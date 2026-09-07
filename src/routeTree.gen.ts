@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AanmeldenRouteImport } from './routes/aanmelden'
 import { Route as BoodschappenRouteImport } from './routes/boodschappen'
+import { Route as InstallerenRouteImport } from './routes/installeren'
 import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as ReceptenIdRouteImport } from './routes/recepten.$id'
 import { Route as ReceptenNieuwRouteImport } from './routes/recepten.nieuw'
@@ -30,6 +31,11 @@ const AanmeldenRoute = AanmeldenRouteImport.update({
 const BoodschappenRoute = BoodschappenRouteImport.update({
   id: '/boodschappen',
   path: '/boodschappen',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InstallerenRoute = InstallerenRouteImport.update({
+  id: '/installeren',
+  path: '/installeren',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlannerRoute = PlannerRouteImport.update({
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/aanmelden': typeof AanmeldenRoute
   '/boodschappen': typeof BoodschappenRoute
+  '/installeren': typeof InstallerenRoute
   '/planner': typeof PlannerRoute
   '/recepten/$id': typeof ReceptenIdRouteWithChildren
   '/recepten/nieuw': typeof ReceptenNieuwRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/aanmelden': typeof AanmeldenRoute
   '/boodschappen': typeof BoodschappenRoute
+  '/installeren': typeof InstallerenRoute
   '/planner': typeof PlannerRoute
   '/recepten/$id': typeof ReceptenIdRouteWithChildren
   '/recepten/nieuw': typeof ReceptenNieuwRoute
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/aanmelden': typeof AanmeldenRoute
   '/boodschappen': typeof BoodschappenRoute
+  '/installeren': typeof InstallerenRoute
   '/planner': typeof PlannerRoute
   '/recepten/$id': typeof ReceptenIdRouteWithChildren
   '/recepten/nieuw': typeof ReceptenNieuwRoute
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/aanmelden'
     | '/boodschappen'
+    | '/installeren'
     | '/planner'
     | '/recepten/$id'
     | '/recepten/nieuw'
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
     | '/'
     | '/aanmelden'
     | '/boodschappen'
+    | '/installeren'
     | '/planner'
     | '/recepten/$id'
     | '/recepten/nieuw'
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/aanmelden'
     | '/boodschappen'
+    | '/installeren'
     | '/planner'
     | '/recepten/$id'
     | '/recepten/nieuw'
@@ -115,6 +127,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AanmeldenRoute: typeof AanmeldenRoute
   BoodschappenRoute: typeof BoodschappenRoute
+  InstallerenRoute: typeof InstallerenRoute
   PlannerRoute: typeof PlannerRoute
   ReceptenIdRoute: typeof ReceptenIdRouteWithChildren
   ReceptenNieuwRoute: typeof ReceptenNieuwRoute
@@ -141,6 +154,13 @@ declare module '@tanstack/react-router' {
       path: '/boodschappen'
       fullPath: '/boodschappen'
       preLoaderRoute: typeof BoodschappenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/installeren': {
+      id: '/installeren'
+      path: '/installeren'
+      fullPath: '/installeren'
+      preLoaderRoute: typeof InstallerenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/planner': {
@@ -190,6 +210,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AanmeldenRoute: AanmeldenRoute,
   BoodschappenRoute: BoodschappenRoute,
+  InstallerenRoute: InstallerenRoute,
   PlannerRoute: PlannerRoute,
   ReceptenIdRoute: ReceptenIdRouteWithChildren,
   ReceptenNieuwRoute: ReceptenNieuwRoute,
