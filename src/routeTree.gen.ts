@@ -11,6 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AanmeldenRouteImport } from './routes/aanmelden'
+import { Route as BoodschappenRouteImport } from './routes/boodschappen'
+import { Route as PlannerRouteImport } from './routes/planner'
+import { Route as ReceptenIdRouteImport } from './routes/recepten.$id'
 import { Route as ReceptenNieuwRouteImport } from './routes/recepten.nieuw'
 import { Route as ReceptenIdBewerkenRouteImport } from './routes/recepten.$id.bewerken'
 
@@ -24,26 +27,47 @@ const AanmeldenRoute = AanmeldenRouteImport.update({
   path: '/aanmelden',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BoodschappenRoute = BoodschappenRouteImport.update({
+  id: '/boodschappen',
+  path: '/boodschappen',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlannerRoute = PlannerRouteImport.update({
+  id: '/planner',
+  path: '/planner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReceptenIdRoute = ReceptenIdRouteImport.update({
+  id: '/recepten/$id',
+  path: '/recepten/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReceptenNieuwRoute = ReceptenNieuwRouteImport.update({
   id: '/recepten/nieuw',
   path: '/recepten/nieuw',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReceptenIdBewerkenRoute = ReceptenIdBewerkenRouteImport.update({
-  id: '/recepten/$id/bewerken',
-  path: '/recepten/$id/bewerken',
-  getParentRoute: () => rootRouteImport,
+  id: '/bewerken',
+  path: '/bewerken',
+  getParentRoute: () => ReceptenIdRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/aanmelden': typeof AanmeldenRoute
+  '/boodschappen': typeof BoodschappenRoute
+  '/planner': typeof PlannerRoute
+  '/recepten/$id': typeof ReceptenIdRouteWithChildren
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/aanmelden': typeof AanmeldenRoute
+  '/boodschappen': typeof BoodschappenRoute
+  '/planner': typeof PlannerRoute
+  '/recepten/$id': typeof ReceptenIdRouteWithChildren
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
 }
@@ -51,18 +75,38 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/aanmelden': typeof AanmeldenRoute
+  '/boodschappen': typeof BoodschappenRoute
+  '/planner': typeof PlannerRoute
+  '/recepten/$id': typeof ReceptenIdRouteWithChildren
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/aanmelden' | '/recepten/nieuw' | '/recepten/$id/bewerken'
+  fullPaths:
+    | '/'
+    | '/aanmelden'
+    | '/boodschappen'
+    | '/planner'
+    | '/recepten/$id'
+    | '/recepten/nieuw'
+    | '/recepten/$id/bewerken'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/aanmelden' | '/recepten/nieuw' | '/recepten/$id/bewerken'
+  to:
+    | '/'
+    | '/aanmelden'
+    | '/boodschappen'
+    | '/planner'
+    | '/recepten/$id'
+    | '/recepten/nieuw'
+    | '/recepten/$id/bewerken'
   id:
     | '__root__'
     | '/'
     | '/aanmelden'
+    | '/boodschappen'
+    | '/planner'
+    | '/recepten/$id'
     | '/recepten/nieuw'
     | '/recepten/$id/bewerken'
   fileRoutesById: FileRoutesById
@@ -70,8 +114,10 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AanmeldenRoute: typeof AanmeldenRoute
+  BoodschappenRoute: typeof BoodschappenRoute
+  PlannerRoute: typeof PlannerRoute
+  ReceptenIdRoute: typeof ReceptenIdRouteWithChildren
   ReceptenNieuwRoute: typeof ReceptenNieuwRoute
-  ReceptenIdBewerkenRoute: typeof ReceptenIdBewerkenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -90,6 +136,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AanmeldenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/boodschappen': {
+      id: '/boodschappen'
+      path: '/boodschappen'
+      fullPath: '/boodschappen'
+      preLoaderRoute: typeof BoodschappenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/planner': {
+      id: '/planner'
+      path: '/planner'
+      fullPath: '/planner'
+      preLoaderRoute: typeof PlannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recepten/$id': {
+      id: '/recepten/$id'
+      path: '/recepten/$id'
+      fullPath: '/recepten/$id'
+      preLoaderRoute: typeof ReceptenIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/recepten/nieuw': {
       id: '/recepten/nieuw'
       path: '/recepten/nieuw'
@@ -99,19 +166,33 @@ declare module '@tanstack/react-router' {
     }
     '/recepten/$id/bewerken': {
       id: '/recepten/$id/bewerken'
-      path: '/recepten/$id/bewerken'
+      path: '/bewerken'
       fullPath: '/recepten/$id/bewerken'
       preLoaderRoute: typeof ReceptenIdBewerkenRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ReceptenIdRoute
     }
   }
 }
 
+interface ReceptenIdRouteChildren {
+  ReceptenIdBewerkenRoute: typeof ReceptenIdBewerkenRoute
+}
+
+const ReceptenIdRouteChildren: ReceptenIdRouteChildren = {
+  ReceptenIdBewerkenRoute: ReceptenIdBewerkenRoute,
+}
+
+const ReceptenIdRouteWithChildren = ReceptenIdRoute._addFileChildren(
+  ReceptenIdRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AanmeldenRoute: AanmeldenRoute,
+  BoodschappenRoute: BoodschappenRoute,
+  PlannerRoute: PlannerRoute,
+  ReceptenIdRoute: ReceptenIdRouteWithChildren,
   ReceptenNieuwRoute: ReceptenNieuwRoute,
-  ReceptenIdBewerkenRoute: ReceptenIdBewerkenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

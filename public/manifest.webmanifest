@@ -1,0 +1,15 @@
+{
+  "name": "Samen Koken",
+  "short_name": "Samen Koken",
+  "description": "Verzamel samen recepten, plan je week en maak je boodschappenlijst.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#faf6ee",
+  "theme_color": "#a4552e",
+  "lang": "nl",
+  "icons": [
+    { "src": "/app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
