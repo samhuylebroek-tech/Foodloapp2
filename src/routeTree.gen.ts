@@ -10,33 +10,68 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AanmeldenRouteImport } from './routes/aanmelden'
+import { Route as ReceptenNieuwRouteImport } from './routes/recepten.nieuw'
+import { Route as ReceptenIdBewerkenRouteImport } from './routes/recepten.$id.bewerken'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AanmeldenRoute = AanmeldenRouteImport.update({
+  id: '/aanmelden',
+  path: '/aanmelden',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReceptenNieuwRoute = ReceptenNieuwRouteImport.update({
+  id: '/recepten/nieuw',
+  path: '/recepten/nieuw',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReceptenIdBewerkenRoute = ReceptenIdBewerkenRouteImport.update({
+  id: '/recepten/$id/bewerken',
+  path: '/recepten/$id/bewerken',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/aanmelden': typeof AanmeldenRoute
+  '/recepten/nieuw': typeof ReceptenNieuwRoute
+  '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/aanmelden': typeof AanmeldenRoute
+  '/recepten/nieuw': typeof ReceptenNieuwRoute
+  '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/aanmelden': typeof AanmeldenRoute
+  '/recepten/nieuw': typeof ReceptenNieuwRoute
+  '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/aanmelden' | '/recepten/nieuw' | '/recepten/$id/bewerken'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/aanmelden' | '/recepten/nieuw' | '/recepten/$id/bewerken'
+  id:
+    | '__root__'
+    | '/'
+    | '/aanmelden'
+    | '/recepten/nieuw'
+    | '/recepten/$id/bewerken'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AanmeldenRoute: typeof AanmeldenRoute
+  ReceptenNieuwRoute: typeof ReceptenNieuwRoute
+  ReceptenIdBewerkenRoute: typeof ReceptenIdBewerkenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +83,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/aanmelden': {
+      id: '/aanmelden'
+      path: '/aanmelden'
+      fullPath: '/aanmelden'
+      preLoaderRoute: typeof AanmeldenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recepten/nieuw': {
+      id: '/recepten/nieuw'
+      path: '/recepten/nieuw'
+      fullPath: '/recepten/nieuw'
+      preLoaderRoute: typeof ReceptenNieuwRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recepten/$id/bewerken': {
+      id: '/recepten/$id/bewerken'
+      path: '/recepten/$id/bewerken'
+      fullPath: '/recepten/$id/bewerken'
+      preLoaderRoute: typeof ReceptenIdBewerkenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AanmeldenRoute: AanmeldenRoute,
+  ReceptenNieuwRoute: ReceptenNieuwRoute,
+  ReceptenIdBewerkenRoute: ReceptenIdBewerkenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
