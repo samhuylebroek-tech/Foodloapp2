@@ -27,7 +27,7 @@ export function RecipeForm({
 }: {
   recipe?: Recipe;
   ingredients?: Ingredient[];
-  gedeeld?: { title?: string; text?: string; url?: string };
+  gedeeld?: { title?: string | undefined; text?: string | undefined; url?: string | undefined };
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
