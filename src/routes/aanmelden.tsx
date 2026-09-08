@@ -38,7 +38,13 @@ function AanmeldenPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && session) navigate({ to: "/" });
+    if (loading || !session) return;
+    const code = sessionStorage.getItem("uitnodiging");
+    if (code) {
+      navigate({ to: "/uitnodiging", search: { code } });
+      return;
+    }
+    navigate({ to: "/" });
   }, [loading, session, navigate]);
 
   async function handleSubmit(e: React.FormEvent) {

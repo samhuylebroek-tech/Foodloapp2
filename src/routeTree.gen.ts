@@ -14,6 +14,8 @@ import { Route as AanmeldenRouteImport } from './routes/aanmelden'
 import { Route as BoodschappenRouteImport } from './routes/boodschappen'
 import { Route as InstallerenRouteImport } from './routes/installeren'
 import { Route as PlannerRouteImport } from './routes/planner'
+import { Route as UitnodigingRouteImport } from './routes/uitnodiging'
+import { Route as VriendenRouteImport } from './routes/vrienden'
 import { Route as ReceptenIdRouteImport } from './routes/recepten.$id'
 import { Route as ReceptenNieuwRouteImport } from './routes/recepten.nieuw'
 import { Route as ReceptenIdBewerkenRouteImport } from './routes/recepten.$id.bewerken'
@@ -43,6 +45,16 @@ const PlannerRoute = PlannerRouteImport.update({
   path: '/planner',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UitnodigingRoute = UitnodigingRouteImport.update({
+  id: '/uitnodiging',
+  path: '/uitnodiging',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VriendenRoute = VriendenRouteImport.update({
+  id: '/vrienden',
+  path: '/vrienden',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReceptenIdRoute = ReceptenIdRouteImport.update({
   id: '/recepten/$id',
   path: '/recepten/$id',
@@ -65,6 +77,8 @@ export interface FileRoutesByFullPath {
   '/boodschappen': typeof BoodschappenRoute
   '/installeren': typeof InstallerenRoute
   '/planner': typeof PlannerRoute
+  '/uitnodiging': typeof UitnodigingRoute
+  '/vrienden': typeof VriendenRoute
   '/recepten/$id': typeof ReceptenIdRouteWithChildren
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
@@ -75,6 +89,8 @@ export interface FileRoutesByTo {
   '/boodschappen': typeof BoodschappenRoute
   '/installeren': typeof InstallerenRoute
   '/planner': typeof PlannerRoute
+  '/uitnodiging': typeof UitnodigingRoute
+  '/vrienden': typeof VriendenRoute
   '/recepten/$id': typeof ReceptenIdRouteWithChildren
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
@@ -86,6 +102,8 @@ export interface FileRoutesById {
   '/boodschappen': typeof BoodschappenRoute
   '/installeren': typeof InstallerenRoute
   '/planner': typeof PlannerRoute
+  '/uitnodiging': typeof UitnodigingRoute
+  '/vrienden': typeof VriendenRoute
   '/recepten/$id': typeof ReceptenIdRouteWithChildren
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
@@ -98,6 +116,8 @@ export interface FileRouteTypes {
     | '/boodschappen'
     | '/installeren'
     | '/planner'
+    | '/uitnodiging'
+    | '/vrienden'
     | '/recepten/$id'
     | '/recepten/nieuw'
     | '/recepten/$id/bewerken'
@@ -108,6 +128,8 @@ export interface FileRouteTypes {
     | '/boodschappen'
     | '/installeren'
     | '/planner'
+    | '/uitnodiging'
+    | '/vrienden'
     | '/recepten/$id'
     | '/recepten/nieuw'
     | '/recepten/$id/bewerken'
@@ -118,6 +140,8 @@ export interface FileRouteTypes {
     | '/boodschappen'
     | '/installeren'
     | '/planner'
+    | '/uitnodiging'
+    | '/vrienden'
     | '/recepten/$id'
     | '/recepten/nieuw'
     | '/recepten/$id/bewerken'
@@ -129,6 +153,8 @@ export interface RootRouteChildren {
   BoodschappenRoute: typeof BoodschappenRoute
   InstallerenRoute: typeof InstallerenRoute
   PlannerRoute: typeof PlannerRoute
+  UitnodigingRoute: typeof UitnodigingRoute
+  VriendenRoute: typeof VriendenRoute
   ReceptenIdRoute: typeof ReceptenIdRouteWithChildren
   ReceptenNieuwRoute: typeof ReceptenNieuwRoute
 }
@@ -168,6 +194,20 @@ declare module '@tanstack/react-router' {
       path: '/planner'
       fullPath: '/planner'
       preLoaderRoute: typeof PlannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/uitnodiging': {
+      id: '/uitnodiging'
+      path: '/uitnodiging'
+      fullPath: '/uitnodiging'
+      preLoaderRoute: typeof UitnodigingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vrienden': {
+      id: '/vrienden'
+      path: '/vrienden'
+      fullPath: '/vrienden'
+      preLoaderRoute: typeof VriendenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/recepten/$id': {
@@ -212,6 +252,8 @@ const rootRouteChildren: RootRouteChildren = {
   BoodschappenRoute: BoodschappenRoute,
   InstallerenRoute: InstallerenRoute,
   PlannerRoute: PlannerRoute,
+  UitnodigingRoute: UitnodigingRoute,
+  VriendenRoute: VriendenRoute,
   ReceptenIdRoute: ReceptenIdRouteWithChildren,
   ReceptenNieuwRoute: ReceptenNieuwRoute,
 }
