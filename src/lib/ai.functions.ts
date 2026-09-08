@@ -156,7 +156,7 @@ export const importRecipeFromText = createServerFn({ method: "POST" })
       {
         role: "system",
         content:
-          "Je zet losse tekst (bijvoorbeeld een bericht, een Instagram-tekst of een handgeschreven receptje) om in een gestructureerd recept. Vul ontbrekende gegevens aan met een verstandige schatting. Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. Formaat: {\"title\":string,\"description\":string,\"servings\":number,\"prep_minutes\":number,\"cook_minutes\":number,\"category\":string,\"difficulty\":\"makkelijk\"|\"gemiddeld\"|\"moeilijk\",\"tags\":string[],\"ingredients\":[{\"name\":string,\"quantity\":number|null,\"unit\":string}],\"instructions\":string[]}",
+          `Je zet losse tekst (bijvoorbeeld een bericht, een Instagram-tekst of een handgeschreven receptje) om in een gestructureerd recept. Vul ontbrekende gegevens aan met een verstandige schatting. ${STAP_REGELS} Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. ${JSON_FORMAAT}`,
       },
       { role: "user", content: data.text },
     ]);
