@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-import { BookOpen, CalendarDays, ShoppingCart, PlusCircle, Smartphone } from "lucide-react";
+import { BookOpen, CalendarDays, ShoppingCart, PlusCircle, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
@@ -9,7 +9,7 @@ const NAV = [
   { to: "/planner", label: "Planning", icon: CalendarDays },
   { to: "/recepten/nieuw", label: "Toevoegen", icon: PlusCircle },
   { to: "/boodschappen", label: "Lijst", icon: ShoppingCart },
-  { to: "/installeren", label: "App", icon: Smartphone },
+  { to: "/vrienden", label: "Vrienden", icon: Users },
 ] as const;
 
 export function AppShell({
