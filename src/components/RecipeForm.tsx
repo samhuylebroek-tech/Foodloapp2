@@ -1,11 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Camera, Link2, Loader2, Plus, Trash2, Sparkles } from "lucide-react";
+import { Camera, Link2, Loader2, Plus, Trash2, Sparkles, ClipboardType } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { uploadRecipePhoto, fileToDataUrl } from "@/lib/photos";
-import { importRecipeFromUrl, recognizeIngredients } from "@/lib/ai.functions";
+import {
+  importRecipeFromUrl,
+  importRecipeFromText,
+  recognizeIngredients,
+  type ImportedRecipe,
+} from "@/lib/ai.functions";
 import { CATEGORIES, DIFFICULTIES, UNITS, type Ingredient, type Recipe } from "@/lib/types";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { Button } from "@/components/ui/button";
@@ -18,12 +23,18 @@ type IngredientRow = { name: string; quantity: string; unit: string };
 export function RecipeForm({
   recipe,
   ingredients,
+  gedeeld,
 }: {
   recipe?: Recipe;
   ingredients?: Ingredient[];
+  gedeeld?: { title?: string; text?: string; url?: string };
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const gedeeldeTekst = [gedeeld?.title, gedeeld?.text].filter(Boolean).join("\n\n");
+  const gedeeldeLink =
+    gedeeld?.url ?? [gedeeld?.text, gedeeld?.title].join(" ").match(/https?:\/\/\S+/)?.[0] ?? "";
 
   const [title, setTitle] = useState(recipe?.title ?? "");
   const [description, setDescription] = useState(recipe?.description ?? "");
@@ -34,7 +45,7 @@ export function RecipeForm({
   const [difficulty, setDifficulty] = useState(recipe?.difficulty ?? "makkelijk");
   const [tags, setTags] = useState((recipe?.tags ?? []).join(", "));
   const [photoPath, setPhotoPath] = useState<string | null>(recipe?.image_url ?? null);
-  const [sourceUrl, setSourceUrl] = useState(recipe?.source_url ?? "");
+  const [sourceUrl, setSourceUrl] = useState(recipe?.source_url ?? gedeeldeLink);
   const [rows, setRows] = useState<IngredientRow[]>(
     ingredients?.length
       ? ingredients.map((i) => ({
@@ -48,11 +59,51 @@ export function RecipeForm({
     recipe?.instructions?.length ? recipe.instructions : [""],
   );
 
-  const [importUrl, setImportUrl] = useState("");
+  const [importUrl, setImportUrl] = useState(gedeeldeLink);
+  const [vrijeTekst, setVrijeTekst] = useState(gedeeldeTekst);
   const [importing, setImporting] = useState(false);
+  const [lezenTekst, setLezenTekst] = useState(false);
   const [recognizing, setRecognizing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  function vulIn(data: ImportedRecipe) {
+    setTitle(data.title);
+    setDescription(data.description);
+    setServings(String(data.servings));
+    setPrep(String(data.prep_minutes));
+    setCook(String(data.cook_minutes));
+    setCategory(CATEGORIES.includes(data.category as never) ? data.category : "hoofdgerecht");
+    setDifficulty(DIFFICULTIES.includes(data.difficulty as never) ? data.difficulty : "makkelijk");
+    setTags(data.tags.join(", "));
+    if (data.ingredients.length)
+      setRows(
+        data.ingredients.map((i) => ({
+          name: i.name,
+          quantity: i.quantity === null ? "" : String(i.quantity),
+          unit: i.unit ?? "",
+        })),
+      );
+    if (data.instructions.length) setSteps(data.instructions);
+  }
+
+  async function handleTekst() {
+    if (vrijeTekst.trim().length < 5) {
+      toast.error("Plak eerst wat tekst");
+      return;
+    }
+    setLezenTekst(true);
+    try {
+      const data = await importRecipeFromText({ data: { text: vrijeTekst.trim() } });
+      vulIn(data);
+      toast.success("We hebben alles ingevuld. Controleer het even en sla op.");
+    } catch {
+      toast.error("Hier konden we geen recept uit halen");
+    } finally {
+      setLezenTekst(false);
+    }
+  }
+
 
   async function handlePhoto(file: File) {
     if (!user) return;
