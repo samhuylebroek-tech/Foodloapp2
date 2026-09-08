@@ -44,7 +44,37 @@ export type ImportedRecipe = {
   tags: string[];
   ingredients: { name: string; quantity: number | null; unit: string }[];
   instructions: string[];
+  image_url?: string | null;
+  is_suggestie?: boolean;
 };
+
+const STAP_REGELS =
+  "De bereiding is het belangrijkste: geef volledige, duidelijke stappen in gewone taal, elke stap één handeling, met tijden en temperaturen waar dat kan. Minstens 4 stappen.";
+
+const JSON_FORMAAT =
+  'Formaat: {"title":string,"description":string,"servings":number,"prep_minutes":number,"cook_minutes":number,"category":string,"difficulty":"makkelijk"|"gemiddeld"|"moeilijk","tags":string[],"ingredients":[{"name":string,"quantity":number|null,"unit":string}],"instructions":string[]}';
+
+function vindAfbeelding(html: string, paginaUrl: string): string | null {
+  const patronen = [
+    /<meta[^>]+property=["']og:image(?::secure_url)?["'][^>]+content=["']([^"']+)["']/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i,
+    /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i,
+    /"image"\s*:\s*"(https?:\/\/[^"]+)"/i,
+    /"image"\s*:\s*\[\s*"(https?:\/\/[^"]+)"/i,
+    /"image"\s*:\s*\{[^}]*"url"\s*:\s*"(https?:\/\/[^"]+)"/i,
+  ];
+  for (const p of patronen) {
+    const m = html.match(p);
+    if (m?.[1]) {
+      try {
+        return new URL(m[1].replace(/&amp;/g, "&"), paginaUrl).toString();
+      } catch {
+        // volgende patroon
+      }
+    }
+  }
+  return null;
+}
 
 export const importRecipeFromUrl = createServerFn({ method: "POST" })
   .inputValidator((data) => z.object({ url: z.string().url() }).parse(data))
