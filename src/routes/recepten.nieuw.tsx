@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { RecipeForm } from "@/components/RecipeForm";
 
-type NieuwSearch = { title?: string; text?: string; url?: string };
+type NieuwSearch = { title?: string | undefined; text?: string | undefined; url?: string | undefined };
 
 export const Route = createFileRoute("/recepten/nieuw")({
   validateSearch: (search: Record<string, unknown>): NieuwSearch => ({
