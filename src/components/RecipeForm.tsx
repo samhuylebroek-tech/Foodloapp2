@@ -9,6 +9,7 @@ import {
   importRecipeFromUrl,
   importRecipeFromText,
   recognizeIngredients,
+  recipeFromPhoto,
   type ImportedRecipe,
 } from "@/lib/ai.functions";
 import { CATEGORIES, DIFFICULTIES, UNITS, type Ingredient, type Recipe } from "@/lib/types";
