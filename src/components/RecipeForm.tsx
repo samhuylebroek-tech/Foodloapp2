@@ -64,6 +64,7 @@ export function RecipeForm({
   const [importing, setImporting] = useState(false);
   const [lezenTekst, setLezenTekst] = useState(false);
   const [recognizing, setRecognizing] = useState(false);
+  const [suggereren, setSuggereren] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
