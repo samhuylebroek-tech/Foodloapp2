@@ -85,6 +85,29 @@ export function RecipeForm({
         })),
       );
     if (data.instructions.length) setSteps(data.instructions);
+    if (data.image_url) setPhotoPath(data.image_url);
+  }
+
+  async function handleFotoSuggestie(file: File) {
+    setSuggereren(true);
+    try {
+      const imageDataUrl = await fileToDataUrl(file);
+      const data = await recipeFromPhoto({ data: { imageDataUrl } });
+      vulIn(data);
+      if (user) {
+        try {
+          const path = await uploadRecipePhoto(file, user.id);
+          setPhotoPath(path);
+        } catch {
+          // foto bewaren mag mislukken, het recept blijft staan
+        }
+      }
+      toast.success("Voorstel klaar. Lees het even na en pas aan wat je anders wil.");
+    } catch {
+      toast.error("We konden hier geen gerecht van maken");
+    } finally {
+      setSuggereren(false);
+    }
   }
 
   async function handleTekst() {
