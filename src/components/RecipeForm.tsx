@@ -9,6 +9,7 @@ import {
   importRecipeFromUrl,
   importRecipeFromText,
   recognizeIngredients,
+  recipeFromPhoto,
   type ImportedRecipe,
 } from "@/lib/ai.functions";
 import { CATEGORIES, DIFFICULTIES, UNITS, type Ingredient, type Recipe } from "@/lib/types";
@@ -64,6 +65,7 @@ export function RecipeForm({
   const [importing, setImporting] = useState(false);
   const [lezenTekst, setLezenTekst] = useState(false);
   const [recognizing, setRecognizing] = useState(false);
+  const [suggereren, setSuggereren] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -85,6 +87,29 @@ export function RecipeForm({
         })),
       );
     if (data.instructions.length) setSteps(data.instructions);
+    if (data.image_url) setPhotoPath(data.image_url);
+  }
+
+  async function handleFotoSuggestie(file: File) {
+    setSuggereren(true);
+    try {
+      const imageDataUrl = await fileToDataUrl(file);
+      const data = await recipeFromPhoto({ data: { imageDataUrl } });
+      vulIn(data);
+      if (user) {
+        try {
+          const path = await uploadRecipePhoto(file, user.id);
+          setPhotoPath(path);
+        } catch {
+          // foto bewaren mag mislukken, het recept blijft staan
+        }
+      }
+      toast.success("Voorstel klaar. Lees het even na en pas aan wat je anders wil.");
+    } catch {
+      toast.error("We konden hier geen gerecht van maken");
+    } finally {
+      setSuggereren(false);
+    }
   }
 
   async function handleTekst() {
@@ -275,6 +300,37 @@ export function RecipeForm({
             )}
             Recept eruit halen
           </Button>
+        </section>
+      )}
+
+      {!recipe && (
+        <section className="rounded-2xl border border-border bg-card p-4">
+          <h2 className="flex items-center gap-2 text-lg">
+            <Camera className="size-5 text-primary" aria-hidden /> Alleen een foto van een gerecht?
+          </h2>
+          <p className="mt-1 text-base text-muted-foreground">
+            Kies een foto van een klaar gerecht. Wij bedenken een voorstel: welke ingrediënten je
+            nodig hebt en hoe je het stap voor stap maakt. Het is een voorstel, geen zekerheid — lees
+            het na en pas gerust aan.
+          </p>
+          <label className="mt-3 inline-flex min-h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-5 text-base font-semibold text-primary-foreground">
+            {suggereren ? (
+              <Loader2 className="size-5 animate-spin" />
+            ) : (
+              <Sparkles className="size-5" />
+            )}
+            Maak een recept van mijn foto
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="sr-only"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void handleFotoSuggestie(f);
+              }}
+            />
+          </label>
         </section>
       )}
 
