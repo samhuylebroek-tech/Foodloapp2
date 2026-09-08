@@ -8,6 +8,15 @@
   "background_color": "#faf6ee",
   "theme_color": "#a4552e",
   "lang": "nl",
+  "share_target": {
+    "action": "/recepten/nieuw",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
   "icons": [
     { "src": "/app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "/app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
