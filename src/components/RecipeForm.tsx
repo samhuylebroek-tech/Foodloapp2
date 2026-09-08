@@ -303,6 +303,37 @@ export function RecipeForm({
         </section>
       )}
 
+      {!recipe && (
+        <section className="rounded-2xl border border-border bg-card p-4">
+          <h2 className="flex items-center gap-2 text-lg">
+            <Camera className="size-5 text-primary" aria-hidden /> Alleen een foto van een gerecht?
+          </h2>
+          <p className="mt-1 text-base text-muted-foreground">
+            Kies een foto van een klaar gerecht. Wij bedenken een voorstel: welke ingrediënten je
+            nodig hebt en hoe je het stap voor stap maakt. Het is een voorstel, geen zekerheid — lees
+            het na en pas gerust aan.
+          </p>
+          <label className="mt-3 inline-flex min-h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-5 text-base font-semibold text-primary-foreground">
+            {suggereren ? (
+              <Loader2 className="size-5 animate-spin" />
+            ) : (
+              <Sparkles className="size-5" />
+            )}
+            Maak een recept van mijn foto
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="sr-only"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void handleFotoSuggestie(f);
+              }}
+            />
+          </label>
+        </section>
+      )}
+
       <section className="space-y-4">
         <div>
           <Label htmlFor="title" className="text-base">
