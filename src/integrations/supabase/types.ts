@@ -185,6 +185,57 @@ export type Database = {
         }
         Relationships: []
       }
+      shares: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          id: string
+          invited_email: string | null
+          member_id: string | null
+          owner_id: string
+          planner_edit: boolean
+          planner_view: boolean
+          recipes_edit: boolean
+          recipes_view: boolean
+          shopping_edit: boolean
+          shopping_view: boolean
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          id?: string
+          invited_email?: string | null
+          member_id?: string | null
+          owner_id: string
+          planner_edit?: boolean
+          planner_view?: boolean
+          recipes_edit?: boolean
+          recipes_view?: boolean
+          shopping_edit?: boolean
+          shopping_view?: boolean
+          status?: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          id?: string
+          invited_email?: string | null
+          member_id?: string | null
+          owner_id?: string
+          planner_edit?: boolean
+          planner_view?: boolean
+          recipes_edit?: boolean
+          recipes_view?: boolean
+          shopping_edit?: boolean
+          shopping_view?: boolean
+          status?: string
+          token?: string
+        }
+        Relationships: []
+      }
       shopping_items: {
         Row: {
           checked: boolean
@@ -231,7 +282,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      accept_share: { Args: { _token: string }; Returns: string }
+      has_share: {
+        Args: { _owner: string; _perm: string; _viewer: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
