@@ -145,26 +145,8 @@ export function RecipeForm({
     setImporting(true);
     try {
       const data = await importRecipeFromUrl({ data: { url: importUrl.trim() } });
-      setTitle(data.title);
-      setDescription(data.description);
-      setServings(String(data.servings));
-      setPrep(String(data.prep_minutes));
-      setCook(String(data.cook_minutes));
-      setCategory(CATEGORIES.includes(data.category as never) ? data.category : "hoofdgerecht");
-      setDifficulty(
-        DIFFICULTIES.includes(data.difficulty as never) ? data.difficulty : "makkelijk",
-      );
-      setTags(data.tags.join(", "));
+      vulIn(data);
       setSourceUrl(importUrl.trim());
-      if (data.ingredients.length)
-        setRows(
-          data.ingredients.map((i) => ({
-            name: i.name,
-            quantity: i.quantity === null ? "" : String(i.quantity),
-            unit: i.unit ?? "",
-          })),
-        );
-      if (data.instructions.length) setSteps(data.instructions);
       toast.success("Recept ingelezen. Controleer het even en sla op.");
     } catch {
       toast.error("Dit recept kon niet worden ingelezen");
