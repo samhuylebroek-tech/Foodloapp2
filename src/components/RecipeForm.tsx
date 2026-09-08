@@ -245,6 +245,39 @@ export function RecipeForm({
         </section>
       )}
 
+      {!recipe && (
+        <section className="rounded-2xl border border-border bg-card p-4">
+          <h2 className="flex items-center gap-2 text-lg">
+            <ClipboardType className="size-5 text-primary" aria-hidden /> Losse tekst omzetten in een
+            recept
+          </h2>
+          <p className="mt-1 text-base text-muted-foreground">
+            Plak hier een tekst van Instagram, een bericht van een vriend of je eigen notities. We
+            herkennen het gerecht en vullen alles in. Je controleert het daarna zelf.
+          </p>
+          <Textarea
+            value={vrijeTekst}
+            onChange={(e) => setVrijeTekst(e.target.value)}
+            rows={6}
+            placeholder="Plak of typ hier de tekst…"
+            className="mt-3 text-base"
+            aria-label="Tekst van het recept"
+          />
+          <Button
+            onClick={handleTekst}
+            disabled={lezenTekst}
+            className="mt-3 h-14 w-full text-base"
+          >
+            {lezenTekst ? (
+              <Loader2 className="size-5 animate-spin" />
+            ) : (
+              <Sparkles className="size-5" />
+            )}
+            Recept eruit halen
+          </Button>
+        </section>
+      )}
+
       <section className="space-y-4">
         <div>
           <Label htmlFor="title" className="text-base">
