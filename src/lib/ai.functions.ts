@@ -85,6 +85,33 @@ export const importRecipeFromUrl = createServerFn({ method: "POST" })
     };
   });
 
+export const importRecipeFromText = createServerFn({ method: "POST" })
+  .inputValidator((data) => z.object({ text: z.string().min(5).max(20000) }).parse(data))
+  .handler(async ({ data }): Promise<ImportedRecipe> => {
+    const raw = await askAI([
+      {
+        role: "system",
+        content:
+          "Je zet losse tekst (bijvoorbeeld een bericht, een Instagram-tekst of een handgeschreven receptje) om in een gestructureerd recept. Vul ontbrekende gegevens aan met een verstandige schatting. Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. Formaat: {\"title\":string,\"description\":string,\"servings\":number,\"prep_minutes\":number,\"cook_minutes\":number,\"category\":string,\"difficulty\":\"makkelijk\"|\"gemiddeld\"|\"moeilijk\",\"tags\":string[],\"ingredients\":[{\"name\":string,\"quantity\":number|null,\"unit\":string}],\"instructions\":string[]}",
+      },
+      { role: "user", content: data.text },
+    ]);
+
+    const parsed = parseJson<Partial<ImportedRecipe>>(raw, {});
+    return {
+      title: parsed.title ?? "",
+      description: parsed.description ?? "",
+      servings: Number(parsed.servings) || 4,
+      prep_minutes: Number(parsed.prep_minutes) || 0,
+      cook_minutes: Number(parsed.cook_minutes) || 0,
+      category: parsed.category ?? "hoofdgerecht",
+      difficulty: parsed.difficulty ?? "makkelijk",
+      tags: parsed.tags ?? [],
+      ingredients: parsed.ingredients ?? [],
+      instructions: parsed.instructions ?? [],
+    };
+  });
+
 export const recognizeIngredients = createServerFn({ method: "POST" })
   .inputValidator((data) => z.object({ imageDataUrl: z.string().min(20) }).parse(data))
   .handler(async ({ data }): Promise<string[]> => {

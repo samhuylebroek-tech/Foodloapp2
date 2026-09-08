@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AanmeldenRouteImport } from './routes/aanmelden'
 import { Route as BoodschappenRouteImport } from './routes/boodschappen'
+import { Route as FeedbackRouteImport } from './routes/feedback'
 import { Route as InstallerenRouteImport } from './routes/installeren'
 import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as UitnodigingRouteImport } from './routes/uitnodiging'
@@ -33,6 +34,11 @@ const AanmeldenRoute = AanmeldenRouteImport.update({
 const BoodschappenRoute = BoodschappenRouteImport.update({
   id: '/boodschappen',
   path: '/boodschappen',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FeedbackRoute = FeedbackRouteImport.update({
+  id: '/feedback',
+  path: '/feedback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InstallerenRoute = InstallerenRouteImport.update({
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/aanmelden': typeof AanmeldenRoute
   '/boodschappen': typeof BoodschappenRoute
+  '/feedback': typeof FeedbackRoute
   '/installeren': typeof InstallerenRoute
   '/planner': typeof PlannerRoute
   '/uitnodiging': typeof UitnodigingRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/aanmelden': typeof AanmeldenRoute
   '/boodschappen': typeof BoodschappenRoute
+  '/feedback': typeof FeedbackRoute
   '/installeren': typeof InstallerenRoute
   '/planner': typeof PlannerRoute
   '/uitnodiging': typeof UitnodigingRoute
@@ -100,6 +108,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/aanmelden': typeof AanmeldenRoute
   '/boodschappen': typeof BoodschappenRoute
+  '/feedback': typeof FeedbackRoute
   '/installeren': typeof InstallerenRoute
   '/planner': typeof PlannerRoute
   '/uitnodiging': typeof UitnodigingRoute
@@ -114,6 +123,7 @@ export interface FileRouteTypes {
     | '/'
     | '/aanmelden'
     | '/boodschappen'
+    | '/feedback'
     | '/installeren'
     | '/planner'
     | '/uitnodiging'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/'
     | '/aanmelden'
     | '/boodschappen'
+    | '/feedback'
     | '/installeren'
     | '/planner'
     | '/uitnodiging'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/'
     | '/aanmelden'
     | '/boodschappen'
+    | '/feedback'
     | '/installeren'
     | '/planner'
     | '/uitnodiging'
@@ -151,6 +163,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AanmeldenRoute: typeof AanmeldenRoute
   BoodschappenRoute: typeof BoodschappenRoute
+  FeedbackRoute: typeof FeedbackRoute
   InstallerenRoute: typeof InstallerenRoute
   PlannerRoute: typeof PlannerRoute
   UitnodigingRoute: typeof UitnodigingRoute
@@ -180,6 +193,13 @@ declare module '@tanstack/react-router' {
       path: '/boodschappen'
       fullPath: '/boodschappen'
       preLoaderRoute: typeof BoodschappenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/feedback': {
+      id: '/feedback'
+      path: '/feedback'
+      fullPath: '/feedback'
+      preLoaderRoute: typeof FeedbackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/installeren': {
@@ -250,6 +270,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AanmeldenRoute: AanmeldenRoute,
   BoodschappenRoute: BoodschappenRoute,
+  FeedbackRoute: FeedbackRoute,
   InstallerenRoute: InstallerenRoute,
   PlannerRoute: PlannerRoute,
   UitnodigingRoute: UitnodigingRoute,
