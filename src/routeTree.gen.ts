@@ -22,6 +22,8 @@ import { Route as UitnodigingRouteImport } from './routes/uitnodiging'
 import { Route as VriendenRouteImport } from './routes/vrienden'
 import { Route as BeheerIndexRouteImport } from './routes/beheer.index'
 import { Route as BeheerAiRouteImport } from './routes/beheer.ai'
+import { Route as BeheerAnalyticsRouteImport } from './routes/beheer.analytics'
+import { Route as BeheerBeveiligingRouteImport } from './routes/beheer.beveiliging'
 import { Route as BeheerGebruikersRouteImport } from './routes/beheer.gebruikers'
 import { Route as BeheerInhoudRouteImport } from './routes/beheer.inhoud'
 import { Route as BeheerInstellingenRouteImport } from './routes/beheer.instellingen'
@@ -100,6 +102,16 @@ const BeheerAiRoute = BeheerAiRouteImport.update({
   path: '/ai',
   getParentRoute: () => BeheerRoute,
 } as any)
+const BeheerAnalyticsRoute = BeheerAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => BeheerRoute,
+} as any)
+const BeheerBeveiligingRoute = BeheerBeveiligingRouteImport.update({
+  id: '/beveiliging',
+  path: '/beveiliging',
+  getParentRoute: () => BeheerRoute,
+} as any)
 const BeheerGebruikersRoute = BeheerGebruikersRouteImport.update({
   id: '/gebruikers',
   path: '/gebruikers',
@@ -174,6 +186,8 @@ export interface FileRoutesByFullPath {
   '/uitnodiging': typeof UitnodigingRoute
   '/vrienden': typeof VriendenRouteWithChildren
   '/beheer/ai': typeof BeheerAiRoute
+  '/beheer/analytics': typeof BeheerAnalyticsRoute
+  '/beheer/beveiliging': typeof BeheerBeveiligingRoute
   '/beheer/gebruikers': typeof BeheerGebruikersRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
@@ -200,6 +214,8 @@ export interface FileRoutesByTo {
   '/uitnodiging': typeof UitnodigingRoute
   '/vrienden': typeof VriendenRouteWithChildren
   '/beheer/ai': typeof BeheerAiRoute
+  '/beheer/analytics': typeof BeheerAnalyticsRoute
+  '/beheer/beveiliging': typeof BeheerBeveiligingRoute
   '/beheer/gebruikers': typeof BeheerGebruikersRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
@@ -228,6 +244,8 @@ export interface FileRoutesById {
   '/uitnodiging': typeof UitnodigingRoute
   '/vrienden': typeof VriendenRouteWithChildren
   '/beheer/ai': typeof BeheerAiRoute
+  '/beheer/analytics': typeof BeheerAnalyticsRoute
+  '/beheer/beveiliging': typeof BeheerBeveiligingRoute
   '/beheer/gebruikers': typeof BeheerGebruikersRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
@@ -257,6 +275,8 @@ export interface FileRouteTypes {
     | '/uitnodiging'
     | '/vrienden'
     | '/beheer/ai'
+    | '/beheer/analytics'
+    | '/beheer/beveiliging'
     | '/beheer/gebruikers'
     | '/beheer/inhoud'
     | '/beheer/instellingen'
@@ -283,6 +303,8 @@ export interface FileRouteTypes {
     | '/uitnodiging'
     | '/vrienden'
     | '/beheer/ai'
+    | '/beheer/analytics'
+    | '/beheer/beveiliging'
     | '/beheer/gebruikers'
     | '/beheer/inhoud'
     | '/beheer/instellingen'
@@ -310,6 +332,8 @@ export interface FileRouteTypes {
     | '/uitnodiging'
     | '/vrienden'
     | '/beheer/ai'
+    | '/beheer/analytics'
+    | '/beheer/beveiliging'
     | '/beheer/gebruikers'
     | '/beheer/inhoud'
     | '/beheer/instellingen'
@@ -434,6 +458,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerAiRouteImport
       parentRoute: typeof BeheerRoute
     }
+    '/beheer/analytics': {
+      id: '/beheer/analytics'
+      path: '/analytics'
+      fullPath: '/beheer/analytics'
+      preLoaderRoute: typeof BeheerAnalyticsRouteImport
+      parentRoute: typeof BeheerRoute
+    }
+    '/beheer/beveiliging': {
+      id: '/beheer/beveiliging'
+      path: '/beveiliging'
+      fullPath: '/beheer/beveiliging'
+      preLoaderRoute: typeof BeheerBeveiligingRouteImport
+      parentRoute: typeof BeheerRoute
+    }
     '/beheer/gebruikers': {
       id: '/beheer/gebruikers'
       path: '/gebruikers'
@@ -523,6 +561,8 @@ declare module '@tanstack/react-router' {
 
 interface BeheerRouteChildren {
   BeheerAiRoute: typeof BeheerAiRoute
+  BeheerAnalyticsRoute: typeof BeheerAnalyticsRoute
+  BeheerBeveiligingRoute: typeof BeheerBeveiligingRoute
   BeheerGebruikersRoute: typeof BeheerGebruikersRoute
   BeheerInhoudRoute: typeof BeheerInhoudRoute
   BeheerInstellingenRoute: typeof BeheerInstellingenRoute
@@ -536,6 +576,8 @@ interface BeheerRouteChildren {
 
 const BeheerRouteChildren: BeheerRouteChildren = {
   BeheerAiRoute: BeheerAiRoute,
+  BeheerAnalyticsRoute: BeheerAnalyticsRoute,
+  BeheerBeveiligingRoute: BeheerBeveiligingRoute,
   BeheerGebruikersRoute: BeheerGebruikersRoute,
   BeheerInhoudRoute: BeheerInhoudRoute,
   BeheerInstellingenRoute: BeheerInstellingenRoute,
