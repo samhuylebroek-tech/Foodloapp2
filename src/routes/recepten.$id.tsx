@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { zorgVoorLijst, voegToeAanLijst } from "@/lib/boodschappen";
 import { useAuth } from "@/hooks/useAuth";
+import { SterrenKiezer } from "@/components/Sterren";
 import { AppShell } from "@/components/AppShell";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,32 @@ function ReceptPage() {
       return (data?.length ?? 0) > 0;
     },
   });
+
+  const { data: mijnScore = 0 } = useQuery({
+    queryKey: ["rating", id, user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("recipe_ratings")
+        .select("stars")
+        .eq("recipe_id", id)
+        .maybeSingle();
+      return data?.stars ?? 0;
+    },
+  });
+
+  async function zetScore(n: number) {
+    if (!user) return;
+    const { error } = await supabase
+      .from("recipe_ratings")
+      .upsert({ user_id: user.id, recipe_id: id, stars: n }, { onConflict: "user_id,recipe_id" });
+    if (error) {
+      toast.error("Score bewaren lukte niet");
+      return;
+    }
+    qc.invalidateQueries({ queryKey: ["rating", id] });
+    qc.invalidateQueries({ queryKey: ["ratings"] });
+  }
 
   if (isLoading || !data) {
     return (
@@ -286,6 +313,11 @@ function ReceptPage() {
           </span>
           <span>{t(recipe.category)}</span>
         </div>
+
+        <section className="rounded-3xl border border-border bg-card p-4">
+          <SterrenKiezer waarde={mijnScore} onKies={zetScore} label={t("Jouw score")} />
+        </section>
+
 
 
         <section className="rounded-3xl border border-border bg-card p-4">

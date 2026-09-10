@@ -21,6 +21,7 @@ import { Route as UitnodigingRouteImport } from './routes/uitnodiging'
 import { Route as VriendenRouteImport } from './routes/vrienden'
 import { Route as ReceptenIdRouteImport } from './routes/recepten.$id'
 import { Route as ReceptenNieuwRouteImport } from './routes/recepten.nieuw'
+import { Route as VriendenIdRouteImport } from './routes/vrienden.$id'
 import { Route as ReceptenIdBewerkenRouteImport } from './routes/recepten.$id.bewerken'
 
 const IndexRoute = IndexRouteImport.update({
@@ -83,6 +84,11 @@ const ReceptenNieuwRoute = ReceptenNieuwRouteImport.update({
   path: '/recepten/nieuw',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VriendenIdRoute = VriendenIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => VriendenRoute,
+} as any)
 const ReceptenIdBewerkenRoute = ReceptenIdBewerkenRouteImport.update({
   id: '/bewerken',
   path: '/bewerken',
@@ -99,9 +105,10 @@ export interface FileRoutesByFullPath {
   '/instellingen': typeof InstellingenRoute
   '/planner': typeof PlannerRoute
   '/uitnodiging': typeof UitnodigingRoute
-  '/vrienden': typeof VriendenRoute
+  '/vrienden': typeof VriendenRouteWithChildren
   '/recepten/$id': typeof ReceptenIdRouteWithChildren
   '/recepten/nieuw': typeof ReceptenNieuwRoute
+  '/vrienden/$id': typeof VriendenIdRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
 }
 export interface FileRoutesByTo {
@@ -114,9 +121,10 @@ export interface FileRoutesByTo {
   '/instellingen': typeof InstellingenRoute
   '/planner': typeof PlannerRoute
   '/uitnodiging': typeof UitnodigingRoute
-  '/vrienden': typeof VriendenRoute
+  '/vrienden': typeof VriendenRouteWithChildren
   '/recepten/$id': typeof ReceptenIdRouteWithChildren
   '/recepten/nieuw': typeof ReceptenNieuwRoute
+  '/vrienden/$id': typeof VriendenIdRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
 }
 export interface FileRoutesById {
@@ -130,9 +138,10 @@ export interface FileRoutesById {
   '/instellingen': typeof InstellingenRoute
   '/planner': typeof PlannerRoute
   '/uitnodiging': typeof UitnodigingRoute
-  '/vrienden': typeof VriendenRoute
+  '/vrienden': typeof VriendenRouteWithChildren
   '/recepten/$id': typeof ReceptenIdRouteWithChildren
   '/recepten/nieuw': typeof ReceptenNieuwRoute
+  '/vrienden/$id': typeof VriendenIdRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
 }
 export interface FileRouteTypes {
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/vrienden'
     | '/recepten/$id'
     | '/recepten/nieuw'
+    | '/vrienden/$id'
     | '/recepten/$id/bewerken'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/vrienden'
     | '/recepten/$id'
     | '/recepten/nieuw'
+    | '/vrienden/$id'
     | '/recepten/$id/bewerken'
   id:
     | '__root__'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
     | '/vrienden'
     | '/recepten/$id'
     | '/recepten/nieuw'
+    | '/vrienden/$id'
     | '/recepten/$id/bewerken'
   fileRoutesById: FileRoutesById
 }
@@ -193,7 +205,7 @@ export interface RootRouteChildren {
   InstellingenRoute: typeof InstellingenRoute
   PlannerRoute: typeof PlannerRoute
   UitnodigingRoute: typeof UitnodigingRoute
-  VriendenRoute: typeof VriendenRoute
+  VriendenRoute: typeof VriendenRouteWithChildren
   ReceptenIdRoute: typeof ReceptenIdRouteWithChildren
   ReceptenNieuwRoute: typeof ReceptenNieuwRoute
 }
@@ -284,6 +296,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReceptenNieuwRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/vrienden/$id': {
+      id: '/vrienden/$id'
+      path: '/$id'
+      fullPath: '/vrienden/$id'
+      preLoaderRoute: typeof VriendenIdRouteImport
+      parentRoute: typeof VriendenRoute
+    }
     '/recepten/$id/bewerken': {
       id: '/recepten/$id/bewerken'
       path: '/bewerken'
@@ -293,6 +312,18 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface VriendenRouteChildren {
+  VriendenIdRoute: typeof VriendenIdRoute
+}
+
+const VriendenRouteChildren: VriendenRouteChildren = {
+  VriendenIdRoute: VriendenIdRoute,
+}
+
+const VriendenRouteWithChildren = VriendenRoute._addFileChildren(
+  VriendenRouteChildren,
+)
 
 interface ReceptenIdRouteChildren {
   ReceptenIdBewerkenRoute: typeof ReceptenIdBewerkenRoute
@@ -316,7 +347,7 @@ const rootRouteChildren: RootRouteChildren = {
   InstellingenRoute: InstellingenRoute,
   PlannerRoute: PlannerRoute,
   UitnodigingRoute: UitnodigingRoute,
-  VriendenRoute: VriendenRoute,
+  VriendenRoute: VriendenRouteWithChildren,
   ReceptenIdRoute: ReceptenIdRouteWithChildren,
   ReceptenNieuwRoute: ReceptenNieuwRoute,
 }

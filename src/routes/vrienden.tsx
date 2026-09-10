@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCode from "qrcode";
-import { Copy, Mail, Share2, Smartphone, Trash2, UserPlus } from "lucide-react";
+import { ChefHat, Copy, Mail, Plus, Share2, Smartphone, Trash2, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -76,6 +76,7 @@ function VriendenPage() {
   const qc = useQueryClient();
   const [email, setEmail] = useState("");
   const [rechten, setRechten] = useState<Rechten>(STANDAARD);
+  const [nieuwOpen, setNieuwOpen] = useState(false);
 
   const { data: shares = [] } = useQuery({
     queryKey: ["shares", user?.id],
@@ -102,6 +103,27 @@ function VriendenPage() {
   const mijn = shares.filter((s) => s.owner_id === user?.id);
   const metMijGedeeld = shares.filter((s) => s.member_id === user?.id && s.owner_id !== user?.id);
 
+  // Alle mensen waarmee een verbinding bestaat, in beide richtingen.
+  const vrienden = (() => {
+    const map = new Map<
+      string,
+      { id: string; ikDeel: Share | null; zijDelen: Share | null }
+    >();
+    for (const s of shares) {
+      if (s.status !== "accepted") continue;
+      if (s.owner_id === user?.id && s.member_id) {
+        const rij = map.get(s.member_id) ?? { id: s.member_id, ikDeel: null, zijDelen: null };
+        rij.ikDeel = s;
+        map.set(s.member_id, rij);
+      } else if (s.member_id === user?.id) {
+        const rij = map.get(s.owner_id) ?? { id: s.owner_id, ikDeel: null, zijDelen: null };
+        rij.zijDelen = s;
+        map.set(s.owner_id, rij);
+      }
+    }
+    return [...map.values()];
+  })();
+
   const maakUitnodiging = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase
@@ -114,6 +136,7 @@ function VriendenPage() {
     },
     onSuccess: (s) => {
       setEmail("");
+      setNieuwOpen(true);
       setRechten(STANDAARD);
       qc.invalidateQueries({ queryKey: ["shares"] });
       toast.success("Uitnodiging klaar — deel de link of QR-code hieronder.");
@@ -151,10 +174,51 @@ function VriendenPage() {
   return (
     <AppShell title="Vrienden">
       <div className="space-y-6">
-        <p className="text-lg leading-relaxed">
-          Nodig iemand uit en vink zelf aan wat die persoon mag zien en veranderen.
-        </p>
+        <div className="flex items-start justify-between gap-4">
+          <p className="text-lg leading-relaxed">
+            Hier staan je vrienden. Klik op + om iemand uit te nodigen.
+          </p>
+          <button
+            type="button"
+            onClick={() => setNieuwOpen((v) => !v)}
+            aria-label={nieuwOpen ? "Uitnodiging sluiten" : "Vriend toevoegen"}
+            aria-expanded={nieuwOpen}
+            className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground"
+          >
+            {nieuwOpen ? <X className="size-8" aria-hidden /> : <Plus className="size-8" aria-hidden />}
+          </button>
+        </div>
 
+        <section className="space-y-3">
+          <h2 className="font-display text-xl">Mijn vrienden</h2>
+          {vrienden.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-border p-5 text-base text-muted-foreground">
+              Je hebt nog geen vrienden toegevoegd. Klik op + om iemand uit te nodigen.
+            </p>
+          ) : (
+            vrienden.map((v) => (
+              <div key={v.id} className="rounded-2xl border border-border bg-card p-4">
+                <p className="text-lg font-semibold">{namen[v.id] ?? "Vriend"}</p>
+                <p className="mt-1 text-base text-muted-foreground">
+                  {v.zijDelen && (v.zijDelen.recipes_view || v.zijDelen.recipes_edit)
+                    ? "Deelt zijn of haar gerechten met jou"
+                    : "Deelt (nog) geen gerechten met jou"}
+                </p>
+                {v.zijDelen && (v.zijDelen.recipes_view || v.zijDelen.recipes_edit) && (
+                  <Link
+                    to="/vrienden/$id"
+                    params={{ id: v.id }}
+                    className="mt-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-base font-semibold text-primary-foreground"
+                  >
+                    <ChefHat className="size-5" aria-hidden /> Bekijk hun gerechten
+                  </Link>
+                )}
+              </div>
+            ))
+          )}
+        </section>
+
+        {nieuwOpen && (
         <section className="space-y-4 rounded-3xl border border-border bg-card p-5">
           <h2 className="font-display text-xl">Nieuwe uitnodiging</h2>
 
@@ -204,6 +268,7 @@ function VriendenPage() {
             </p>
           )}
         </section>
+        )}
 
         <section className="space-y-3">
           <h2 className="font-display text-xl">Mensen die ik uitnodigde</h2>

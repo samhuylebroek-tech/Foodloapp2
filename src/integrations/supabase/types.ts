@@ -167,6 +167,41 @@ export type Database = {
           },
         ]
       }
+      recipe_ratings: {
+        Row: {
+          created_at: string
+          id: string
+          recipe_id: string
+          stars: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          recipe_id: string
+          stars?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          recipe_id?: string
+          stars?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_ratings_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recipes: {
         Row: {
           category: string
@@ -353,6 +388,7 @@ export type Database = {
     }
     Functions: {
       accept_share: { Args: { _token: string }; Returns: string }
+      decline_share: { Args: { _token: string }; Returns: boolean }
       has_share: {
         Args: { _owner: string; _perm: string; _viewer: string }
         Returns: boolean

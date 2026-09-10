@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { CATEGORIES, DIFFICULTIES, type Recipe } from "@/lib/types";
 import { DIETEN, bepaalDieet } from "@/lib/dieet";
+import { Sterren } from "@/components/Sterren";
 import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
 
@@ -54,6 +55,7 @@ function GerechtenPage() {
   const [dieet, setDieet] = useState<string | null>(null);
   const [maxTijd, setMaxTijd] = useState(0);
   const [alleenFavorieten, setAlleenFavorieten] = useState(false);
+  const [minSterren, setMinSterren] = useState(0);
 
   const { data: recipes = [], isLoading } = useQuery({
     queryKey: ["recipes"],
@@ -74,6 +76,16 @@ function GerechtenPage() {
       const { data, error } = await supabase.from("favorites").select("recipe_id");
       if (error) throw error;
       return data.map((f) => f.recipe_id as string);
+    },
+  });
+
+  const { data: scores = {} } = useQuery({
+    queryKey: ["ratings", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("recipe_ratings").select("recipe_id, stars");
+      if (error) throw error;
+      return Object.fromEntries(data.map((r) => [r.recipe_id, r.stars])) as Record<string, number>;
     },
   });
 
@@ -121,6 +133,7 @@ function GerechtenPage() {
       if (dieet && dieetPerRecept.get(r.id) !== dieet) return false;
       if (maxTijd && r.prep_minutes + r.cook_minutes > maxTijd) return false;
       if (alleenFavorieten && !favorites.includes(r.id)) return false;
+      if (minSterren && (scores[r.id] ?? 0) < minSterren) return false;
       if (!q) return true;
       return (
         r.title.toLowerCase().includes(q) ||
@@ -138,6 +151,8 @@ function GerechtenPage() {
     dieetPerRecept,
     maxTijd,
     alleenFavorieten,
+    minSterren,
+    scores,
     favorites,
     ingredientMatches,
   ]);
@@ -147,6 +162,7 @@ function GerechtenPage() {
     (moeilijkheid ? 1 : 0) +
     (dieet ? 1 : 0) +
     (maxTijd ? 1 : 0) +
+    (minSterren ? 1 : 0) +
     (alleenFavorieten ? 1 : 0);
 
   function wisFilters() {
@@ -154,6 +170,7 @@ function GerechtenPage() {
     setMoeilijkheid(null);
     setDieet(null);
     setMaxTijd(0);
+    setMinSterren(0);
     setAlleenFavorieten(false);
   }
 
@@ -227,6 +244,20 @@ function GerechtenPage() {
 
 
 
+            <FilterSelect
+              label={t("Score")}
+              value={String(minSterren)}
+              onChange={(v) => setMinSterren(Number(v))}
+              options={[
+                { value: "0", label: t("Alles") },
+                { value: "5", label: "★★★★★" },
+                { value: "4", label: `★★★★ ${t("en meer")}` },
+                { value: "3", label: `★★★ ${t("en meer")}` },
+                { value: "2", label: `★★ ${t("en meer")}` },
+                { value: "1", label: `★ ${t("en meer")}` },
+              ]}
+            />
+
             <button
               type="button"
               onClick={() => setAlleenFavorieten(!alleenFavorieten)}
@@ -286,6 +317,11 @@ function GerechtenPage() {
                       <Clock className="size-4" aria-hidden />
                       {r.prep_minutes + r.cook_minutes} min · {t(r.category)} · {t(r.difficulty)}
                     </p>
+                    {(scores[r.id] ?? 0) > 0 && (
+                      <span className="mt-1 inline-block">
+                        <Sterren waarde={scores[r.id] ?? 0} klein />
+                      </span>
+                    )}
                   </div>
                   {favorites.includes(r.id) && (
                     <Heart className="size-6 fill-primary text-primary" aria-label={t("Favoriet")} />

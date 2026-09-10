@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/uitnodiging")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -27,11 +29,36 @@ export const Route = createFileRoute("/uitnodiging")({
   component: UitnodigingPage,
 });
 
+type TerugKey =
+  | "recipes_view"
+  | "recipes_edit"
+  | "planner_view"
+  | "planner_edit"
+  | "shopping_view"
+  | "shopping_edit";
+
+const TERUG: { key: TerugKey; label: string }[] = [
+  { key: "recipes_view", label: "Mijn recepten bekijken" },
+  { key: "recipes_edit", label: "Mijn recepten bewerken" },
+  { key: "planner_view", label: "Mijn weekplanning bekijken" },
+  { key: "planner_edit", label: "Mijn weekplanning bewerken" },
+  { key: "shopping_view", label: "Mijn boodschappenlijst bekijken" },
+  { key: "shopping_edit", label: "Mijn boodschappenlijst bewerken" },
+];
+
 function UitnodigingPage() {
   const { code } = Route.useSearch();
   const { session, loading } = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [terugDelen, setTerugDelen] = useState({
+    recipes_view: true,
+    recipes_edit: false,
+    planner_view: false,
+    planner_edit: false,
+    shopping_view: false,
+    shopping_edit: false,
+  });
 
   useEffect(() => {
     if (code) sessionStorage.setItem("uitnodiging", code);
@@ -39,14 +66,42 @@ function UitnodigingPage() {
 
   async function aannemen() {
     setBusy(true);
-    const { error } = await supabase.rpc("accept_share", { _token: code });
-    setBusy(false);
+    const { data, error } = await supabase.rpc("accept_share", { _token: code });
     if (error) {
+      setBusy(false);
       toast.error("Deze uitnodiging werkt niet meer. Vraag om een nieuwe.");
       return;
     }
+    const eigenaar = data as unknown as string;
+    const iets = Object.values(terugDelen).some(Boolean);
+    if (eigenaar && iets) {
+      const { data: mij } = await supabase.auth.getUser();
+      if (mij.user) {
+        await supabase.from("shares").insert({
+          owner_id: mij.user.id,
+          member_id: eigenaar,
+          status: "accepted",
+          accepted_at: new Date().toISOString(),
+          ...terugDelen,
+        });
+      }
+    }
+    setBusy(false);
     sessionStorage.removeItem("uitnodiging");
-    toast.success("Gelukt! Jullie delen nu samen.");
+    toast.success("Gelukt! Jullie zijn nu vrienden.");
+    navigate({ to: "/vrienden" });
+  }
+
+  async function weigeren() {
+    setBusy(true);
+    const { error } = await supabase.rpc("decline_share", { _token: code });
+    setBusy(false);
+    if (error) {
+      toast.error("Weigeren lukte niet.");
+      return;
+    }
+    sessionStorage.removeItem("uitnodiging");
+    toast.success("Uitnodiging geweigerd.");
     navigate({ to: "/" });
   }
 
@@ -67,8 +122,38 @@ function UitnodigingPage() {
             <p className="mt-4 text-lg leading-relaxed">
               Neem de uitnodiging aan om samen recepten, planning of de boodschappenlijst te delen.
             </p>
+
+            <div className="mt-6 rounded-2xl border border-border p-4 text-left">
+              <p className="text-base font-semibold">Wat mag deze persoon bij jou zien?</p>
+              <ul className="mt-2 space-y-1">
+                {TERUG.map((r) => (
+                  <li
+                    key={r.key}
+                    className="flex min-h-14 items-center justify-between gap-4 border-b border-border/60 py-2 last:border-b-0"
+                  >
+                    <Label htmlFor={`terug-${r.key}`} className="text-base font-normal leading-snug">
+                      {r.label}
+                    </Label>
+                    <Switch
+                      id={`terug-${r.key}`}
+                      checked={terugDelen[r.key]}
+                      onCheckedChange={(v) => setTerugDelen((p) => ({ ...p, [r.key]: v }))}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+
             <Button onClick={aannemen} disabled={busy} className="mt-6 h-16 w-full text-lg">
               {busy ? <Loader2 className="size-5 animate-spin" /> : null} Uitnodiging aannemen
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={weigeren}
+              disabled={busy}
+              className="mt-3 h-14 w-full text-base"
+            >
+              Nee, bedankt
             </Button>
           </>
         ) : (
