@@ -8,6 +8,7 @@ import {
   Users,
   MessageSquareHeart,
   Settings,
+  Sparkles,
   Menu,
   X,
 } from "lucide-react";
@@ -16,7 +17,8 @@ import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { to: "/", label: "Recepten", icon: BookOpen },
+  { to: "/", label: "Start", icon: Sparkles },
+  { to: "/gerechten", label: "Recepten", icon: BookOpen },
   { to: "/recepten/nieuw", label: "Toevoegen", icon: PlusCircle },
   { to: "/planner", label: "Weekmenu", icon: CalendarDays },
   { to: "/boodschappen", label: "Boodschappen", icon: ShoppingCart },

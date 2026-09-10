@@ -237,7 +237,7 @@ function ReceptPage() {
       <div className="space-y-6">
         <div className="flex flex-wrap gap-2">
           <Link
-            to="/"
+            to="/gerechten"
             className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-border bg-card px-4 text-base font-semibold"
           >
             <ArrowLeft className="size-5" aria-hidden /> {t("Alle gerechten")}
