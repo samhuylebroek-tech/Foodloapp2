@@ -29,23 +29,11 @@ export const Route = createFileRoute("/instellingen")({
 });
 
 function InstellingenPage() {
-  const { user } = useAuth();
   const { taal, zetTaal, thema, zetThema, t } = useVoorkeuren();
 
-  const [email, setEmail] = useState(user?.email ?? "");
-  const [emailBezig, setEmailBezig] = useState(false);
   const [wachtwoord, setWachtwoord] = useState("");
   const [herhaal, setHerhaal] = useState("");
   const [wachtwoordBezig, setWachtwoordBezig] = useState(false);
-
-  async function bewaarEmail() {
-    if (!email.trim() || email.trim() === user?.email) return;
-    setEmailBezig(true);
-    const { error } = await supabase.auth.updateUser({ email: email.trim() });
-    setEmailBezig(false);
-    if (error) toast.error(t("Aanpassen lukte niet"));
-    else toast.success(t("Kijk in je mailbox om het nieuwe adres te bevestigen"));
-  }
 
   async function bewaarWachtwoord() {
     if (wachtwoord.length < 8) {
