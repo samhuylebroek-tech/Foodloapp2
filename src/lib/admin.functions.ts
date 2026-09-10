@@ -175,18 +175,30 @@ async function logboek(
 
 export const mijnAdminProfiel = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<{ profiel: AdminProfiel | null; rechten: Rechten[] }> => {
-    const { data } = await (context as Ctx).supabase
-      .from("admin_users")
-      .select("user_id, role, active, can_view_private_content, note")
-      .eq("user_id", (context as Ctx).userId)
-      .maybeSingle();
-    const profiel = (data as AdminProfiel | null) ?? null;
-    if (!profiel || !profiel.active) return { profiel: null, rechten: [] };
-    const rechten = [...MATRIX[profiel.role]];
-    if (profiel.can_view_private_content) rechten.push("private.view");
-    return { profiel, rechten };
-  });
+  .handler(
+    async ({
+      context,
+    }): Promise<{ profiel: AdminProfiel | null; rechten: Rechten[]; aal: string | null; mfaOk: boolean }> => {
+      const ctx = context as Ctx;
+      const { data } = await ctx.supabase
+        .from("admin_users")
+        .select("user_id, role, active, can_view_private_content, note, read_only, mfa_required")
+        .eq("user_id", ctx.userId)
+        .maybeSingle();
+      const profiel = (data as AdminProfiel | null) ?? null;
+      const aal = (ctx.claims?.aal as string | undefined) ?? null;
+      if (!profiel || !profiel.active) return { profiel: null, rechten: [], aal, mfaOk: true };
+      const rechten = [...MATRIX[profiel.role]];
+      if (profiel.can_view_private_content) rechten.push("private.view");
+      try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        await sessieLoggen(supabaseAdmin, profiel.user_id, aal);
+      } catch {
+        /* logging mag nooit de toegang blokkeren */
+      }
+      return { profiel, rechten, aal, mfaOk: aal === "aal2" || !profiel.mfa_required };
+    },
+  );
 
 // ---------------- dashboard ----------------
 
