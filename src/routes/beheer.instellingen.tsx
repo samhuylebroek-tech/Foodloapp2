@@ -30,7 +30,7 @@ function Instellingen() {
   const [bericht, setBericht] = useState<string | null>(null);
 
   const zet = useMutation({
-    mutationFn: (v: { sleutel: string; waarde: unknown }) => zetFn({ data: v }),
+    mutationFn: (v: { key: string; value: unknown }) => zetFn({ data: v }),
     onSuccess: () => {
       toast.success("Opgeslagen");
       qc.invalidateQueries({ queryKey: ["admin-instellingen"] });
@@ -61,7 +61,7 @@ function Instellingen() {
                     <Switch
                       checked={vlaggen[k] !== false}
                       disabled={!mag("settings.manage")}
-                      onCheckedChange={(v) => zet.mutate({ sleutel: `flag:${k}`, waarde: v })}
+                      onCheckedChange={(v) => zet.mutate({ key: `flag:${k}`, value: v })}
                     />
                   </li>
                 ))}
@@ -75,7 +75,7 @@ function Instellingen() {
               <Switch
                 checked={vlaggen["onderhoud"] === true}
                 disabled={!mag("settings.manage")}
-                onCheckedChange={(v) => zet.mutate({ sleutel: "flag:onderhoud", waarde: v })}
+                onCheckedChange={(v) => zet.mutate({ key: "flag:onderhoud", value: v })}
               />
             </div>
             <Input
@@ -88,7 +88,7 @@ function Instellingen() {
             <Button
               className="mt-3"
               disabled={!mag("settings.manage")}
-              onClick={() => zet.mutate({ sleutel: "onderhoudsbericht", waarde: bericht ?? "" })}
+              onClick={() => zet.mutate({ key: "onderhoudsbericht", value: bericht ?? "" })}
             >
               Bericht opslaan
             </Button>

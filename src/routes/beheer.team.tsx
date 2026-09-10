@@ -39,8 +39,13 @@ function Team() {
   const { data } = useQuery({ queryKey: ["admin-team"], queryFn: () => lijstFn() });
 
   const zet = useMutation({
-    mutationFn: (v: { user_id: string; rol: string; prive_toegang?: boolean; actief?: boolean }) =>
-      zetFn({ data: v }),
+    mutationFn: (v: {
+      user_id: string;
+      role: string;
+      active?: boolean;
+      can_view_private_content?: boolean;
+      note?: string;
+    }) => zetFn({ data: v }),
     onSuccess: () => {
       toast.success("Beheerder bijgewerkt");
       qc.invalidateQueries({ queryKey: ["admin-team"] });
@@ -67,7 +72,7 @@ function Team() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="text-sm font-medium">{b.naam || "(geen naam)"}</p>
-                    <p className="text-xs text-slate-400">{b.email}</p>
+                    <p className="text-xs text-slate-400">{b.role.replace("_", " ")}</p>
                   </div>
                   <Button
                     size="sm"
@@ -91,7 +96,7 @@ function Team() {
                       key={r.id}
                       size="sm"
                       variant={b.role === r.id ? "default" : "secondary"}
-                      onClick={() => zet.mutate({ user_id: b.user_id, rol: r.id })}
+                      onClick={() => zet.mutate({ user_id: b.user_id, role: r.id, active: b.active, can_view_private_content: b.can_view_private_content })}
                     >
                       {r.label}
                     </Button>
@@ -100,15 +105,15 @@ function Team() {
                 <div className="mt-2 flex items-center justify-between text-xs">
                   <span>Mag privé-inhoud van gebruikers bekijken</span>
                   <Switch
-                    checked={b.can_view_private}
-                    onCheckedChange={(v) => zet.mutate({ user_id: b.user_id, rol: b.role, prive_toegang: v })}
+                    checked={b.can_view_private_content}
+                    onCheckedChange={(v) => zet.mutate({ user_id: b.user_id, role: b.role, active: b.active, can_view_private_content: v })}
                   />
                 </div>
                 <div className="mt-2 flex items-center justify-between text-xs">
                   <span>Actief</span>
                   <Switch
                     checked={b.active}
-                    onCheckedChange={(v) => zet.mutate({ user_id: b.user_id, rol: b.role, actief: v })}
+                    onCheckedChange={(v) => zet.mutate({ user_id: b.user_id, role: b.role, active: v, can_view_private_content: b.can_view_private_content })}
                   />
                 </div>
               </div>
@@ -138,10 +143,9 @@ function Team() {
             {resultaten.map((r) => (
               <li key={r.id} className="flex items-center justify-between rounded border border-white/10 p-2">
                 <div>
-                  <p>{r.naam || "(geen naam)"}</p>
-                  <p className="text-xs text-slate-400">{r.email}</p>
+                  <p>{r.display_name || "(geen naam)"}</p>
                 </div>
-                <Button size="sm" onClick={() => zet.mutate({ user_id: r.id, rol: "support" })}>
+                <Button size="sm" onClick={() => zet.mutate({ user_id: r.id, role: "support", active: true, can_view_private_content: false })}>
                   Toevoegen
                 </Button>
               </li>
