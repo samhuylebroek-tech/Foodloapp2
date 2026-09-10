@@ -64,7 +64,7 @@ export function AppShell({
 
   const menu = (
     <nav aria-label="Hoofdmenu">
-      <p className="px-3 font-display text-2xl text-primary">Samen Koken</p>
+      <p className="px-3 font-display text-2xl text-primary">MaJeBa</p>
       <ul className="mt-6 space-y-2">
         {NAV.map((item) => {
           const active =

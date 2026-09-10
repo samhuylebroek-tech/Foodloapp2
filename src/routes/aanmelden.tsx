@@ -12,13 +12,13 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/aanmelden")({
   head: () => ({
     meta: [
-      { title: "Aanmelden – Samen Koken" },
+      { title: "Aanmelden – MaJeBa" },
       {
         name: "description",
         content:
-          "Meld je aan bij Samen Koken en verzamel samen recepten, plan je week en maak je boodschappenlijst.",
+          "Meld je aan bij MaJeBa en verzamel samen recepten, plan je week en maak je boodschappenlijst.",
       },
-      { property: "og:title", content: "Aanmelden – Samen Koken" },
+      { property: "og:title", content: "Aanmelden – MaJeBa" },
       {
         property: "og:description",
         content: "Meld je aan en verzamel samen recepten in één duidelijke app.",
@@ -93,7 +93,7 @@ function AanmeldenPage() {
           <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
             <CookingPot className="size-9" aria-hidden />
           </div>
-          <h1 className="mt-4 font-display text-3xl">Samen Koken</h1>
+          <h1 className="mt-4 font-display text-3xl">MaJeBa</h1>
           <p className="mt-2 text-base text-muted-foreground">
             Al jullie recepten op één plek, makkelijk terug te vinden.
           </p>

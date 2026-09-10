@@ -80,7 +80,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Samen Koken – recepten verzamelen, plannen en koken" },
+      { title: "MaJeBa – recepten verzamelen, plannen en koken" },
       {
         name: "description",
         content:
@@ -88,8 +88,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { name: "theme-color", content: "#a4552e" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-title", content: "Samen Koken" },
-      { property: "og:title", content: "Samen Koken" },
+      { name: "apple-mobile-web-app-title", content: "MaJeBa" },
+      { property: "og:title", content: "MaJeBa" },
       {
         property: "og:description",
         content: "Recepten verzamelen, plannen en koken – groot en duidelijk voor iedereen.",

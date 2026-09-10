@@ -8,10 +8,10 @@ import type { Ingredient, Recipe } from "@/lib/types";
 export const Route = createFileRoute("/recepten/$id/bewerken")({
   head: () => ({
     meta: [
-      { title: "Recept aanpassen – Samen Koken" },
+      { title: "Recept aanpassen – MaJeBa" },
       { name: "description", content: "Pas dit recept aan: ingrediënten, stappen, foto en tijden." },
-      { property: "og:title", content: "Recept aanpassen – Samen Koken" },
-      { property: "og:description", content: "Werk je recept bij in Samen Koken." },
+      { property: "og:title", content: "Recept aanpassen – MaJeBa" },
+      { property: "og:description", content: "Werk je recept bij in MaJeBa." },
     ],
   }),
   component: BewerkenPage,

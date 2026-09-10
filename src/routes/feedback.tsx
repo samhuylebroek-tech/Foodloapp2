@@ -14,13 +14,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/feedback")({
   head: () => ({
     meta: [
-      { title: "Feedback geven – Samen Koken" },
+      { title: "Feedback geven – MaJeBa" },
       {
         name: "description",
-        content: "Vertel wat je van Samen Koken vindt: een idee, een probleem of een compliment.",
+        content: "Vertel wat je van MaJeBa vindt: een idee, een probleem of een compliment.",
       },
-      { property: "og:title", content: "Feedback geven – Samen Koken" },
-      { property: "og:description", content: "Help Samen Koken beter maken met jouw tips." },
+      { property: "og:title", content: "Feedback geven – MaJeBa" },
+      { property: "og:description", content: "Help MaJeBa beter maken met jouw tips." },
     ],
   }),
   component: FeedbackPage,
