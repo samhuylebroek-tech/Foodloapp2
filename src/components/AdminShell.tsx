@@ -7,6 +7,9 @@ import {
   ChefHat,
   FileClock,
   LifeBuoy,
+  LineChart,
+  Lock,
+  Megaphone,
   Settings2,
   ShieldCheck,
   Sparkles,
@@ -22,6 +25,9 @@ const MENU: { pad: string; label: string; icoon: typeof Users; recht: Rechten }[
   { pad: "/beheer/recepten", label: "Recepten", icoon: BookOpen, recht: "recipes.view" },
   { pad: "/beheer/inhoud", label: "Inhoud & labels", icoon: Tags, recht: "content.manage" },
   { pad: "/beheer/ai", label: "AI & import", icoon: Sparkles, recht: "ai.view" },
+  { pad: "/beheer/teksten", label: "Teksten & berichten", icoon: Megaphone, recht: "content.manage" },
+  { pad: "/beheer/analytics", label: "Analytics", icoon: LineChart, recht: "dashboard.view" },
+  { pad: "/beheer/beveiliging", label: "Beveiliging", icoon: Lock, recht: "dashboard.view" },
   { pad: "/beheer/support", label: "Support", icoon: LifeBuoy, recht: "support.view" },
   { pad: "/beheer/systeem", label: "Systeem", icoon: Activity, recht: "system.view" },
   { pad: "/beheer/logboek", label: "Auditlogboek", icoon: FileClock, recht: "audit.view" },
@@ -40,7 +46,7 @@ export function AdminShell({
   acties?: ReactNode;
   children: ReactNode;
 }) {
-  const { profiel, mag } = useAdmin();
+  const { profiel, mag, alleenLezen, mfaOk } = useAdmin();
   const pad = useRouterState({ select: (s) => s.location.pathname });
 
   return (
@@ -103,6 +109,19 @@ export function AdminShell({
               ))}
             </nav>
           </header>
+          {alleenLezen ? (
+            <div className="border-b border-amber-500/30 bg-amber-500/10 px-6 py-2 text-sm text-amber-200">
+              Alleen-lezen modus: je kunt meekijken maar niets wijzigen. Elke inzage wordt gelogd.
+            </div>
+          ) : null}
+          {!mfaOk ? (
+            <div className="border-b border-red-500/30 bg-red-500/10 px-6 py-2 text-sm text-red-200">
+              2-staps verificatie is verplicht voor jouw rol.{" "}
+              <Link to="/beheer/beveiliging" className="underline">
+                Nu instellen
+              </Link>
+            </div>
+          ) : null}
           <div className="p-6">{children}</div>
         </main>
       </div>

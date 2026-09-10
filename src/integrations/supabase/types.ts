@@ -53,13 +53,66 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_rate_limits: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      admin_sessions: {
+        Row: {
+          aal: string | null
+          admin_id: string
+          id: string
+          ip: string | null
+          last_seen_at: string
+          started_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          aal?: string | null
+          admin_id: string
+          id?: string
+          ip?: string | null
+          last_seen_at?: string
+          started_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          aal?: string | null
+          admin_id?: string
+          id?: string
+          ip?: string | null
+          last_seen_at?: string
+          started_at?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       admin_users: {
         Row: {
           active: boolean
           can_view_private_content: boolean
           created_at: string
           created_by: string | null
+          mfa_required: boolean
           note: string
+          read_only: boolean
           role: Database["public"]["Enums"]["admin_role"]
           user_id: string
         }
@@ -68,7 +121,9 @@ export type Database = {
           can_view_private_content?: boolean
           created_at?: string
           created_by?: string | null
+          mfa_required?: boolean
           note?: string
+          read_only?: boolean
           role?: Database["public"]["Enums"]["admin_role"]
           user_id: string
         }
@@ -77,7 +132,9 @@ export type Database = {
           can_view_private_content?: boolean
           created_at?: string
           created_by?: string | null
+          mfa_required?: boolean
           note?: string
+          read_only?: boolean
           role?: Database["public"]["Enums"]["admin_role"]
           user_id?: string
         }
@@ -110,6 +167,42 @@ export type Database = {
           kind?: string
           model?: string
           ok?: boolean
+        }
+        Relationships: []
+      }
+      announcements: {
+        Row: {
+          active: boolean
+          body: string
+          created_at: string
+          created_by: string | null
+          ends_at: string | null
+          id: string
+          level: string
+          starts_at: string
+          title: string
+        }
+        Insert: {
+          active?: boolean
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          level?: string
+          starts_at?: string
+          title: string
+        }
+        Update: {
+          active?: boolean
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          level?: string
+          starts_at?: string
+          title?: string
         }
         Relationships: []
       }
@@ -520,6 +613,57 @@ export type Database = {
           name?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      site_content: {
+        Row: {
+          body: string
+          key: string
+          published: boolean
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          body?: string
+          key: string
+          published?: boolean
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          body?: string
+          key?: string
+          published?: boolean
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      usage_events: {
+        Row: {
+          created_at: string
+          event: string
+          id: string
+          path: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event: string
+          id?: string
+          path?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          id?: string
+          path?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

@@ -16,6 +16,8 @@ export type AdminProfiel = {
   active: boolean;
   can_view_private_content: boolean;
   note: string;
+  read_only?: boolean;
+  mfa_required?: boolean;
 };
 
 export type Rechten =
@@ -81,19 +83,71 @@ export function heeftRecht(profiel: AdminProfiel | null, recht: Rechten): boolea
   return MATRIX[profiel.role].includes(recht);
 }
 
-type Ctx = { supabase: any; userId: string };
+type Ctx = { supabase: any; userId: string; claims?: any };
 
-async function bewaker(context: Ctx, recht: Rechten) {
+const SCHRIJFRECHTEN: Rechten[] = [
+  "users.manage",
+  "users.delete",
+  "recipes.manage",
+  "content.manage",
+  "support.manage",
+  "settings.manage",
+  "admins.manage",
+  "privacy.manage",
+];
+
+// Max aantal beheeracties per minuut per beheerder.
+const LIMIET_PER_MINUUT = 120;
+
+async function bewaker(context: Ctx, recht: Rechten, opties: { schrijft?: boolean } = {}) {
   const { data, error } = await context.supabase
     .from("admin_users")
-    .select("user_id, role, active, can_view_private_content, note")
+    .select("user_id, role, active, can_view_private_content, note, read_only, mfa_required")
     .eq("user_id", context.userId)
     .maybeSingle();
   if (error || !data || !data.active) throw new Error("Geen toegang tot het Control Center.");
   const profiel = data as AdminProfiel;
   if (!heeftRecht(profiel, recht)) throw new Error("Je rol heeft dit recht niet.");
+
+  const schrijft = opties.schrijft ?? SCHRIJFRECHTEN.includes(recht);
+  if (schrijft && profiel.read_only) {
+    throw new Error("Je account staat in alleen-lezen modus. Wijzigen is niet toegestaan.");
+  }
+
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  // Snelheidslimiet: beschermt tegen misbruik of een doorgeslagen script.
+  const sinds = new Date(Date.now() - 60_000).toISOString();
+  const { count } = await supabaseAdmin
+    .from("admin_rate_limits")
+    .select("*", { count: "exact", head: true })
+    .eq("admin_id", profiel.user_id)
+    .gte("created_at", sinds);
+  if ((count ?? 0) >= LIMIET_PER_MINUUT) {
+    throw new Error("Te veel acties na elkaar. Probeer over een minuut opnieuw.");
+  }
+  await supabaseAdmin.from("admin_rate_limits").insert({ admin_id: profiel.user_id, action: recht });
+
   return { profiel, db: supabaseAdmin };
+}
+
+async function sessieLoggen(db: any, adminId: string, aal: string | null) {
+  const req = getRequest();
+  const ip = req?.headers.get("x-forwarded-for") ?? null;
+  const ua = req?.headers.get("user-agent") ?? null;
+  const sinds = new Date(Date.now() - 30 * 60_000).toISOString();
+  const { data: bestaand } = await db
+    .from("admin_sessions")
+    .select("id")
+    .eq("admin_id", adminId)
+    .gte("last_seen_at", sinds)
+    .order("last_seen_at", { ascending: false })
+    .limit(1);
+  if (bestaand?.length) {
+    await db.from("admin_sessions").update({ last_seen_at: new Date().toISOString(), aal }).eq("id", bestaand[0].id);
+  } else {
+    await db.from("admin_sessions").insert({ admin_id: adminId, ip, user_agent: ua, aal });
+  }
 }
 
 async function logboek(
@@ -121,18 +175,30 @@ async function logboek(
 
 export const mijnAdminProfiel = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<{ profiel: AdminProfiel | null; rechten: Rechten[] }> => {
-    const { data } = await (context as Ctx).supabase
-      .from("admin_users")
-      .select("user_id, role, active, can_view_private_content, note")
-      .eq("user_id", (context as Ctx).userId)
-      .maybeSingle();
-    const profiel = (data as AdminProfiel | null) ?? null;
-    if (!profiel || !profiel.active) return { profiel: null, rechten: [] };
-    const rechten = [...MATRIX[profiel.role]];
-    if (profiel.can_view_private_content) rechten.push("private.view");
-    return { profiel, rechten };
-  });
+  .handler(
+    async ({
+      context,
+    }): Promise<{ profiel: AdminProfiel | null; rechten: Rechten[]; aal: string | null; mfaOk: boolean }> => {
+      const ctx = context as Ctx;
+      const { data } = await ctx.supabase
+        .from("admin_users")
+        .select("user_id, role, active, can_view_private_content, note, read_only, mfa_required")
+        .eq("user_id", ctx.userId)
+        .maybeSingle();
+      const profiel = (data as AdminProfiel | null) ?? null;
+      const aal = (ctx.claims?.aal as string | undefined) ?? null;
+      if (!profiel || !profiel.active) return { profiel: null, rechten: [], aal, mfaOk: true };
+      const rechten = [...MATRIX[profiel.role]];
+      if (profiel.can_view_private_content) rechten.push("private.view");
+      try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        await sessieLoggen(supabaseAdmin, profiel.user_id, aal);
+      } catch {
+        /* logging mag nooit de toegang blokkeren */
+      }
+      return { profiel, rechten, aal, mfaOk: aal === "aal2" || !profiel.mfa_required };
+    },
+  );
 
 // ---------------- dashboard ----------------
 
@@ -632,4 +698,188 @@ export const adminZoekGebruikerVoorRol = createServerFn({ method: "POST" })
       .ilike("display_name", `%${data.zoek}%`)
       .limit(10);
     return rijen ?? [];
+  });
+
+// ---------------- beveiliging: sessies & apparaten ----------------
+
+export const adminSessies = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { db, profiel } = await bewaker(context as Ctx, "dashboard.view");
+    const alles = heeftRecht(profiel, "admins.manage");
+    let q = db.from("admin_sessions").select("*").order("last_seen_at", { ascending: false }).limit(100);
+    if (!alles) q = q.eq("admin_id", profiel.user_id);
+    const { data: rijen } = await q;
+    const ids = [...new Set((rijen ?? []).map((r: any) => r.admin_id))];
+    const { data: profielen } = ids.length
+      ? await db.from("profiles").select("id, display_name").in("id", ids)
+      : { data: [] };
+    const namen = new Map((profielen ?? []).map((p: any) => [p.id, p.display_name]));
+    return (rijen ?? []).map((r: any) => ({ ...r, naam: namen.get(r.admin_id) ?? "onbekend" }));
+  });
+
+export const adminBeveiligingZetten = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        user_id: z.string().uuid(),
+        read_only: z.boolean().optional(),
+        mfa_required: z.boolean().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { db, profiel } = await bewaker(context as Ctx, "admins.manage");
+    const wijziging: Record<string, boolean> = {};
+    if (data.read_only !== undefined) wijziging["read_only"] = data.read_only;
+    if (data.mfa_required !== undefined) wijziging["mfa_required"] = data.mfa_required;
+    await db.from("admin_users").update(wijziging as any).eq("user_id", data.user_id);
+    await logboek(db, profiel, "admin.security_update", "admin", data.user_id, wijziging);
+    return { ok: true };
+  });
+
+// ---------------- analytics ----------------
+
+export const adminAnalytics = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { db } = await bewaker(context as Ctx, "dashboard.view");
+    const dagen = 30;
+    const sinds = new Date(Date.now() - dagen * 24 * 3600_000).toISOString();
+
+    const { data: events } = await db
+      .from("usage_events")
+      .select("event, path, user_id, created_at")
+      .gte("created_at", sinds)
+      .limit(20000);
+    const rijen = (events ?? []) as any[];
+
+    const perEvent = new Map<string, number>();
+    const perPad = new Map<string, number>();
+    const perDag = new Map<string, Set<string>>();
+    for (const r of rijen) {
+      perEvent.set(r.event, (perEvent.get(r.event) ?? 0) + 1);
+      if (r.path) perPad.set(r.path, (perPad.get(r.path) ?? 0) + 1);
+      const dag = String(r.created_at).slice(0, 10);
+      if (!perDag.has(dag)) perDag.set(dag, new Set());
+      if (r.user_id) perDag.get(dag)!.add(r.user_id);
+    }
+
+    const grafiek: { datum: string; actieveGebruikers: number }[] = [];
+    for (let i = dagen - 1; i >= 0; i--) {
+      const datum = new Date(Date.now() - i * 24 * 3600_000).toISOString().slice(0, 10);
+      grafiek.push({ datum, actieveGebruikers: perDag.get(datum)?.size ?? 0 });
+    }
+
+    const uniek = new Set(rijen.map((r) => r.user_id).filter(Boolean));
+    const week = Date.now() - 7 * 24 * 3600_000;
+    const uniekWeek = new Set(
+      rijen.filter((r) => new Date(r.created_at).getTime() >= week).map((r) => r.user_id).filter(Boolean),
+    );
+
+    const sorteer = (m: Map<string, number>) =>
+      [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([naam, aantal]) => ({ naam, aantal }));
+
+    // Retentie: hoeveel gebruikers met een recept keren terug
+    const { count: gebruikers } = await db.from("profiles").select("*", { count: "exact", head: true });
+    const { data: recepten } = await db.from("recipes").select("user_id").is("deleted_at", null).limit(20000);
+    const makers = new Set((recepten ?? []).map((r: any) => r.user_id));
+
+    return {
+      totaalEvents: rijen.length,
+      actieveGebruikers30: uniek.size,
+      actieveGebruikers7: uniekWeek.size,
+      gebruikers: gebruikers ?? 0,
+      makers: makers.size,
+      grafiek,
+      topEvents: sorteer(perEvent),
+      topPaginas: sorteer(perPad),
+    };
+  });
+
+// ---------------- teksten (CMS) ----------------
+
+export const adminTeksten = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { db } = await bewaker(context as Ctx, "content.manage", { schrijft: false });
+    const { data } = await db.from("site_content").select("*").order("key");
+    return data ?? [];
+  });
+
+export const adminTekstZetten = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        key: z.string().min(1),
+        title: z.string().default(""),
+        body: z.string().default(""),
+        published: z.boolean().default(true),
+      })
+      .parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { db, profiel } = await bewaker(context as Ctx, "content.manage");
+    await db
+      .from("site_content")
+      .upsert(
+        { ...data, updated_at: new Date().toISOString(), updated_by: profiel.user_id },
+        { onConflict: "key" },
+      );
+    await logboek(db, profiel, "content.update", "site_content", data.key, { title: data.title });
+    return { ok: true };
+  });
+
+// ---------------- aankondigingen ----------------
+
+export const adminAankondigingen = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { db } = await bewaker(context as Ctx, "content.manage", { schrijft: false });
+    const { data } = await db.from("announcements").select("*").order("created_at", { ascending: false });
+    return data ?? [];
+  });
+
+export const adminAankondigingZetten = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string().uuid().nullable().default(null),
+        title: z.string().min(1),
+        body: z.string().default(""),
+        level: z.enum(["info", "waarschuwing", "onderhoud"]).default("info"),
+        active: z.boolean().default(true),
+        ends_at: z.string().nullable().default(null),
+      })
+      .parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { db, profiel } = await bewaker(context as Ctx, "content.manage");
+    const rij = {
+      title: data.title,
+      body: data.body,
+      level: data.level,
+      active: data.active,
+      ends_at: data.ends_at,
+      created_by: profiel.user_id,
+    };
+    if (data.id) await db.from("announcements").update(rij).eq("id", data.id);
+    else await db.from("announcements").insert(rij);
+    await logboek(db, profiel, data.id ? "announcement.update" : "announcement.create", "announcement", data.id, {
+      title: data.title,
+    });
+    return { ok: true };
+  });
+
+export const adminAankondigingVerwijderen = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { db, profiel } = await bewaker(context as Ctx, "content.manage");
+    await db.from("announcements").delete().eq("id", data.id);
+    await logboek(db, profiel, "announcement.delete", "announcement", data.id);
+    return { ok: true };
   });
