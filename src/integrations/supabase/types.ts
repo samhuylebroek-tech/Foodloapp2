@@ -14,6 +14,105 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_role: Database["public"]["Enums"]["admin_role"] | null
+          created_at: string
+          details: Json
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_role?: Database["public"]["Enums"]["admin_role"] | null
+          created_at?: string
+          details?: Json
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_role?: Database["public"]["Enums"]["admin_role"] | null
+          created_at?: string
+          details?: Json
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      admin_users: {
+        Row: {
+          active: boolean
+          can_view_private_content: boolean
+          created_at: string
+          created_by: string | null
+          note: string
+          role: Database["public"]["Enums"]["admin_role"]
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          can_view_private_content?: boolean
+          created_at?: string
+          created_by?: string | null
+          note?: string
+          role?: Database["public"]["Enums"]["admin_role"]
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          can_view_private_content?: boolean
+          created_at?: string
+          created_by?: string | null
+          note?: string
+          role?: Database["public"]["Enums"]["admin_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_events: {
+        Row: {
+          created_at: string
+          duration_ms: number
+          error: string | null
+          id: string
+          kind: string
+          model: string
+          ok: boolean
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number
+          error?: string | null
+          id?: string
+          kind?: string
+          model?: string
+          ok?: boolean
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number
+          error?: string | null
+          id?: string
+          kind?: string
+          model?: string
+          ok?: boolean
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string
@@ -42,32 +141,41 @@ export type Database = {
       }
       feedback: {
         Row: {
+          admin_note: string
+          assigned_to: string | null
           created_at: string
           id: string
           kind: string
           message: string
           page: string | null
           rating: number | null
+          status: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          admin_note?: string
+          assigned_to?: string | null
           created_at?: string
           id?: string
           kind?: string
           message: string
           page?: string | null
           rating?: number | null
+          status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          admin_note?: string
+          assigned_to?: string | null
           created_at?: string
           id?: string
           kind?: string
           message?: string
           page?: string | null
           rating?: number | null
+          status?: string
           updated_at?: string
           user_id?: string
         }
@@ -111,18 +219,48 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          description: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          description?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          description?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          admin_note: string
+          blocked_at: string | null
           created_at: string
           display_name: string
           id: string
         }
         Insert: {
+          admin_note?: string
+          blocked_at?: string | null
           created_at?: string
           display_name?: string
           id: string
         }
         Update: {
+          admin_note?: string
+          blocked_at?: string | null
           created_at?: string
           display_name?: string
           id?: string
@@ -207,6 +345,7 @@ export type Database = {
           category: string
           cook_minutes: number
           created_at: string
+          deleted_at: string | null
           description: string
           difficulty: string
           id: string
@@ -224,6 +363,7 @@ export type Database = {
           category?: string
           cook_minutes?: number
           created_at?: string
+          deleted_at?: string | null
           description?: string
           difficulty?: string
           id?: string
@@ -241,6 +381,7 @@ export type Database = {
           category?: string
           cook_minutes?: number
           created_at?: string
+          deleted_at?: string | null
           description?: string
           difficulty?: string
           id?: string
@@ -388,14 +529,28 @@ export type Database = {
     }
     Functions: {
       accept_share: { Args: { _token: string }; Returns: string }
+      claim_first_admin: { Args: never; Returns: boolean }
       decline_share: { Args: { _token: string }; Returns: boolean }
+      has_admin_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["admin_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_share: {
         Args: { _owner: string; _perm: string; _viewer: string }
         Returns: boolean
       }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      admin_role:
+        | "super_admin"
+        | "admin"
+        | "support"
+        | "content_manager"
+        | "analyst"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -522,6 +677,14 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      admin_role: [
+        "super_admin",
+        "admin",
+        "support",
+        "content_manager",
+        "analyst",
+      ],
+    },
   },
 } as const
