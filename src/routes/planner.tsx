@@ -127,9 +127,69 @@ function PlannerPage() {
     let recipeId: string | null = null;
 
     if (bewaren) {
+      toast.info("We maken alvast een recept met ingrediënten en stappen…");
+      let basis: {
+        title: string;
+        description: string;
+        servings: number;
+        prep_minutes: number;
+        cook_minutes: number;
+        category: string;
+        difficulty: string;
+        tags: string[];
+        instructions: string[];
+        ingredienten: { name: string; quantity: number | null; unit: string }[];
+      } = {
+        title: naam,
+        description: "",
+        servings: 4,
+        prep_minutes: 0,
+        cook_minutes: 0,
+        category: "hoofdgerecht",
+        difficulty: "makkelijk",
+        tags: [],
+        instructions: [],
+        ingredienten: [],
+      };
+
+      try {
+        const ai = await importRecipeFromText({
+          data: { text: `Maak een volledig recept voor: ${naam}` },
+        });
+        basis = {
+          title: ai.title || naam,
+          description: ai.description,
+          servings: ai.servings || 4,
+          prep_minutes: ai.prep_minutes || 0,
+          cook_minutes: ai.cook_minutes || 0,
+          category: ai.category || "hoofdgerecht",
+          difficulty: ai.difficulty || "makkelijk",
+          tags: ai.tags ?? [],
+          instructions: ai.instructions ?? [],
+          ingredienten: (ai.ingredients ?? []).map((i) => ({
+            name: i.name,
+            quantity: i.quantity,
+            unit: i.unit ?? "",
+          })),
+        };
+      } catch {
+        // zonder AI bewaren we het gerecht met enkel een naam
+      }
+
       const { data, error } = await supabase
         .from("recipes")
-        .insert({ user_id: user.id, title: naam })
+        .insert({
+          user_id: user.id,
+          title: basis.title,
+          description: basis.description,
+          servings: basis.servings,
+          prep_minutes: basis.prep_minutes,
+          cook_minutes: basis.cook_minutes,
+          category: basis.category,
+          difficulty: basis.difficulty,
+          tags: basis.tags,
+          instructions: basis.instructions,
+        })
         .select("id")
         .single();
       if (error) {
@@ -137,6 +197,18 @@ function PlannerPage() {
         return;
       }
       recipeId = data.id;
+
+      if (basis.ingredienten.length) {
+        await supabase.from("recipe_ingredients").insert(
+          basis.ingredienten.map((i, index) => ({
+            recipe_id: recipeId!,
+            name: i.name,
+            quantity: i.quantity,
+            unit: i.unit,
+            position: index,
+          })),
+        );
+      }
     }
 
     const { error } = await supabase.from("meal_plan").insert({
@@ -155,6 +227,7 @@ function PlannerPage() {
     qc.invalidateQueries({ queryKey: ["meal-plan"] });
     qc.invalidateQueries({ queryKey: ["recipes"] });
   }
+
 
   async function alleBoodschappen() {
     if (!user || plan.length === 0) return;

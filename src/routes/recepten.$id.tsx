@@ -2,13 +2,16 @@ import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowLeft,
   ChefHat,
   Clock,
   Heart,
+  Loader2,
   Minus,
   Pencil,
   Plus,
   ShoppingCart,
+  Sparkles,
   Trash2,
   X,
   CalendarPlus,
@@ -19,7 +22,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { Button } from "@/components/ui/button";
+import { importRecipeFromText } from "@/lib/ai.functions";
+import { useT } from "@/lib/voorkeuren";
 import { MEAL_TYPES, type Ingredient, type Recipe } from "@/lib/types";
+
 
 export const Route = createFileRoute("/recepten/$id")({
   head: () => ({

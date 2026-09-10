@@ -246,11 +246,12 @@ export function RecipeForm({
   }
 
   const manieren: { id: Manier; label: string; icon: typeof Link2 }[] = [
-    { id: "link", label: "Link", icon: Link2 },
-    { id: "tekst", label: "Tekst", icon: ClipboardType },
-    { id: "foto", label: "Foto", icon: Camera },
+    { id: "link", label: "AI link", icon: Link2 },
+    { id: "tekst", label: "AI tekst", icon: ClipboardType },
+    { id: "foto", label: "AI foto", icon: Camera },
     { id: "zelf", label: "Zelf typen", icon: Pencil },
   ];
+
 
   return (
     <div className="space-y-6">
