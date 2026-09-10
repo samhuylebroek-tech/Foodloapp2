@@ -25,6 +25,7 @@ import { Route as BeheerAiRouteImport } from './routes/beheer.ai'
 import { Route as BeheerGebruikersRouteImport } from './routes/beheer.gebruikers'
 import { Route as BeheerInhoudRouteImport } from './routes/beheer.inhoud'
 import { Route as BeheerReceptenRouteImport } from './routes/beheer.recepten'
+import { Route as BeheerSupportRouteImport } from './routes/beheer.support'
 import { Route as ReceptenIdRouteImport } from './routes/recepten.$id'
 import { Route as ReceptenNieuwRouteImport } from './routes/recepten.nieuw'
 import { Route as VriendenIdRouteImport } from './routes/vrienden.$id'
@@ -110,6 +111,11 @@ const BeheerReceptenRoute = BeheerReceptenRouteImport.update({
   path: '/recepten',
   getParentRoute: () => BeheerRoute,
 } as any)
+const BeheerSupportRoute = BeheerSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => BeheerRoute,
+} as any)
 const ReceptenIdRoute = ReceptenIdRouteImport.update({
   id: '/recepten/$id',
   path: '/recepten/$id',
@@ -147,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/beheer/gebruikers': typeof BeheerGebruikersRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/recepten': typeof BeheerReceptenRoute
+  '/beheer/support': typeof BeheerSupportRoute
   '/recepten/$id': typeof ReceptenIdRouteWithChildren
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/vrienden/$id': typeof VriendenIdRoute
@@ -168,6 +175,7 @@ export interface FileRoutesByTo {
   '/beheer/gebruikers': typeof BeheerGebruikersRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/recepten': typeof BeheerReceptenRoute
+  '/beheer/support': typeof BeheerSupportRoute
   '/recepten/$id': typeof ReceptenIdRouteWithChildren
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/vrienden/$id': typeof VriendenIdRoute
@@ -191,6 +199,7 @@ export interface FileRoutesById {
   '/beheer/gebruikers': typeof BeheerGebruikersRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/recepten': typeof BeheerReceptenRoute
+  '/beheer/support': typeof BeheerSupportRoute
   '/recepten/$id': typeof ReceptenIdRouteWithChildren
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/vrienden/$id': typeof VriendenIdRoute
@@ -215,6 +224,7 @@ export interface FileRouteTypes {
     | '/beheer/gebruikers'
     | '/beheer/inhoud'
     | '/beheer/recepten'
+    | '/beheer/support'
     | '/recepten/$id'
     | '/recepten/nieuw'
     | '/vrienden/$id'
@@ -236,6 +246,7 @@ export interface FileRouteTypes {
     | '/beheer/gebruikers'
     | '/beheer/inhoud'
     | '/beheer/recepten'
+    | '/beheer/support'
     | '/recepten/$id'
     | '/recepten/nieuw'
     | '/vrienden/$id'
@@ -258,6 +269,7 @@ export interface FileRouteTypes {
     | '/beheer/gebruikers'
     | '/beheer/inhoud'
     | '/beheer/recepten'
+    | '/beheer/support'
     | '/recepten/$id'
     | '/recepten/nieuw'
     | '/vrienden/$id'
@@ -395,6 +407,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerReceptenRouteImport
       parentRoute: typeof BeheerRoute
     }
+    '/beheer/support': {
+      id: '/beheer/support'
+      path: '/support'
+      fullPath: '/beheer/support'
+      preLoaderRoute: typeof BeheerSupportRouteImport
+      parentRoute: typeof BeheerRoute
+    }
     '/recepten/$id': {
       id: '/recepten/$id'
       path: '/recepten/$id'
@@ -431,6 +450,7 @@ interface BeheerRouteChildren {
   BeheerGebruikersRoute: typeof BeheerGebruikersRoute
   BeheerInhoudRoute: typeof BeheerInhoudRoute
   BeheerReceptenRoute: typeof BeheerReceptenRoute
+  BeheerSupportRoute: typeof BeheerSupportRoute
   BeheerIndexRoute: typeof BeheerIndexRoute
 }
 
@@ -439,6 +459,7 @@ const BeheerRouteChildren: BeheerRouteChildren = {
   BeheerGebruikersRoute: BeheerGebruikersRoute,
   BeheerInhoudRoute: BeheerInhoudRoute,
   BeheerReceptenRoute: BeheerReceptenRoute,
+  BeheerSupportRoute: BeheerSupportRoute,
   BeheerIndexRoute: BeheerIndexRoute,
 }
 
