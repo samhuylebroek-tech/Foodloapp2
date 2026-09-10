@@ -46,7 +46,7 @@ export function AdminShell({
   acties?: ReactNode;
   children: ReactNode;
 }) {
-  const { profiel, mag } = useAdmin();
+  const { profiel, mag, alleenLezen, mfaOk } = useAdmin();
   const pad = useRouterState({ select: (s) => s.location.pathname });
 
   return (
