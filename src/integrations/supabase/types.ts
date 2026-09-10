@@ -76,26 +76,29 @@ export type Database = {
       meal_plan: {
         Row: {
           created_at: string
+          custom_title: string | null
           id: string
           meal_type: string
           plan_date: string
-          recipe_id: string
+          recipe_id: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
+          custom_title?: string | null
           id?: string
           meal_type?: string
           plan_date: string
-          recipe_id: string
+          recipe_id?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
+          custom_title?: string | null
           id?: string
           meal_type?: string
           plan_date?: string
-          recipe_id?: string
+          recipe_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -274,6 +277,7 @@ export type Database = {
           checked: boolean
           created_at: string
           id: string
+          list_id: string | null
           name: string
           quantity: number | null
           recipe_id: string | null
@@ -284,6 +288,7 @@ export type Database = {
           checked?: boolean
           created_at?: string
           id?: string
+          list_id?: string | null
           name: string
           quantity?: number | null
           recipe_id?: string | null
@@ -294,6 +299,7 @@ export type Database = {
           checked?: boolean
           created_at?: string
           id?: string
+          list_id?: string | null
           name?: string
           quantity?: number | null
           recipe_id?: string | null
@@ -302,6 +308,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "shopping_items_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "shopping_lists"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "shopping_items_recipe_id_fkey"
             columns: ["recipe_id"]
             isOneToOne: false
@@ -309,6 +322,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      shopping_lists: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
