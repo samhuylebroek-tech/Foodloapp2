@@ -311,7 +311,7 @@ function ReceptPage() {
           <ul className="mt-4 space-y-2 text-lg">
             {ingredients.map((i) => (
               <li key={i.id} className="flex justify-between gap-3 border-b border-border py-2">
-                <span>{i.name}</span>
+                <span>{t(i.name)}</span>
                 <span className="shrink-0 font-semibold">
                   {i.quantity === null
                     ? ""
@@ -320,17 +320,18 @@ function ReceptPage() {
               </li>
             ))}
             {ingredients.length === 0 && (
-              <li className="py-2 text-muted-foreground">Nog geen ingrediënten.</li>
+              <li className="py-2 text-muted-foreground">{t("Nog geen ingrediënten.")}</li>
             )}
           </ul>
 
           <Button onClick={naarBoodschappen} className="mt-4 h-16 w-full text-lg">
-            <ShoppingCart className="size-5" /> Naar boodschappenlijst
+            <ShoppingCart className="size-5" /> {t("Naar boodschappenlijst")}
           </Button>
         </section>
 
         <section>
-          <h2 className="text-xl">Bereiding</h2>
+          <h2 className="text-xl">{t("Bereiding")}</h2>
+
           <ol className="mt-3 space-y-3">
             {recipe.instructions.map((s, i) => (
               <li key={i} className="flex gap-3 rounded-2xl border border-border bg-card p-4">
