@@ -83,19 +83,71 @@ export function heeftRecht(profiel: AdminProfiel | null, recht: Rechten): boolea
   return MATRIX[profiel.role].includes(recht);
 }
 
-type Ctx = { supabase: any; userId: string };
+type Ctx = { supabase: any; userId: string; claims?: any };
 
-async function bewaker(context: Ctx, recht: Rechten) {
+const SCHRIJFRECHTEN: Rechten[] = [
+  "users.manage",
+  "users.delete",
+  "recipes.manage",
+  "content.manage",
+  "support.manage",
+  "settings.manage",
+  "admins.manage",
+  "privacy.manage",
+];
+
+// Max aantal beheeracties per minuut per beheerder.
+const LIMIET_PER_MINUUT = 120;
+
+async function bewaker(context: Ctx, recht: Rechten, opties: { schrijft?: boolean } = {}) {
   const { data, error } = await context.supabase
     .from("admin_users")
-    .select("user_id, role, active, can_view_private_content, note")
+    .select("user_id, role, active, can_view_private_content, note, read_only, mfa_required")
     .eq("user_id", context.userId)
     .maybeSingle();
   if (error || !data || !data.active) throw new Error("Geen toegang tot het Control Center.");
   const profiel = data as AdminProfiel;
   if (!heeftRecht(profiel, recht)) throw new Error("Je rol heeft dit recht niet.");
+
+  const schrijft = opties.schrijft ?? SCHRIJFRECHTEN.includes(recht);
+  if (schrijft && profiel.read_only) {
+    throw new Error("Je account staat in alleen-lezen modus. Wijzigen is niet toegestaan.");
+  }
+
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  // Snelheidslimiet: beschermt tegen misbruik of een doorgeslagen script.
+  const sinds = new Date(Date.now() - 60_000).toISOString();
+  const { count } = await supabaseAdmin
+    .from("admin_rate_limits")
+    .select("*", { count: "exact", head: true })
+    .eq("admin_id", profiel.user_id)
+    .gte("created_at", sinds);
+  if ((count ?? 0) >= LIMIET_PER_MINUUT) {
+    throw new Error("Te veel acties na elkaar. Probeer over een minuut opnieuw.");
+  }
+  await supabaseAdmin.from("admin_rate_limits").insert({ admin_id: profiel.user_id, action: recht });
+
   return { profiel, db: supabaseAdmin };
+}
+
+async function sessieLoggen(db: any, adminId: string, aal: string | null) {
+  const req = getRequest();
+  const ip = req?.headers.get("x-forwarded-for") ?? null;
+  const ua = req?.headers.get("user-agent") ?? null;
+  const sinds = new Date(Date.now() - 30 * 60_000).toISOString();
+  const { data: bestaand } = await db
+    .from("admin_sessions")
+    .select("id")
+    .eq("admin_id", adminId)
+    .gte("last_seen_at", sinds)
+    .order("last_seen_at", { ascending: false })
+    .limit(1);
+  if (bestaand?.length) {
+    await db.from("admin_sessions").update({ last_seen_at: new Date().toISOString(), aal }).eq("id", bestaand[0].id);
+  } else {
+    await db.from("admin_sessions").insert({ admin_id: adminId, ip, user_agent: ua, aal });
+  }
 }
 
 async function logboek(
