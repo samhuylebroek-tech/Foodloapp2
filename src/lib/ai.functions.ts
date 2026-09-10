@@ -273,3 +273,34 @@ export const ontdekSuggesties = createServerFn({ method: "POST" })
         category: String(s.category ?? "hoofdgerecht"),
       }));
   });
+
+export const gerechtFoto = createServerFn({ method: "POST" })
+  .inputValidator((data) => z.object({ titel: z.string().min(2).max(120) }).parse(data))
+  .handler(async ({ data }): Promise<string | null> => {
+    const apiKey = process.env["LOVABLE_API_KEY"];
+    if (!apiKey) return null;
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-3.1-flash-lite-image",
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: `Een smakelijke, realistische foodfoto van het gerecht "${data.titel}", mooi opgediend op een bord, natuurlijk daglicht, bovenaanzicht, warme keukensfeer. Geen tekst of letters in beeld.`,
+              },
+            ],
+          },
+        ],
+        generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
+      }),
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { data?: { b64_json?: string }[] };
+    const b64 = json.data?.[0]?.b64_json;
+    if (!b64) return null;
+    const mime = b64.startsWith("/9j/") ? "image/jpeg" : "image/png";
+    return `data:${mime};base64,${b64}`;
+  });
