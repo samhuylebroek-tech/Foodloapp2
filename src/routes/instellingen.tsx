@@ -57,9 +57,9 @@ function InstellingenPage() {
   return (
     <AppShell title={t("Instellingen")}>
       <div className="space-y-6">
-        <section className="rounded-2xl border border-border bg-card p-4">
-          <h2 className="text-xl">{t("Wachtwoord")}</h2>
-          <Label htmlFor="pw" className="mt-3 block text-base">
+        <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+          <h2 className="text-xl font-bold tracking-tight">{t("Wachtwoord")}</h2>
+          <Label htmlFor="pw" className="mt-4 block text-base font-semibold">
             {t("Nieuw wachtwoord")}
           </Label>
           <Input
@@ -67,9 +67,9 @@ function InstellingenPage() {
             type="password"
             value={wachtwoord}
             onChange={(e) => setWachtwoord(e.target.value)}
-            className="mt-2 h-14 text-base"
+            className="mt-2 h-14 rounded-2xl border-input bg-muted px-5 text-base focus-visible:ring-primary/20"
           />
-          <Label htmlFor="pw2" className="mt-3 block text-base">
+          <Label htmlFor="pw2" className="mt-3 block text-base font-semibold">
             {t("Herhaal het wachtwoord")}
           </Label>
           <Input
@@ -77,21 +77,21 @@ function InstellingenPage() {
             type="password"
             value={herhaal}
             onChange={(e) => setHerhaal(e.target.value)}
-            className="mt-2 h-14 text-base"
+            className="mt-2 h-14 rounded-2xl border-input bg-muted px-5 text-base focus-visible:ring-primary/20"
           />
           <Button
             onClick={bewaarWachtwoord}
             disabled={wachtwoordBezig}
-            className="mt-3 h-14 w-full text-base"
+            className="mt-4 h-14 w-full text-base shadow-md shadow-primary/15"
           >
             {wachtwoordBezig ? <Loader2 className="size-5 animate-spin" /> : null}
             {t("Wachtwoord bewaren")}
           </Button>
         </section>
 
-        <section className="rounded-2xl border border-border bg-card p-4">
-          <h2 className="text-xl">{t("Kleuren")}</h2>
-          <div className="mt-3 grid grid-cols-2 gap-2">
+        <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+          <h2 className="text-xl font-bold tracking-tight">{t("Kleuren")}</h2>
+          <div className="mt-4 grid grid-cols-2 gap-3">
             {THEMAS.map((k) => (
               <button
                 key={k.id}
@@ -100,8 +100,8 @@ function InstellingenPage() {
                 aria-pressed={thema === k.id}
                 className={
                   thema === k.id
-                    ? "min-h-16 rounded-xl bg-primary px-3 text-base font-semibold text-primary-foreground"
-                    : "min-h-16 rounded-xl border border-border bg-secondary px-3 text-base font-semibold"
+                    ? "min-h-16 rounded-2xl bg-primary px-3 text-base font-semibold text-primary-foreground shadow-md shadow-primary/15"
+                    : "min-h-16 rounded-2xl border border-border bg-secondary px-3 text-base font-semibold transition-colors hover:bg-muted"
                 }
               >
                 {t(k.label)}
@@ -110,8 +110,8 @@ function InstellingenPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-border bg-card p-4">
-          <h2 className="text-xl">{t("Taal")}</h2>
+        <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+          <h2 className="text-xl font-bold tracking-tight">{t("Taal")}</h2>
           <p className="mt-2 text-base text-muted-foreground">
             {t("De hele app en je recepten worden dan in die taal getoond.")}
           </p>
@@ -119,7 +119,7 @@ function InstellingenPage() {
             value={taal}
             onChange={(e) => zetTaal(e.target.value)}
             aria-label={t("Taal kiezen")}
-            className="mt-3 h-14 w-full rounded-xl border border-input bg-background px-3 text-base"
+            className="mt-4 h-14 w-full rounded-2xl border border-input bg-muted px-4 text-base focus-visible:ring-primary/20"
           >
             {TALEN.map((l) => (
               <option key={l.code} value={l.code}>
