@@ -215,6 +215,18 @@ function HomePage() {
               ]}
             />
 
+            <FilterSelect
+              label={t("Vlees, vis of veggie")}
+              value={dieet ?? "alles"}
+              onChange={(v) => setDieet(v === "alles" ? null : v)}
+              options={[
+                { value: "alles", label: t("Alles") },
+                ...DIETEN.map((d) => ({ value: d, label: t(d) })),
+              ]}
+            />
+
+
+
             <button
               type="button"
               onClick={() => setAlleenFavorieten(!alleenFavorieten)}
