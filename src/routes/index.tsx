@@ -258,6 +258,59 @@ function StartPage() {
           </div>
         </section>
 
+        {/* Nieuw van het internet */}
+        {user && (
+          <section>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <SectieTitel icoon={<Globe2 className="size-5" aria-hidden />}>
+                {t("Nieuw voor jou van het internet")}
+              </SectieTitel>
+              <button
+                type="button"
+                onClick={() => setRonde((r) => r + 1)}
+                disabled={internetVerst}
+                className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-border bg-card px-4 text-base font-semibold disabled:opacity-60"
+              >
+                <RefreshCw className={`size-4 ${internetVerst ? "animate-spin" : ""}`} aria-hidden />
+                {t("Andere")}
+              </button>
+            </div>
+            {internetLaadt ? (
+              <p className="text-lg text-muted-foreground">{t("Even zoeken naar nieuwe ideeën…")}</p>
+            ) : internet.length === 0 ? (
+              <p className="text-lg text-muted-foreground">
+                {t("Geen nieuwe suggesties gevonden. Probeer straks opnieuw.")}
+              </p>
+            ) : (
+              <ul className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2">
+                {internet.map((s) => (
+                  <li key={s.title} className="w-60 shrink-0 snap-start">
+                    <div className="flex h-full flex-col justify-between rounded-2xl border border-border bg-gradient-to-br from-accent/15 to-primary/10 p-4">
+                      <div>
+                        <p className="font-display text-xl leading-tight">{t(s.title)}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {s.keuken ? `${t(s.keuken)} · ` : ""}
+                          {s.minuten} min
+                        </p>
+                        <p className="mt-2 line-clamp-3 text-base">{t(s.waarom)}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => bewaarSuggestie(s)}
+                        disabled={bezig !== null}
+                        className="mt-4 inline-flex min-h-14 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground disabled:opacity-60"
+                      >
+                        <Plus className="size-5" aria-hidden />
+                        {bezig === s.title ? t("Bezig…") : t("Bij mijn gerechten")}
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
         {isLoading ? (
           <p className="py-10 text-center text-lg text-muted-foreground">{t("Even laden…")}</p>
         ) : recipes.length === 0 ? (
