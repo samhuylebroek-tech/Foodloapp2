@@ -10,6 +10,7 @@ import {
   Timer,
   CalendarDays,
   ChevronRight,
+  Compass,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -202,6 +203,15 @@ function StartPage() {
           </div>
         ) : (
           <>
+            {ontdek.length > 0 && (
+              <Rij
+                titel={t("Nog niet geproefd")}
+                recepten={ontdek}
+                t={t}
+                icoon={<Compass className="size-5" aria-hidden />}
+              />
+            )}
+
             {/* Gerecht van de dag */}
             {vandaag && (
               <section>
