@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MEAL_TYPES, type Recipe } from "@/lib/types";
+import { importRecipeFromText } from "@/lib/ai.functions";
 import { zorgVoorLijst, type ShoppingList } from "@/lib/boodschappen";
+
 
 export const Route = createFileRoute("/planner")({
   head: () => ({

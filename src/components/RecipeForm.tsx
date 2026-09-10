@@ -381,6 +381,41 @@ export function RecipeForm({
         </div>
 
         <div>
+          <Label htmlFor="servings-top" className="text-base">
+            Voor hoeveel personen zijn deze ingrediënten?
+          </Label>
+          <div className="mt-2 flex items-center gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setServings(String(Math.max(1, (Number(servings) || 1) - 1)))}
+              aria-label="Minder personen"
+              className="size-14"
+            >
+              –
+            </Button>
+            <Input
+              id="servings-top"
+              value={servings}
+              onChange={(e) => setServings(e.target.value)}
+              inputMode="numeric"
+              className="h-14 w-24 text-center text-base"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setServings(String((Number(servings) || 0) + 1))}
+              aria-label="Meer personen"
+              className="size-14"
+            >
+              +
+            </Button>
+            <span className="text-base text-muted-foreground">personen</span>
+          </div>
+        </div>
+
+
+        <div>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <Label htmlFor="ingredienten" className="text-base">
               Ingrediënten — één per regel
