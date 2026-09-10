@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import logo from "@/assets/logo.png";
@@ -90,90 +89,136 @@ function AanmeldenPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
       <div className="w-full max-w-md">
-        <div className="mb-6 text-center">
-          <img
-            src={logo}
-            alt="MaJeBa logo"
-            width={112}
-            height={112}
-            className="mx-auto size-28 rounded-3xl"
-          />
-          <h1 className="mt-4 font-display text-3xl">MaJeBa</h1>
-          <p className="mt-2 text-base text-muted-foreground">
-            Al jullie recepten op één plek, makkelijk terug te vinden.
-          </p>
-        </div>
+        <div className="rounded-[2.5rem] border border-border bg-card p-8 shadow-2xl shadow-muted/50 sm:p-10">
+          {/* Logo & Header */}
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-secondary">
+              <img src={logo} alt="MaJeBa logo" width={40} height={40} className="size-10" />
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">MaJeBa</h1>
+            <p className="mt-2 text-base font-medium text-muted-foreground">
+              Ontdek je volgende favoriete recept
+            </p>
+          </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-4 rounded-3xl border border-border bg-card p-6"
-        >
-          {mode === "signup" && (
+          {/* Social Login */}
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={handleGoogle}
+              className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-input bg-card px-4 text-base font-semibold text-foreground transition-colors hover:bg-muted"
+            >
+              <svg className="size-5" viewBox="0 0 24 24">
+                <path
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  fill="#4285F4"
+                />
+                <path
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  fill="#34A853"
+                />
+                <path
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+                  fill="#FBBC05"
+                />
+                <path
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                  fill="#EA4335"
+                />
+              </svg>
+              Doorgaan met Google
+            </button>
+          </div>
+
+          <div className="relative my-6 text-center">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <span className="relative bg-card px-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Of met e-mail
+            </span>
+          </div>
+
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {mode === "signup" && (
+              <div>
+                <Label htmlFor="name" className="text-base font-semibold text-foreground">
+                  Jouw naam
+                </Label>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="mt-2 h-14 rounded-2xl border-input bg-muted px-5 text-base placeholder:text-muted-foreground focus-visible:ring-primary/20"
+                  autoComplete="name"
+                />
+              </div>
+            )}
             <div>
-              <Label htmlFor="name" className="text-base">
-                Jouw naam
+              <Label htmlFor="email" className="text-base font-semibold text-foreground">
+                E-mailadres
               </Label>
               <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="mt-2 h-14 text-base"
-                autoComplete="name"
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="naam@voorbeeld.nl"
+                className="mt-2 h-14 rounded-2xl border-input bg-muted px-5 text-base placeholder:text-muted-foreground focus-visible:ring-primary/20"
+                autoComplete="email"
               />
             </div>
-          )}
-          <div>
-            <Label htmlFor="email" className="text-base">
-              E-mailadres
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-2 h-14 text-base"
-              autoComplete="email"
-            />
-          </div>
-          <div>
-            <Label htmlFor="password" className="text-base">
-              Wachtwoord
-            </Label>
-            <Input
-              id="password"
-              type="password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-2 h-14 text-base"
-              autoComplete={mode === "signup" ? "new-password" : "current-password"}
-            />
-          </div>
+            <div>
+              <Label htmlFor="password" className="text-base font-semibold text-foreground">
+                Wachtwoord
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="mt-2 h-14 rounded-2xl border-input bg-muted px-5 text-base placeholder:text-muted-foreground focus-visible:ring-primary/20"
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
+              />
+            </div>
 
-          <Button type="submit" disabled={busy} className="h-16 w-full text-lg">
-            {busy ? <Loader2 className="size-5 animate-spin" /> : null}
-            {mode === "login" ? "Aanmelden" : "Account maken"}
-          </Button>
-
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleGoogle}
-            className="h-16 w-full text-lg"
-          >
-            Doorgaan met Google
-          </Button>
+            <button
+              type="submit"
+              disabled={busy}
+              className="flex h-16 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-lg font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5 hover:bg-primary/90 active:translate-y-0 disabled:opacity-60"
+            >
+              {busy ? <Loader2 className="size-5 animate-spin" /> : null}
+              {mode === "login" ? "Aanmelden" : "Account maken"}
+            </button>
+          </form>
 
           <button
             type="button"
             onClick={() => setMode(mode === "login" ? "signup" : "login")}
-            className="w-full py-2 text-base font-semibold text-primary underline underline-offset-4"
+            className="mt-6 w-full text-base font-semibold text-muted-foreground transition-colors hover:text-primary"
           >
-            {mode === "login" ? "Nog geen account? Account maken" : "Ik heb al een account"}
+            {mode === "login" ? (
+              <>
+                Nog geen account?{" "}
+                <span className="font-bold text-primary underline underline-offset-4">
+                  Account maken
+                </span>
+              </>
+            ) : (
+              <>
+                Ik heb al een account?{" "}
+                <span className="font-bold text-primary underline underline-offset-4">
+                  Inloggen
+                </span>
+              </>
+            )}
           </button>
-        </form>
+        </div>
       </div>
     </div>
   );
