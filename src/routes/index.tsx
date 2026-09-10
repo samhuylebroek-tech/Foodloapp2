@@ -408,7 +408,7 @@ function StartPage() {
 
 function SectieTitel({ children, icoon }: { children: React.ReactNode; icoon?: React.ReactNode }) {
   return (
-    <h2 className="mb-3 flex items-center gap-2 font-display text-2xl">
+    <h2 className="mb-3 flex items-center gap-2 text-2xl font-bold tracking-tight">
       {icoon}
       {children}
     </h2>
@@ -436,11 +436,11 @@ function Rij({
             <Link
               to="/recepten/$id"
               params={{ id: r.id }}
-              className="block h-full overflow-hidden rounded-2xl border border-border bg-card active:opacity-90"
+              className="block h-full overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md active:opacity-90"
             >
               <RecipePhoto path={r.image_url} alt={r.title} className="h-28 w-full rounded-none" />
               <div className="p-3">
-                <p className="line-clamp-2 font-display text-lg leading-tight">{t(r.title)}</p>
+                <p className="line-clamp-2 text-lg font-bold leading-tight">{t(r.title)}</p>
                 <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
                   <Clock className="size-4" aria-hidden />
                   {r.prep_minutes + r.cook_minutes} min
