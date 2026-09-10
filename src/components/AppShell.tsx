@@ -16,6 +16,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.png";
+import { Aankondigingen } from "@/components/Aankondigingen";
+import { meet } from "@/lib/meten";
 
 const NAV = [
   { to: "/", label: "Start", icon: Sparkles },
@@ -54,6 +56,10 @@ export function AppShell({
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (session) meet("pagina", pathname);
+  }, [pathname, session]);
 
   if (loading || !session) {
     return (
@@ -125,7 +131,10 @@ export function AppShell({
             </div>
           </header>
 
-          <main className="mx-auto w-full max-w-3xl px-4 py-5 pb-16 lg:max-w-4xl">{children}</main>
+          <main className="mx-auto w-full max-w-3xl px-4 py-5 pb-16 lg:max-w-4xl">
+            <Aankondigingen />
+            {children}
+          </main>
         </div>
       </div>
 
