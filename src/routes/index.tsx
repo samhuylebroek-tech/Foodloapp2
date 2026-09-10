@@ -161,6 +161,13 @@ function HomePage() {
   return (
     <AppShell title={t("Gerechten")}>
       <div className="space-y-4">
+        <Link
+          to="/recepten/nieuw"
+          className="flex min-h-16 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-6 text-lg font-semibold text-primary-foreground"
+        >
+          <Plus className="size-6" aria-hidden /> {t("Nieuw recept toevoegen")}
+        </Link>
+
         <div className="relative">
           <Search
             className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
@@ -174,6 +181,7 @@ function HomePage() {
             aria-label={t("Zoeken")}
           />
         </div>
+
 
         <div className="space-y-3 rounded-2xl border border-border bg-card p-3">
           <div className="flex flex-wrap items-end gap-3">
