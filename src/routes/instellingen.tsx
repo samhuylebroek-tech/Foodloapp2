@@ -129,6 +129,8 @@ function InstellingenPage() {
           </select>
         </section>
 
+        <BeheerLink />
+
         <Button
           variant="ghost"
           onClick={() => supabase.auth.signOut()}
