@@ -225,19 +225,11 @@ function VriendenPage() {
         <section className="space-y-4 rounded-3xl border border-border bg-card p-5">
           <h2 className="font-display text-xl">Nieuwe uitnodiging</h2>
 
-          <div>
-            <Label htmlFor="uitnodig-email" className="text-base">
-              E-mailadres (mag je ook leeg laten)
-            </Label>
-            <Input
-              id="uitnodig-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="naam@voorbeeld.be"
-              className="mt-2 h-14 text-base"
-            />
-          </div>
+          <p className="text-base text-muted-foreground">
+            Kies eerst wat je vriend mag zien of bewerken. Daarna krijg je een link die je kan
+            doorsturen via WhatsApp, sms of hoe je wil. Wie erop klikt, wordt jouw vriend.
+          </p>
+
 
           <ul className="space-y-1">
             {RECHTEN.map((r) => (
@@ -262,14 +254,7 @@ function VriendenPage() {
             disabled={maakUitnodiging.isPending}
             className="h-16 w-full text-lg"
           >
-            <UserPlus className="size-5" /> Uitnodiging maken
-          </Button>
-          {email.trim() && (
-            <p className="flex items-center gap-2 text-base text-muted-foreground">
-              <Mail className="size-4" aria-hidden /> Je e-mailprogramma opent met de uitnodiging
-              erin.
-            </p>
-          )}
+            <UserPlus className="size-5" /> Uitnodigingslink maken
         </section>
         )}
 
