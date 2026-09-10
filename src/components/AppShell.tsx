@@ -7,10 +7,12 @@ import {
   PlusCircle,
   Users,
   MessageSquareHeart,
+  Settings,
   Menu,
   X,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -19,8 +21,10 @@ const NAV = [
   { to: "/planner", label: "Weekmenu", icon: CalendarDays },
   { to: "/boodschappen", label: "Boodschappen", icon: ShoppingCart },
   { to: "/vrienden", label: "Vrienden", icon: Users },
+  { to: "/instellingen", label: "Instellingen", icon: Settings },
   { to: "/feedback", label: "Feedback", icon: MessageSquareHeart },
 ] as const;
+
 
 export function AppShell({
   title,
