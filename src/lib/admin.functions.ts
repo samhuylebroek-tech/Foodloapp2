@@ -16,6 +16,8 @@ export type AdminProfiel = {
   active: boolean;
   can_view_private_content: boolean;
   note: string;
+  read_only?: boolean;
+  mfa_required?: boolean;
 };
 
 export type Rechten =
