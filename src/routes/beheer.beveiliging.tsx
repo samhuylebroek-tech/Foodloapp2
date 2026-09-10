@@ -34,7 +34,10 @@ function Beveiliging() {
     setBezig(true);
     const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: `MaJeBa ${Date.now()}` });
     setBezig(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     setQr({ id: data.id, svg: data.totp.qr_code, secret: data.totp.secret });
   };
 
@@ -44,7 +47,8 @@ function Beveiliging() {
     const { data: uitdaging, error: e1 } = await supabase.auth.mfa.challenge({ factorId: qr.id });
     if (e1 || !uitdaging) {
       setBezig(false);
-      return toast.error(e1?.message ?? "Kon niet starten");
+      toast.error(e1?.message ?? "Kon niet starten");
+      return;
     }
     const { error } = await supabase.auth.mfa.verify({
       factorId: qr.id,
@@ -52,7 +56,10 @@ function Beveiliging() {
       code: code.trim(),
     });
     setBezig(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("2-staps verificatie staat aan");
     setQr(null);
     setCode("");
@@ -81,7 +88,10 @@ function Beveiliging() {
                     variant="destructive"
                     onClick={async () => {
                       const { error } = await supabase.auth.mfa.unenroll({ factorId: f.id });
-                      if (error) return toast.error(error.message);
+                      if (error) {
+                        toast.error(error.message);
+                        return;
+                      }
                       toast.success("Verwijderd");
                       laadFactoren();
                     }}

@@ -734,7 +734,7 @@ export const adminBeveiligingZetten = createServerFn({ method: "POST" })
     const wijziging: Record<string, boolean> = {};
     if (data.read_only !== undefined) wijziging["read_only"] = data.read_only;
     if (data.mfa_required !== undefined) wijziging["mfa_required"] = data.mfa_required;
-    await db.from("admin_users").update(wijziging).eq("user_id", data.user_id);
+    await db.from("admin_users").update(wijziging as any).eq("user_id", data.user_id);
     await logboek(db, profiel, "admin.security_update", "admin", data.user_id, wijziging);
     return { ok: true };
   });
