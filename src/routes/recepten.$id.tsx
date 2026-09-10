@@ -143,6 +143,45 @@ function ReceptPage() {
     }
   }
 
+  async function vulAanMetAI() {
+    setAanvullen(true);
+    try {
+      const ai = await importRecipeFromText({
+        data: { text: `Maak een volledig recept voor: ${recipe.title}` },
+      });
+      const { error } = await supabase
+        .from("recipes")
+        .update({
+          description: recipe.description || ai.description,
+          servings: recipe.servings || ai.servings,
+          prep_minutes: recipe.prep_minutes || ai.prep_minutes,
+          cook_minutes: recipe.cook_minutes || ai.cook_minutes,
+          instructions: recipe.instructions.length ? recipe.instructions : ai.instructions,
+        })
+        .eq("id", recipe.id);
+      if (error) throw error;
+
+      if (!ingredients.length && ai.ingredients.length) {
+        await supabase.from("recipe_ingredients").insert(
+          ai.ingredients.map((i, index) => ({
+            recipe_id: recipe.id,
+            name: i.name,
+            quantity: i.quantity,
+            unit: i.unit ?? "",
+            position: index,
+          })),
+        );
+      }
+      await qc.invalidateQueries({ queryKey: ["recipe", id] });
+      toast.success(t("Voorstel klaar. Lees het na en pas aan wat je anders wil."));
+    } catch {
+      toast.error(t("Aanvullen lukte niet"));
+    } finally {
+      setAanvullen(false);
+    }
+  }
+
+
   if (kookstand) {
     const stappen = recipe.instructions;
     return (
