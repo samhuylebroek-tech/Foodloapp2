@@ -318,14 +318,20 @@ function UitnodigingKaart({
   naam,
   onWijzig,
   onVerwijder,
+  startOpen = false,
 }: {
   share: Share;
   naam: string | null;
   onWijzig: (patch: Partial<Rechten>) => void;
   onVerwijder: () => void;
+  startOpen?: boolean;
 }) {
   const [qr, setQr] = useState("");
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen);
+
+  useEffect(() => {
+    if (startOpen) setOpen(true);
+  }, [startOpen]);
   const link = typeof window === "undefined" ? "" : uitnodigingsLink(share.token);
 
   useEffect(() => {
