@@ -51,6 +51,7 @@ function HomePage() {
   const [zoek, setZoek] = useState("");
   const [categorie, setCategorie] = useState<string | null>(null);
   const [moeilijkheid, setMoeilijkheid] = useState<string | null>(null);
+  const [dieet, setDieet] = useState<string | null>(null);
   const [maxTijd, setMaxTijd] = useState(0);
   const [alleenFavorieten, setAlleenFavorieten] = useState(false);
 
@@ -76,6 +77,29 @@ function HomePage() {
     },
   });
 
+  const { data: alleIngredienten = [] } = useQuery({
+    queryKey: ["alle-ingredienten"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("recipe_ingredients").select("recipe_id, name");
+      if (error) throw error;
+      return data as { recipe_id: string; name: string }[];
+    },
+  });
+
+  const dieetPerRecept = useMemo(() => {
+    const namen = new Map<string, string[]>();
+    for (const rij of alleIngredienten) {
+      const lijst = namen.get(rij.recipe_id) ?? [];
+      lijst.push(rij.name);
+      namen.set(rij.recipe_id, lijst);
+    }
+    const map = new Map<string, string>();
+    for (const r of recipes) {
+      map.set(r.id, bepaalDieet(r.title, r.tags, namen.get(r.id) ?? []));
+    }
+    return map;
+  }, [recipes, alleIngredienten]);
+
   const { data: ingredientMatches = [] } = useQuery({
     queryKey: ["ingredient-search", zoek],
     enabled: zoek.trim().length > 1,
@@ -94,6 +118,7 @@ function HomePage() {
     return recipes.filter((r) => {
       if (categorie && r.category !== categorie) return false;
       if (moeilijkheid && r.difficulty !== moeilijkheid) return false;
+      if (dieet && dieetPerRecept.get(r.id) !== dieet) return false;
       if (maxTijd && r.prep_minutes + r.cook_minutes > maxTijd) return false;
       if (alleenFavorieten && !favorites.includes(r.id)) return false;
       if (!q) return true;
@@ -109,6 +134,8 @@ function HomePage() {
     zoek,
     categorie,
     moeilijkheid,
+    dieet,
+    dieetPerRecept,
     maxTijd,
     alleenFavorieten,
     favorites,
@@ -116,14 +143,20 @@ function HomePage() {
   ]);
 
   const actieveFilters =
-    (categorie ? 1 : 0) + (moeilijkheid ? 1 : 0) + (maxTijd ? 1 : 0) + (alleenFavorieten ? 1 : 0);
+    (categorie ? 1 : 0) +
+    (moeilijkheid ? 1 : 0) +
+    (dieet ? 1 : 0) +
+    (maxTijd ? 1 : 0) +
+    (alleenFavorieten ? 1 : 0);
 
   function wisFilters() {
     setCategorie(null);
     setMoeilijkheid(null);
+    setDieet(null);
     setMaxTijd(0);
     setAlleenFavorieten(false);
   }
+
 
   return (
     <AppShell title={t("Gerechten")}>
