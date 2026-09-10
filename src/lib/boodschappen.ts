@@ -111,10 +111,6 @@ export async function voegToeAanLijst(
     if (error) throw error;
   }
 
-  for (const [, rij] of bestaande) {
-    // enkel rijen die we net hebben opgeteld hebben een gewijzigde hoeveelheid nodig
-  }
-
   const updates = [...bestaande.entries()]
     .filter(([k]) => items.some((i) => sleutel(i.name, i.unit ?? "") === k))
     .map(([, rij]) =>
