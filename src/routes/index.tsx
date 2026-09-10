@@ -17,6 +17,7 @@ import { AppShell } from "@/components/AppShell";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import type { Recipe } from "@/lib/types";
 import { haalWeer, sfeerVoorWeer, type Weer } from "@/lib/weer";
+import { gezienIds } from "@/lib/gezien";
 import { useT } from "@/lib/voorkeuren";
 
 export const Route = createFileRoute("/")({
@@ -61,6 +62,11 @@ function StartPage() {
   const t = useT();
   const [weer, setWeer] = useState<Weer | null>(null);
   const [weerKlaar, setWeerKlaar] = useState(false);
+  const [gezien, setGezien] = useState<string[]>([]);
+
+  useEffect(() => {
+    setGezien(gezienIds());
+  }, []);
 
   useEffect(() => {
     let actief = true;
