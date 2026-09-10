@@ -90,9 +90,13 @@ function AanmeldenPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
-          <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-            <CookingPot className="size-9" aria-hidden />
-          </div>
+          <img
+            src={logo}
+            alt="MaJeBa logo"
+            width={112}
+            height={112}
+            className="mx-auto size-28 rounded-3xl"
+          />
           <h1 className="mt-4 font-display text-3xl">MaJeBa</h1>
           <p className="mt-2 text-base text-muted-foreground">
             Al jullie recepten op één plek, makkelijk terug te vinden.
