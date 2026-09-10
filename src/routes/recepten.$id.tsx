@@ -48,10 +48,13 @@ function ReceptPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const t = useT();
   const [personen, setPersonen] = useState<number | null>(null);
   const [kookstand, setKookstand] = useState(false);
   const [stap, setStap] = useState(0);
   const [planOpen, setPlanOpen] = useState(false);
+  const [aanvullen, setAanvullen] = useState(false);
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["recipe", id],
