@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AanmeldenRouteImport } from './routes/aanmelden'
+import { Route as BeheerRouteImport } from './routes/beheer'
 import { Route as BoodschappenRouteImport } from './routes/boodschappen'
 import { Route as FeedbackRouteImport } from './routes/feedback'
 import { Route as GerechtenRouteImport } from './routes/gerechten'
@@ -32,6 +33,11 @@ const IndexRoute = IndexRouteImport.update({
 const AanmeldenRoute = AanmeldenRouteImport.update({
   id: '/aanmelden',
   path: '/aanmelden',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BeheerRoute = BeheerRouteImport.update({
+  id: '/beheer',
+  path: '/beheer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BoodschappenRoute = BoodschappenRouteImport.update({
@@ -98,6 +104,7 @@ const ReceptenIdBewerkenRoute = ReceptenIdBewerkenRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/aanmelden': typeof AanmeldenRoute
+  '/beheer': typeof BeheerRoute
   '/boodschappen': typeof BoodschappenRoute
   '/feedback': typeof FeedbackRoute
   '/gerechten': typeof GerechtenRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/aanmelden': typeof AanmeldenRoute
+  '/beheer': typeof BeheerRoute
   '/boodschappen': typeof BoodschappenRoute
   '/feedback': typeof FeedbackRoute
   '/gerechten': typeof GerechtenRoute
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/aanmelden': typeof AanmeldenRoute
+  '/beheer': typeof BeheerRoute
   '/boodschappen': typeof BoodschappenRoute
   '/feedback': typeof FeedbackRoute
   '/gerechten': typeof GerechtenRoute
@@ -149,6 +158,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/aanmelden'
+    | '/beheer'
     | '/boodschappen'
     | '/feedback'
     | '/gerechten'
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/aanmelden'
+    | '/beheer'
     | '/boodschappen'
     | '/feedback'
     | '/gerechten'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/aanmelden'
+    | '/beheer'
     | '/boodschappen'
     | '/feedback'
     | '/gerechten'
@@ -198,6 +210,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AanmeldenRoute: typeof AanmeldenRoute
+  BeheerRoute: typeof BeheerRoute
   BoodschappenRoute: typeof BoodschappenRoute
   FeedbackRoute: typeof FeedbackRoute
   GerechtenRoute: typeof GerechtenRoute
@@ -224,6 +237,13 @@ declare module '@tanstack/react-router' {
       path: '/aanmelden'
       fullPath: '/aanmelden'
       preLoaderRoute: typeof AanmeldenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/beheer': {
+      id: '/beheer'
+      path: '/beheer'
+      fullPath: '/beheer'
+      preLoaderRoute: typeof BeheerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/boodschappen': {
@@ -340,6 +360,7 @@ const ReceptenIdRouteWithChildren = ReceptenIdRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AanmeldenRoute: AanmeldenRoute,
+  BeheerRoute: BeheerRoute,
   BoodschappenRoute: BoodschappenRoute,
   FeedbackRoute: FeedbackRoute,
   GerechtenRoute: GerechtenRoute,
