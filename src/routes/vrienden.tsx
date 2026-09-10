@@ -255,6 +255,7 @@ function VriendenPage() {
             className="h-16 w-full text-lg"
           >
             <UserPlus className="size-5" /> Uitnodigingslink maken
+          </Button>
         </section>
         )}
 
@@ -270,6 +271,7 @@ function VriendenPage() {
                 key={s.id}
                 share={s}
                 naam={s.member_id ? (namen[s.member_id] ?? "Vriend") : null}
+                startOpen={s.id === nieuwId}
                 onWijzig={(patch) => wijzig.mutate({ id: s.id, patch })}
                 onVerwijder={() => verwijder.mutate(s.id)}
               />
