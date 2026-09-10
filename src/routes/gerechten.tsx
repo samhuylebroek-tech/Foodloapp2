@@ -23,20 +23,20 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/gerechten")({
   head: () => ({
     meta: [
-      { title: "Samen Koken – jullie recepten op één plek" },
+      { title: "Alle gerechten – Samen Koken" },
       {
         name: "description",
         content:
           "Verzamel samen recepten, zoek op ingrediënt of naam, plan je week en maak automatisch je boodschappenlijst.",
       },
-      { property: "og:title", content: "Samen Koken – jullie recepten op één plek" },
+      { property: "og:title", content: "Alle gerechten – Samen Koken" },
       {
         property: "og:description",
         content: "Recepten verzamelen, plannen en koken. Groot, duidelijk en voor iedereen.",
       },
     ],
   }),
-  component: HomePage,
+  component: GerechtenPage,
 });
 
 const TIJDEN = [
@@ -45,7 +45,7 @@ const TIJDEN = [
   { value: 60, label: "Tot 1 uur" },
 ] as const;
 
-function HomePage() {
+function GerechtenPage() {
   const { user } = useAuth();
   const t = useT();
   const [zoek, setZoek] = useState("");
