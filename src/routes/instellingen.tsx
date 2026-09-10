@@ -16,12 +16,12 @@ export const Route = createFileRoute("/instellingen")({
       { title: "Instellingen – Samen Koken" },
       {
         name: "description",
-        content: "Pas je e-mailadres en wachtwoord aan, kies een kleurenthema en je taal.",
+        content: "Pas je wachtwoord aan, kies een kleurenthema en je taal.",
       },
       { property: "og:title", content: "Instellingen – Samen Koken" },
       {
         property: "og:description",
-        content: "E-mail, wachtwoord, kleuren en taal: alles op één plek.",
+        content: "Wachtwoord, kleuren en taal: alles op één plek.",
       },
     ],
   }),
