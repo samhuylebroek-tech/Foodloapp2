@@ -246,11 +246,12 @@ export function RecipeForm({
   }
 
   const manieren: { id: Manier; label: string; icon: typeof Link2 }[] = [
-    { id: "link", label: "Link", icon: Link2 },
-    { id: "tekst", label: "Tekst", icon: ClipboardType },
-    { id: "foto", label: "Foto", icon: Camera },
+    { id: "link", label: "AI link", icon: Link2 },
+    { id: "tekst", label: "AI tekst", icon: ClipboardType },
+    { id: "foto", label: "AI foto", icon: Camera },
     { id: "zelf", label: "Zelf typen", icon: Pencil },
   ];
+
 
   return (
     <div className="space-y-6">
@@ -380,6 +381,41 @@ export function RecipeForm({
         </div>
 
         <div>
+          <Label htmlFor="servings-top" className="text-base">
+            Voor hoeveel personen zijn deze ingrediënten?
+          </Label>
+          <div className="mt-2 flex items-center gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setServings(String(Math.max(1, (Number(servings) || 1) - 1)))}
+              aria-label="Minder personen"
+              className="size-14"
+            >
+              –
+            </Button>
+            <Input
+              id="servings-top"
+              value={servings}
+              onChange={(e) => setServings(e.target.value)}
+              inputMode="numeric"
+              className="h-14 w-24 text-center text-base"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setServings(String((Number(servings) || 0) + 1))}
+              aria-label="Meer personen"
+              className="size-14"
+            >
+              +
+            </Button>
+            <span className="text-base text-muted-foreground">personen</span>
+          </div>
+        </div>
+
+
+        <div>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <Label htmlFor="ingredienten" className="text-base">
               Ingrediënten — één per regel
@@ -483,18 +519,7 @@ export function RecipeForm({
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="servings" className="text-base">
-                  Personen
-                </Label>
-                <Input
-                  id="servings"
-                  value={servings}
-                  onChange={(e) => setServings(e.target.value)}
-                  inputMode="numeric"
-                  className="mt-2 h-14 text-base"
-                />
-              </div>
+
               <div>
                 <Label htmlFor="prep" className="text-base">
                   Voorbereiden (min)

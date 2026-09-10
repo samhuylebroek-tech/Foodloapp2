@@ -7,10 +7,12 @@ import {
   PlusCircle,
   Users,
   MessageSquareHeart,
+  Settings,
   Menu,
   X,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -19,8 +21,10 @@ const NAV = [
   { to: "/planner", label: "Weekmenu", icon: CalendarDays },
   { to: "/boodschappen", label: "Boodschappen", icon: ShoppingCart },
   { to: "/vrienden", label: "Vrienden", icon: Users },
+  { to: "/instellingen", label: "Instellingen", icon: Settings },
   { to: "/feedback", label: "Feedback", icon: MessageSquareHeart },
 ] as const;
+
 
 export function AppShell({
   title,
@@ -34,6 +38,8 @@ export function AppShell({
   sidebar?: ReactNode;
 }) {
   const { session, loading } = useAuth();
+  const t = useT();
+
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [menuOpen, setMenuOpen] = useState(false);
@@ -49,7 +55,7 @@ export function AppShell({
   if (loading || !session) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-lg text-muted-foreground">Even geduld…</p>
+        <p className="text-lg text-muted-foreground">{t("Even geduld…")}</p>
       </div>
     );
   }
@@ -76,7 +82,7 @@ export function AppShell({
                 )}
               >
                 <Icon className="size-6 shrink-0" aria-hidden />
-                {item.label}
+                {t(item.label)}
               </Link>
             </li>
           );

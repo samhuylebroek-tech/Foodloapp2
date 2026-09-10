@@ -2,13 +2,16 @@ import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowLeft,
   ChefHat,
   Clock,
   Heart,
+  Loader2,
   Minus,
   Pencil,
   Plus,
   ShoppingCart,
+  Sparkles,
   Trash2,
   X,
   CalendarPlus,
@@ -19,7 +22,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { Button } from "@/components/ui/button";
+import { importRecipeFromText } from "@/lib/ai.functions";
+import { useT } from "@/lib/voorkeuren";
 import { MEAL_TYPES, type Ingredient, type Recipe } from "@/lib/types";
+
 
 export const Route = createFileRoute("/recepten/$id")({
   head: () => ({
@@ -42,10 +48,13 @@ function ReceptPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const t = useT();
   const [personen, setPersonen] = useState<number | null>(null);
   const [kookstand, setKookstand] = useState(false);
   const [stap, setStap] = useState(0);
   const [planOpen, setPlanOpen] = useState(false);
+  const [aanvullen, setAanvullen] = useState(false);
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["recipe", id],
@@ -134,6 +143,45 @@ function ReceptPage() {
     }
   }
 
+  async function vulAanMetAI() {
+    setAanvullen(true);
+    try {
+      const ai = await importRecipeFromText({
+        data: { text: `Maak een volledig recept voor: ${recipe.title}` },
+      });
+      const { error } = await supabase
+        .from("recipes")
+        .update({
+          description: recipe.description || ai.description,
+          servings: recipe.servings || ai.servings,
+          prep_minutes: recipe.prep_minutes || ai.prep_minutes,
+          cook_minutes: recipe.cook_minutes || ai.cook_minutes,
+          instructions: recipe.instructions.length ? recipe.instructions : ai.instructions,
+        })
+        .eq("id", recipe.id);
+      if (error) throw error;
+
+      if (!ingredients.length && ai.ingredients.length) {
+        await supabase.from("recipe_ingredients").insert(
+          ai.ingredients.map((i, index) => ({
+            recipe_id: recipe.id,
+            name: i.name,
+            quantity: i.quantity,
+            unit: i.unit ?? "",
+            position: index,
+          })),
+        );
+      }
+      await qc.invalidateQueries({ queryKey: ["recipe", id] });
+      toast.success(t("Voorstel klaar. Lees het na en pas aan wat je anders wil."));
+    } catch {
+      toast.error(t("Aanvullen lukte niet"));
+    } finally {
+      setAanvullen(false);
+    }
+  }
+
+
   if (kookstand) {
     const stappen = recipe.instructions;
     return (
@@ -173,27 +221,66 @@ function ReceptPage() {
 
   return (
     <AppShell
-      title={recipe.title}
+      title={t(recipe.title)}
       action={
-        <Button variant="ghost" onClick={toggleFavorite} className="h-12" aria-label="Favoriet">
+        <Button variant="ghost" onClick={toggleFavorite} className="h-12" aria-label={t("Favoriet")}>
           <Heart className={isFavorite ? "size-6 fill-primary text-primary" : "size-6"} />
         </Button>
       }
     >
       <div className="space-y-6">
+        <div className="flex flex-wrap gap-2">
+          <Link
+            to="/"
+            className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-border bg-card px-4 text-base font-semibold"
+          >
+            <ArrowLeft className="size-5" aria-hidden /> {t("Alle gerechten")}
+          </Link>
+          {isOwner && (
+            <Link
+              to="/recepten/$id/bewerken"
+              params={{ id: recipe.id }}
+              className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-border bg-card px-4 text-base font-semibold"
+            >
+              <Pencil className="size-5" aria-hidden /> {t("Aanpassen")}
+            </Link>
+          )}
+        </div>
+
         <RecipePhoto path={recipe.image_url} alt={recipe.title} className="h-56 w-full rounded-3xl" />
 
-        {recipe.description && <p className="text-lg leading-relaxed">{recipe.description}</p>}
+        {recipe.description && <p className="text-lg leading-relaxed">{t(recipe.description)}</p>}
+
+        {isOwner && (ingredients.length === 0 || recipe.instructions.length === 0) && (
+          <div className="rounded-2xl border border-primary/40 bg-secondary p-4">
+            <p className="text-base">
+              {t("Dit gerecht heeft nog geen ingrediënten of stappen. Laat het ons voorstellen.")}
+            </p>
+            <Button
+              onClick={vulAanMetAI}
+              disabled={aanvullen}
+              className="mt-3 h-14 w-full text-base"
+            >
+              {aanvullen ? (
+                <Loader2 className="size-5 animate-spin" />
+              ) : (
+                <Sparkles className="size-5" />
+              )}
+              {t("Vul dit gerecht aan")}
+            </Button>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-3 text-base text-muted-foreground">
           <span className="inline-flex items-center gap-2">
             <Clock className="size-5" aria-hidden /> {recipe.prep_minutes + recipe.cook_minutes} min
           </span>
           <span className="inline-flex items-center gap-2">
-            <ChefHat className="size-5" aria-hidden /> {recipe.difficulty}
+            <ChefHat className="size-5" aria-hidden /> {t(recipe.difficulty)}
           </span>
-          <span>{recipe.category}</span>
+          <span>{t(recipe.category)}</span>
         </div>
+
 
         <section className="rounded-3xl border border-border bg-card p-4">
           <div className="flex items-center justify-between">
@@ -224,7 +311,7 @@ function ReceptPage() {
           <ul className="mt-4 space-y-2 text-lg">
             {ingredients.map((i) => (
               <li key={i.id} className="flex justify-between gap-3 border-b border-border py-2">
-                <span>{i.name}</span>
+                <span>{t(i.name)}</span>
                 <span className="shrink-0 font-semibold">
                   {i.quantity === null
                     ? ""
@@ -233,22 +320,23 @@ function ReceptPage() {
               </li>
             ))}
             {ingredients.length === 0 && (
-              <li className="py-2 text-muted-foreground">Nog geen ingrediënten.</li>
+              <li className="py-2 text-muted-foreground">{t("Nog geen ingrediënten.")}</li>
             )}
           </ul>
 
           <Button onClick={naarBoodschappen} className="mt-4 h-16 w-full text-lg">
-            <ShoppingCart className="size-5" /> Naar boodschappenlijst
+            <ShoppingCart className="size-5" /> {t("Naar boodschappenlijst")}
           </Button>
         </section>
 
         <section>
-          <h2 className="text-xl">Bereiding</h2>
+          <h2 className="text-xl">{t("Bereiding")}</h2>
+
           <ol className="mt-3 space-y-3">
             {recipe.instructions.map((s, i) => (
               <li key={i} className="flex gap-3 rounded-2xl border border-border bg-card p-4">
                 <span className="font-display text-xl text-primary">{i + 1}</span>
-                <p className="text-lg leading-relaxed">{s}</p>
+                <p className="text-lg leading-relaxed">{t(s)}</p>
               </li>
             ))}
           </ol>
@@ -260,7 +348,7 @@ function ReceptPage() {
               }}
               className="mt-4 h-16 w-full text-lg"
             >
-              Start kookstand
+              {t("Start kookstand")}
             </Button>
           )}
         </section>
@@ -271,7 +359,7 @@ function ReceptPage() {
             onClick={() => setPlanOpen(!planOpen)}
             className="h-16 w-full text-lg"
           >
-            <CalendarPlus className="size-5" /> Inplannen
+            <CalendarPlus className="size-5" /> {t("Inplannen")}
           </Button>
 
           {planOpen && <PlanKiezer onKies={planOp} />}
@@ -283,7 +371,7 @@ function ReceptPage() {
               rel="noreferrer"
               className="block py-2 text-base text-primary underline underline-offset-4"
             >
-              Bekijk de originele website
+              {t("Bekijk de originele website")}
             </a>
           )}
 
@@ -294,18 +382,19 @@ function ReceptPage() {
                 params={{ id: recipe.id }}
                 className="inline-flex h-16 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card text-lg font-semibold"
               >
-                <Pencil className="size-5" /> Aanpassen
+                <Pencil className="size-5" /> {t("Aanpassen")}
               </Link>
               <Button
                 variant="ghost"
                 onClick={verwijder}
                 className="h-16 flex-1 text-lg text-destructive"
               >
-                <Trash2 className="size-5" /> Verwijderen
+                <Trash2 className="size-5" /> {t("Verwijderen")}
               </Button>
             </div>
           )}
         </section>
+
       </div>
     </AppShell>
   );
