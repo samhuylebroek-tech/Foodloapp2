@@ -141,6 +141,74 @@ function StartPage() {
 
   const uur = new Date().getHours();
 
+  // Nieuwe gerechten van het internet die nog niet in je kookboek staan.
+  const bekend = useMemo(() => recipes.map((r) => r.title), [recipes]);
+  const bekendSleutel = bekend.length;
+  const [ronde, setRonde] = useState(0);
+  const {
+    data: internet = [],
+    isLoading: internetLaadt,
+    isFetching: internetVerst,
+  } = useQuery({
+    queryKey: ["internet-suggesties", bekendSleutel, sfeer?.titel ?? "", ronde],
+    enabled: !!user && weerKlaar,
+    staleTime: 1000 * 60 * 60,
+    queryFn: async () => {
+      const lijst = await ontdekSuggesties({
+        data: { bekend, sfeer: sfeer ? `${sfeer.titel} – ${sfeer.uitleg}` : "" },
+      });
+      const bestaand = new Set(bekend.map((tt) => tt.toLowerCase().trim()));
+      return lijst.filter((s) => !bestaand.has(s.title.toLowerCase().trim()));
+    },
+  });
+
+  const navigate = useNavigate();
+  const [bezig, setBezig] = useState<string | null>(null);
+
+  async function bewaarSuggestie(s: InternetSuggestie) {
+    if (!user) return;
+    setBezig(s.title);
+    try {
+      const ai = await importRecipeFromText({
+        data: { text: `Geef een volledig recept voor: ${s.title}. ${s.keuken ? `Keuken: ${s.keuken}.` : ""} ${s.waarom}` },
+      });
+      const { data, error } = await supabase
+        .from("recipes")
+        .insert({
+          user_id: user.id,
+          title: ai.title || s.title,
+          description: ai.description || s.waarom,
+          servings: ai.servings || 4,
+          prep_minutes: ai.prep_minutes || 0,
+          cook_minutes: ai.cook_minutes || 0,
+          category: ai.category || s.category,
+          difficulty: ai.difficulty || "makkelijk",
+          tags: ai.tags ?? [],
+          instructions: ai.instructions ?? [],
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      if (ai.ingredients?.length) {
+        await supabase.from("recipe_ingredients").insert(
+          ai.ingredients.map((i, index) => ({
+            recipe_id: data.id,
+            name: i.name,
+            quantity: i.quantity,
+            unit: i.unit ?? "",
+            position: index,
+          })),
+        );
+      }
+      toast.success(t("Toegevoegd aan je gerechten"));
+      navigate({ to: "/recepten/$id", params: { id: data.id } });
+    } catch {
+      toast.error(t("Toevoegen lukte niet, probeer opnieuw"));
+    } finally {
+      setBezig(null);
+    }
+  }
+
   return (
     <AppShell title={t("Samen Koken")}>
       <div className="space-y-8">
