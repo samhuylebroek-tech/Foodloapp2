@@ -336,7 +336,7 @@ function ReceptPage() {
             {recipe.instructions.map((s, i) => (
               <li key={i} className="flex gap-3 rounded-2xl border border-border bg-card p-4">
                 <span className="font-display text-xl text-primary">{i + 1}</span>
-                <p className="text-lg leading-relaxed">{s}</p>
+                <p className="text-lg leading-relaxed">{t(s)}</p>
               </li>
             ))}
           </ol>
@@ -348,7 +348,7 @@ function ReceptPage() {
               }}
               className="mt-4 h-16 w-full text-lg"
             >
-              Start kookstand
+              {t("Start kookstand")}
             </Button>
           )}
         </section>
@@ -359,7 +359,7 @@ function ReceptPage() {
             onClick={() => setPlanOpen(!planOpen)}
             className="h-16 w-full text-lg"
           >
-            <CalendarPlus className="size-5" /> Inplannen
+            <CalendarPlus className="size-5" /> {t("Inplannen")}
           </Button>
 
           {planOpen && <PlanKiezer onKies={planOp} />}
@@ -371,7 +371,7 @@ function ReceptPage() {
               rel="noreferrer"
               className="block py-2 text-base text-primary underline underline-offset-4"
             >
-              Bekijk de originele website
+              {t("Bekijk de originele website")}
             </a>
           )}
 
@@ -382,18 +382,19 @@ function ReceptPage() {
                 params={{ id: recipe.id }}
                 className="inline-flex h-16 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card text-lg font-semibold"
               >
-                <Pencil className="size-5" /> Aanpassen
+                <Pencil className="size-5" /> {t("Aanpassen")}
               </Link>
               <Button
                 variant="ghost"
                 onClick={verwijder}
                 className="h-16 flex-1 text-lg text-destructive"
               >
-                <Trash2 className="size-5" /> Verwijderen
+                <Trash2 className="size-5" /> {t("Verwijderen")}
               </Button>
             </div>
           )}
         </section>
+
       </div>
     </AppShell>
   );
