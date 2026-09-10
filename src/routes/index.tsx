@@ -475,9 +475,9 @@ function InternetKaart({
 
   return (
     <li className="w-60 shrink-0 snap-start">
-      <div className="flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-accent/15 to-primary/10">
+      <div className="flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <div>
-          <p className="px-4 pt-4 font-display text-xl leading-tight">{t(s.title)}</p>
+          <p className="px-4 pt-4 text-xl font-bold leading-tight tracking-tight">{t(s.title)}</p>
           {foto ? (
             <img
               src={foto}
@@ -486,10 +486,10 @@ function InternetKaart({
               loading="lazy"
             />
           ) : (
-            <div className="mt-3 h-32 w-full animate-pulse bg-secondary" aria-hidden />
+            <div className="mt-3 h-32 w-full animate-pulse bg-muted" aria-hidden />
           )}
           <div className="px-4">
-            <p className="mt-3 text-sm text-muted-foreground">
+            <p className="mt-3 text-sm font-medium text-muted-foreground">
               {s.keuken ? `${t(s.keuken)} · ` : ""}
               {s.minuten} min
             </p>
@@ -501,7 +501,7 @@ function InternetKaart({
             type="button"
             onClick={onBewaar}
             disabled={bezig !== null}
-            className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground disabled:opacity-60"
+            className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground shadow-md shadow-primary/15 transition-transform active:scale-95 disabled:opacity-60"
           >
             <Plus className="size-5" aria-hidden />
             {bezig === s.title ? t("Bezig…") : t("Bij mijn gerechten")}
