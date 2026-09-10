@@ -3,24 +3,49 @@ import { z } from "zod";
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-async function askAI(messages: unknown[]) {
+const MODEL = "google/gemini-3.7-flash";
+
+async function logAi(kind: string, ok: boolean, ms: number, error?: string) {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("ai_events").insert({
+      kind,
+      model: MODEL,
+      ok,
+      duration_ms: Math.round(ms),
+      error: error ? error.slice(0, 500) : null,
+    });
+  } catch {
+    // meting mag nooit de app breken
+  }
+}
+
+async function askAI(messages: unknown[], kind = "chat") {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new Error("AI is niet beschikbaar.");
-  const res = await fetch(GATEWAY, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ model: "google/gemini-3.7-flash", messages }),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`AI-fout: ${res.status} ${text.slice(0, 200)}`);
+  const start = Date.now();
+  try {
+    const res = await fetch(GATEWAY, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ model: MODEL, messages }),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`AI-fout: ${res.status} ${text.slice(0, 200)}`);
+    }
+    const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    await logAi(kind, true, Date.now() - start);
+    return json.choices?.[0]?.message?.content ?? "";
+  } catch (e) {
+    await logAi(kind, false, Date.now() - start, e instanceof Error ? e.message : String(e));
+    throw e;
   }
-  const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-  return json.choices?.[0]?.message?.content ?? "";
 }
+
 
 function parseJson<T>(raw: string, fallback: T): T {
   const cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
