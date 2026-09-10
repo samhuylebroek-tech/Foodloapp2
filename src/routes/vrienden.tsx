@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCode from "qrcode";
-import { ChefHat, Copy, Mail, Plus, Share2, Smartphone, Trash2, UserPlus, X } from "lucide-react";
+import { ChefHat, Copy, Plus, Share2, Smartphone, Trash2, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
@@ -74,9 +74,9 @@ function uitnodigingsLink(token: string) {
 function VriendenPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const [email, setEmail] = useState("");
   const [rechten, setRechten] = useState<Rechten>(STANDAARD);
   const [nieuwOpen, setNieuwOpen] = useState(false);
+  const [nieuwId, setNieuwId] = useState<string | null>(null);
 
   const { data: shares = [] } = useQuery({
     queryKey: ["shares", user?.id],
@@ -128,24 +128,27 @@ function VriendenPage() {
     mutationFn: async () => {
       const { data, error } = await supabase
         .from("shares")
-        .insert({ owner_id: user!.id, invited_email: email.trim() || null, ...rechten })
+        .insert({ owner_id: user!.id, ...rechten })
         .select("*")
         .single();
       if (error) throw error;
       return data as Share;
     },
-    onSuccess: (s) => {
-      setEmail("");
-      setNieuwOpen(true);
+    onSuccess: async (s) => {
+      setNieuwOpen(false);
+      setNieuwId(s.id);
       setRechten(STANDAARD);
       qc.invalidateQueries({ queryKey: ["shares"] });
-      toast.success("Uitnodiging klaar — deel de link of QR-code hieronder.");
-      if (s.invited_email) {
-        window.location.href = `mailto:${s.invited_email}?subject=${encodeURIComponent(
-          "Uitnodiging voor Samen Koken",
-        )}&body=${encodeURIComponent(
-          `Hallo,\n\nIk deel mijn recepten met je in de app Samen Koken.\nOpen deze link om mee te doen:\n${uitnodigingsLink(s.token)}\n`,
-        )}`;
+      const link = uitnodigingsLink(s.token);
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: "Samen Koken", text: "Doe mee met mijn recepten", url: link });
+          return;
+        }
+        await navigator.clipboard.writeText(link);
+        toast.success("Uitnodigingslink gekopieerd — plak hem in een bericht.");
+      } catch {
+        toast.success("Uitnodiging klaar — deel de link hieronder.");
       }
     },
     onError: () => toast.error("De uitnodiging maken lukte niet"),
@@ -222,19 +225,11 @@ function VriendenPage() {
         <section className="space-y-4 rounded-3xl border border-border bg-card p-5">
           <h2 className="font-display text-xl">Nieuwe uitnodiging</h2>
 
-          <div>
-            <Label htmlFor="uitnodig-email" className="text-base">
-              E-mailadres (mag je ook leeg laten)
-            </Label>
-            <Input
-              id="uitnodig-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="naam@voorbeeld.be"
-              className="mt-2 h-14 text-base"
-            />
-          </div>
+          <p className="text-base text-muted-foreground">
+            Kies eerst wat je vriend mag zien of bewerken. Daarna krijg je een link die je kan
+            doorsturen via WhatsApp, sms of hoe je wil. Wie erop klikt, wordt jouw vriend.
+          </p>
+
 
           <ul className="space-y-1">
             {RECHTEN.map((r) => (
@@ -259,14 +254,8 @@ function VriendenPage() {
             disabled={maakUitnodiging.isPending}
             className="h-16 w-full text-lg"
           >
-            <UserPlus className="size-5" /> Uitnodiging maken
+            <UserPlus className="size-5" /> Uitnodigingslink maken
           </Button>
-          {email.trim() && (
-            <p className="flex items-center gap-2 text-base text-muted-foreground">
-              <Mail className="size-4" aria-hidden /> Je e-mailprogramma opent met de uitnodiging
-              erin.
-            </p>
-          )}
         </section>
         )}
 
@@ -282,6 +271,7 @@ function VriendenPage() {
                 key={s.id}
                 share={s}
                 naam={s.member_id ? (namen[s.member_id] ?? "Vriend") : null}
+                startOpen={s.id === nieuwId}
                 onWijzig={(patch) => wijzig.mutate({ id: s.id, patch })}
                 onVerwijder={() => verwijder.mutate(s.id)}
               />
@@ -328,14 +318,20 @@ function UitnodigingKaart({
   naam,
   onWijzig,
   onVerwijder,
+  startOpen = false,
 }: {
   share: Share;
   naam: string | null;
   onWijzig: (patch: Partial<Rechten>) => void;
   onVerwijder: () => void;
+  startOpen?: boolean;
 }) {
   const [qr, setQr] = useState("");
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen);
+
+  useEffect(() => {
+    if (startOpen) setOpen(true);
+  }, [startOpen]);
   const link = typeof window === "undefined" ? "" : uitnodigingsLink(share.token);
 
   useEffect(() => {

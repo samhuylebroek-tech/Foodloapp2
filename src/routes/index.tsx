@@ -10,6 +10,7 @@ import {
   Timer,
   CalendarDays,
   ChevronRight,
+  Compass,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,6 +18,7 @@ import { AppShell } from "@/components/AppShell";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import type { Recipe } from "@/lib/types";
 import { haalWeer, sfeerVoorWeer, type Weer } from "@/lib/weer";
+import { gezienIds } from "@/lib/gezien";
 import { useT } from "@/lib/voorkeuren";
 
 export const Route = createFileRoute("/")({
@@ -61,6 +63,11 @@ function StartPage() {
   const t = useT();
   const [weer, setWeer] = useState<Weer | null>(null);
   const [weerKlaar, setWeerKlaar] = useState(false);
+  const [gezien, setGezien] = useState<string[]>([]);
+
+  useEffect(() => {
+    setGezien(gezienIds());
+  }, []);
 
   useEffect(() => {
     let actief = true;
@@ -114,6 +121,14 @@ function StartPage() {
       .slice(0, 6)
       .map((x) => x.r);
   }, [recipes, sfeer]);
+
+  // Gerechten die je nog niet bekeek: eerst die van vrienden, dan je eigen oudere recepten.
+  const ontdek = useMemo(() => {
+    const nietGezien = recipes.filter((r) => !gezien.includes(r.id) && !favorites.includes(r.id));
+    const vanVrienden = nietGezien.filter((r) => r.user_id !== user?.id);
+    const eigen = nietGezien.filter((r) => r.user_id === user?.id);
+    return [...vanVrienden, ...eigen].slice(0, 8);
+  }, [recipes, gezien, favorites, user?.id]);
 
   const nieuwste = recipes.slice(0, 8);
   const vandaag = recipes.length ? recipes[dagIndex(recipes.length)] : null;
@@ -188,6 +203,15 @@ function StartPage() {
           </div>
         ) : (
           <>
+            {ontdek.length > 0 && (
+              <Rij
+                titel={t("Nog niet geproefd")}
+                recepten={ontdek}
+                t={t}
+                icoon={<Compass className="size-5" aria-hidden />}
+              />
+            )}
+
             {/* Gerecht van de dag */}
             {vandaag && (
               <section>
