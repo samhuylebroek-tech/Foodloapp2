@@ -1,59 +1,78 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Heart, Search, Clock, RotateCcw, Plus } from "lucide-react";
+import {
+  Clock,
+  Heart,
+  Plus,
+  Search,
+  Sparkles,
+  Timer,
+  CalendarDays,
+  ChevronRight,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { RecipePhoto } from "@/components/RecipePhoto";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { CATEGORIES, DIFFICULTIES, type Recipe } from "@/lib/types";
-import { DIETEN, bepaalDieet } from "@/lib/dieet";
+import type { Recipe } from "@/lib/types";
+import { haalWeer, sfeerVoorWeer, type Weer } from "@/lib/weer";
 import { useT } from "@/lib/voorkeuren";
-import { cn } from "@/lib/utils";
-
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Samen Koken – jullie recepten op één plek" },
+      { title: "Samen Koken – wat eten we vandaag?" },
       {
         name: "description",
         content:
-          "Verzamel samen recepten, zoek op ingrediënt of naam, plan je week en maak automatisch je boodschappenlijst.",
+          "Elke dag verse kookinspiratie: suggesties op maat van het weer, je nieuwste recepten en het gerecht van de dag.",
       },
-      { property: "og:title", content: "Samen Koken – jullie recepten op één plek" },
+      { property: "og:title", content: "Samen Koken – wat eten we vandaag?" },
       {
         property: "og:description",
-        content: "Recepten verzamelen, plannen en koken. Groot, duidelijk en voor iedereen.",
+        content: "Kookinspiratie op maat van het weer, met je eigen recepten in de kijker.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: HomePage,
+  component: StartPage,
 });
 
-const TIJDEN = [
-  { value: 20, label: "Tot 20 min" },
-  { value: 30, label: "Tot 30 min" },
-  { value: 60, label: "Tot 1 uur" },
-] as const;
+function groet(uur: number) {
+  if (uur < 6) return "Nog wakker?";
+  if (uur < 11) return "Goeiemorgen";
+  if (uur < 14) return "Smakelijk middagje";
+  if (uur < 18) return "Goeiemiddag";
+  if (uur < 22) return "Goeieavond";
+  return "Late trek?";
+}
 
-function HomePage() {
+function dagIndex(lengte: number) {
+  if (lengte === 0) return 0;
+  const d = new Date();
+  const getal = d.getFullYear() * 400 + (d.getMonth() + 1) * 31 + d.getDate();
+  return getal % lengte;
+}
+
+function StartPage() {
   const { user } = useAuth();
   const t = useT();
-  const [zoek, setZoek] = useState("");
-  const [categorie, setCategorie] = useState<string | null>(null);
-  const [moeilijkheid, setMoeilijkheid] = useState<string | null>(null);
-  const [dieet, setDieet] = useState<string | null>(null);
-  const [maxTijd, setMaxTijd] = useState(0);
-  const [alleenFavorieten, setAlleenFavorieten] = useState(false);
+  const [weer, setWeer] = useState<Weer | null>(null);
+  const [weerKlaar, setWeerKlaar] = useState(false);
+
+  useEffect(() => {
+    let actief = true;
+    haalWeer().then((w) => {
+      if (!actief) return;
+      setWeer(w);
+      setWeerKlaar(true);
+    });
+    return () => {
+      actief = false;
+    };
+  }, []);
 
   const { data: recipes = [], isLoading } = useQuery({
     queryKey: ["recipes"],
@@ -77,265 +96,220 @@ function HomePage() {
     },
   });
 
-  const { data: alleIngredienten = [] } = useQuery({
-    queryKey: ["alle-ingredienten"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("recipe_ingredients").select("recipe_id, name");
-      if (error) throw error;
-      return data as { recipe_id: string; name: string }[];
-    },
-  });
+  const sfeer = weer ? sfeerVoorWeer(weer) : null;
 
-  const dieetPerRecept = useMemo(() => {
-    const namen = new Map<string, string[]>();
-    for (const rij of alleIngredienten) {
-      const lijst = namen.get(rij.recipe_id) ?? [];
-      lijst.push(rij.name);
-      namen.set(rij.recipe_id, lijst);
-    }
-    const map = new Map<string, string>();
-    for (const r of recipes) {
-      map.set(r.id, bepaalDieet(r.title, r.tags, namen.get(r.id) ?? []));
-    }
-    return map;
-  }, [recipes, alleIngredienten]);
+  const weerTips = useMemo(() => {
+    if (!sfeer) return [];
+    const scoor = (r: Recipe) => {
+      const tekst = `${r.title} ${r.tags.join(" ")} ${r.description}`.toLowerCase();
+      let score = 0;
+      if (sfeer.categorieen.includes(r.category)) score += 2;
+      for (const w of sfeer.woorden) if (tekst.includes(w)) score += 3;
+      return score;
+    };
+    return [...recipes]
+      .map((r) => ({ r, s: scoor(r) }))
+      .filter((x) => x.s > 0)
+      .sort((a, b) => b.s - a.s)
+      .slice(0, 6)
+      .map((x) => x.r);
+  }, [recipes, sfeer]);
 
-  const { data: ingredientMatches = [] } = useQuery({
-    queryKey: ["ingredient-search", zoek],
-    enabled: zoek.trim().length > 1,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("recipe_ingredients")
-        .select("recipe_id")
-        .ilike("name", `%${zoek.trim()}%`);
-      if (error) throw error;
-      return data.map((r) => r.recipe_id as string);
-    },
-  });
+  const nieuwste = recipes.slice(0, 8);
+  const vandaag = recipes.length ? recipes[dagIndex(recipes.length)] : null;
+  const snel = recipes.filter((r) => r.prep_minutes + r.cook_minutes <= 20).slice(0, 8);
+  const favorietenLijst = recipes.filter((r) => favorites.includes(r.id)).slice(0, 8);
 
-  const zichtbaar = useMemo(() => {
-    const q = zoek.trim().toLowerCase();
-    return recipes.filter((r) => {
-      if (categorie && r.category !== categorie) return false;
-      if (moeilijkheid && r.difficulty !== moeilijkheid) return false;
-      if (dieet && dieetPerRecept.get(r.id) !== dieet) return false;
-      if (maxTijd && r.prep_minutes + r.cook_minutes > maxTijd) return false;
-      if (alleenFavorieten && !favorites.includes(r.id)) return false;
-      if (!q) return true;
-      return (
-        r.title.toLowerCase().includes(q) ||
-        r.description.toLowerCase().includes(q) ||
-        r.tags.some((tag) => tag.includes(q)) ||
-        ingredientMatches.includes(r.id)
-      );
-    });
-  }, [
-    recipes,
-    zoek,
-    categorie,
-    moeilijkheid,
-    dieet,
-    dieetPerRecept,
-    maxTijd,
-    alleenFavorieten,
-    favorites,
-    ingredientMatches,
-  ]);
-
-  const actieveFilters =
-    (categorie ? 1 : 0) +
-    (moeilijkheid ? 1 : 0) +
-    (dieet ? 1 : 0) +
-    (maxTijd ? 1 : 0) +
-    (alleenFavorieten ? 1 : 0);
-
-  function wisFilters() {
-    setCategorie(null);
-    setMoeilijkheid(null);
-    setDieet(null);
-    setMaxTijd(0);
-    setAlleenFavorieten(false);
-  }
-
+  const uur = new Date().getHours();
 
   return (
-    <AppShell title={t("Gerechten")}>
-      <div className="space-y-4">
-        <Link
-          to="/recepten/nieuw"
-          className="flex min-h-16 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-6 text-lg font-semibold text-primary-foreground"
-        >
-          <Plus className="size-6" aria-hidden /> {t("Nieuw recept toevoegen")}
-        </Link>
+    <AppShell title={t("Samen Koken")}>
+      <div className="space-y-8">
+        {/* Groet + weer */}
+        <section className="overflow-hidden rounded-3xl border border-border bg-card">
+          <div className="bg-gradient-to-br from-primary/15 via-accent/10 to-transparent p-5">
+            <p className="font-display text-3xl leading-tight">
+              {t(groet(uur))}
+              {user?.email ? "" : ""}!
+            </p>
+            <p className="mt-1 text-lg text-muted-foreground">{t("Wat eten we vandaag?")}</p>
 
-        <div className="relative">
-          <Search
-            className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
-            aria-hidden
-          />
-          <Input
-            value={zoek}
-            onChange={(e) => setZoek(e.target.value)}
-            placeholder={t("Zoek op gerecht of ingrediënt")}
-            className="h-14 pl-12 text-base"
-            aria-label={t("Zoeken")}
-          />
-        </div>
-
-
-        <div className="space-y-3 rounded-2xl border border-border bg-card p-3">
-          <div className="flex flex-wrap items-end gap-3">
-            <FilterSelect
-              label={t("Soort")}
-              value={categorie ?? "alles"}
-              onChange={(v) => setCategorie(v === "alles" ? null : v)}
-              options={[
-                { value: "alles", label: t("Alles") },
-                ...CATEGORIES.map((c) => ({ value: c, label: t(c) })),
-              ]}
-            />
-
-            <FilterSelect
-              label={t("Duurtijd")}
-              value={String(maxTijd)}
-              onChange={(v) => setMaxTijd(Number(v))}
-              options={[
-                { value: "0", label: t("Alles") },
-                ...TIJDEN.map((tijd) => ({ value: String(tijd.value), label: t(tijd.label) })),
-              ]}
-            />
-
-            <FilterSelect
-              label={t("Moeilijkheid")}
-              value={moeilijkheid ?? "alles"}
-              onChange={(v) => setMoeilijkheid(v === "alles" ? null : v)}
-              options={[
-                { value: "alles", label: t("Alles") },
-                ...DIFFICULTIES.map((d) => ({ value: d, label: t(d) })),
-              ]}
-            />
-
-            <FilterSelect
-              label={t("Vlees, vis of veggie")}
-              value={dieet ?? "alles"}
-              onChange={(v) => setDieet(v === "alles" ? null : v)}
-              options={[
-                { value: "alles", label: t("Alles") },
-                ...DIETEN.map((d) => ({ value: d, label: t(d) })),
-              ]}
-            />
-
-
-
-            <button
-              type="button"
-              onClick={() => setAlleenFavorieten(!alleenFavorieten)}
-              className={cn(
-                "inline-flex min-h-[56px] items-center gap-2 rounded-xl border px-4 text-base font-semibold",
-                alleenFavorieten
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-foreground",
-              )}
-              aria-pressed={alleenFavorieten}
-            >
-              <Heart className={cn("size-5", alleenFavorieten && "fill-current")} aria-hidden />
-              {t("Favorieten")}
-            </button>
-
-            {actieveFilters > 0 && (
-              <button
-                type="button"
-                onClick={wisFilters}
-                className="inline-flex min-h-[56px] items-center gap-2 rounded-xl px-2 text-base font-semibold text-primary"
-              >
-                <RotateCcw className="size-5" aria-hidden /> {t("Filters wissen")}
-              </button>
+            {weerKlaar && weer && sfeer && (
+              <div className="mt-4 flex items-start gap-3 rounded-2xl bg-card/80 p-4">
+                <span className="text-4xl" aria-hidden>
+                  {sfeer.emoji}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-lg font-semibold">
+                    {t(sfeer.titel)} · {weer.temperatuur}°C
+                  </p>
+                  <p className="text-base text-muted-foreground">{t(sfeer.uitleg)}</p>
+                </div>
+              </div>
             )}
-          </div>
-        </div>
 
-        <p className="text-base text-muted-foreground">
-          {zichtbaar.length} {t(zichtbaar.length === 1 ? "gerecht" : "gerechten")}
-        </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                to="/recepten/nieuw"
+                className="inline-flex min-h-14 items-center gap-2 rounded-2xl bg-primary px-5 text-base font-semibold text-primary-foreground"
+              >
+                <Plus className="size-5" aria-hidden /> {t("Nieuw recept")}
+              </Link>
+              <Link
+                to="/gerechten"
+                className="inline-flex min-h-14 items-center gap-2 rounded-2xl border border-border bg-card px-5 text-base font-semibold"
+              >
+                <Search className="size-5" aria-hidden /> {t("Alle gerechten")}
+              </Link>
+              <Link
+                to="/planner"
+                className="inline-flex min-h-14 items-center gap-2 rounded-2xl border border-border bg-card px-5 text-base font-semibold"
+              >
+                <CalendarDays className="size-5" aria-hidden /> {t("Weekmenu")}
+              </Link>
+            </div>
+          </div>
+        </section>
 
         {isLoading ? (
-          <p className="py-10 text-center text-lg text-muted-foreground">{t("Recepten laden…")}</p>
-        ) : zichtbaar.length === 0 ? (
+          <p className="py-10 text-center text-lg text-muted-foreground">{t("Even laden…")}</p>
+        ) : recipes.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-border p-8 text-center">
-            <p className="text-lg">{t("Nog geen recepten gevonden.")}</p>
+            <p className="font-display text-2xl">{t("Nog niets in jullie kookboek")}</p>
+            <p className="mt-2 text-lg text-muted-foreground">
+              {t("Voeg een eerste gerecht toe met een link, een foto of gewoon zelf getypt.")}
+            </p>
             <Link
               to="/recepten/nieuw"
-              className="mt-4 inline-flex h-14 items-center rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground"
+              className="mt-5 inline-flex h-14 items-center rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground"
             >
               {t("Eerste recept toevoegen")}
             </Link>
           </div>
         ) : (
-          <ul className="space-y-3">
-            {zichtbaar.map((r) => (
-              <li key={r.id}>
+          <>
+            {/* Gerecht van de dag */}
+            {vandaag && (
+              <section>
+                <SectieTitel icoon={<Sparkles className="size-5" aria-hidden />}>
+                  {t("In de kijker vandaag")}
+                </SectieTitel>
                 <Link
                   to="/recepten/$id"
-                  params={{ id: r.id }}
-                  className="flex items-center gap-4 rounded-2xl border border-border bg-card p-3 active:bg-secondary"
+                  params={{ id: vandaag.id }}
+                  className="block overflow-hidden rounded-3xl border border-border bg-card active:opacity-90"
                 >
-                  <RecipePhoto path={r.image_url} alt={r.title} className="size-20 rounded-xl" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-display text-xl">{t(r.title)}</p>
+                  <RecipePhoto
+                    path={vandaag.image_url}
+                    alt={vandaag.title}
+                    className="h-48 w-full rounded-none sm:h-64"
+                  />
+                  <div className="p-4">
+                    <p className="font-display text-2xl leading-tight">{t(vandaag.title)}</p>
                     <p className="mt-1 flex items-center gap-2 text-base text-muted-foreground">
                       <Clock className="size-4" aria-hidden />
-                      {r.prep_minutes + r.cook_minutes} min · {t(r.category)} · {t(r.difficulty)}
+                      {vandaag.prep_minutes + vandaag.cook_minutes} min · {t(vandaag.category)} ·{" "}
+                      {t(vandaag.difficulty)}
                     </p>
+                    {vandaag.description && (
+                      <p className="mt-2 line-clamp-2 text-base">{t(vandaag.description)}</p>
+                    )}
                   </div>
-                  {favorites.includes(r.id) && (
-                    <Heart className="size-6 fill-primary text-primary" aria-label={t("Favoriet")} />
-                  )}
                 </Link>
-              </li>
-            ))}
-          </ul>
+              </section>
+            )}
+
+            {weerTips.length > 0 && sfeer && (
+              <Rij
+                titel={`${sfeer.emoji} ${t("Past bij het weer")}`}
+                recepten={weerTips}
+                t={t}
+              />
+            )}
+
+            <Rij
+              titel={t("Net toegevoegd")}
+              recepten={nieuwste}
+              t={t}
+              icoon={<Plus className="size-5" aria-hidden />}
+            />
+
+            {snel.length > 0 && (
+              <Rij
+                titel={t("Klaar in 20 minuten")}
+                recepten={snel}
+                t={t}
+                icoon={<Timer className="size-5" aria-hidden />}
+              />
+            )}
+
+            {favorietenLijst.length > 0 && (
+              <Rij
+                titel={t("Jullie favorieten")}
+                recepten={favorietenLijst}
+                t={t}
+                icoon={<Heart className="size-5" aria-hidden />}
+              />
+            )}
+
+            <Link
+              to="/gerechten"
+              className="flex min-h-16 items-center justify-between rounded-2xl border border-border bg-card px-5 text-lg font-semibold"
+            >
+              {t("Bekijk alle gerechten")}
+              <ChevronRight className="size-6" aria-hidden />
+            </Link>
+          </>
         )}
       </div>
     </AppShell>
   );
 }
 
-function FilterSelect({
-  label,
-  value,
-  onChange,
-  options,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-}) {
+function SectieTitel({ children, icoon }: { children: React.ReactNode; icoon?: React.ReactNode }) {
   return (
-    <div className="min-w-[10rem] flex-1">
-      <label className="mb-1 block text-base font-semibold" htmlFor={`filter-${label}`}>
-        {label}
-      </label>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger
-          id={`filter-${label}`}
-          className="h-14 w-full rounded-xl border-border bg-card text-base"
-          aria-label={label}
-        >
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent className="rounded-xl border-border bg-card text-base">
-          {options.map((opt) => (
-            <SelectItem
-              key={opt.value}
-              value={opt.value}
-              className="min-h-12 cursor-pointer text-base focus:bg-secondary"
+    <h2 className="mb-3 flex items-center gap-2 font-display text-2xl">
+      {icoon}
+      {children}
+    </h2>
+  );
+}
+
+function Rij({
+  titel,
+  recepten,
+  t,
+  icoon,
+}: {
+  titel: string;
+  recepten: Recipe[];
+  t: (s: string) => string;
+  icoon?: React.ReactNode;
+}) {
+  if (recepten.length === 0) return null;
+  return (
+    <section>
+      <SectieTitel icoon={icoon}>{titel}</SectieTitel>
+      <ul className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2">
+        {recepten.map((r) => (
+          <li key={r.id} className="w-44 shrink-0 snap-start sm:w-52">
+            <Link
+              to="/recepten/$id"
+              params={{ id: r.id }}
+              className="block h-full overflow-hidden rounded-2xl border border-border bg-card active:opacity-90"
             >
-              {opt.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+              <RecipePhoto path={r.image_url} alt={r.title} className="h-28 w-full rounded-none" />
+              <div className="p-3">
+                <p className="line-clamp-2 font-display text-lg leading-tight">{t(r.title)}</p>
+                <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
+                  <Clock className="size-4" aria-hidden />
+                  {r.prep_minutes + r.cook_minutes} min
+                </p>
+              </div>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
