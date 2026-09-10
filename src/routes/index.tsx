@@ -218,16 +218,16 @@ function StartPage() {
     <AppShell title={t("MaJeBa")}>
       <div className="space-y-8">
         {/* Groet + weer */}
-        <section className="overflow-hidden rounded-3xl border border-border bg-card">
-          <div className="bg-gradient-to-br from-primary/15 via-accent/10 to-transparent p-5">
-            <p className="font-display text-3xl leading-tight">
+        <section className="overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm">
+          <div className="bg-gradient-to-br from-primary/10 via-secondary to-transparent p-6">
+            <p className="text-3xl font-bold leading-tight tracking-tight">
               {t(groet(uur))}
               {user?.email ? "" : ""}!
             </p>
             <p className="mt-1 text-lg text-muted-foreground">{t("Wat eten we vandaag?")}</p>
 
             {weerKlaar && weer && sfeer && (
-              <div className="mt-4 flex items-start gap-3 rounded-2xl bg-card/80 p-4">
+              <div className="mt-5 flex items-start gap-3 rounded-2xl bg-card/80 p-4 backdrop-blur-sm">
                 <span className="text-4xl" aria-hidden>
                   {sfeer.emoji}
                 </span>
@@ -240,22 +240,22 @@ function StartPage() {
               </div>
             )}
 
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-5 flex flex-wrap gap-3">
               <Link
                 to="/recepten/nieuw"
-                className="inline-flex min-h-14 items-center gap-2 rounded-2xl bg-primary px-5 text-base font-semibold text-primary-foreground"
+                className="inline-flex min-h-14 items-center gap-2 rounded-2xl bg-primary px-5 text-base font-semibold text-primary-foreground shadow-md shadow-primary/15 transition-transform active:scale-95"
               >
                 <Plus className="size-5" aria-hidden /> {t("Nieuw recept")}
               </Link>
               <Link
                 to="/gerechten"
-                className="inline-flex min-h-14 items-center gap-2 rounded-2xl border border-border bg-card px-5 text-base font-semibold"
+                className="inline-flex min-h-14 items-center gap-2 rounded-2xl border border-border bg-card px-5 text-base font-semibold transition-colors hover:bg-muted"
               >
                 <Search className="size-5" aria-hidden /> {t("Alle gerechten")}
               </Link>
               <Link
                 to="/planner"
-                className="inline-flex min-h-14 items-center gap-2 rounded-2xl border border-border bg-card px-5 text-base font-semibold"
+                className="inline-flex min-h-14 items-center gap-2 rounded-2xl border border-border bg-card px-5 text-base font-semibold transition-colors hover:bg-muted"
               >
                 <CalendarDays className="size-5" aria-hidden /> {t("Weekmenu")}
               </Link>
