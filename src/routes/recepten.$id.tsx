@@ -221,27 +221,66 @@ function ReceptPage() {
 
   return (
     <AppShell
-      title={recipe.title}
+      title={t(recipe.title)}
       action={
-        <Button variant="ghost" onClick={toggleFavorite} className="h-12" aria-label="Favoriet">
+        <Button variant="ghost" onClick={toggleFavorite} className="h-12" aria-label={t("Favoriet")}>
           <Heart className={isFavorite ? "size-6 fill-primary text-primary" : "size-6"} />
         </Button>
       }
     >
       <div className="space-y-6">
+        <div className="flex flex-wrap gap-2">
+          <Link
+            to="/"
+            className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-border bg-card px-4 text-base font-semibold"
+          >
+            <ArrowLeft className="size-5" aria-hidden /> {t("Alle gerechten")}
+          </Link>
+          {isOwner && (
+            <Link
+              to="/recepten/$id/bewerken"
+              params={{ id: recipe.id }}
+              className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-border bg-card px-4 text-base font-semibold"
+            >
+              <Pencil className="size-5" aria-hidden /> {t("Aanpassen")}
+            </Link>
+          )}
+        </div>
+
         <RecipePhoto path={recipe.image_url} alt={recipe.title} className="h-56 w-full rounded-3xl" />
 
-        {recipe.description && <p className="text-lg leading-relaxed">{recipe.description}</p>}
+        {recipe.description && <p className="text-lg leading-relaxed">{t(recipe.description)}</p>}
+
+        {isOwner && (ingredients.length === 0 || recipe.instructions.length === 0) && (
+          <div className="rounded-2xl border border-primary/40 bg-secondary p-4">
+            <p className="text-base">
+              {t("Dit gerecht heeft nog geen ingrediënten of stappen. Laat het ons voorstellen.")}
+            </p>
+            <Button
+              onClick={vulAanMetAI}
+              disabled={aanvullen}
+              className="mt-3 h-14 w-full text-base"
+            >
+              {aanvullen ? (
+                <Loader2 className="size-5 animate-spin" />
+              ) : (
+                <Sparkles className="size-5" />
+              )}
+              {t("Vul dit gerecht aan")}
+            </Button>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-3 text-base text-muted-foreground">
           <span className="inline-flex items-center gap-2">
             <Clock className="size-5" aria-hidden /> {recipe.prep_minutes + recipe.cook_minutes} min
           </span>
           <span className="inline-flex items-center gap-2">
-            <ChefHat className="size-5" aria-hidden /> {recipe.difficulty}
+            <ChefHat className="size-5" aria-hidden /> {t(recipe.difficulty)}
           </span>
-          <span>{recipe.category}</span>
+          <span>{t(recipe.category)}</span>
         </div>
+
 
         <section className="rounded-3xl border border-border bg-card p-4">
           <div className="flex items-center justify-between">
