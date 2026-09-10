@@ -218,16 +218,16 @@ function StartPage() {
     <AppShell title={t("MaJeBa")}>
       <div className="space-y-8">
         {/* Groet + weer */}
-        <section className="overflow-hidden rounded-3xl border border-border bg-card">
-          <div className="bg-gradient-to-br from-primary/15 via-accent/10 to-transparent p-5">
-            <p className="font-display text-3xl leading-tight">
+        <section className="overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm">
+          <div className="bg-gradient-to-br from-primary/10 via-secondary to-transparent p-6">
+            <p className="text-3xl font-bold leading-tight tracking-tight">
               {t(groet(uur))}
               {user?.email ? "" : ""}!
             </p>
             <p className="mt-1 text-lg text-muted-foreground">{t("Wat eten we vandaag?")}</p>
 
             {weerKlaar && weer && sfeer && (
-              <div className="mt-4 flex items-start gap-3 rounded-2xl bg-card/80 p-4">
+              <div className="mt-5 flex items-start gap-3 rounded-2xl bg-card/80 p-4 backdrop-blur-sm">
                 <span className="text-4xl" aria-hidden>
                   {sfeer.emoji}
                 </span>
@@ -240,22 +240,22 @@ function StartPage() {
               </div>
             )}
 
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-5 flex flex-wrap gap-3">
               <Link
                 to="/recepten/nieuw"
-                className="inline-flex min-h-14 items-center gap-2 rounded-2xl bg-primary px-5 text-base font-semibold text-primary-foreground"
+                className="inline-flex min-h-14 items-center gap-2 rounded-2xl bg-primary px-5 text-base font-semibold text-primary-foreground shadow-md shadow-primary/15 transition-transform active:scale-95"
               >
                 <Plus className="size-5" aria-hidden /> {t("Nieuw recept")}
               </Link>
               <Link
                 to="/gerechten"
-                className="inline-flex min-h-14 items-center gap-2 rounded-2xl border border-border bg-card px-5 text-base font-semibold"
+                className="inline-flex min-h-14 items-center gap-2 rounded-2xl border border-border bg-card px-5 text-base font-semibold transition-colors hover:bg-muted"
               >
                 <Search className="size-5" aria-hidden /> {t("Alle gerechten")}
               </Link>
               <Link
                 to="/planner"
-                className="inline-flex min-h-14 items-center gap-2 rounded-2xl border border-border bg-card px-5 text-base font-semibold"
+                className="inline-flex min-h-14 items-center gap-2 rounded-2xl border border-border bg-card px-5 text-base font-semibold transition-colors hover:bg-muted"
               >
                 <CalendarDays className="size-5" aria-hidden /> {t("Weekmenu")}
               </Link>
@@ -305,14 +305,14 @@ function StartPage() {
         {isLoading ? (
           <p className="py-10 text-center text-lg text-muted-foreground">{t("Even laden…")}</p>
         ) : recipes.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-border p-8 text-center">
-            <p className="font-display text-2xl">{t("Nog niets in jullie kookboek")}</p>
+          <div className="rounded-[2rem] border border-dashed border-border p-8 text-center">
+            <p className="text-2xl font-bold tracking-tight">{t("Nog niets in jullie kookboek")}</p>
             <p className="mt-2 text-lg text-muted-foreground">
               {t("Voeg een eerste gerecht toe met een link, een foto of gewoon zelf getypt.")}
             </p>
             <Link
               to="/recepten/nieuw"
-              className="mt-5 inline-flex h-14 items-center rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground"
+              className="mt-5 inline-flex h-14 items-center rounded-2xl bg-primary px-6 text-base font-semibold text-primary-foreground shadow-md shadow-primary/15"
             >
               {t("Eerste recept toevoegen")}
             </Link>
@@ -337,15 +337,15 @@ function StartPage() {
                 <Link
                   to="/recepten/$id"
                   params={{ id: vandaag.id }}
-                  className="block overflow-hidden rounded-3xl border border-border bg-card active:opacity-90"
+                  className="block overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm transition-shadow hover:shadow-md active:opacity-90"
                 >
                   <RecipePhoto
                     path={vandaag.image_url}
                     alt={vandaag.title}
                     className="h-48 w-full rounded-none sm:h-64"
                   />
-                  <div className="p-4">
-                    <p className="font-display text-2xl leading-tight">{t(vandaag.title)}</p>
+                  <div className="p-5">
+                    <p className="text-2xl font-bold leading-tight tracking-tight">{t(vandaag.title)}</p>
                     <p className="mt-1 flex items-center gap-2 text-base text-muted-foreground">
                       <Clock className="size-4" aria-hidden />
                       {vandaag.prep_minutes + vandaag.cook_minutes} min · {t(vandaag.category)} ·{" "}
@@ -394,7 +394,7 @@ function StartPage() {
 
             <Link
               to="/gerechten"
-              className="flex min-h-16 items-center justify-between rounded-2xl border border-border bg-card px-5 text-lg font-semibold"
+              className="flex min-h-16 items-center justify-between rounded-2xl border border-border bg-card px-5 text-lg font-semibold transition-colors hover:bg-muted"
             >
               {t("Bekijk alle gerechten")}
               <ChevronRight className="size-6" aria-hidden />
@@ -408,7 +408,7 @@ function StartPage() {
 
 function SectieTitel({ children, icoon }: { children: React.ReactNode; icoon?: React.ReactNode }) {
   return (
-    <h2 className="mb-3 flex items-center gap-2 font-display text-2xl">
+    <h2 className="mb-3 flex items-center gap-2 text-2xl font-bold tracking-tight">
       {icoon}
       {children}
     </h2>
@@ -436,11 +436,11 @@ function Rij({
             <Link
               to="/recepten/$id"
               params={{ id: r.id }}
-              className="block h-full overflow-hidden rounded-2xl border border-border bg-card active:opacity-90"
+              className="block h-full overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md active:opacity-90"
             >
               <RecipePhoto path={r.image_url} alt={r.title} className="h-28 w-full rounded-none" />
               <div className="p-3">
-                <p className="line-clamp-2 font-display text-lg leading-tight">{t(r.title)}</p>
+                <p className="line-clamp-2 text-lg font-bold leading-tight">{t(r.title)}</p>
                 <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
                   <Clock className="size-4" aria-hidden />
                   {r.prep_minutes + r.cook_minutes} min
@@ -475,9 +475,9 @@ function InternetKaart({
 
   return (
     <li className="w-60 shrink-0 snap-start">
-      <div className="flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-accent/15 to-primary/10">
+      <div className="flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
         <div>
-          <p className="px-4 pt-4 font-display text-xl leading-tight">{t(s.title)}</p>
+          <p className="px-4 pt-4 text-xl font-bold leading-tight tracking-tight">{t(s.title)}</p>
           {foto ? (
             <img
               src={foto}
@@ -486,10 +486,10 @@ function InternetKaart({
               loading="lazy"
             />
           ) : (
-            <div className="mt-3 h-32 w-full animate-pulse bg-secondary" aria-hidden />
+            <div className="mt-3 h-32 w-full animate-pulse bg-muted" aria-hidden />
           )}
           <div className="px-4">
-            <p className="mt-3 text-sm text-muted-foreground">
+            <p className="mt-3 text-sm font-medium text-muted-foreground">
               {s.keuken ? `${t(s.keuken)} · ` : ""}
               {s.minuten} min
             </p>
@@ -501,7 +501,7 @@ function InternetKaart({
             type="button"
             onClick={onBewaar}
             disabled={bezig !== null}
-            className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground disabled:opacity-60"
+            className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground shadow-md shadow-primary/15 transition-transform active:scale-95 disabled:opacity-60"
           >
             <Plus className="size-5" aria-hidden />
             {bezig === s.title ? t("Bezig…") : t("Bij mijn gerechten")}

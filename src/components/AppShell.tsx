@@ -66,10 +66,12 @@ export function AppShell({
   const menu = (
     <nav aria-label="Hoofdmenu">
       <Link to="/" className="flex items-center gap-3 px-3">
-        <img src={logo} alt="MaJeBa logo" width={48} height={48} className="size-12 rounded-xl" />
-        <p className="font-display text-2xl text-primary">MaJeBa</p>
+        <div className="flex size-12 items-center justify-center rounded-xl bg-secondary">
+          <img src={logo} alt="MaJeBa logo" width={28} height={28} className="size-7" />
+        </div>
+        <p className="text-2xl font-bold tracking-tight text-foreground">MaJeBa</p>
       </Link>
-      <ul className="mt-6 space-y-2">
+      <ul className="mt-6 space-y-1">
         {NAV.map((item) => {
           const active =
             item.to === "/"
@@ -81,10 +83,10 @@ export function AppShell({
               <Link
                 to={item.to}
                 className={cn(
-                  "flex min-h-14 items-center gap-3 rounded-xl px-3 text-lg font-semibold",
+                  "flex min-h-14 items-center gap-3 rounded-xl px-3 text-lg font-semibold transition-colors",
                   active
                     ? "bg-primary text-primary-foreground"
-                    : "text-foreground hover:bg-secondary",
+                    : "text-foreground hover:bg-muted",
                 )}
               >
                 <Icon className="size-6 shrink-0" aria-hidden />
@@ -112,11 +114,11 @@ export function AppShell({
                 type="button"
                 onClick={() => setMenuOpen(true)}
                 aria-label="Menu openen"
-                className="flex size-14 shrink-0 items-center justify-center rounded-xl border border-border bg-card lg:hidden"
+                className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-border bg-card lg:hidden"
               >
                 <Menu className="size-7" aria-hidden />
               </button>
-              <h1 className="min-w-0 flex-1 truncate font-display text-2xl leading-tight">
+              <h1 className="min-w-0 flex-1 truncate text-2xl font-bold leading-tight tracking-tight">
                 {title}
               </h1>
               {action}
@@ -141,7 +143,7 @@ export function AppShell({
                 type="button"
                 onClick={() => setMenuOpen(false)}
                 aria-label="Menu sluiten"
-                className="flex size-12 items-center justify-center rounded-xl border border-border"
+                className="flex size-12 items-center justify-center rounded-2xl border border-border"
               >
                 <X className="size-6" aria-hidden />
               </button>

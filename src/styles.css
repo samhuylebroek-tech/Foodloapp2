@@ -12,10 +12,6 @@
  *
  * The :root and .dark blocks define the actual color values using oklch.
  * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
  */
 
 @theme inline {
@@ -62,7 +58,79 @@
 }
 
 :root {
-  --radius: 1rem;
+  --radius: 1.25rem;
+  /* Sage & slate: clean, strak, rustig */
+  --background: oklch(0.975 0.008 260);
+  --foreground: oklch(0.22 0.03 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.03 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.03 260);
+  --primary: oklch(0.55 0.12 160);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.95 0.015 160);
+  --secondary-foreground: oklch(0.28 0.04 160);
+  --muted: oklch(0.94 0.01 260);
+  --muted-foreground: oklch(0.52 0.02 260);
+  --accent: oklch(0.62 0.1 160);
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.9 0.01 260);
+  --input: oklch(0.9 0.01 260);
+  --ring: oklch(0.55 0.12 160);
+  --chart-1: oklch(0.55 0.12 160);
+  --chart-2: oklch(0.52 0.08 220);
+  --chart-3: oklch(0.65 0.1 80);
+  --chart-4: oklch(0.45 0.12 280);
+  --chart-5: oklch(0.75 0.12 100);
+  --sidebar: oklch(0.975 0.008 260);
+  --sidebar-foreground: oklch(0.22 0.03 260);
+  --sidebar-primary: oklch(0.55 0.12 160);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.95 0.015 160);
+  --sidebar-accent-foreground: oklch(0.28 0.04 160);
+  --sidebar-border: oklch(0.9 0.01 260);
+  --sidebar-ring: oklch(0.55 0.12 160);
+}
+
+.dark {
+  --background: oklch(0.2 0.02 260);
+  --foreground: oklch(0.96 0.01 260);
+  --card: oklch(0.25 0.02 260);
+  --card-foreground: oklch(0.96 0.01 260);
+  --popover: oklch(0.25 0.02 260);
+  --popover-foreground: oklch(0.96 0.01 260);
+  --primary: oklch(0.65 0.13 160);
+  --primary-foreground: oklch(0.15 0.02 260);
+  --secondary: oklch(0.3 0.025 160);
+  --secondary-foreground: oklch(0.96 0.01 260);
+  --muted: oklch(0.3 0.02 260);
+  --muted-foreground: oklch(0.75 0.015 260);
+  --accent: oklch(0.7 0.11 160);
+  --accent-foreground: oklch(0.15 0.02 260);
+  --destructive: oklch(0.62 0.19 25);
+  --destructive-foreground: oklch(0.98 0.01 260);
+  --border: oklch(1 0 0 / 14%);
+  --input: oklch(1 0 0 / 18%);
+  --ring: oklch(0.65 0.13 160);
+  --chart-1: oklch(0.65 0.13 160);
+  --chart-2: oklch(0.55 0.1 220);
+  --chart-3: oklch(0.75 0.12 80);
+  --chart-4: oklch(0.55 0.14 280);
+  --chart-5: oklch(0.85 0.13 100);
+  --sidebar: oklch(0.25 0.02 260);
+  --sidebar-foreground: oklch(0.96 0.01 260);
+  --sidebar-primary: oklch(0.65 0.13 160);
+  --sidebar-primary-foreground: oklch(0.15 0.02 260);
+  --sidebar-accent: oklch(0.3 0.025 160);
+  --sidebar-accent-foreground: oklch(0.96 0.01 260);
+  --sidebar-border: oklch(1 0 0 / 14%);
+  --sidebar-ring: oklch(0.65 0.13 160);
+}
+
+/* Oude warme keukenstijl, nu als alternatief thema */
+.thema-warm {
   --background: oklch(0.976 0.014 85.5);
   --foreground: oklch(0.27 0.035 55);
   --card: oklch(0.995 0.008 85);
@@ -82,54 +150,6 @@
   --border: oklch(0.88 0.025 80);
   --input: oklch(0.88 0.025 80);
   --ring: oklch(0.55 0.168 38);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.976 0.014 85.5);
-  --sidebar-foreground: oklch(0.27 0.035 55);
-  --sidebar-primary: oklch(0.55 0.168 38);
-  --sidebar-primary-foreground: oklch(0.985 0.012 85);
-  --sidebar-accent: oklch(0.93 0.03 88);
-  --sidebar-accent-foreground: oklch(0.33 0.05 50);
-  --sidebar-border: oklch(0.88 0.025 80);
-  --sidebar-ring: oklch(0.55 0.168 38);
-}
-
-.dark {
-  --background: oklch(0.21 0.02 55);
-  --foreground: oklch(0.96 0.014 85);
-  --card: oklch(0.26 0.025 55);
-  --card-foreground: oklch(0.96 0.014 85);
-  --popover: oklch(0.26 0.025 55);
-  --popover-foreground: oklch(0.96 0.014 85);
-  --primary: oklch(0.68 0.16 45);
-  --primary-foreground: oklch(0.2 0.02 55);
-  --secondary: oklch(0.32 0.03 55);
-  --secondary-foreground: oklch(0.96 0.014 85);
-  --muted: oklch(0.32 0.03 55);
-  --muted-foreground: oklch(0.75 0.02 70);
-  --accent: oklch(0.62 0.11 148);
-  --accent-foreground: oklch(0.2 0.02 55);
-  --destructive: oklch(0.62 0.2 27);
-  --destructive-foreground: oklch(0.98 0.012 85);
-  --border: oklch(1 0 0 / 14%);
-  --input: oklch(1 0 0 / 18%);
-  --ring: oklch(0.68 0.16 45);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.26 0.025 55);
-  --sidebar-foreground: oklch(0.96 0.014 85);
-  --sidebar-primary: oklch(0.68 0.16 45);
-  --sidebar-primary-foreground: oklch(0.2 0.02 55);
-  --sidebar-accent: oklch(0.32 0.03 55);
-  --sidebar-accent-foreground: oklch(0.96 0.014 85);
-  --sidebar-border: oklch(1 0 0 / 14%);
-  --sidebar-ring: oklch(0.68 0.16 45);
 }
 
 .thema-fris {
@@ -173,8 +193,8 @@
 }
 
 @theme inline {
-  --font-sans: "Karla", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 
@@ -190,16 +210,15 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: "Karla", ui-sans-serif, system-ui, sans-serif;
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
     -webkit-tap-highlight-color: transparent;
   }
 
   h1,
   h2,
   h3 {
-    font-family: "Fraunces", ui-serif, Georgia, serif;
-    font-weight: 600;
-    letter-spacing: -0.01em;
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
   }
 }
-
