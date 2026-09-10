@@ -23,6 +23,7 @@ export const TALEN = [
 ] as const;
 
 export const THEMAS = [
+  { id: "sage", label: "Sage & slate" },
   { id: "warm", label: "Warme keuken" },
   { id: "fris", label: "Fris groen" },
   { id: "donker", label: "Donker" },
