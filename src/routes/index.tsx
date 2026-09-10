@@ -121,6 +121,14 @@ function StartPage() {
       .map((x) => x.r);
   }, [recipes, sfeer]);
 
+  // Gerechten die je nog niet bekeek: eerst die van vrienden, dan je eigen oudere recepten.
+  const ontdek = useMemo(() => {
+    const nietGezien = recipes.filter((r) => !gezien.includes(r.id) && !favorites.includes(r.id));
+    const vanVrienden = nietGezien.filter((r) => r.user_id !== user?.id);
+    const eigen = nietGezien.filter((r) => r.user_id === user?.id);
+    return [...vanVrienden, ...eigen].slice(0, 8);
+  }, [recipes, gezien, favorites, user?.id]);
+
   const nieuwste = recipes.slice(0, 8);
   const vandaag = recipes.length ? recipes[dagIndex(recipes.length)] : null;
   const snel = recipes.filter((r) => r.prep_minutes + r.cook_minutes <= 20).slice(0, 8);
