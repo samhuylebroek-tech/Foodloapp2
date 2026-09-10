@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCode from "qrcode";
-import { ChefHat, Copy, Mail, Plus, Share2, Smartphone, Trash2, UserPlus, X } from "lucide-react";
+import { ChefHat, Copy, Plus, Share2, Smartphone, Trash2, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -74,9 +74,9 @@ function uitnodigingsLink(token: string) {
 function VriendenPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const [email, setEmail] = useState("");
   const [rechten, setRechten] = useState<Rechten>(STANDAARD);
   const [nieuwOpen, setNieuwOpen] = useState(false);
+  const [nieuwId, setNieuwId] = useState<string | null>(null);
 
   const { data: shares = [] } = useQuery({
     queryKey: ["shares", user?.id],
