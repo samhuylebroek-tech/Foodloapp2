@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { CookingPot, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -8,17 +8,18 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/aanmelden")({
   head: () => ({
     meta: [
-      { title: "Aanmelden – Samen Koken" },
+      { title: "Aanmelden – MaJeBa" },
       {
         name: "description",
         content:
-          "Meld je aan bij Samen Koken en verzamel samen recepten, plan je week en maak je boodschappenlijst.",
+          "Meld je aan bij MaJeBa en verzamel samen recepten, plan je week en maak je boodschappenlijst.",
       },
-      { property: "og:title", content: "Aanmelden – Samen Koken" },
+      { property: "og:title", content: "Aanmelden – MaJeBa" },
       {
         property: "og:description",
         content: "Meld je aan en verzamel samen recepten in één duidelijke app.",
@@ -90,10 +91,14 @@ function AanmeldenPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
-          <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-            <CookingPot className="size-9" aria-hidden />
-          </div>
-          <h1 className="mt-4 font-display text-3xl">Samen Koken</h1>
+          <img
+            src={logo}
+            alt="MaJeBa logo"
+            width={112}
+            height={112}
+            className="mx-auto size-28 rounded-3xl"
+          />
+          <h1 className="mt-4 font-display text-3xl">MaJeBa</h1>
           <p className="mt-2 text-base text-muted-foreground">
             Al jullie recepten op één plek, makkelijk terug te vinden.
           </p>

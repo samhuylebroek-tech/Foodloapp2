@@ -15,13 +15,13 @@ import { parseIngredientLine } from "@/lib/ingredienten";
 export const Route = createFileRoute("/boodschappen")({
   head: () => ({
     meta: [
-      { title: "Boodschappenlijst – Samen Koken" },
+      { title: "Boodschappenlijst – MaJeBa" },
       {
         name: "description",
         content:
           "Maak meerdere boodschappenlijstjes met alle ingrediënten van je recepten, af te vinken in de winkel.",
       },
-      { property: "og:title", content: "Boodschappenlijst – Samen Koken" },
+      { property: "og:title", content: "Boodschappenlijst – MaJeBa" },
       { property: "og:description", content: "Vink af terwijl je winkelt en deel de lijst." },
     ],
   }),

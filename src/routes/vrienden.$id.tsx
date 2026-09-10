@@ -10,12 +10,12 @@ import type { Recipe } from "@/lib/types";
 export const Route = createFileRoute("/vrienden/$id")({
   head: () => ({
     meta: [
-      { title: "Gerechten van een vriend – Samen Koken" },
+      { title: "Gerechten van een vriend – MaJeBa" },
       {
         name: "description",
         content: "Bekijk de recepten die een vriend of familielid met jou deelt.",
       },
-      { property: "og:title", content: "Gerechten van een vriend – Samen Koken" },
+      { property: "og:title", content: "Gerechten van een vriend – MaJeBa" },
       {
         property: "og:description",
         content: "Alle gedeelde recepten van je vriend op één plek.",

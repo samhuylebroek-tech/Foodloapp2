@@ -12,13 +12,13 @@ export const Route = createFileRoute("/recepten/nieuw")({
   }),
   head: () => ({
     meta: [
-      { title: "Recept toevoegen – Samen Koken" },
+      { title: "Recept toevoegen – MaJeBa" },
       {
         name: "description",
         content:
           "Voeg een nieuw recept toe: typ het zelf in, lees het in van een website, plak een tekst of herken ingrediënten met een foto.",
       },
-      { property: "og:title", content: "Recept toevoegen – Samen Koken" },
+      { property: "og:title", content: "Recept toevoegen – MaJeBa" },
       {
         property: "og:description",
         content: "Nieuw recept toevoegen met foto, ingrediënten en bereidingsstappen.",

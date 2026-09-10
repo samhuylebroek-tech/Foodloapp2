@@ -12,12 +12,12 @@ import { TALEN, THEMAS, useVoorkeuren, type ThemaId } from "@/lib/voorkeuren";
 export const Route = createFileRoute("/instellingen")({
   head: () => ({
     meta: [
-      { title: "Instellingen – Samen Koken" },
+      { title: "Instellingen – MaJeBa" },
       {
         name: "description",
         content: "Pas je wachtwoord aan, kies een kleurenthema en je taal.",
       },
-      { property: "og:title", content: "Instellingen – Samen Koken" },
+      { property: "og:title", content: "Instellingen – MaJeBa" },
       {
         property: "og:description",
         content: "Wachtwoord, kleuren en taal: alles op één plek.",

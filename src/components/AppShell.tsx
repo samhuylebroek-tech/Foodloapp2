@@ -15,6 +15,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
+import logo from "@/assets/logo.png";
 
 const NAV = [
   { to: "/", label: "Start", icon: Sparkles },
@@ -64,7 +65,10 @@ export function AppShell({
 
   const menu = (
     <nav aria-label="Hoofdmenu">
-      <p className="px-3 font-display text-2xl text-primary">Samen Koken</p>
+      <Link to="/" className="flex items-center gap-3 px-3">
+        <img src={logo} alt="MaJeBa logo" width={48} height={48} className="size-12 rounded-xl" />
+        <p className="font-display text-2xl text-primary">MaJeBa</p>
+      </Link>
       <ul className="mt-6 space-y-2">
         {NAV.map((item) => {
           const active =
