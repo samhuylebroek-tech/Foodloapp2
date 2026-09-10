@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   Clock,
+  Globe2,
   Heart,
   Plus,
+  RefreshCw,
   Search,
   Sparkles,
   Timer,
@@ -20,6 +23,7 @@ import type { Recipe } from "@/lib/types";
 import { haalWeer, sfeerVoorWeer, type Weer } from "@/lib/weer";
 import { gezienIds } from "@/lib/gezien";
 import { useT } from "@/lib/voorkeuren";
+import { ontdekSuggesties, importRecipeFromText, type InternetSuggestie } from "@/lib/ai.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -137,6 +141,74 @@ function StartPage() {
 
   const uur = new Date().getHours();
 
+  // Nieuwe gerechten van het internet die nog niet in je kookboek staan.
+  const bekend = useMemo(() => recipes.map((r) => r.title), [recipes]);
+  const bekendSleutel = bekend.length;
+  const [ronde, setRonde] = useState(0);
+  const {
+    data: internet = [],
+    isLoading: internetLaadt,
+    isFetching: internetVerst,
+  } = useQuery({
+    queryKey: ["internet-suggesties", bekendSleutel, sfeer?.titel ?? "", ronde],
+    enabled: !!user && weerKlaar,
+    staleTime: 1000 * 60 * 60,
+    queryFn: async () => {
+      const lijst = await ontdekSuggesties({
+        data: { bekend, sfeer: sfeer ? `${sfeer.titel} – ${sfeer.uitleg}` : "" },
+      });
+      const bestaand = new Set(bekend.map((tt) => tt.toLowerCase().trim()));
+      return lijst.filter((s) => !bestaand.has(s.title.toLowerCase().trim()));
+    },
+  });
+
+  const navigate = useNavigate();
+  const [bezig, setBezig] = useState<string | null>(null);
+
+  async function bewaarSuggestie(s: InternetSuggestie) {
+    if (!user) return;
+    setBezig(s.title);
+    try {
+      const ai = await importRecipeFromText({
+        data: { text: `Geef een volledig recept voor: ${s.title}. ${s.keuken ? `Keuken: ${s.keuken}.` : ""} ${s.waarom}` },
+      });
+      const { data, error } = await supabase
+        .from("recipes")
+        .insert({
+          user_id: user.id,
+          title: ai.title || s.title,
+          description: ai.description || s.waarom,
+          servings: ai.servings || 4,
+          prep_minutes: ai.prep_minutes || 0,
+          cook_minutes: ai.cook_minutes || 0,
+          category: ai.category || s.category,
+          difficulty: ai.difficulty || "makkelijk",
+          tags: ai.tags ?? [],
+          instructions: ai.instructions ?? [],
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      if (ai.ingredients?.length) {
+        await supabase.from("recipe_ingredients").insert(
+          ai.ingredients.map((i, index) => ({
+            recipe_id: data.id,
+            name: i.name,
+            quantity: i.quantity,
+            unit: i.unit ?? "",
+            position: index,
+          })),
+        );
+      }
+      toast.success(t("Toegevoegd aan je gerechten"));
+      navigate({ to: "/recepten/$id", params: { id: data.id } });
+    } catch {
+      toast.error(t("Toevoegen lukte niet, probeer opnieuw"));
+    } finally {
+      setBezig(null);
+    }
+  }
+
   return (
     <AppShell title={t("Samen Koken")}>
       <div className="space-y-8">
@@ -185,6 +257,59 @@ function StartPage() {
             </div>
           </div>
         </section>
+
+        {/* Nieuw van het internet */}
+        {user && (
+          <section>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <SectieTitel icoon={<Globe2 className="size-5" aria-hidden />}>
+                {t("Nieuw voor jou van het internet")}
+              </SectieTitel>
+              <button
+                type="button"
+                onClick={() => setRonde((r) => r + 1)}
+                disabled={internetVerst}
+                className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-border bg-card px-4 text-base font-semibold disabled:opacity-60"
+              >
+                <RefreshCw className={`size-4 ${internetVerst ? "animate-spin" : ""}`} aria-hidden />
+                {t("Andere")}
+              </button>
+            </div>
+            {internetLaadt ? (
+              <p className="text-lg text-muted-foreground">{t("Even zoeken naar nieuwe ideeën…")}</p>
+            ) : internet.length === 0 ? (
+              <p className="text-lg text-muted-foreground">
+                {t("Geen nieuwe suggesties gevonden. Probeer straks opnieuw.")}
+              </p>
+            ) : (
+              <ul className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2">
+                {internet.map((s) => (
+                  <li key={s.title} className="w-60 shrink-0 snap-start">
+                    <div className="flex h-full flex-col justify-between rounded-2xl border border-border bg-gradient-to-br from-accent/15 to-primary/10 p-4">
+                      <div>
+                        <p className="font-display text-xl leading-tight">{t(s.title)}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {s.keuken ? `${t(s.keuken)} · ` : ""}
+                          {s.minuten} min
+                        </p>
+                        <p className="mt-2 line-clamp-3 text-base">{t(s.waarom)}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => bewaarSuggestie(s)}
+                        disabled={bezig !== null}
+                        className="mt-4 inline-flex min-h-14 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground disabled:opacity-60"
+                      >
+                        <Plus className="size-5" aria-hidden />
+                        {bezig === s.title ? t("Bezig…") : t("Bij mijn gerechten")}
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
 
         {isLoading ? (
           <p className="py-10 text-center text-lg text-muted-foreground">{t("Even laden…")}</p>

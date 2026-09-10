@@ -229,3 +229,47 @@ export const recognizeIngredients = createServerFn({ method: "POST" })
     const list = parseJson<string[]>(raw, []);
     return Array.isArray(list) ? list.filter((x) => typeof x === "string").slice(0, 25) : [];
   });
+
+export type InternetSuggestie = {
+  title: string;
+  keuken: string;
+  waarom: string;
+  minuten: number;
+  category: string;
+};
+
+export const ontdekSuggesties = createServerFn({ method: "POST" })
+  .inputValidator((data) =>
+    z
+      .object({
+        bekend: z.array(z.string()).max(200).default([]),
+        sfeer: z.string().max(200).default(""),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data }): Promise<InternetSuggestie[]> => {
+    const maand = new Date().toLocaleDateString("nl-BE", { month: "long" });
+    const raw = await askAI([
+      {
+        role: "system",
+        content:
+          'Je bent een kookredacteur die populaire gerechten van het internet kent (foodblogs, Instagram, TikTok, klassieke keukens uit de hele wereld). Je stelt gerechten voor die iemand nog niet kent. Antwoord uitsluitend met een JSON-array van 6 objecten: [{"title":"","keuken":"","waarom":"","minuten":30,"category":"hoofdgerecht"}]. "waarom" is één korte, wervende zin in het Nederlands. Geen uitleg buiten de JSON.',
+      },
+      {
+        role: "user",
+        content: `Maand: ${maand}. ${data.sfeer ? `Weer/sfeer: ${data.sfeer}.` : ""}\nDeze gerechten heeft de gebruiker al, stel iets anders voor:\n${data.bekend.slice(0, 120).join(", ") || "(nog geen)"}`,
+      },
+    ]);
+    const list = parseJson<Partial<InternetSuggestie>[]>(raw, []);
+    if (!Array.isArray(list)) return [];
+    return list
+      .filter((s) => typeof s?.title === "string" && s.title.trim())
+      .slice(0, 6)
+      .map((s) => ({
+        title: String(s.title).trim(),
+        keuken: String(s.keuken ?? "").trim(),
+        waarom: String(s.waarom ?? "").trim(),
+        minuten: Number(s.minuten) || 30,
+        category: String(s.category ?? "hoofdgerecht"),
+      }));
+  });
