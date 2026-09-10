@@ -245,36 +245,42 @@ function HomePage() {
   );
 }
 
-function FilterRij({ titel, children }: { titel: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <p className="text-base font-semibold">{titel}</p>
-      <div className="mt-2 flex gap-2 overflow-x-auto pb-1">{children}</div>
-    </div>
-  );
-}
-
-function Chip({
-  active,
-  onClick,
-  children,
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options,
 }: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "inline-flex min-h-12 shrink-0 items-center gap-2 rounded-full border px-4 text-base font-semibold",
-        active
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-card text-foreground",
-      )}
-    >
-      {children}
-    </button>
+    <div className="min-w-[10rem] flex-1">
+      <label className="mb-1 block text-base font-semibold" htmlFor={`filter-${label}`}>
+        {label}
+      </label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger
+          id={`filter-${label}`}
+          className="h-14 w-full rounded-xl border-border bg-card text-base"
+          aria-label={label}
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="rounded-xl border-border bg-card text-base">
+          {options.map((opt) => (
+            <SelectItem
+              key={opt.value}
+              value={opt.value}
+              className="min-h-12 cursor-pointer text-base focus:bg-secondary"
+            >
+              {opt.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
