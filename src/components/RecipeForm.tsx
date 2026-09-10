@@ -519,18 +519,7 @@ export function RecipeForm({
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="servings" className="text-base">
-                  Personen
-                </Label>
-                <Input
-                  id="servings"
-                  value={servings}
-                  onChange={(e) => setServings(e.target.value)}
-                  inputMode="numeric"
-                  className="mt-2 h-14 text-base"
-                />
-              </div>
+
               <div>
                 <Label htmlFor="prep" className="text-base">
                   Voorbereiden (min)
