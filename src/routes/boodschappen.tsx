@@ -9,7 +9,8 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { zorgVoorLijst, type ShoppingList } from "@/lib/boodschappen";
+import { zorgVoorLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
+import { parseIngredientLine } from "@/lib/ingredienten";
 
 export const Route = createFileRoute("/boodschappen")({
   head: () => ({
@@ -118,9 +119,14 @@ function BoodschappenPage() {
 
   async function voegToe() {
     if (!user || !nieuw.trim() || !actief) return;
-    await supabase
-      .from("shopping_items")
-      .insert({ user_id: user.id, name: nieuw.trim(), list_id: actief });
+    const geparsed = parseIngredientLine(nieuw);
+    if (!geparsed) return;
+    try {
+      await voegToeAanLijst(user.id, actief, [geparsed]);
+    } catch {
+      toast.error("Toevoegen lukte niet");
+      return;
+    }
     setNieuw("");
     refresh();
   }
