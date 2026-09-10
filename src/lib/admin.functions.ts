@@ -699,3 +699,187 @@ export const adminZoekGebruikerVoorRol = createServerFn({ method: "POST" })
       .limit(10);
     return rijen ?? [];
   });
+
+// ---------------- beveiliging: sessies & apparaten ----------------
+
+export const adminSessies = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { db, profiel } = await bewaker(context as Ctx, "dashboard.view");
+    const alles = heeftRecht(profiel, "admins.manage");
+    let q = db.from("admin_sessions").select("*").order("last_seen_at", { ascending: false }).limit(100);
+    if (!alles) q = q.eq("admin_id", profiel.user_id);
+    const { data: rijen } = await q;
+    const ids = [...new Set((rijen ?? []).map((r: any) => r.admin_id))];
+    const { data: profielen } = ids.length
+      ? await db.from("profiles").select("id, display_name").in("id", ids)
+      : { data: [] };
+    const namen = new Map((profielen ?? []).map((p: any) => [p.id, p.display_name]));
+    return (rijen ?? []).map((r: any) => ({ ...r, naam: namen.get(r.admin_id) ?? "onbekend" }));
+  });
+
+export const adminBeveiligingZetten = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        user_id: z.string().uuid(),
+        read_only: z.boolean().optional(),
+        mfa_required: z.boolean().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { db, profiel } = await bewaker(context as Ctx, "admins.manage");
+    const wijziging: Record<string, boolean> = {};
+    if (data.read_only !== undefined) wijziging["read_only"] = data.read_only;
+    if (data.mfa_required !== undefined) wijziging["mfa_required"] = data.mfa_required;
+    await db.from("admin_users").update(wijziging).eq("user_id", data.user_id);
+    await logboek(db, profiel, "admin.security_update", "admin", data.user_id, wijziging);
+    return { ok: true };
+  });
+
+// ---------------- analytics ----------------
+
+export const adminAnalytics = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { db } = await bewaker(context as Ctx, "dashboard.view");
+    const dagen = 30;
+    const sinds = new Date(Date.now() - dagen * 24 * 3600_000).toISOString();
+
+    const { data: events } = await db
+      .from("usage_events")
+      .select("event, path, user_id, created_at")
+      .gte("created_at", sinds)
+      .limit(20000);
+    const rijen = (events ?? []) as any[];
+
+    const perEvent = new Map<string, number>();
+    const perPad = new Map<string, number>();
+    const perDag = new Map<string, Set<string>>();
+    for (const r of rijen) {
+      perEvent.set(r.event, (perEvent.get(r.event) ?? 0) + 1);
+      if (r.path) perPad.set(r.path, (perPad.get(r.path) ?? 0) + 1);
+      const dag = String(r.created_at).slice(0, 10);
+      if (!perDag.has(dag)) perDag.set(dag, new Set());
+      if (r.user_id) perDag.get(dag)!.add(r.user_id);
+    }
+
+    const grafiek: { datum: string; actieveGebruikers: number }[] = [];
+    for (let i = dagen - 1; i >= 0; i--) {
+      const datum = new Date(Date.now() - i * 24 * 3600_000).toISOString().slice(0, 10);
+      grafiek.push({ datum, actieveGebruikers: perDag.get(datum)?.size ?? 0 });
+    }
+
+    const uniek = new Set(rijen.map((r) => r.user_id).filter(Boolean));
+    const week = Date.now() - 7 * 24 * 3600_000;
+    const uniekWeek = new Set(
+      rijen.filter((r) => new Date(r.created_at).getTime() >= week).map((r) => r.user_id).filter(Boolean),
+    );
+
+    const sorteer = (m: Map<string, number>) =>
+      [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([naam, aantal]) => ({ naam, aantal }));
+
+    // Retentie: hoeveel gebruikers met een recept keren terug
+    const { count: gebruikers } = await db.from("profiles").select("*", { count: "exact", head: true });
+    const { data: recepten } = await db.from("recipes").select("user_id").is("deleted_at", null).limit(20000);
+    const makers = new Set((recepten ?? []).map((r: any) => r.user_id));
+
+    return {
+      totaalEvents: rijen.length,
+      actieveGebruikers30: uniek.size,
+      actieveGebruikers7: uniekWeek.size,
+      gebruikers: gebruikers ?? 0,
+      makers: makers.size,
+      grafiek,
+      topEvents: sorteer(perEvent),
+      topPaginas: sorteer(perPad),
+    };
+  });
+
+// ---------------- teksten (CMS) ----------------
+
+export const adminTeksten = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { db } = await bewaker(context as Ctx, "content.manage", { schrijft: false });
+    const { data } = await db.from("site_content").select("*").order("key");
+    return data ?? [];
+  });
+
+export const adminTekstZetten = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        key: z.string().min(1),
+        title: z.string().default(""),
+        body: z.string().default(""),
+        published: z.boolean().default(true),
+      })
+      .parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { db, profiel } = await bewaker(context as Ctx, "content.manage");
+    await db
+      .from("site_content")
+      .upsert(
+        { ...data, updated_at: new Date().toISOString(), updated_by: profiel.user_id },
+        { onConflict: "key" },
+      );
+    await logboek(db, profiel, "content.update", "site_content", data.key, { title: data.title });
+    return { ok: true };
+  });
+
+// ---------------- aankondigingen ----------------
+
+export const adminAankondigingen = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { db } = await bewaker(context as Ctx, "content.manage", { schrijft: false });
+    const { data } = await db.from("announcements").select("*").order("created_at", { ascending: false });
+    return data ?? [];
+  });
+
+export const adminAankondigingZetten = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string().uuid().nullable().default(null),
+        title: z.string().min(1),
+        body: z.string().default(""),
+        level: z.enum(["info", "waarschuwing", "onderhoud"]).default("info"),
+        active: z.boolean().default(true),
+        ends_at: z.string().nullable().default(null),
+      })
+      .parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { db, profiel } = await bewaker(context as Ctx, "content.manage");
+    const rij = {
+      title: data.title,
+      body: data.body,
+      level: data.level,
+      active: data.active,
+      ends_at: data.ends_at,
+      created_by: profiel.user_id,
+    };
+    if (data.id) await db.from("announcements").update(rij).eq("id", data.id);
+    else await db.from("announcements").insert(rij);
+    await logboek(db, profiel, data.id ? "announcement.update" : "announcement.create", "announcement", data.id, {
+      title: data.title,
+    });
+    return { ok: true };
+  });
+
+export const adminAankondigingVerwijderen = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { db, profiel } = await bewaker(context as Ctx, "content.manage");
+    await db.from("announcements").delete().eq("id", data.id);
+    await logboek(db, profiel, "announcement.delete", "announcement", data.id);
+    return { ok: true };
+  });
