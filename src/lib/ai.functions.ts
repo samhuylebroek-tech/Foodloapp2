@@ -300,5 +300,7 @@ export const gerechtFoto = createServerFn({ method: "POST" })
     if (!res.ok) return null;
     const json = (await res.json()) as { data?: { b64_json?: string }[] };
     const b64 = json.data?.[0]?.b64_json;
-    return b64 ? `data:image/png;base64,${b64}` : null;
+    if (!b64) return null;
+    const mime = b64.startsWith("/9j/") ? "image/jpeg" : "image/png";
+    return `data:${mime};base64,${b64}`;
   });
