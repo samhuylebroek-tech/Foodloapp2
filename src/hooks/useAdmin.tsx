@@ -19,6 +19,9 @@ export function useAdmin() {
   return {
     profiel,
     rechten,
+    aal: q.data?.aal ?? null,
+    mfaOk: q.data?.mfaOk ?? true,
+    alleenLezen: Boolean(profiel?.read_only),
     mag: (r: Rechten) => rechten.includes(r),
     laden: loading || (Boolean(user) && q.isLoading),
     ingelogd: Boolean(user),
