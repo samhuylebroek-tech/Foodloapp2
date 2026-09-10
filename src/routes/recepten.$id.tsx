@@ -313,6 +313,11 @@ function ReceptPage() {
           <span>{t(recipe.category)}</span>
         </div>
 
+        <section className="rounded-3xl border border-border bg-card p-4">
+          <SterrenKiezer waarde={mijnScore} onKies={zetScore} label={t("Jouw score")} />
+        </section>
+
+
 
         <section className="rounded-3xl border border-border bg-card p-4">
           <div className="flex items-center justify-between">
