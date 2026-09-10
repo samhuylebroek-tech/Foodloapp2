@@ -109,17 +109,22 @@ function ReceptPage() {
   async function naarBoodschappen() {
     if (!user) return;
     const rows = ingredients.map((i) => ({
-      user_id: user.id,
       name: i.name,
       quantity: i.quantity === null ? null : Math.round(i.quantity * factor * 100) / 100,
       unit: i.unit,
       recipe_id: recipe.id,
     }));
     if (!rows.length) return;
-    const { error } = await supabase.from("shopping_items").insert(rows);
-    if (error) toast.error("Toevoegen lukte niet");
-    else toast.success("Ingrediënten op je boodschappenlijst gezet");
+    try {
+      const listId = await zorgVoorLijst(user.id);
+      await voegToeAanLijst(user.id, listId, rows);
+      toast.success("Ingrediënten op je boodschappenlijst gezet");
+      qc.invalidateQueries({ queryKey: ["shopping"] });
+    } catch {
+      toast.error("Toevoegen lukte niet");
+    }
   }
+
 
   async function planOp(datum: string, moment: string) {
     if (!user) return;
