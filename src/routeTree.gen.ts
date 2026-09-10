@@ -15,6 +15,7 @@ import { Route as BeheerRouteImport } from './routes/beheer'
 import { Route as BoodschappenRouteImport } from './routes/boodschappen'
 import { Route as FeedbackRouteImport } from './routes/feedback'
 import { Route as GerechtenRouteImport } from './routes/gerechten'
+import { Route as InfoRouteImport } from './routes/info'
 import { Route as InstallerenRouteImport } from './routes/installeren'
 import { Route as InstellingenRouteImport } from './routes/instellingen'
 import { Route as PlannerRouteImport } from './routes/planner'
@@ -66,6 +67,11 @@ const FeedbackRoute = FeedbackRouteImport.update({
 const GerechtenRoute = GerechtenRouteImport.update({
   id: '/gerechten',
   path: '/gerechten',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InfoRoute = InfoRouteImport.update({
+  id: '/info',
+  path: '/info',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InstallerenRoute = InstallerenRouteImport.update({
@@ -186,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/boodschappen': typeof BoodschappenRoute
   '/feedback': typeof FeedbackRoute
   '/gerechten': typeof GerechtenRoute
+  '/info': typeof InfoRoute
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
   '/planner': typeof PlannerRoute
@@ -215,6 +222,7 @@ export interface FileRoutesByTo {
   '/boodschappen': typeof BoodschappenRoute
   '/feedback': typeof FeedbackRoute
   '/gerechten': typeof GerechtenRoute
+  '/info': typeof InfoRoute
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
   '/planner': typeof PlannerRoute
@@ -246,6 +254,7 @@ export interface FileRoutesById {
   '/boodschappen': typeof BoodschappenRoute
   '/feedback': typeof FeedbackRoute
   '/gerechten': typeof GerechtenRoute
+  '/info': typeof InfoRoute
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
   '/planner': typeof PlannerRoute
@@ -278,6 +287,7 @@ export interface FileRouteTypes {
     | '/boodschappen'
     | '/feedback'
     | '/gerechten'
+    | '/info'
     | '/installeren'
     | '/instellingen'
     | '/planner'
@@ -307,6 +317,7 @@ export interface FileRouteTypes {
     | '/boodschappen'
     | '/feedback'
     | '/gerechten'
+    | '/info'
     | '/installeren'
     | '/instellingen'
     | '/planner'
@@ -337,6 +348,7 @@ export interface FileRouteTypes {
     | '/boodschappen'
     | '/feedback'
     | '/gerechten'
+    | '/info'
     | '/installeren'
     | '/instellingen'
     | '/planner'
@@ -368,6 +380,7 @@ export interface RootRouteChildren {
   BoodschappenRoute: typeof BoodschappenRoute
   FeedbackRoute: typeof FeedbackRoute
   GerechtenRoute: typeof GerechtenRoute
+  InfoRoute: typeof InfoRoute
   InstallerenRoute: typeof InstallerenRoute
   InstellingenRoute: typeof InstellingenRoute
   PlannerRoute: typeof PlannerRoute
@@ -419,6 +432,13 @@ declare module '@tanstack/react-router' {
       path: '/gerechten'
       fullPath: '/gerechten'
       preLoaderRoute: typeof GerechtenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/info': {
+      id: '/info'
+      path: '/info'
+      fullPath: '/info'
+      preLoaderRoute: typeof InfoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/installeren': {
@@ -644,6 +664,7 @@ const rootRouteChildren: RootRouteChildren = {
   BoodschappenRoute: BoodschappenRoute,
   FeedbackRoute: FeedbackRoute,
   GerechtenRoute: GerechtenRoute,
+  InfoRoute: InfoRoute,
   InstallerenRoute: InstallerenRoute,
   InstellingenRoute: InstellingenRoute,
   PlannerRoute: PlannerRoute,
