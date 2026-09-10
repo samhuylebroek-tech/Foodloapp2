@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   Clock,
+  Globe2,
   Heart,
   Plus,
+  RefreshCw,
   Search,
   Sparkles,
   Timer,
@@ -20,6 +23,7 @@ import type { Recipe } from "@/lib/types";
 import { haalWeer, sfeerVoorWeer, type Weer } from "@/lib/weer";
 import { gezienIds } from "@/lib/gezien";
 import { useT } from "@/lib/voorkeuren";
+import { ontdekSuggesties, importRecipeFromText, type InternetSuggestie } from "@/lib/ai.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
