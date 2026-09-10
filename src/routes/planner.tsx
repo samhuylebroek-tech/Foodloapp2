@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trash2, ShoppingCart, Plus, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Trash2, ShoppingCart, Plus, ChevronLeft, ChevronRight, X, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { MEAL_TYPES, type Recipe } from "@/lib/types";
+import { zorgVoorLijst, type ShoppingList } from "@/lib/boodschappen";
 
 export const Route = createFileRoute("/planner")({
   head: () => ({
@@ -32,7 +34,8 @@ type PlanRow = {
   id: string;
   plan_date: string;
   meal_type: string;
-  recipe_id: string;
+  recipe_id: string | null;
+  custom_title: string | null;
   recipes: Recipe | null;
 };
 
@@ -58,6 +61,7 @@ function PlannerPage() {
   const qc = useQueryClient();
   const [weekStart, setWeekStart] = useState(() => maandagVan(new Date()));
   const [kiezen, setKiezen] = useState<{ datum: string; moment: string } | null>(null);
+  const [lijstId, setLijstId] = useState<string>("");
 
   const week = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
@@ -66,13 +70,28 @@ function PlannerPage() {
   });
   const vandaag = datumTekst(new Date());
 
+  const { data: lijsten = [] } = useQuery({
+    queryKey: ["shopping-lists", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      if (!user) return [];
+      await zorgVoorLijst(user.id);
+      const { data, error } = await supabase
+        .from("shopping_lists")
+        .select("id, name, created_at")
+        .order("created_at");
+      if (error) throw error;
+      return data as ShoppingList[];
+    },
+  });
+
   const { data: plan = [] } = useQuery({
     queryKey: ["meal-plan", user?.id, week[0]],
     enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("meal_plan")
-        .select("id, plan_date, meal_type, recipe_id, recipes(*)")
+        .select("id, plan_date, meal_type, recipe_id, custom_title, recipes(*)")
         .gte("plan_date", week[0]!)
         .lte("plan_date", week[6]!)
         .order("plan_date");
@@ -103,9 +122,48 @@ function PlannerPage() {
     qc.invalidateQueries({ queryKey: ["meal-plan"] });
   }
 
+  async function nieuw_gerecht(naam: string, bewaren: boolean) {
+    if (!user || !kiezen) return;
+    let recipeId: string | null = null;
+
+    if (bewaren) {
+      const { data, error } = await supabase
+        .from("recipes")
+        .insert({ user_id: user.id, title: naam })
+        .select("id")
+        .single();
+      if (error) {
+        toast.error("Bewaren lukte niet");
+        return;
+      }
+      recipeId = data.id;
+    }
+
+    const { error } = await supabase.from("meal_plan").insert({
+      user_id: user.id,
+      recipe_id: recipeId,
+      custom_title: recipeId ? null : naam,
+      plan_date: kiezen.datum,
+      meal_type: kiezen.moment,
+    });
+    if (error) {
+      toast.error("Inplannen lukte niet");
+      return;
+    }
+    setKiezen(null);
+    toast.success(bewaren ? "Ingepland en bewaard bij je recepten" : "In je weekmenu gezet");
+    qc.invalidateQueries({ queryKey: ["meal-plan"] });
+    qc.invalidateQueries({ queryKey: ["recipes"] });
+  }
+
   async function alleBoodschappen() {
     if (!user || plan.length === 0) return;
-    const ids = plan.map((p) => p.recipe_id);
+    const ids = plan.map((p) => p.recipe_id).filter((x): x is string => !!x);
+    if (!ids.length) {
+      toast.error("Geen ingrediënten gevonden");
+      return;
+    }
+    const listId = lijstId || lijsten[0]?.id || (await zorgVoorLijst(user.id));
     const { data, error } = await supabase
       .from("recipe_ingredients")
       .select("name, quantity, unit, recipe_id")
@@ -116,6 +174,7 @@ function PlannerPage() {
     }
     const rows = data.map((i) => ({
       user_id: user.id,
+      list_id: listId,
       name: i.name as string,
       quantity: i.quantity as number | null,
       unit: (i.unit as string) ?? "",
@@ -165,9 +224,25 @@ function PlannerPage() {
           </Button>
         </div>
 
-        <Button onClick={alleBoodschappen} className="h-16 w-full text-lg">
-          <ShoppingCart className="size-5" /> Hele week op de lijst zetten
-        </Button>
+        <div className="space-y-2">
+          {lijsten.length > 1 && (
+            <select
+              value={lijstId || lijsten[0]!.id}
+              onChange={(e) => setLijstId(e.target.value)}
+              aria-label="Naar welk lijstje?"
+              className="h-14 w-full rounded-xl border border-input bg-card px-3 text-base"
+            >
+              {lijsten.map((l) => (
+                <option key={l.id} value={l.id}>
+                  Naar lijstje: {l.name}
+                </option>
+              ))}
+            </select>
+          )}
+          <Button onClick={alleBoodschappen} className="h-16 w-full text-lg">
+            <ShoppingCart className="size-5" /> Hele week op de lijst zetten
+          </Button>
+        </div>
 
         {week.map((dag) => {
           const items = plan.filter((p) => p.plan_date === dag);
@@ -189,14 +264,21 @@ function PlannerPage() {
                 <ul className="mt-2 space-y-2">
                   {items.map((p) => (
                     <li key={p.id} className="flex items-center gap-3">
-                      <Link
-                        to="/recepten/$id"
-                        params={{ id: p.recipe_id }}
-                        className="flex-1 text-lg underline-offset-4 hover:underline"
-                      >
-                        <span className="text-base text-muted-foreground">{p.meal_type}: </span>
-                        {p.recipes?.title ?? "Recept"}
-                      </Link>
+                      {p.recipe_id ? (
+                        <Link
+                          to="/recepten/$id"
+                          params={{ id: p.recipe_id }}
+                          className="flex-1 text-lg underline-offset-4 hover:underline"
+                        >
+                          <span className="text-base text-muted-foreground">{p.meal_type}: </span>
+                          {p.recipes?.title ?? "Recept"}
+                        </Link>
+                      ) : (
+                        <span className="flex-1 text-lg">
+                          <span className="text-base text-muted-foreground">{p.meal_type}: </span>
+                          {p.custom_title}
+                        </span>
+                      )}
                       <Button
                         variant="ghost"
                         onClick={() => verwijder(p.id)}
@@ -232,6 +314,7 @@ function PlannerPage() {
           titel={`${labelVoor(kiezen.datum)} · ${kiezen.moment}`}
           onSluit={() => setKiezen(null)}
           onKies={plan_toevoegen}
+          onNieuw={nieuw_gerecht}
         />
       )}
     </AppShell>
@@ -242,12 +325,15 @@ function ReceptKiezer({
   titel,
   onSluit,
   onKies,
+  onNieuw,
 }: {
   titel: string;
   onSluit: () => void;
   onKies: (id: string) => void;
+  onNieuw: (naam: string, bewaren: boolean) => void;
 }) {
   const [zoek, setZoek] = useState("");
+  const [bewaren, setBewaren] = useState(true);
   const { data: recipes = [] } = useQuery({
     queryKey: ["recipes"],
     queryFn: async () => {
@@ -260,7 +346,9 @@ function ReceptKiezer({
     },
   });
 
-  const lijst = recipes.filter((r) => r.title.toLowerCase().includes(zoek.trim().toLowerCase()));
+  const term = zoek.trim();
+  const lijst = recipes.filter((r) => r.title.toLowerCase().includes(term.toLowerCase()));
+  const bestaatAl = recipes.some((r) => r.title.toLowerCase() === term.toLowerCase());
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
@@ -274,13 +362,36 @@ function ReceptKiezer({
         <Input
           value={zoek}
           onChange={(e) => setZoek(e.target.value)}
-          placeholder="Zoek een recept"
-          aria-label="Zoek een recept"
+          placeholder="Wat eten we? Zoek of typ een naam"
+          aria-label="Zoek of typ een gerecht"
           className="mt-3 h-14 text-base"
         />
+
+        {term && !bestaatAl && (
+          <div className="mt-3 rounded-2xl border border-primary/40 bg-secondary p-4">
+            <p className="text-base">
+              “{term}” staat nog niet in je recepten. Je kan het toch inplannen.
+            </p>
+            <label className="mt-3 flex min-h-12 items-center gap-3 text-base">
+              <Checkbox
+                checked={bewaren}
+                onCheckedChange={(v) => setBewaren(v === true)}
+                className="size-7"
+              />
+              Ook bewaren bij mijn recepten
+            </label>
+            <Button
+              onClick={() => onNieuw(term, bewaren)}
+              className="mt-3 h-14 w-full text-base"
+            >
+              <Sparkles className="size-5" /> “{term}” inplannen
+            </Button>
+          </div>
+        )}
+
         <ul className="mt-3 flex-1 space-y-2 overflow-y-auto">
           {lijst.length === 0 ? (
-            <li className="py-8 text-center text-lg text-muted-foreground">
+            <li className="py-6 text-center text-lg text-muted-foreground">
               Geen recepten gevonden.
             </li>
           ) : (

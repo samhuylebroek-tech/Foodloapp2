@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Camera, Link2, Loader2, Plus, Trash2, Sparkles, ClipboardType } from "lucide-react";
+import {
+  Camera,
+  Link2,
+  Loader2,
+  Sparkles,
+  ClipboardType,
+  ChevronDown,
+  Pencil,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,14 +20,15 @@ import {
   recipeFromPhoto,
   type ImportedRecipe,
 } from "@/lib/ai.functions";
-import { CATEGORIES, DIFFICULTIES, UNITS, type Ingredient, type Recipe } from "@/lib/types";
+import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/types";
+import { parseIngredientText, ingredientToLine } from "@/lib/ingredienten";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-type IngredientRow = { name: string; quantity: string; unit: string };
+type Manier = "link" | "tekst" | "foto" | "zelf";
 
 export function RecipeForm({
   recipe,
@@ -37,6 +46,9 @@ export function RecipeForm({
   const gedeeldeLink =
     gedeeld?.url ?? [gedeeld?.text, gedeeld?.title].join(" ").match(/https?:\/\/\S+/)?.[0] ?? "";
 
+  const [manier, setManier] = useState<Manier>(gedeeldeLink ? "link" : gedeeldeTekst ? "tekst" : "link");
+  const [ingevuld, setIngevuld] = useState(Boolean(recipe));
+
   const [title, setTitle] = useState(recipe?.title ?? "");
   const [description, setDescription] = useState(recipe?.description ?? "");
   const [servings, setServings] = useState(String(recipe?.servings ?? 4));
@@ -47,18 +59,11 @@ export function RecipeForm({
   const [tags, setTags] = useState((recipe?.tags ?? []).join(", "));
   const [photoPath, setPhotoPath] = useState<string | null>(recipe?.image_url ?? null);
   const [sourceUrl, setSourceUrl] = useState(recipe?.source_url ?? gedeeldeLink);
-  const [rows, setRows] = useState<IngredientRow[]>(
-    ingredients?.length
-      ? ingredients.map((i) => ({
-          name: i.name,
-          quantity: i.quantity === null ? "" : String(i.quantity),
-          unit: i.unit,
-        }))
-      : [{ name: "", quantity: "", unit: "" }],
+  const [ingredientTekst, setIngredientTekst] = useState(
+    (ingredients ?? []).map(ingredientToLine).join("\n"),
   );
-  const [steps, setSteps] = useState<string[]>(
-    recipe?.instructions?.length ? recipe.instructions : [""],
-  );
+  const [stappenTekst, setStappenTekst] = useState((recipe?.instructions ?? []).join("\n"));
+  const [meerDetails, setMeerDetails] = useState(false);
 
   const [importUrl, setImportUrl] = useState(gedeeldeLink);
   const [vrijeTekst, setVrijeTekst] = useState(gedeeldeTekst);
@@ -79,15 +84,14 @@ export function RecipeForm({
     setDifficulty(DIFFICULTIES.includes(data.difficulty as never) ? data.difficulty : "makkelijk");
     setTags(data.tags.join(", "));
     if (data.ingredients.length)
-      setRows(
-        data.ingredients.map((i) => ({
-          name: i.name,
-          quantity: i.quantity === null ? "" : String(i.quantity),
-          unit: i.unit ?? "",
-        })),
+      setIngredientTekst(
+        data.ingredients
+          .map((i) => ingredientToLine({ name: i.name, quantity: i.quantity, unit: i.unit ?? "" }))
+          .join("\n"),
       );
-    if (data.instructions.length) setSteps(data.instructions);
+    if (data.instructions.length) setStappenTekst(data.instructions.join("\n"));
     if (data.image_url) setPhotoPath(data.image_url);
+    setIngevuld(true);
   }
 
   async function handleFotoSuggestie(file: File) {
@@ -129,7 +133,6 @@ export function RecipeForm({
     }
   }
 
-
   async function handlePhoto(file: File) {
     if (!user) return;
     setUploading(true);
@@ -153,10 +156,7 @@ export function RecipeForm({
         toast.error("Geen ingrediënten herkend");
         return;
       }
-      setRows((prev) => {
-        const kept = prev.filter((r) => r.name.trim());
-        return [...kept, ...found.map((name) => ({ name, quantity: "", unit: "" }))];
-      });
+      setIngredientTekst((prev) => [prev.trim(), found.join("\n")].filter(Boolean).join("\n"));
       toast.success(`${found.length} ingrediënten herkend`);
     } catch {
       toast.error("Herkennen is niet gelukt");
@@ -202,7 +202,10 @@ export function RecipeForm({
           .split(",")
           .map((t) => t.trim().toLowerCase())
           .filter(Boolean),
-        instructions: steps.map((s) => s.trim()).filter(Boolean),
+        instructions: stappenTekst
+          .split("\n")
+          .map((s) => s.replace(/^\s*\d+[.)]\s*/, "").trim())
+          .filter(Boolean),
         source_url: sourceUrl.trim() || null,
       };
 
@@ -221,15 +224,13 @@ export function RecipeForm({
         recipeId = data.id;
       }
 
-      const cleanRows = rows
-        .filter((r) => r.name.trim())
-        .map((r, index) => ({
-          recipe_id: recipeId!,
-          name: r.name.trim(),
-          quantity: r.quantity === "" ? null : Number(r.quantity.replace(",", ".")),
-          unit: r.unit,
-          position: index,
-        }));
+      const cleanRows = parseIngredientText(ingredientTekst).map((r, index) => ({
+        recipe_id: recipeId!,
+        name: r.name,
+        quantity: r.quantity,
+        unit: r.unit,
+        position: index,
+      }));
       if (cleanRows.length) {
         const { error } = await supabase.from("recipe_ingredients").insert(cleanRows);
         if (error) throw error;
@@ -244,93 +245,123 @@ export function RecipeForm({
     }
   }
 
+  const manieren: { id: Manier; label: string; icon: typeof Link2 }[] = [
+    { id: "link", label: "Link", icon: Link2 },
+    { id: "tekst", label: "Tekst", icon: ClipboardType },
+    { id: "foto", label: "Foto", icon: Camera },
+    { id: "zelf", label: "Zelf typen", icon: Pencil },
+  ];
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {!recipe && (
         <section className="rounded-2xl border border-border bg-card p-4">
-          <h2 className="flex items-center gap-2 text-lg">
-            <Link2 className="size-5 text-primary" aria-hidden /> Recept van een website halen
-          </h2>
-          <p className="mt-1 text-base text-muted-foreground">
-            Plak de link van een recept. We vullen alles alvast voor je in.
-          </p>
-          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-            <Input
-              value={importUrl}
-              onChange={(e) => setImportUrl(e.target.value)}
-              placeholder="https://…"
-              inputMode="url"
-              className="h-14 text-base"
-            />
-            <Button onClick={handleImport} disabled={importing} className="h-14 px-6 text-base">
-              {importing ? <Loader2 className="size-5 animate-spin" /> : <Sparkles className="size-5" />}
-              Inlezen
-            </Button>
+          <h2 className="text-lg">Hoe wil je beginnen?</h2>
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {manieren.map((m) => {
+              const Icon = m.icon;
+              const actief = manier === m.id;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setManier(m.id)}
+                  aria-pressed={actief}
+                  className={
+                    actief
+                      ? "flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl bg-primary px-2 text-base font-semibold text-primary-foreground"
+                      : "flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border border-border bg-secondary px-2 text-base font-semibold"
+                  }
+                >
+                  <Icon className="size-6" aria-hidden />
+                  {m.label}
+                </button>
+              );
+            })}
           </div>
-        </section>
-      )}
 
-      {!recipe && (
-        <section className="rounded-2xl border border-border bg-card p-4">
-          <h2 className="flex items-center gap-2 text-lg">
-            <ClipboardType className="size-5 text-primary" aria-hidden /> Losse tekst omzetten in een
-            recept
-          </h2>
-          <p className="mt-1 text-base text-muted-foreground">
-            Plak hier een tekst van Instagram, een bericht van een vriend of je eigen notities. We
-            herkennen het gerecht en vullen alles in. Je controleert het daarna zelf.
-          </p>
-          <Textarea
-            value={vrijeTekst}
-            onChange={(e) => setVrijeTekst(e.target.value)}
-            rows={6}
-            placeholder="Plak of typ hier de tekst…"
-            className="mt-3 text-base"
-            aria-label="Tekst van het recept"
-          />
-          <Button
-            onClick={handleTekst}
-            disabled={lezenTekst}
-            className="mt-3 h-14 w-full text-base"
-          >
-            {lezenTekst ? (
-              <Loader2 className="size-5 animate-spin" />
-            ) : (
-              <Sparkles className="size-5" />
-            )}
-            Recept eruit halen
-          </Button>
-        </section>
-      )}
+          {manier === "link" && (
+            <div className="mt-4">
+              <p className="text-base text-muted-foreground">
+                Plak de link van een recept. Wij vullen alles voor je in.
+              </p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <Input
+                  value={importUrl}
+                  onChange={(e) => setImportUrl(e.target.value)}
+                  placeholder="https://…"
+                  inputMode="url"
+                  aria-label="Link naar het recept"
+                  className="h-14 text-base"
+                />
+                <Button onClick={handleImport} disabled={importing} className="h-14 px-6 text-base">
+                  {importing ? (
+                    <Loader2 className="size-5 animate-spin" />
+                  ) : (
+                    <Sparkles className="size-5" />
+                  )}
+                  Inlezen
+                </Button>
+              </div>
+            </div>
+          )}
 
-      {!recipe && (
-        <section className="rounded-2xl border border-border bg-card p-4">
-          <h2 className="flex items-center gap-2 text-lg">
-            <Camera className="size-5 text-primary" aria-hidden /> Alleen een foto van een gerecht?
-          </h2>
-          <p className="mt-1 text-base text-muted-foreground">
-            Kies een foto van een klaar gerecht. Wij bedenken een voorstel: welke ingrediënten je
-            nodig hebt en hoe je het stap voor stap maakt. Het is een voorstel, geen zekerheid — lees
-            het na en pas gerust aan.
-          </p>
-          <label className="mt-3 inline-flex min-h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-5 text-base font-semibold text-primary-foreground">
-            {suggereren ? (
-              <Loader2 className="size-5 animate-spin" />
-            ) : (
-              <Sparkles className="size-5" />
-            )}
-            Maak een recept van mijn foto
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="sr-only"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void handleFotoSuggestie(f);
-              }}
-            />
-          </label>
+          {manier === "tekst" && (
+            <div className="mt-4">
+              <p className="text-base text-muted-foreground">
+                Plak een tekst van Instagram, een bericht of je eigen notities.
+              </p>
+              <Textarea
+                value={vrijeTekst}
+                onChange={(e) => setVrijeTekst(e.target.value)}
+                rows={5}
+                placeholder="Plak of typ hier de tekst…"
+                className="mt-3 text-base"
+                aria-label="Tekst van het recept"
+              />
+              <Button onClick={handleTekst} disabled={lezenTekst} className="mt-3 h-14 w-full text-base">
+                {lezenTekst ? (
+                  <Loader2 className="size-5 animate-spin" />
+                ) : (
+                  <Sparkles className="size-5" />
+                )}
+                Recept eruit halen
+              </Button>
+            </div>
+          )}
+
+          {manier === "foto" && (
+            <div className="mt-4">
+              <p className="text-base text-muted-foreground">
+                Kies een foto van een klaar gerecht. Wij bedenken een voorstel: ingrediënten en
+                stappen. Lees het na en pas gerust aan.
+              </p>
+              <label className="mt-3 inline-flex min-h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-5 text-base font-semibold text-primary-foreground">
+                {suggereren ? (
+                  <Loader2 className="size-5 animate-spin" />
+                ) : (
+                  <Sparkles className="size-5" />
+                )}
+                Maak een recept van mijn foto
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="sr-only"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void handleFotoSuggestie(f);
+                  }}
+                />
+              </label>
+            </div>
+          )}
+
+          {manier === "zelf" && (
+            <p className="mt-4 text-base text-muted-foreground">
+              Vul hieronder gewoon een naam in. Ingrediënten en stappen mag je later aanvullen.
+            </p>
+          )}
         </section>
       )}
 
@@ -349,14 +380,49 @@ export function RecipeForm({
         </div>
 
         <div>
-          <Label htmlFor="description" className="text-base">
-            Korte omschrijving
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Label htmlFor="ingredienten" className="text-base">
+              Ingrediënten — één per regel
+            </Label>
+            <label className="inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-xl border border-border bg-secondary px-4 text-base font-semibold">
+              {recognizing ? (
+                <Loader2 className="size-5 animate-spin" />
+              ) : (
+                <Camera className="size-5" />
+              )}
+              Herken op foto
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void handleIngredientPhoto(f);
+                }}
+              />
+            </label>
+          </div>
+          <Textarea
+            id="ingredienten"
+            value={ingredientTekst}
+            onChange={(e) => setIngredientTekst(e.target.value)}
+            rows={6}
+            placeholder={"500 g bloem\n2 eieren\nsnuf zout"}
+            className="mt-2 text-base"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="stappen" className="text-base">
+            Bereiding — één stap per regel
           </Label>
           <Textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
+            id="stappen"
+            value={stappenTekst}
+            onChange={(e) => setStappenTekst(e.target.value)}
+            rows={7}
+            placeholder={"Verwarm de oven op 180 graden.\nMeng de bloem met de eieren."}
             className="mt-2 text-base"
           />
         </div>
@@ -385,206 +451,130 @@ export function RecipeForm({
             </label>
           </div>
         </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="servings" className="text-base">
-              Personen
-            </Label>
-            <Input
-              id="servings"
-              value={servings}
-              onChange={(e) => setServings(e.target.value)}
-              inputMode="numeric"
-              className="mt-2 h-14 text-base"
-            />
-          </div>
-          <div>
-            <Label htmlFor="prep" className="text-base">
-              Voorbereiden (min)
-            </Label>
-            <Input
-              id="prep"
-              value={prep}
-              onChange={(e) => setPrep(e.target.value)}
-              inputMode="numeric"
-              className="mt-2 h-14 text-base"
-            />
-          </div>
-          <div>
-            <Label htmlFor="cook" className="text-base">
-              Koken (min)
-            </Label>
-            <Input
-              id="cook"
-              value={cook}
-              onChange={(e) => setCook(e.target.value)}
-              inputMode="numeric"
-              className="mt-2 h-14 text-base"
-            />
-          </div>
-          <div>
-            <Label htmlFor="category" className="text-base">
-              Soort gerecht
-            </Label>
-            <select
-              id="category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="mt-2 h-14 w-full rounded-xl border border-input bg-card px-3 text-base"
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <Label htmlFor="difficulty" className="text-base">
-              Moeilijkheid
-            </Label>
-            <select
-              id="difficulty"
-              value={difficulty}
-              onChange={(e) => setDifficulty(e.target.value)}
-              className="mt-2 h-14 w-full rounded-xl border border-input bg-card px-3 text-base"
-            >
-              {DIFFICULTIES.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <Label htmlFor="tags" className="text-base">
-              Labels (met komma)
-            </Label>
-            <Input
-              id="tags"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="vegetarisch, snel"
-              className="mt-2 h-14 text-base"
-            />
-          </div>
-        </div>
       </section>
 
-      <section>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg">Ingrediënten</h2>
-          <label className="inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-xl border border-border bg-secondary px-4 text-base font-semibold">
-            {recognizing ? <Loader2 className="size-5 animate-spin" /> : <Camera className="size-5" />}
-            Herken op foto
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="sr-only"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void handleIngredientPhoto(f);
-              }}
-            />
-          </label>
-        </div>
-
-        <ul className="mt-3 space-y-3">
-          {rows.map((row, i) => (
-            <li key={i} className="flex gap-2">
-              <Input
-                value={row.quantity}
-                onChange={(e) =>
-                  setRows(rows.map((r, j) => (i === j ? { ...r, quantity: e.target.value } : r)))
-                }
-                placeholder="500"
-                inputMode="decimal"
-                className="h-14 w-20 text-base"
-                aria-label="Hoeveelheid"
-              />
-              <select
-                value={row.unit}
-                onChange={(e) =>
-                  setRows(rows.map((r, j) => (i === j ? { ...r, unit: e.target.value } : r)))
-                }
-                aria-label="Eenheid"
-                className="h-14 w-28 rounded-xl border border-input bg-card px-2 text-base"
-              >
-                {UNITS.map((u) => (
-                  <option key={u} value={u}>
-                    {u || "—"}
-                  </option>
-                ))}
-              </select>
-              <Input
-                value={row.name}
-                onChange={(e) =>
-                  setRows(rows.map((r, j) => (i === j ? { ...r, name: e.target.value } : r)))
-                }
-                placeholder="Ingrediënt"
-                className="h-14 flex-1 text-base"
-                aria-label="Ingrediënt"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setRows(rows.filter((_, j) => j !== i))}
-                aria-label="Verwijder ingrediënt"
-                className="h-14 w-12"
-              >
-                <Trash2 className="size-5" />
-              </Button>
-            </li>
-          ))}
-        </ul>
-        <Button
+      <section className="rounded-2xl border border-border bg-card">
+        <button
           type="button"
-          variant="secondary"
-          onClick={() => setRows([...rows, { name: "", quantity: "", unit: "" }])}
-          className="mt-3 h-14 w-full text-base"
+          onClick={() => setMeerDetails(!meerDetails)}
+          aria-expanded={meerDetails}
+          className="flex min-h-14 w-full items-center justify-between px-4 text-left text-base font-semibold"
         >
-          <Plus className="size-5" /> Ingrediënt toevoegen
-        </Button>
-      </section>
+          Meer details (personen, tijd, soort) — mag je overslaan
+          <ChevronDown
+            className={meerDetails ? "size-6 rotate-180 transition" : "size-6 transition"}
+            aria-hidden
+          />
+        </button>
 
-      <section>
-        <h2 className="text-lg">Bereiding</h2>
-        <ol className="mt-3 space-y-3">
-          {steps.map((step, i) => (
-            <li key={i} className="flex gap-2">
-              <span className="mt-4 w-7 shrink-0 text-center text-base font-bold text-primary">
-                {i + 1}
-              </span>
+        {meerDetails && (
+          <div className="space-y-4 border-t border-border p-4">
+            <div>
+              <Label htmlFor="description" className="text-base">
+                Korte omschrijving
+              </Label>
               <Textarea
-                value={step}
-                onChange={(e) => setSteps(steps.map((s, j) => (i === j ? e.target.value : s)))}
-                rows={2}
-                placeholder="Beschrijf deze stap"
-                className="text-base"
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className="mt-2 text-base"
               />
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setSteps(steps.filter((_, j) => j !== i))}
-                aria-label="Verwijder stap"
-                className="h-14 w-12"
-              >
-                <Trash2 className="size-5" />
-              </Button>
-            </li>
-          ))}
-        </ol>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => setSteps([...steps, ""])}
-          className="mt-3 h-14 w-full text-base"
-        >
-          <Plus className="size-5" /> Stap toevoegen
-        </Button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="servings" className="text-base">
+                  Personen
+                </Label>
+                <Input
+                  id="servings"
+                  value={servings}
+                  onChange={(e) => setServings(e.target.value)}
+                  inputMode="numeric"
+                  className="mt-2 h-14 text-base"
+                />
+              </div>
+              <div>
+                <Label htmlFor="prep" className="text-base">
+                  Voorbereiden (min)
+                </Label>
+                <Input
+                  id="prep"
+                  value={prep}
+                  onChange={(e) => setPrep(e.target.value)}
+                  inputMode="numeric"
+                  className="mt-2 h-14 text-base"
+                />
+              </div>
+              <div>
+                <Label htmlFor="cook" className="text-base">
+                  Koken (min)
+                </Label>
+                <Input
+                  id="cook"
+                  value={cook}
+                  onChange={(e) => setCook(e.target.value)}
+                  inputMode="numeric"
+                  className="mt-2 h-14 text-base"
+                />
+              </div>
+              <div>
+                <Label htmlFor="category" className="text-base">
+                  Soort gerecht
+                </Label>
+                <select
+                  id="category"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="mt-2 h-14 w-full rounded-xl border border-input bg-card px-3 text-base"
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="difficulty" className="text-base">
+                  Moeilijkheid
+                </Label>
+                <select
+                  id="difficulty"
+                  value={difficulty}
+                  onChange={(e) => setDifficulty(e.target.value)}
+                  className="mt-2 h-14 w-full rounded-xl border border-input bg-card px-3 text-base"
+                >
+                  {DIFFICULTIES.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="tags" className="text-base">
+                  Labels (met komma)
+                </Label>
+                <Input
+                  id="tags"
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  placeholder="vegetarisch, snel"
+                  className="mt-2 h-14 text-base"
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </section>
+
+      {ingevuld && !recipe && (
+        <p className="text-base text-muted-foreground">
+          Alles ingevuld op basis van wat je gaf. Lees het even na en pas aan wat je anders wil.
+        </p>
+      )}
 
       <Button onClick={handleSave} disabled={saving} className="h-16 w-full text-lg">
         {saving ? <Loader2 className="size-5 animate-spin" /> : null}
