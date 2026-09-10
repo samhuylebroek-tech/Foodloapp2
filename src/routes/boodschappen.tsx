@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Share2 } from "lucide-react";
+import { Plus, Trash2, Share2, ListPlus, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,6 +9,7 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { zorgVoorLijst, type ShoppingList } from "@/lib/boodschappen";
 
 export const Route = createFileRoute("/boodschappen")({
   head: () => ({
@@ -16,7 +17,8 @@ export const Route = createFileRoute("/boodschappen")({
       { title: "Boodschappenlijst – Samen Koken" },
       {
         name: "description",
-        content: "Je boodschappenlijst met alle ingrediënten van je recepten, af te vinken in de winkel.",
+        content:
+          "Maak meerdere boodschappenlijstjes met alle ingrediënten van je recepten, af te vinken in de winkel.",
       },
       { property: "og:title", content: "Boodschappenlijst – Samen Koken" },
       { property: "og:description", content: "Vink af terwijl je winkelt en deel de lijst." },
@@ -37,14 +39,37 @@ function BoodschappenPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [nieuw, setNieuw] = useState("");
+  const [actief, setActief] = useState<string | null>(null);
+
+  const { data: lijsten = [] } = useQuery({
+    queryKey: ["shopping-lists", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      if (!user) return [];
+      await zorgVoorLijst(user.id);
+      const { data, error } = await supabase
+        .from("shopping_lists")
+        .select("id, name, created_at")
+        .order("created_at");
+      if (error) throw error;
+      return data as ShoppingList[];
+    },
+  });
+
+  useEffect(() => {
+    if (!actief && lijsten.length) setActief(lijsten[0]!.id);
+    if (actief && lijsten.length && !lijsten.some((l) => l.id === actief))
+      setActief(lijsten[0]!.id);
+  }, [lijsten, actief]);
 
   const { data: items = [] } = useQuery({
-    queryKey: ["shopping", user?.id],
-    enabled: !!user,
+    queryKey: ["shopping", actief],
+    enabled: !!actief,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shopping_items")
         .select("id, name, quantity, unit, checked")
+        .eq("list_id", actief!)
         .order("checked")
         .order("name");
       if (error) throw error;
@@ -53,10 +78,49 @@ function BoodschappenPage() {
   });
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["shopping"] });
+  const refreshLijsten = () => qc.invalidateQueries({ queryKey: ["shopping-lists"] });
+
+  async function nieuwLijstje() {
+    if (!user) return;
+    const naam = window.prompt("Hoe noem je dit lijstje?", "Nieuw lijstje");
+    if (!naam?.trim()) return;
+    const { data, error } = await supabase
+      .from("shopping_lists")
+      .insert({ user_id: user.id, name: naam.trim() })
+      .select("id")
+      .single();
+    if (error) {
+      toast.error("Lijstje maken lukte niet");
+      return;
+    }
+    setActief(data.id);
+    refreshLijsten();
+  }
+
+  async function hernoem() {
+    const huidig = lijsten.find((l) => l.id === actief);
+    if (!huidig) return;
+    const naam = window.prompt("Nieuwe naam voor dit lijstje", huidig.name);
+    if (!naam?.trim()) return;
+    await supabase.from("shopping_lists").update({ name: naam.trim() }).eq("id", huidig.id);
+    refreshLijsten();
+  }
+
+  async function verwijderLijst() {
+    const huidig = lijsten.find((l) => l.id === actief);
+    if (!huidig) return;
+    if (!window.confirm(`Lijstje “${huidig.name}” verwijderen?`)) return;
+    await supabase.from("shopping_lists").delete().eq("id", huidig.id);
+    setActief(null);
+    refreshLijsten();
+    refresh();
+  }
 
   async function voegToe() {
-    if (!user || !nieuw.trim()) return;
-    await supabase.from("shopping_items").insert({ user_id: user.id, name: nieuw.trim() });
+    if (!user || !nieuw.trim() || !actief) return;
+    await supabase
+      .from("shopping_items")
+      .insert({ user_id: user.id, name: nieuw.trim(), list_id: actief });
     setNieuw("");
     refresh();
   }
@@ -72,7 +136,8 @@ function BoodschappenPage() {
   }
 
   async function wisAfgevinkt() {
-    await supabase.from("shopping_items").delete().eq("checked", true);
+    if (!actief) return;
+    await supabase.from("shopping_items").delete().eq("checked", true).eq("list_id", actief);
     refresh();
   }
 
@@ -96,6 +161,45 @@ function BoodschappenPage() {
   return (
     <AppShell title="Boodschappen">
       <div className="space-y-4">
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Je lijstjes">
+          {lijsten.map((l) => (
+            <button
+              key={l.id}
+              type="button"
+              role="tab"
+              aria-selected={l.id === actief}
+              onClick={() => setActief(l.id)}
+              className={
+                l.id === actief
+                  ? "min-h-12 rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground"
+                  : "min-h-12 rounded-xl border border-border bg-card px-4 text-base font-semibold"
+              }
+            >
+              {l.name}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={nieuwLijstje}
+            className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-dashed border-border px-4 text-base font-semibold"
+          >
+            <ListPlus className="size-5" aria-hidden /> Nieuw lijstje
+          </button>
+        </div>
+
+        {lijsten.length > 0 && (
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={hernoem} className="h-12 text-base">
+              <Pencil className="size-4" /> Naam wijzigen
+            </Button>
+            {lijsten.length > 1 && (
+              <Button variant="ghost" onClick={verwijderLijst} className="h-12 text-base">
+                <Trash2 className="size-4" /> Lijstje verwijderen
+              </Button>
+            )}
+          </div>
+        )}
+
         <div className="flex gap-2">
           <Input
             value={nieuw}
@@ -140,7 +244,7 @@ function BoodschappenPage() {
           ))}
           {items.length === 0 && (
             <li className="rounded-2xl border border-dashed border-border p-8 text-center text-lg text-muted-foreground">
-              Je lijst is nog leeg.
+              Dit lijstje is nog leeg.
             </li>
           )}
         </ul>
