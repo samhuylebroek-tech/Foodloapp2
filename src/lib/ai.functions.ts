@@ -149,7 +149,40 @@ export const recipeFromPhoto = createServerFn({ method: "POST" })
     };
   });
 
+export const importRecipeFromScreenshot = createServerFn({ method: "POST" })
+  .inputValidator((data) => z.object({ imageDataUrl: z.string().min(20) }).parse(data))
+  .handler(async ({ data }): Promise<ImportedRecipe> => {
+    const raw = await askAI([
+      {
+        role: "system",
+        content: `Je krijgt een schermafbeelding van een recept, bijvoorbeeld van Instagram, TikTok, WhatsApp of een website. Lees alle zichtbare tekst en zet die om in een gestructureerd recept. Neem de ingrediënten en de bereiding zo letterlijk mogelijk over; vul enkel aan wat echt ontbreekt. ${STAP_REGELS} Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. ${JSON_FORMAAT}`,
+      },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "Haal het recept uit deze schermafbeelding." },
+          { type: "image_url", image_url: { url: data.imageDataUrl } },
+        ],
+      },
+    ]);
+
+    const parsed = parseJson<Partial<ImportedRecipe>>(raw, {});
+    return {
+      title: parsed.title ?? "",
+      description: parsed.description ?? "",
+      servings: Number(parsed.servings) || 4,
+      prep_minutes: Number(parsed.prep_minutes) || 0,
+      cook_minutes: Number(parsed.cook_minutes) || 0,
+      category: parsed.category ?? "hoofdgerecht",
+      difficulty: parsed.difficulty ?? "makkelijk",
+      tags: parsed.tags ?? [],
+      ingredients: parsed.ingredients ?? [],
+      instructions: parsed.instructions ?? [],
+    };
+  });
+
 export const importRecipeFromText = createServerFn({ method: "POST" })
+
   .inputValidator((data) => z.object({ text: z.string().min(5).max(20000) }).parse(data))
   .handler(async ({ data }): Promise<ImportedRecipe> => {
     const raw = await askAI([

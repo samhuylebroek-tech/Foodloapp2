@@ -1,7 +1,16 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trash2, ShoppingCart, Plus, ChevronLeft, ChevronRight, X, Sparkles } from "lucide-react";
+import {
+  Trash2,
+  ShoppingCart,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Sparkles,
+  ListPlus,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,8 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MEAL_TYPES, type Recipe } from "@/lib/types";
 import { importRecipeFromText } from "@/lib/ai.functions";
-import { zorgVoorLijst, type ShoppingList } from "@/lib/boodschappen";
-
+import { zorgVoorLijst, maakLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
 
 export const Route = createFileRoute("/planner")({
   head: () => ({
@@ -58,12 +66,18 @@ function labelVoor(datum: string) {
   return d.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" });
 }
 
+function kortLabel(datum: string) {
+  const d = new Date(`${datum}T12:00:00`);
+  return d.toLocaleDateString("nl-BE", { weekday: "short", day: "numeric" });
+}
+
 function PlannerPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [weekStart, setWeekStart] = useState(() => maandagVan(new Date()));
   const [kiezen, setKiezen] = useState<{ datum: string; moment: string } | null>(null);
   const [lijstId, setLijstId] = useState<string>("");
+  const [vraagLijst, setVraagLijst] = useState<{ recipeId: string; titel: string } | null>(null);
 
   const week = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
@@ -107,13 +121,13 @@ function PlannerPage() {
     qc.invalidateQueries({ queryKey: ["meal-plan"] });
   }
 
-  async function plan_toevoegen(recipeId: string) {
-    if (!user || !kiezen) return;
+  async function plan_toevoegen(recipeId: string, datum: string, moment: string, titel: string) {
+    if (!user) return;
     const { error } = await supabase.from("meal_plan").insert({
       user_id: user.id,
       recipe_id: recipeId,
-      plan_date: kiezen.datum,
-      meal_type: kiezen.moment,
+      plan_date: datum,
+      meal_type: moment,
     });
     if (error) {
       toast.error("Inplannen lukte niet");
@@ -122,10 +136,11 @@ function PlannerPage() {
     setKiezen(null);
     toast.success("In je weekmenu gezet");
     qc.invalidateQueries({ queryKey: ["meal-plan"] });
+    setVraagLijst({ recipeId, titel });
   }
 
-  async function nieuw_gerecht(naam: string, bewaren: boolean) {
-    if (!user || !kiezen) return;
+  async function nieuw_gerecht(naam: string, bewaren: boolean, datum: string, moment: string) {
+    if (!user) return;
     let recipeId: string | null = null;
 
     if (bewaren) {
@@ -217,8 +232,8 @@ function PlannerPage() {
       user_id: user.id,
       recipe_id: recipeId,
       custom_title: recipeId ? null : naam,
-      plan_date: kiezen.datum,
-      meal_type: kiezen.moment,
+      plan_date: datum,
+      meal_type: moment,
     });
     if (error) {
       toast.error("Inplannen lukte niet");
@@ -228,8 +243,37 @@ function PlannerPage() {
     toast.success(bewaren ? "Ingepland en bewaard bij je recepten" : "In je weekmenu gezet");
     qc.invalidateQueries({ queryKey: ["meal-plan"] });
     qc.invalidateQueries({ queryKey: ["recipes"] });
+    qc.invalidateQueries({ queryKey: ["alle-ingredienten"] });
+    if (recipeId) setVraagLijst({ recipeId, titel: naam });
   }
 
+  async function zetOpLijst(recipeId: string, listId: string) {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("recipe_ingredients")
+      .select("name, quantity, unit")
+      .eq("recipe_id", recipeId);
+    if (error || !data?.length) {
+      toast.error("Dit gerecht heeft nog geen ingrediënten");
+      return;
+    }
+    try {
+      await voegToeAanLijst(
+        user.id,
+        listId,
+        data.map((i) => ({
+          name: i.name as string,
+          quantity: i.quantity as number | null,
+          unit: (i.unit as string) ?? "",
+          recipe_id: recipeId,
+        })),
+      );
+      toast.success("Op je boodschappenlijst gezet");
+      qc.invalidateQueries({ queryKey: ["shopping"] });
+    } catch {
+      toast.error("Toevoegen lukte niet");
+    }
+  }
 
   async function alleBoodschappen() {
     if (!user || plan.length === 0) return;
@@ -247,17 +291,22 @@ function PlannerPage() {
       toast.error("Geen ingrediënten gevonden");
       return;
     }
-    const rows = data.map((i) => ({
-      user_id: user.id,
-      list_id: listId,
-      name: i.name as string,
-      quantity: i.quantity as number | null,
-      unit: (i.unit as string) ?? "",
-      recipe_id: i.recipe_id as string,
-    }));
-    const { error: insertError } = await supabase.from("shopping_items").insert(rows);
-    if (insertError) toast.error("Toevoegen lukte niet");
-    else toast.success("Alles staat op je boodschappenlijst");
+    try {
+      await voegToeAanLijst(
+        user.id,
+        listId,
+        data.map((i) => ({
+          name: i.name as string,
+          quantity: i.quantity as number | null,
+          unit: (i.unit as string) ?? "",
+          recipe_id: i.recipe_id as string,
+        })),
+      );
+      toast.success("Alles staat op je boodschappenlijst");
+      qc.invalidateQueries({ queryKey: ["shopping"] });
+    } catch {
+      toast.error("Toevoegen lukte niet");
+    }
   }
 
   function verschuif(weken: number) {
@@ -299,6 +348,13 @@ function PlannerPage() {
           </Button>
         </div>
 
+        <Button
+          onClick={() => setKiezen({ datum: vandaag >= week[0]! && vandaag <= week[6]! ? vandaag : week[0]!, moment: "avondeten" })}
+          className="h-16 w-full text-lg"
+        >
+          <Plus className="size-6" /> Gerecht inplannen deze week
+        </Button>
+
         <div className="space-y-2">
           {lijsten.length > 1 && (
             <select
@@ -314,7 +370,7 @@ function PlannerPage() {
               ))}
             </select>
           )}
-          <Button onClick={alleBoodschappen} className="h-16 w-full text-lg">
+          <Button variant="secondary" onClick={alleBoodschappen} className="h-16 w-full text-lg">
             <ShoppingCart className="size-5" /> Hele week op de lijst zetten
           </Button>
         </div>
@@ -354,6 +410,21 @@ function PlannerPage() {
                           {p.custom_title}
                         </span>
                       )}
+                      {p.recipe_id && (
+                        <Button
+                          variant="ghost"
+                          onClick={() =>
+                            setVraagLijst({
+                              recipeId: p.recipe_id!,
+                              titel: p.recipes?.title ?? "Recept",
+                            })
+                          }
+                          aria-label="Op boodschappenlijst zetten"
+                          className="size-12"
+                        >
+                          <ShoppingCart className="size-5" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         onClick={() => verwijder(p.id)}
@@ -386,10 +457,33 @@ function PlannerPage() {
 
       {kiezen && (
         <ReceptKiezer
-          titel={`${labelVoor(kiezen.datum)} · ${kiezen.moment}`}
+          week={week}
+          start={kiezen}
           onSluit={() => setKiezen(null)}
           onKies={plan_toevoegen}
           onNieuw={nieuw_gerecht}
+        />
+      )}
+
+      {vraagLijst && user && (
+        <LijstVraag
+          titel={vraagLijst.titel}
+          lijsten={lijsten}
+          onSluit={() => setVraagLijst(null)}
+          onKies={async (listId) => {
+            await zetOpLijst(vraagLijst.recipeId, listId);
+            setVraagLijst(null);
+          }}
+          onNieuw={async (naam) => {
+            try {
+              const id = await maakLijst(user.id, naam);
+              qc.invalidateQueries({ queryKey: ["shopping-lists"] });
+              await zetOpLijst(vraagLijst.recipeId, id);
+            } catch {
+              toast.error("Lijstje maken lukte niet");
+            }
+            setVraagLijst(null);
+          }}
         />
       )}
     </AppShell>
@@ -397,18 +491,23 @@ function PlannerPage() {
 }
 
 function ReceptKiezer({
-  titel,
+  week,
+  start,
   onSluit,
   onKies,
   onNieuw,
 }: {
-  titel: string;
+  week: string[];
+  start: { datum: string; moment: string };
   onSluit: () => void;
-  onKies: (id: string) => void;
-  onNieuw: (naam: string, bewaren: boolean) => void;
+  onKies: (id: string, datum: string, moment: string, titel: string) => void;
+  onNieuw: (naam: string, bewaren: boolean, datum: string, moment: string) => void;
 }) {
   const [zoek, setZoek] = useState("");
   const [bewaren, setBewaren] = useState(true);
+  const [datum, setDatum] = useState(start.datum);
+  const [moment, setMoment] = useState(start.moment);
+
   const { data: recipes = [] } = useQuery({
     queryKey: ["recipes"],
     queryFn: async () => {
@@ -427,13 +526,50 @@ function ReceptKiezer({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
-      <div className="flex max-h-[85vh] w-full max-w-lg flex-col rounded-t-3xl bg-card p-4 sm:rounded-3xl">
+      <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-t-3xl bg-card p-4 sm:rounded-3xl">
         <div className="flex items-start justify-between gap-3">
-          <h2 className="font-display text-xl capitalize">{titel}</h2>
+          <h2 className="font-display text-xl">Inplannen deze week</h2>
           <Button variant="ghost" onClick={onSluit} aria-label="Sluiten" className="size-12">
             <X className="size-6" />
           </Button>
         </div>
+
+        <div className="mt-2 flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Kies een dag">
+          {week.map((d) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => setDatum(d)}
+              aria-pressed={d === datum}
+              className={
+                d === datum
+                  ? "min-h-12 shrink-0 rounded-xl bg-primary px-4 text-base font-semibold capitalize text-primary-foreground"
+                  : "min-h-12 shrink-0 rounded-xl border border-border bg-secondary px-4 text-base font-semibold capitalize"
+              }
+            >
+              {kortLabel(d)}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-2 flex gap-2" role="group" aria-label="Kies een moment">
+          {MEAL_TYPES.map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMoment(m)}
+              aria-pressed={m === moment}
+              className={
+                m === moment
+                  ? "min-h-12 flex-1 rounded-xl bg-primary px-3 text-base font-semibold text-primary-foreground"
+                  : "min-h-12 flex-1 rounded-xl border border-border bg-secondary px-3 text-base font-semibold"
+              }
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+
         <Input
           value={zoek}
           onChange={(e) => setZoek(e.target.value)}
@@ -456,7 +592,7 @@ function ReceptKiezer({
               Ook bewaren bij mijn recepten
             </label>
             <Button
-              onClick={() => onNieuw(term, bewaren)}
+              onClick={() => onNieuw(term, bewaren, datum, moment)}
               className="mt-3 h-14 w-full text-base"
             >
               <Sparkles className="size-5" /> “{term}” inplannen
@@ -474,7 +610,7 @@ function ReceptKiezer({
               <li key={r.id}>
                 <button
                   type="button"
-                  onClick={() => onKies(r.id)}
+                  onClick={() => onKies(r.id, datum, moment, r.title)}
                   className="min-h-16 w-full rounded-xl border border-border px-4 py-3 text-left text-lg active:bg-secondary"
                 >
                   {r.title}
@@ -486,6 +622,77 @@ function ReceptKiezer({
             ))
           )}
         </ul>
+      </div>
+    </div>
+  );
+}
+
+function LijstVraag({
+  titel,
+  lijsten,
+  onSluit,
+  onKies,
+  onNieuw,
+}: {
+  titel: string;
+  lijsten: ShoppingList[];
+  onSluit: () => void;
+  onKies: (listId: string) => void;
+  onNieuw: (naam: string) => void;
+}) {
+  const [nieuweNaam, setNieuweNaam] = useState("");
+  const [nieuwTonen, setNieuwTonen] = useState(false);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
+      <div className="w-full max-w-lg rounded-t-3xl bg-card p-4 sm:rounded-3xl">
+        <h2 className="font-display text-xl">Ook op je boodschappenlijst?</h2>
+        <p className="mt-1 text-base text-muted-foreground">
+          De ingrediënten van “{titel}” worden bij je lijst opgeteld.
+        </p>
+
+        <div className="mt-4 space-y-2">
+          {lijsten.map((l) => (
+            <button
+              key={l.id}
+              type="button"
+              onClick={() => onKies(l.id)}
+              className="flex min-h-16 w-full items-center gap-3 rounded-xl border border-border px-4 text-left text-lg active:bg-secondary"
+            >
+              <ShoppingCart className="size-5" aria-hidden /> {l.name}
+            </button>
+          ))}
+
+          {nieuwTonen ? (
+            <div className="flex gap-2">
+              <Input
+                value={nieuweNaam}
+                onChange={(e) => setNieuweNaam(e.target.value)}
+                placeholder="Naam van het lijstje"
+                aria-label="Naam van het nieuwe lijstje"
+                className="h-14 text-base"
+              />
+              <Button
+                onClick={() => nieuweNaam.trim() && onNieuw(nieuweNaam.trim())}
+                className="h-14 px-6 text-base"
+              >
+                Maken
+              </Button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setNieuwTonen(true)}
+              className="flex min-h-16 w-full items-center gap-3 rounded-xl border border-dashed border-border px-4 text-left text-lg"
+            >
+              <ListPlus className="size-5" aria-hidden /> Nieuw lijstje maken
+            </button>
+          )}
+        </div>
+
+        <Button variant="ghost" onClick={onSluit} className="mt-3 h-14 w-full text-base">
+          Nee, bedankt
+        </Button>
       </div>
     </div>
   );

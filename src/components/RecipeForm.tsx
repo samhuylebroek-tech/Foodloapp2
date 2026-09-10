@@ -16,6 +16,7 @@ import { uploadRecipePhoto, fileToDataUrl } from "@/lib/photos";
 import {
   importRecipeFromUrl,
   importRecipeFromText,
+  importRecipeFromScreenshot,
   recognizeIngredients,
   recipeFromPhoto,
   type ImportedRecipe,
@@ -71,6 +72,7 @@ export function RecipeForm({
   const [lezenTekst, setLezenTekst] = useState(false);
   const [recognizing, setRecognizing] = useState(false);
   const [suggereren, setSuggereren] = useState(false);
+  const [screenshotBezig, setScreenshotBezig] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -113,6 +115,20 @@ export function RecipeForm({
       toast.error("We konden hier geen gerecht van maken");
     } finally {
       setSuggereren(false);
+    }
+  }
+
+  async function handleScreenshot(file: File) {
+    setScreenshotBezig(true);
+    try {
+      const imageDataUrl = await fileToDataUrl(file);
+      const data = await importRecipeFromScreenshot({ data: { imageDataUrl } });
+      vulIn(data);
+      toast.success("Recept van je schermafbeelding gehaald. Lees het even na.");
+    } catch {
+      toast.error("We konden geen recept uit deze afbeelding halen");
+    } finally {
+      setScreenshotBezig(false);
     }
   }
 
@@ -284,7 +300,8 @@ export function RecipeForm({
           {manier === "link" && (
             <div className="mt-4">
               <p className="text-base text-muted-foreground">
-                Plak de link van een recept. Wij vullen alles voor je in.
+                Plak de link van een recept, ook van Instagram, TikTok of Facebook. Wij vullen
+                alles voor je in.
               </p>
               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                 <Input
@@ -334,9 +351,27 @@ export function RecipeForm({
           {manier === "foto" && (
             <div className="mt-4">
               <p className="text-base text-muted-foreground">
-                Kies een foto van een klaar gerecht. Wij bedenken een voorstel: ingrediënten en
-                stappen. Lees het na en pas gerust aan.
+                Heb je een schermafbeelding van een recept (bijvoorbeeld van Instagram)? Kies die
+                hieronder. Of kies een foto van een klaar gerecht: dan bedenken wij een voorstel.
               </p>
+              <label className="mt-3 inline-flex min-h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-5 text-base font-semibold">
+                {screenshotBezig ? (
+                  <Loader2 className="size-5 animate-spin" />
+                ) : (
+                  <Camera className="size-5" />
+                )}
+                Schermafbeelding van Instagram of een website
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void handleScreenshot(f);
+                  }}
+                />
+              </label>
+
               <label className="mt-3 inline-flex min-h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-5 text-base font-semibold text-primary-foreground">
                 {suggereren ? (
                   <Loader2 className="size-5 animate-spin" />
