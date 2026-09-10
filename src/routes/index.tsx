@@ -7,6 +7,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CATEGORIES, DIFFICULTIES, type Recipe } from "@/lib/types";
 import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
@@ -134,63 +141,62 @@ function HomePage() {
         </div>
 
         <div className="space-y-3 rounded-2xl border border-border bg-card p-3">
-          <FilterRij titel={t("Soort")}>
-            <Chip active={!categorie} onClick={() => setCategorie(null)}>
-              {t("Alles")}
-            </Chip>
-            {CATEGORIES.map((c) => (
-              <Chip
-                key={c}
-                active={categorie === c}
-                onClick={() => setCategorie(categorie === c ? null : c)}
-              >
-                {t(c)}
-              </Chip>
-            ))}
-          </FilterRij>
+          <div className="flex flex-wrap items-end gap-3">
+            <FilterSelect
+              label={t("Soort")}
+              value={categorie ?? "alles"}
+              onChange={(v) => setCategorie(v === "alles" ? null : v)}
+              options={[
+                { value: "alles", label: t("Alles") },
+                ...CATEGORIES.map((c) => ({ value: c, label: t(c) })),
+              ]}
+            />
 
-          <FilterRij titel={t("Duurtijd")}>
-            <Chip active={!maxTijd} onClick={() => setMaxTijd(0)}>
-              {t("Alles")}
-            </Chip>
-            {TIJDEN.map((tijd) => (
-              <Chip
-                key={tijd.value}
-                active={maxTijd === tijd.value}
-                onClick={() => setMaxTijd(maxTijd === tijd.value ? 0 : tijd.value)}
-              >
-                {t(tijd.label)}
-              </Chip>
-            ))}
-          </FilterRij>
+            <FilterSelect
+              label={t("Duurtijd")}
+              value={String(maxTijd)}
+              onChange={(v) => setMaxTijd(Number(v))}
+              options={[
+                { value: "0", label: t("Alles") },
+                ...TIJDEN.map((tijd) => ({ value: String(tijd.value), label: t(tijd.label) })),
+              ]}
+            />
 
-          <FilterRij titel={t("Moeilijkheid")}>
-            <Chip active={!moeilijkheid} onClick={() => setMoeilijkheid(null)}>
-              {t("Alles")}
-            </Chip>
-            {DIFFICULTIES.map((d) => (
-              <Chip
-                key={d}
-                active={moeilijkheid === d}
-                onClick={() => setMoeilijkheid(moeilijkheid === d ? null : d)}
-              >
-                {t(d)}
-              </Chip>
-            ))}
-            <Chip active={alleenFavorieten} onClick={() => setAlleenFavorieten(!alleenFavorieten)}>
-              <Heart className="size-4" aria-hidden /> {t("Favorieten")}
-            </Chip>
-          </FilterRij>
+            <FilterSelect
+              label={t("Moeilijkheid")}
+              value={moeilijkheid ?? "alles"}
+              onChange={(v) => setMoeilijkheid(v === "alles" ? null : v)}
+              options={[
+                { value: "alles", label: t("Alles") },
+                ...DIFFICULTIES.map((d) => ({ value: d, label: t(d) })),
+              ]}
+            />
 
-          {actieveFilters > 0 && (
             <button
               type="button"
-              onClick={wisFilters}
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-base font-semibold text-primary"
+              onClick={() => setAlleenFavorieten(!alleenFavorieten)}
+              className={cn(
+                "inline-flex min-h-[56px] items-center gap-2 rounded-xl border px-4 text-base font-semibold",
+                alleenFavorieten
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card text-foreground",
+              )}
+              aria-pressed={alleenFavorieten}
             >
-              <RotateCcw className="size-4" aria-hidden /> {t("Filters wissen")}
+              <Heart className={cn("size-5", alleenFavorieten && "fill-current")} aria-hidden />
+              {t("Favorieten")}
             </button>
-          )}
+
+            {actieveFilters > 0 && (
+              <button
+                type="button"
+                onClick={wisFilters}
+                className="inline-flex min-h-[56px] items-center gap-2 rounded-xl px-2 text-base font-semibold text-primary"
+              >
+                <RotateCcw className="size-5" aria-hidden /> {t("Filters wissen")}
+              </button>
+            )}
+          </div>
         </div>
 
         <p className="text-base text-muted-foreground">
@@ -239,36 +245,42 @@ function HomePage() {
   );
 }
 
-function FilterRij({ titel, children }: { titel: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <p className="text-base font-semibold">{titel}</p>
-      <div className="mt-2 flex gap-2 overflow-x-auto pb-1">{children}</div>
-    </div>
-  );
-}
-
-function Chip({
-  active,
-  onClick,
-  children,
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options,
 }: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "inline-flex min-h-12 shrink-0 items-center gap-2 rounded-full border px-4 text-base font-semibold",
-        active
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-card text-foreground",
-      )}
-    >
-      {children}
-    </button>
+    <div className="min-w-[10rem] flex-1">
+      <label className="mb-1 block text-base font-semibold" htmlFor={`filter-${label}`}>
+        {label}
+      </label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger
+          id={`filter-${label}`}
+          className="h-14 w-full rounded-xl border-border bg-card text-base"
+          aria-label={label}
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="rounded-xl border-border bg-card text-base">
+          {options.map((opt) => (
+            <SelectItem
+              key={opt.value}
+              value={opt.value}
+              className="min-h-12 cursor-pointer text-base focus:bg-secondary"
+            >
+              {opt.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }

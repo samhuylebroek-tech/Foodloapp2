@@ -3,7 +3,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Loader2, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,12 +15,12 @@ export const Route = createFileRoute("/instellingen")({
       { title: "Instellingen – Samen Koken" },
       {
         name: "description",
-        content: "Pas je e-mailadres en wachtwoord aan, kies een kleurenthema en je taal.",
+        content: "Pas je wachtwoord aan, kies een kleurenthema en je taal.",
       },
       { property: "og:title", content: "Instellingen – Samen Koken" },
       {
         property: "og:description",
-        content: "E-mail, wachtwoord, kleuren en taal: alles op één plek.",
+        content: "Wachtwoord, kleuren en taal: alles op één plek.",
       },
     ],
   }),
@@ -29,23 +28,11 @@ export const Route = createFileRoute("/instellingen")({
 });
 
 function InstellingenPage() {
-  const { user } = useAuth();
   const { taal, zetTaal, thema, zetThema, t } = useVoorkeuren();
 
-  const [email, setEmail] = useState(user?.email ?? "");
-  const [emailBezig, setEmailBezig] = useState(false);
   const [wachtwoord, setWachtwoord] = useState("");
   const [herhaal, setHerhaal] = useState("");
   const [wachtwoordBezig, setWachtwoordBezig] = useState(false);
-
-  async function bewaarEmail() {
-    if (!email.trim() || email.trim() === user?.email) return;
-    setEmailBezig(true);
-    const { error } = await supabase.auth.updateUser({ email: email.trim() });
-    setEmailBezig(false);
-    if (error) toast.error(t("Aanpassen lukte niet"));
-    else toast.success(t("Kijk in je mailbox om het nieuwe adres te bevestigen"));
-  }
 
   async function bewaarWachtwoord() {
     if (wachtwoord.length < 8) {
@@ -70,24 +57,6 @@ function InstellingenPage() {
   return (
     <AppShell title={t("Instellingen")}>
       <div className="space-y-6">
-        <section className="rounded-2xl border border-border bg-card p-4">
-          <h2 className="text-xl">{t("E-mailadres")}</h2>
-          <Label htmlFor="email" className="mt-3 block text-base">
-            {t("Je e-mailadres")}
-          </Label>
-          <Input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mt-2 h-14 text-base"
-          />
-          <Button onClick={bewaarEmail} disabled={emailBezig} className="mt-3 h-14 w-full text-base">
-            {emailBezig ? <Loader2 className="size-5 animate-spin" /> : null}
-            {t("E-mailadres bewaren")}
-          </Button>
-        </section>
-
         <section className="rounded-2xl border border-border bg-card p-4">
           <h2 className="text-xl">{t("Wachtwoord")}</h2>
           <Label htmlFor="pw" className="mt-3 block text-base">
