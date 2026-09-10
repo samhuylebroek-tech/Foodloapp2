@@ -17,7 +17,11 @@ function Systeem() {
       ) : (
         <div className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
-            {data.checks.map((c) => (
+            {[
+              { naam: "Database", ok: data.database.ok, detail: data.database.melding ?? `${data.database.ms} ms` },
+              { naam: "AI", ok: data.ai.ok, detail: data.ai.melding ?? "Beschikbaar" },
+              { naam: "Opslag", ok: data.opslag.ok, detail: data.opslag.melding ?? "Beschikbaar" },
+            ].map((c) => (
               <Kaart key={c.naam}>
                 <div className="flex items-center gap-2">
                   <span className={`h-2.5 w-2.5 rounded-full ${c.ok ? "bg-emerald-400" : "bg-red-400"}`} />

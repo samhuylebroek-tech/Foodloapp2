@@ -38,7 +38,11 @@ function Instellingen() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const vlaggen: Record<string, boolean> = (data?.vlaggen as any) ?? {};
+  const rijen = (data ?? []) as { key: string; value: any }[];
+  const vlaggen: Record<string, boolean> = Object.fromEntries(
+    rijen.filter((r) => r.key.startsWith("flag:")).map((r) => [r.key.slice(5), r.value === true || r.value === "true"]),
+  );
+  const onderhoudsbericht = (rijen.find((r) => r.key === "onderhoudsbericht")?.value as string) ?? "";
 
   return (
     <AdminShell titel="Instellingen" omschrijving="Functies aan- of uitzetten zonder code">
