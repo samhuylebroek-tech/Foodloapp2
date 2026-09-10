@@ -145,7 +145,7 @@ export const adminDashboard = createServerFn({ method: "GET" })
     const week = new Date(nu - 7 * 24 * 3600_000).toISOString();
 
     const tel = async (tabel: string, filter?: (q: any) => any) => {
-      let q = db.from(tabel).select("*", { count: "exact", head: true });
+      let q = (db as any).from(tabel).select("*", { count: "exact", head: true });
       if (filter) q = filter(q);
       const { count } = await q;
       return count ?? 0;
@@ -296,11 +296,11 @@ export const adminExportGebruiker = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { db, profiel } = await bewaker(context as Ctx, "privacy.manage");
     const tabellen = ["profiles", "recipes", "favorites", "meal_plan", "shopping_lists", "shopping_items", "feedback"];
-    const bundel: Record<string, unknown> = {};
+    const bundel: Record<string, any[]> = {};
     for (const t of tabellen) {
       const kolom = t === "profiles" ? "id" : "user_id";
-      const { data: rijen } = await db.from(t).select("*").eq(kolom, data.id);
-      bundel[t] = rijen ?? [];
+      const { data: rijen } = await (db as any).from(t).select("*").eq(kolom, data.id);
+      bundel[t] = (rijen ?? []) as any[];
     }
     await logboek(db, profiel, "privacy.export", "user", data.id);
     return bundel;

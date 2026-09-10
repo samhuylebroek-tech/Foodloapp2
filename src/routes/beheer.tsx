@@ -53,8 +53,14 @@ function BeheerLayout() {
             setBezig(true);
             const { data, error } = await supabase.rpc("claim_first_admin");
             setBezig(false);
-            if (error) return toast.error(error.message);
-            if (!data) return toast.error("Er bestaat al een beheerder. Vraag die om je toe te voegen.");
+            if (error) {
+              toast.error(error.message);
+              return;
+            }
+            if (!data) {
+              toast.error("Er bestaat al een beheerder. Vraag die om je toe te voegen.");
+              return;
+            }
             await qc.invalidateQueries({ queryKey: ["admin-profiel"] });
             toast.success("Je bent nu hoofdbeheerder.");
           }}
