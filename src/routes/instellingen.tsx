@@ -58,24 +58,6 @@ function InstellingenPage() {
     <AppShell title={t("Instellingen")}>
       <div className="space-y-6">
         <section className="rounded-2xl border border-border bg-card p-4">
-          <h2 className="text-xl">{t("E-mailadres")}</h2>
-          <Label htmlFor="email" className="mt-3 block text-base">
-            {t("Je e-mailadres")}
-          </Label>
-          <Input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mt-2 h-14 text-base"
-          />
-          <Button onClick={bewaarEmail} disabled={emailBezig} className="mt-3 h-14 w-full text-base">
-            {emailBezig ? <Loader2 className="size-5 animate-spin" /> : null}
-            {t("E-mailadres bewaren")}
-          </Button>
-        </section>
-
-        <section className="rounded-2xl border border-border bg-card p-4">
           <h2 className="text-xl">{t("Wachtwoord")}</h2>
           <Label htmlFor="pw" className="mt-3 block text-base">
             {t("Nieuw wachtwoord")}
