@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { markeerGezien } from "@/lib/gezien";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -56,6 +57,10 @@ function ReceptPage() {
   const [stap, setStap] = useState(0);
   const [planOpen, setPlanOpen] = useState(false);
   const [aanvullen, setAanvullen] = useState(false);
+
+  useEffect(() => {
+    markeerGezien(id);
+  }, [id]);
 
 
   const { data, isLoading } = useQuery({
