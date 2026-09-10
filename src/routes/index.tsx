@@ -23,7 +23,12 @@ import type { Recipe } from "@/lib/types";
 import { haalWeer, sfeerVoorWeer, type Weer } from "@/lib/weer";
 import { gezienIds } from "@/lib/gezien";
 import { useT } from "@/lib/voorkeuren";
-import { ontdekSuggesties, importRecipeFromText, type InternetSuggestie } from "@/lib/ai.functions";
+import {
+  ontdekSuggesties,
+  importRecipeFromText,
+  gerechtFoto,
+  type InternetSuggestie,
+} from "@/lib/ai.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -446,5 +451,63 @@ function Rij({
         ))}
       </ul>
     </section>
+  );
+}
+
+function InternetKaart({
+  s,
+  t,
+  bezig,
+  onBewaar,
+}: {
+  s: InternetSuggestie;
+  t: (x: string) => string;
+  bezig: string | null;
+  onBewaar: () => void;
+}) {
+  const { data: foto } = useQuery({
+    queryKey: ["gerecht-foto", s.title],
+    staleTime: Infinity,
+    gcTime: 1000 * 60 * 60 * 24,
+    retry: false,
+    queryFn: () => gerechtFoto({ data: { titel: s.title } }),
+  });
+
+  return (
+    <li className="w-60 shrink-0 snap-start">
+      <div className="flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-accent/15 to-primary/10">
+        <div>
+          <p className="px-4 pt-4 font-display text-xl leading-tight">{t(s.title)}</p>
+          {foto ? (
+            <img
+              src={foto}
+              alt={s.title}
+              className="mt-3 h-32 w-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="mt-3 h-32 w-full animate-pulse bg-secondary" aria-hidden />
+          )}
+          <div className="px-4">
+            <p className="mt-3 text-sm text-muted-foreground">
+              {s.keuken ? `${t(s.keuken)} · ` : ""}
+              {s.minuten} min
+            </p>
+            <p className="mt-2 line-clamp-3 text-base">{t(s.waarom)}</p>
+          </div>
+        </div>
+        <div className="p-4">
+          <button
+            type="button"
+            onClick={onBewaar}
+            disabled={bezig !== null}
+            className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground disabled:opacity-60"
+          >
+            <Plus className="size-5" aria-hidden />
+            {bezig === s.title ? t("Bezig…") : t("Bij mijn gerechten")}
+          </button>
+        </div>
+      </div>
+    </li>
   );
 }
