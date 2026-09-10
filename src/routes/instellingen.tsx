@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { useAdmin } from "@/hooks/useAdmin";
 import { Loader2, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -140,5 +141,18 @@ function InstellingenPage() {
         </Button>
       </div>
     </AppShell>
+  );
+}
+
+function BeheerLink() {
+  const { profiel } = useAdmin();
+  if (!profiel) return null;
+  return (
+    <Link
+      to="/beheer"
+      className="block rounded-2xl border border-border bg-card p-5 text-lg font-medium text-foreground shadow-sm"
+    >
+      Control Center openen
+    </Link>
   );
 }
