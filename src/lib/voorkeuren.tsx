@@ -43,7 +43,7 @@ type Ctx = {
 const VoorkeurenCtx = createContext<Ctx>({
   taal: "nl",
   zetTaal: () => {},
-  thema: "warm",
+  thema: "sage",
   zetThema: () => {},
   t: (tekst) => tekst,
 });
