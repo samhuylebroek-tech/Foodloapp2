@@ -71,9 +71,9 @@ function Instellingen() {
           <Kaart>
             <p className="mb-3 text-sm font-medium">Onderhoud</p>
             <div className="flex items-center justify-between gap-3 text-sm">
-              <span>{LABELS.onderhoud}</span>
+              <span>{LABELS["onderhoud"]}</span>
               <Switch
-                checked={vlaggen.onderhoud === true}
+                checked={vlaggen["onderhoud"] === true}
                 disabled={!mag("settings.manage")}
                 onCheckedChange={(v) => zet.mutate({ sleutel: "flag:onderhoud", waarde: v })}
               />
@@ -81,7 +81,7 @@ function Instellingen() {
             <Input
               className="mt-3 border-white/10 bg-slate-950 text-slate-100"
               placeholder="Bericht voor gebruikers tijdens onderhoud"
-              value={bericht ?? (data?.onderhoudsbericht as string) ?? ""}
+              value={bericht ?? onderhoudsbericht}
               onChange={(e) => setBericht(e.target.value)}
               disabled={!mag("settings.manage")}
             />
