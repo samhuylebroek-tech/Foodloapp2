@@ -128,24 +128,27 @@ function VriendenPage() {
     mutationFn: async () => {
       const { data, error } = await supabase
         .from("shares")
-        .insert({ owner_id: user!.id, invited_email: email.trim() || null, ...rechten })
+        .insert({ owner_id: user!.id, ...rechten })
         .select("*")
         .single();
       if (error) throw error;
       return data as Share;
     },
-    onSuccess: (s) => {
-      setEmail("");
-      setNieuwOpen(true);
+    onSuccess: async (s) => {
+      setNieuwOpen(false);
+      setNieuwId(s.id);
       setRechten(STANDAARD);
       qc.invalidateQueries({ queryKey: ["shares"] });
-      toast.success("Uitnodiging klaar — deel de link of QR-code hieronder.");
-      if (s.invited_email) {
-        window.location.href = `mailto:${s.invited_email}?subject=${encodeURIComponent(
-          "Uitnodiging voor Samen Koken",
-        )}&body=${encodeURIComponent(
-          `Hallo,\n\nIk deel mijn recepten met je in de app Samen Koken.\nOpen deze link om mee te doen:\n${uitnodigingsLink(s.token)}\n`,
-        )}`;
+      const link = uitnodigingsLink(s.token);
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: "Samen Koken", text: "Doe mee met mijn recepten", url: link });
+          return;
+        }
+        await navigator.clipboard.writeText(link);
+        toast.success("Uitnodigingslink gekopieerd — plak hem in een bericht.");
+      } catch {
+        toast.success("Uitnodiging klaar — deel de link hieronder.");
       }
     },
     onError: () => toast.error("De uitnodiging maken lukte niet"),
