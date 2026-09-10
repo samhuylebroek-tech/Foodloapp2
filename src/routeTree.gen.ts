@@ -14,6 +14,7 @@ import { Route as AanmeldenRouteImport } from './routes/aanmelden'
 import { Route as BoodschappenRouteImport } from './routes/boodschappen'
 import { Route as FeedbackRouteImport } from './routes/feedback'
 import { Route as InstallerenRouteImport } from './routes/installeren'
+import { Route as InstellingenRouteImport } from './routes/instellingen'
 import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as UitnodigingRouteImport } from './routes/uitnodiging'
 import { Route as VriendenRouteImport } from './routes/vrienden'
@@ -44,6 +45,11 @@ const FeedbackRoute = FeedbackRouteImport.update({
 const InstallerenRoute = InstallerenRouteImport.update({
   id: '/installeren',
   path: '/installeren',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InstellingenRoute = InstellingenRouteImport.update({
+  id: '/instellingen',
+  path: '/instellingen',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlannerRoute = PlannerRouteImport.update({
@@ -83,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/boodschappen': typeof BoodschappenRoute
   '/feedback': typeof FeedbackRoute
   '/installeren': typeof InstallerenRoute
+  '/instellingen': typeof InstellingenRoute
   '/planner': typeof PlannerRoute
   '/uitnodiging': typeof UitnodigingRoute
   '/vrienden': typeof VriendenRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByTo {
   '/boodschappen': typeof BoodschappenRoute
   '/feedback': typeof FeedbackRoute
   '/installeren': typeof InstallerenRoute
+  '/instellingen': typeof InstellingenRoute
   '/planner': typeof PlannerRoute
   '/uitnodiging': typeof UitnodigingRoute
   '/vrienden': typeof VriendenRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/boodschappen': typeof BoodschappenRoute
   '/feedback': typeof FeedbackRoute
   '/installeren': typeof InstallerenRoute
+  '/instellingen': typeof InstellingenRoute
   '/planner': typeof PlannerRoute
   '/uitnodiging': typeof UitnodigingRoute
   '/vrienden': typeof VriendenRoute
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/boodschappen'
     | '/feedback'
     | '/installeren'
+    | '/instellingen'
     | '/planner'
     | '/uitnodiging'
     | '/vrienden'
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/boodschappen'
     | '/feedback'
     | '/installeren'
+    | '/instellingen'
     | '/planner'
     | '/uitnodiging'
     | '/vrienden'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/boodschappen'
     | '/feedback'
     | '/installeren'
+    | '/instellingen'
     | '/planner'
     | '/uitnodiging'
     | '/vrienden'
@@ -165,6 +177,7 @@ export interface RootRouteChildren {
   BoodschappenRoute: typeof BoodschappenRoute
   FeedbackRoute: typeof FeedbackRoute
   InstallerenRoute: typeof InstallerenRoute
+  InstellingenRoute: typeof InstellingenRoute
   PlannerRoute: typeof PlannerRoute
   UitnodigingRoute: typeof UitnodigingRoute
   VriendenRoute: typeof VriendenRoute
@@ -207,6 +220,13 @@ declare module '@tanstack/react-router' {
       path: '/installeren'
       fullPath: '/installeren'
       preLoaderRoute: typeof InstallerenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/instellingen': {
+      id: '/instellingen'
+      path: '/instellingen'
+      fullPath: '/instellingen'
+      preLoaderRoute: typeof InstellingenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/planner': {
@@ -272,6 +292,7 @@ const rootRouteChildren: RootRouteChildren = {
   BoodschappenRoute: BoodschappenRoute,
   FeedbackRoute: FeedbackRoute,
   InstallerenRoute: InstallerenRoute,
+  InstellingenRoute: InstellingenRoute,
   PlannerRoute: PlannerRoute,
   UitnodigingRoute: UitnodigingRoute,
   VriendenRoute: VriendenRoute,
