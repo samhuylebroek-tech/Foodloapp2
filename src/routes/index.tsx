@@ -305,14 +305,14 @@ function StartPage() {
         {isLoading ? (
           <p className="py-10 text-center text-lg text-muted-foreground">{t("Even laden…")}</p>
         ) : recipes.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-border p-8 text-center">
-            <p className="font-display text-2xl">{t("Nog niets in jullie kookboek")}</p>
+          <div className="rounded-[2rem] border border-dashed border-border p-8 text-center">
+            <p className="text-2xl font-bold tracking-tight">{t("Nog niets in jullie kookboek")}</p>
             <p className="mt-2 text-lg text-muted-foreground">
               {t("Voeg een eerste gerecht toe met een link, een foto of gewoon zelf getypt.")}
             </p>
             <Link
               to="/recepten/nieuw"
-              className="mt-5 inline-flex h-14 items-center rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground"
+              className="mt-5 inline-flex h-14 items-center rounded-2xl bg-primary px-6 text-base font-semibold text-primary-foreground shadow-md shadow-primary/15"
             >
               {t("Eerste recept toevoegen")}
             </Link>
@@ -337,15 +337,15 @@ function StartPage() {
                 <Link
                   to="/recepten/$id"
                   params={{ id: vandaag.id }}
-                  className="block overflow-hidden rounded-3xl border border-border bg-card active:opacity-90"
+                  className="block overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm transition-shadow hover:shadow-md active:opacity-90"
                 >
                   <RecipePhoto
                     path={vandaag.image_url}
                     alt={vandaag.title}
                     className="h-48 w-full rounded-none sm:h-64"
                   />
-                  <div className="p-4">
-                    <p className="font-display text-2xl leading-tight">{t(vandaag.title)}</p>
+                  <div className="p-5">
+                    <p className="text-2xl font-bold leading-tight tracking-tight">{t(vandaag.title)}</p>
                     <p className="mt-1 flex items-center gap-2 text-base text-muted-foreground">
                       <Clock className="size-4" aria-hidden />
                       {vandaag.prep_minutes + vandaag.cook_minutes} min · {t(vandaag.category)} ·{" "}
@@ -394,7 +394,7 @@ function StartPage() {
 
             <Link
               to="/gerechten"
-              className="flex min-h-16 items-center justify-between rounded-2xl border border-border bg-card px-5 text-lg font-semibold"
+              className="flex min-h-16 items-center justify-between rounded-2xl border border-border bg-card px-5 text-lg font-semibold transition-colors hover:bg-muted"
             >
               {t("Bekijk alle gerechten")}
               <ChevronRight className="size-6" aria-hidden />
