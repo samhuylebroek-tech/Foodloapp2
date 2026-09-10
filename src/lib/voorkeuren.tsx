@@ -63,7 +63,7 @@ function leesCache(taal: string): Record<string, string> {
 
 export function VoorkeurenProvider({ children }: { children: ReactNode }) {
   const [taal, setTaal] = useState("nl");
-  const [thema, setThema] = useState<ThemaId>("warm");
+  const [thema, setThema] = useState<ThemaId>("sage");
   const [cache, setCache] = useState<Record<string, string>>({});
 
   const wachtrij = useRef<Set<string>>(new Set());
@@ -87,8 +87,9 @@ export function VoorkeurenProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const el = document.documentElement;
-    el.classList.remove("dark", "thema-fris", "thema-contrast");
+    el.classList.remove("dark", "thema-warm", "thema-fris", "thema-contrast");
     if (thema === "donker") el.classList.add("dark");
+    if (thema === "warm") el.classList.add("thema-warm");
     if (thema === "fris") el.classList.add("thema-fris");
     if (thema === "contrast") el.classList.add("thema-contrast");
   }, [thema]);
