@@ -13,7 +13,7 @@ export function QrDeelKaart({ compact = false }: { compact?: boolean }) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const appUrl = `${window.location.origin}/installeren`;
+    const appUrl = "https://foodloapp.com/installeren";
     setUrl(appUrl);
     let cancelled = false;
     toDataURL(appUrl, {
