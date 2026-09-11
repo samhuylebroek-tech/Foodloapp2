@@ -324,6 +324,15 @@ function ReceptPage() {
               <Pencil className="size-5" aria-hidden /> {t("Aanpassen")}
             </Link>
           )}
+          {!isOwner && (
+            <button
+              type="button"
+              onClick={kopieerNaarMij}
+              className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground"
+            >
+              <Copy className="size-5" aria-hidden /> {t("Zet in mijn gerechten")}
+            </button>
+          )}
         </div>
 
         <RecipePhoto path={recipe.image_url} alt={recipe.title} className="h-56 w-full rounded-3xl" />
@@ -446,7 +455,7 @@ function ReceptPage() {
             <CalendarPlus className="size-5" /> {t("Inplannen")}
           </Button>
 
-          {planOpen && <PlanKiezer onKies={planOp} />}
+          {planOpen && <PlanKiezer momenten={momenten} onKies={planOp} />}
 
           {recipe.source_url && (
             <a
@@ -484,9 +493,15 @@ function ReceptPage() {
   );
 }
 
-function PlanKiezer({ onKies }: { onKies: (datum: string, moment: string) => void }) {
+function PlanKiezer({
+  momenten,
+  onKies,
+}: {
+  momenten: string[];
+  onKies: (datum: string, moment: string) => void;
+}) {
   const [datum, setDatum] = useState(new Date().toISOString().slice(0, 10));
-  const [moment, setMoment] = useState<string>("avondeten");
+  const [moment, setMoment] = useState<string>(momenten[momenten.length - 1] ?? "avondeten");
   return (
     <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
       <input
@@ -502,7 +517,7 @@ function PlanKiezer({ onKies }: { onKies: (datum: string, moment: string) => voi
         aria-label="Maaltijd"
         className="h-14 w-full rounded-xl border border-input bg-background px-3 text-base"
       >
-        {MEAL_TYPES.map((m) => (
+        {momenten.map((m) => (
           <option key={m} value={m}>
             {m}
           </option>
