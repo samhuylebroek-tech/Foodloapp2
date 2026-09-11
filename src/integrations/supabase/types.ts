@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      aankopen: {
+        Row: {
+          bedrag_cent: number
+          created_at: string
+          extra_gerechten: number
+          id: string
+          provider: string
+          provider_ref: string | null
+          soort: string
+          status: string
+          updated_at: string
+          user_id: string
+          valuta: string
+        }
+        Insert: {
+          bedrag_cent?: number
+          created_at?: string
+          extra_gerechten?: number
+          id?: string
+          provider?: string
+          provider_ref?: string | null
+          soort?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          valuta?: string
+        }
+        Update: {
+          bedrag_cent?: number
+          created_at?: string
+          extra_gerechten?: number
+          id?: string
+          provider?: string
+          provider_ref?: string | null
+          soort?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          valuta?: string
+        }
+        Relationships: []
+      }
       admin_audit_log: {
         Row: {
           action: string
