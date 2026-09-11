@@ -1,9 +1,5 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { toast } from "sonner";
 import { ShieldCheck } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Button } from "@/components/ui/button";
 
@@ -24,8 +20,6 @@ export const Route = createFileRoute("/beheer")({
 
 function BeheerLayout() {
   const { profiel, laden, ingelogd } = useAdmin();
-  const qc = useQueryClient();
-  const [bezig, setBezig] = useState(false);
 
   if (laden) {
     return <div className="grid min-h-screen place-items-center bg-slate-950 text-slate-400">Laden…</div>;
@@ -45,28 +39,8 @@ function BeheerLayout() {
     return (
       <Scherm
         titel="Geen toegang"
-        tekst="Dit account heeft geen beheerdersrol. Als jij de eigenaar bent en er bestaat nog geen beheerder, kun je jezelf eenmalig als hoofdbeheerder instellen."
+        tekst="Dit account heeft geen beheerdersrol. Vraag de hoofdbeheerder om je toe te voegen."
       >
-        <Button
-          disabled={bezig}
-          onClick={async () => {
-            setBezig(true);
-            const { data, error } = await supabase.rpc("claim_first_admin");
-            setBezig(false);
-            if (error) {
-              toast.error(error.message);
-              return;
-            }
-            if (!data) {
-              toast.error("Er bestaat al een beheerder. Vraag die om je toe te voegen.");
-              return;
-            }
-            await qc.invalidateQueries({ queryKey: ["admin-profiel"] });
-            toast.success("Je bent nu hoofdbeheerder.");
-          }}
-        >
-          Mij hoofdbeheerder maken
-        </Button>
         <Link to="/" className="text-sm text-emerald-400 hover:underline">
           Terug naar de app
         </Link>

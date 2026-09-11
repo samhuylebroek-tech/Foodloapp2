@@ -353,7 +353,7 @@ function PlannerPage() {
               key={dag}
               className={
                 volledig
-                  ? "rounded-2xl border-2 border-primary bg-primary/15 p-4"
+                  ? "rounded-2xl border-2 border-primary bg-primary p-4 text-primary-foreground [&_a]:text-primary-foreground [&_button]:text-primary-foreground [&_span]:text-primary-foreground"
                   : dag === vandaag
                     ? "rounded-2xl border-2 border-primary bg-card p-4"
                     : "rounded-2xl border border-border bg-card p-4"
@@ -363,7 +363,7 @@ function PlannerPage() {
                 {labelVoor(dag)}
                 {dag === vandaag ? " · vandaag" : ""}
                 {volledig && (
-                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 align-middle text-xs font-bold normal-case text-primary-foreground">
+                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-primary-foreground/20 px-2 py-0.5 align-middle text-xs font-bold normal-case">
                     <Check className="size-3.5" aria-hidden /> volledig
                   </span>
                 )}

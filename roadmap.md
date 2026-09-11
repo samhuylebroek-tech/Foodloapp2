@@ -39,3 +39,4 @@
 - Boodschappenlijstjes gemakkelijk verwijderen
 - Recept van vriend met 1 knop naar eigen gerechten kopiëren
 - Volledig ingeplande dag in het weekmenu ingekleurd tonen
+- SSO: geen enkele lovable-verwijzing zichtbaar bij aanmelden
