@@ -1,12 +1,14 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { Heart, Search, Clock, RotateCcw, Plus } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Heart, Search, Clock, RotateCcw, Plus, Trash2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -19,7 +21,6 @@ import { DIETEN, bepaalDieet } from "@/lib/dieet";
 import { Sterren } from "@/components/Sterren";
 import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
-
 
 export const Route = createFileRoute("/gerechten")({
   head: () => ({
@@ -49,6 +50,7 @@ const TIJDEN = [
 function GerechtenPage() {
   const { user } = useAuth();
   const t = useT();
+  const qc = useQueryClient();
   const [zoek, setZoek] = useState("");
   const [categorie, setCategorie] = useState<string | null>(null);
   const [moeilijkheid, setMoeilijkheid] = useState<string | null>(null);
@@ -56,6 +58,8 @@ function GerechtenPage() {
   const [maxTijd, setMaxTijd] = useState(0);
   const [alleenFavorieten, setAlleenFavorieten] = useState(false);
   const [minSterren, setMinSterren] = useState(0);
+  const [teVerwijderen, setTeVerwijderen] = useState<Recipe | null>(null);
+  const [bezig, setBezig] = useState(false);
 
   const { data: recipes = [], isLoading } = useQuery({
     queryKey: ["recipes"],
@@ -63,6 +67,7 @@ function GerechtenPage() {
       const { data, error } = await supabase
         .from("recipes")
         .select("*")
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Recipe[];
@@ -174,6 +179,23 @@ function GerechtenPage() {
     setAlleenFavorieten(false);
   }
 
+  async function verwijder(r: Recipe) {
+    setBezig(true);
+    const { error } = await supabase
+      .from("recipes")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", r.id);
+    setBezig(false);
+    if (error) {
+      toast.error(t("Verwijderen lukte niet"));
+      return;
+    }
+    toast.success(t("Gerecht verwijderd"));
+    setTeVerwijderen(null);
+    qc.invalidateQueries({ queryKey: ["recipes"] });
+    qc.invalidateQueries({ queryKey: ["alle-ingredienten"] });
+    qc.invalidateQueries({ queryKey: ["meal-plan"] });
+  }
 
   return (
     <AppShell title={t("Gerechten")}>
@@ -198,7 +220,6 @@ function GerechtenPage() {
             aria-label={t("Zoeken")}
           />
         </div>
-
 
         <div className="rounded-2xl border border-border bg-card p-2">
           <div className="grid grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap">
@@ -241,8 +262,6 @@ function GerechtenPage() {
                 ...DIETEN.map((d) => ({ value: d, label: t(d) })),
               ]}
             />
-
-
 
             <FilterSelect
               label={t("Score")}
@@ -302,54 +321,148 @@ function GerechtenPage() {
             </Link>
           </div>
         ) : (
-          <ul className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+          <ul className="space-y-3">
             {zichtbaar.map((r) => (
               <li key={r.id}>
-                <Link
-                  to="/recepten/$id"
-                  params={{ id: r.id }}
-                  className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card active:bg-secondary"
-                >
-                  <div className="relative">
+                <SwipeRij onVerwijder={() => setTeVerwijderen(r)}>
+                  <Link
+                    to="/recepten/$id"
+                    params={{ id: r.id }}
+                    className="flex min-h-28 items-stretch gap-3 rounded-2xl border border-border bg-card p-3 active:bg-secondary"
+                  >
                     <RecipePhoto
                       path={r.image_url}
                       alt={r.title}
-                      className="aspect-[4/3] w-full rounded-none"
+                      className="size-24 shrink-0 rounded-xl"
                     />
-                    {favorites.includes(r.id) && (
-                      <span className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-full bg-card/90">
-                        <Heart
-                          className="size-5 fill-primary text-primary"
-                          aria-label={t("Favoriet")}
-                        />
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-1 flex-col gap-1 p-3">
-                    <p className="line-clamp-2 font-display text-base leading-snug">{t(r.title)}</p>
-                    <p className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                      <span className="inline-flex items-center gap-1">
-                        <Clock className="size-3.5" aria-hidden />
-                        {r.prep_minutes + r.cook_minutes} min
-                      </span>
-                      <span className="rounded-full bg-secondary px-2 py-0.5">{t(r.category)}</span>
-                      <span className="rounded-full bg-secondary px-2 py-0.5">
-                        {t(r.difficulty)}
-                      </span>
-                    </p>
-                    {(scores[r.id] ?? 0) > 0 && (
-                      <span className="inline-block">
-                        <Sterren waarde={scores[r.id] ?? 0} klein />
-                      </span>
-                    )}
-                  </div>
-                </Link>
+                    <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
+                      <p className="flex items-start gap-2 font-display text-lg leading-snug">
+                        <span className="min-w-0 flex-1">{t(r.title)}</span>
+                        {favorites.includes(r.id) && (
+                          <Heart
+                            className="mt-0.5 size-5 shrink-0 fill-primary text-primary"
+                            aria-label={t("Favoriet")}
+                          />
+                        )}
+                      </p>
+                      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="size-4" aria-hidden />
+                          {r.prep_minutes + r.cook_minutes} min
+                        </span>
+                        <span className="rounded-full bg-secondary px-2 py-0.5">
+                          {t(r.category)}
+                        </span>
+                        <span className="rounded-full bg-secondary px-2 py-0.5">
+                          {t(r.difficulty)}
+                        </span>
+                      </p>
+                      {(scores[r.id] ?? 0) > 0 && (
+                        <span className="inline-block">
+                          <Sterren waarde={scores[r.id] ?? 0} klein />
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                </SwipeRij>
               </li>
             ))}
           </ul>
         )}
       </div>
+
+      {teVerwijderen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
+          <div className="w-full max-w-md rounded-t-3xl bg-card p-5 sm:rounded-3xl">
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="font-display text-xl">{t("Zeker verwijderen?")}</h2>
+              <Button
+                variant="ghost"
+                onClick={() => setTeVerwijderen(null)}
+                aria-label={t("Sluiten")}
+                className="size-12"
+              >
+                <X className="size-6" />
+              </Button>
+            </div>
+            <p className="mt-2 text-base text-muted-foreground">
+              {t("Je verwijdert")} “{t(teVerwijderen.title)}”. {t("Het staat ook niet meer in je weekmenu.")}
+            </p>
+            <div className="mt-4 flex gap-2">
+              <Button
+                variant="ghost"
+                disabled={bezig}
+                onClick={() => setTeVerwijderen(null)}
+                className="h-14 flex-1 text-base"
+              >
+                {t("Annuleren")}
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={bezig}
+                onClick={() => verwijder(teVerwijderen)}
+                className="h-14 flex-1 text-base"
+              >
+                <Trash2 className="size-5" /> {t("Verwijderen")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
+  );
+}
+
+function SwipeRij({
+  children,
+  onVerwijder,
+}: {
+  children: React.ReactNode;
+  onVerwijder: () => void;
+}) {
+  const startX = useRef<number | null>(null);
+  const [dx, setDx] = useState(0);
+  const OPEN = -88;
+
+  function onStart(e: React.TouchEvent) {
+    startX.current = e.touches[0]!.clientX;
+  }
+
+  function onMove(e: React.TouchEvent) {
+    if (startX.current === null) return;
+    const delta = e.touches[0]!.clientX - startX.current;
+    setDx(Math.max(OPEN, Math.min(0, delta + (dx === OPEN ? OPEN : 0))));
+  }
+
+  function onEnd() {
+    if (dx < OPEN / 2) setDx(OPEN);
+    else setDx(0);
+    startX.current = null;
+  }
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl">
+      <button
+        type="button"
+        onClick={() => {
+          onVerwijder();
+          setDx(0);
+        }}
+        aria-label="Verwijder dit gerecht"
+        className="absolute inset-y-0 right-0 flex w-22 flex-col items-center justify-center gap-1 rounded-r-2xl bg-destructive text-sm font-semibold text-destructive-foreground"
+      >
+        <Trash2 className="size-6" aria-hidden />
+      </button>
+      <div
+        onTouchStart={onStart}
+        onTouchMove={onMove}
+        onTouchEnd={onEnd}
+        style={{ transform: `translateX(${dx}px)` }}
+        className="relative transition-transform duration-150"
+      >
+        {children}
+      </div>
+    </div>
   );
 }
 

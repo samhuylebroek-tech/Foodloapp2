@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { QrDeelKaart } from "@/components/QrDeelKaart";
 import { useLimiet } from "@/lib/limiet";
-import { TALEN, THEMAS, useVoorkeuren, type ThemaId } from "@/lib/voorkeuren";
+import { ALLE_MOMENTEN, EEN_BLOK, TALEN, THEMAS, useVoorkeuren, type ThemaId } from "@/lib/voorkeuren";
 
 export const Route = createFileRoute("/instellingen")({
   head: () => ({
@@ -32,7 +32,7 @@ export const Route = createFileRoute("/instellingen")({
 });
 
 function InstellingenPage() {
-  const { taal, zetTaal, thema, zetThema, t } = useVoorkeuren();
+  const { taal, zetTaal, thema, zetThema, momenten, zetMomenten, t } = useVoorkeuren();
 
   const [wachtwoord, setWachtwoord] = useState("");
   const [herhaal, setHerhaal] = useState("");
@@ -131,6 +131,47 @@ function InstellingenPage() {
               </option>
             ))}
           </select>
+        </section>
+
+        <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+          <h2 className="text-xl font-bold tracking-tight">{t("Weekmenu")}</h2>
+          <p className="mt-2 text-base text-muted-foreground">
+            {t("Kies welke momenten je per dag wil inplannen.")}
+          </p>
+          <div className="mt-4 space-y-2">
+            <label className="flex min-h-14 items-center gap-3 rounded-2xl border border-border bg-muted px-4 text-base font-semibold">
+              <input
+                type="checkbox"
+                checked={momenten.length === 1 && momenten[0] === EEN_BLOK[0]}
+                onChange={(e) =>
+                  zetMomenten(e.target.checked ? [...EEN_BLOK] : [...ALLE_MOMENTEN])
+                }
+                className="size-6 accent-primary"
+              />
+              {t("Alles in 1 blok (geen ontbijt/middag/avond)")}
+            </label>
+            {momenten.length > 1 &&
+              ALLE_MOMENTEN.map((m) => (
+                <label
+                  key={m}
+                  className="flex min-h-14 items-center gap-3 rounded-2xl border border-border bg-muted px-4 text-base font-semibold"
+                >
+                  <input
+                    type="checkbox"
+                    checked={momenten.includes(m)}
+                    onChange={(e) =>
+                      zetMomenten(
+                        e.target.checked
+                          ? ALLE_MOMENTEN.filter((x) => x === m || momenten.includes(x))
+                          : momenten.filter((x) => x !== m),
+                      )
+                    }
+                    className="size-6 accent-primary"
+                  />
+                  <span className="capitalize">{t(m)}</span>
+                </label>
+              ))}
+          </div>
         </section>
 
         <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">

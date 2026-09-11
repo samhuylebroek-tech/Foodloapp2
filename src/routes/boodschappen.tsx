@@ -80,6 +80,8 @@ function BoodschappenPage() {
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["shopping"] });
   const refreshLijsten = () => qc.invalidateQueries({ queryKey: ["shopping-lists"] });
+  const [vraagVerwijder, setVraagVerwijder] = useState(false);
+  const actieveNaam = lijsten.find((l) => l.id === actief)?.name ?? "";
 
   async function nieuwLijstje() {
     if (!user) return;
@@ -110,11 +112,12 @@ function BoodschappenPage() {
   async function verwijderLijst() {
     const huidig = lijsten.find((l) => l.id === actief);
     if (!huidig) return;
-    if (!window.confirm(`Lijstje “${huidig.name}” verwijderen?`)) return;
     await supabase.from("shopping_lists").delete().eq("id", huidig.id);
+    setVraagVerwijder(false);
     setActief(null);
     refreshLijsten();
     refresh();
+    toast.success("Lijstje verwijderd");
   }
 
   async function voegToe() {
@@ -199,7 +202,7 @@ function BoodschappenPage() {
               <Pencil className="size-4" /> Naam wijzigen
             </Button>
             {lijsten.length > 1 && (
-              <Button variant="ghost" onClick={verwijderLijst} className="h-12 text-base">
+              <Button variant="ghost" onClick={() => setVraagVerwijder(true)} className="h-12 text-base text-destructive">
                 <Trash2 className="size-4" /> Lijstje verwijderen
               </Button>
             )}
@@ -264,6 +267,33 @@ function BoodschappenPage() {
           </Button>
         </div>
       </div>
+
+      {vraagVerwijder && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
+          <div className="w-full max-w-md rounded-t-3xl bg-card p-5 sm:rounded-3xl">
+            <h2 className="font-display text-xl">Lijstje verwijderen?</h2>
+            <p className="mt-2 text-base text-muted-foreground">
+              Je verwijdert “{actieveNaam}” met alles wat erop staat.
+            </p>
+            <div className="mt-4 flex gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => setVraagVerwijder(false)}
+                className="h-14 flex-1 text-base"
+              >
+                Annuleren
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={verwijderLijst}
+                className="h-14 flex-1 text-base"
+              >
+                <Trash2 className="size-5" /> Verwijderen
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }

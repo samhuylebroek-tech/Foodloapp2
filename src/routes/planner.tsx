@@ -8,8 +8,11 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  Check,
+  Loader2,
   Sparkles,
   ListPlus,
+  Type,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,9 +20,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { MEAL_TYPES, type Recipe } from "@/lib/types";
+
+import { type Recipe } from "@/lib/types";
 import { importRecipeFromText } from "@/lib/ai.functions";
+import { useVoorkeuren } from "@/lib/voorkeuren";
 import { zorgVoorLijst, maakLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
 
 export const Route = createFileRoute("/planner")({
@@ -71,8 +75,22 @@ function kortLabel(datum: string) {
   return d.toLocaleDateString("nl-BE", { weekday: "short", day: "numeric" });
 }
 
+type Basis = {
+  title: string;
+  description: string;
+  servings: number;
+  prep_minutes: number;
+  cook_minutes: number;
+  category: string;
+  difficulty: string;
+  tags: string[];
+  instructions: string[];
+  ingredienten: { name: string; quantity: number | null; unit: string }[];
+};
+
 function PlannerPage() {
   const { user } = useAuth();
+  const { momenten } = useVoorkeuren();
   const qc = useQueryClient();
   const [weekStart, setWeekStart] = useState(() => maandagVan(new Date()));
   const [kiezen, setKiezen] = useState<{ datum: string; moment: string } | null>(null);
@@ -139,65 +157,16 @@ function PlannerPage() {
     setVraagLijst({ recipeId, titel });
   }
 
-  async function nieuw_gerecht(naam: string, bewaren: boolean, datum: string, moment: string) {
+  async function nieuw_gerecht(naam: string, basis: Basis | null, datum: string, moment: string) {
     if (!user) return;
     let recipeId: string | null = null;
 
-    if (bewaren) {
-      toast.info("We maken alvast een recept met ingrediënten en stappen…");
-      let basis: {
-        title: string;
-        description: string;
-        servings: number;
-        prep_minutes: number;
-        cook_minutes: number;
-        category: string;
-        difficulty: string;
-        tags: string[];
-        instructions: string[];
-        ingredienten: { name: string; quantity: number | null; unit: string }[];
-      } = {
-        title: naam,
-        description: "",
-        servings: 4,
-        prep_minutes: 0,
-        cook_minutes: 0,
-        category: "hoofdgerecht",
-        difficulty: "makkelijk",
-        tags: [],
-        instructions: [],
-        ingredienten: [],
-      };
-
-      try {
-        const ai = await importRecipeFromText({
-          data: { text: `Maak een volledig recept voor: ${naam}` },
-        });
-        basis = {
-          title: ai.title || naam,
-          description: ai.description,
-          servings: ai.servings || 4,
-          prep_minutes: ai.prep_minutes || 0,
-          cook_minutes: ai.cook_minutes || 0,
-          category: ai.category || "hoofdgerecht",
-          difficulty: ai.difficulty || "makkelijk",
-          tags: ai.tags ?? [],
-          instructions: ai.instructions ?? [],
-          ingredienten: (ai.ingredients ?? []).map((i) => ({
-            name: i.name,
-            quantity: i.quantity,
-            unit: i.unit ?? "",
-          })),
-        };
-      } catch {
-        // zonder AI bewaren we het gerecht met enkel een naam
-      }
-
+    if (basis) {
       const { data, error } = await supabase
         .from("recipes")
         .insert({
           user_id: user.id,
-          title: basis.title,
+          title: basis.title || naam,
           description: basis.description,
           servings: basis.servings,
           prep_minutes: basis.prep_minutes,
@@ -240,7 +209,7 @@ function PlannerPage() {
       return;
     }
     setKiezen(null);
-    toast.success(bewaren ? "Ingepland en bewaard bij je recepten" : "In je weekmenu gezet");
+    toast.success(basis ? "Ingepland en bewaard bij je recepten" : "In je weekmenu gezet");
     qc.invalidateQueries({ queryKey: ["meal-plan"] });
     qc.invalidateQueries({ queryKey: ["recipes"] });
     qc.invalidateQueries({ queryKey: ["alle-ingredienten"] });
@@ -349,7 +318,7 @@ function PlannerPage() {
         </div>
 
         <Button
-          onClick={() => setKiezen({ datum: vandaag >= week[0]! && vandaag <= week[6]! ? vandaag : week[0]!, moment: "avondeten" })}
+          onClick={() => setKiezen({ datum: vandaag >= week[0]! && vandaag <= week[6]! ? vandaag : week[0]!, moment: momenten[momenten.length - 1] ?? "avondeten" })}
           className="h-16 w-full text-lg"
         >
           <Plus className="size-6" /> Gerecht inplannen deze week
@@ -377,18 +346,27 @@ function PlannerPage() {
 
         {week.map((dag) => {
           const items = plan.filter((p) => p.plan_date === dag);
+          const openMomenten = momenten.filter((m) => !items.some((p) => p.meal_type === m));
+          const volledig = momenten.length > 0 && openMomenten.length === 0;
           return (
             <section
               key={dag}
               className={
-                dag === vandaag
-                  ? "rounded-2xl border-2 border-primary bg-card p-4"
-                  : "rounded-2xl border border-border bg-card p-4"
+                volledig
+                  ? "rounded-2xl border-2 border-primary bg-primary/15 p-4"
+                  : dag === vandaag
+                    ? "rounded-2xl border-2 border-primary bg-card p-4"
+                    : "rounded-2xl border border-border bg-card p-4"
               }
             >
               <h2 className="text-lg capitalize">
                 {labelVoor(dag)}
                 {dag === vandaag ? " · vandaag" : ""}
+                {volledig && (
+                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 align-middle text-xs font-bold normal-case text-primary-foreground">
+                    <Check className="size-3.5" aria-hidden /> volledig
+                  </span>
+                )}
               </h2>
 
               {items.length > 0 && (
@@ -439,7 +417,7 @@ function PlannerPage() {
               )}
 
               <div className="mt-3 flex flex-wrap gap-2">
-                {MEAL_TYPES.map((m) => (
+                {openMomenten.map((m) => (
                   <button
                     key={m}
                     type="button"
@@ -449,6 +427,11 @@ function PlannerPage() {
                     <Plus className="size-4" aria-hidden /> {m}
                   </button>
                 ))}
+                {volledig && (
+                  <p className="text-base font-semibold text-primary">
+                    Alles is ingepland voor deze dag.
+                  </p>
+                )}
               </div>
             </section>
           );
@@ -458,6 +441,7 @@ function PlannerPage() {
       {kiezen && (
         <ReceptKiezer
           week={week}
+          momenten={momenten}
           start={kiezen}
           onSluit={() => setKiezen(null)}
           onKies={plan_toevoegen}
@@ -492,21 +476,53 @@ function PlannerPage() {
 
 function ReceptKiezer({
   week,
+  momenten,
   start,
   onSluit,
   onKies,
   onNieuw,
 }: {
   week: string[];
+  momenten: string[];
   start: { datum: string; moment: string };
   onSluit: () => void;
   onKies: (id: string, datum: string, moment: string, titel: string) => void;
-  onNieuw: (naam: string, bewaren: boolean, datum: string, moment: string) => void;
+  onNieuw: (naam: string, basis: Basis | null, datum: string, moment: string) => void;
 }) {
   const [zoek, setZoek] = useState("");
-  const [bewaren, setBewaren] = useState(true);
   const [datum, setDatum] = useState(start.datum);
   const [moment, setMoment] = useState(start.moment);
+  const [aiBezig, setAiBezig] = useState(false);
+  const [voorstel, setVoorstel] = useState<Basis | null>(null);
+
+  async function maakVoorstel(naam: string) {
+    setAiBezig(true);
+    try {
+      const ai = await importRecipeFromText({
+        data: { text: `Maak een volledig recept voor: ${naam}` },
+      });
+      setVoorstel({
+        title: ai.title || naam,
+        description: ai.description,
+        servings: ai.servings || 4,
+        prep_minutes: ai.prep_minutes || 0,
+        cook_minutes: ai.cook_minutes || 0,
+        category: ai.category || "hoofdgerecht",
+        difficulty: ai.difficulty || "makkelijk",
+        tags: ai.tags ?? [],
+        instructions: ai.instructions ?? [],
+        ingredienten: (ai.ingredients ?? []).map((i) => ({
+          name: i.name,
+          quantity: i.quantity,
+          unit: i.unit ?? "",
+        })),
+      });
+    } catch {
+      toast.error("De AI kon geen recept maken. Probeer opnieuw of kies gewone tekst.");
+    } finally {
+      setAiBezig(false);
+    }
+  }
 
   const { data: recipes = [] } = useQuery({
     queryKey: ["recipes"],
@@ -514,6 +530,7 @@ function ReceptKiezer({
       const { data, error } = await supabase
         .from("recipes")
         .select("*")
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Recipe[];
@@ -523,6 +540,70 @@ function ReceptKiezer({
   const term = zoek.trim();
   const lijst = recipes.filter((r) => r.title.toLowerCase().includes(term.toLowerCase()));
   const bestaatAl = recipes.some((r) => r.title.toLowerCase() === term.toLowerCase());
+
+  if (voorstel) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
+        <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-t-3xl bg-card p-4 sm:rounded-3xl">
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="font-display text-xl">Klopt dit recept?</h2>
+            <Button
+              onClick={() => onNieuw(zoek.trim(), voorstel, datum, moment)}
+              aria-label="Bevestigen"
+              className="size-12 rounded-full"
+            >
+              <Check className="size-6" />
+            </Button>
+          </div>
+
+          <div className="mt-3 flex-1 space-y-3 overflow-y-auto">
+            <p className="text-xl font-semibold">{voorstel.title}</p>
+            {voorstel.description && (
+              <p className="text-base text-muted-foreground">{voorstel.description}</p>
+            )}
+            <p className="text-base text-muted-foreground">
+              {voorstel.servings} personen · {voorstel.prep_minutes + voorstel.cook_minutes} min ·{" "}
+              {voorstel.category} · {voorstel.difficulty}
+            </p>
+            {voorstel.ingredienten.length > 0 && (
+              <div>
+                <h3 className="text-base font-semibold">Ingrediënten</h3>
+                <ul className="mt-1 list-inside list-disc text-base">
+                  {voorstel.ingredienten.map((i, idx) => (
+                    <li key={idx}>
+                      {[i.quantity ?? "", i.unit, i.name].join(" ").replace(/\s+/g, " ").trim()}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {voorstel.instructions.length > 0 && (
+              <div>
+                <h3 className="text-base font-semibold">Zo maak je het</h3>
+                <ol className="mt-1 list-inside list-decimal text-base">
+                  {voorstel.instructions.map((s, idx) => (
+                    <li key={idx}>{s}</li>
+                  ))}
+                </ol>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-3 flex gap-2">
+            <Button variant="ghost" onClick={() => setVoorstel(null)} className="h-14 flex-1 text-base">
+              Terug
+            </Button>
+            <Button
+              onClick={() => onNieuw(zoek.trim(), voorstel, datum, moment)}
+              className="h-14 flex-[2] text-base"
+            >
+              <Check className="size-5" /> Bevestigen
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
@@ -553,7 +634,7 @@ function ReceptKiezer({
         </div>
 
         <div className="mt-2 flex gap-2" role="group" aria-label="Kies een moment">
-          {MEAL_TYPES.map((m) => (
+          {momenten.map((m) => (
             <button
               key={m}
               type="button"
@@ -583,19 +664,25 @@ function ReceptKiezer({
             <p className="text-base">
               “{term}” staat nog niet in je recepten. Je kan het toch inplannen.
             </p>
-            <label className="mt-3 flex min-h-12 items-center gap-3 text-base">
-              <Checkbox
-                checked={bewaren}
-                onCheckedChange={(v) => setBewaren(v === true)}
-                className="size-7"
-              />
-              Ook bewaren bij mijn recepten
-            </label>
             <Button
-              onClick={() => onNieuw(term, bewaren, datum, moment)}
+              variant="outline"
+              disabled={aiBezig}
+              onClick={() => onNieuw(term, null, datum, moment)}
               className="mt-3 h-14 w-full text-base"
             >
-              <Sparkles className="size-5" /> “{term}” inplannen
+              <Type className="size-5" /> Enkel als tekst inplannen
+            </Button>
+            <Button
+              disabled={aiBezig}
+              onClick={() => maakVoorstel(term)}
+              className="mt-2 h-14 w-full text-base"
+            >
+              {aiBezig ? (
+                <Loader2 className="size-5 animate-spin" />
+              ) : (
+                <Sparkles className="size-5" />
+              )}
+              {aiBezig ? "AI maakt het recept…" : "Met AI invullen"}
             </Button>
           </div>
         )}

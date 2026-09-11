@@ -29,3 +29,13 @@
 ## Nog te doen
 - [ ] Vriendenuitnodigingen: op gsm duidelijk zien naar wie je een uitnodiging stuurde
 - [ ] Gerechtpagina op gsm volledig responsive (o.a. aantal personen +/-)
+
+## Weekmenu (klaar)
+- Reeds ingepland moment (bv. avondeten) verdwijnt uit de knoppen van die dag
+- Instellingen: kies welke maaltijdmomenten je per dag ziet (ontbijt/middageten/avondeten of 1 blok)
+- Zelf gerecht toevoegen: keuze "gewoon tekst" of "met AI", daarna controlevenster met bevestigen (knop onderaan + vinkje rechtsboven)
+- Gerechten verwijderen via swipe naar links + bevestigingspop-up
+- Receptenlijst volledig gsm-leesbaar maken (tekst mag niet afgekapt/onleesbaar zijn)
+- Boodschappenlijstjes gemakkelijk verwijderen
+- Recept van vriend met 1 knop naar eigen gerechten kopiëren
+- Volledig ingeplande dag in het weekmenu ingekleurd tonen

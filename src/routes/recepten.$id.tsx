@@ -26,8 +26,9 @@ import { AppShell } from "@/components/AppShell";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { Button } from "@/components/ui/button";
 import { importRecipeFromText } from "@/lib/ai.functions";
-import { useT } from "@/lib/voorkeuren";
-import { MEAL_TYPES, type Ingredient, type Recipe } from "@/lib/types";
+import { useT, useVoorkeuren } from "@/lib/voorkeuren";
+import { type Ingredient, type Recipe } from "@/lib/types";
+import { Copy } from "lucide-react";
 
 
 export const Route = createFileRoute("/recepten/$id")({
@@ -52,6 +53,7 @@ function ReceptPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const t = useT();
+  const { momenten } = useVoorkeuren();
   const [personen, setPersonen] = useState<number | null>(null);
   const [kookstand, setKookstand] = useState(false);
   const [stap, setStap] = useState(0);
@@ -171,6 +173,45 @@ function ReceptPage() {
     }
   }
 
+  async function kopieerNaarMij() {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("recipes")
+      .insert({
+        user_id: user.id,
+        title: recipe.title,
+        description: recipe.description,
+        image_url: recipe.image_url,
+        servings: recipe.servings,
+        prep_minutes: recipe.prep_minutes,
+        cook_minutes: recipe.cook_minutes,
+        difficulty: recipe.difficulty,
+        category: recipe.category,
+        tags: recipe.tags,
+        instructions: recipe.instructions,
+        source_url: recipe.source_url,
+      })
+      .select("id")
+      .single();
+    if (error) {
+      toast.error(t("Kopiëren lukte niet"));
+      return;
+    }
+    if (ingredients.length) {
+      await supabase.from("recipe_ingredients").insert(
+        ingredients.map((i, index) => ({
+          recipe_id: data.id,
+          name: i.name,
+          quantity: i.quantity,
+          unit: i.unit,
+          position: index,
+        })),
+      );
+    }
+    toast.success(t("Toegevoegd aan jouw gerechten"));
+    navigate({ to: "/recepten/$id", params: { id: data.id } });
+  }
+
   async function verwijder() {
     if (!confirm("Dit recept definitief verwijderen?")) return;
     const { error } = await supabase.from("recipes").delete().eq("id", recipe.id);
@@ -282,6 +323,15 @@ function ReceptPage() {
             >
               <Pencil className="size-5" aria-hidden /> {t("Aanpassen")}
             </Link>
+          )}
+          {!isOwner && (
+            <button
+              type="button"
+              onClick={kopieerNaarMij}
+              className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground"
+            >
+              <Copy className="size-5" aria-hidden /> {t("Zet in mijn gerechten")}
+            </button>
           )}
         </div>
 
@@ -405,7 +455,7 @@ function ReceptPage() {
             <CalendarPlus className="size-5" /> {t("Inplannen")}
           </Button>
 
-          {planOpen && <PlanKiezer onKies={planOp} />}
+          {planOpen && <PlanKiezer momenten={momenten} onKies={planOp} />}
 
           {recipe.source_url && (
             <a
@@ -443,9 +493,15 @@ function ReceptPage() {
   );
 }
 
-function PlanKiezer({ onKies }: { onKies: (datum: string, moment: string) => void }) {
+function PlanKiezer({
+  momenten,
+  onKies,
+}: {
+  momenten: string[];
+  onKies: (datum: string, moment: string) => void;
+}) {
   const [datum, setDatum] = useState(new Date().toISOString().slice(0, 10));
-  const [moment, setMoment] = useState<string>("avondeten");
+  const [moment, setMoment] = useState<string>(momenten[momenten.length - 1] ?? "avondeten");
   return (
     <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
       <input
@@ -461,7 +517,7 @@ function PlanKiezer({ onKies }: { onKies: (datum: string, moment: string) => voi
         aria-label="Maaltijd"
         className="h-14 w-full rounded-xl border border-input bg-background px-3 text-base"
       >
-        {MEAL_TYPES.map((m) => (
+        {momenten.map((m) => (
           <option key={m} value={m}>
             {m}
           </option>
