@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { AppShell } from "@/components/AppShell";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { QrDeelKaart } from "@/components/QrDeelKaart";
 import { useT } from "@/lib/voorkeuren";
+import { ArrowLeft } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/deel")({
   head: () => ({
@@ -24,8 +25,13 @@ export const Route = createFileRoute("/deel")({
 function DeelPage() {
   const t = useT();
   return (
-    <AppShell title={t("Deel Foodlo")}>
-      <div className="space-y-6">
+    <div className="min-h-screen bg-background px-4 py-6 pb-10">
+      <header className="mx-auto flex max-w-md items-center gap-3">
+        <img src={logo} alt="Foodlo" className="size-10" />
+        <h1 className="text-2xl font-bold tracking-tight">Foodlo</h1>
+      </header>
+
+      <main className="mx-auto mt-6 max-w-md space-y-6">
         <section className="rounded-[2rem] border border-border bg-card p-6 shadow-sm">
           <h2 className="text-center text-2xl font-bold tracking-tight">
             {t("Laat anderen Foodlo openen")}
@@ -34,6 +40,9 @@ function DeelPage() {
             {t(
               "Laat ze deze QR-code scannen met hun telefoon. Ze kunnen meteen verder in de browser, zonder app store."
             )}
+          </p>
+          <p className="mx-auto mt-3 inline-block rounded-full bg-emerald-50 px-4 py-1.5 text-sm font-semibold text-emerald-700">
+            {t("Geen App Store of Play Store nodig")}
           </p>
           <div className="mt-6">
             <QrDeelKaart />
@@ -48,7 +57,17 @@ function DeelPage() {
             <li>{t("Ze openen Foodlo in de browser en kunnen zich aanmelden.")}</li>
           </ol>
         </section>
-      </div>
-    </AppShell>
+
+        <div className="text-center">
+          <Link
+            to="/aanmelden"
+            className="inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-base font-semibold text-primary hover:underline"
+          >
+            <ArrowLeft className="size-5" />
+            {t("Terug naar Foodlo")}
+          </Link>
+        </div>
+      </main>
+    </div>
   );
 }
