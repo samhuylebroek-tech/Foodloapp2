@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useAdmin } from "@/hooks/useAdmin";
-import { Loader2, LogOut } from "lucide-react";
+import { Loader2, LogOut, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { QrDeelKaart } from "@/components/QrDeelKaart";
 import { TALEN, THEMAS, useVoorkeuren, type ThemaId } from "@/lib/voorkeuren";
 
 export const Route = createFileRoute("/instellingen")({
@@ -128,6 +129,23 @@ function InstellingenPage() {
               </option>
             ))}
           </select>
+        </section>
+
+        <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+          <h2 className="text-xl font-bold tracking-tight">{t("Deel met vrienden")}</h2>
+          <p className="mt-2 text-base text-muted-foreground">
+            {t("Laat anderen Foodlo openen zonder app store.")}
+          </p>
+          <div className="mt-4">
+            <QrDeelKaart compact />
+          </div>
+          <Link
+            to="/deel"
+            className="mt-4 flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-border bg-secondary text-base font-semibold transition-colors hover:bg-muted"
+          >
+            <QrCode className="size-5" />
+            {t("Grotere QR-code tonen")}
+          </Link>
         </section>
 
         <BeheerLink />
