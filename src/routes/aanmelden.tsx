@@ -74,17 +74,18 @@ function AanmeldenPage() {
     }
   }
 
-  async function handleGoogle() {
-    const result = await lovable.auth.signInWithOAuth("google", {
+  async function handleSso(provider: "google" | "apple" | "microsoft", naam: string) {
+    const result = await lovable.auth.signInWithOAuth(provider, {
       redirect_uri: window.location.origin,
     });
     if (result.error) {
-      toast.error("Aanmelden met Google lukte niet");
+      toast.error(`Aanmelden met ${naam} lukte niet`);
       return;
     }
     if (result.redirected) return;
     navigate({ to: "/" });
   }
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
@@ -105,7 +106,7 @@ function AanmeldenPage() {
           <div className="space-y-3">
             <button
               type="button"
-              onClick={handleGoogle}
+              onClick={() => handleSso("google", "Google")}
               className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-input bg-card px-4 text-base font-semibold text-foreground transition-colors hover:bg-muted"
             >
               <svg className="size-5" viewBox="0 0 24 24">
@@ -128,6 +129,32 @@ function AanmeldenPage() {
               </svg>
               Doorgaan met Google
             </button>
+
+            <button
+              type="button"
+              onClick={() => handleSso("apple", "Apple")}
+              className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-input bg-card px-4 text-base font-semibold text-foreground transition-colors hover:bg-muted"
+            >
+              <svg className="size-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M16.36 12.79c.02-2.2 1.8-3.26 1.88-3.31-1.03-1.5-2.62-1.71-3.19-1.73-1.36-.14-2.65.8-3.34.8-.69 0-1.75-.78-2.88-.76-1.48.02-2.85.86-3.61 2.19-1.54 2.67-.39 6.62 1.11 8.79.73 1.06 1.6 2.25 2.75 2.21 1.1-.045 1.52-.71 2.85-.71 1.33 0 1.71.71 2.88.69 1.19-.02 1.94-1.08 2.67-2.14.84-1.23 1.19-2.42 1.21-2.48-.03-.01-2.32-.89-2.33-3.55zM14.2 5.87c.61-.74 1.02-1.77.91-2.8-.88.04-1.94.59-2.57 1.32-.56.65-1.05 1.7-.92 2.7.98.08 1.98-.5 2.58-1.22z" />
+              </svg>
+              Doorgaan met Apple
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSso("microsoft", "Microsoft")}
+              className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-input bg-card px-4 text-base font-semibold text-foreground transition-colors hover:bg-muted"
+            >
+              <svg className="size-5" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M2 2h9.5v9.5H2z" fill="#F25022" />
+                <path d="M12.5 2H22v9.5h-9.5z" fill="#7FBA00" />
+                <path d="M2 12.5h9.5V22H2z" fill="#00A4EF" />
+                <path d="M12.5 12.5H22V22h-9.5z" fill="#FFB900" />
+              </svg>
+              Doorgaan met Microsoft
+            </button>
+
           </div>
 
           <div className="relative my-6 text-center">
