@@ -32,11 +32,16 @@ export const THEMAS = [
 
 export type ThemaId = (typeof THEMAS)[number]["id"];
 
+export const ALLE_MOMENTEN = ["ontbijt", "middageten", "avondeten"] as const;
+export const EEN_BLOK = ["maaltijd"] as const;
+
 type Ctx = {
   taal: string;
   zetTaal: (t: string) => void;
   thema: ThemaId;
   zetThema: (t: ThemaId) => void;
+  momenten: string[];
+  zetMomenten: (m: string[]) => void;
   t: (tekst: string) => string;
 };
 
@@ -45,6 +50,8 @@ const VoorkeurenCtx = createContext<Ctx>({
   zetTaal: () => {},
   thema: "sage",
   zetThema: () => {},
+  momenten: [...ALLE_MOMENTEN],
+  zetMomenten: () => {},
   t: (tekst) => tekst,
 });
 
@@ -64,6 +71,7 @@ function leesCache(taal: string): Record<string, string> {
 export function VoorkeurenProvider({ children }: { children: ReactNode }) {
   const [taal, setTaal] = useState("nl");
   const [thema, setThema] = useState<ThemaId>("sage");
+  const [momenten, setMomenten] = useState<string[]>([...ALLE_MOMENTEN]);
   const [cache, setCache] = useState<Record<string, string>>({});
 
   const wachtrij = useRef<Set<string>>(new Set());
@@ -75,6 +83,15 @@ export function VoorkeurenProvider({ children }: { children: ReactNode }) {
     const bewaardThema = window.localStorage.getItem("thema") as ThemaId | null;
     if (bewaardeTaal) setTaal(bewaardeTaal);
     if (bewaardThema) setThema(bewaardThema);
+    const bewaardeMomenten = window.localStorage.getItem("momenten");
+    if (bewaardeMomenten) {
+      try {
+        const m = JSON.parse(bewaardeMomenten) as string[];
+        if (Array.isArray(m) && m.length) setMomenten(m);
+      } catch {
+        // negeren
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -151,8 +168,14 @@ export function VoorkeurenProvider({ children }: { children: ReactNode }) {
     window.localStorage.setItem("thema", nieuw);
   }, []);
 
+  const zetMomenten = useCallback((nieuw: string[]) => {
+    const lijst = nieuw.length ? nieuw : [...ALLE_MOMENTEN];
+    setMomenten(lijst);
+    window.localStorage.setItem("momenten", JSON.stringify(lijst));
+  }, []);
+
   return (
-    <VoorkeurenCtx.Provider value={{ taal, zetTaal, thema, zetThema, t }}>
+    <VoorkeurenCtx.Provider value={{ taal, zetTaal, thema, zetThema, momenten, zetMomenten, t }}>
       {children}
     </VoorkeurenCtx.Provider>
   );
