@@ -304,7 +304,7 @@ function StartPage() {
           <section>
             <div className="mb-3 flex items-center justify-between gap-3">
               <SectieTitel icoon={<Globe2 className="size-5" aria-hidden />}>
-                {t("Nieuw voor jou van het internet")}
+                {t("Nieuw voor jou")}
               </SectieTitel>
               <button
                 type="button"

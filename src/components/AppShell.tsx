@@ -30,6 +30,14 @@ const NAV = [
   { to: "/feedback", label: "Feedback", icon: MessageSquareHeart },
 ] as const;
 
+const TABS = [
+  { to: "/", label: "Start", icon: Sparkles },
+  { to: "/gerechten", label: "Recepten", icon: BookOpen },
+  { to: "/recepten/nieuw", label: "Nieuw", icon: PlusCircle },
+  { to: "/planner", label: "Weekmenu", icon: CalendarDays },
+  { to: "/boodschappen", label: "Lijst", icon: ShoppingCart },
+] as const;
+
 
 export function AppShell({
   title,
@@ -114,29 +122,70 @@ export function AppShell({
         </aside>
 
         <div className="min-w-0 flex-1">
-          <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur">
-            <div className="flex items-center gap-3 px-4 py-4">
+          <header
+            className="sticky top-0 z-20 border-b border-border/70 bg-card/80 backdrop-blur-xl"
+            style={{ paddingTop: "env(safe-area-inset-top)" }}
+          >
+            <div className="flex items-center gap-3 px-4 py-3">
               <button
                 type="button"
                 onClick={() => setMenuOpen(true)}
                 aria-label="Menu openen"
-                className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-border bg-card lg:hidden"
+                className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-border bg-card transition-transform active:scale-95 lg:hidden"
               >
-                <Menu className="size-7" aria-hidden />
+                <Menu className="size-6" aria-hidden />
               </button>
-              <h1 className="min-w-0 flex-1 truncate text-2xl font-bold leading-tight tracking-tight">
+              <h1 className="min-w-0 flex-1 truncate text-[1.6rem] font-bold leading-tight tracking-tight">
                 {title}
               </h1>
               {action}
             </div>
           </header>
 
-          <main className="mx-auto w-full max-w-3xl px-4 py-5 pb-16 lg:max-w-4xl">
+          <main className="mx-auto w-full max-w-3xl px-4 py-5 pb-32 lg:max-w-4xl lg:pb-16">
             <Aankondigingen />
             {children}
           </main>
         </div>
       </div>
+
+      {/* Mobiele tabbalk onderaan */}
+      <nav
+        aria-label="Snelmenu"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-border/70 bg-card/90 backdrop-blur-xl lg:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <ul className="mx-auto flex max-w-lg items-stretch justify-between px-2">
+          {TABS.map((item) => {
+            const active =
+              item.to === "/"
+                ? pathname === "/"
+                : pathname === item.to || pathname.startsWith(`${item.to}/`);
+            const Icon = item.icon;
+            return (
+              <li key={item.to} className="flex-1">
+                <Link
+                  to={item.to}
+                  className={cn(
+                    "flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-xs font-semibold transition-colors",
+                    active ? "text-primary" : "text-muted-foreground",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex size-9 items-center justify-center rounded-xl transition-colors",
+                      active ? "bg-primary/12 text-primary" : "text-muted-foreground",
+                    )}
+                  >
+                    <Icon className="size-6" aria-hidden />
+                  </span>
+                  <span className="truncate">{t(item.label)}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
 
       {menuOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
