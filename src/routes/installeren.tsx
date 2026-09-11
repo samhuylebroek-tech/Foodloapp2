@@ -9,16 +9,16 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/installeren")({
   head: () => ({
     meta: [
-      { title: "App installeren – MaJeBa" },
+      { title: "App installeren – Foodlo" },
       {
         name: "description",
         content:
-          "Scan de QR-code of deel de link om MaJeBa als app op je telefoon te zetten. Geen app store nodig.",
+          "Scan de QR-code of deel de link om Foodlo als app op je telefoon te zetten. Geen app store nodig.",
       },
-      { property: "og:title", content: "App installeren – MaJeBa" },
+      { property: "og:title", content: "App installeren – Foodlo" },
       {
         property: "og:description",
-        content: "Zet MaJeBa op je telefoon via een QR-code of link.",
+        content: "Zet Foodlo op je telefoon via een QR-code of link.",
       },
     ],
   }),
@@ -39,7 +39,7 @@ function InstallerenPage() {
 
   async function deel() {
     if (navigator.share) {
-      await navigator.share({ title: "MaJeBa", url: link });
+      await navigator.share({ title: "Foodlo", url: link });
     } else {
       await navigator.clipboard.writeText(link);
       toast.success("Link gekopieerd");

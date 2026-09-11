@@ -25,12 +25,12 @@ import { zorgVoorLijst, maakLijst, voegToeAanLijst, type ShoppingList } from "@/
 export const Route = createFileRoute("/planner")({
   head: () => ({
     meta: [
-      { title: "Weekmenu – MaJeBa" },
+      { title: "Weekmenu – Foodlo" },
       {
         name: "description",
         content: "Maak je agenda: plan per dag wat je eet en zet alle ingrediënten op je lijst.",
       },
-      { property: "og:title", content: "Weekmenu – MaJeBa" },
+      { property: "og:title", content: "Weekmenu – Foodlo" },
       {
         property: "og:description",
         content: "Zie in één oogopslag wat er deze week op tafel komt.",

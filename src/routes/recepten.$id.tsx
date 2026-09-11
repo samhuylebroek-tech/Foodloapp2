@@ -33,13 +33,13 @@ import { MEAL_TYPES, type Ingredient, type Recipe } from "@/lib/types";
 export const Route = createFileRoute("/recepten/$id")({
   head: () => ({
     meta: [
-      { title: "Recept – MaJeBa" },
+      { title: "Recept – Foodlo" },
       {
         name: "description",
         content:
           "Bekijk het recept met ingrediënten voor jouw aantal personen, en kook stap voor stap mee.",
       },
-      { property: "og:title", content: "Recept – MaJeBa" },
+      { property: "og:title", content: "Recept – Foodlo" },
       { property: "og:description", content: "Ingrediënten, stappen en kookstand in één scherm." },
     ],
   }),

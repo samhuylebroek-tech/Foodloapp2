@@ -32,7 +32,7 @@ function Beveiliging() {
 
   const start = async () => {
     setBezig(true);
-    const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: `MaJeBa ${Date.now()}` });
+    const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: `Foodlo ${Date.now()}` });
     setBezig(false);
     if (error) {
       toast.error(error.message);

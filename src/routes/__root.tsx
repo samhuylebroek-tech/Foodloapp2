@@ -80,7 +80,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "MaJeBa – recepten verzamelen, plannen en koken" },
+      { title: "Foodlo – recepten verzamelen, plannen en koken" },
       {
         name: "description",
         content:
@@ -88,8 +88,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { name: "theme-color", content: "#0f766e" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-title", content: "MaJeBa" },
-      { property: "og:title", content: "MaJeBa" },
+      { name: "apple-mobile-web-app-title", content: "Foodlo" },
+      { property: "og:title", content: "Foodlo" },
       {
         property: "og:description",
         content: "Recepten verzamelen, plannen en koken – groot en duidelijk voor iedereen.",
