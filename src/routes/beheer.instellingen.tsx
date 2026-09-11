@@ -43,13 +43,22 @@ function Instellingen() {
     rijen.filter((r) => r.key.startsWith("flag:")).map((r) => [r.key.slice(5), r.value === true || r.value === "true"]),
   );
   const onderhoudsbericht = (rijen.find((r) => r.key === "onderhoudsbericht")?.value as string) ?? "";
+  const getal = (key: string, standaard: number) => {
+    const v = rijen.find((r) => r.key === key)?.value;
+    const n = typeof v === "number" ? v : Number(v);
+    return Number.isFinite(n) ? n : standaard;
+  };
+  const betalenActief = rijen.find((r) => r.key === "betalen_actief")?.value === true;
+  const [gratis, setGratis] = useState<string | null>(null);
+  const [pakket, setPakket] = useState<string | null>(null);
+  const [prijs, setPrijs] = useState<string | null>(null);
 
   return (
     <AdminShell titel="Instellingen" omschrijving="Functies aan- of uitzetten zonder code">
       {isLoading ? (
         <p className="text-slate-400">Laden…</p>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-3">
           <Kaart>
             <p className="mb-3 text-sm font-medium">Functies</p>
             <ul className="space-y-3">
