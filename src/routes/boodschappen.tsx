@@ -110,11 +110,12 @@ function BoodschappenPage() {
   async function verwijderLijst() {
     const huidig = lijsten.find((l) => l.id === actief);
     if (!huidig) return;
-    if (!window.confirm(`Lijstje “${huidig.name}” verwijderen?`)) return;
     await supabase.from("shopping_lists").delete().eq("id", huidig.id);
+    setVraagVerwijder(false);
     setActief(null);
     refreshLijsten();
     refresh();
+    toast.success("Lijstje verwijderd");
   }
 
   async function voegToe() {
@@ -199,7 +200,7 @@ function BoodschappenPage() {
               <Pencil className="size-4" /> Naam wijzigen
             </Button>
             {lijsten.length > 1 && (
-              <Button variant="ghost" onClick={verwijderLijst} className="h-12 text-base">
+              <Button variant="ghost" onClick={() => setVraagVerwijder(true)} className="h-12 text-base text-destructive">
                 <Trash2 className="size-4" /> Lijstje verwijderen
               </Button>
             )}
