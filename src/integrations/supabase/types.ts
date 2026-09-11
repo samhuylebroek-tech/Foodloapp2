@@ -538,6 +538,7 @@ export type Database = {
           created_at: string
           id: string
           invited_email: string | null
+          invited_name: string
           member_id: string | null
           owner_id: string
           planner_edit: boolean
@@ -554,6 +555,7 @@ export type Database = {
           created_at?: string
           id?: string
           invited_email?: string | null
+          invited_name?: string
           member_id?: string | null
           owner_id: string
           planner_edit?: boolean
@@ -570,6 +572,7 @@ export type Database = {
           created_at?: string
           id?: string
           invited_email?: string | null
+          invited_name?: string
           member_id?: string | null
           owner_id?: string
           planner_edit?: boolean
