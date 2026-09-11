@@ -80,6 +80,8 @@ function BoodschappenPage() {
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["shopping"] });
   const refreshLijsten = () => qc.invalidateQueries({ queryKey: ["shopping-lists"] });
+  const [vraagVerwijder, setVraagVerwijder] = useState(false);
+  const actieveNaam = lijsten.find((l) => l.id === actief)?.name ?? "";
 
   async function nieuwLijstje() {
     if (!user) return;
@@ -265,6 +267,33 @@ function BoodschappenPage() {
           </Button>
         </div>
       </div>
+
+      {vraagVerwijder && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
+          <div className="w-full max-w-md rounded-t-3xl bg-card p-5 sm:rounded-3xl">
+            <h2 className="font-display text-xl">Lijstje verwijderen?</h2>
+            <p className="mt-2 text-base text-muted-foreground">
+              Je verwijdert “{actieveNaam}” met alles wat erop staat.
+            </p>
+            <div className="mt-4 flex gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => setVraagVerwijder(false)}
+                className="h-14 flex-1 text-base"
+              >
+                Annuleren
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={verwijderLijst}
+                className="h-14 flex-1 text-base"
+              >
+                <Trash2 className="size-5" /> Verwijderen
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }
