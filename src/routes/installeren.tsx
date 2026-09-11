@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import QRCode from "qrcode";
-import { Copy, Share2, Download, Smartphone, Check, Loader2 } from "lucide-react";
+import { Copy, Share2, Download, Smartphone, Check, Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/voorkeuren";
+import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/installeren")({
   head: () => ({
@@ -97,8 +97,13 @@ function InstallerenPage() {
   }
 
   return (
-    <AppShell title={t("App installeren")}>
-      <div className="space-y-6">
+    <div className="min-h-screen bg-background px-4 py-6 pb-10">
+      <header className="mx-auto flex max-w-md items-center gap-3">
+        <img src={logo} alt="Foodlo" className="size-10" />
+        <h1 className="text-2xl font-bold tracking-tight">Foodlo</h1>
+      </header>
+
+      <main className="mx-auto mt-6 max-w-md space-y-6">
         <section className="rounded-[2rem] border border-border bg-card p-6 text-center shadow-sm">
           <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <Smartphone className="size-8" />
@@ -111,7 +116,7 @@ function InstallerenPage() {
               "Scan deze QR-code met je camera. Je opent de app meteen in je browser — geen app store nodig."
             )}
           </p>
-          <p className="mt-2 inline-block rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700">
+          <p className="mt-3 inline-block rounded-full bg-emerald-50 px-4 py-1.5 text-sm font-semibold text-emerald-700">
             {t("Geen App Store of Play Store nodig")}
           </p>
 
@@ -187,8 +192,18 @@ function InstallerenPage() {
             </ol>
           </div>
         </section>
-      </div>
-    </AppShell>
+
+        <div className="text-center">
+          <Link
+            to="/aanmelden"
+            className="inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-base font-semibold text-primary hover:underline"
+          >
+            <ArrowLeft className="size-5" />
+            {t("Terug naar Foodlo")}
+          </Link>
+        </div>
+      </main>
+    </div>
   );
 }
 
