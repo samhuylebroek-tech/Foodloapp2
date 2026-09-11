@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useAdmin } from "@/hooks/useAdmin";
-import { Loader2, LogOut } from "lucide-react";
+import { Loader2, LogOut, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { QrDeelKaart } from "@/components/QrDeelKaart";
 import { TALEN, THEMAS, useVoorkeuren, type ThemaId } from "@/lib/voorkeuren";
 
 export const Route = createFileRoute("/instellingen")({

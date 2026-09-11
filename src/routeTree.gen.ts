@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AanmeldenRouteImport } from './routes/aanmelden'
 import { Route as BeheerRouteImport } from './routes/beheer'
 import { Route as BoodschappenRouteImport } from './routes/boodschappen'
+import { Route as DeelRouteImport } from './routes/deel'
 import { Route as FeedbackRouteImport } from './routes/feedback'
 import { Route as GerechtenRouteImport } from './routes/gerechten'
 import { Route as InfoRouteImport } from './routes/info'
@@ -57,6 +58,11 @@ const BeheerRoute = BeheerRouteImport.update({
 const BoodschappenRoute = BoodschappenRouteImport.update({
   id: '/boodschappen',
   path: '/boodschappen',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeelRoute = DeelRouteImport.update({
+  id: '/deel',
+  path: '/deel',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FeedbackRoute = FeedbackRouteImport.update({
@@ -190,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/aanmelden': typeof AanmeldenRoute
   '/beheer': typeof BeheerRouteWithChildren
   '/boodschappen': typeof BoodschappenRoute
+  '/deel': typeof DeelRoute
   '/feedback': typeof FeedbackRoute
   '/gerechten': typeof GerechtenRoute
   '/info': typeof InfoRoute
@@ -220,6 +227,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/aanmelden': typeof AanmeldenRoute
   '/boodschappen': typeof BoodschappenRoute
+  '/deel': typeof DeelRoute
   '/feedback': typeof FeedbackRoute
   '/gerechten': typeof GerechtenRoute
   '/info': typeof InfoRoute
@@ -252,6 +260,7 @@ export interface FileRoutesById {
   '/aanmelden': typeof AanmeldenRoute
   '/beheer': typeof BeheerRouteWithChildren
   '/boodschappen': typeof BoodschappenRoute
+  '/deel': typeof DeelRoute
   '/feedback': typeof FeedbackRoute
   '/gerechten': typeof GerechtenRoute
   '/info': typeof InfoRoute
@@ -285,6 +294,7 @@ export interface FileRouteTypes {
     | '/aanmelden'
     | '/beheer'
     | '/boodschappen'
+    | '/deel'
     | '/feedback'
     | '/gerechten'
     | '/info'
@@ -315,6 +325,7 @@ export interface FileRouteTypes {
     | '/'
     | '/aanmelden'
     | '/boodschappen'
+    | '/deel'
     | '/feedback'
     | '/gerechten'
     | '/info'
@@ -346,6 +357,7 @@ export interface FileRouteTypes {
     | '/aanmelden'
     | '/beheer'
     | '/boodschappen'
+    | '/deel'
     | '/feedback'
     | '/gerechten'
     | '/info'
@@ -378,6 +390,7 @@ export interface RootRouteChildren {
   AanmeldenRoute: typeof AanmeldenRoute
   BeheerRoute: typeof BeheerRouteWithChildren
   BoodschappenRoute: typeof BoodschappenRoute
+  DeelRoute: typeof DeelRoute
   FeedbackRoute: typeof FeedbackRoute
   GerechtenRoute: typeof GerechtenRoute
   InfoRoute: typeof InfoRoute
@@ -418,6 +431,13 @@ declare module '@tanstack/react-router' {
       path: '/boodschappen'
       fullPath: '/boodschappen'
       preLoaderRoute: typeof BoodschappenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/deel': {
+      id: '/deel'
+      path: '/deel'
+      fullPath: '/deel'
+      preLoaderRoute: typeof DeelRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/feedback': {
@@ -662,6 +682,7 @@ const rootRouteChildren: RootRouteChildren = {
   AanmeldenRoute: AanmeldenRoute,
   BeheerRoute: BeheerRouteWithChildren,
   BoodschappenRoute: BoodschappenRoute,
+  DeelRoute: DeelRoute,
   FeedbackRoute: FeedbackRoute,
   GerechtenRoute: GerechtenRoute,
   InfoRoute: InfoRoute,
