@@ -73,9 +73,9 @@ export function AppShell({
     <nav aria-label="Hoofdmenu">
       <Link to="/" className="flex items-center gap-3 px-3">
         <div className="flex size-12 items-center justify-center rounded-xl bg-secondary">
-          <img src={logo} alt="MaJeBa logo" width={28} height={28} className="size-7" />
+          <img src={logo} alt="Foodlo logo" width={28} height={28} className="size-7" />
         </div>
-        <p className="text-2xl font-bold tracking-tight text-foreground">MaJeBa</p>
+        <p className="text-2xl font-bold tracking-tight text-foreground">Foodlo</p>
       </Link>
       <ul className="mt-6 space-y-1">
         {NAV.map((item) => {

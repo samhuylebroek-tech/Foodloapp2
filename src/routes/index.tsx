@@ -33,13 +33,13 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "MaJeBa – wat eten we vandaag?" },
+      { title: "Foodlo – wat eten we vandaag?" },
       {
         name: "description",
         content:
           "Elke dag verse kookinspiratie: suggesties op maat van het weer, je nieuwste recepten en het gerecht van de dag.",
       },
-      { property: "og:title", content: "MaJeBa – wat eten we vandaag?" },
+      { property: "og:title", content: "Foodlo – wat eten we vandaag?" },
       {
         property: "og:description",
         content: "Kookinspiratie op maat van het weer, met je eigen recepten in de kijker.",
@@ -251,7 +251,7 @@ function StartPage() {
   }
 
   return (
-    <AppShell title={t("MaJeBa")}>
+    <AppShell title={t("Foodlo")}>
       <div className="space-y-8">
         {/* Groet + weer */}
         <section className="overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm">

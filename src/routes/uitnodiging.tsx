@@ -14,12 +14,12 @@ export const Route = createFileRoute("/uitnodiging")({
   }),
   head: () => ({
     meta: [
-      { title: "Uitnodiging – MaJeBa" },
+      { title: "Uitnodiging – Foodlo" },
       {
         name: "description",
         content: "Je bent uitgenodigd om mee te koken: bekijk gedeelde recepten, planning en lijst.",
       },
-      { property: "og:title", content: "Uitnodiging – MaJeBa" },
+      { property: "og:title", content: "Uitnodiging – Foodlo" },
       {
         property: "og:description",
         content: "Neem de uitnodiging aan en kook samen mee.",

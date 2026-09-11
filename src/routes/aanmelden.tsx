@@ -12,13 +12,13 @@ import logo from "@/assets/logo.png";
 export const Route = createFileRoute("/aanmelden")({
   head: () => ({
     meta: [
-      { title: "Aanmelden – MaJeBa" },
+      { title: "Aanmelden – Foodlo" },
       {
         name: "description",
         content:
-          "Meld je aan bij MaJeBa en verzamel samen recepten, plan je week en maak je boodschappenlijst.",
+          "Meld je aan bij Foodlo en verzamel samen recepten, plan je week en maak je boodschappenlijst.",
       },
-      { property: "og:title", content: "Aanmelden – MaJeBa" },
+      { property: "og:title", content: "Aanmelden – Foodlo" },
       {
         property: "og:description",
         content: "Meld je aan en verzamel samen recepten in één duidelijke app.",
@@ -94,9 +94,9 @@ function AanmeldenPage() {
           {/* Logo & Header */}
           <div className="mb-8 text-center">
             <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-secondary">
-              <img src={logo} alt="MaJeBa logo" width={40} height={40} className="size-10" />
+              <img src={logo} alt="Foodlo logo" width={40} height={40} className="size-10" />
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">MaJeBa</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">Foodlo</h1>
             <p className="mt-2 text-base font-medium text-muted-foreground">
               Ontdek je volgende favoriete recept
             </p>

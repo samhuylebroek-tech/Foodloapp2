@@ -7,10 +7,10 @@ export const Route = createFileRoute("/info")({
   component: Info,
   head: () => ({
     meta: [
-      { title: "Info & privacy — MaJeBa" },
-      { name: "description", content: "Uitleg, privacyverklaring en gebruiksvoorwaarden van de kook-app MaJeBa." },
-      { property: "og:title", content: "Info & privacy — MaJeBa" },
-      { property: "og:description", content: "Uitleg, privacy en voorwaarden van MaJeBa." },
+      { title: "Info & privacy — Foodlo" },
+      { name: "description", content: "Uitleg, privacyverklaring en gebruiksvoorwaarden van de kook-app Foodlo." },
+      { property: "og:title", content: "Info & privacy — Foodlo" },
+      { property: "og:description", content: "Uitleg, privacy en voorwaarden van Foodlo." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

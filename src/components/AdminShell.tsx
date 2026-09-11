@@ -58,7 +58,7 @@ export function AdminShell({
               <ChefHat className="size-5" />
             </div>
             <div>
-              <p className="text-sm font-semibold">MaJeBa</p>
+              <p className="text-sm font-semibold">Foodlo</p>
               <p className="text-xs text-slate-400">Control Center</p>
             </div>
           </div>

@@ -24,13 +24,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/gerechten")({
   head: () => ({
     meta: [
-      { title: "Alle gerechten – MaJeBa" },
+      { title: "Alle gerechten – Foodlo" },
       {
         name: "description",
         content:
           "Verzamel samen recepten, zoek op ingrediënt of naam, plan je week en maak automatisch je boodschappenlijst.",
       },
-      { property: "og:title", content: "Alle gerechten – MaJeBa" },
+      { property: "og:title", content: "Alle gerechten – Foodlo" },
       {
         property: "og:description",
         content: "Recepten verzamelen, plannen en koken. Groot, duidelijk en voor iedereen.",

@@ -10,11 +10,11 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/beheer")({
   head: () => ({
     meta: [
-      { title: "Control Center – MaJeBa" },
-      { name: "description", content: "Beveiligde beheeromgeving van MaJeBa: gebruikers, recepten, AI, support en systeem." },
+      { title: "Control Center – Foodlo" },
+      { name: "description", content: "Beveiligde beheeromgeving van Foodlo: gebruikers, recepten, AI, support en systeem." },
       { name: "robots", content: "noindex, nofollow" },
-      { property: "og:title", content: "Control Center – MaJeBa" },
-      { property: "og:description", content: "Beveiligde beheeromgeving van MaJeBa." },
+      { property: "og:title", content: "Control Center – Foodlo" },
+      { property: "og:description", content: "Beveiligde beheeromgeving van Foodlo." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

@@ -15,13 +15,13 @@ import { Switch } from "@/components/ui/switch";
 export const Route = createFileRoute("/vrienden")({
   head: () => ({
     meta: [
-      { title: "Vrienden uitnodigen – MaJeBa" },
+      { title: "Vrienden uitnodigen – Foodlo" },
       {
         name: "description",
         content:
           "Nodig vrienden of familie uit met een link, QR-code of e-mail en bepaal zelf wat zij mogen zien en bewerken.",
       },
-      { property: "og:title", content: "Vrienden uitnodigen – MaJeBa" },
+      { property: "og:title", content: "Vrienden uitnodigen – Foodlo" },
       {
         property: "og:description",
         content: "Deel je recepten, planning en boodschappenlijst met wie jij kiest.",
@@ -142,7 +142,7 @@ function VriendenPage() {
       const link = uitnodigingsLink(s.token);
       try {
         if (navigator.share) {
-          await navigator.share({ title: "MaJeBa", text: "Doe mee met mijn recepten", url: link });
+          await navigator.share({ title: "Foodlo", text: "Doe mee met mijn recepten", url: link });
           return;
         }
         await navigator.clipboard.writeText(link);
@@ -396,7 +396,7 @@ function UitnodigingKaart({
                 <Button
                   onClick={async () => {
                     if (navigator.share) {
-                      await navigator.share({ title: "MaJeBa", url: link });
+                      await navigator.share({ title: "Foodlo", url: link });
                     } else {
                       await navigator.clipboard.writeText(link);
                       toast.success("Link gekopieerd");

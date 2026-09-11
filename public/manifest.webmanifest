@@ -1,12 +1,12 @@
 {
-  "name": "MaJeBa",
-  "short_name": "MaJeBa",
+  "name": "Foodlo",
+  "short_name": "Foodlo",
   "description": "Verzamel samen recepten, plan je week en maak je boodschappenlijst.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#faf6ee",
-  "theme_color": "#a4552e",
+  "background_color": "#f6f7f9",
+  "theme_color": "#0f766e",
   "lang": "nl",
   "share_target": {
     "action": "/recepten/nieuw",
