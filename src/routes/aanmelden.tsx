@@ -74,17 +74,18 @@ function AanmeldenPage() {
     }
   }
 
-  async function handleGoogle() {
-    const result = await lovable.auth.signInWithOAuth("google", {
+  async function handleSso(provider: "google" | "apple" | "microsoft", naam: string) {
+    const result = await lovable.auth.signInWithOAuth(provider, {
       redirect_uri: window.location.origin,
     });
     if (result.error) {
-      toast.error("Aanmelden met Google lukte niet");
+      toast.error(`Aanmelden met ${naam} lukte niet`);
       return;
     }
     if (result.redirected) return;
     navigate({ to: "/" });
   }
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
