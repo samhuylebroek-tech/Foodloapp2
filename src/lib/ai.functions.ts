@@ -268,23 +268,31 @@ export const ontdekSuggesties = createServerFn({ method: "POST" })
     z
       .object({
         bekend: z.array(z.string()).max(200).default([]),
+        favorieten: z.array(z.string()).max(50).default([]),
         sfeer: z.string().max(200).default(""),
       })
       .parse(data),
   )
   .handler(async ({ data }): Promise<InternetSuggestie[]> => {
     const maand = new Date().toLocaleDateString("nl-BE", { month: "long" });
+    const heeftSmaak = data.favorieten.length > 0;
     const raw = await askAI([
       {
         role: "system",
         content:
-          'Je bent een kookredacteur die populaire gerechten van het internet kent (foodblogs, Instagram, TikTok, klassieke keukens uit de hele wereld). Je stelt gerechten voor die iemand nog niet kent. Antwoord uitsluitend met een JSON-array van 6 objecten: [{"title":"","keuken":"","waarom":"","minuten":30,"category":"hoofdgerecht"}]. "waarom" is één korte, wervende zin in het Nederlands. Geen uitleg buiten de JSON.',
+          'Je bent een kookredacteur die populaire gerechten van het internet kent (foodblogs, Instagram, TikTok, klassieke keukens uit de hele wereld). Je stelt gerechten voor die iemand nog niet kent, maar die passen bij de smaak van de gebruiker: kijk vooral naar de gerechten die hij hoog beoordeelde (keuken, smaken, ingrediënten, type gerecht). Antwoord uitsluitend met een JSON-array van 6 objecten: [{"title":"","keuken":"","waarom":"","minuten":30,"category":"hoofdgerecht"}]. "waarom" is één korte, wervende zin in het Nederlands die verwijst naar waarom het bij zijn smaak past. Geen uitleg buiten de JSON.',
       },
       {
         role: "user",
-        content: `Maand: ${maand}. ${data.sfeer ? `Weer/sfeer: ${data.sfeer}.` : ""}\nDeze gerechten heeft de gebruiker al, stel iets anders voor:\n${data.bekend.slice(0, 120).join(", ") || "(nog geen)"}`,
+        content: `Maand: ${maand}. ${data.sfeer ? `Weer/sfeer: ${data.sfeer}.` : ""}
+Deze gerechten gaf de gebruiker een hoge score (belangrijkste bron voor je keuze):
+${heeftSmaak ? data.favorieten.join("\n") : "(nog geen beoordelingen – kies dan gewoon populaire, toegankelijke gerechten)"}
+
+Deze gerechten heeft hij al, stel iets anders voor:
+${data.bekend.slice(0, 120).join(", ") || "(nog geen)"}`,
       },
     ]);
+
     const list = parseJson<Partial<InternetSuggestie>[]>(raw, []);
     if (!Array.isArray(list)) return [];
     return list
