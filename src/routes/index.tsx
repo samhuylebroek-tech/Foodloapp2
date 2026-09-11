@@ -162,26 +162,46 @@ function StartPage() {
 
   const uur = new Date().getHours();
 
-  // Nieuwe gerechten van het internet die nog niet in je kookboek staan.
+  // Nieuwe gerechten van het internet, gekozen op basis van je best beoordeelde recepten.
   const bekend = useMemo(() => recipes.map((r) => r.title), [recipes]);
   const bekendSleutel = bekend.length;
+
+  const favorietSmaak = useMemo(() => {
+    const perId = new Map(recipes.map((r) => [r.id, r]));
+    return topRatings
+      .map((rt) => {
+        const r = perId.get(rt.recipe_id);
+        if (!r) return null;
+        const extra = [r.category, ...r.tags].filter(Boolean).join(", ");
+        return `${r.title} (${rt.stars} sterren${extra ? `, ${extra}` : ""})`;
+      })
+      .filter((x): x is string => !!x)
+      .slice(0, 15);
+  }, [topRatings, recipes]);
+
+  const smaakSleutel = favorietSmaak.join("|");
   const [ronde, setRonde] = useState(0);
   const {
     data: internet = [],
     isLoading: internetLaadt,
     isFetching: internetVerst,
   } = useQuery({
-    queryKey: ["internet-suggesties", bekendSleutel, sfeer?.titel ?? "", ronde],
+    queryKey: ["internet-suggesties", bekendSleutel, smaakSleutel, sfeer?.titel ?? "", ronde],
     enabled: !!user && weerKlaar,
     staleTime: 1000 * 60 * 60,
     queryFn: async () => {
       const lijst = await ontdekSuggesties({
-        data: { bekend, sfeer: sfeer ? `${sfeer.titel} – ${sfeer.uitleg}` : "" },
+        data: {
+          bekend,
+          favorieten: favorietSmaak,
+          sfeer: sfeer ? `${sfeer.titel} – ${sfeer.uitleg}` : "",
+        },
       });
       const bestaand = new Set(bekend.map((tt) => tt.toLowerCase().trim()));
       return lijst.filter((s) => !bestaand.has(s.title.toLowerCase().trim()));
     },
   });
+
 
   const navigate = useNavigate();
   const [bezig, setBezig] = useState<string | null>(null);
