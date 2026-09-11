@@ -353,7 +353,7 @@ function PlannerPage() {
               key={dag}
               className={
                 volledig
-                  ? "rounded-2xl border-2 border-primary bg-primary/15 p-4"
+                  ? "rounded-2xl border-2 border-primary bg-primary p-4 text-primary-foreground [&_a]:text-primary-foreground [&_button]:text-primary-foreground [&_span]:text-primary-foreground"
                   : dag === vandaag
                     ? "rounded-2xl border-2 border-primary bg-card p-4"
                     : "rounded-2xl border border-border bg-card p-4"
