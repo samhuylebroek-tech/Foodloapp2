@@ -12,7 +12,8 @@
 - [x] Teksten (CMS) en aankondigingen die medewerkers zelf beheren, met infopagina in de app
 
 ## Bezig
-- [ ] Eigen domeinnaam kopen en koppelen (naam: Shared Kitchen)
+- [ ] Eigen domeinnaam kopen en koppelen (naam: Foodlo)
+- [ ] Foodlo volledig als mobiele app inrichten voor gsm en iPad (PWA, iconen, splash, mobiele UI)
 - [ ] Voorbereiding betalen: limiet gratis gerechten + pakketten bijkopen (nog niet actief)
 
 ## Ideeën voor later

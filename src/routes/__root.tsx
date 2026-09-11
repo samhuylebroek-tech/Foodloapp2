@@ -87,8 +87,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Verzamel samen recepten, zoek op ingrediënt, plan je week en maak automatisch je boodschappenlijst.",
       },
       { name: "theme-color", content: "#0f766e" },
+      { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "Foodlo" },
+      { name: "application-name", content: "Foodlo" },
       { property: "og:title", content: "Foodlo" },
       {
         property: "og:description",
