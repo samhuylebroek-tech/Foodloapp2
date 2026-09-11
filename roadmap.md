@@ -1,4 +1,4 @@
-# MaJeBa roadmap
+# Shared Kitchen roadmap
 
 ## Klaar
 - [x] Stijlvernieuwing: sage & slate kleuren, strakkere kaarten, Inter font, nieuw logo
