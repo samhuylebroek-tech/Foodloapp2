@@ -180,7 +180,7 @@ function GerechtenPage() {
       <div className="space-y-4">
         <Link
           to="/recepten/nieuw"
-          className="flex min-h-16 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-6 text-lg font-semibold text-primary-foreground"
+          className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-6 text-base font-semibold text-primary-foreground"
         >
           <Plus className="size-6" aria-hidden /> {t("Nieuw recept toevoegen")}
         </Link>
@@ -194,14 +194,14 @@ function GerechtenPage() {
             value={zoek}
             onChange={(e) => setZoek(e.target.value)}
             placeholder={t("Zoek op gerecht of ingrediënt")}
-            className="h-14 pl-12 text-base"
+            className="h-12 pl-11 text-base"
             aria-label={t("Zoeken")}
           />
         </div>
 
 
-        <div className="space-y-3 rounded-2xl border border-border bg-card p-3">
-          <div className="grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap">
+        <div className="rounded-2xl border border-border bg-card p-2">
+          <div className="grid grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap">
             <FilterSelect
               label={t("Soort")}
               value={categorie ?? "alles"}
@@ -262,14 +262,14 @@ function GerechtenPage() {
               type="button"
               onClick={() => setAlleenFavorieten(!alleenFavorieten)}
               className={cn(
-                "inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border px-4 text-base font-semibold sm:min-h-[56px]",
+                "inline-flex h-10 items-center justify-center gap-2 rounded-lg border px-3 text-sm font-semibold",
                 alleenFavorieten
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-card text-foreground",
               )}
               aria-pressed={alleenFavorieten}
             >
-              <Heart className={cn("size-5", alleenFavorieten && "fill-current")} aria-hidden />
+              <Heart className={cn("size-4", alleenFavorieten && "fill-current")} aria-hidden />
               {t("Favorieten")}
             </button>
 
@@ -277,15 +277,15 @@ function GerechtenPage() {
               <button
                 type="button"
                 onClick={wisFilters}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-2 text-base font-semibold text-primary sm:min-h-[56px]"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold text-primary"
               >
-                <RotateCcw className="size-5" aria-hidden /> {t("Filters wissen")}
+                <RotateCcw className="size-4" aria-hidden /> {t("Wissen")}
               </button>
             )}
           </div>
         </div>
 
-        <p className="text-base text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           {zichtbaar.length} {t(zichtbaar.length === 1 ? "gerecht" : "gerechten")}
         </p>
 
@@ -302,30 +302,47 @@ function GerechtenPage() {
             </Link>
           </div>
         ) : (
-          <ul className="space-y-3">
+          <ul className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             {zichtbaar.map((r) => (
               <li key={r.id}>
                 <Link
                   to="/recepten/$id"
                   params={{ id: r.id }}
-                  className="flex items-center gap-4 rounded-2xl border border-border bg-card p-3 active:bg-secondary"
+                  className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card active:bg-secondary"
                 >
-                  <RecipePhoto path={r.image_url} alt={r.title} className="size-20 rounded-xl" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-display text-xl">{t(r.title)}</p>
-                    <p className="mt-1 flex items-center gap-2 text-base text-muted-foreground">
-                      <Clock className="size-4" aria-hidden />
-                      {r.prep_minutes + r.cook_minutes} min · {t(r.category)} · {t(r.difficulty)}
+                  <div className="relative">
+                    <RecipePhoto
+                      path={r.image_url}
+                      alt={r.title}
+                      className="aspect-[4/3] w-full rounded-none"
+                    />
+                    {favorites.includes(r.id) && (
+                      <span className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-full bg-card/90">
+                        <Heart
+                          className="size-5 fill-primary text-primary"
+                          aria-label={t("Favoriet")}
+                        />
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-1 flex-col gap-1 p-3">
+                    <p className="line-clamp-2 font-display text-base leading-snug">{t(r.title)}</p>
+                    <p className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="size-3.5" aria-hidden />
+                        {r.prep_minutes + r.cook_minutes} min
+                      </span>
+                      <span className="rounded-full bg-secondary px-2 py-0.5">{t(r.category)}</span>
+                      <span className="rounded-full bg-secondary px-2 py-0.5">
+                        {t(r.difficulty)}
+                      </span>
                     </p>
                     {(scores[r.id] ?? 0) > 0 && (
-                      <span className="mt-1 inline-block">
+                      <span className="inline-block">
                         <Sterren waarde={scores[r.id] ?? 0} klein />
                       </span>
                     )}
                   </div>
-                  {favorites.includes(r.id) && (
-                    <Heart className="size-6 fill-primary text-primary" aria-label={t("Favoriet")} />
-                  )}
                 </Link>
               </li>
             ))}
@@ -348,24 +365,27 @@ function FilterSelect({
   options: { value: string; label: string }[];
 }) {
   return (
-    <div className="min-w-0 sm:min-w-[10rem] sm:flex-1">
-      <label className="mb-1 block truncate text-sm font-semibold text-muted-foreground sm:text-base sm:text-foreground" htmlFor={`filter-${label}`}>
+    <div className="min-w-0 sm:min-w-[8rem] sm:flex-1">
+      <label
+        className="mb-0.5 block truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+        htmlFor={`filter-${label}`}
+      >
         {label}
       </label>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger
           id={`filter-${label}`}
-          className="h-12 w-full rounded-xl border-border bg-card text-base sm:h-14"
+          className="h-10 w-full rounded-lg border-border bg-card px-3 text-sm"
           aria-label={label}
         >
           <SelectValue />
         </SelectTrigger>
-        <SelectContent className="rounded-xl border-border bg-card text-base">
+        <SelectContent className="rounded-xl border-border bg-card text-sm">
           {options.map((opt) => (
             <SelectItem
               key={opt.value}
               value={opt.value}
-              className="min-h-12 cursor-pointer text-base focus:bg-secondary"
+              className="min-h-11 cursor-pointer text-base focus:bg-secondary"
             >
               {opt.label}
             </SelectItem>
