@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import QRCode from "qrcode";
-import { Copy, Share2 } from "lucide-react";
+import { Copy, Share2, Download, Smartphone, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/voorkeuren";
 
 export const Route = createFileRoute("/installeren")({
   head: () => ({
@@ -26,80 +27,169 @@ export const Route = createFileRoute("/installeren")({
 });
 
 function InstallerenPage() {
+  const t = useT();
   const [link, setLink] = useState("");
   const [qr, setQr] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    const url = window.location.origin;
+    if (typeof window === "undefined") return;
+
+    const url = `${window.location.origin}/installeren`;
     setLink(url);
-    QRCode.toDataURL(url, { width: 640, margin: 1, color: { dark: "#7a3d22", light: "#faf6ee" } })
+
+    QRCode.toDataURL(url, {
+      width: 640,
+      margin: 1,
+      color: { dark: "#0f766e", light: "#ffffff" },
+    })
       .then(setQr)
       .catch(() => setQr(""));
+
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e as BeforeInstallPromptEvent);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+
+    if (window.matchMedia("(display-mode: standalone)").matches) {
+      setIsInstalled(true);
+    }
+
+    return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
+  async function install() {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    if (choice?.outcome === "accepted") {
+      toast.success(t("Foodlo wordt geïnstalleerd"));
+    }
+    setInstallPrompt(null);
+  }
+
   async function deel() {
+    if (!link) return;
     if (navigator.share) {
-      await navigator.share({ title: "Foodlo", url: link });
-    } else {
+      try {
+        await navigator.share({ title: "Foodlo", text: t("Bekijk Foodlo"), url: link });
+        return;
+      } catch {
+        // fall through to copy
+      }
+    }
+    await kopieer();
+  }
+
+  async function kopieer() {
+    if (!link) return;
+    try {
       await navigator.clipboard.writeText(link);
-      toast.success("Link gekopieerd");
+      setCopied(true);
+      toast.success(t("Link gekopieerd"));
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error(t("Kopiëren lukte niet"));
     }
   }
 
   return (
-    <AppShell title="App op je telefoon">
+    <AppShell title={t("App installeren")}>
       <div className="space-y-6">
-        <p className="text-lg leading-relaxed">
-          Scan deze code met de camera van je telefoon. De app opent meteen — je hoeft niets te
-          downloaden uit een app store.
-        </p>
+        <section className="rounded-[2rem] border border-border bg-card p-6 text-center shadow-sm">
+          <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <Smartphone className="size-8" />
+          </div>
+          <h2 className="mt-4 text-2xl font-bold tracking-tight">
+            {t("Zet Foodlo op je telefoon")}
+          </h2>
+          <p className="mt-3 text-base text-muted-foreground">
+            {t(
+              "Scan deze QR-code met je camera. Je opent de app meteen in je browser — geen app store nodig."
+            )}
+          </p>
 
-        <div className="flex justify-center rounded-3xl border border-border bg-card p-6">
-          {qr ? (
-            <img src={qr} alt="QR-code om de app te openen" className="size-64" />
-          ) : (
-            <div className="size-64 animate-pulse rounded-2xl bg-secondary" />
-          )}
-        </div>
+          <div className="mt-6 flex justify-center rounded-3xl bg-white p-4">
+            {qr ? (
+              <img
+                src={qr}
+                alt={t("QR-code om Foodlo te installeren")}
+                className="size-64 rounded-2xl sm:size-72"
+              />
+            ) : (
+              <div className="flex size-64 items-center justify-center rounded-2xl bg-muted sm:size-72">
+                <Loader2 className="size-8 animate-spin text-muted-foreground" />
+              </div>
+            )}
+          </div>
 
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <p className="break-all text-base text-muted-foreground">{link}</p>
-          <div className="mt-3 flex gap-3">
-            <Button onClick={deel} className="h-16 flex-1 text-lg">
-              <Share2 className="size-5" /> Link delen
+          <p className="mt-4 break-all text-sm text-muted-foreground">{link}</p>
+
+          <div className="mt-5 flex gap-3">
+            <Button
+              variant="outline"
+              onClick={kopieer}
+              disabled={!link}
+              className="h-14 flex-1 rounded-2xl text-base"
+            >
+              {copied ? <Check className="size-5" /> : <Copy className="size-5" />}
+              {copied ? t("Gekopieerd") : t("Link kopiëren")}
             </Button>
             <Button
-              variant="secondary"
-              onClick={async () => {
-                await navigator.clipboard.writeText(link);
-                toast.success("Link gekopieerd");
-              }}
-              className="h-16 flex-1 text-lg"
+              onClick={deel}
+              disabled={!link}
+              className="h-14 flex-1 rounded-2xl text-base shadow-md shadow-primary/15"
             >
-              <Copy className="size-5" /> Kopiëren
+              <Share2 className="size-5" />
+              {t("Delen")}
             </Button>
           </div>
-        </div>
+
+          {installPrompt && (
+            <Button
+              onClick={install}
+              className="mt-4 h-14 w-full rounded-2xl text-base shadow-md shadow-primary/15"
+            >
+              <Download className="size-5" />
+              {t("Foodlo installeren")}
+            </Button>
+          )}
+
+          {isInstalled && (
+            <p className="mt-4 rounded-2xl bg-emerald-50 p-3 text-sm font-medium text-emerald-700">
+              {t("Foodlo staat al op je startscherm. Veel kookplezier!")}
+            </p>
+          )}
+        </section>
 
         <section className="space-y-4">
-          <div className="rounded-2xl border border-border bg-card p-4">
-            <h2 className="text-lg">Op een iPhone of iPad</h2>
-            <ol className="mt-2 list-decimal space-y-1 pl-5 text-lg leading-relaxed">
-              <li>Open de link in Safari.</li>
-              <li>Tik onderaan op het deel-icoon (vierkantje met pijltje).</li>
-              <li>Kies “Zet op beginscherm”.</li>
+          <div className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+            <h3 className="text-lg font-bold">{t("Op een iPhone of iPad")}</h3>
+            <ol className="mt-3 list-decimal space-y-2 pl-5 text-base text-muted-foreground">
+              <li>{t("Open deze pagina in Safari.")}</li>
+              <li>{t("Tik onderaan op het deel-icoon (vierkantje met pijltje).")}</li>
+              <li>{t("Scroll naar beneden en kies ‘Zet op beginscherm’.")}</li>
             </ol>
           </div>
-          <div className="rounded-2xl border border-border bg-card p-4">
-            <h2 className="text-lg">Op een Android-telefoon</h2>
-            <ol className="mt-2 list-decimal space-y-1 pl-5 text-lg leading-relaxed">
-              <li>Open de link in Chrome.</li>
-              <li>Tik rechtsboven op de drie puntjes.</li>
-              <li>Kies “App installeren” of “Toevoegen aan startscherm”.</li>
+
+          <div className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+            <h3 className="text-lg font-bold">{t("Op een Android-telefoon")}</h3>
+            <ol className="mt-3 list-decimal space-y-2 pl-5 text-base text-muted-foreground">
+              <li>{t("Open deze pagina in Chrome.")}</li>
+              <li>{t("Tik rechtsboven op de drie puntjes.")}</li>
+              <li>{t("Kies ‘App installeren’ of ‘Toevoegen aan startscherm’.")}</li>
             </ol>
           </div>
         </section>
       </div>
     </AppShell>
   );
+}
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
