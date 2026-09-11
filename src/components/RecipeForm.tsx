@@ -471,13 +471,13 @@ export function RecipeForm({
           <Label htmlFor="servings-top" className="text-base">
             Voor hoeveel personen zijn deze ingrediënten?
           </Label>
-          <div className="mt-2 flex items-center gap-3">
+          <div className="mt-2 flex w-full items-center gap-2 sm:gap-3">
             <Button
               type="button"
               variant="secondary"
               onClick={() => setServings(String(Math.max(1, (Number(servings) || 1) - 1)))}
               aria-label="Minder personen"
-              className="size-14"
+              className="size-12 shrink-0 sm:size-14"
             >
               –
             </Button>
@@ -486,18 +486,18 @@ export function RecipeForm({
               value={servings}
               onChange={(e) => setServings(e.target.value)}
               inputMode="numeric"
-              className="h-14 w-24 text-center text-base"
+              className="h-12 min-w-0 flex-1 text-center text-base sm:h-14 sm:w-24 sm:flex-none"
             />
             <Button
               type="button"
               variant="secondary"
               onClick={() => setServings(String((Number(servings) || 0) + 1))}
               aria-label="Meer personen"
-              className="size-14"
+              className="size-12 shrink-0 sm:size-14"
             >
               +
             </Button>
-            <span className="text-base text-muted-foreground">personen</span>
+            <span className="shrink-0 text-base text-muted-foreground">personen</span>
           </div>
         </div>
 
