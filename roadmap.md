@@ -11,6 +11,10 @@
 - [x] Analytics: actieve gebruikers, populaire functies en schermen
 - [x] Teksten (CMS) en aankondigingen die medewerkers zelf beheren, met infopagina in de app
 
+## Bezig
+- [ ] Eigen domeinnaam kopen en koppelen (naam: Shared Kitchen)
+- [ ] Voorbereiding betalen: limiet gratis gerechten + pakketten bijkopen (nog niet actief)
+
 ## Ideeën voor later
 - [ ] Passkeys als alternatief voor de authenticator-app
 - [ ] Meekijken met een gebruiker (impersonatie) met expliciete toestemming
