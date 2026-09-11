@@ -30,7 +30,7 @@
 - [ ] Vriendenuitnodigingen: op gsm duidelijk zien naar wie je een uitnodiging stuurde
 - [ ] Gerechtpagina op gsm volledig responsive (o.a. aantal personen +/-)
 
-## Weekmenu (nieuw)
+## Weekmenu (klaar)
 - Reeds ingepland moment (bv. avondeten) verdwijnt uit de knoppen van die dag
 - Instellingen: kies welke maaltijdmomenten je per dag ziet (ontbijt/middageten/avondeten of 1 blok)
 - Zelf gerecht toevoegen: keuze "gewoon tekst" of "met AI", daarna controlevenster met bevestigen (knop onderaan + vinkje rechtsboven)
