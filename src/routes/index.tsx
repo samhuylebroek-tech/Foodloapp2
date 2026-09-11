@@ -276,24 +276,24 @@ function StartPage() {
               </div>
             )}
 
-            <div className="mt-5 flex flex-wrap gap-3">
+            <div className="mt-5 grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-3">
               <Link
                 to="/recepten/nieuw"
-                className="inline-flex min-h-14 items-center gap-2 rounded-2xl bg-primary px-5 text-base font-semibold text-primary-foreground shadow-md shadow-primary/15 transition-transform active:scale-95"
+                className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl bg-primary px-2 text-center text-sm font-semibold text-primary-foreground shadow-md shadow-primary/15 transition-transform active:scale-95 sm:min-h-14 sm:flex-row sm:gap-2 sm:px-5 sm:text-base"
               >
-                <Plus className="size-5" aria-hidden /> {t("Nieuw recept")}
+                <Plus className="size-5 shrink-0" aria-hidden /> {t("Nieuw recept")}
               </Link>
               <Link
                 to="/gerechten"
-                className="inline-flex min-h-14 items-center gap-2 rounded-2xl border border-border bg-card px-5 text-base font-semibold transition-colors hover:bg-muted"
+                className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-border bg-card px-2 text-center text-sm font-semibold transition-colors hover:bg-muted sm:min-h-14 sm:flex-row sm:gap-2 sm:px-5 sm:text-base"
               >
-                <Search className="size-5" aria-hidden /> {t("Alle gerechten")}
+                <Search className="size-5 shrink-0" aria-hidden /> {t("Gerechten")}
               </Link>
               <Link
                 to="/planner"
-                className="inline-flex min-h-14 items-center gap-2 rounded-2xl border border-border bg-card px-5 text-base font-semibold transition-colors hover:bg-muted"
+                className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-border bg-card px-2 text-center text-sm font-semibold transition-colors hover:bg-muted sm:min-h-14 sm:flex-row sm:gap-2 sm:px-5 sm:text-base"
               >
-                <CalendarDays className="size-5" aria-hidden /> {t("Weekmenu")}
+                <CalendarDays className="size-5 shrink-0" aria-hidden /> {t("Weekmenu")}
               </Link>
             </div>
           </div>
@@ -304,7 +304,7 @@ function StartPage() {
           <section>
             <div className="mb-3 flex items-center justify-between gap-3">
               <SectieTitel icoon={<Globe2 className="size-5" aria-hidden />}>
-                {t("Nieuw voor jou van het internet")}
+                {t("Nieuw voor jou")}
               </SectieTitel>
               <button
                 type="button"
@@ -444,9 +444,9 @@ function StartPage() {
 
 function SectieTitel({ children, icoon }: { children: React.ReactNode; icoon?: React.ReactNode }) {
   return (
-    <h2 className="mb-3 flex items-center gap-2 text-2xl font-bold tracking-tight">
-      {icoon}
-      {children}
+    <h2 className="mb-3 flex min-w-0 items-center gap-2 text-xl font-bold tracking-tight sm:text-2xl">
+      <span className="shrink-0">{icoon}</span>
+      <span className="truncate">{children}</span>
     </h2>
   );
 }
