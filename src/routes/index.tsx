@@ -112,6 +112,22 @@ function StartPage() {
     },
   });
 
+  // Gerechten waaraan jij 4 of 5 sterren gaf: dit stuurt de internetsuggesties.
+  const { data: topRatings = [] } = useQuery({
+    queryKey: ["top-ratings", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("recipe_ratings")
+        .select("recipe_id, stars")
+        .gte("stars", 4)
+        .order("stars", { ascending: false });
+      if (error) throw error;
+      return data as { recipe_id: string; stars: number }[];
+    },
+  });
+
+
   const sfeer = weer ? sfeerVoorWeer(weer) : null;
 
   const weerTips = useMemo(() => {
