@@ -111,6 +111,9 @@ function InstallerenPage() {
               "Scan deze QR-code met je camera. Je opent de app meteen in je browser — geen app store nodig."
             )}
           </p>
+          <p className="mt-2 inline-block rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700">
+            {t("Geen App Store of Play Store nodig")}
+          </p>
 
           <div className="mt-6 flex justify-center rounded-3xl bg-white p-4">
             {qr ? (
