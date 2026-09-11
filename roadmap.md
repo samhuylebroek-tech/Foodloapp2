@@ -11,10 +11,14 @@
 - [x] Analytics: actieve gebruikers, populaire functies en schermen
 - [x] Teksten (CMS) en aankondigingen die medewerkers zelf beheren, met infopagina in de app
 
+- [x] Beveiligingslinter schoon: admin_rate_limits dichtgezet, hulpfuncties afgeschermd voor anoniem
+- [x] Foodlo volledig als mobiele app ingericht (PWA, iconen, installatiepagina, QR, mobiel tabmenu)
+- [x] Voorbereiding betalen: limiet gratis gerechten + pakketten, beheerinstellingen,
+      limietcontrole bij nieuw recept, pakkettenoverzicht in instellingen (nog niet actief)
+
 ## Bezig
-- [ ] Eigen domeinnaam kopen en koppelen (naam: Foodlo)
-- [ ] Foodlo volledig als mobiele app inrichten voor gsm en iPad (PWA, iconen, splash, mobiele UI)
-- [ ] Voorbereiding betalen: limiet gratis gerechten + pakketten bijkopen (nog niet actief)
+- [ ] Eigen domeinnaam kopen en koppelen (naam: Foodlo) — wacht tot de rest klaar is
+- [ ] Betalingen effectief activeren met een betaalprovider zodra gewenst
 
 ## Ideeën voor later
 - [ ] Passkeys als alternatief voor de authenticator-app

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useAuth } from "@/hooks/useAuth";
 import { Loader2, LogOut, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { QrDeelKaart } from "@/components/QrDeelKaart";
+import { useLimiet } from "@/lib/limiet";
 import { TALEN, THEMAS, useVoorkeuren, type ThemaId } from "@/lib/voorkeuren";
 
 export const Route = createFileRoute("/instellingen")({
@@ -148,6 +150,8 @@ function InstellingenPage() {
           </Link>
         </section>
 
+        <Pakketten t={t} />
+
         <BeheerLink />
 
         <Button
@@ -159,6 +163,32 @@ function InstellingenPage() {
         </Button>
       </div>
     </AppShell>
+  );
+}
+
+function Pakketten({ t }: { t: (s: string) => string }) {
+  const { user } = useAuth();
+  const { data: limiet } = useLimiet(user?.id);
+  if (!limiet?.betalenActief) return null;
+
+  const percentage =
+    Number.isFinite(limiet.totaal) && limiet.totaal > 0
+      ? Math.min(100, Math.round((limiet.gebruikt / limiet.totaal) * 100))
+      : 0;
+
+  return (
+    <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+      <h2 className="text-xl font-bold tracking-tight">{t("Pakketten")}</h2>
+      <p className="mt-2 text-base text-muted-foreground">
+        {limiet.gebruikt} {t("van")} {limiet.totaal} {t("gerechten in gebruik")}
+      </p>
+      <div className="mt-3 h-3 overflow-hidden rounded-full bg-muted">
+        <div className="h-full rounded-full bg-primary" style={{ width: `${percentage}%` }} />
+      </div>
+      <Button disabled className="mt-4 h-14 w-full text-base">
+        {t("Extra pakket kopen (binnenkort beschikbaar)")}
+      </Button>
+    </section>
   );
 }
 

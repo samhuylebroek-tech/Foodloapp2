@@ -43,13 +43,22 @@ function Instellingen() {
     rijen.filter((r) => r.key.startsWith("flag:")).map((r) => [r.key.slice(5), r.value === true || r.value === "true"]),
   );
   const onderhoudsbericht = (rijen.find((r) => r.key === "onderhoudsbericht")?.value as string) ?? "";
+  const getal = (key: string, standaard: number) => {
+    const v = rijen.find((r) => r.key === key)?.value;
+    const n = typeof v === "number" ? v : Number(v);
+    return Number.isFinite(n) ? n : standaard;
+  };
+  const betalenActief = rijen.find((r) => r.key === "betalen_actief")?.value === true;
+  const [gratis, setGratis] = useState<string | null>(null);
+  const [pakket, setPakket] = useState<string | null>(null);
+  const [prijs, setPrijs] = useState<string | null>(null);
 
   return (
     <AdminShell titel="Instellingen" omschrijving="Functies aan- of uitzetten zonder code">
       {isLoading ? (
         <p className="text-slate-400">Laden…</p>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-3">
           <Kaart>
             <p className="mb-3 text-sm font-medium">Functies</p>
             <ul className="space-y-3">
@@ -92,6 +101,60 @@ function Instellingen() {
             >
               Bericht opslaan
             </Button>
+          </Kaart>
+
+          <Kaart>
+            <p className="mb-1 text-sm font-medium">Betalingen (voorbereiding)</p>
+            <p className="mb-3 text-xs text-slate-400">
+              Zolang dit uit staat, is alles gratis en onbeperkt.
+            </p>
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span>Betalingen actief</span>
+              <Switch
+                checked={betalenActief}
+                disabled={!mag("settings.manage")}
+                onCheckedChange={(v) => zet.mutate({ key: "betalen_actief", value: v })}
+              />
+            </div>
+            <label className="mt-4 block text-xs text-slate-400">Gratis gerechten per gebruiker</label>
+            <Input
+              type="number"
+              min={0}
+              className="mt-1 border-white/10 bg-slate-950 text-slate-100"
+              value={gratis ?? String(getal("gratis_gerechten", 100))}
+              onChange={(e) => setGratis(e.target.value)}
+              onBlur={() => {
+                if (gratis !== null) zet.mutate({ key: "gratis_gerechten", value: Number(gratis) });
+                setGratis(null);
+              }}
+              disabled={!mag("settings.manage")}
+            />
+            <label className="mt-3 block text-xs text-slate-400">Gerechten per pakket</label>
+            <Input
+              type="number"
+              min={1}
+              className="mt-1 border-white/10 bg-slate-950 text-slate-100"
+              value={pakket ?? String(getal("pakket_gerechten", 100))}
+              onChange={(e) => setPakket(e.target.value)}
+              onBlur={() => {
+                if (pakket !== null) zet.mutate({ key: "pakket_gerechten", value: Number(pakket) });
+                setPakket(null);
+              }}
+              disabled={!mag("settings.manage")}
+            />
+            <label className="mt-3 block text-xs text-slate-400">Prijs per pakket (eurocent)</label>
+            <Input
+              type="number"
+              min={0}
+              className="mt-1 border-white/10 bg-slate-950 text-slate-100"
+              value={prijs ?? String(getal("pakket_prijs_cent", 499))}
+              onChange={(e) => setPrijs(e.target.value)}
+              onBlur={() => {
+                if (prijs !== null) zet.mutate({ key: "pakket_prijs_cent", value: Number(prijs) });
+                setPrijs(null);
+              }}
+              disabled={!mag("settings.manage")}
+            />
           </Kaart>
         </div>
       )}
