@@ -1,9 +1,5 @@
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { toast } from "sonner";
 import { ShieldCheck } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Button } from "@/components/ui/button";
 
