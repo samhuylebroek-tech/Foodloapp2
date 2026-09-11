@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useAuth } from "@/hooks/useAuth";
 import { Loader2, LogOut, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { QrDeelKaart } from "@/components/QrDeelKaart";
+import { useLimiet } from "@/lib/limiet";
 import { TALEN, THEMAS, useVoorkeuren, type ThemaId } from "@/lib/voorkeuren";
 
 export const Route = createFileRoute("/instellingen")({
@@ -147,6 +149,8 @@ function InstellingenPage() {
             {t("Grotere QR-code tonen")}
           </Link>
         </section>
+
+        <Pakketten t={t} />
 
         <BeheerLink />
 
