@@ -363,7 +363,7 @@ function PlannerPage() {
                 {labelVoor(dag)}
                 {dag === vandaag ? " · vandaag" : ""}
                 {volledig && (
-                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 align-middle text-xs font-bold normal-case text-primary-foreground">
+                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-primary-foreground/20 px-2 py-0.5 align-middle text-xs font-bold normal-case">
                     <Check className="size-3.5" aria-hidden /> volledig
                   </span>
                 )}
