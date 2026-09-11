@@ -501,25 +501,65 @@ export function RecipeForm({
         <div>
           <Label className="text-base">Foto van het gerecht</Label>
           <div className="mt-2 flex items-center gap-4">
-            <RecipePhoto
-              path={photoPath}
-              alt={title || "Gerecht"}
-              className="size-24 shrink-0 rounded-2xl"
-            />
-            <label className="inline-flex min-h-14 cursor-pointer items-center gap-2 rounded-xl border border-border bg-secondary px-5 text-base font-semibold">
-              {uploading ? <Loader2 className="size-5 animate-spin" /> : <Camera className="size-5" />}
-              Foto kiezen
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="sr-only"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) void handlePhoto(f);
-                }}
+            <div className="relative shrink-0">
+              <RecipePhoto
+                path={photoPath ?? voorstelFoto}
+                alt={title || "Gerecht"}
+                className="size-24 rounded-2xl"
               />
-            </label>
+              {(photoPath || voorstelFoto) && (
+                <button
+                  type="button"
+                  onClick={verwijderFoto}
+                  aria-label="Foto verwijderen"
+                  className="absolute -right-2 -top-2 flex size-9 items-center justify-center rounded-full border border-border bg-card text-foreground shadow"
+                >
+                  <X className="size-5" aria-hidden />
+                </button>
+              )}
+              {fotoBezig && !photoPath && !voorstelFoto && (
+                <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-card/70">
+                  <Loader2 className="size-6 animate-spin" aria-hidden />
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <label className="inline-flex min-h-14 cursor-pointer items-center gap-2 rounded-xl border border-border bg-secondary px-5 text-base font-semibold">
+                {uploading ? (
+                  <Loader2 className="size-5 animate-spin" />
+                ) : (
+                  <Camera className="size-5" />
+                )}
+                Foto kiezen
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="sr-only"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void handlePhoto(f);
+                  }}
+                />
+              </label>
+              {!photoPath && voorstelFoto && (
+                <p className="text-sm text-muted-foreground">
+                  Voorgestelde foto. Niet goed? Klik op het kruisje.
+                </p>
+              )}
+              {!photoPath && !voorstelFoto && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFotoGeweigerd(false);
+                    void maakVoorstelFoto();
+                  }}
+                  className="block text-base font-semibold text-primary"
+                >
+                  Stel een foto voor
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </section>
