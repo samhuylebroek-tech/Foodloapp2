@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   Camera,
@@ -8,17 +8,19 @@ import {
   ClipboardType,
   ChevronDown,
   Pencil,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { uploadRecipePhoto, fileToDataUrl } from "@/lib/photos";
+import { uploadRecipePhoto, uploadDataUrl, fileToDataUrl } from "@/lib/photos";
 import {
   importRecipeFromUrl,
   importRecipeFromText,
   importRecipeFromScreenshot,
   recognizeIngredients,
   recipeFromPhoto,
+  gerechtFoto,
   type ImportedRecipe,
 } from "@/lib/ai.functions";
 import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/types";
@@ -75,6 +77,41 @@ export function RecipeForm({
   const [screenshotBezig, setScreenshotBezig] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [voorstelFoto, setVoorstelFoto] = useState<string | null>(null);
+  const [fotoBezig, setFotoBezig] = useState(false);
+  const [fotoGeweigerd, setFotoGeweigerd] = useState(false);
+  const laatsteFotoTitel = useRef("");
+
+  async function maakVoorstelFoto() {
+    const naam = title.trim();
+    if (!naam || fotoBezig) return;
+    laatsteFotoTitel.current = naam;
+    setFotoBezig(true);
+    try {
+      const url = await gerechtFoto({ data: { titel: naam } });
+      if (url) setVoorstelFoto(url);
+    } catch {
+      // een voorgestelde foto is extra, nooit blokkerend
+    } finally {
+      setFotoBezig(false);
+    }
+  }
+
+  function verwijderFoto() {
+    setPhotoPath(null);
+    setVoorstelFoto(null);
+    setFotoGeweigerd(true);
+  }
+
+  // Altijd een foto voorstellen zodra we een naam kennen, tenzij die is weggeklikt.
+  useEffect(() => {
+    const naam = title.trim();
+    if (photoPath || voorstelFoto || fotoGeweigerd || naam.length < 3) return;
+    if (laatsteFotoTitel.current === naam) return;
+    const timer = setTimeout(() => void maakVoorstelFoto(), 1200);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, photoPath, voorstelFoto, fotoGeweigerd]);
 
   function vulIn(data: ImportedRecipe) {
     setTitle(data.title);
@@ -155,6 +192,8 @@ export function RecipeForm({
     try {
       const path = await uploadRecipePhoto(file, user.id);
       setPhotoPath(path);
+      setVoorstelFoto(null);
+      setFotoGeweigerd(false);
       toast.success("Foto toegevoegd");
     } catch {
       toast.error("De foto kon niet worden opgeslagen");
@@ -189,8 +228,12 @@ export function RecipeForm({
       vulIn(data);
       setSourceUrl(importUrl.trim());
       toast.success("Recept ingelezen. Controleer het even en sla op.");
-    } catch {
-      toast.error("Dit recept kon niet worden ingelezen");
+    } catch (err) {
+      toast.error(
+        err instanceof Error && err.message.length < 300
+          ? err.message
+          : "Dit recept kon niet worden ingelezen",
+      );
     } finally {
       setImporting(false);
     }
@@ -204,11 +247,20 @@ export function RecipeForm({
     }
     setSaving(true);
     try {
+      let bewaardeFoto = photoPath;
+      if (!bewaardeFoto && voorstelFoto && !fotoGeweigerd) {
+        try {
+          bewaardeFoto = await uploadDataUrl(voorstelFoto, user.id);
+          setPhotoPath(bewaardeFoto);
+        } catch {
+          bewaardeFoto = null;
+        }
+      }
       const payload = {
         user_id: user.id,
         title: title.trim(),
         description: description.trim(),
-        image_url: photoPath,
+        image_url: bewaardeFoto,
         servings: Number(servings) || 1,
         prep_minutes: Number(prep) || 0,
         cook_minutes: Number(cook) || 0,
