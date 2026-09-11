@@ -131,6 +131,23 @@ function InstellingenPage() {
           </select>
         </section>
 
+        <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+          <h2 className="text-xl font-bold tracking-tight">{t("Deel met vrienden")}</h2>
+          <p className="mt-2 text-base text-muted-foreground">
+            {t("Laat anderen Foodlo openen zonder app store.")}
+          </p>
+          <div className="mt-4">
+            <QrDeelKaart compact />
+          </div>
+          <Link
+            to="/deel"
+            className="mt-4 flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-border bg-secondary text-base font-semibold transition-colors hover:bg-muted"
+          >
+            <QrCode className="size-5" />
+            {t("Grotere QR-code tonen")}
+          </Link>
+        </section>
+
         <BeheerLink />
 
         <Button
