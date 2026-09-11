@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import logo from "@/assets/logo.png";
+import { appOrigin } from "@/lib/app-url";
 
 export const Route = createFileRoute("/aanmelden")({
   head: () => ({
@@ -56,7 +57,7 @@ function AanmeldenPage() {
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: appOrigin(),
             data: { display_name: name },
           },
         });
@@ -76,7 +77,7 @@ function AanmeldenPage() {
 
   async function handleSso(provider: "google" | "apple" | "microsoft", naam: string) {
     const result = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: window.location.origin,
+      redirect_uri: appOrigin(),
     });
     if (result.error) {
       toast.error(`Aanmelden met ${naam} lukte niet`);

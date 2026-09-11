@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { appOrigin } from "@/lib/app-url";
 
 export const Route = createFileRoute("/vrienden")({
   head: () => ({
@@ -68,7 +70,7 @@ const STANDAARD: Rechten = {
 };
 
 function uitnodigingsLink(token: string) {
-  return `${window.location.origin}/uitnodiging?code=${token}`;
+  return `${appOrigin()}/uitnodiging?code=${token}`;
 }
 
 function VriendenPage() {
