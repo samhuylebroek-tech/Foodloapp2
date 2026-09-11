@@ -24,3 +24,4 @@
 - [ ] Passkeys als alternatief voor de authenticator-app
 - [ ] Meekijken met een gebruiker (impersonatie) met expliciete toestemming
 - [ ] Externe integraties en betaalde abonnementen
+- [ ] Native app in App Store / Play Store (nu is PWA-installatie via QR/link voldoende)
