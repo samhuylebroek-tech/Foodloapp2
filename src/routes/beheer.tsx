@@ -20,8 +20,6 @@ export const Route = createFileRoute("/beheer")({
 
 function BeheerLayout() {
   const { profiel, laden, ingelogd } = useAdmin();
-  const qc = useQueryClient();
-  const [bezig, setBezig] = useState(false);
 
   if (laden) {
     return <div className="grid min-h-screen place-items-center bg-slate-950 text-slate-400">Laden…</div>;
