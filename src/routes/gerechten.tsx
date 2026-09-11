@@ -201,7 +201,7 @@ function GerechtenPage() {
 
 
         <div className="space-y-3 rounded-2xl border border-border bg-card p-3">
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap">
             <FilterSelect
               label={t("Soort")}
               value={categorie ?? "alles"}
@@ -262,7 +262,7 @@ function GerechtenPage() {
               type="button"
               onClick={() => setAlleenFavorieten(!alleenFavorieten)}
               className={cn(
-                "inline-flex min-h-[56px] items-center gap-2 rounded-xl border px-4 text-base font-semibold",
+                "inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border px-4 text-base font-semibold sm:min-h-[56px]",
                 alleenFavorieten
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-card text-foreground",
@@ -277,7 +277,7 @@ function GerechtenPage() {
               <button
                 type="button"
                 onClick={wisFilters}
-                className="inline-flex min-h-[56px] items-center gap-2 rounded-xl px-2 text-base font-semibold text-primary"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-2 text-base font-semibold text-primary sm:min-h-[56px]"
               >
                 <RotateCcw className="size-5" aria-hidden /> {t("Filters wissen")}
               </button>
@@ -348,14 +348,14 @@ function FilterSelect({
   options: { value: string; label: string }[];
 }) {
   return (
-    <div className="min-w-[10rem] flex-1">
-      <label className="mb-1 block text-base font-semibold" htmlFor={`filter-${label}`}>
+    <div className="min-w-0 sm:min-w-[10rem] sm:flex-1">
+      <label className="mb-1 block truncate text-sm font-semibold text-muted-foreground sm:text-base sm:text-foreground" htmlFor={`filter-${label}`}>
         {label}
       </label>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger
           id={`filter-${label}`}
-          className="h-14 w-full rounded-xl border-border bg-card text-base"
+          className="h-12 w-full rounded-xl border-border bg-card text-base sm:h-14"
           aria-label={label}
         >
           <SelectValue />
