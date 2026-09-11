@@ -28,3 +28,4 @@
 
 ## Nog te doen
 - [ ] Vriendenuitnodigingen: op gsm duidelijk zien naar wie je een uitnodiging stuurde
+- [ ] Gerechtpagina op gsm volledig responsive (o.a. aantal personen +/-)
