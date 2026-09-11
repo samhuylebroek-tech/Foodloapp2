@@ -26,8 +26,9 @@ import { AppShell } from "@/components/AppShell";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { Button } from "@/components/ui/button";
 import { importRecipeFromText } from "@/lib/ai.functions";
-import { useT } from "@/lib/voorkeuren";
-import { MEAL_TYPES, type Ingredient, type Recipe } from "@/lib/types";
+import { useT, useVoorkeuren } from "@/lib/voorkeuren";
+import { type Ingredient, type Recipe } from "@/lib/types";
+import { Copy } from "lucide-react";
 
 
 export const Route = createFileRoute("/recepten/$id")({
@@ -52,6 +53,7 @@ function ReceptPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const t = useT();
+  const { momenten } = useVoorkeuren();
   const [personen, setPersonen] = useState<number | null>(null);
   const [kookstand, setKookstand] = useState(false);
   const [stap, setStap] = useState(0);
@@ -169,6 +171,45 @@ function ReceptPage() {
       toast.success("In je planning gezet");
       setPlanOpen(false);
     }
+  }
+
+  async function kopieerNaarMij() {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("recipes")
+      .insert({
+        user_id: user.id,
+        title: recipe.title,
+        description: recipe.description,
+        image_url: recipe.image_url,
+        servings: recipe.servings,
+        prep_minutes: recipe.prep_minutes,
+        cook_minutes: recipe.cook_minutes,
+        difficulty: recipe.difficulty,
+        category: recipe.category,
+        tags: recipe.tags,
+        instructions: recipe.instructions,
+        source_url: recipe.source_url,
+      })
+      .select("id")
+      .single();
+    if (error) {
+      toast.error(t("Kopiëren lukte niet"));
+      return;
+    }
+    if (ingredients.length) {
+      await supabase.from("recipe_ingredients").insert(
+        ingredients.map((i, index) => ({
+          recipe_id: data.id,
+          name: i.name,
+          quantity: i.quantity,
+          unit: i.unit,
+          position: index,
+        })),
+      );
+    }
+    toast.success(t("Toegevoegd aan jouw gerechten"));
+    navigate({ to: "/recepten/$id", params: { id: data.id } });
   }
 
   async function verwijder() {
