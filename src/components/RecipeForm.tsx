@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   Camera,
@@ -8,17 +8,19 @@ import {
   ClipboardType,
   ChevronDown,
   Pencil,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { uploadRecipePhoto, fileToDataUrl } from "@/lib/photos";
+import { uploadRecipePhoto, uploadDataUrl, fileToDataUrl } from "@/lib/photos";
 import {
   importRecipeFromUrl,
   importRecipeFromText,
   importRecipeFromScreenshot,
   recognizeIngredients,
   recipeFromPhoto,
+  gerechtFoto,
   type ImportedRecipe,
 } from "@/lib/ai.functions";
 import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/types";
@@ -75,6 +77,41 @@ export function RecipeForm({
   const [screenshotBezig, setScreenshotBezig] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [voorstelFoto, setVoorstelFoto] = useState<string | null>(null);
+  const [fotoBezig, setFotoBezig] = useState(false);
+  const [fotoGeweigerd, setFotoGeweigerd] = useState(false);
+  const laatsteFotoTitel = useRef("");
+
+  async function maakVoorstelFoto() {
+    const naam = title.trim();
+    if (!naam || fotoBezig) return;
+    laatsteFotoTitel.current = naam;
+    setFotoBezig(true);
+    try {
+      const url = await gerechtFoto({ data: { titel: naam } });
+      if (url) setVoorstelFoto(url);
+    } catch {
+      // een voorgestelde foto is extra, nooit blokkerend
+    } finally {
+      setFotoBezig(false);
+    }
+  }
+
+  function verwijderFoto() {
+    setPhotoPath(null);
+    setVoorstelFoto(null);
+    setFotoGeweigerd(true);
+  }
+
+  // Altijd een foto voorstellen zodra we een naam kennen, tenzij die is weggeklikt.
+  useEffect(() => {
+    const naam = title.trim();
+    if (photoPath || voorstelFoto || fotoGeweigerd || naam.length < 3) return;
+    if (laatsteFotoTitel.current === naam) return;
+    const timer = setTimeout(() => void maakVoorstelFoto(), 1200);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, photoPath, voorstelFoto, fotoGeweigerd]);
 
   function vulIn(data: ImportedRecipe) {
     setTitle(data.title);
@@ -155,6 +192,8 @@ export function RecipeForm({
     try {
       const path = await uploadRecipePhoto(file, user.id);
       setPhotoPath(path);
+      setVoorstelFoto(null);
+      setFotoGeweigerd(false);
       toast.success("Foto toegevoegd");
     } catch {
       toast.error("De foto kon niet worden opgeslagen");
@@ -189,8 +228,12 @@ export function RecipeForm({
       vulIn(data);
       setSourceUrl(importUrl.trim());
       toast.success("Recept ingelezen. Controleer het even en sla op.");
-    } catch {
-      toast.error("Dit recept kon niet worden ingelezen");
+    } catch (err) {
+      toast.error(
+        err instanceof Error && err.message.length < 300
+          ? err.message
+          : "Dit recept kon niet worden ingelezen",
+      );
     } finally {
       setImporting(false);
     }
@@ -204,11 +247,20 @@ export function RecipeForm({
     }
     setSaving(true);
     try {
+      let bewaardeFoto = photoPath;
+      if (!bewaardeFoto && voorstelFoto && !fotoGeweigerd) {
+        try {
+          bewaardeFoto = await uploadDataUrl(voorstelFoto, user.id);
+          setPhotoPath(bewaardeFoto);
+        } catch {
+          bewaardeFoto = null;
+        }
+      }
       const payload = {
         user_id: user.id,
         title: title.trim(),
         description: description.trim(),
-        image_url: photoPath,
+        image_url: bewaardeFoto,
         servings: Number(servings) || 1,
         prep_minutes: Number(prep) || 0,
         cook_minutes: Number(cook) || 0,
@@ -419,13 +471,13 @@ export function RecipeForm({
           <Label htmlFor="servings-top" className="text-base">
             Voor hoeveel personen zijn deze ingrediënten?
           </Label>
-          <div className="mt-2 flex items-center gap-3">
+          <div className="mt-2 flex w-full items-center gap-2 sm:gap-3">
             <Button
               type="button"
               variant="secondary"
               onClick={() => setServings(String(Math.max(1, (Number(servings) || 1) - 1)))}
               aria-label="Minder personen"
-              className="size-14"
+              className="size-12 shrink-0 sm:size-14"
             >
               –
             </Button>
@@ -434,18 +486,18 @@ export function RecipeForm({
               value={servings}
               onChange={(e) => setServings(e.target.value)}
               inputMode="numeric"
-              className="h-14 w-24 text-center text-base"
+              className="h-12 min-w-0 flex-1 text-center text-base sm:h-14 sm:w-24 sm:flex-none"
             />
             <Button
               type="button"
               variant="secondary"
               onClick={() => setServings(String((Number(servings) || 0) + 1))}
               aria-label="Meer personen"
-              className="size-14"
+              className="size-12 shrink-0 sm:size-14"
             >
               +
             </Button>
-            <span className="text-base text-muted-foreground">personen</span>
+            <span className="shrink-0 text-base text-muted-foreground">personen</span>
           </div>
         </div>
 
@@ -501,25 +553,65 @@ export function RecipeForm({
         <div>
           <Label className="text-base">Foto van het gerecht</Label>
           <div className="mt-2 flex items-center gap-4">
-            <RecipePhoto
-              path={photoPath}
-              alt={title || "Gerecht"}
-              className="size-24 shrink-0 rounded-2xl"
-            />
-            <label className="inline-flex min-h-14 cursor-pointer items-center gap-2 rounded-xl border border-border bg-secondary px-5 text-base font-semibold">
-              {uploading ? <Loader2 className="size-5 animate-spin" /> : <Camera className="size-5" />}
-              Foto kiezen
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="sr-only"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) void handlePhoto(f);
-                }}
+            <div className="relative shrink-0">
+              <RecipePhoto
+                path={photoPath ?? voorstelFoto}
+                alt={title || "Gerecht"}
+                className="size-24 rounded-2xl"
               />
-            </label>
+              {(photoPath || voorstelFoto) && (
+                <button
+                  type="button"
+                  onClick={verwijderFoto}
+                  aria-label="Foto verwijderen"
+                  className="absolute -right-2 -top-2 flex size-9 items-center justify-center rounded-full border border-border bg-card text-foreground shadow"
+                >
+                  <X className="size-5" aria-hidden />
+                </button>
+              )}
+              {fotoBezig && !photoPath && !voorstelFoto && (
+                <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-card/70">
+                  <Loader2 className="size-6 animate-spin" aria-hidden />
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <label className="inline-flex min-h-14 cursor-pointer items-center gap-2 rounded-xl border border-border bg-secondary px-5 text-base font-semibold">
+                {uploading ? (
+                  <Loader2 className="size-5 animate-spin" />
+                ) : (
+                  <Camera className="size-5" />
+                )}
+                Foto kiezen
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="sr-only"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void handlePhoto(f);
+                  }}
+                />
+              </label>
+              {!photoPath && voorstelFoto && (
+                <p className="text-sm text-muted-foreground">
+                  Voorgestelde foto. Niet goed? Klik op het kruisje.
+                </p>
+              )}
+              {!photoPath && !voorstelFoto && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFotoGeweigerd(false);
+                    void maakVoorstelFoto();
+                  }}
+                  className="block text-base font-semibold text-primary"
+                >
+                  Stel een foto voor
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </section>

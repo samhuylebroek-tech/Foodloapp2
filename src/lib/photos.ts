@@ -49,3 +49,11 @@ export function fileToDataUrl(file: File): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
+
+export async function uploadDataUrl(dataUrl: string, userId: string) {
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  const ext = blob.type.includes("png") ? "png" : "jpg";
+  const file = new File([blob], `voorstel.${ext}`, { type: blob.type || "image/jpeg" });
+  return uploadRecipePhoto(file, userId);
+}

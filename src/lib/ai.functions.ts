@@ -101,30 +101,110 @@ function vindAfbeelding(html: string, paginaUrl: string): string | null {
   return null;
 }
 
+const SOCIAAL = /(instagram\.com|instagr\.am|tiktok\.com|facebook\.com|fb\.watch|pinterest\.)/i;
+
+const BROWSER_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
+
+function metaTekst(html: string, sleutels: string[]): string {
+  const stukken: string[] = [];
+  for (const sleutel of sleutels) {
+    const patronen = [
+      new RegExp(`<meta[^>]+(?:property|name)=["']${sleutel}["'][^>]+content=["']([^"']+)["']`, "i"),
+      new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${sleutel}["']`, "i"),
+    ];
+    for (const p of patronen) {
+      const m = html.match(p);
+      if (m?.[1]) {
+        stukken.push(m[1]);
+        break;
+      }
+    }
+  }
+  return stukken
+    .join("\n")
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;|&#039;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/\\n/g, "\n")
+    .trim();
+}
+
+async function haalPagina(url: string, ua: string) {
+  return fetch(url, {
+    headers: {
+      "User-Agent": ua,
+      Accept: "text/html,application/xhtml+xml",
+      "Accept-Language": "nl,en;q=0.8",
+    },
+    redirect: "follow",
+  });
+}
+
 export const importRecipeFromUrl = createServerFn({ method: "POST" })
   .inputValidator((data) => z.object({ url: z.string().url() }).parse(data))
   .handler(async ({ data }): Promise<ImportedRecipe> => {
-    const page = await fetch(data.url, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; KookApp/1.0)" },
-    });
+    const isSociaal = SOCIAAL.test(data.url);
+
+    let page = await haalPagina(data.url, isSociaal ? "facebookexternalhit/1.1" : BROWSER_UA);
+    if (!page.ok && isSociaal) page = await haalPagina(data.url, BROWSER_UA);
     if (!page.ok) throw new Error("De pagina kon niet worden opgehaald.");
     const html = await page.text();
-    const text = html
+
+    const platteTekst = html
       .replace(/<script[\s\S]*?<\/script>/gi, " ")
       .replace(/<style[\s\S]*?<\/style>/gi, " ")
       .replace(/<[^>]+>/g, " ")
       .replace(/\s+/g, " ")
-      .slice(0, 15000);
+      .trim();
+
+    const meta = metaTekst(html, [
+      "og:title",
+      "og:description",
+      "description",
+      "twitter:description",
+    ]);
+    const bijschrift = (() => {
+      const m =
+        html.match(/"edge_media_to_caption"[\s\S]{0,200}?"text"\s*:\s*"([\s\S]{20,4000}?)"/) ??
+        html.match(/"caption"\s*:\s*"([\s\S]{20,4000}?)"/) ??
+        html.match(/"desc"\s*:\s*"([\s\S]{20,4000}?)"/);
+      return m?.[1]
+        ? m[1]
+            .replace(/\\n/g, "\n")
+            .replace(/\\u([\dA-Fa-f]{4})/g, (_x, c) => String.fromCharCode(parseInt(c, 16)))
+            .replace(/\\"/g, '"')
+        : "";
+    })();
+
+    const bron = isSociaal
+      ? [meta, bijschrift].filter(Boolean).join("\n\n").slice(0, 15000)
+      : platteTekst.slice(0, 15000);
+
+    if (bron.replace(/\s/g, "").length < 60) {
+      throw new Error(
+        isSociaal
+          ? "Deze Instagram- of TikTok-link is afgeschermd. Kopieer de tekst onder het filmpje en plak die bij 'AI tekst', of neem een schermafbeelding en gebruik 'AI foto'."
+          : "Op deze pagina vonden we geen receptinformatie.",
+      );
+    }
 
     const raw = await askAI([
       {
         role: "system",
-        content: `Je haalt recepten uit webpagina's. Neem de bereiding letterlijk en volledig over zoals ze op de pagina staat, zonder stappen weg te laten. ${STAP_REGELS} Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. ${JSON_FORMAAT}`,
+        content: isSociaal
+          ? `Je maakt een recept op basis van een bijschrift van Instagram, TikTok of Facebook. Gebruik alles wat in het bijschrift staat en vul ontbrekende hoeveelheden, tijden en stappen aan met een verstandige, realistische schatting, zodat het recept altijd volledig is. ${STAP_REGELS} Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. ${JSON_FORMAAT}`
+          : `Je haalt recepten uit webpagina's. Neem de bereiding letterlijk en volledig over zoals ze op de pagina staat, zonder stappen weg te laten. ${STAP_REGELS} Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. ${JSON_FORMAAT}`,
       },
-      { role: "user", content: `Bron: ${data.url}\n\nTekst:\n${text}` },
+      { role: "user", content: `Bron: ${data.url}\n\nTekst:\n${bron}` },
     ]);
 
     const parsed = parseJson<Partial<ImportedRecipe>>(raw, {});
+    if (!parsed.title) {
+      throw new Error(
+        "We konden hier geen recept uit halen. Probeer de tekst te plakken of een schermafbeelding te kiezen.",
+      );
+    }
     return {
       title: parsed.title ?? "",
       description: parsed.description ?? "",
@@ -137,7 +217,7 @@ export const importRecipeFromUrl = createServerFn({ method: "POST" })
       ingredients: parsed.ingredients ?? [],
       instructions: parsed.instructions ?? [],
       image_url: vindAfbeelding(html, data.url),
-      is_suggestie: false,
+      is_suggestie: isSociaal,
     };
   });
 

@@ -326,25 +326,25 @@ function ReceptPage() {
 
 
         <section className="rounded-3xl border border-border bg-card p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-xl">Ingrediënten</h2>
-            <div className="flex items-center gap-2">
+            <div className="flex w-full items-center justify-between gap-2 rounded-2xl bg-secondary p-1 sm:w-auto sm:justify-end sm:bg-transparent sm:p-0">
               <Button
                 variant="secondary"
                 onClick={() => setPersonen(Math.max(1, aantal - 1))}
                 aria-label="Minder personen"
-                className="size-14"
+                className="size-12 shrink-0 sm:size-14"
               >
                 <Minus className="size-5" />
               </Button>
-              <span className="w-24 text-center text-lg font-semibold">
+              <span className="min-w-0 flex-1 text-center text-base font-semibold sm:w-24 sm:flex-none sm:text-lg">
                 {aantal} pers.
               </span>
               <Button
                 variant="secondary"
                 onClick={() => setPersonen(aantal + 1)}
                 aria-label="Meer personen"
-                className="size-14"
+                className="size-12 shrink-0 sm:size-14"
               >
                 <Plus className="size-5" />
               </Button>

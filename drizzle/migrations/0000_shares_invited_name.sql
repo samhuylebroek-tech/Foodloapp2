@@ -1,0 +1,1 @@
+ALTER TABLE public.shares ADD COLUMN IF NOT EXISTS invited_name text NOT NULL DEFAULT '';

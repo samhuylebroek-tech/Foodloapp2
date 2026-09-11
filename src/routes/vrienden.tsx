@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { appOrigin } from "@/lib/app-url";
 
 export const Route = createFileRoute("/vrienden")({
   head: () => ({
@@ -45,6 +47,7 @@ type Share = Rechten & {
   owner_id: string;
   member_id: string | null;
   invited_email: string | null;
+  invited_name: string;
   token: string;
   status: string;
 };
@@ -68,7 +71,7 @@ const STANDAARD: Rechten = {
 };
 
 function uitnodigingsLink(token: string) {
-  return `${window.location.origin}/uitnodiging?code=${token}`;
+  return `${appOrigin()}/uitnodiging?code=${token}`;
 }
 
 function VriendenPage() {
@@ -77,6 +80,7 @@ function VriendenPage() {
   const [rechten, setRechten] = useState<Rechten>(STANDAARD);
   const [nieuwOpen, setNieuwOpen] = useState(false);
   const [nieuwId, setNieuwId] = useState<string | null>(null);
+  const [voorWie, setVoorWie] = useState("");
 
   const { data: shares = [] } = useQuery({
     queryKey: ["shares", user?.id],
@@ -128,7 +132,7 @@ function VriendenPage() {
     mutationFn: async () => {
       const { data, error } = await supabase
         .from("shares")
-        .insert({ owner_id: user!.id, ...rechten })
+        .insert({ owner_id: user!.id, invited_name: voorWie.trim(), ...rechten })
         .select("*")
         .single();
       if (error) throw error;
@@ -138,6 +142,7 @@ function VriendenPage() {
       setNieuwOpen(false);
       setNieuwId(s.id);
       setRechten(STANDAARD);
+      setVoorWie("");
       qc.invalidateQueries({ queryKey: ["shares"] });
       const link = uitnodigingsLink(s.token);
       try {
@@ -231,6 +236,22 @@ function VriendenPage() {
           </p>
 
 
+          <div>
+            <Label htmlFor="voor-wie" className="text-base">
+              Voor wie is deze uitnodiging?
+            </Label>
+            <Input
+              id="voor-wie"
+              value={voorWie}
+              onChange={(e) => setVoorWie(e.target.value)}
+              placeholder="Bijvoorbeeld: Marie"
+              className="mt-2 h-14 text-base"
+            />
+            <p className="mt-1 text-sm text-muted-foreground">
+              Zo zie je later meteen naar wie je deze uitnodiging stuurde.
+            </p>
+          </div>
+
           <ul className="space-y-1">
             {RECHTEN.map((r) => (
               <li
@@ -270,7 +291,7 @@ function VriendenPage() {
               <UitnodigingKaart
                 key={s.id}
                 share={s}
-                naam={s.member_id ? (namen[s.member_id] ?? "Vriend") : null}
+                naam={s.member_id ? (namen[s.member_id] ?? "Vriend") : (s.invited_name || null)}
                 startOpen={s.id === nieuwId}
                 onWijzig={(patch) => wijzig.mutate({ id: s.id, patch })}
                 onVerwijder={() => verwijder.mutate(s.id)}
@@ -343,16 +364,26 @@ function UitnodigingKaart({
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <p className="truncate text-lg font-semibold">
-            {naam ?? share.invited_email ?? "Nog niet aangenomen"}
+          <p className="break-words text-lg font-semibold leading-snug">
+            {naam ?? share.invited_email ?? "Uitnodiging zonder naam"}
           </p>
-          <p className="text-base text-muted-foreground">
+          <span
+            className={
+              share.status === "accepted"
+                ? "mt-1 inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary"
+                : "mt-1 inline-flex items-center rounded-full bg-secondary px-3 py-1 text-sm font-semibold text-muted-foreground"
+            }
+          >
             {share.status === "accepted" ? "Doet mee" : "Wacht op antwoord"}
-          </p>
+          </span>
         </div>
-        <Button variant="secondary" onClick={() => setOpen(!open)} className="h-14 text-base">
+        <Button
+          variant="secondary"
+          onClick={() => setOpen(!open)}
+          className="h-14 w-full text-base sm:w-auto"
+        >
           {open ? "Sluiten" : "Instellen"}
         </Button>
       </div>
@@ -391,8 +422,10 @@ function UitnodigingKaart({
               ) : (
                 <div className="mx-auto size-52 animate-pulse rounded-xl bg-card" />
               )}
-              <p className="break-all text-base text-muted-foreground">{link}</p>
-              <div className="flex gap-3">
+              <p className="break-all rounded-xl bg-card p-3 text-sm leading-relaxed text-muted-foreground">
+                {link}
+              </p>
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <Button
                   onClick={async () => {
                     if (navigator.share) {
@@ -402,7 +435,7 @@ function UitnodigingKaart({
                       toast.success("Link gekopieerd");
                     }
                   }}
-                  className="h-14 flex-1 text-base"
+                  className="h-14 w-full text-base sm:flex-1"
                 >
                   <Share2 className="size-5" /> Delen
                 </Button>
@@ -412,7 +445,7 @@ function UitnodigingKaart({
                     await navigator.clipboard.writeText(link);
                     toast.success("Link gekopieerd");
                   }}
-                  className="h-14 flex-1 text-base"
+                  className="h-14 w-full text-base sm:flex-1"
                 >
                   <Copy className="size-5" /> Kopiëren
                 </Button>
