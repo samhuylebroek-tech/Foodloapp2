@@ -18,9 +18,9 @@
 
 ## Bezig
 - [ ] Eigen domeinnaam kopen en koppelen (naam: Foodlo) — wacht tot de rest klaar is
-- [ ] Betalingen effectief activeren met een betaalprovider zodra gewenst
 
 ## Ideeën voor later
+- [ ] Betalingen activeren met een betaalprovider (voorbereiding ligt klaar, staat nu UIT)
 - [ ] Passkeys als alternatief voor de authenticator-app
 - [ ] Meekijken met een gebruiker (impersonatie) met expliciete toestemming
 - [ ] Externe integraties en betaalde abonnementen
