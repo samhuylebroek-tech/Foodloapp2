@@ -63,6 +63,9 @@ const RUIS = [
   /geniet van de video's en muziek/i,
   /^watch on tiktok$/i,
   /log in to instagram/i,
+  /ai-voorwaarden|AI Terms/i,
+  /interacties met ai|interactions with ais/i,
+
 ];
 
 /** Haalt herhalingen en platformruis uit de tekst. */
