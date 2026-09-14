@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, Link as RouterLink } from "@tanstack/react-router";
 import {
   Camera,
   Link2,
@@ -94,11 +94,9 @@ export function RecipeForm({
     return credits.data?.kosten.find((k) => k.feature === feature)?.credit_cost ?? 0;
   }
 
-  function kostLabel(feature: string): string {
-    const c = kost(feature);
-    if (!c) return "gratis";
-    return `${c} credit${c === 1 ? "" : "s"}`;
-  }
+  const laagSaldo =
+    credits.data != null && credits.data.saldo <= credits.data.waarschuwingVanaf;
+
 
   /** Waarschuwt vooraf als het saldo te laag is. Gewone functies blijven altijd werken. */
   function magStarten(feature: string): boolean {
@@ -395,6 +393,16 @@ export function RecipeForm({
             })}
           </div>
 
+          {laagSaldo && (
+            <p className="mt-3 text-sm text-muted-foreground">
+              Nog {credits.data?.saldo ?? 0} AI-credits over.{" "}
+              <RouterLink to="/credits" className="font-semibold underline">
+                Bekijk je credits
+              </RouterLink>
+            </p>
+          )}
+
+
           {manier === "link" && (
             <div className="mt-4">
               <p className="text-base text-muted-foreground">
@@ -419,10 +427,6 @@ export function RecipeForm({
                   Inlezen
                 </Button>
               </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Kost ongeveer {kostLabel("import_url")}. Staat het recept netjes op de website, dan
-                is het gratis. Je hebt er nog {credits.data?.saldo ?? 0}.
-              </p>
 
             </div>
           )}
@@ -448,9 +452,6 @@ export function RecipeForm({
                 )}
                 Recept eruit halen
               </Button>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Kost ongeveer {kostLabel("import_tekst")}. Je hebt er nog {credits.data?.saldo ?? 0}.
-              </p>
 
             </div>
           )}
@@ -497,10 +498,6 @@ export function RecipeForm({
                   }}
                 />
               </label>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Een schermafbeelding lezen kost {kostLabel("import_foto")}, een recept bedenken van
-                een foto {kostLabel("gerecht_foto")}. Je hebt er nog {credits.data?.saldo ?? 0}.
-              </p>
 
             </div>
           )}
