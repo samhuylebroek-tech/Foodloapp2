@@ -103,15 +103,8 @@ export function RecipeForm({
     setFotoGeweigerd(true);
   }
 
-  // Altijd een foto voorstellen zodra we een naam kennen, tenzij die is weggeklikt.
-  useEffect(() => {
-    const naam = title.trim();
-    if (photoPath || voorstelFoto || fotoGeweigerd || naam.length < 3) return;
-    if (laatsteFotoTitel.current === naam) return;
-    const timer = setTimeout(() => void maakVoorstelFoto(), 1200);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, photoPath, voorstelFoto, fotoGeweigerd]);
+  // Bewust geen automatische AI-foto: slimme functies starten alleen als jij erop tikt.
+
 
   function vulIn(data: ImportedRecipe) {
     setTitle(data.title);
