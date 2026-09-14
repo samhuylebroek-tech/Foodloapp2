@@ -419,10 +419,6 @@ export function RecipeForm({
                   Inlezen
                 </Button>
               </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Kost ongeveer {kostLabel("import_url")}. Staat het recept netjes op de website, dan
-                is het gratis. Je hebt er nog {credits.data?.saldo ?? 0}.
-              </p>
 
             </div>
           )}
