@@ -82,8 +82,8 @@ function CreditsPagina() {
                     className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-muted px-4 text-base"
                   >
                     <span>{t(k.label || k.feature)}</span>
-                    <span className="font-semibold">
-                      {k.credit_cost} {t("credits")}
+                    <span className="whitespace-nowrap font-semibold">
+                      {k.credit_cost} {k.credit_cost === 1 ? t("credit") : t("credits")}
                     </span>
                   </li>
                 ))}
