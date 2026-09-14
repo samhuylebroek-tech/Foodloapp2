@@ -395,6 +395,16 @@ export function RecipeForm({
             })}
           </div>
 
+          {laagSaldo && (
+            <p className="mt-3 text-sm text-muted-foreground">
+              Nog {credits.data?.saldo ?? 0} AI-credits over.{" "}
+              <RouterLink to="/credits" className="font-semibold underline">
+                Bekijk je credits
+              </RouterLink>
+            </p>
+          )}
+
+
           {manier === "link" && (
             <div className="mt-4">
               <p className="text-base text-muted-foreground">
