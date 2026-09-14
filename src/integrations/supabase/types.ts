@@ -182,6 +182,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_cache: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          feature: string
+          hits: number
+          input_hash: string
+          model: string
+          prompt_version: number
+          result: Json
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          feature: string
+          hits?: number
+          input_hash: string
+          model?: string
+          prompt_version?: number
+          result: Json
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          feature?: string
+          hits?: number
+          input_hash?: string
+          model?: string
+          prompt_version?: number
+          result?: Json
+        }
+        Relationships: []
+      }
       ai_events: {
         Row: {
           created_at: string
@@ -209,6 +242,42 @@ export type Database = {
           kind?: string
           model?: string
           ok?: boolean
+        }
+        Relationships: []
+      }
+      ai_usage: {
+        Row: {
+          cache_hit: boolean
+          created_at: string
+          credits: number
+          duration_ms: number
+          feature: string
+          id: string
+          model: string
+          ok: boolean
+          user_id: string | null
+        }
+        Insert: {
+          cache_hit?: boolean
+          created_at?: string
+          credits?: number
+          duration_ms?: number
+          feature: string
+          id?: string
+          model?: string
+          ok?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          cache_hit?: boolean
+          created_at?: string
+          credits?: number
+          duration_ms?: number
+          feature?: string
+          id?: string
+          model?: string
+          ok?: boolean
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -245,6 +314,108 @@ export type Database = {
           level?: string
           starts_at?: string
           title?: string
+        }
+        Relationships: []
+      }
+      credit_costs: {
+        Row: {
+          credit_cost: number
+          enabled: boolean
+          feature: string
+          label: string
+          max_per_dag: number
+          model: string
+          updated_at: string
+        }
+        Insert: {
+          credit_cost?: number
+          enabled?: boolean
+          feature: string
+          label?: string
+          max_per_dag?: number
+          model?: string
+          updated_at?: string
+        }
+        Update: {
+          credit_cost?: number
+          enabled?: boolean
+          feature?: string
+          label?: string
+          max_per_dag?: number
+          model?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      credit_packs: {
+        Row: {
+          actief: boolean
+          bonus: number
+          created_at: string
+          credits: number
+          id: string
+          naam: string
+          prijs_cent: number
+          valuta: string
+          volgorde: number
+        }
+        Insert: {
+          actief?: boolean
+          bonus?: number
+          created_at?: string
+          credits: number
+          id?: string
+          naam: string
+          prijs_cent: number
+          valuta?: string
+          volgorde?: number
+        }
+        Update: {
+          actief?: boolean
+          bonus?: number
+          created_at?: string
+          credits?: number
+          id?: string
+          naam?: string
+          prijs_cent?: number
+          valuta?: string
+          volgorde?: number
+        }
+        Relationships: []
+      }
+      credit_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          feature: string | null
+          id: string
+          reference_id: string | null
+          status: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string
+          feature?: string | null
+          id?: string
+          reference_id?: string | null
+          status?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          feature?: string | null
+          id?: string
+          reference_id?: string | null
+          status?: string
+          type?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -712,6 +883,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_credits: {
+        Row: {
+          balance: number
+          created_at: string
+          gebruikt_totaal: number
+          gekocht_totaal: number
+          gratis_totaal: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          gebruikt_totaal?: number
+          gekocht_totaal?: number
+          gratis_totaal?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          gebruikt_totaal?: number
+          gekocht_totaal?: number
+          gratis_totaal?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -719,6 +920,34 @@ export type Database = {
     Functions: {
       accept_share: { Args: { _token: string }; Returns: string }
       claim_first_admin: { Args: never; Returns: boolean }
+      credits_account: {
+        Args: { _user: string }
+        Returns: {
+          balance: number
+          created_at: string
+          gebruikt_totaal: number
+          gekocht_totaal: number
+          gratis_totaal: number
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "user_credits"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      credits_afronden: { Args: { _txn: string }; Returns: undefined }
+      credits_reserveren: {
+        Args: { _feature: string; _user: string }
+        Returns: Json
+      }
+      credits_terugstorten: { Args: { _txn: string }; Returns: undefined }
+      credits_toekennen: {
+        Args: { _amount: number; _ref: string; _type: string; _user: string }
+        Returns: number
+      }
       decline_share: { Args: { _token: string }; Returns: boolean }
       has_admin_role: {
         Args: {
