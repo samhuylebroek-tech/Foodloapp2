@@ -258,44 +258,53 @@ function StartPage() {
     <AppShell title={t("Foodlo")}>
       <div className="space-y-8">
         {/* Groet + weer */}
-        <section className="overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm">
-          <div className="bg-gradient-to-br from-primary/10 via-secondary to-transparent p-6">
-            <p className="text-3xl font-bold leading-tight tracking-tight">
-              {t(groet(uur))}
-              {user?.email ? "" : ""}!
-            </p>
-            <p className="mt-1 text-lg text-muted-foreground">{t("Wat eten we vandaag?")}</p>
+        <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground shadow-lg shadow-primary/20">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full bg-primary-foreground/10 blur-2xl"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -bottom-24 -left-10 size-56 rounded-full bg-primary-foreground/10 blur-2xl"
+          />
+          <div className="relative p-6 sm:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-3xl font-bold leading-tight tracking-tight sm:text-4xl">{t(groet(uur))}!</p>
+                <p className="mt-1 text-lg text-primary-foreground/85">{t("Wat eten we vandaag?")}</p>
+              </div>
+              {weerKlaar && weer && sfeer ? (
+                <div className="flex shrink-0 items-center gap-2 rounded-full bg-primary-foreground/15 px-3 py-2 backdrop-blur-sm">
+                  <span className="text-2xl leading-none" aria-hidden>
+                    {sfeer.emoji}
+                  </span>
+                  <span className="text-lg font-semibold">{weer.temperatuur}°</span>
+                </div>
+              ) : null}
+            </div>
 
             {weerKlaar && weer && sfeer && (
-              <div className="mt-5 flex items-start gap-3 rounded-2xl bg-card/80 p-4 backdrop-blur-sm">
-                <span className="text-4xl" aria-hidden>
-                  {sfeer.emoji}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-lg font-semibold">
-                    {t(sfeer.titel)} · {weer.temperatuur}°C
-                  </p>
-                  <p className="text-base text-muted-foreground">{t(sfeer.uitleg)}</p>
-                </div>
-              </div>
+              <p className="mt-4 text-base text-primary-foreground/90 sm:text-lg">
+                <span className="font-semibold">{t(sfeer.titel)}</span> · {t(sfeer.uitleg)}
+              </p>
             )}
 
-            <div className="mt-5 grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-3">
+            <div className="mt-6 grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-3">
               <Link
                 to="/recepten/nieuw"
-                className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl bg-primary px-2 text-center text-sm font-semibold text-primary-foreground shadow-md shadow-primary/15 transition-transform active:scale-95 sm:min-h-14 sm:flex-row sm:gap-2 sm:px-5 sm:text-base"
+                className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl bg-card px-2 text-center text-sm font-semibold text-foreground shadow-md transition-transform active:scale-95 sm:min-h-14 sm:flex-row sm:gap-2 sm:px-5 sm:text-base"
               >
                 <Plus className="size-5 shrink-0" aria-hidden /> {t("Nieuw recept")}
               </Link>
               <Link
                 to="/gerechten"
-                className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-border bg-card px-2 text-center text-sm font-semibold transition-colors hover:bg-muted sm:min-h-14 sm:flex-row sm:gap-2 sm:px-5 sm:text-base"
+                className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-primary-foreground/25 bg-primary-foreground/10 px-2 text-center text-sm font-semibold text-primary-foreground backdrop-blur-sm transition-transform active:scale-95 sm:min-h-14 sm:flex-row sm:gap-2 sm:px-5 sm:text-base"
               >
                 <Search className="size-5 shrink-0" aria-hidden /> {t("Gerechten")}
               </Link>
               <Link
                 to="/planner"
-                className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-border bg-card px-2 text-center text-sm font-semibold transition-colors hover:bg-muted sm:min-h-14 sm:flex-row sm:gap-2 sm:px-5 sm:text-base"
+                className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-primary-foreground/25 bg-primary-foreground/10 px-2 text-center text-sm font-semibold text-primary-foreground backdrop-blur-sm transition-transform active:scale-95 sm:min-h-14 sm:flex-row sm:gap-2 sm:px-5 sm:text-base"
               >
                 <CalendarDays className="size-5 shrink-0" aria-hidden /> {t("Weekmenu")}
               </Link>
