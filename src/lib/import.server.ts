@@ -159,7 +159,7 @@ const SOCIALE_ADAPTER = (platform: Platform): Adapter => ({
   tekstUit: (html) => {
     const meta = metaTekst(html, META_SLEUTELS);
     const cap = bijschrift(html);
-    const tekst = [meta, cap].filter(Boolean).join("\n\n");
+    const tekst = schoon([meta, cap].filter(Boolean).join("\n\n"));
     return { tekst, methode: cap ? "bijschrift" : "metadata" };
   },
 });
@@ -172,11 +172,12 @@ export function adapterVoor(platform: Platform): Adapter {
       tekstUit: (html) => {
         const beschrijving = youtubeBeschrijving(html);
         const meta = metaTekst(html, META_SLEUTELS);
-        const tekst = [meta, beschrijving].filter(Boolean).join("\n\n");
+        const tekst = schoon([meta, beschrijving].filter(Boolean).join("\n\n"));
         return { tekst, methode: beschrijving ? "videobeschrijving" : "metadata" };
       },
     };
   }
+
   if (platform === "website") {
     return {
       platform,
