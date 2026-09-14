@@ -94,11 +94,9 @@ export function RecipeForm({
     return credits.data?.kosten.find((k) => k.feature === feature)?.credit_cost ?? 0;
   }
 
-  function kostLabel(feature: string): string {
-    const c = kost(feature);
-    if (!c) return "gratis";
-    return `${c} credit${c === 1 ? "" : "s"}`;
-  }
+  const laagSaldo =
+    credits.data != null && credits.data.saldo <= credits.data.waarschuwingVanaf;
+
 
   /** Waarschuwt vooraf als het saldo te laag is. Gewone functies blijven altijd werken. */
   function magStarten(feature: string): boolean {
