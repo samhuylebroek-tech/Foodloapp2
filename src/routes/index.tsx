@@ -182,13 +182,16 @@ function StartPage() {
 
   const smaakSleutel = favorietSmaak.join("|");
   const [ronde, setRonde] = useState(0);
+  // Slimme ideeën starten nooit vanzelf: jij beslist wanneer.
+  const [ontdekAan, setOntdekAan] = useState(false);
   const {
     data: internet = [],
     isLoading: internetLaadt,
     isFetching: internetVerst,
   } = useQuery({
     queryKey: ["internet-suggesties", bekendSleutel, smaakSleutel, sfeer?.titel ?? "", ronde],
-    enabled: !!user && weerKlaar,
+    enabled: !!user && weerKlaar && ontdekAan,
+
     staleTime: 1000 * 60 * 60,
     queryFn: async () => {
       const lijst = await ontdekSuggesties({
