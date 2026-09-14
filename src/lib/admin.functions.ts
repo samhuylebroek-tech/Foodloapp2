@@ -883,3 +883,93 @@ export const adminAankondigingVerwijderen = createServerFn({ method: "POST" })
     await logboek(db, profiel, "announcement.delete", "announcement", data.id);
     return { ok: true };
   });
+
+// ---------------- credits & AI-kosten ----------------
+
+export const adminCredits = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { db } = await bewaker(context as Ctx, "dashboard.view");
+    const sinds = new Date(Date.now() - 30 * 86400_000).toISOString();
+
+    const [kosten, pakketten, saldi, boekingen, gebruik] = await Promise.all([
+      db.from("credit_costs").select("*").order("feature"),
+      db.from("credit_packs").select("*").order("volgorde"),
+      db.from("user_credits").select("balance, gratis_totaal, gekocht_totaal, gebruikt_totaal"),
+      db.from("credit_transactions").select("type, amount, created_at").gte("created_at", sinds),
+      db.from("ai_usage").select("feature, credits, cache_hit, ok, duration_ms, created_at").gte("created_at", sinds),
+    ]);
+
+    const rijen = (saldi.data ?? []) as any[];
+    const events = (gebruik.data ?? []) as any[];
+    const perFunctie = new Map<string, { feature: string; aantal: number; credits: number; cache: number; fouten: number }>();
+    for (const e of events) {
+      const r = perFunctie.get(e.feature) ?? { feature: e.feature, aantal: 0, credits: 0, cache: 0, fouten: 0 };
+      r.aantal += 1;
+      r.credits += e.credits ?? 0;
+      if (e.cache_hit) r.cache += 1;
+      if (!e.ok) r.fouten += 1;
+      perFunctie.set(e.feature, r);
+    }
+
+    const gebruikers = rijen.length || 1;
+    const cacheTreffers = events.filter((e) => e.cache_hit).length;
+
+    return {
+      kosten: kosten.data ?? [],
+      pakketten: pakketten.data ?? [],
+      gebruikers: rijen.length,
+      saldoTotaal: rijen.reduce((s, r) => s + (r.balance ?? 0), 0),
+      gratisUitgedeeld: rijen.reduce((s, r) => s + (r.gratis_totaal ?? 0), 0),
+      gekocht: rijen.reduce((s, r) => s + (r.gekocht_totaal ?? 0), 0),
+      verbruikt: rijen.reduce((s, r) => s + (r.gebruikt_totaal ?? 0), 0),
+      verbruiktPerGebruiker: Math.round((rijen.reduce((s, r) => s + (r.gebruikt_totaal ?? 0), 0) / gebruikers) * 10) / 10,
+      aiVerzoeken: events.length,
+      cacheTreffers,
+      cachePercentage: events.length ? Math.round((cacheTreffers / events.length) * 100) : 0,
+      teruggestort: (boekingen.data ?? []).filter((b: any) => b.type === "refund").length,
+      perFunctie: [...perFunctie.values()].sort((a, b) => b.credits - a.credits),
+    };
+  });
+
+export const adminCreditKostZetten = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        feature: z.string().min(1),
+        credit_cost: z.number().int().min(0).max(1000).optional(),
+        enabled: z.boolean().optional(),
+        max_per_dag: z.number().int().min(1).max(10000).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { db, profiel } = await bewaker(context as Ctx, "settings.manage");
+    const { feature, ...rest } = data;
+    await db
+      .from("credit_costs")
+      .update({ ...rest, updated_at: new Date().toISOString() })
+      .eq("feature", feature);
+    await logboek(db, profiel, "credits.cost_update", "credit_cost", feature, rest);
+    return { ok: true };
+  });
+
+export const adminCreditsToekennen = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ user_id: z.string().uuid(), amount: z.number().int().min(-10000).max(10000), reden: z.string().max(200).default("") }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { db, profiel } = await bewaker(context as Ctx, "users.manage");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.rpc("credits_toekennen", {
+      _user: data.user_id,
+      _amount: data.amount,
+      _type: "admin_adjustment",
+      _ref: `admin:${Date.now()}:${data.user_id}`,
+    });
+    if (error) throw new Error(error.message);
+    await logboek(db, profiel, "credits.adjust", "user", data.user_id, { amount: data.amount, reden: data.reden });
+    return { ok: true };
+  });
