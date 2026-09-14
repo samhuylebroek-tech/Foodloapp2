@@ -1,8 +1,14 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { adminCreditKostZetten, adminCredits } from "@/lib/admin.functions";
+import {
+  adminCreditAanvraagAfhandelen,
+  adminCreditAanvragen,
+  adminCreditKostZetten,
+  adminCredits,
+} from "@/lib/admin.functions";
 import { AdminShell, Kaart, Kpi } from "@/components/AdminShell";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Input } from "@/components/ui/input";
