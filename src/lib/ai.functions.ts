@@ -2,6 +2,17 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { metCredits } from "@/lib/credits.server";
+import {
+  adapterVoor,
+  detecteerPlatform,
+  haalPagina,
+  isSociaal,
+  logImport,
+  PLATFORM_LABEL,
+  velden,
+  type Platform,
+} from "@/lib/import.server";
+
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
@@ -78,8 +89,10 @@ export type ImportedRecipe = {
   bron?: string;
   source_url?: string | null;
   reeds_bekend?: { id: string; title: string } | null;
-
+  platform?: Platform;
+  ontbrekend?: string[];
 };
+
 
 function vulAan(parsed: Partial<ImportedRecipe>, extra: Partial<ImportedRecipe> = {}): ImportedRecipe {
   return {
@@ -125,10 +138,8 @@ function vindAfbeelding(html: string, paginaUrl: string): string | null {
   return null;
 }
 
-const SOCIAAL = /(instagram\.com|instagr\.am|tiktok\.com|facebook\.com|fb\.watch|pinterest\.)/i;
 
-const BROWSER_UA =
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
+
 
 /** Verwijdert tracking en maakt van dezelfde pagina altijd dezelfde sleutel. */
 export function canoniekeUrl(ruw: string): string {
