@@ -345,7 +345,9 @@ export const importRecipeFromUrl = createServerFn({ method: "POST" })
       .is("deleted_at", null)
       .limit(1)
       .maybeSingle();
-
+    if (bestaand) {
+      throw new Error(`Je hebt dit recept al: "${bestaand.title}". Open het bij je recepten.`);
+    }
 
     let page = await haalPagina(url, isSociaal ? "facebookexternalhit/1.1" : BROWSER_UA);
     if (!page.ok && isSociaal) page = await haalPagina(url, BROWSER_UA);
@@ -355,6 +357,7 @@ export const importRecipeFromUrl = createServerFn({ method: "POST" })
     // Stap 1 — gestructureerd recept op de pagina: geen AI, geen credits.
     const structuur = leesStructuurData(html, url);
     if (structuur?.title) return structuur;
+
 
     const platteTekst = html
       .replace(/<script[\s\S]*?<\/script>/gi, " ")
