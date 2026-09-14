@@ -947,7 +947,12 @@ export const adminCreditKostZetten = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { db, profiel } = await bewaker(context as Ctx, "settings.manage");
     const { feature, ...rest } = data;
-    const velden: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    const velden: {
+      updated_at: string;
+      credit_cost?: number;
+      enabled?: boolean;
+      max_per_dag?: number;
+    } = { updated_at: new Date().toISOString() };
     if (rest.credit_cost !== undefined) velden.credit_cost = rest.credit_cost;
     if (rest.enabled !== undefined) velden.enabled = rest.enabled;
     if (rest.max_per_dag !== undefined) velden.max_per_dag = rest.max_per_dag;
