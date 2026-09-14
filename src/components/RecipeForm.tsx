@@ -168,11 +168,13 @@ export function RecipeForm({
   }
 
   async function handleFotoSuggestie(file: File) {
+    if (!magStarten("gerecht_foto")) return;
     setSuggereren(true);
     try {
       const imageDataUrl = await fileToDataUrl(file);
       const data = await recipeFromPhoto({ data: { imageDataUrl } });
       vulIn(data);
+      naAiActie();
       if (user) {
         try {
           const path = await uploadRecipePhoto(file, user.id);
@@ -182,22 +184,24 @@ export function RecipeForm({
         }
       }
       toast.success("Voorstel klaar. Lees het even na en pas aan wat je anders wil.");
-    } catch {
-      toast.error("We konden hier geen gerecht van maken");
+    } catch (err) {
+      meldFout(err, "We konden hier geen gerecht van maken");
     } finally {
       setSuggereren(false);
     }
   }
 
   async function handleScreenshot(file: File) {
+    if (!magStarten("import_foto")) return;
     setScreenshotBezig(true);
     try {
       const imageDataUrl = await fileToDataUrl(file);
       const data = await importRecipeFromScreenshot({ data: { imageDataUrl } });
       vulIn(data);
+      naAiActie();
       toast.success("Recept van je schermafbeelding gehaald. Lees het even na.");
-    } catch {
-      toast.error("We konden geen recept uit deze afbeelding halen");
+    } catch (err) {
+      meldFout(err, "We konden geen recept uit deze afbeelding halen");
     } finally {
       setScreenshotBezig(false);
     }
@@ -208,13 +212,15 @@ export function RecipeForm({
       toast.error("Plak eerst wat tekst");
       return;
     }
+    if (!magStarten("import_tekst")) return;
     setLezenTekst(true);
     try {
       const data = await importRecipeFromText({ data: { text: vrijeTekst.trim() } });
       vulIn(data);
+      naAiActie();
       toast.success("We hebben alles ingevuld. Controleer het even en sla op.");
-    } catch {
-      toast.error("Hier konden we geen recept uit halen");
+    } catch (err) {
+      meldFout(err, "Hier konden we geen recept uit halen");
     } finally {
       setLezenTekst(false);
     }
@@ -237,18 +243,20 @@ export function RecipeForm({
   }
 
   async function handleIngredientPhoto(file: File) {
+    if (!magStarten("ingredienten_foto")) return;
     setRecognizing(true);
     try {
       const imageDataUrl = await fileToDataUrl(file);
       const found = await recognizeIngredients({ data: { imageDataUrl } });
+      naAiActie();
       if (!found.length) {
         toast.error("Geen ingrediënten herkend");
         return;
       }
       setIngredientTekst((prev) => [prev.trim(), found.join("\n")].filter(Boolean).join("\n"));
       toast.success(`${found.length} ingrediënten herkend`);
-    } catch {
-      toast.error("Herkennen is niet gelukt");
+    } catch (err) {
+      meldFout(err, "Herkennen is niet gelukt");
     } finally {
       setRecognizing(false);
     }
@@ -256,22 +264,26 @@ export function RecipeForm({
 
   async function handleImport() {
     if (!importUrl.trim()) return;
+    if (!magStarten("import_url")) return;
     setImporting(true);
     try {
       const data = await importRecipeFromUrl({ data: { url: importUrl.trim() } });
       vulIn(data);
-      setSourceUrl(importUrl.trim());
-      toast.success("Recept ingelezen. Controleer het even en sla op.");
-    } catch (err) {
-      toast.error(
-        err instanceof Error && err.message.length < 300
-          ? err.message
-          : "Dit recept kon niet worden ingelezen",
+      naAiActie();
+      setSourceUrl(data.source_url ?? importUrl.trim());
+      toast.success(
+        data.bron === "paginagegevens"
+          ? "Recept ingelezen zonder credits. Controleer het even en sla op."
+          : "Recept ingelezen. Controleer het even en sla op.",
       );
+    } catch (err) {
+      meldFout(err, "Dit recept kon niet worden ingelezen");
     } finally {
       setImporting(false);
     }
   }
+
+
 
   async function handleSave() {
     if (!user) return;
