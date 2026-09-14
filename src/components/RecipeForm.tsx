@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, Link as RouterLink } from "@tanstack/react-router";
 import {
   Camera,
   Link2,
