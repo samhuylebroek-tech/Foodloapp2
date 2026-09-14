@@ -219,7 +219,7 @@ function splitsIngredient(regel: string): { name: string; quantity: number | nul
     .trim()
     .match(/^(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+)?)\s*([a-zA-Zµ%.]*)\s+(.*)$/);
   if (!m) return { name: regel.trim(), quantity: null, unit: "" };
-  const aantal = Number(m[1].replace(",", "."));
+  const aantal = Number((m[1] ?? "").replace(",", "."));
   const eenheid = (m[2] ?? "").toLowerCase();
   const rest = m[3] ?? "";
   const gekendeEenheden = /^(g|gr|gram|kg|ml|cl|dl|l|el|tl|kop|kopjes?|stuk|stuks|snuf|teen|tenen|blik|pak)$/;
