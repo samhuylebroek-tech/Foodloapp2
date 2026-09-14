@@ -288,7 +288,9 @@ export function leesStructuurData(html: string, paginaUrl: string): ImportedReci
     ingredients: ingredienten,
     instructions: stappen,
     image_url: vindAfbeelding(html, paginaUrl),
-    bron: "structuurdata",
+    bron: "paginagegevens",
+    source_url: paginaUrl,
+
   };
 }
 
