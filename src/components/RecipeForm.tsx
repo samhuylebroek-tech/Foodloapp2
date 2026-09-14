@@ -497,6 +497,11 @@ export function RecipeForm({
                   }}
                 />
               </label>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Een schermafbeelding lezen kost {kostLabel("import_foto")}, een recept bedenken van
+                een foto {kostLabel("gerecht_foto")}. Je hebt er nog {credits.data?.saldo ?? 0}.
+              </p>
+
             </div>
           )}
 
