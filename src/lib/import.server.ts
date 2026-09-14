@@ -56,6 +56,31 @@ function ontsnap(tekst: string) {
     .replace(/&amp;/g, "&");
 }
 
+/** Standaardteksten van platforms zijn geen recept: die gooien we weg. */
+const RUIS = [
+  /bekijk je favoriete video/i,
+  /enjoy the videos and music you love/i,
+  /geniet van de video's en muziek/i,
+  /^watch on tiktok$/i,
+  /log in to instagram/i,
+];
+
+/** Haalt herhalingen en platformruis uit de tekst. */
+export function schoon(tekst: string): string {
+  const gezien = new Set<string>();
+  const regels: string[] = [];
+  for (const regel of tekst.split("\n")) {
+    const r = regel.trim();
+    if (!r) continue;
+    if (RUIS.some((p) => p.test(r))) continue;
+    const sleutel = r.toLowerCase();
+    if (gezien.has(sleutel)) continue;
+    gezien.add(sleutel);
+    regels.push(r);
+  }
+  return regels.join("\n").trim();
+}
+
 export function metaTekst(html: string, sleutels: string[]): string {
   const stukken: string[] = [];
   for (const sleutel of sleutels) {
@@ -71,23 +96,43 @@ export function metaTekst(html: string, sleutels: string[]): string {
       }
     }
   }
-  return ontsnap(stukken.join("\n")).trim();
+  return schoon(ontsnap(stukken.join("\n")));
+}
+
+/** Leest een JSON-stringwaarde uit ruwe HTML, met respect voor escapes. */
+function jsonWaarde(html: string, sleutel: string): string {
+  const merk = `"${sleutel}":"`;
+  const i = html.indexOf(merk);
+  if (i < 0) return "";
+  let j = i + merk.length;
+  let uit = "";
+  while (j < html.length && uit.length < 8000) {
+    const c = html[j];
+    if (c === "\\") {
+      uit += html.slice(j, j + 2);
+      j += 2;
+      continue;
+    }
+    if (c === '"') break;
+    uit += c;
+    j += 1;
+  }
+  return ontsnap(uit).trim();
 }
 
 function bijschrift(html: string): string {
-  const m =
-    html.match(/"edge_media_to_caption"[\s\S]{0,200}?"text"\s*:\s*"([\s\S]{20,4000}?)"/) ??
-    html.match(/"caption"\s*:\s*"([\s\S]{20,4000}?)"/) ??
-    html.match(/"desc"\s*:\s*"([\s\S]{20,4000}?)"/);
-  return m?.[1] ? ontsnap(m[1]) : "";
+  const kandidaten = ["text", "caption", "desc", "description"];
+  for (const sleutel of kandidaten) {
+    const waarde = schoon(jsonWaarde(html, sleutel));
+    if (waarde.length > 40) return waarde;
+  }
+  return "";
 }
 
 function youtubeBeschrijving(html: string): string {
-  const m =
-    html.match(/"shortDescription"\s*:\s*"([\s\S]{20,8000}?)"/) ??
-    html.match(/"attributedDescription"[\s\S]{0,120}?"content"\s*:\s*"([\s\S]{20,8000}?)"/);
-  return m?.[1] ? ontsnap(m[1]) : "";
+  return schoon(jsonWaarde(html, "shortDescription"));
 }
+
 
 function platteTekst(html: string): string {
   return html
