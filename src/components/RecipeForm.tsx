@@ -37,6 +37,16 @@ import { Textarea } from "@/components/ui/textarea";
 
 type Manier = "link" | "tekst" | "foto" | "zelf";
 
+const PLATFORM_NAAM: Record<string, string> = {
+  instagram: "Instagram",
+  tiktok: "TikTok",
+  youtube: "YouTube",
+  facebook: "Facebook",
+  pinterest: "Pinterest",
+  website: "de website",
+};
+
+
 export function RecipeForm({
   recipe,
   ingredients,
@@ -73,7 +83,10 @@ export function RecipeForm({
   const [meerDetails, setMeerDetails] = useState(false);
 
   const [importUrl, setImportUrl] = useState(gedeeldeLink);
-  const [vrijeTekst, setVrijeTekst] = useState(gedeeldeTekst);
+  const [importInfo, setImportInfo] = useState<
+    { platform: string; gratis: boolean; ontbrekend: string[] } | null
+  >(null);
+
   const [importing, setImporting] = useState(false);
   const [lezenTekst, setLezenTekst] = useState(false);
   const [recognizing, setRecognizing] = useState(false);
