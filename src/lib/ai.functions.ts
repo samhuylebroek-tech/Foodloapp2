@@ -1,9 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { metCredits } from "@/lib/credits.server";
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-const MODEL = "google/gemini-3.7-flash";
+const MODEL = "google/gemini-3.8-flash";
 
 async function logAi(kind: string, ok: boolean, ms: number, error?: string) {
   try {
@@ -35,6 +37,9 @@ async function askAI(messages: unknown[], kind = "chat") {
     });
     if (!res.ok) {
       const text = await res.text();
+      if (res.status === 429) throw new Error("Het is even te druk. Probeer het zo opnieuw.");
+      if (res.status === 402)
+        throw new Error("De slimme functies zijn tijdelijk niet beschikbaar. Probeer het later opnieuw.");
       throw new Error(`AI-fout: ${res.status} ${text.slice(0, 200)}`);
     }
     const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
@@ -45,7 +50,6 @@ async function askAI(messages: unknown[], kind = "chat") {
     throw e;
   }
 }
-
 
 function parseJson<T>(raw: string, fallback: T): T {
   const cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
@@ -71,7 +75,24 @@ export type ImportedRecipe = {
   instructions: string[];
   image_url?: string | null;
   is_suggestie?: boolean;
+  bron?: string;
 };
+
+function vulAan(parsed: Partial<ImportedRecipe>, extra: Partial<ImportedRecipe> = {}): ImportedRecipe {
+  return {
+    title: parsed.title ?? "",
+    description: parsed.description ?? "",
+    servings: Number(parsed.servings) || 4,
+    prep_minutes: Number(parsed.prep_minutes) || 0,
+    cook_minutes: Number(parsed.cook_minutes) || 0,
+    category: parsed.category ?? "hoofdgerecht",
+    difficulty: parsed.difficulty ?? "makkelijk",
+    tags: parsed.tags ?? [],
+    ingredients: parsed.ingredients ?? [],
+    instructions: parsed.instructions ?? [],
+    ...extra,
+  };
+}
 
 const STAP_REGELS =
   "De bereiding is het belangrijkste: geef volledige, duidelijke stappen in gewone taal, elke stap één handeling, met tijden en temperaturen waar dat kan. Minstens 4 stappen.";
@@ -105,6 +126,168 @@ const SOCIAAL = /(instagram\.com|instagr\.am|tiktok\.com|facebook\.com|fb\.watch
 
 const BROWSER_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
+
+/** Verwijdert tracking en maakt van dezelfde pagina altijd dezelfde sleutel. */
+export function canoniekeUrl(ruw: string): string {
+  try {
+    const u = new URL(ruw);
+    if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("protocol");
+    const weg = [
+      /^utm_/i,
+      /^fbclid$/i,
+      /^gclid$/i,
+      /^igshid$/i,
+      /^igsh$/i,
+      /^si$/i,
+      /^feature$/i,
+      /^ref$/i,
+      /^ref_src$/i,
+      /^_nc_/i,
+    ];
+    for (const sleutel of [...u.searchParams.keys()]) {
+      if (weg.some((p) => p.test(sleutel))) u.searchParams.delete(sleutel);
+    }
+    u.hash = "";
+    u.hostname = u.hostname.replace(/^www\./i, "").toLowerCase();
+    if (u.pathname.length > 1) u.pathname = u.pathname.replace(/\/+$/, "");
+    return u.toString();
+  } catch {
+    return ruw.trim();
+  }
+}
+
+/** Blokkeert interne adressen (SSRF-bescherming). */
+function veiligeUrl(ruw: string) {
+  const u = new URL(ruw);
+  if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("Alleen gewone weblinks werken.");
+  const host = u.hostname.toLowerCase();
+  const intern =
+    host === "localhost" ||
+    host.endsWith(".local") ||
+    host.endsWith(".internal") ||
+    /^\d+\.\d+\.\d+\.\d+$/.test(host) ||
+    host.includes(":");
+  if (intern) throw new Error("Deze link kunnen we niet openen.");
+  return u.toString();
+}
+
+function minuten(iso: unknown): number {
+  if (typeof iso === "number") return iso;
+  if (typeof iso !== "string") return 0;
+  const m = iso.match(/P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?/i);
+  if (!m) {
+    const n = Number(iso.replace(/\D/g, ""));
+    return Number.isFinite(n) ? n : 0;
+  }
+  return (Number(m[1] ?? 0) * 1440) + (Number(m[2] ?? 0) * 60) + Number(m[3] ?? 0);
+}
+
+function tekstVan(v: unknown): string {
+  if (typeof v === "string") return v.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  if (v && typeof v === "object" && "text" in (v as Record<string, unknown>))
+    return tekstVan((v as Record<string, unknown>)["text"]);
+  if (v && typeof v === "object" && "name" in (v as Record<string, unknown>))
+    return tekstVan((v as Record<string, unknown>)["name"]);
+  return "";
+}
+
+function stappenVan(v: unknown): string[] {
+  if (!v) return [];
+  if (typeof v === "string")
+    return v
+      .split(/\n+|(?<=\.)\s{2,}/)
+      .map((s) => tekstVan(s))
+      .filter(Boolean);
+  if (Array.isArray(v)) {
+    const uit: string[] = [];
+    for (const item of v) {
+      const obj = item as Record<string, unknown> | null;
+      if (obj && obj["@type"] === "HowToSection" && Array.isArray(obj["itemListElement"])) {
+        uit.push(...stappenVan(obj["itemListElement"]));
+      } else {
+        const t = tekstVan(item);
+        if (t) uit.push(t);
+      }
+    }
+    return uit;
+  }
+  return [];
+}
+
+function splitsIngredient(regel: string): { name: string; quantity: number | null; unit: string } {
+  const m = regel
+    .trim()
+    .match(/^(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+)?)\s*([a-zA-Zµ%.]*)\s+(.*)$/);
+  if (!m) return { name: regel.trim(), quantity: null, unit: "" };
+  const aantal = Number(m[1].replace(",", "."));
+  const eenheid = (m[2] ?? "").toLowerCase();
+  const rest = m[3] ?? "";
+  const gekendeEenheden = /^(g|gr|gram|kg|ml|cl|dl|l|el|tl|kop|kopjes?|stuk|stuks|snuf|teen|tenen|blik|pak)$/;
+  if (!Number.isFinite(aantal)) return { name: regel.trim(), quantity: null, unit: "" };
+  if (eenheid && !gekendeEenheden.test(eenheid)) {
+    return { name: `${eenheid} ${rest}`.trim(), quantity: aantal, unit: "" };
+  }
+  return { name: rest.trim(), quantity: aantal, unit: eenheid };
+}
+
+/** Stap 1: volledig recept uit Schema.org/JSON-LD halen. Kost 0 credits. */
+export function leesStructuurData(html: string, paginaUrl: string): ImportedRecipe | null {
+  const blokken = [...html.matchAll(/<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)];
+  const kandidaten: Record<string, unknown>[] = [];
+  for (const blok of blokken) {
+    try {
+      const json = JSON.parse((blok[1] ?? "").trim());
+      const lijst = Array.isArray(json) ? json : [json];
+      for (const item of lijst) {
+        if (!item || typeof item !== "object") continue;
+        const obj = item as Record<string, unknown>;
+        const graaf = obj["@graph"];
+        if (Array.isArray(graaf)) kandidaten.push(...(graaf as Record<string, unknown>[]));
+        kandidaten.push(obj);
+      }
+    } catch {
+      // ongeldige JSON-LD negeren
+    }
+  }
+  const recept = kandidaten.find((o) => {
+    const type = o["@type"];
+    return type === "Recipe" || (Array.isArray(type) && type.includes("Recipe"));
+  });
+  if (!recept) return null;
+
+  const ingredienten = (Array.isArray(recept["recipeIngredient"]) ? recept["recipeIngredient"] : [])
+    .map((r) => tekstVan(r))
+    .filter(Boolean)
+    .map(splitsIngredient);
+  const stappen = stappenVan(recept["recipeInstructions"]);
+  if (ingredienten.length < 2 || stappen.length < 2) return null;
+
+  const opbrengst = recept["recipeYield"];
+  const personen = Number(String(Array.isArray(opbrengst) ? opbrengst[0] : (opbrengst ?? "")).replace(/\D/g, ""));
+
+  const tags = [
+    ...(Array.isArray(recept["keywords"]) ? recept["keywords"].map(String) : []),
+    ...(typeof recept["keywords"] === "string" ? recept["keywords"].split(",") : []),
+  ]
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .slice(0, 8);
+
+  return {
+    title: tekstVan(recept["name"]) || "",
+    description: tekstVan(recept["description"]).slice(0, 600),
+    servings: personen > 0 && personen < 50 ? personen : 4,
+    prep_minutes: minuten(recept["prepTime"]),
+    cook_minutes: minuten(recept["cookTime"]) || minuten(recept["totalTime"]),
+    category: tekstVan(recept["recipeCategory"]) || "hoofdgerecht",
+    difficulty: "makkelijk",
+    tags,
+    ingredients: ingredienten,
+    instructions: stappen,
+    image_url: vindAfbeelding(html, paginaUrl),
+    bron: "structuurdata",
+  };
+}
 
 function metaTekst(html: string, sleutels: string[]): string {
   const stukken: string[] = [];
@@ -142,14 +325,20 @@ async function haalPagina(url: string, ua: string) {
 }
 
 export const importRecipeFromUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ url: z.string().url() }).parse(data))
-  .handler(async ({ data }): Promise<ImportedRecipe> => {
-    const isSociaal = SOCIAAL.test(data.url);
+  .handler(async ({ data, context }): Promise<ImportedRecipe> => {
+    const url = veiligeUrl(canoniekeUrl(data.url));
+    const isSociaal = SOCIAAL.test(url);
 
-    let page = await haalPagina(data.url, isSociaal ? "facebookexternalhit/1.1" : BROWSER_UA);
-    if (!page.ok && isSociaal) page = await haalPagina(data.url, BROWSER_UA);
+    let page = await haalPagina(url, isSociaal ? "facebookexternalhit/1.1" : BROWSER_UA);
+    if (!page.ok && isSociaal) page = await haalPagina(url, BROWSER_UA);
     if (!page.ok) throw new Error("De pagina kon niet worden opgehaald.");
     const html = await page.text();
+
+    // Stap 1 — gestructureerd recept op de pagina: geen AI, geen credits.
+    const structuur = leesStructuurData(html, url);
+    if (structuur?.title) return structuur;
 
     const platteTekst = html
       .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -158,12 +347,7 @@ export const importRecipeFromUrl = createServerFn({ method: "POST" })
       .replace(/\s+/g, " ")
       .trim();
 
-    const meta = metaTekst(html, [
-      "og:title",
-      "og:description",
-      "description",
-      "twitter:description",
-    ]);
+    const meta = metaTekst(html, ["og:title", "og:description", "description", "twitter:description"]);
     const bijschrift = (() => {
       const m =
         html.match(/"edge_media_to_caption"[\s\S]{0,200}?"text"\s*:\s*"([\s\S]{20,4000}?)"/) ??
@@ -189,150 +373,163 @@ export const importRecipeFromUrl = createServerFn({ method: "POST" })
       );
     }
 
-    const raw = await askAI([
-      {
-        role: "system",
-        content: isSociaal
-          ? `Je maakt een recept op basis van een bijschrift van Instagram, TikTok of Facebook. Gebruik alles wat in het bijschrift staat en vul ontbrekende hoeveelheden, tijden en stappen aan met een verstandige, realistische schatting, zodat het recept altijd volledig is. ${STAP_REGELS} Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. ${JSON_FORMAAT}`
-          : `Je haalt recepten uit webpagina's. Neem de bereiding letterlijk en volledig over zoals ze op de pagina staat, zonder stappen weg te laten. ${STAP_REGELS} Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. ${JSON_FORMAAT}`,
+    // Stap 2 — dezelfde link of dezelfde tekst? Dan uit de cache, zonder credits.
+    const { resultaat } = await metCredits(
+      { userId: context.userId, feature: "import_url", cacheSleutel: `${url}|${bron.slice(0, 4000)}`, model: MODEL },
+      async () => {
+        const raw = await askAI(
+          [
+            {
+              role: "system",
+              content: isSociaal
+                ? `Je maakt een recept op basis van een bijschrift van Instagram, TikTok of Facebook. Gebruik uitsluitend wat in de bron staat; vul enkel aan waar het echt nodig is en houd schattingen realistisch. ${STAP_REGELS} Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. ${JSON_FORMAAT}`
+                : `Je haalt recepten uit webpagina's. Neem de bereiding letterlijk en volledig over zoals ze op de pagina staat, zonder stappen weg te laten en zonder hoeveelheden te verzinnen. ${STAP_REGELS} Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. ${JSON_FORMAAT}`,
+            },
+            { role: "user", content: `Bron: ${url}\n\nTekst:\n${bron}` },
+          ],
+          "import_url",
+        );
+        const parsed = parseJson<Partial<ImportedRecipe>>(raw, {});
+        if (!parsed.title) {
+          throw new Error(
+            "We konden hier geen recept uit halen. Probeer de tekst te plakken of een schermafbeelding te kiezen.",
+          );
+        }
+        return vulAan(parsed, {
+          image_url: vindAfbeelding(html, url),
+          is_suggestie: isSociaal,
+          bron: isSociaal ? "bijschrift" : "paginatekst",
+        });
       },
-      { role: "user", content: `Bron: ${data.url}\n\nTekst:\n${bron}` },
-    ]);
-
-    const parsed = parseJson<Partial<ImportedRecipe>>(raw, {});
-    if (!parsed.title) {
-      throw new Error(
-        "We konden hier geen recept uit halen. Probeer de tekst te plakken of een schermafbeelding te kiezen.",
-      );
-    }
-    return {
-      title: parsed.title ?? "",
-      description: parsed.description ?? "",
-      servings: Number(parsed.servings) || 4,
-      prep_minutes: Number(parsed.prep_minutes) || 0,
-      cook_minutes: Number(parsed.cook_minutes) || 0,
-      category: parsed.category ?? "hoofdgerecht",
-      difficulty: parsed.difficulty ?? "makkelijk",
-      tags: parsed.tags ?? [],
-      ingredients: parsed.ingredients ?? [],
-      instructions: parsed.instructions ?? [],
-      image_url: vindAfbeelding(html, data.url),
-      is_suggestie: isSociaal,
-    };
+    );
+    return resultaat;
   });
 
 export const recipeFromPhoto = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ imageDataUrl: z.string().min(20) }).parse(data))
-  .handler(async ({ data }): Promise<ImportedRecipe> => {
-    const raw = await askAI([
+  .handler(async ({ data, context }): Promise<ImportedRecipe> => {
+    const { resultaat } = await metCredits(
       {
-        role: "system",
-        content: `Je bekijkt een foto van een klaargemaakt gerecht en bedenkt een volledig, realistisch recept om het na te maken. Je mag inventief zijn: schat de ingrediënten en hoeveelheden in. Zet in "description" duidelijk dat dit een voorstel is op basis van de foto. ${STAP_REGELS} Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. ${JSON_FORMAAT}`,
+        userId: context.userId,
+        feature: "gerecht_foto",
+        cacheSleutel: data.imageDataUrl.slice(0, 5000),
+        model: MODEL,
       },
-      {
-        role: "user",
-        content: [
-          { type: "text", text: "Welk gerecht is dit en hoe maak ik het?" },
-          { type: "image_url", image_url: { url: data.imageDataUrl } },
-        ],
+      async () => {
+        const raw = await askAI(
+          [
+            {
+              role: "system",
+              content: `Je bekijkt een foto van een klaargemaakt gerecht en bedenkt een volledig, realistisch recept om het na te maken. Je mag inventief zijn: schat de ingrediënten en hoeveelheden in. Zet in "description" duidelijk dat dit een voorstel is op basis van de foto. ${STAP_REGELS} Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. ${JSON_FORMAAT}`,
+            },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: "Welk gerecht is dit en hoe maak ik het?" },
+                { type: "image_url", image_url: { url: data.imageDataUrl } },
+              ],
+            },
+          ],
+          "gerecht_foto",
+        );
+        return vulAan(parseJson<Partial<ImportedRecipe>>(raw, {}), { is_suggestie: true, bron: "foto" });
       },
-    ]);
-
-    const parsed = parseJson<Partial<ImportedRecipe>>(raw, {});
-    return {
-      title: parsed.title ?? "",
-      description: parsed.description ?? "",
-      servings: Number(parsed.servings) || 4,
-      prep_minutes: Number(parsed.prep_minutes) || 0,
-      cook_minutes: Number(parsed.cook_minutes) || 0,
-      category: parsed.category ?? "hoofdgerecht",
-      difficulty: parsed.difficulty ?? "makkelijk",
-      tags: parsed.tags ?? [],
-      ingredients: parsed.ingredients ?? [],
-      instructions: parsed.instructions ?? [],
-      is_suggestie: true,
-    };
+    );
+    return resultaat;
   });
 
 export const importRecipeFromScreenshot = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ imageDataUrl: z.string().min(20) }).parse(data))
-  .handler(async ({ data }): Promise<ImportedRecipe> => {
-    const raw = await askAI([
+  .handler(async ({ data, context }): Promise<ImportedRecipe> => {
+    const { resultaat } = await metCredits(
       {
-        role: "system",
-        content: `Je krijgt een schermafbeelding van een recept, bijvoorbeeld van Instagram, TikTok, WhatsApp of een website. Lees alle zichtbare tekst en zet die om in een gestructureerd recept. Neem de ingrediënten en de bereiding zo letterlijk mogelijk over; vul enkel aan wat echt ontbreekt. ${STAP_REGELS} Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. ${JSON_FORMAAT}`,
+        userId: context.userId,
+        feature: "import_foto",
+        cacheSleutel: data.imageDataUrl.slice(0, 5000),
+        model: MODEL,
       },
-      {
-        role: "user",
-        content: [
-          { type: "text", text: "Haal het recept uit deze schermafbeelding." },
-          { type: "image_url", image_url: { url: data.imageDataUrl } },
-        ],
+      async () => {
+        const raw = await askAI(
+          [
+            {
+              role: "system",
+              content: `Je krijgt een schermafbeelding van een recept, bijvoorbeeld van Instagram, TikTok, WhatsApp of een website. Lees alle zichtbare tekst en zet die om in een gestructureerd recept. Neem de ingrediënten en de bereiding zo letterlijk mogelijk over; verzin geen hoeveelheden die er niet staan. ${STAP_REGELS} Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. ${JSON_FORMAAT}`,
+            },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: "Haal het recept uit deze schermafbeelding." },
+                { type: "image_url", image_url: { url: data.imageDataUrl } },
+              ],
+            },
+          ],
+          "import_foto",
+        );
+        return vulAan(parseJson<Partial<ImportedRecipe>>(raw, {}), { bron: "schermafbeelding" });
       },
-    ]);
-
-    const parsed = parseJson<Partial<ImportedRecipe>>(raw, {});
-    return {
-      title: parsed.title ?? "",
-      description: parsed.description ?? "",
-      servings: Number(parsed.servings) || 4,
-      prep_minutes: Number(parsed.prep_minutes) || 0,
-      cook_minutes: Number(parsed.cook_minutes) || 0,
-      category: parsed.category ?? "hoofdgerecht",
-      difficulty: parsed.difficulty ?? "makkelijk",
-      tags: parsed.tags ?? [],
-      ingredients: parsed.ingredients ?? [],
-      instructions: parsed.instructions ?? [],
-    };
+    );
+    return resultaat;
   });
 
 export const importRecipeFromText = createServerFn({ method: "POST" })
-
+  .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ text: z.string().min(5).max(20000) }).parse(data))
-  .handler(async ({ data }): Promise<ImportedRecipe> => {
-    const raw = await askAI([
-      {
-        role: "system",
-        content:
-          `Je zet losse tekst (bijvoorbeeld een bericht, een Instagram-tekst of een handgeschreven receptje) om in een gestructureerd recept. Vul ontbrekende gegevens aan met een verstandige schatting. ${STAP_REGELS} Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. ${JSON_FORMAAT}`,
+  .handler(async ({ data, context }): Promise<ImportedRecipe> => {
+    const { resultaat } = await metCredits(
+      { userId: context.userId, feature: "import_tekst", cacheSleutel: data.text, model: MODEL },
+      async () => {
+        const raw = await askAI(
+          [
+            {
+              role: "system",
+              content: `Je zet losse tekst (bijvoorbeeld een bericht, een Instagram-tekst of een handgeschreven receptje) om in een gestructureerd recept. Vul ontbrekende gegevens aan met een verstandige schatting. ${STAP_REGELS} Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. ${JSON_FORMAAT}`,
+            },
+            { role: "user", content: data.text },
+          ],
+          "import_tekst",
+        );
+        return vulAan(parseJson<Partial<ImportedRecipe>>(raw, {}), { bron: "tekst" });
       },
-      { role: "user", content: data.text },
-    ]);
-
-    const parsed = parseJson<Partial<ImportedRecipe>>(raw, {});
-    return {
-      title: parsed.title ?? "",
-      description: parsed.description ?? "",
-      servings: Number(parsed.servings) || 4,
-      prep_minutes: Number(parsed.prep_minutes) || 0,
-      cook_minutes: Number(parsed.cook_minutes) || 0,
-      category: parsed.category ?? "hoofdgerecht",
-      difficulty: parsed.difficulty ?? "makkelijk",
-      tags: parsed.tags ?? [],
-      ingredients: parsed.ingredients ?? [],
-      instructions: parsed.instructions ?? [],
-    };
+    );
+    return resultaat;
   });
 
 export const recognizeIngredients = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ imageDataUrl: z.string().min(20) }).parse(data))
-  .handler(async ({ data }): Promise<string[]> => {
-    const raw = await askAI([
+  .handler(async ({ data, context }): Promise<string[]> => {
+    const { resultaat } = await metCredits(
       {
-        role: "system",
-        content:
-          'Je herkent voedingsmiddelen op foto\'s. Antwoord uitsluitend met een JSON-array van Nederlandse ingrediëntnamen, bijvoorbeeld ["ui","tomaat"]. Geen uitleg.',
+        userId: context.userId,
+        feature: "ingredienten_foto",
+        cacheSleutel: data.imageDataUrl.slice(0, 5000),
+        model: MODEL,
       },
-      {
-        role: "user",
-        content: [
-          { type: "text", text: "Welke ingrediënten zie je op deze foto?" },
-          { type: "image_url", image_url: { url: data.imageDataUrl } },
-        ],
+      async () => {
+        const raw = await askAI(
+          [
+            {
+              role: "system",
+              content:
+                'Je herkent voedingsmiddelen op foto\'s. Antwoord uitsluitend met een JSON-array van Nederlandse ingrediëntnamen, bijvoorbeeld ["ui","tomaat"]. Geen uitleg.',
+            },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: "Welke ingrediënten zie je op deze foto?" },
+                { type: "image_url", image_url: { url: data.imageDataUrl } },
+              ],
+            },
+          ],
+          "ingredienten_foto",
+        );
+        const list = parseJson<string[]>(raw, []);
+        return Array.isArray(list) ? list.filter((x) => typeof x === "string").slice(0, 25) : [];
       },
-    ]);
-    const list = parseJson<string[]>(raw, []);
-    return Array.isArray(list) ? list.filter((x) => typeof x === "string").slice(0, 25) : [];
+    );
+    return resultaat;
   });
 
 export type InternetSuggestie = {
@@ -344,6 +541,7 @@ export type InternetSuggestie = {
 };
 
 export const ontdekSuggesties = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
     z
       .object({
@@ -353,67 +551,97 @@ export const ontdekSuggesties = createServerFn({ method: "POST" })
       })
       .parse(data),
   )
-  .handler(async ({ data }): Promise<InternetSuggestie[]> => {
+  .handler(async ({ data, context }): Promise<InternetSuggestie[]> => {
     const maand = new Date().toLocaleDateString("nl-BE", { month: "long" });
     const heeftSmaak = data.favorieten.length > 0;
-    const raw = await askAI([
+    const { resultaat } = await metCredits(
       {
-        role: "system",
-        content:
-          'Je bent een kookredacteur die populaire gerechten van het internet kent (foodblogs, Instagram, TikTok, klassieke keukens uit de hele wereld). Je stelt gerechten voor die iemand nog niet kent, maar die passen bij de smaak van de gebruiker: kijk vooral naar de gerechten die hij hoog beoordeelde (keuken, smaken, ingrediënten, type gerecht). Antwoord uitsluitend met een JSON-array van 6 objecten: [{"title":"","keuken":"","waarom":"","minuten":30,"category":"hoofdgerecht"}]. "waarom" is één korte, wervende zin in het Nederlands die verwijst naar waarom het bij zijn smaak past. Geen uitleg buiten de JSON.',
+        userId: context.userId,
+        feature: "suggesties",
+        cacheSleutel: `${maand}|${data.sfeer}|${data.favorieten.slice(0, 15).join(",")}|${data.bekend.slice(0, 40).join(",")}`,
+        model: MODEL,
       },
-      {
-        role: "user",
-        content: `Maand: ${maand}. ${data.sfeer ? `Weer/sfeer: ${data.sfeer}.` : ""}
-Deze gerechten gaf de gebruiker een hoge score (belangrijkste bron voor je keuze):
-${heeftSmaak ? data.favorieten.join("\n") : "(nog geen beoordelingen – kies dan gewoon populaire, toegankelijke gerechten)"}
+      async () => {
+        const raw = await askAI(
+          [
+            {
+              role: "system",
+              content:
+                'Je bent een kookredacteur die populaire gerechten van het internet kent. Je stelt gerechten voor die iemand nog niet kent, maar die passen bij de gerechten die hij hoog beoordeelde. Antwoord uitsluitend met een JSON-array van 6 objecten: [{"title":"","keuken":"","waarom":"","minuten":30,"category":"hoofdgerecht"}]. "waarom" is één korte zin in het Nederlands.',
+            },
+            {
+              role: "user",
+              content: `Maand: ${maand}. ${data.sfeer ? `Weer/sfeer: ${data.sfeer}.` : ""}
+Hoog beoordeeld:
+${heeftSmaak ? data.favorieten.join("\n") : "(nog geen beoordelingen)"}
 
-Deze gerechten heeft hij al, stel iets anders voor:
+Heeft hij al:
 ${data.bekend.slice(0, 120).join(", ") || "(nog geen)"}`,
+            },
+          ],
+          "suggesties",
+        );
+        const list = parseJson<Partial<InternetSuggestie>[]>(raw, []);
+        if (!Array.isArray(list)) return [];
+        return list
+          .filter((s) => typeof s?.title === "string" && s.title.trim())
+          .slice(0, 6)
+          .map((s) => ({
+            title: String(s.title).trim(),
+            keuken: String(s.keuken ?? "").trim(),
+            waarom: String(s.waarom ?? "").trim(),
+            minuten: Number(s.minuten) || 30,
+            category: String(s.category ?? "hoofdgerecht"),
+          }));
       },
-    ]);
-
-    const list = parseJson<Partial<InternetSuggestie>[]>(raw, []);
-    if (!Array.isArray(list)) return [];
-    return list
-      .filter((s) => typeof s?.title === "string" && s.title.trim())
-      .slice(0, 6)
-      .map((s) => ({
-        title: String(s.title).trim(),
-        keuken: String(s.keuken ?? "").trim(),
-        waarom: String(s.waarom ?? "").trim(),
-        minuten: Number(s.minuten) || 30,
-        category: String(s.category ?? "hoofdgerecht"),
-      }));
+    );
+    return resultaat;
   });
 
 export const gerechtFoto = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ titel: z.string().min(2).max(120) }).parse(data))
-  .handler(async ({ data }): Promise<string | null> => {
+  .handler(async ({ data, context }): Promise<string | null> => {
     const apiKey = process.env["LOVABLE_API_KEY"];
     if (!apiKey) return null;
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-3.1-flash-lite-image",
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {
-                text: `Een smakelijke, realistische foodfoto van het gerecht "${data.titel}", mooi opgediend op een bord, natuurlijk daglicht, bovenaanzicht, warme keukensfeer. Geen tekst of letters in beeld.`,
-              },
-            ],
-          },
-        ],
-        generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
-      }),
-    });
-    if (!res.ok) return null;
-    const json = (await res.json()) as { data?: { b64_json?: string }[] };
-    const b64 = json.data?.[0]?.b64_json;
-    if (!b64) return null;
-    const mime = b64.startsWith("/9j/") ? "image/jpeg" : "image/png";
-    return `data:${mime};base64,${b64}`;
+    try {
+      const { resultaat } = await metCredits(
+        {
+          userId: context.userId,
+          feature: "foto_maken",
+          cacheSleutel: data.titel,
+          model: "google/gemini-3.1-flash-lite-image",
+        },
+        async () => {
+          const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: "google/gemini-3.1-flash-lite-image",
+              contents: [
+                {
+                  role: "user",
+                  parts: [
+                    {
+                      text: `Een smakelijke, realistische foodfoto van het gerecht "${data.titel}", mooi opgediend op een bord, natuurlijk daglicht, bovenaanzicht, warme keukensfeer. Geen tekst of letters in beeld.`,
+                    },
+                  ],
+                },
+              ],
+              generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
+            }),
+          });
+          if (!res.ok) throw new Error(`foto ${res.status}`);
+          const json = (await res.json()) as { data?: { b64_json?: string }[] };
+          const b64 = json.data?.[0]?.b64_json;
+          if (!b64) throw new Error("geen foto");
+          const mime = b64.startsWith("/9j/") ? "image/jpeg" : "image/png";
+          return `data:${mime};base64,${b64}`;
+        },
+      );
+      return resultaat;
+    } catch {
+      // een sfeerfoto is nooit verplicht
+      return null;
+    }
   });
