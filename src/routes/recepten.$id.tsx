@@ -47,6 +47,22 @@ export const Route = createFileRoute("/recepten/$id")({
   component: ReceptPage,
 });
 
+/** Vriendelijke naam van de website waar dit recept vandaan komt. */
+function bronNaam(url: string) {
+  try {
+    const h = new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+    if (h.includes("instagram")) return "Instagram";
+    if (h.includes("tiktok")) return "TikTok";
+    if (h.includes("youtube") || h.includes("youtu.be")) return "YouTube";
+    if (h.includes("facebook") || h.includes("fb.watch")) return "Facebook";
+    if (h.includes("pinterest") || h.includes("pin.it")) return "Pinterest";
+    return h;
+  } catch {
+    return "de bron";
+  }
+}
+
+
 function ReceptPage() {
   const { id } = Route.useParams();
   const { user } = useAuth();
