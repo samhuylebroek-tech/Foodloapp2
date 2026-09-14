@@ -91,6 +91,9 @@ export type ImportedRecipe = {
   reeds_bekend?: { id: string; title: string } | null;
   platform?: Platform;
   ontbrekend?: string[];
+  /** Gevuld wanneer de link niets bruikbaars opleverde: vriendelijke uitleg. */
+  fout?: string;
+
 };
 
 
@@ -321,6 +324,17 @@ export const importRecipeFromUrl = createServerFn({ method: "POST" })
       platform,
     };
 
+    // Een link die niets bruikbaars oplevert is geen crash: we geven een
+    // vriendelijke uitleg terug, zodat het scherm gewoon blijft staan.
+    const geenRecept = (bericht: string): ImportedRecipe => ({
+      ...vulAan({}),
+      title: "",
+      servings: 0,
+      platform,
+      source_url: url,
+      fout: bericht,
+    });
+
     const mislukt = async (code: string, bericht: string) => {
       await logImport({
         ...basis,
@@ -335,7 +349,7 @@ export const importRecipeFromUrl = createServerFn({ method: "POST" })
         error_code: code,
         error_message: bericht,
       });
-      return new Error(bericht);
+      return geenRecept(bericht);
     };
 
     // Stap 0 — deze link al eens ingelezen? Dan geen nieuwe AI-kost.
@@ -359,14 +373,17 @@ export const importRecipeFromUrl = createServerFn({ method: "POST" })
         fields_found: [],
         fields_missing: [],
       });
-      throw new Error(`Je hebt dit recept al: "${bestaand.title}". Open het bij je recepten.`);
+      return {
+        ...geenRecept(`Je hebt dit recept al: "${bestaand.title}". Open het bij je recepten.`),
+        reeds_bekend: { id: bestaand.id, title: bestaand.title },
+      };
     }
 
     let html: string;
     try {
       html = await haalPagina(url, adapter.agents);
     } catch (e) {
-      throw await mislukt("ophalen", e instanceof Error ? e.message : "De pagina kon niet worden opgehaald.");
+      return await mislukt("ophalen", e instanceof Error ? e.message : "De pagina kon niet worden opgehaald.");
     }
 
     // Stap 1 — gestructureerd recept op de pagina: geen AI, geen credits.
@@ -392,13 +409,14 @@ export const importRecipeFromUrl = createServerFn({ method: "POST" })
     const bron = tekst.slice(0, 15000);
 
     if (bron.replace(/\s/g, "").length < 60) {
-      throw await mislukt(
+      return await mislukt(
         "te_weinig_info",
         sociaal
           ? `Deze ${PLATFORM_LABEL[platform]}-link is afgeschermd. Kopieer de tekst onder het bericht en plak die bij "AI tekst", of neem een schermafbeelding en gebruik "AI foto".`
           : "Op deze pagina vonden we geen receptinformatie.",
       );
     }
+
 
     // Stap 3 — pas nu AI. Zelfde bron = cachetreffer = 0 credits.
     let uitkomst: { resultaat: ImportedRecipe; credits: number; cache: boolean };

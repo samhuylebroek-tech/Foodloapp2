@@ -282,7 +282,12 @@ export function RecipeForm({
     setImportInfo(null);
     try {
       const data = await importRecipeFromUrl({ data: { url: importUrl.trim() } });
+      if (data.fout) {
+        toast.error(data.fout);
+        return;
+      }
       vulIn(data);
+
       naAiActie();
       setSourceUrl(data.source_url ?? importUrl.trim());
       const ontbrekend = (data.ontbrekend ?? []).filter((v) => v !== "foto");
