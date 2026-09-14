@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Sparkles } from "lucide-react";
+import { toast } from "sonner";
+import { Send, Sparkles } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { creditOverzicht } from "@/lib/credits.functions";
+import { Textarea } from "@/components/ui/textarea";
+import { creditOverzicht, mijnCreditAanvraag, vraagCredits } from "@/lib/credits.functions";
 import { useVoorkeuren } from "@/lib/voorkeuren";
 
 export const Route = createFileRoute("/credits")({
