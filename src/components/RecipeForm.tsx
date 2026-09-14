@@ -264,11 +264,18 @@ export function RecipeForm({
     if (!importUrl.trim()) return;
     if (!magStarten("import_url")) return;
     setImporting(true);
+    setImportInfo(null);
     try {
       const data = await importRecipeFromUrl({ data: { url: importUrl.trim() } });
       vulIn(data);
       naAiActie();
       setSourceUrl(data.source_url ?? importUrl.trim());
+      const ontbrekend = (data.ontbrekend ?? []).filter((v) => v !== "foto");
+      setImportInfo({
+        platform: data.platform ?? "website",
+        gratis: data.bron === "paginagegevens",
+        ontbrekend,
+      });
       toast.success(
         data.bron === "paginagegevens"
           ? "Recept ingelezen zonder credits. Controleer het even en sla op."
@@ -280,6 +287,7 @@ export function RecipeForm({
       setImporting(false);
     }
   }
+
 
 
 
