@@ -379,12 +379,16 @@ function PlannerPage() {
                           params={{ id: p.recipe_id }}
                           className="flex-1 text-lg underline-offset-4 hover:underline"
                         >
-                          <span className="text-base text-muted-foreground">{p.meal_type}: </span>
+                          {p.meal_type && p.meal_type !== "maaltijd" ? (
+                            <span className="text-base capitalize text-muted-foreground">{p.meal_type}: </span>
+                          ) : null}
                           {p.recipes?.title ?? "Recept"}
                         </Link>
                       ) : (
                         <span className="flex-1 text-lg">
-                          <span className="text-base text-muted-foreground">{p.meal_type}: </span>
+                          {p.meal_type && p.meal_type !== "maaltijd" ? (
+                            <span className="text-base capitalize text-muted-foreground">{p.meal_type}: </span>
+                          ) : null}
                           {p.custom_title}
                         </span>
                       )}
