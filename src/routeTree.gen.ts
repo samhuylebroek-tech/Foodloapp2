@@ -23,6 +23,7 @@ import { Route as InstellingenRouteImport } from './routes/instellingen'
 import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as UitnodigingRouteImport } from './routes/uitnodiging'
 import { Route as VriendenRouteImport } from './routes/vrienden'
+import { Route as WelkomRouteImport } from './routes/welkom'
 import { Route as BeheerIndexRouteImport } from './routes/beheer.index'
 import { Route as BeheerAiRouteImport } from './routes/beheer.ai'
 import { Route as BeheerAnalyticsRouteImport } from './routes/beheer.analytics'
@@ -111,6 +112,11 @@ const UitnodigingRoute = UitnodigingRouteImport.update({
 const VriendenRoute = VriendenRouteImport.update({
   id: '/vrienden',
   path: '/vrienden',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WelkomRoute = WelkomRouteImport.update({
+  id: '/welkom',
+  path: '/welkom',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BeheerIndexRoute = BeheerIndexRouteImport.update({
@@ -224,6 +230,7 @@ export interface FileRoutesByFullPath {
   '/planner': typeof PlannerRoute
   '/uitnodiging': typeof UitnodigingRoute
   '/vrienden': typeof VriendenRouteWithChildren
+  '/welkom': typeof WelkomRoute
   '/beheer/ai': typeof BeheerAiRoute
   '/beheer/analytics': typeof BeheerAnalyticsRoute
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
@@ -258,6 +265,7 @@ export interface FileRoutesByTo {
   '/planner': typeof PlannerRoute
   '/uitnodiging': typeof UitnodigingRoute
   '/vrienden': typeof VriendenRouteWithChildren
+  '/welkom': typeof WelkomRoute
   '/beheer/ai': typeof BeheerAiRoute
   '/beheer/analytics': typeof BeheerAnalyticsRoute
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
@@ -294,6 +302,7 @@ export interface FileRoutesById {
   '/planner': typeof PlannerRoute
   '/uitnodiging': typeof UitnodigingRoute
   '/vrienden': typeof VriendenRouteWithChildren
+  '/welkom': typeof WelkomRoute
   '/beheer/ai': typeof BeheerAiRoute
   '/beheer/analytics': typeof BeheerAnalyticsRoute
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
@@ -331,6 +340,7 @@ export interface FileRouteTypes {
     | '/planner'
     | '/uitnodiging'
     | '/vrienden'
+    | '/welkom'
     | '/beheer/ai'
     | '/beheer/analytics'
     | '/beheer/beveiliging'
@@ -365,6 +375,7 @@ export interface FileRouteTypes {
     | '/planner'
     | '/uitnodiging'
     | '/vrienden'
+    | '/welkom'
     | '/beheer/ai'
     | '/beheer/analytics'
     | '/beheer/beveiliging'
@@ -400,6 +411,7 @@ export interface FileRouteTypes {
     | '/planner'
     | '/uitnodiging'
     | '/vrienden'
+    | '/welkom'
     | '/beheer/ai'
     | '/beheer/analytics'
     | '/beheer/beveiliging'
@@ -436,6 +448,7 @@ export interface RootRouteChildren {
   PlannerRoute: typeof PlannerRoute
   UitnodigingRoute: typeof UitnodigingRoute
   VriendenRoute: typeof VriendenRouteWithChildren
+  WelkomRoute: typeof WelkomRoute
   ReceptenIdRoute: typeof ReceptenIdRouteWithChildren
   ReceptenNieuwRoute: typeof ReceptenNieuwRoute
 }
@@ -538,6 +551,13 @@ declare module '@tanstack/react-router' {
       path: '/vrienden'
       fullPath: '/vrienden'
       preLoaderRoute: typeof VriendenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/welkom': {
+      id: '/welkom'
+      path: '/welkom'
+      fullPath: '/welkom'
+      preLoaderRoute: typeof WelkomRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/beheer/': {
@@ -754,6 +774,7 @@ const rootRouteChildren: RootRouteChildren = {
   PlannerRoute: PlannerRoute,
   UitnodigingRoute: UitnodigingRoute,
   VriendenRoute: VriendenRouteWithChildren,
+  WelkomRoute: WelkomRoute,
   ReceptenIdRoute: ReceptenIdRouteWithChildren,
   ReceptenNieuwRoute: ReceptenNieuwRoute,
 }

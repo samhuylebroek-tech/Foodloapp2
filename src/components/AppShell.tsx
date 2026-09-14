@@ -12,6 +12,8 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
@@ -60,6 +62,25 @@ export function AppShell({
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/aanmelden" });
   }, [loading, session, navigate]);
+
+  // Nieuwe gebruikers eerst door de instelstappen loodsen.
+  const { data: profiel } = useQuery({
+    queryKey: ["onboarding", session?.user.id],
+    enabled: !!session,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("onboarding_klaar")
+        .eq("id", session!.user.id)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (profiel && profiel.onboarding_klaar === false) navigate({ to: "/welkom" });
+  }, [profiel, navigate]);
 
   useEffect(() => {
     setMenuOpen(false);

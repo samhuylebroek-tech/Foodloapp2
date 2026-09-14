@@ -595,6 +595,10 @@ export type Database = {
           created_at: string
           display_name: string
           id: string
+          momenten: string[]
+          onboarding_klaar: boolean
+          taal: string
+          thema: string
         }
         Insert: {
           admin_note?: string
@@ -602,6 +606,10 @@ export type Database = {
           created_at?: string
           display_name?: string
           id: string
+          momenten?: string[]
+          onboarding_klaar?: boolean
+          taal?: string
+          thema?: string
         }
         Update: {
           admin_note?: string
@@ -609,6 +617,10 @@ export type Database = {
           created_at?: string
           display_name?: string
           id?: string
+          momenten?: string[]
+          onboarding_klaar?: boolean
+          taal?: string
+          thema?: string
         }
         Relationships: []
       }

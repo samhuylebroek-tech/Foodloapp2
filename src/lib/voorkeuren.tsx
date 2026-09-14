@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { translateTexts } from "@/lib/vertaal.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 export const TALEN = [
   { code: "nl", label: "Nederlands" },
@@ -68,6 +69,22 @@ function leesCache(taal: string): Record<string, string> {
   }
 }
 
+/** Voorkeuren mee bewaren bij het account; mislukt dit, dan blijft de app gewoon werken. */
+async function bewaarOpAccount(velden: {
+  taal?: string;
+  thema?: string;
+  momenten?: string[];
+}) {
+  try {
+    const { data } = await supabase.auth.getSession();
+    const id = data.session?.user.id;
+    if (!id) return;
+    await supabase.from("profiles").update(velden).eq("id", id);
+  } catch {
+    // lokaal is al bewaard
+  }
+}
+
 export function VoorkeurenProvider({ children }: { children: ReactNode }) {
   const [taal, setTaal] = useState("nl");
   const [thema, setThema] = useState<ThemaId>("sage");
@@ -92,6 +109,38 @@ export function VoorkeurenProvider({ children }: { children: ReactNode }) {
         // negeren
       }
     }
+  }, []);
+
+  // Voorkeuren van het account halen: zo staan ze ook goed op een ander toestel.
+  useEffect(() => {
+    let actief = true;
+    async function haal(userId: string) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("taal, thema, momenten")
+        .eq("id", userId)
+        .maybeSingle();
+      if (!actief || !data) return;
+      if (data.taal) {
+        setTaal(data.taal);
+        window.localStorage.setItem("taal", data.taal);
+      }
+      if (data.thema) {
+        setThema(data.thema as ThemaId);
+        window.localStorage.setItem("thema", data.thema);
+      }
+      if (Array.isArray(data.momenten) && data.momenten.length) {
+        setMomenten(data.momenten);
+        window.localStorage.setItem("momenten", JSON.stringify(data.momenten));
+      }
+    }
+    void supabase.auth.getSession().then(({ data }) => {
+      const id = data.session?.user.id;
+      if (id) void haal(id);
+    });
+    return () => {
+      actief = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -161,17 +210,20 @@ export function VoorkeurenProvider({ children }: { children: ReactNode }) {
   const zetTaal = useCallback((nieuw: string) => {
     setTaal(nieuw);
     window.localStorage.setItem("taal", nieuw);
+    void bewaarOpAccount({ taal: nieuw });
   }, []);
 
   const zetThema = useCallback((nieuw: ThemaId) => {
     setThema(nieuw);
     window.localStorage.setItem("thema", nieuw);
+    void bewaarOpAccount({ thema: nieuw });
   }, []);
 
   const zetMomenten = useCallback((nieuw: string[]) => {
     const lijst = nieuw.length ? nieuw : [...ALLE_MOMENTEN];
     setMomenten(lijst);
     window.localStorage.setItem("momenten", JSON.stringify(lijst));
+    void bewaarOpAccount({ momenten: lijst });
   }, []);
 
   return (
