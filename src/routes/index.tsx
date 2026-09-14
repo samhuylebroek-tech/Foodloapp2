@@ -422,7 +422,9 @@ function StartPage() {
                   <div className="p-5">
                     <p className="text-2xl font-bold leading-tight tracking-tight">{t(vandaag.title)}</p>
                     <p className="mt-1 flex items-center gap-2 text-base text-muted-foreground">
-                      <Clock className="size-4" aria-hidden />
+                      {tijdLabel(vandaag.prep_minutes, vandaag.cook_minutes) ? (
+                        <Clock className="size-4" aria-hidden />
+                      ) : null}
                       {[tijdLabel(vandaag.prep_minutes, vandaag.cook_minutes), t(vandaag.category)]
                         .filter(Boolean)
                         .join(" · ")}{" · "}
