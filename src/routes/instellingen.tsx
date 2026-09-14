@@ -2,7 +2,11 @@ import { useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, LogOut, QrCode } from "lucide-react";
+import { Loader2, LogOut, QrCode, Sparkles } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { creditOverzicht } from "@/lib/credits.functions";
+
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
@@ -33,6 +37,9 @@ export const Route = createFileRoute("/instellingen")({
 
 function InstellingenPage() {
   const { taal, zetTaal, thema, zetThema, momenten, zetMomenten, t } = useVoorkeuren();
+  const creditFn = useServerFn(creditOverzicht);
+  const credits = useQuery({ queryKey: ["credits"], queryFn: () => creditFn() });
+
 
   const [wachtwoord, setWachtwoord] = useState("");
   const [herhaal, setHerhaal] = useState("");
@@ -61,7 +68,21 @@ function InstellingenPage() {
   return (
     <AppShell title={t("Instellingen")}>
       <div className="space-y-6">
+        <Link
+          to="/credits"
+          className="flex min-h-16 items-center justify-between gap-3 rounded-[2rem] border border-border bg-card px-5 shadow-sm transition-colors hover:bg-muted"
+        >
+          <span className="flex items-center gap-3">
+            <Sparkles className="size-5 text-primary" aria-hidden />
+            <span className="text-base font-semibold">
+              {credits.data ? `${credits.data.saldo} ${t("AI-credits")}` : t("AI-credits")}
+            </span>
+          </span>
+          <span className="text-base text-muted-foreground">{t("Bekijken")}</span>
+        </Link>
+
         <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+
           <h2 className="text-xl font-bold tracking-tight">{t("Wachtwoord")}</h2>
           <Label htmlFor="pw" className="mt-4 block text-base font-semibold">
             {t("Nieuw wachtwoord")}

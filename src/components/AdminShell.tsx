@@ -5,6 +5,8 @@ import {
   BarChart3,
   BookOpen,
   ChefHat,
+  Coins,
+
   FileClock,
   LifeBuoy,
   LineChart,
@@ -27,6 +29,8 @@ const MENU: { pad: string; label: string; icoon: typeof Users; recht: Rechten }[
   { pad: "/beheer/ai", label: "AI & import", icoon: Sparkles, recht: "ai.view" },
   { pad: "/beheer/teksten", label: "Teksten & berichten", icoon: Megaphone, recht: "content.manage" },
   { pad: "/beheer/analytics", label: "Analytics", icoon: LineChart, recht: "dashboard.view" },
+  { pad: "/beheer/credits", label: "Credits & AI-kosten", icoon: Coins, recht: "dashboard.view" },
+
   { pad: "/beheer/beveiliging", label: "Beveiliging", icoon: Lock, recht: "dashboard.view" },
   { pad: "/beheer/support", label: "Support", icoon: LifeBuoy, recht: "support.view" },
   { pad: "/beheer/systeem", label: "Systeem", icoon: Activity, recht: "system.view" },

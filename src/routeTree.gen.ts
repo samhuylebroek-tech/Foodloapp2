@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AanmeldenRouteImport } from './routes/aanmelden'
 import { Route as BeheerRouteImport } from './routes/beheer'
 import { Route as BoodschappenRouteImport } from './routes/boodschappen'
+import { Route as CreditsRouteImport } from './routes/credits'
 import { Route as DeelRouteImport } from './routes/deel'
 import { Route as FeedbackRouteImport } from './routes/feedback'
 import { Route as GerechtenRouteImport } from './routes/gerechten'
@@ -26,6 +27,7 @@ import { Route as BeheerIndexRouteImport } from './routes/beheer.index'
 import { Route as BeheerAiRouteImport } from './routes/beheer.ai'
 import { Route as BeheerAnalyticsRouteImport } from './routes/beheer.analytics'
 import { Route as BeheerBeveiligingRouteImport } from './routes/beheer.beveiliging'
+import { Route as BeheerCreditsRouteImport } from './routes/beheer.credits'
 import { Route as BeheerGebruikersRouteImport } from './routes/beheer.gebruikers'
 import { Route as BeheerInhoudRouteImport } from './routes/beheer.inhoud'
 import { Route as BeheerInstellingenRouteImport } from './routes/beheer.instellingen'
@@ -58,6 +60,11 @@ const BeheerRoute = BeheerRouteImport.update({
 const BoodschappenRoute = BoodschappenRouteImport.update({
   id: '/boodschappen',
   path: '/boodschappen',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreditsRoute = CreditsRouteImport.update({
+  id: '/credits',
+  path: '/credits',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DeelRoute = DeelRouteImport.update({
@@ -123,6 +130,11 @@ const BeheerAnalyticsRoute = BeheerAnalyticsRouteImport.update({
 const BeheerBeveiligingRoute = BeheerBeveiligingRouteImport.update({
   id: '/beveiliging',
   path: '/beveiliging',
+  getParentRoute: () => BeheerRoute,
+} as any)
+const BeheerCreditsRoute = BeheerCreditsRouteImport.update({
+  id: '/credits',
+  path: '/credits',
   getParentRoute: () => BeheerRoute,
 } as any)
 const BeheerGebruikersRoute = BeheerGebruikersRouteImport.update({
@@ -196,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/aanmelden': typeof AanmeldenRoute
   '/beheer': typeof BeheerRouteWithChildren
   '/boodschappen': typeof BoodschappenRoute
+  '/credits': typeof CreditsRoute
   '/deel': typeof DeelRoute
   '/feedback': typeof FeedbackRoute
   '/gerechten': typeof GerechtenRoute
@@ -208,6 +221,7 @@ export interface FileRoutesByFullPath {
   '/beheer/ai': typeof BeheerAiRoute
   '/beheer/analytics': typeof BeheerAnalyticsRoute
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
+  '/beheer/credits': typeof BeheerCreditsRoute
   '/beheer/gebruikers': typeof BeheerGebruikersRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
@@ -227,6 +241,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/aanmelden': typeof AanmeldenRoute
   '/boodschappen': typeof BoodschappenRoute
+  '/credits': typeof CreditsRoute
   '/deel': typeof DeelRoute
   '/feedback': typeof FeedbackRoute
   '/gerechten': typeof GerechtenRoute
@@ -239,6 +254,7 @@ export interface FileRoutesByTo {
   '/beheer/ai': typeof BeheerAiRoute
   '/beheer/analytics': typeof BeheerAnalyticsRoute
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
+  '/beheer/credits': typeof BeheerCreditsRoute
   '/beheer/gebruikers': typeof BeheerGebruikersRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
@@ -260,6 +276,7 @@ export interface FileRoutesById {
   '/aanmelden': typeof AanmeldenRoute
   '/beheer': typeof BeheerRouteWithChildren
   '/boodschappen': typeof BoodschappenRoute
+  '/credits': typeof CreditsRoute
   '/deel': typeof DeelRoute
   '/feedback': typeof FeedbackRoute
   '/gerechten': typeof GerechtenRoute
@@ -272,6 +289,7 @@ export interface FileRoutesById {
   '/beheer/ai': typeof BeheerAiRoute
   '/beheer/analytics': typeof BeheerAnalyticsRoute
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
+  '/beheer/credits': typeof BeheerCreditsRoute
   '/beheer/gebruikers': typeof BeheerGebruikersRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
@@ -294,6 +312,7 @@ export interface FileRouteTypes {
     | '/aanmelden'
     | '/beheer'
     | '/boodschappen'
+    | '/credits'
     | '/deel'
     | '/feedback'
     | '/gerechten'
@@ -306,6 +325,7 @@ export interface FileRouteTypes {
     | '/beheer/ai'
     | '/beheer/analytics'
     | '/beheer/beveiliging'
+    | '/beheer/credits'
     | '/beheer/gebruikers'
     | '/beheer/inhoud'
     | '/beheer/instellingen'
@@ -325,6 +345,7 @@ export interface FileRouteTypes {
     | '/'
     | '/aanmelden'
     | '/boodschappen'
+    | '/credits'
     | '/deel'
     | '/feedback'
     | '/gerechten'
@@ -337,6 +358,7 @@ export interface FileRouteTypes {
     | '/beheer/ai'
     | '/beheer/analytics'
     | '/beheer/beveiliging'
+    | '/beheer/credits'
     | '/beheer/gebruikers'
     | '/beheer/inhoud'
     | '/beheer/instellingen'
@@ -357,6 +379,7 @@ export interface FileRouteTypes {
     | '/aanmelden'
     | '/beheer'
     | '/boodschappen'
+    | '/credits'
     | '/deel'
     | '/feedback'
     | '/gerechten'
@@ -369,6 +392,7 @@ export interface FileRouteTypes {
     | '/beheer/ai'
     | '/beheer/analytics'
     | '/beheer/beveiliging'
+    | '/beheer/credits'
     | '/beheer/gebruikers'
     | '/beheer/inhoud'
     | '/beheer/instellingen'
@@ -390,6 +414,7 @@ export interface RootRouteChildren {
   AanmeldenRoute: typeof AanmeldenRoute
   BeheerRoute: typeof BeheerRouteWithChildren
   BoodschappenRoute: typeof BoodschappenRoute
+  CreditsRoute: typeof CreditsRoute
   DeelRoute: typeof DeelRoute
   FeedbackRoute: typeof FeedbackRoute
   GerechtenRoute: typeof GerechtenRoute
@@ -431,6 +456,13 @@ declare module '@tanstack/react-router' {
       path: '/boodschappen'
       fullPath: '/boodschappen'
       preLoaderRoute: typeof BoodschappenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/credits': {
+      id: '/credits'
+      path: '/credits'
+      fullPath: '/credits'
+      preLoaderRoute: typeof CreditsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/deel': {
@@ -522,6 +554,13 @@ declare module '@tanstack/react-router' {
       path: '/beveiliging'
       fullPath: '/beheer/beveiliging'
       preLoaderRoute: typeof BeheerBeveiligingRouteImport
+      parentRoute: typeof BeheerRoute
+    }
+    '/beheer/credits': {
+      id: '/beheer/credits'
+      path: '/credits'
+      fullPath: '/beheer/credits'
+      preLoaderRoute: typeof BeheerCreditsRouteImport
       parentRoute: typeof BeheerRoute
     }
     '/beheer/gebruikers': {
@@ -622,6 +661,7 @@ interface BeheerRouteChildren {
   BeheerAiRoute: typeof BeheerAiRoute
   BeheerAnalyticsRoute: typeof BeheerAnalyticsRoute
   BeheerBeveiligingRoute: typeof BeheerBeveiligingRoute
+  BeheerCreditsRoute: typeof BeheerCreditsRoute
   BeheerGebruikersRoute: typeof BeheerGebruikersRoute
   BeheerInhoudRoute: typeof BeheerInhoudRoute
   BeheerInstellingenRoute: typeof BeheerInstellingenRoute
@@ -638,6 +678,7 @@ const BeheerRouteChildren: BeheerRouteChildren = {
   BeheerAiRoute: BeheerAiRoute,
   BeheerAnalyticsRoute: BeheerAnalyticsRoute,
   BeheerBeveiligingRoute: BeheerBeveiligingRoute,
+  BeheerCreditsRoute: BeheerCreditsRoute,
   BeheerGebruikersRoute: BeheerGebruikersRoute,
   BeheerInhoudRoute: BeheerInhoudRoute,
   BeheerInstellingenRoute: BeheerInstellingenRoute,
@@ -682,6 +723,7 @@ const rootRouteChildren: RootRouteChildren = {
   AanmeldenRoute: AanmeldenRoute,
   BeheerRoute: BeheerRouteWithChildren,
   BoodschappenRoute: BoodschappenRoute,
+  CreditsRoute: CreditsRoute,
   DeelRoute: DeelRoute,
   FeedbackRoute: FeedbackRoute,
   GerechtenRoute: GerechtenRoute,

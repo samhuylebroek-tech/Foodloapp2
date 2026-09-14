@@ -30,6 +30,24 @@
 - [ ] Vriendenuitnodigingen: op gsm duidelijk zien naar wie je een uitnodiging stuurde
 - [ ] Gerechtpagina op gsm volledig responsive (o.a. aantal personen +/-)
 
+## AI-credits & kostenefficiëntie (bezig)
+- [x] Creditmotor: saldo, onveranderlijk grootboek, reservering/afronding/terugstorting
+- [x] 50 gratis credits bij registratie, ook voor bestaande gebruikers
+- [x] Kosten per AI-functie instelbaar, daglimiet per functie, AI-resultaatcache
+- [ ] Creditcentrum in de app + saldo zichtbaar bij AI-acties
+- [ ] Beheerscherm credits: saldo's, verbruik, kosten, cache-trefkans
+- [ ] Kopen van creditpakketten (staat UIT tot betalingen actief zijn)
+
+## Linkimport verbeteren (nog te doen)
+- [ ] Eén importpijplijn met adapters: Instagram, TikTok, YouTube, Facebook, Pinterest, websites
+- [ ] Volgorde: structured data (JSON-LD Recipe) → metadata → caption → transcript → OCR → AI
+- [ ] Canonieke URL + dubbeldetectie ("dit recept heb je al"), gedeelde cache per bron
+- [ ] Gedeeltelijke import tonen i.p.v. falen, duidelijk onderscheid import vs AI-voorstel
+- [ ] Bronvermelding bewaren, veilige URL-controle (geen interne adressen)
+- [ ] Delen vanuit Instagram/TikTok rechtstreeks naar de app (share target)
+- [ ] Beheerscherm: importstatistieken per platform, fouten, cache-trefkans
+
+
 ## Weekmenu (klaar)
 - Reeds ingepland moment (bv. avondeten) verdwijnt uit de knoppen van die dag
 - Instellingen: kies welke maaltijdmomenten je per dag ziet (ontbijt/middageten/avondeten of 1 blok)
