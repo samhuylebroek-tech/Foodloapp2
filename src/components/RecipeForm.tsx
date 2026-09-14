@@ -448,9 +448,6 @@ export function RecipeForm({
                 )}
                 Recept eruit halen
               </Button>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Kost ongeveer {kostLabel("import_tekst")}. Je hebt er nog {credits.data?.saldo ?? 0}.
-              </p>
 
             </div>
           )}
