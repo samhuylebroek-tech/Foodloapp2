@@ -418,6 +418,8 @@ export const importRecipeFromUrl = createServerFn({ method: "POST" })
           image_url: vindAfbeelding(html, url),
           is_suggestie: isSociaal,
           bron: isSociaal ? "bijschrift" : "paginatekst",
+          source_url: url,
+
         });
       },
     );
