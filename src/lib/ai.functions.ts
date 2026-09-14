@@ -294,47 +294,38 @@ export function leesStructuurData(html: string, paginaUrl: string): ImportedReci
   };
 }
 
-function metaTekst(html: string, sleutels: string[]): string {
-  const stukken: string[] = [];
-  for (const sleutel of sleutels) {
-    const patronen = [
-      new RegExp(`<meta[^>]+(?:property|name)=["']${sleutel}["'][^>]+content=["']([^"']+)["']`, "i"),
-      new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${sleutel}["']`, "i"),
-    ];
-    for (const p of patronen) {
-      const m = html.match(p);
-      if (m?.[1]) {
-        stukken.push(m[1]);
-        break;
-      }
-    }
-  }
-  return stukken
-    .join("\n")
-    .replace(/&quot;/g, '"')
-    .replace(/&#x27;|&#039;/g, "'")
-    .replace(/&amp;/g, "&")
-    .replace(/\\n/g, "\n")
-    .trim();
-}
-
-async function haalPagina(url: string, ua: string) {
-  return fetch(url, {
-    headers: {
-      "User-Agent": ua,
-      Accept: "text/html,application/xhtml+xml",
-      "Accept-Language": "nl,en;q=0.8",
-    },
-    redirect: "follow",
-  });
-}
-
 export const importRecipeFromUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ url: z.string().url() }).parse(data))
   .handler(async ({ data, context }): Promise<ImportedRecipe> => {
+    const start = Date.now();
     const url = veiligeUrl(canoniekeUrl(data.url));
-    const isSociaal = SOCIAAL.test(url);
+    const platform = detecteerPlatform(url);
+    const sociaal = isSociaal(platform);
+    const adapter = adapterVoor(platform);
+    const basis = {
+      user_id: context.userId,
+      source_url: data.url.slice(0, 900),
+      canonical_url: url,
+      platform,
+    };
+
+    const mislukt = async (code: string, bericht: string) => {
+      await logImport({
+        ...basis,
+        status: "mislukt",
+        extraction_method: null,
+        ai_used: false,
+        credits_used: 0,
+        cache_hit: false,
+        duration_ms: Date.now() - start,
+        fields_found: [],
+        fields_missing: [],
+        error_code: code,
+        error_message: bericht,
+      });
+      return new Error(bericht);
+    };
 
     // Stap 0 — deze link al eens ingelezen? Dan geen nieuwe AI-kost.
     const { data: bestaand } = await context.supabase
@@ -346,85 +337,109 @@ export const importRecipeFromUrl = createServerFn({ method: "POST" })
       .limit(1)
       .maybeSingle();
     if (bestaand) {
+      await logImport({
+        ...basis,
+        status: "dubbel",
+        extraction_method: "dubbeldetectie",
+        ai_used: false,
+        credits_used: 0,
+        cache_hit: true,
+        duration_ms: Date.now() - start,
+        fields_found: [],
+        fields_missing: [],
+      });
       throw new Error(`Je hebt dit recept al: "${bestaand.title}". Open het bij je recepten.`);
     }
 
-    let page = await haalPagina(url, isSociaal ? "facebookexternalhit/1.1" : BROWSER_UA);
-    if (!page.ok && isSociaal) page = await haalPagina(url, BROWSER_UA);
-    if (!page.ok) throw new Error("De pagina kon niet worden opgehaald.");
-    const html = await page.text();
+    let html: string;
+    try {
+      html = await haalPagina(url, adapter.agents);
+    } catch (e) {
+      throw await mislukt("ophalen", e instanceof Error ? e.message : "De pagina kon niet worden opgehaald.");
+    }
 
     // Stap 1 — gestructureerd recept op de pagina: geen AI, geen credits.
     const structuur = leesStructuurData(html, url);
-    if (structuur?.title) return structuur;
+    if (structuur?.title) {
+      const v = velden(structuur);
+      await logImport({
+        ...basis,
+        status: v.ontbrekend.length > 2 ? "gedeeltelijk" : "klaar",
+        extraction_method: "structuurdata",
+        ai_used: false,
+        credits_used: 0,
+        cache_hit: false,
+        duration_ms: Date.now() - start,
+        fields_found: v.gevonden,
+        fields_missing: v.ontbrekend,
+      });
+      return { ...structuur, platform, ontbrekend: v.ontbrekend };
+    }
 
-
-    const platteTekst = html
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    const meta = metaTekst(html, ["og:title", "og:description", "description", "twitter:description"]);
-    const bijschrift = (() => {
-      const m =
-        html.match(/"edge_media_to_caption"[\s\S]{0,200}?"text"\s*:\s*"([\s\S]{20,4000}?)"/) ??
-        html.match(/"caption"\s*:\s*"([\s\S]{20,4000}?)"/) ??
-        html.match(/"desc"\s*:\s*"([\s\S]{20,4000}?)"/);
-      return m?.[1]
-        ? m[1]
-            .replace(/\\n/g, "\n")
-            .replace(/\\u([\dA-Fa-f]{4})/g, (_x, c) => String.fromCharCode(parseInt(c, 16)))
-            .replace(/\\"/g, '"')
-        : "";
-    })();
-
-    const bron = isSociaal
-      ? [meta, bijschrift].filter(Boolean).join("\n\n").slice(0, 15000)
-      : platteTekst.slice(0, 15000);
+    // Stap 2 — goedkope tekst van het platform (bijschrift, beschrijving, metadata).
+    const { tekst, methode } = adapter.tekstUit(html);
+    const bron = tekst.slice(0, 15000);
 
     if (bron.replace(/\s/g, "").length < 60) {
-      throw new Error(
-        isSociaal
-          ? "Deze Instagram- of TikTok-link is afgeschermd. Kopieer de tekst onder het filmpje en plak die bij 'AI tekst', of neem een schermafbeelding en gebruik 'AI foto'."
+      throw await mislukt(
+        "te_weinig_info",
+        sociaal
+          ? `Deze ${PLATFORM_LABEL[platform]}-link is afgeschermd. Kopieer de tekst onder het bericht en plak die bij "AI tekst", of neem een schermafbeelding en gebruik "AI foto".`
           : "Op deze pagina vonden we geen receptinformatie.",
       );
     }
 
-    // Stap 2 — dezelfde link of dezelfde tekst? Dan uit de cache, zonder credits.
-    const { resultaat } = await metCredits(
-      { userId: context.userId, feature: "import_url", cacheSleutel: `${url}|${bron.slice(0, 4000)}`, model: MODEL },
-      async () => {
-        const raw = await askAI(
-          [
-            {
-              role: "system",
-              content: isSociaal
-                ? `Je maakt een recept op basis van een bijschrift van Instagram, TikTok of Facebook. Gebruik uitsluitend wat in de bron staat; vul enkel aan waar het echt nodig is en houd schattingen realistisch. ${STAP_REGELS} Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. ${JSON_FORMAAT}`
-                : `Je haalt recepten uit webpagina's. Neem de bereiding letterlijk en volledig over zoals ze op de pagina staat, zonder stappen weg te laten en zonder hoeveelheden te verzinnen. ${STAP_REGELS} Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. ${JSON_FORMAAT}`,
-            },
-            { role: "user", content: `Bron: ${url}\n\nTekst:\n${bron}` },
-          ],
-          "import_url",
-        );
-        const parsed = parseJson<Partial<ImportedRecipe>>(raw, {});
-        if (!parsed.title) {
-          throw new Error(
-            "We konden hier geen recept uit halen. Probeer de tekst te plakken of een schermafbeelding te kiezen.",
+    // Stap 3 — pas nu AI. Zelfde bron = cachetreffer = 0 credits.
+    let uitkomst: { resultaat: ImportedRecipe; credits: number; cache: boolean };
+    try {
+      uitkomst = await metCredits(
+        { userId: context.userId, feature: "import_url", cacheSleutel: `${url}|${bron.slice(0, 4000)}`, model: MODEL },
+        async () => {
+          const raw = await askAI(
+            [
+              {
+                role: "system",
+                content: sociaal
+                  ? `Je maakt een recept op basis van een bericht van ${PLATFORM_LABEL[platform]}. Gebruik uitsluitend informatie die in de bron staat. Verzin geen hoeveelheden, tijden of stappen: wat ontbreekt laat je leeg (null of lege lijst). ${STAP_REGELS} Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. ${JSON_FORMAAT}`
+                  : `Je haalt recepten uit webpagina's. Neem de bereiding letterlijk en volledig over zoals ze op de pagina staat. Verzin niets: ontbrekende hoeveelheden, tijden of stappen laat je leeg (null of lege lijst). ${STAP_REGELS} Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. ${JSON_FORMAAT}`,
+              },
+              { role: "user", content: `Bron: ${url}\n\nTekst:\n${bron}` },
+            ],
+            "import_url",
           );
-        }
-        return vulAan(parsed, {
-          image_url: vindAfbeelding(html, url),
-          is_suggestie: isSociaal,
-          bron: isSociaal ? "bijschrift" : "paginatekst",
-          source_url: url,
+          const parsed = parseJson<Partial<ImportedRecipe>>(raw, {});
+          if (!parsed.title) {
+            throw new Error(
+              "We konden hier geen recept uit halen. Probeer de tekst te plakken of een schermafbeelding te kiezen.",
+            );
+          }
+          return vulAan(parsed, {
+            image_url: vindAfbeelding(html, url),
+            is_suggestie: false,
+            bron: methode,
+            source_url: url,
+          });
+        },
+      );
+    } catch (e) {
+      throw await mislukt("ai", e instanceof Error ? e.message : "Inlezen lukte niet.");
+    }
 
-        });
-      },
-    );
-    return resultaat;
+    const v = velden(uitkomst.resultaat);
+    await logImport({
+      ...basis,
+      status: v.ontbrekend.length > 2 ? "gedeeltelijk" : "klaar",
+      extraction_method: methode,
+      ai_used: !uitkomst.cache,
+      credits_used: uitkomst.credits,
+      cache_hit: uitkomst.cache,
+      duration_ms: Date.now() - start,
+      fields_found: v.gevonden,
+      fields_missing: v.ontbrekend,
+    });
+    return { ...uitkomst.resultaat, platform, ontbrekend: v.ontbrekend };
   });
+
 
 export const recipeFromPhoto = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
