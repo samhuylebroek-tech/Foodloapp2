@@ -83,3 +83,68 @@ export const creditOverzicht = createServerFn({ method: "GET" })
       boekingen: (boekingen.data ?? []) as CreditBoeking[],
     };
   });
+
+export type CreditAanvraag = {
+  id: string;
+  aantal: number;
+  bericht: string;
+  status: string;
+  toegekend: number;
+  admin_note: string;
+  created_at: string;
+};
+
+/** Laatste aanvraag van de gebruiker (om dubbele vragen te vermijden). */
+export const mijnCreditAanvraag = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<CreditAanvraag | null> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("credit_requests")
+      .select("id, aantal, bericht, status, toegekend, admin_note, created_at")
+      .eq("user_id", context.userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return (data as CreditAanvraag | null) ?? null;
+  });
+
+/** Gebruiker vraagt extra credits aan bij het team. */
+export const vraagCredits = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({ aantal: z.number().int().min(0).max(100000).default(0), bericht: z.string().max(500).default("") })
+      .parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Niet spammen: één open aanvraag tegelijk, en max 3 per dag.
+    const { data: open } = await supabaseAdmin
+      .from("credit_requests")
+      .select("id")
+      .eq("user_id", context.userId)
+      .eq("status", "open")
+      .limit(1);
+    if (open && open.length > 0) {
+      return { ok: false as const, melding: "Je vraag staat al klaar. We laten iets weten zodra ze behandeld is." };
+    }
+    const sinds = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count } = await supabaseAdmin
+      .from("credit_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", context.userId)
+      .gte("created_at", sinds);
+    if ((count ?? 0) >= 3) {
+      return { ok: false as const, melding: "Je stuurde vandaag al een paar vragen. Probeer morgen opnieuw." };
+    }
+
+    const { error } = await supabaseAdmin.from("credit_requests").insert({
+      user_id: context.userId,
+      aantal: data.aantal,
+      bericht: data.bericht.trim(),
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true as const, melding: "Bedankt! Je vraag is doorgestuurd." };
+  });
