@@ -31,6 +31,9 @@
 - [ ] Gerechtpagina op gsm volledig responsive (o.a. aantal personen +/-)
 
 ## AI-credits & kostenefficiëntie (bezig)
+- [x] Creditcentrum in de app + saldo in Instellingen
+- [x] Beheerscherm Credits & AI-kosten (prijs, daglimiet, aan/uit, verbruik, cache-trefkans)
+- [x] Kostmelding vóór elke slimme actie, geen AI zonder tik van de gebruiker
 - [x] Creditmotor: saldo, onveranderlijk grootboek, reservering/afronding/terugstorting
 - [x] 50 gratis credits bij registratie, ook voor bestaande gebruikers
 - [x] Kosten per AI-functie instelbaar, daglimiet per functie, AI-resultaatcache
@@ -40,10 +43,10 @@
 
 ## Linkimport verbeteren (nog te doen)
 - [ ] Eén importpijplijn met adapters: Instagram, TikTok, YouTube, Facebook, Pinterest, websites
-- [ ] Volgorde: structured data (JSON-LD Recipe) → metadata → caption → transcript → OCR → AI
-- [ ] Canonieke URL + dubbeldetectie ("dit recept heb je al"), gedeelde cache per bron
+- [x] Volgorde: structured data (JSON-LD Recipe, gratis) → metadata → caption → AI
+- [x] Canonieke URL + dubbeldetectie ("dit recept heb je al"), gedeelde cache per bron
 - [ ] Gedeeltelijke import tonen i.p.v. falen, duidelijk onderscheid import vs AI-voorstel
-- [ ] Bronvermelding bewaren, veilige URL-controle (geen interne adressen)
+- [x] Bronvermelding bewaren, veilige URL-controle (geen interne adressen)
 - [ ] Delen vanuit Instagram/TikTok rechtstreeks naar de app (share target)
 - [ ] Beheerscherm: importstatistieken per platform, fouten, cache-trefkans
 

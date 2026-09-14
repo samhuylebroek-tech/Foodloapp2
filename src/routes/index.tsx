@@ -182,13 +182,16 @@ function StartPage() {
 
   const smaakSleutel = favorietSmaak.join("|");
   const [ronde, setRonde] = useState(0);
+  // Slimme ideeën starten nooit vanzelf: jij beslist wanneer.
+  const [ontdekAan, setOntdekAan] = useState(false);
   const {
     data: internet = [],
     isLoading: internetLaadt,
     isFetching: internetVerst,
   } = useQuery({
     queryKey: ["internet-suggesties", bekendSleutel, smaakSleutel, sfeer?.titel ?? "", ronde],
-    enabled: !!user && weerKlaar,
+    enabled: !!user && weerKlaar && ontdekAan,
+
     staleTime: 1000 * 60 * 60,
     queryFn: async () => {
       const lijst = await ontdekSuggesties({
@@ -307,17 +310,36 @@ function StartPage() {
               <SectieTitel icoon={<Globe2 className="size-5" aria-hidden />}>
                 {t("Nieuw voor jou")}
               </SectieTitel>
-              <button
-                type="button"
-                onClick={() => setRonde((r) => r + 1)}
-                disabled={internetVerst}
-                className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-border bg-card px-4 text-base font-semibold disabled:opacity-60"
-              >
-                <RefreshCw className={`size-4 ${internetVerst ? "animate-spin" : ""}`} aria-hidden />
-                {t("Andere")}
-              </button>
+              {ontdekAan ? (
+                <button
+                  type="button"
+                  onClick={() => setRonde((r) => r + 1)}
+                  disabled={internetVerst}
+                  className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-border bg-card px-4 text-base font-semibold disabled:opacity-60"
+                >
+                  <RefreshCw className={`size-4 ${internetVerst ? "animate-spin" : ""}`} aria-hidden />
+                  {t("Andere")}
+                </button>
+              ) : null}
             </div>
-            {internetLaadt ? (
+            {!ontdekAan ? (
+              <div className="rounded-2xl border border-border bg-card p-5">
+                <p className="text-lg">
+                  {t("Zin in iets nieuws? We zoeken gerechten die passen bij wat jij lekker vindt.")}
+                </p>
+                <p className="mt-1 text-base text-muted-foreground">
+                  {t("Dit gebruikt een paar AI-credits. Alles wat je al hebt, blijft gratis.")}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setOntdekAan(true)}
+                  className="mt-4 inline-flex min-h-14 items-center gap-2 rounded-xl bg-primary px-5 text-base font-semibold text-primary-foreground"
+                >
+                  <Globe2 className="size-5" aria-hidden />
+                  {t("Zoek nieuwe ideeën")}
+                </button>
+              </div>
+            ) : internetLaadt ? (
               <p className="text-lg text-muted-foreground">{t("Even zoeken naar nieuwe ideeën…")}</p>
             ) : internet.length === 0 ? (
               <p className="text-lg text-muted-foreground">
@@ -336,6 +358,7 @@ function StartPage() {
                 ))}
               </ul>
             )}
+
           </section>
         )}
 

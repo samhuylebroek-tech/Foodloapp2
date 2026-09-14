@@ -76,6 +76,9 @@ export type ImportedRecipe = {
   image_url?: string | null;
   is_suggestie?: boolean;
   bron?: string;
+  source_url?: string | null;
+  reeds_bekend?: { id: string; title: string } | null;
+
 };
 
 function vulAan(parsed: Partial<ImportedRecipe>, extra: Partial<ImportedRecipe> = {}): ImportedRecipe {
@@ -285,7 +288,9 @@ export function leesStructuurData(html: string, paginaUrl: string): ImportedReci
     ingredients: ingredienten,
     instructions: stappen,
     image_url: vindAfbeelding(html, paginaUrl),
-    bron: "structuurdata",
+    bron: "paginagegevens",
+    source_url: paginaUrl,
+
   };
 }
 
@@ -331,6 +336,19 @@ export const importRecipeFromUrl = createServerFn({ method: "POST" })
     const url = veiligeUrl(canoniekeUrl(data.url));
     const isSociaal = SOCIAAL.test(url);
 
+    // Stap 0 — deze link al eens ingelezen? Dan geen nieuwe AI-kost.
+    const { data: bestaand } = await context.supabase
+      .from("recipes")
+      .select("id, title")
+      .eq("user_id", context.userId)
+      .eq("source_url", url)
+      .is("deleted_at", null)
+      .limit(1)
+      .maybeSingle();
+    if (bestaand) {
+      throw new Error(`Je hebt dit recept al: "${bestaand.title}". Open het bij je recepten.`);
+    }
+
     let page = await haalPagina(url, isSociaal ? "facebookexternalhit/1.1" : BROWSER_UA);
     if (!page.ok && isSociaal) page = await haalPagina(url, BROWSER_UA);
     if (!page.ok) throw new Error("De pagina kon niet worden opgehaald.");
@@ -339,6 +357,7 @@ export const importRecipeFromUrl = createServerFn({ method: "POST" })
     // Stap 1 — gestructureerd recept op de pagina: geen AI, geen credits.
     const structuur = leesStructuurData(html, url);
     if (structuur?.title) return structuur;
+
 
     const platteTekst = html
       .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -399,6 +418,8 @@ export const importRecipeFromUrl = createServerFn({ method: "POST" })
           image_url: vindAfbeelding(html, url),
           is_suggestie: isSociaal,
           bron: isSociaal ? "bijschrift" : "paginatekst",
+          source_url: url,
+
         });
       },
     );
