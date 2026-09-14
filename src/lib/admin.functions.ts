@@ -979,3 +979,66 @@ export const adminCreditsToekennen = createServerFn({ method: "POST" })
     await logboek(db, profiel, "credits.adjust", "user", data.user_id, { amount: data.amount, reden: data.reden });
     return { ok: true };
   });
+
+// ============================================================
+// Importcentrum — kwaliteit en kosten van de linkimport.
+// ============================================================
+export const adminImports = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { db } = await bewaker(context as Ctx, "ai.view");
+    const sinds = new Date(Date.now() - 30 * 86400_000).toISOString();
+    const { data } = await db
+      .from("recipe_import_jobs")
+      .select("*")
+      .gte("created_at", sinds)
+      .order("created_at", { ascending: false })
+      .limit(500);
+
+    const rijen = (data ?? []) as any[];
+    const perPlatform = new Map<
+      string,
+      { platform: string; totaal: number; klaar: number; gedeeltelijk: number; mislukt: number; dubbel: number; credits: number; cache: number; ms: number }
+    >();
+    for (const r of rijen) {
+      const p = perPlatform.get(r.platform) ?? {
+        platform: r.platform,
+        totaal: 0,
+        klaar: 0,
+        gedeeltelijk: 0,
+        mislukt: 0,
+        dubbel: 0,
+        credits: 0,
+        cache: 0,
+        ms: 0,
+      };
+      p.totaal += 1;
+      if (r.status === "klaar") p.klaar += 1;
+      if (r.status === "gedeeltelijk") p.gedeeltelijk += 1;
+      if (r.status === "mislukt") p.mislukt += 1;
+      if (r.status === "dubbel") p.dubbel += 1;
+      p.credits += r.credits_used ?? 0;
+      if (r.cache_hit) p.cache += 1;
+      p.ms += r.duration_ms ?? 0;
+      perPlatform.set(r.platform, p);
+    }
+
+    const vandaag = new Date().toISOString().slice(0, 10);
+    const zonderAi = rijen.filter((r) => !r.ai_used).length;
+
+    return {
+      totaal: rijen.length,
+      vandaag: rijen.filter((r) => String(r.created_at).slice(0, 10) === vandaag).length,
+      mislukt: rijen.filter((r) => r.status === "mislukt").length,
+      gedeeltelijk: rijen.filter((r) => r.status === "gedeeltelijk").length,
+      credits: rijen.reduce((s, r) => s + (r.credits_used ?? 0), 0),
+      gratisPercentage: rijen.length ? Math.round((zonderAi / rijen.length) * 100) : 0,
+      cachePercentage: rijen.length
+        ? Math.round((rijen.filter((r) => r.cache_hit).length / rijen.length) * 100)
+        : 0,
+      perPlatform: [...perPlatform.values()]
+        .map((p) => ({ ...p, gemiddeldMs: p.totaal ? Math.round(p.ms / p.totaal) : 0 }))
+        .sort((a, b) => b.totaal - a.totaal),
+      recent: rijen.slice(0, 40),
+    };
+  });
