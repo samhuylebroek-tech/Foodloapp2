@@ -1042,3 +1042,90 @@ export const adminImports = createServerFn({ method: "GET" })
       recent: rijen.slice(0, 40),
     };
   });
+
+// ============================================================
+// Creditaanvragen — gebruikers vragen extra credits aan het team.
+// ============================================================
+export const adminCreditAanvragen = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await bewaker(context as Ctx, "users.view");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rijen } = await supabaseAdmin
+      .from("credit_requests")
+      .select("id, user_id, aantal, bericht, status, toegekend, admin_note, created_at")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    const lijst = rijen ?? [];
+    const ids = [...new Set(lijst.map((r) => r.user_id))];
+    const { data: profielen } = ids.length
+      ? await supabaseAdmin.from("profiles").select("id, display_name").in("id", ids)
+      : { data: [] as { id: string; display_name: string }[] };
+    const { data: saldi } = ids.length
+      ? await supabaseAdmin.from("user_credits").select("user_id, balance").in("user_id", ids)
+      : { data: [] as { user_id: string; balance: number }[] };
+    const naam = new Map((profielen ?? []).map((p) => [p.id, p.display_name]));
+    const saldo = new Map((saldi ?? []).map((s) => [s.user_id, s.balance]));
+    return {
+      open: lijst.filter((r) => r.status === "open").length,
+      aanvragen: lijst.map((r) => ({
+        ...r,
+        naam: naam.get(r.user_id) ?? "Gebruiker",
+        saldo: saldo.get(r.user_id) ?? 0,
+      })),
+    };
+  });
+
+export const adminCreditAanvraagAfhandelen = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        toekennen: z.number().int().min(0).max(100000).default(0),
+        afwijzen: z.boolean().default(false),
+        note: z.string().max(300).default(""),
+      })
+      .parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { db, profiel } = await bewaker(context as Ctx, "users.manage");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rij } = await supabaseAdmin
+      .from("credit_requests")
+      .select("id, user_id, status")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!rij) throw new Error("Aanvraag niet gevonden");
+    if (rij.status !== "open") throw new Error("Deze aanvraag is al behandeld");
+
+    let toegekend = 0;
+    if (!data.afwijzen && data.toekennen > 0) {
+      const { error } = await supabaseAdmin.rpc("credits_toekennen", {
+        _user: rij.user_id,
+        _amount: data.toekennen,
+        _type: "promotional_bonus",
+        _ref: `aanvraag:${rij.id}`,
+      });
+      if (error) throw new Error(error.message);
+      toegekend = data.toekennen;
+    }
+
+    await supabaseAdmin
+      .from("credit_requests")
+      .update({
+        status: data.afwijzen ? "afgewezen" : "toegekend",
+        toegekend,
+        admin_note: data.note,
+        handled_by: profiel.user_id,
+        handled_at: new Date().toISOString(),
+      })
+      .eq("id", rij.id);
+
+    await logboek(db, profiel, "credits.request_handled", "user", rij.user_id, {
+      aanvraag: rij.id,
+      toegekend,
+      afgewezen: data.afwijzen,
+    });
+    return { ok: true };
+  });

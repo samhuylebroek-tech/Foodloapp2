@@ -383,6 +383,45 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_requests: {
+        Row: {
+          aantal: number
+          admin_note: string
+          bericht: string
+          created_at: string
+          handled_at: string | null
+          handled_by: string | null
+          id: string
+          status: string
+          toegekend: number
+          user_id: string
+        }
+        Insert: {
+          aantal?: number
+          admin_note?: string
+          bericht?: string
+          created_at?: string
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: string
+          status?: string
+          toegekend?: number
+          user_id: string
+        }
+        Update: {
+          aantal?: number
+          admin_note?: string
+          bericht?: string
+          created_at?: string
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: string
+          status?: string
+          toegekend?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       credit_transactions: {
         Row: {
           amount: number

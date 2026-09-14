@@ -29,6 +29,7 @@ import { importRecipeFromText } from "@/lib/ai.functions";
 import { useT, useVoorkeuren } from "@/lib/voorkeuren";
 import { type Ingredient, type Recipe } from "@/lib/types";
 import { Copy } from "lucide-react";
+import { tijdLabel } from "@/lib/tijd";
 
 
 export const Route = createFileRoute("/recepten/$id")({
@@ -376,9 +377,11 @@ function ReceptPage() {
         )}
 
         <div className="flex flex-wrap gap-3 text-base text-muted-foreground">
-          <span className="inline-flex items-center gap-2">
-            <Clock className="size-5" aria-hidden /> {recipe.prep_minutes + recipe.cook_minutes} min
-          </span>
+          {tijdLabel(recipe.prep_minutes, recipe.cook_minutes) ? (
+            <span className="inline-flex items-center gap-2">
+              <Clock className="size-5" aria-hidden /> {tijdLabel(recipe.prep_minutes, recipe.cook_minutes)}
+            </span>
+          ) : null}
           <span className="inline-flex items-center gap-2">
             <ChefHat className="size-5" aria-hidden /> {t(recipe.difficulty)}
           </span>

@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Sparkles } from "lucide-react";
+import { toast } from "sonner";
+import { Send, Sparkles } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
-import { creditOverzicht } from "@/lib/credits.functions";
+import { Textarea } from "@/components/ui/textarea";
+import { creditOverzicht, mijnCreditAanvraag, vraagCredits } from "@/lib/credits.functions";
 import { useVoorkeuren } from "@/lib/voorkeuren";
 
 export const Route = createFileRoute("/credits")({
@@ -79,8 +82,8 @@ function CreditsPagina() {
                     className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-muted px-4 text-base"
                   >
                     <span>{t(k.label || k.feature)}</span>
-                    <span className="font-semibold">
-                      {k.credit_cost} {t("credits")}
+                    <span className="whitespace-nowrap font-semibold">
+                      {k.credit_cost} {k.credit_cost === 1 ? t("credit") : t("credits")}
                     </span>
                   </li>
                 ))}
@@ -107,9 +110,10 @@ function CreditsPagina() {
               </div>
             ) : (
               <p className="mt-2 text-base text-muted-foreground">
-                {t("Extra credits kopen kan binnenkort. Tot dan gebruik je gewoon je gratis credits.")}
+                {t("Extra credits kopen kan binnenkort. Heb je er nu al meer nodig? Vraag het gerust.")}
               </p>
             )}
+            <ExtraVragen t={t} />
           </section>
 
           <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
@@ -131,5 +135,91 @@ function CreditsPagina() {
         </div>
       )}
     </AppShell>
+  );
+}
+
+function ExtraVragen({ t }: { t: (s: string) => string }) {
+  const qc = useQueryClient();
+  const lezen = useServerFn(mijnCreditAanvraag);
+  const sturen = useServerFn(vraagCredits);
+  const { data: aanvraag } = useQuery({ queryKey: ["credit-aanvraag"], queryFn: () => lezen() });
+  const [open, setOpen] = useState(false);
+  const [bericht, setBericht] = useState("");
+
+  const versturen = useMutation({
+    mutationFn: () => sturen({ data: { aantal: 0, bericht } }),
+    onSuccess: (r) => {
+      if (r.ok) {
+        toast.success(t(r.melding));
+        setOpen(false);
+        setBericht("");
+      } else {
+        toast.info(t(r.melding));
+      }
+      qc.invalidateQueries({ queryKey: ["credit-aanvraag"] });
+    },
+    onError: () => toast.error(t("Versturen lukte niet. Probeer straks opnieuw.")),
+  });
+
+  if (aanvraag?.status === "open") {
+    return (
+      <p className="mt-4 rounded-2xl bg-muted p-4 text-base">
+        {t("Je vraag om extra credits staat klaar. We laten iets weten zodra ze behandeld is.")}
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-4">
+      {aanvraag?.status === "toegekend" && aanvraag.toegekend > 0 ? (
+        <p className="mb-3 rounded-2xl bg-muted p-4 text-base">
+          {t("Je kreeg extra credits toegekend")}: +{aanvraag.toegekend}
+        </p>
+      ) : null}
+
+      {open ? (
+        <div className="space-y-3">
+          <label className="block text-base font-semibold" htmlFor="credit-bericht">
+            {t("Waarvoor heb je ze nodig? (mag kort)")}
+          </label>
+          <Textarea
+            id="credit-bericht"
+            value={bericht}
+            onChange={(e) => setBericht(e.target.value)}
+            rows={3}
+            maxLength={500}
+            className="text-base"
+            placeholder={t("Bijvoorbeeld: ik wil nog een paar recepten inlezen van een link.")}
+          />
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => versturen.mutate()}
+              disabled={versturen.isPending}
+              className="inline-flex min-h-14 items-center gap-2 rounded-2xl bg-primary px-5 text-base font-semibold text-primary-foreground disabled:opacity-60"
+            >
+              <Send className="size-5" aria-hidden />
+              {versturen.isPending ? t("Versturen…") : t("Versturen")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="inline-flex min-h-14 items-center rounded-2xl border border-border px-5 text-base font-semibold"
+            >
+              {t("Annuleren")}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex min-h-14 items-center gap-2 rounded-2xl border border-border bg-card px-5 text-base font-semibold transition-colors hover:bg-muted"
+        >
+          <Send className="size-5" aria-hidden />
+          {t("Vraag extra credits")}
+        </button>
+      )}
+    </div>
   );
 }

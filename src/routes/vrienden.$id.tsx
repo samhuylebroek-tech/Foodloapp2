@@ -6,6 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { useT } from "@/lib/voorkeuren";
 import type { Recipe } from "@/lib/types";
+import { tijdLabel } from "@/lib/tijd";
 
 export const Route = createFileRoute("/vrienden/$id")({
   head: () => ({
@@ -84,7 +85,9 @@ function VriendPage() {
                     <p className="truncate font-display text-xl">{t(r.title)}</p>
                     <p className="mt-1 flex items-center gap-2 text-base text-muted-foreground">
                       <Clock className="size-4" aria-hidden />
-                      {r.prep_minutes + r.cook_minutes} min · {t(r.category)}
+                      {[tijdLabel(r.prep_minutes, r.cook_minutes), t(r.category)]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </p>
                   </div>
                 </Link>
