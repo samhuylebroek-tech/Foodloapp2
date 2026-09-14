@@ -76,6 +76,9 @@ export type ImportedRecipe = {
   image_url?: string | null;
   is_suggestie?: boolean;
   bron?: string;
+  source_url?: string | null;
+  reeds_bekend?: { id: string; title: string } | null;
+
 };
 
 function vulAan(parsed: Partial<ImportedRecipe>, extra: Partial<ImportedRecipe> = {}): ImportedRecipe {
