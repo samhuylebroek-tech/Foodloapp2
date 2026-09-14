@@ -121,20 +121,22 @@ export function RecipeForm({
   }
 
   async function maakVoorstelFoto() {
-
     const naam = title.trim();
     if (!naam || fotoBezig) return;
+    if (!magStarten("foto_maken")) return;
     laatsteFotoTitel.current = naam;
     setFotoBezig(true);
     try {
       const url = await gerechtFoto({ data: { titel: naam } });
       if (url) setVoorstelFoto(url);
-    } catch {
-      // een voorgestelde foto is extra, nooit blokkerend
+      naAiActie();
+    } catch (err) {
+      meldFout(err, "De foto kon niet gemaakt worden");
     } finally {
       setFotoBezig(false);
     }
   }
+
 
   function verwijderFoto() {
     setPhotoPath(null);
