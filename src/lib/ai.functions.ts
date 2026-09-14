@@ -336,6 +336,17 @@ export const importRecipeFromUrl = createServerFn({ method: "POST" })
     const url = veiligeUrl(canoniekeUrl(data.url));
     const isSociaal = SOCIAAL.test(url);
 
+    // Stap 0 — deze link al eens ingelezen? Dan geen nieuwe AI-kost.
+    const { data: bestaand } = await context.supabase
+      .from("recipes")
+      .select("id, title")
+      .eq("user_id", context.userId)
+      .eq("source_url", url)
+      .is("deleted_at", null)
+      .limit(1)
+      .maybeSingle();
+
+
     let page = await haalPagina(url, isSociaal ? "facebookexternalhit/1.1" : BROWSER_UA);
     if (!page.ok && isSociaal) page = await haalPagina(url, BROWSER_UA);
     if (!page.ok) throw new Error("De pagina kon niet worden opgehaald.");
