@@ -103,6 +103,8 @@ function CreditsBeheer() {
             </table>
           </Kaart>
 
+          <Aanvragen magBeheren={mag("users.manage")} />
+
           <Kaart>
             <p className="mb-3 text-sm font-medium">Creditpakketten (verkoop staat uit tot betalingen actief zijn)</p>
             <ul className="space-y-1 text-sm text-slate-300">
