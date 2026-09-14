@@ -25,6 +25,10 @@ import {
 } from "@/lib/ai.functions";
 import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/types";
 import { parseIngredientText, ingredientToLine } from "@/lib/ingredienten";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { creditOverzicht } from "@/lib/credits.functions";
+
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,7 +86,42 @@ export function RecipeForm({
   const [fotoGeweigerd, setFotoGeweigerd] = useState(false);
   const laatsteFotoTitel = useRef("");
 
+  const creditFn = useServerFn(creditOverzicht);
+  const credits = useQuery({ queryKey: ["credits"], queryFn: () => creditFn() });
+  const qc = useQueryClient();
+
+  function kost(feature: string): number {
+    return credits.data?.kosten.find((k) => k.feature === feature)?.credit_cost ?? 0;
+  }
+
+  function kostLabel(feature: string): string {
+    const c = kost(feature);
+    if (!c) return "gratis";
+    return `${c} credit${c === 1 ? "" : "s"}`;
+  }
+
+  /** Waarschuwt vooraf als het saldo te laag is. Gewone functies blijven altijd werken. */
+  function magStarten(feature: string): boolean {
+    const c = kost(feature);
+    const saldo = credits.data?.saldo ?? 0;
+    if (c > 0 && saldo < c) {
+      toast.error(`Hiervoor heb je ${c} AI-credits nodig. Je hebt er nog ${saldo}.`);
+      return false;
+    }
+    return true;
+  }
+
+  function meldFout(err: unknown, standaard: string) {
+    void qc.invalidateQueries({ queryKey: ["credits"] });
+    toast.error(err instanceof Error && err.message.length < 300 ? err.message : standaard);
+  }
+
+  function naAiActie() {
+    void qc.invalidateQueries({ queryKey: ["credits"] });
+  }
+
   async function maakVoorstelFoto() {
+
     const naam = title.trim();
     if (!naam || fotoBezig) return;
     laatsteFotoTitel.current = naam;
