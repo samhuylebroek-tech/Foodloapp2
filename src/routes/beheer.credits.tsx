@@ -123,3 +123,75 @@ function CreditsBeheer() {
     </AdminShell>
   );
 }
+
+function Aanvragen({ magBeheren }: { magBeheren: boolean }) {
+  const qc = useQueryClient();
+  const lezen = useServerFn(adminCreditAanvragen);
+  const afhandelen = useServerFn(adminCreditAanvraagAfhandelen);
+  const { data } = useQuery({ queryKey: ["admin-credit-aanvragen"], queryFn: () => lezen() });
+  const [bedrag, setBedrag] = useState<Record<string, number>>({});
+
+  const behandel = useMutation({
+    mutationFn: (v: { id: string; toekennen: number; afwijzen: boolean }) => afhandelen({ data: { ...v, note: "" } }),
+    onSuccess: () => {
+      toast.success("Afgehandeld");
+      qc.invalidateQueries({ queryKey: ["admin-credit-aanvragen"] });
+      qc.invalidateQueries({ queryKey: ["admin-credits"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Kaart>
+      <p className="mb-3 text-sm font-medium">
+        Vragen om extra credits {data?.open ? `· ${data.open} open` : ""}
+      </p>
+      {!data || data.aanvragen.length === 0 ? (
+        <p className="text-sm text-slate-400">Nog geen vragen.</p>
+      ) : (
+        <ul className="space-y-2 text-sm">
+          {data.aanvragen.map((a) => (
+            <li key={a.id} className="rounded-lg border border-white/5 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-medium">{a.naam}</span>
+                <span className="text-xs text-slate-400">
+                  saldo {a.saldo} · {new Date(a.created_at).toLocaleDateString("nl-BE")} ·{" "}
+                  {a.status === "open" ? "open" : a.status === "toegekend" ? `+${a.toegekend}` : "afgewezen"}
+                </span>
+              </div>
+              {a.bericht ? <p className="mt-1 text-slate-300">{a.bericht}</p> : null}
+              {a.status === "open" && magBeheren ? (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    placeholder="50"
+                    value={bedrag[a.id] ?? 50}
+                    onChange={(e) => setBedrag((b) => ({ ...b, [a.id]: Number(e.target.value) }))}
+                    className="h-8 w-24 border-white/10 bg-slate-950 text-slate-100"
+                  />
+                  <button
+                    type="button"
+                    disabled={behandel.isPending}
+                    onClick={() => behandel.mutate({ id: a.id, toekennen: bedrag[a.id] ?? 50, afwijzen: false })}
+                    className="h-8 rounded-md bg-emerald-600 px-3 text-xs font-medium text-white disabled:opacity-60"
+                  >
+                    Credits geven
+                  </button>
+                  <button
+                    type="button"
+                    disabled={behandel.isPending}
+                    onClick={() => behandel.mutate({ id: a.id, toekennen: 0, afwijzen: true })}
+                    className="h-8 rounded-md border border-white/10 px-3 text-xs font-medium text-slate-300 disabled:opacity-60"
+                  >
+                    Afwijzen
+                  </button>
+                </div>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Kaart>
+  );
+}
