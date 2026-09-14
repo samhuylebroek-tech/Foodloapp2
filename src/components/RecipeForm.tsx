@@ -83,6 +83,8 @@ export function RecipeForm({
   const [meerDetails, setMeerDetails] = useState(false);
 
   const [importUrl, setImportUrl] = useState(gedeeldeLink);
+  const [vrijeTekst, setVrijeTekst] = useState(gedeeldeTekst);
+
   const [importInfo, setImportInfo] = useState<
     { platform: string; gratis: boolean; ontbrekend: string[] } | null
   >(null);
