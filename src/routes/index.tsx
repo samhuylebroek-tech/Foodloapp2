@@ -29,6 +29,7 @@ import {
   gerechtFoto,
   type InternetSuggestie,
 } from "@/lib/ai.functions";
+import { tijdLabel } from "@/lib/tijd";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -158,7 +159,12 @@ function StartPage() {
 
   const nieuwste = recipes.slice(0, 8);
   const vandaag = recipes.length ? recipes[dagIndex(recipes.length)] : null;
-  const snel = recipes.filter((r) => r.prep_minutes + r.cook_minutes <= 20).slice(0, 8);
+  const snel = recipes
+    .filter((r) => {
+      const m = r.prep_minutes + r.cook_minutes;
+      return m > 0 && m <= 20;
+    })
+    .slice(0, 8);
   const favorietenLijst = recipes.filter((r) => favorites.includes(r.id)).slice(0, 8);
 
   const uur = new Date().getHours();
@@ -417,7 +423,9 @@ function StartPage() {
                     <p className="text-2xl font-bold leading-tight tracking-tight">{t(vandaag.title)}</p>
                     <p className="mt-1 flex items-center gap-2 text-base text-muted-foreground">
                       <Clock className="size-4" aria-hidden />
-                      {vandaag.prep_minutes + vandaag.cook_minutes} min · {t(vandaag.category)} ·{" "}
+                      {[tijdLabel(vandaag.prep_minutes, vandaag.cook_minutes), t(vandaag.category)]
+                        .filter(Boolean)
+                        .join(" · ")}{" · "}
                       {t(vandaag.difficulty)}
                     </p>
                     {vandaag.description && (
@@ -510,10 +518,12 @@ function Rij({
               <RecipePhoto path={r.image_url} alt={r.title} className="h-28 w-full rounded-none" />
               <div className="p-3">
                 <p className="line-clamp-2 text-lg font-bold leading-tight">{t(r.title)}</p>
-                <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
-                  <Clock className="size-4" aria-hidden />
-                  {r.prep_minutes + r.cook_minutes} min
-                </p>
+                {tijdLabel(r.prep_minutes, r.cook_minutes) ? (
+                  <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
+                    <Clock className="size-4" aria-hidden />
+                    {tijdLabel(r.prep_minutes, r.cook_minutes)}
+                  </p>
+                ) : null}
               </div>
             </Link>
           </li>

@@ -21,6 +21,7 @@ import { DIETEN, bepaalDieet } from "@/lib/dieet";
 import { Sterren } from "@/components/Sterren";
 import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
+import { tijdLabel } from "@/lib/tijd";
 
 export const Route = createFileRoute("/gerechten")({
   head: () => ({
@@ -346,10 +347,12 @@ function GerechtenPage() {
                         )}
                       </p>
                       <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-                        <span className="inline-flex items-center gap-1">
-                          <Clock className="size-4" aria-hidden />
-                          {r.prep_minutes + r.cook_minutes} min
-                        </span>
+                        {tijdLabel(r.prep_minutes, r.cook_minutes) ? (
+                          <span className="inline-flex items-center gap-1">
+                            <Clock className="size-4" aria-hidden />
+                            {tijdLabel(r.prep_minutes, r.cook_minutes)}
+                          </span>
+                        ) : null}
                         <span className="rounded-full bg-secondary px-2 py-0.5">
                           {t(r.category)}
                         </span>

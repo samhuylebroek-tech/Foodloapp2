@@ -25,6 +25,7 @@ import { type Recipe } from "@/lib/types";
 import { importRecipeFromText } from "@/lib/ai.functions";
 import { useVoorkeuren } from "@/lib/voorkeuren";
 import { zorgVoorLijst, maakLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
+import { tijdLabel } from "@/lib/tijd";
 
 export const Route = createFileRoute("/planner")({
   head: () => ({
@@ -566,8 +567,14 @@ function ReceptKiezer({
               <p className="text-base text-muted-foreground">{voorstel.description}</p>
             )}
             <p className="text-base text-muted-foreground">
-              {voorstel.servings} personen · {voorstel.prep_minutes + voorstel.cook_minutes} min ·{" "}
-              {voorstel.category} · {voorstel.difficulty}
+              {[
+                `${voorstel.servings} personen`,
+                tijdLabel(voorstel.prep_minutes, voorstel.cook_minutes),
+                voorstel.category,
+                voorstel.difficulty,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </p>
             {voorstel.ingredienten.length > 0 && (
               <div>
@@ -706,7 +713,7 @@ function ReceptKiezer({
                 >
                   {r.title}
                   <span className="block text-base text-muted-foreground">
-                    {r.prep_minutes + r.cook_minutes} min · {r.category}
+                    {[tijdLabel(r.prep_minutes, r.cook_minutes), r.category].filter(Boolean).join(" · ")}
                   </span>
                 </button>
               </li>
