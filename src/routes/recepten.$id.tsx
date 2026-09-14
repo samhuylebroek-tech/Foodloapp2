@@ -446,7 +446,9 @@ function ReceptPage() {
           )}
         </section>
 
+        {/* Waar komt dit recept vandaan? */}
         <section className="space-y-3">
+
           <Button
             variant="secondary"
             onClick={() => setPlanOpen(!planOpen)}
