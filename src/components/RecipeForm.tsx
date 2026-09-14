@@ -37,6 +37,16 @@ import { Textarea } from "@/components/ui/textarea";
 
 type Manier = "link" | "tekst" | "foto" | "zelf";
 
+const PLATFORM_NAAM: Record<string, string> = {
+  instagram: "Instagram",
+  tiktok: "TikTok",
+  youtube: "YouTube",
+  facebook: "Facebook",
+  pinterest: "Pinterest",
+  website: "de website",
+};
+
+
 export function RecipeForm({
   recipe,
   ingredients,
@@ -74,6 +84,11 @@ export function RecipeForm({
 
   const [importUrl, setImportUrl] = useState(gedeeldeLink);
   const [vrijeTekst, setVrijeTekst] = useState(gedeeldeTekst);
+
+  const [importInfo, setImportInfo] = useState<
+    { platform: string; gratis: boolean; ontbrekend: string[] } | null
+  >(null);
+
   const [importing, setImporting] = useState(false);
   const [lezenTekst, setLezenTekst] = useState(false);
   const [recognizing, setRecognizing] = useState(false);
@@ -264,11 +279,18 @@ export function RecipeForm({
     if (!importUrl.trim()) return;
     if (!magStarten("import_url")) return;
     setImporting(true);
+    setImportInfo(null);
     try {
       const data = await importRecipeFromUrl({ data: { url: importUrl.trim() } });
       vulIn(data);
       naAiActie();
       setSourceUrl(data.source_url ?? importUrl.trim());
+      const ontbrekend = (data.ontbrekend ?? []).filter((v) => v !== "foto");
+      setImportInfo({
+        platform: data.platform ?? "website",
+        gratis: data.bron === "paginagegevens",
+        ontbrekend,
+      });
       toast.success(
         data.bron === "paginagegevens"
           ? "Recept ingelezen zonder credits. Controleer het even en sla op."
@@ -280,6 +302,7 @@ export function RecipeForm({
       setImporting(false);
     }
   }
+
 
 
 
@@ -406,8 +429,8 @@ export function RecipeForm({
           {manier === "link" && (
             <div className="mt-4">
               <p className="text-base text-muted-foreground">
-                Plak de link van een recept, ook van Instagram, TikTok of Facebook. Wij vullen
-                alles voor je in.
+                Plak de link van een recept, ook van Instagram, TikTok, YouTube, Facebook of
+                Pinterest. Wij vullen alles voor je in.
               </p>
               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                 <Input
@@ -428,7 +451,26 @@ export function RecipeForm({
                 </Button>
               </div>
 
+              {importInfo && (
+                <div className="mt-3 rounded-2xl border border-border bg-secondary p-4 text-base">
+                  <p className="font-semibold">
+                    Ingelezen van {PLATFORM_NAAM[importInfo.platform] ?? "de website"}
+                    {importInfo.gratis ? " — zonder credits" : ""}
+                  </p>
+                  {importInfo.ontbrekend.length > 0 ? (
+                    <p className="mt-1 text-muted-foreground">
+                      Niet alles stond erbij: vul zelf nog {importInfo.ontbrekend.join(" en ")} aan.
+                      Je kan ook een schermafbeelding toevoegen met “AI foto”.
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-muted-foreground">
+                      Kijk het even na en pas aan wat je anders wil.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
+
           )}
 
           {manier === "tekst" && (

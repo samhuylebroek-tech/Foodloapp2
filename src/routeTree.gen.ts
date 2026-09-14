@@ -29,6 +29,7 @@ import { Route as BeheerAnalyticsRouteImport } from './routes/beheer.analytics'
 import { Route as BeheerBeveiligingRouteImport } from './routes/beheer.beveiliging'
 import { Route as BeheerCreditsRouteImport } from './routes/beheer.credits'
 import { Route as BeheerGebruikersRouteImport } from './routes/beheer.gebruikers'
+import { Route as BeheerImportsRouteImport } from './routes/beheer.imports'
 import { Route as BeheerInhoudRouteImport } from './routes/beheer.inhoud'
 import { Route as BeheerInstellingenRouteImport } from './routes/beheer.instellingen'
 import { Route as BeheerLogboekRouteImport } from './routes/beheer.logboek'
@@ -142,6 +143,11 @@ const BeheerGebruikersRoute = BeheerGebruikersRouteImport.update({
   path: '/gebruikers',
   getParentRoute: () => BeheerRoute,
 } as any)
+const BeheerImportsRoute = BeheerImportsRouteImport.update({
+  id: '/imports',
+  path: '/imports',
+  getParentRoute: () => BeheerRoute,
+} as any)
 const BeheerInhoudRoute = BeheerInhoudRouteImport.update({
   id: '/inhoud',
   path: '/inhoud',
@@ -223,6 +229,7 @@ export interface FileRoutesByFullPath {
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
   '/beheer/credits': typeof BeheerCreditsRoute
   '/beheer/gebruikers': typeof BeheerGebruikersRoute
+  '/beheer/imports': typeof BeheerImportsRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
   '/beheer/logboek': typeof BeheerLogboekRoute
@@ -256,6 +263,7 @@ export interface FileRoutesByTo {
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
   '/beheer/credits': typeof BeheerCreditsRoute
   '/beheer/gebruikers': typeof BeheerGebruikersRoute
+  '/beheer/imports': typeof BeheerImportsRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
   '/beheer/logboek': typeof BeheerLogboekRoute
@@ -291,6 +299,7 @@ export interface FileRoutesById {
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
   '/beheer/credits': typeof BeheerCreditsRoute
   '/beheer/gebruikers': typeof BeheerGebruikersRoute
+  '/beheer/imports': typeof BeheerImportsRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
   '/beheer/logboek': typeof BeheerLogboekRoute
@@ -327,6 +336,7 @@ export interface FileRouteTypes {
     | '/beheer/beveiliging'
     | '/beheer/credits'
     | '/beheer/gebruikers'
+    | '/beheer/imports'
     | '/beheer/inhoud'
     | '/beheer/instellingen'
     | '/beheer/logboek'
@@ -360,6 +370,7 @@ export interface FileRouteTypes {
     | '/beheer/beveiliging'
     | '/beheer/credits'
     | '/beheer/gebruikers'
+    | '/beheer/imports'
     | '/beheer/inhoud'
     | '/beheer/instellingen'
     | '/beheer/logboek'
@@ -394,6 +405,7 @@ export interface FileRouteTypes {
     | '/beheer/beveiliging'
     | '/beheer/credits'
     | '/beheer/gebruikers'
+    | '/beheer/imports'
     | '/beheer/inhoud'
     | '/beheer/instellingen'
     | '/beheer/logboek'
@@ -570,6 +582,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerGebruikersRouteImport
       parentRoute: typeof BeheerRoute
     }
+    '/beheer/imports': {
+      id: '/beheer/imports'
+      path: '/imports'
+      fullPath: '/beheer/imports'
+      preLoaderRoute: typeof BeheerImportsRouteImport
+      parentRoute: typeof BeheerRoute
+    }
     '/beheer/inhoud': {
       id: '/beheer/inhoud'
       path: '/inhoud'
@@ -663,6 +682,7 @@ interface BeheerRouteChildren {
   BeheerBeveiligingRoute: typeof BeheerBeveiligingRoute
   BeheerCreditsRoute: typeof BeheerCreditsRoute
   BeheerGebruikersRoute: typeof BeheerGebruikersRoute
+  BeheerImportsRoute: typeof BeheerImportsRoute
   BeheerInhoudRoute: typeof BeheerInhoudRoute
   BeheerInstellingenRoute: typeof BeheerInstellingenRoute
   BeheerLogboekRoute: typeof BeheerLogboekRoute
@@ -680,6 +700,7 @@ const BeheerRouteChildren: BeheerRouteChildren = {
   BeheerBeveiligingRoute: BeheerBeveiligingRoute,
   BeheerCreditsRoute: BeheerCreditsRoute,
   BeheerGebruikersRoute: BeheerGebruikersRoute,
+  BeheerImportsRoute: BeheerImportsRoute,
   BeheerInhoudRoute: BeheerInhoudRoute,
   BeheerInstellingenRoute: BeheerInstellingenRoute,
   BeheerLogboekRoute: BeheerLogboekRoute,

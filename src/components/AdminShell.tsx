@@ -6,6 +6,8 @@ import {
   BookOpen,
   ChefHat,
   Coins,
+  Link2,
+
 
   FileClock,
   LifeBuoy,
@@ -27,6 +29,8 @@ const MENU: { pad: string; label: string; icoon: typeof Users; recht: Rechten }[
   { pad: "/beheer/recepten", label: "Recepten", icoon: BookOpen, recht: "recipes.view" },
   { pad: "/beheer/inhoud", label: "Inhoud & labels", icoon: Tags, recht: "content.manage" },
   { pad: "/beheer/ai", label: "AI & import", icoon: Sparkles, recht: "ai.view" },
+  { pad: "/beheer/imports", label: "Importcentrum", icoon: Link2, recht: "ai.view" },
+
   { pad: "/beheer/teksten", label: "Teksten & berichten", icoon: Megaphone, recht: "content.manage" },
   { pad: "/beheer/analytics", label: "Analytics", icoon: LineChart, recht: "dashboard.view" },
   { pad: "/beheer/credits", label: "Credits & AI-kosten", icoon: Coins, recht: "dashboard.view" },

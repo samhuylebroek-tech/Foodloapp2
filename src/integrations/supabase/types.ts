@@ -573,6 +573,63 @@ export type Database = {
         }
         Relationships: []
       }
+      recipe_import_jobs: {
+        Row: {
+          ai_used: boolean
+          cache_hit: boolean
+          canonical_url: string | null
+          created_at: string
+          credits_used: number
+          duration_ms: number
+          error_code: string | null
+          error_message: string | null
+          extraction_method: string | null
+          fields_found: string[]
+          fields_missing: string[]
+          id: string
+          platform: string
+          source_url: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          ai_used?: boolean
+          cache_hit?: boolean
+          canonical_url?: string | null
+          created_at?: string
+          credits_used?: number
+          duration_ms?: number
+          error_code?: string | null
+          error_message?: string | null
+          extraction_method?: string | null
+          fields_found?: string[]
+          fields_missing?: string[]
+          id?: string
+          platform?: string
+          source_url?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          ai_used?: boolean
+          cache_hit?: boolean
+          canonical_url?: string | null
+          created_at?: string
+          credits_used?: number
+          duration_ms?: number
+          error_code?: string | null
+          error_message?: string | null
+          extraction_method?: string | null
+          fields_found?: string[]
+          fields_missing?: string[]
+          id?: string
+          platform?: string
+          source_url?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       recipe_ingredients: {
         Row: {
           created_at: string

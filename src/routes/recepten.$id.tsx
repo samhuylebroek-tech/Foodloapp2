@@ -464,9 +464,10 @@ function ReceptPage() {
               rel="noreferrer"
               className="block py-2 text-base text-primary underline underline-offset-4"
             >
-              {t("Bekijk de originele website")}
+              {t("Ingelezen van")} {bronNaam(recipe.source_url)} — {t("bekijk het origineel")}
             </a>
           )}
+
 
           {isOwner && (
             <div className="flex gap-3">
