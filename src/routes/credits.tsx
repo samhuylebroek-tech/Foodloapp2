@@ -107,9 +107,10 @@ function CreditsPagina() {
               </div>
             ) : (
               <p className="mt-2 text-base text-muted-foreground">
-                {t("Extra credits kopen kan binnenkort. Tot dan gebruik je gewoon je gratis credits.")}
+                {t("Extra credits kopen kan binnenkort. Heb je er nu al meer nodig? Vraag het gerust.")}
               </p>
             )}
+            <ExtraVragen t={t} />
           </section>
 
           <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
