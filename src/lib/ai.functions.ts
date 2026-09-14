@@ -91,6 +91,9 @@ export type ImportedRecipe = {
   reeds_bekend?: { id: string; title: string } | null;
   platform?: Platform;
   ontbrekend?: string[];
+  /** Gevuld wanneer de link niets bruikbaars opleverde: vriendelijke uitleg. */
+  fout?: string;
+
 };
 
 
