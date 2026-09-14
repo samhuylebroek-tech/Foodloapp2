@@ -947,10 +947,11 @@ export const adminCreditKostZetten = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { db, profiel } = await bewaker(context as Ctx, "settings.manage");
     const { feature, ...rest } = data;
-    await db
-      .from("credit_costs")
-      .update({ ...rest, updated_at: new Date().toISOString() })
-      .eq("feature", feature);
+    const velden: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (rest.credit_cost !== undefined) velden.credit_cost = rest.credit_cost;
+    if (rest.enabled !== undefined) velden.enabled = rest.enabled;
+    if (rest.max_per_dag !== undefined) velden.max_per_dag = rest.max_per_dag;
+    await db.from("credit_costs").update(velden).eq("feature", feature);
     await logboek(db, profiel, "credits.cost_update", "credit_cost", feature, rest);
     return { ok: true };
   });
