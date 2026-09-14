@@ -414,8 +414,8 @@ export function RecipeForm({
           {manier === "link" && (
             <div className="mt-4">
               <p className="text-base text-muted-foreground">
-                Plak de link van een recept, ook van Instagram, TikTok of Facebook. Wij vullen
-                alles voor je in.
+                Plak de link van een recept, ook van Instagram, TikTok, YouTube, Facebook of
+                Pinterest. Wij vullen alles voor je in.
               </p>
               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                 <Input
@@ -436,7 +436,26 @@ export function RecipeForm({
                 </Button>
               </div>
 
+              {importInfo && (
+                <div className="mt-3 rounded-2xl border border-border bg-secondary p-4 text-base">
+                  <p className="font-semibold">
+                    Ingelezen van {PLATFORM_NAAM[importInfo.platform] ?? "de website"}
+                    {importInfo.gratis ? " — zonder credits" : ""}
+                  </p>
+                  {importInfo.ontbrekend.length > 0 ? (
+                    <p className="mt-1 text-muted-foreground">
+                      Niet alles stond erbij: vul zelf nog {importInfo.ontbrekend.join(" en ")} aan.
+                      Je kan ook een schermafbeelding toevoegen met “AI foto”.
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-muted-foreground">
+                      Kijk het even na en pas aan wat je anders wil.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
+
           )}
 
           {manier === "tekst" && (
