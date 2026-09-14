@@ -378,8 +378,14 @@ export function RecipeForm({
 
       toast.success("Recept opgeslagen");
       navigate({ to: "/recepten/$id", params: { id: recipeId! } });
-    } catch {
-      toast.error("Opslaan is niet gelukt");
+    } catch (err) {
+      const melding = err instanceof Error ? err.message : "";
+      if (melding.includes("RECEPT_LIMIET")) {
+        toast.error(melding.split("RECEPT_LIMIET:").pop()?.trim() ?? "Je hebt het maximum aantal gerechten bereikt.");
+      } else {
+        toast.error("Opslaan is niet gelukt");
+      }
+
     } finally {
       setSaving(false);
     }
