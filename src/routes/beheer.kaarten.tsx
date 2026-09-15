@@ -86,9 +86,17 @@ function LoyaltyBeheer() {
                           />
                         </td>
                         <td>
-                          <Button size="sm" variant="outline" onClick={() => bewaar.mutate({ ...w, actief: !w.actief })}>
+                          <button
+                            type="button"
+                            onClick={() => bewaar.mutate({ ...w, actief: !w.actief })}
+                            className={`rounded-full border px-3 py-1 text-xs ${
+                              w.actief
+                                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                                : "border-white/10 bg-white/5 text-slate-400"
+                            }`}
+                          >
                             {w.actief ? "Aan" : "Uit"}
-                          </Button>
+                          </button>
                         </td>
                       </tr>
                     ))}
