@@ -30,6 +30,7 @@ import { useT, useVoorkeuren } from "@/lib/voorkeuren";
 import { type Ingredient, type Recipe } from "@/lib/types";
 import { Copy } from "lucide-react";
 import { tijdLabel } from "@/lib/tijd";
+import { Voedingswaarden } from "@/components/Voedingswaarden";
 
 
 export const Route = createFileRoute("/recepten/$id")({
@@ -464,6 +465,8 @@ function ReceptPage() {
             </Button>
           )}
         </section>
+
+        <Voedingswaarden ingredienten={ingredients} porties={aantal} />
 
         {/* Waar komt dit recept vandaan? */}
         <section className="space-y-3">
