@@ -912,53 +912,68 @@ export const adminBeveiligingZetten = createServerFn({ method: "POST" })
 
 export const adminAnalytics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d) => periodeSchema.parse(d ?? {}))
+  .handler(async ({ context, data }) => {
     const { db } = await bewaker(context as Ctx, "dashboard.view");
-    const dagen = 30;
-    const sinds = new Date(Date.now() - dagen * 24 * 3600_000).toISOString();
+    const periode = data.periode as Periode;
+    const duur = PERIODE_DUUR[periode];
+    const nu = Date.now();
+    const sinds = new Date(nu - duur).toISOString();
+    const sindsVorig = new Date(nu - 2 * duur).toISOString();
 
     const { data: events } = await db
       .from("usage_events")
       .select("event, path, user_id, created_at")
-      .gte("created_at", sinds)
-      .limit(20000);
-    const rijen = (events ?? []) as any[];
+      .gte("created_at", sindsVorig)
+      .limit(40000);
+    const alle = (events ?? []) as any[];
+    const rijen = alle.filter((r) => String(r.created_at) >= sinds);
+    const vorige = alle.filter((r) => String(r.created_at) < sinds);
 
+    const buckets = maakBuckets(periode);
     const perEvent = new Map<string, number>();
     const perPad = new Map<string, number>();
-    const perDag = new Map<string, Set<string>>();
+    const perBucket = new Map<string, Set<string>>(buckets.map((b) => [b.key, new Set<string>()]));
     for (const r of rijen) {
       perEvent.set(r.event, (perEvent.get(r.event) ?? 0) + 1);
       if (r.path) perPad.set(r.path, (perPad.get(r.path) ?? 0) + 1);
-      const dag = String(r.created_at).slice(0, 10);
-      if (!perDag.has(dag)) perDag.set(dag, new Set());
-      if (r.user_id) perDag.get(dag)!.add(r.user_id);
+      const k = bucketKey(periode, String(r.created_at));
+      if (r.user_id && perBucket.has(k)) perBucket.get(k)!.add(r.user_id);
     }
 
-    const grafiek: { datum: string; actieveGebruikers: number }[] = [];
-    for (let i = dagen - 1; i >= 0; i--) {
-      const datum = new Date(Date.now() - i * 24 * 3600_000).toISOString().slice(0, 10);
-      grafiek.push({ datum, actieveGebruikers: perDag.get(datum)?.size ?? 0 });
-    }
+    const grafiek = buckets.map((b) => ({
+      datum: b.label,
+      actieveGebruikers: perBucket.get(b.key)?.size ?? 0,
+    }));
 
     const uniek = new Set(rijen.map((r) => r.user_id).filter(Boolean));
-    const week = Date.now() - 7 * 24 * 3600_000;
+    const uniekVorig = new Set(vorige.map((r) => r.user_id).filter(Boolean));
+    const week = nu - 7 * 24 * 3600_000;
     const uniekWeek = new Set(
-      rijen.filter((r) => new Date(r.created_at).getTime() >= week).map((r) => r.user_id).filter(Boolean),
+      alle.filter((r) => new Date(r.created_at).getTime() >= week).map((r) => r.user_id).filter(Boolean),
+    );
+    const maand = nu - 30 * 24 * 3600_000;
+    const uniekMaand = new Set(
+      alle.filter((r) => new Date(r.created_at).getTime() >= maand).map((r) => r.user_id).filter(Boolean),
     );
 
     const sorteer = (m: Map<string, number>) =>
       [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([naam, aantal]) => ({ naam, aantal }));
 
-    // Retentie: hoeveel gebruikers met een recept keren terug
     const { count: gebruikers } = await db.from("profiles").select("*", { count: "exact", head: true });
     const { data: recepten } = await db.from("recipes").select("user_id").is("deleted_at", null).limit(20000);
     const makers = new Set((recepten ?? []).map((r: any) => r.user_id));
 
     return {
+      periode,
       totaalEvents: rijen.length,
-      actieveGebruikers30: uniek.size,
+      actieveGebruikers: uniek.size,
+      actieveGebruikers30: uniekMaand.size,
       actieveGebruikers7: uniekWeek.size,
+      evoluties: {
+        events: evolutie(rijen.length, vorige.length),
+        actieveGebruikers: evolutie(uniek.size, uniekVorig.size),
+      },
       gebruikers: gebruikers ?? 0,
       makers: makers.size,
       grafiek,
@@ -966,6 +981,7 @@ export const adminAnalytics = createServerFn({ method: "GET" })
       topPaginas: sorteer(perPad),
     };
   });
+
 
 // ---------------- teksten (CMS) ----------------
 
