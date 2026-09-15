@@ -14,25 +14,81 @@ export type WeerSfeer = {
   woorden: string[];
 };
 
-function coords(): Promise<{ lat: number; lon: number }> {
-  return new Promise((resolve) => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      resolve({ lat: 50.85, lon: 4.35 });
-      return;
+const STANDAARD = { lat: 50.85, lon: 4.35 };
+const LOC_SLEUTEL = "foodlo_locatie";
+const LOC_VRAAG_SLEUTEL = "foodlo_locatie_gevraagd";
+const LOC_GELDIG = 7 * 24 * 60 * 60 * 1000; // een week
+
+function opgeslagenLocatie(): { lat: number; lon: number } | null {
+  try {
+    const raw = localStorage.getItem(LOC_SLEUTEL);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as { lat?: number; lon?: number; tijd?: number };
+    if (
+      typeof data.lat !== "number" ||
+      typeof data.lon !== "number" ||
+      typeof data.tijd !== "number" ||
+      Date.now() - data.tijd > LOC_GELDIG
+    ) {
+      return null;
     }
-    const fallback = setTimeout(() => resolve({ lat: 50.85, lon: 4.35 }), 4000);
+    return { lat: data.lat, lon: data.lon };
+  } catch {
+    return null;
+  }
+}
+
+function vraagLocatie(): Promise<{ lat: number; lon: number }> {
+  return new Promise((resolve) => {
+    const fallback = setTimeout(() => resolve(STANDAARD), 4000);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         clearTimeout(fallback);
-        resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+        const loc = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+        try {
+          localStorage.setItem(LOC_SLEUTEL, JSON.stringify({ ...loc, tijd: Date.now() }));
+        } catch {
+          /* negeren */
+        }
+        resolve(loc);
       },
       () => {
         clearTimeout(fallback);
-        resolve({ lat: 50.85, lon: 4.35 });
+        resolve(STANDAARD);
       },
       { timeout: 4000, maximumAge: 30 * 60 * 1000 },
     );
   });
+}
+
+async function coords(): Promise<{ lat: number; lon: number }> {
+  if (typeof navigator === "undefined" || !navigator.geolocation) return STANDAARD;
+
+  // Eerder verleende locatie hergebruiken zonder opnieuw te vragen.
+  const bewaard = opgeslagenLocatie();
+  if (bewaard) return bewaard;
+
+  // Al eens geweigerd of al eens gevraagd? Niet opnieuw storen.
+  try {
+    if (localStorage.getItem(LOC_VRAAG_SLEUTEL) === "ja") {
+      const toestemming = await navigator.permissions?.query?.({
+        name: "geolocation" as PermissionName,
+      });
+      if (!toestemming || toestemming.state !== "granted") return STANDAARD;
+      // Toestemming staat (buiten de app om) goed: stil ophalen.
+      return await vraagLocatie();
+    }
+  } catch {
+    return STANDAARD;
+  }
+
+  // Allereerste keer: eenmalig vragen en dat onthouden.
+  try {
+    localStorage.setItem(LOC_VRAAG_SLEUTEL, "ja");
+  } catch {
+    /* negeren */
+  }
+  return vraagLocatie();
 }
 
 export async function haalWeer(): Promise<Weer | null> {
