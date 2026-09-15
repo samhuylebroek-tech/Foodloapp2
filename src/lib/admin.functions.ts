@@ -211,13 +211,70 @@ export const mijnAdminProfiel = createServerFn({ method: "GET" })
 
 // ---------------- dashboard ----------------
 
+export type Periode = "dag" | "week" | "maand" | "jaar";
+
+export const PERIODE_LABEL: Record<Periode, string> = {
+  dag: "Vandaag (24 uur)",
+  week: "Deze week (7 dagen)",
+  maand: "Deze maand (30 dagen)",
+  jaar: "Dit jaar (12 maanden)",
+};
+
+const PERIODE_DUUR: Record<Periode, number> = {
+  dag: 24 * 3600_000,
+  week: 7 * 24 * 3600_000,
+  maand: 30 * 24 * 3600_000,
+  jaar: 365 * 24 * 3600_000,
+};
+
+const periodeSchema = z
+  .object({ periode: z.enum(["dag", "week", "maand", "jaar"]).default("week") })
+  .default({ periode: "week" });
+
+function maakBuckets(periode: Periode) {
+  const nu = Date.now();
+  const res: { key: string; label: string }[] = [];
+  if (periode === "dag") {
+    for (let i = 23; i >= 0; i--) {
+      const d = new Date(nu - i * 3600_000);
+      res.push({ key: d.toISOString().slice(0, 13), label: `${d.toISOString().slice(11, 13)}u` });
+    }
+  } else if (periode === "jaar") {
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(nu);
+      d.setUTCDate(1);
+      d.setUTCMonth(d.getUTCMonth() - i);
+      res.push({ key: d.toISOString().slice(0, 7), label: d.toISOString().slice(0, 7) });
+    }
+  } else {
+    const n = periode === "week" ? 7 : 30;
+    for (let i = n - 1; i >= 0; i--) {
+      const d = new Date(nu - i * 24 * 3600_000);
+      res.push({ key: d.toISOString().slice(0, 10), label: d.toISOString().slice(5, 10) });
+    }
+  }
+  return res;
+}
+
+function bucketKey(periode: Periode, iso: string) {
+  return periode === "dag" ? iso.slice(0, 13) : periode === "jaar" ? iso.slice(0, 7) : iso.slice(0, 10);
+}
+
+function evolutie(nu: number, vorig: number) {
+  if (vorig === 0) return nu === 0 ? 0 : 100;
+  return Math.round(((nu - vorig) / vorig) * 100);
+}
+
 export const adminDashboard = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d) => periodeSchema.parse(d ?? {}))
+  .handler(async ({ context, data }) => {
     const { db } = await bewaker(context as Ctx, "dashboard.view");
+    const periode = data.periode as Periode;
+    const duur = PERIODE_DUUR[periode];
     const nu = Date.now();
-    const dag = new Date(nu - 24 * 3600_000).toISOString();
-    const week = new Date(nu - 7 * 24 * 3600_000).toISOString();
+    const sinds = new Date(nu - duur).toISOString();
+    const sindsVorig = new Date(nu - 2 * duur).toISOString();
 
     const tel = async (tabel: string, filter?: (q: any) => any) => {
       let q = (db as any).from(tabel).select("*", { count: "exact", head: true });
@@ -229,70 +286,101 @@ export const adminDashboard = createServerFn({ method: "GET" })
     const [
       gebruikers,
       nieuweGebruikers,
+      nieuweGebruikersVorig,
       recepten,
       nieuweRecepten,
+      nieuweReceptenVorig,
       verwijderdeRecepten,
       lijsten,
+      nieuweLijsten,
+      nieuweLijstenVorig,
       planItems,
       shares,
       openTickets,
       aiTotaal,
+      aiTotaalVorig,
       aiFouten,
     ] = await Promise.all([
       tel("profiles"),
-      tel("profiles", (q) => q.gte("created_at", week)),
+      tel("profiles", (q) => q.gte("created_at", sinds)),
+      tel("profiles", (q) => q.gte("created_at", sindsVorig).lt("created_at", sinds)),
       tel("recipes", (q) => q.is("deleted_at", null)),
-      tel("recipes", (q) => q.gte("created_at", week).is("deleted_at", null)),
+      tel("recipes", (q) => q.gte("created_at", sinds).is("deleted_at", null)),
+      tel("recipes", (q) => q.gte("created_at", sindsVorig).lt("created_at", sinds).is("deleted_at", null)),
       tel("recipes", (q) => q.not("deleted_at", "is", null)),
       tel("shopping_lists"),
+      tel("shopping_lists", (q) => q.gte("created_at", sinds)),
+      tel("shopping_lists", (q) => q.gte("created_at", sindsVorig).lt("created_at", sinds)),
       tel("meal_plan"),
       tel("shares", (q) => q.eq("status", "accepted")),
       tel("feedback", (q) => q.in("status", ["nieuw", "bezig"])),
-      tel("ai_events", (q) => q.gte("created_at", week)),
-      tel("ai_events", (q) => q.gte("created_at", week).eq("ok", false)),
+      tel("ai_events", (q) => q.gte("created_at", sinds)),
+      tel("ai_events", (q) => q.gte("created_at", sindsVorig).lt("created_at", sinds)),
+      tel("ai_events", (q) => q.gte("created_at", sinds).eq("ok", false)),
     ]);
 
-    const { data: aiDag } = await db
+    const { data: aiRijen } = await db
       .from("ai_events")
       .select("created_at, ok, duration_ms")
-      .gte("created_at", dag)
-      .limit(2000);
+      .gte("created_at", sinds)
+      .limit(5000);
 
     const gem =
-      aiDag && aiDag.length
-        ? Math.round(aiDag.reduce((s: number, e: any) => s + (e.duration_ms || 0), 0) / aiDag.length)
+      aiRijen && aiRijen.length
+        ? Math.round(aiRijen.reduce((s: number, e: any) => s + (e.duration_ms || 0), 0) / aiRijen.length)
         : 0;
 
+    const buckets = maakBuckets(periode);
     const { data: groei } = await db
       .from("recipes")
       .select("created_at")
-      .gte("created_at", new Date(nu - 30 * 24 * 3600_000).toISOString())
-      .order("created_at");
+      .gte("created_at", sinds)
+      .order("created_at")
+      .limit(20000);
+    const { data: nieuweLeden } = await db
+      .from("profiles")
+      .select("created_at")
+      .gte("created_at", sinds)
+      .limit(20000);
 
-    const perDag = new Map<string, number>();
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(nu - i * 24 * 3600_000).toISOString().slice(0, 10);
-      perDag.set(d, 0);
-    }
+    const receptPer = new Map(buckets.map((b) => [b.key, 0]));
+    const gebruikerPer = new Map(buckets.map((b) => [b.key, 0]));
     for (const r of groei ?? []) {
-      const d = String(r.created_at).slice(0, 10);
-      if (perDag.has(d)) perDag.set(d, (perDag.get(d) ?? 0) + 1);
+      const k = bucketKey(periode, String(r.created_at));
+      if (receptPer.has(k)) receptPer.set(k, (receptPer.get(k) ?? 0) + 1);
+    }
+    for (const r of nieuweLeden ?? []) {
+      const k = bucketKey(periode, String((r as any).created_at));
+      if (gebruikerPer.has(k)) gebruikerPer.set(k, (gebruikerPer.get(k) ?? 0) + 1);
     }
 
     return {
+      periode,
       gebruikers,
       nieuweGebruikers,
       recepten,
       nieuweRecepten,
       verwijderdeRecepten,
       lijsten,
+      nieuweLijsten,
       planItems,
       shares,
       openTickets,
-      ai: { totaal: aiTotaal, fouten: aiFouten, gemiddeldMs: gem, vandaag: aiDag?.length ?? 0 },
-      grafiek: [...perDag.entries()].map(([datum, aantal]) => ({ datum, aantal })),
+      evoluties: {
+        gebruikers: evolutie(nieuweGebruikers, nieuweGebruikersVorig),
+        recepten: evolutie(nieuweRecepten, nieuweReceptenVorig),
+        lijsten: evolutie(nieuweLijsten, nieuweLijstenVorig),
+        ai: evolutie(aiTotaal, aiTotaalVorig),
+      },
+      ai: { totaal: aiTotaal, fouten: aiFouten, gemiddeldMs: gem, vandaag: aiRijen?.length ?? 0 },
+      grafiek: buckets.map((b) => ({
+        datum: b.label,
+        aantal: receptPer.get(b.key) ?? 0,
+        gebruikers: gebruikerPer.get(b.key) ?? 0,
+      })),
     };
   });
+
 
 // ---------------- gebruikers ----------------
 
