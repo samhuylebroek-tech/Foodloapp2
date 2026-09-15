@@ -33,12 +33,12 @@ export const Route = createFileRoute("/welkom")({
       { title: "Welkom bij Foodlo — je app instellen" },
       {
         name: "description",
-        content: "Kies je taal, je kleuren en de momenten van de dag. In drie korte stapjes klaar.",
+        content: "Kies je taal en kleuren, leer de app kennen en zet hem op je telefoon. In vijf korte stapjes klaar.",
       },
       { property: "og:title", content: "Welkom bij Foodlo — je app instellen" },
       {
         property: "og:description",
-        content: "Kies je taal, je kleuren en de momenten van de dag. In drie korte stapjes klaar.",
+        content: "Kies je taal en kleuren, leer de app kennen en zet hem op je telefoon. In vijf korte stapjes klaar.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
