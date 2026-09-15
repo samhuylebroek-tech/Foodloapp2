@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, LogOut, QrCode, Sparkles } from "lucide-react";
+import { Bell, Loader2, LogOut, QrCode, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { creditOverzicht } from "@/lib/credits.functions";
@@ -121,6 +121,17 @@ function InstellingenPage() {
             </span>
           </span>
           <span className="text-base text-muted-foreground">{t("Bekijken")}</span>
+        </Link>
+
+        <Link
+          to="/meldingen"
+          className="flex min-h-16 items-center justify-between gap-3 rounded-[2rem] border border-border bg-card px-5 shadow-sm transition-colors hover:bg-muted"
+        >
+          <span className="flex items-center gap-3">
+            <Bell className="size-5 text-primary" aria-hidden />
+            <span className="text-base font-semibold">{t("Meldingen")}</span>
+          </span>
+          <span className="text-base text-muted-foreground">{t("Instellen")}</span>
         </Link>
 
         <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">

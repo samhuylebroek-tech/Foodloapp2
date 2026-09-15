@@ -37,6 +37,7 @@ import { Route as BeheerInhoudRouteImport } from './routes/beheer.inhoud'
 import { Route as BeheerInstellingenRouteImport } from './routes/beheer.instellingen'
 import { Route as BeheerKaartenRouteImport } from './routes/beheer.kaarten'
 import { Route as BeheerLogboekRouteImport } from './routes/beheer.logboek'
+import { Route as BeheerMeldingenRouteImport } from './routes/beheer.meldingen'
 import { Route as BeheerReceptenRouteImport } from './routes/beheer.recepten'
 import { Route as BeheerSupportRouteImport } from './routes/beheer.support'
 import { Route as BeheerSysteemRouteImport } from './routes/beheer.systeem'
@@ -190,6 +191,11 @@ const BeheerLogboekRoute = BeheerLogboekRouteImport.update({
   path: '/logboek',
   getParentRoute: () => BeheerRoute,
 } as any)
+const BeheerMeldingenRoute = BeheerMeldingenRouteImport.update({
+  id: '/meldingen',
+  path: '/meldingen',
+  getParentRoute: () => BeheerRoute,
+} as any)
 const BeheerReceptenRoute = BeheerReceptenRouteImport.update({
   id: '/recepten',
   path: '/recepten',
@@ -279,6 +285,7 @@ export interface FileRoutesByFullPath {
   '/beheer/instellingen': typeof BeheerInstellingenRoute
   '/beheer/kaarten': typeof BeheerKaartenRoute
   '/beheer/logboek': typeof BeheerLogboekRoute
+  '/beheer/meldingen': typeof BeheerMeldingenRoute
   '/beheer/recepten': typeof BeheerReceptenRoute
   '/beheer/support': typeof BeheerSupportRoute
   '/beheer/systeem': typeof BeheerSysteemRoute
@@ -320,6 +327,7 @@ export interface FileRoutesByTo {
   '/beheer/instellingen': typeof BeheerInstellingenRoute
   '/beheer/kaarten': typeof BeheerKaartenRoute
   '/beheer/logboek': typeof BeheerLogboekRoute
+  '/beheer/meldingen': typeof BeheerMeldingenRoute
   '/beheer/recepten': typeof BeheerReceptenRoute
   '/beheer/support': typeof BeheerSupportRoute
   '/beheer/systeem': typeof BeheerSysteemRoute
@@ -363,6 +371,7 @@ export interface FileRoutesById {
   '/beheer/instellingen': typeof BeheerInstellingenRoute
   '/beheer/kaarten': typeof BeheerKaartenRoute
   '/beheer/logboek': typeof BeheerLogboekRoute
+  '/beheer/meldingen': typeof BeheerMeldingenRoute
   '/beheer/recepten': typeof BeheerReceptenRoute
   '/beheer/support': typeof BeheerSupportRoute
   '/beheer/systeem': typeof BeheerSysteemRoute
@@ -407,6 +416,7 @@ export interface FileRouteTypes {
     | '/beheer/instellingen'
     | '/beheer/kaarten'
     | '/beheer/logboek'
+    | '/beheer/meldingen'
     | '/beheer/recepten'
     | '/beheer/support'
     | '/beheer/systeem'
@@ -448,6 +458,7 @@ export interface FileRouteTypes {
     | '/beheer/instellingen'
     | '/beheer/kaarten'
     | '/beheer/logboek'
+    | '/beheer/meldingen'
     | '/beheer/recepten'
     | '/beheer/support'
     | '/beheer/systeem'
@@ -490,6 +501,7 @@ export interface FileRouteTypes {
     | '/beheer/instellingen'
     | '/beheer/kaarten'
     | '/beheer/logboek'
+    | '/beheer/meldingen'
     | '/beheer/recepten'
     | '/beheer/support'
     | '/beheer/systeem'
@@ -728,6 +740,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerLogboekRouteImport
       parentRoute: typeof BeheerRoute
     }
+    '/beheer/meldingen': {
+      id: '/beheer/meldingen'
+      path: '/meldingen'
+      fullPath: '/beheer/meldingen'
+      preLoaderRoute: typeof BeheerMeldingenRouteImport
+      parentRoute: typeof BeheerRoute
+    }
     '/beheer/recepten': {
       id: '/beheer/recepten'
       path: '/recepten'
@@ -826,6 +845,7 @@ interface BeheerRouteChildren {
   BeheerInstellingenRoute: typeof BeheerInstellingenRoute
   BeheerKaartenRoute: typeof BeheerKaartenRoute
   BeheerLogboekRoute: typeof BeheerLogboekRoute
+  BeheerMeldingenRoute: typeof BeheerMeldingenRoute
   BeheerReceptenRoute: typeof BeheerReceptenRoute
   BeheerSupportRoute: typeof BeheerSupportRoute
   BeheerSysteemRoute: typeof BeheerSysteemRoute
@@ -845,6 +865,7 @@ const BeheerRouteChildren: BeheerRouteChildren = {
   BeheerInstellingenRoute: BeheerInstellingenRoute,
   BeheerKaartenRoute: BeheerKaartenRoute,
   BeheerLogboekRoute: BeheerLogboekRoute,
+  BeheerMeldingenRoute: BeheerMeldingenRoute,
   BeheerReceptenRoute: BeheerReceptenRoute,
   BeheerSupportRoute: BeheerSupportRoute,
   BeheerSysteemRoute: BeheerSysteemRoute,
