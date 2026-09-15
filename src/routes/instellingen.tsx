@@ -119,6 +119,27 @@ function InstellingenPage() {
         </Link>
 
         <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+          <h2 className="text-xl font-bold tracking-tight">{t("Jouw Foodlo-naam")}</h2>
+          <p className="mt-2 text-base text-muted-foreground">
+            {t("Met deze naam kunnen vrienden je terugvinden. Bijvoorbeeld: marie")}
+          </p>
+          <Label htmlFor="handle" className="mt-4 block text-base font-semibold">
+            {t("Foodlo-naam")}
+          </Label>
+          <Input
+            id="handle"
+            value={handle}
+            onChange={(e) => setHandle(e.target.value)}
+            placeholder="marie"
+            className="mt-2 h-14 text-base"
+          />
+          <Button onClick={bewaarHandle} disabled={handleBezig} className="mt-3 h-14 w-full text-base">
+            {handleBezig ? <Loader2 className="size-5 animate-spin" /> : null} {t("Bewaren")}
+          </Button>
+        </section>
+
+        <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+
 
           <h2 className="text-xl font-bold tracking-tight">{t("Wachtwoord")}</h2>
           <Label htmlFor="pw" className="mt-4 block text-base font-semibold">
