@@ -104,6 +104,7 @@ export async function synchroniseerTijdzone() {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (!tz || window.localStorage.getItem("tijdzone") === tz) return;
+    if (!(await isAangemeld())) return;
     await bewaarTijdzone({ data: { tijdzone: tz } });
     window.localStorage.setItem("tijdzone", tz);
   } catch {
