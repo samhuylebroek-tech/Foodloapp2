@@ -143,6 +143,19 @@ function VriendenPage() {
     },
   });
 
+  const { data: gezinLeden = [] } = useQuery({
+    queryKey: ["gezin-leden-kort", gezinId],
+    enabled: !!gezinId && !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("group_members")
+        .select("user_id, recipes_view, recipes_edit")
+        .eq("group_id", gezinId!);
+      if (error) throw error;
+      return (data ?? []).filter((m) => m.user_id !== user!.id);
+    },
+  });
+
   const mijn = shares.filter((s) => s.owner_id === user?.id);
   const metMijGedeeld = shares.filter(
     (s) => s.member_id === user?.id && s.owner_id !== user?.id && s.status === "accepted",
