@@ -377,7 +377,27 @@ function ReceptPage() {
           )}
         </div>
 
-        <RecipePhoto path={recipe.image_url} alt={recipe.title} className="h-56 w-full rounded-3xl" />
+        <div className="space-y-3">
+          <div className="relative">
+            <RecipePhoto
+              path={recipe.image_url}
+              alt={recipe.title}
+              className="h-56 w-full rounded-3xl"
+            />
+            {fotoBezig && (
+              <div className="absolute inset-0 flex items-center justify-center rounded-3xl bg-card/70">
+                <Loader2 className="size-8 animate-spin" aria-hidden />
+              </div>
+            )}
+          </div>
+          {isOwner && (
+            <FotoKiezer
+              bezig={fotoBezig}
+              heeftFoto={!!recipe.image_url}
+              onBestand={(f) => void vervangFoto(f)}
+            />
+          )}
+        </div>
 
         {recipe.description && <p className="text-lg leading-relaxed">{t(recipe.description)}</p>}
 
