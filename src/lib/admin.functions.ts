@@ -85,6 +85,11 @@ export function heeftRecht(profiel: AdminProfiel | null, recht: Rechten): boolea
 
 type Ctx = { supabase: any; userId: string; claims?: any };
 
+// Het Control Center is uitsluitend voor de eigenaar van het platform.
+// Deze vaste controle staat los van de database: zelfs als er iemand in
+// admin_users zou belanden, krijgt die geen toegang.
+export const EIGENAAR_ID = "e11454f4-8b82-4b7a-81a4-4c161b3b222d";
+
 const SCHRIJFRECHTEN: Rechten[] = [
   "users.manage",
   "users.delete",
@@ -100,6 +105,7 @@ const SCHRIJFRECHTEN: Rechten[] = [
 const LIMIET_PER_MINUUT = 120;
 
 async function bewaker(context: Ctx, recht: Rechten, opties: { schrijft?: boolean } = {}) {
+  if (context.userId !== EIGENAAR_ID) throw new Error("Geen toegang tot het Control Center.");
   const { data, error } = await context.supabase
     .from("admin_users")
     .select("user_id, role, active, can_view_private_content, note, read_only, mfa_required")
@@ -180,6 +186,9 @@ export const mijnAdminProfiel = createServerFn({ method: "GET" })
       context,
     }): Promise<{ profiel: AdminProfiel | null; rechten: Rechten[]; aal: string | null; mfaOk: boolean }> => {
       const ctx = context as Ctx;
+      if (ctx.userId !== EIGENAAR_ID) {
+        return { profiel: null, rechten: [], aal: null, mfaOk: true };
+      }
       const { data } = await ctx.supabase
         .from("admin_users")
         .select("user_id, role, active, can_view_private_content, note, read_only, mfa_required")
