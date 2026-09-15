@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 export const Route = createFileRoute("/uitnodiging")({
   validateSearch: (search: Record<string, unknown>) => ({
     code: typeof search["code"] === "string" ? search["code"] : "",
+    groep: typeof search["groep"] === "string" ? search["groep"] : "",
   }),
   head: () => ({
     meta: [
