@@ -213,8 +213,8 @@ function Gebruikers() {
                       placeholder="Reden (komt in het logboek)"
                       className="border-white/10 bg-slate-950 text-slate-100"
                     />
-                    <div className="flex gap-2">
-                      {[25, 50, 100].map((n) => (
+                    <div className="flex flex-wrap gap-2">
+                      {[25, 50, 100, -25, -50].map((n) => (
                         <Button
                           key={n}
                           size="sm"
@@ -222,9 +222,22 @@ function Gebruikers() {
                           disabled={creditsAanpassen.isPending}
                           onClick={() => creditsAanpassen.mutate(n)}
                         >
-                          +{n}
+                          {n > 0 ? `+${n}` : n}
                         </Button>
                       ))}
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={creditsAanpassen.isPending || !creditAantal.trim() || Number.isNaN(Number(creditAantal))}
+                        onClick={() => {
+                          const doel = Math.trunc(Number(creditAantal));
+                          const nu = detail.data?.credits?.balance ?? 0;
+                          if (doel === nu) return;
+                          creditsAanpassen.mutate(doel - nu);
+                        }}
+                      >
+                        Saldo op dit aantal zetten
+                      </Button>
                     </div>
                   </div>
                 ) : null}
