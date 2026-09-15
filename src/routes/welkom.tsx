@@ -1,5 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+
 import {
   ArrowLeft,
   ArrowRight,
@@ -85,6 +87,7 @@ const RONDLEIDING = [
 
 function Welkom() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user, loading } = useAuth();
   const { taal, zetTaal, thema, zetThema, momenten, zetMomenten, t } = useVoorkeuren();
   const [stap, setStap] = useState(0);
@@ -103,10 +106,14 @@ function Welkom() {
         .from("profiles")
         .update({ taal, thema, momenten, onboarding_klaar: true })
         .eq("id", user.id);
+      // Anders stuurt de app je meteen terug naar de wizard (oude gegevens in het geheugen).
+      queryClient.setQueryData(["onboarding", user.id], { onboarding_klaar: true });
+      await queryClient.invalidateQueries({ queryKey: ["onboarding", user.id] });
     }
     window.localStorage.setItem("onboarding_klaar", "ja");
     navigate({ to: "/" });
   }
+
 
   return (
     <div className="flex min-h-screen flex-col bg-background px-5 pb-10 pt-[max(1.5rem,env(safe-area-inset-top))]">
