@@ -120,6 +120,7 @@ export async function verwerkMeldingKlik() {
     if (!sleutel) return;
     url.searchParams.delete("mld");
     window.history.replaceState({}, "", url.toString());
+    if (!(await isAangemeld())) return;
     await meldingAangetikt({ data: { sleutel } });
   } catch {
     // niet erg
