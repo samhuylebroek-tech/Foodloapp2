@@ -141,6 +141,13 @@
       "when": 1789485766815,
       "tag": "0019_cron_access_for_tooling",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1789495315681,
+      "tag": "0020_harden_credit_requests_and_group_members",
+      "breakpoints": true
     }
   ]
 }
