@@ -23,6 +23,7 @@ import {
   type Kaart,
   type Winkel,
 } from "@/lib/kaarten";
+import { leesCodeUitBestand, zxingFormaat } from "@/lib/kaart-scan";
 
 export const Route = createFileRoute("/kaarten/")({
   head: () => ({
