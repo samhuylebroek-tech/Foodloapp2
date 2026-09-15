@@ -71,6 +71,13 @@
       "when": 1789461069668,
       "tag": "0009_loyalty_cards",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789463172272,
+      "tag": "0010_admin_login_stats",
+      "breakpoints": true
     }
   ]
 }

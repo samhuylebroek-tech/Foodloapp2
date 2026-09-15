@@ -1209,6 +1209,14 @@ export type Database = {
     }
     Functions: {
       accept_share: { Args: { _token: string }; Returns: string }
+      admin_login_stats: {
+        Args: { _user: string }
+        Returns: {
+          aantal: number
+          eerste: string
+          laatste: string
+        }[]
+      }
       claim_first_admin: { Args: never; Returns: boolean }
       credits_account: {
         Args: { _user: string }

@@ -336,15 +336,87 @@ export const adminGebruikerDetail = createServerFn({ method: "POST" })
       .select("*", { count: "exact", head: true })
       .eq("user_id", data.id);
     const { data: adminRij } = await db.from("admin_users").select("*").eq("user_id", data.id).maybeSingle();
+
+    const { count: favorieten } = await db
+      .from("favorites")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", data.id);
+    const { count: kaarten } = await db
+      .from("loyalty_cards")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", data.id);
+    const { count: boodschappen } = await db
+      .from("shopping_items")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", data.id);
+
+    const { data: credits } = await db.from("user_credits").select("*").eq("user_id", data.id).maybeSingle();
+    const { data: boekingen } = await db
+      .from("credit_transactions")
+      .select("id, type, amount, balance_after, feature, status, created_at")
+      .eq("user_id", data.id)
+      .order("created_at", { ascending: false })
+      .limit(25);
+
+    const { data: verbruik } = await db
+      .from("ai_usage")
+      .select("feature, credits, cache_hit, ok, created_at")
+      .eq("user_id", data.id)
+      .order("created_at", { ascending: false })
+      .limit(500);
+    const perFunctie = new Map<string, { feature: string; aantal: number; credits: number; cache: number }>();
+    for (const r of verbruik ?? []) {
+      const rij = perFunctie.get(r.feature) ?? { feature: r.feature, aantal: 0, credits: 0, cache: 0 };
+      rij.aantal += 1;
+      rij.credits += r.credits ?? 0;
+      if (r.cache_hit) rij.cache += 1;
+      perFunctie.set(r.feature, rij);
+    }
+
+    const { count: handelingen } = await db
+      .from("usage_events")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", data.id);
+    const { data: laatsteActie } = await db
+      .from("usage_events")
+      .select("event, path, created_at")
+      .eq("user_id", data.id)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    let aanmeldingen: number | null = null;
+    let eersteAanmelding: string | null = null;
+    try {
+      const { data: logins } = await (db as any).rpc("admin_login_stats", { _user: data.id });
+      const rij = Array.isArray(logins) ? logins[0] : logins;
+      if (rij) {
+        aanmeldingen = rij.aantal ?? null;
+        eersteAanmelding = rij.eerste ?? null;
+      }
+    } catch {
+      /* aanmeldgeschiedenis is optioneel */
+    }
+
     await logboek(db, profiel, "user.view", "user", data.id);
     return {
       profiel: p,
       email: auth?.user?.email ?? null,
       laatsteAanmelding: auth?.user?.last_sign_in_at ?? null,
       aangemaakt: auth?.user?.created_at ?? null,
+      emailBevestigd: auth?.user?.email_confirmed_at ?? null,
       recepten: recepten ?? [],
       lijsten: lijsten ?? 0,
       planning: planning ?? 0,
+      favorieten: favorieten ?? 0,
+      kaarten: kaarten ?? 0,
+      boodschappen: boodschappen ?? 0,
+      credits,
+      boekingen: boekingen ?? [],
+      aiPerFunctie: [...perFunctie.values()].sort((a, b) => b.credits - a.credits),
+      handelingen: handelingen ?? 0,
+      laatsteActie: laatsteActie ?? [],
+      aanmeldingen,
+      eersteAanmelding,
       adminRij,
     };
   });
