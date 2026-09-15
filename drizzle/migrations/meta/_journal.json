@@ -99,6 +99,13 @@
       "when": 1789464832057,
       "tag": "0013_security_hardening_credits_rpc_and_group_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1789464977612,
+      "tag": "0014_revoke_public_execute_on_definer_functions",
+      "breakpoints": true
     }
   ]
 }
