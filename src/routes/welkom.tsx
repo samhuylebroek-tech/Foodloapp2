@@ -337,6 +337,34 @@ function Welkom() {
           </section>
         )}
 
+        {stap === 5 && (
+          <section className="mt-4">
+            <h1 className="text-3xl font-bold tracking-tight">{t("Blijf op schema")}</h1>
+            <p className="mt-2 text-base text-muted-foreground">
+              {t("Krijg handige herinneringen voor je maaltijden, je weekplanning en je boodschappen.")}
+            </p>
+            <ul className="mt-5 space-y-3">
+              {MELDING_VOORBEELDEN.map((m) => (
+                <li
+                  key={m.titel}
+                  className="flex items-start gap-4 rounded-2xl border border-border bg-card p-4"
+                >
+                  <span className="text-2xl" aria-hidden>
+                    {m.emoji}
+                  </span>
+                  <div>
+                    <p className="text-lg font-bold">{t(m.titel)}</p>
+                    <p className="mt-0.5 text-base text-muted-foreground">{t(m.tekst)}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 rounded-2xl bg-secondary px-4 py-3 text-base text-secondary-foreground">
+              {t("Je bepaalt zelf wat je krijgt en op welk uur. Uitzetten kan altijd.")}
+            </p>
+          </section>
+        )}
+
         <div className="mt-8 flex gap-3">
           {stap > 0 && (
             <Button
@@ -352,12 +380,22 @@ function Welkom() {
               {t("Verder")} <ArrowRight className="size-5" />
             </Button>
           ) : (
-            <Button onClick={() => void klaar()} disabled={bezig} className="h-16 flex-1 text-lg">
-              {bezig ? <Loader2 className="size-5 animate-spin" /> : <Check className="size-5" />}
-              {t("Klaar, begin maar")}
+            <Button onClick={() => void metMeldingen()} disabled={bezig} className="h-16 flex-1 text-lg">
+              {bezig ? <Loader2 className="size-5 animate-spin" /> : <Bell className="size-5" />}
+              {t("Meldingen instellen")}
             </Button>
           )}
         </div>
+        {stap === STAPPEN.length - 1 && (
+          <Button
+            variant="ghost"
+            onClick={() => void klaar()}
+            disabled={bezig}
+            className="mt-3 h-14 w-full text-base"
+          >
+            <Check className="size-5" /> {t("Nu niet, later misschien")}
+          </Button>
+        )}
       </div>
     </div>
   );
