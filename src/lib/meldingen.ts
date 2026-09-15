@@ -1,4 +1,5 @@
 /** Clientkant van de meldingen: toestemming vragen, abonneren en afmelden. */
+import { supabase } from "@/integrations/supabase/client";
 import {
   bewaarPushAbonnement,
   bewaarTijdzone,
