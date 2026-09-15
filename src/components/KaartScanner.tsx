@@ -30,11 +30,34 @@ export function KaartScanner({
 
     const Detector = (globalThis as any).BarcodeDetector;
 
+    const startEigenLezer = async () => {
+      const video = videoRef.current;
+      if (stop || !video) return;
+      const { BrowserMultiFormatReader } = await import("@zxing/browser");
+      const reader = new BrowserMultiFormatReader();
+      controls = await reader.decodeFromVideoElement(video, (result) => {
+        if (stop || !result) return;
+        const waarde = result.getText?.();
+        if (!waarde) return;
+        stop = true;
+        controls?.stop();
+        onGevonden(waarde, zxingFormaat(String(result.getBarcodeFormat?.() ?? "")));
+      });
+    };
+
     (async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
-        });
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error("camera-niet-beschikbaar");
+        }
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" } },
+          });
+        } catch {
+          // Sommige oudere telefoons begrijpen de achtercamera-voorkeur niet.
+          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        }
         if (stop) {
           stream.getTracks().forEach((t) => t.stop());
           return;
@@ -45,8 +68,8 @@ export function KaartScanner({
         }
 
         if (Detector) {
-          const detector = new Detector({
-            formats: [
+          try {
+            const gewenst = [
               "ean_13",
               "ean_8",
               "code_128",
@@ -56,41 +79,44 @@ export function KaartScanner({
               "codabar",
               "upc_a",
               "upc_e",
-            ],
-          });
-          const zoek = async () => {
-            if (stop || !videoRef.current) return;
-            try {
-              const codes = await detector.detect(videoRef.current);
-              if (codes?.length) {
-                const code = codes[0];
-                if (code.rawValue) {
-                  stop = true;
-                  onGevonden(code.rawValue, code.format ?? "code_128");
-                  return;
+            ];
+            const ondersteund = typeof Detector.getSupportedFormats === "function"
+              ? await Detector.getSupportedFormats()
+              : gewenst;
+            const formats = gewenst.filter((formaat) => ondersteund.includes(formaat));
+            if (!formats.length) throw new Error("geen-ondersteund-formaat");
+
+            const detector = new Detector({ formats });
+            const zoek = async () => {
+              if (stop || !videoRef.current) return;
+              try {
+                const codes = await detector.detect(videoRef.current);
+                if (codes?.length) {
+                  const code = codes[0];
+                  if (code.rawValue) {
+                    stop = true;
+                    onGevonden(code.rawValue, code.format ?? "code_128");
+                    return;
+                  }
                 }
+              } catch {
+                // De ingebouwde lezer blijkt onbruikbaar: schakel meteen over.
+                if (timer) window.clearTimeout(timer);
+                await startEigenLezer();
+                return;
               }
-            } catch {
-              /* even niets gevonden */
-            }
-            timer = window.setTimeout(zoek, 350);
-          };
-          zoek();
-          return;
+              timer = window.setTimeout(zoek, 350);
+            };
+            void zoek();
+            return;
+          } catch {
+            // Een gedeeltelijk aanwezige BarcodeDetector komt veel voor op telefoons.
+            // Gebruik dan zonder foutmelding onze eigen lezer.
+          }
         }
 
         // Geen ingebouwde lezer (bv. iPhone): onze eigen lezer op hetzelfde beeld.
-        const { BrowserMultiFormatReader } = await import("@zxing/browser");
-        if (stop || !videoRef.current) return;
-        const reader = new BrowserMultiFormatReader();
-        controls = await reader.decodeFromVideoElement(videoRef.current, (result) => {
-          if (stop || !result) return;
-          const waarde = result.getText?.();
-          if (!waarde) return;
-          stop = true;
-          controls?.stop();
-          onGevonden(waarde, zxingFormaat(String(result.getBarcodeFormat?.() ?? "")));
-        });
+        await startEigenLezer();
       } catch {
         setMelding("We kunnen de camera niet openen. Kies een foto van je kaart, of typ het nummer zelf in.");
       }

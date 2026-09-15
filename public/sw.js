@@ -1,6 +1,6 @@
 // Kleine offline-hulp: bewaart bezochte pagina's en bestanden,
 // zodat je je klantenkaart ook zonder internet kan tonen.
-const CACHE = "foodlo-offline-v1";
+const CACHE = "foodlo-offline-v2";
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();

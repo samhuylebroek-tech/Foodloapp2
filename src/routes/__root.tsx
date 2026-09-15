@@ -143,7 +143,10 @@ function RootComponent() {
   // zodat je je klantenkaart altijd aan de kassa kan tonen.
   useEffect(() => {
     if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
-    navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    navigator.serviceWorker
+      .register("/sw.js", { updateViaCache: "none" })
+      .then((registratie) => registratie.update())
+      .catch(() => undefined);
   }, []);
 
   return (
