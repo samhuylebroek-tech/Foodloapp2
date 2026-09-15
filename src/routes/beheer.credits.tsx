@@ -34,7 +34,7 @@ function CreditsBeheer() {
   });
 
   return (
-    <AdminShell titel="Credits & AI-kosten" omschrijving="Verbruik, kosten per functie en hergebruik van resultaten">
+    <AdminShell titel="Credits & kosten" omschrijving="Verbruik, kosten per functie en hergebruik van resultaten">
       {isLoading || !data ? (
         <p className="text-slate-400">Laden…</p>
       ) : (

@@ -12,12 +12,12 @@ import { useVoorkeuren } from "@/lib/voorkeuren";
 export const Route = createFileRoute("/credits")({
   head: () => ({
     meta: [
-      { title: "credits – Foodlo" },
+      { title: "Credits – Foodlo" },
       {
         name: "description",
         content: "Bekijk je credits, waarvoor ze dienen en wat je er nog mee kan doen.",
       },
-      { property: "og:title", content: "credits – Foodlo" },
+      { property: "og:title", content: "Credits – Foodlo" },
       { property: "og:description", content: "Slimme functies gebruiken credits. De rest van Foodlo blijft gratis." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -48,7 +48,7 @@ function CreditsPagina() {
   const laag = data ? saldo <= data.waarschuwingVanaf : false;
 
   return (
-    <AppShell title={t("credits")}>
+    <AppShell title={t("Credits")}>
       {isLoading || !data ? (
         <p className="text-base text-muted-foreground">{t("Laden…")}</p>
       ) : (
