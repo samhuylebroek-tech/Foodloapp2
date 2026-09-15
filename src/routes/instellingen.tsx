@@ -112,7 +112,7 @@ function InstellingenPage() {
           <span className="flex items-center gap-3">
             <Sparkles className="size-5 text-primary" aria-hidden />
             <span className="text-base font-semibold">
-              {credits.data ? `${credits.data.saldo} ${t("AI-credits")}` : t("AI-credits")}
+              {credits.data ? `${credits.data.saldo} ${t("credits")}` : t("credits")}
             </span>
           </span>
           <span className="text-base text-muted-foreground">{t("Bekijken")}</span>

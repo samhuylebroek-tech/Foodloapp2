@@ -343,7 +343,7 @@ function StartPage() {
                   {t("Zin in iets nieuws? We zoeken gerechten die passen bij wat jij lekker vindt.")}
                 </p>
                 <p className="mt-1 text-base text-muted-foreground">
-                  {t("Dit gebruikt een paar AI-credits. Alles wat je al hebt, blijft gratis.")}
+                  {t("Dit gebruikt een paar credits. Alles wat je al hebt, blijft gratis.")}
                 </p>
                 <button
                   type="button"

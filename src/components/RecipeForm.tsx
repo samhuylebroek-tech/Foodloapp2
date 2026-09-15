@@ -118,7 +118,7 @@ export function RecipeForm({
     const c = kost(feature);
     const saldo = credits.data?.saldo ?? 0;
     if (c > 0 && saldo < c) {
-      toast.error(`Hiervoor heb je ${c} AI-credits nodig. Je hebt er nog ${saldo}.`);
+      toast.error(`Hiervoor heb je ${c} credits nodig. Je hebt er nog ${saldo}.`);
       return false;
     }
     return true;
@@ -429,7 +429,7 @@ export function RecipeForm({
 
           {laagSaldo && (
             <p className="mt-3 text-sm text-muted-foreground">
-              Nog {credits.data?.saldo ?? 0} AI-credits over.{" "}
+              Nog {credits.data?.saldo ?? 0} credits over.{" "}
               <RouterLink to="/credits" className="font-semibold underline">
                 Bekijk je credits
               </RouterLink>
