@@ -282,6 +282,26 @@ function VriendenPage() {
     return [...map.values()];
   })();
 
+  // Namen van iedereen waarmee al een verbinding of uitnodiging loopt.
+  const verbondenNamen = new Set<string>(
+    [
+      ...vrienden.map((v) => namen[v.id]),
+      ...shares
+        .filter((s) => s.status === "pending" && s.member_id)
+        .map((s) => namen[s.owner_id === user?.id ? s.member_id! : s.owner_id]),
+    ]
+      .filter(Boolean)
+      .map((n) => n!.trim().toLowerCase()),
+  );
+
+  // Losse linkuitnodigingen verbergen zodra die persoon al in de app zit.
+  const mijn = mijnAlles.filter((s) => {
+    if (s.member_id) return true;
+    const naam = s.invited_name.trim().toLowerCase();
+    if (!naam) return true;
+    return ![...verbondenNamen].some((v) => v === naam || v.includes(naam) || naam.includes(v));
+  });
+
   function zoekStatus(id: string) {
     if (gezinLeden.some((m) => m.user_id === id)) return "gezin" as const;
     if (vrienden.some((v) => v.id === id)) return "vriend" as const;
