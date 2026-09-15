@@ -30,6 +30,12 @@ function naarB64url(buffer: ArrayBuffer | null) {
   return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+/** Zonder aangemelde gebruiker heeft de server geen toegangsbewijs. */
+async function isAangemeld() {
+  const { data } = await supabase.auth.getSession();
+  return Boolean(data.session);
+}
+
 export function meldingenMogelijk() {
   return (
     typeof window !== "undefined" &&
