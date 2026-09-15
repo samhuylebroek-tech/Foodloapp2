@@ -48,7 +48,8 @@ const TERUG: { key: TerugKey; label: string }[] = [
 ];
 
 function UitnodigingPage() {
-  const { code } = Route.useSearch();
+  const { code, groep } = Route.useSearch();
+  const [groepNaam, setGroepNaam] = useState<string | null>(null);
   const { session, loading } = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
