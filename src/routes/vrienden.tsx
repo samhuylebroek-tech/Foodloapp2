@@ -96,6 +96,11 @@ function VriendenPage() {
   const [voorWie, setVoorWie] = useState("");
   const [zoek, setZoek] = useState("");
   const [gezocht, setGezocht] = useState("");
+  const [keuze, setKeuze] = useState<
+    | { modus: "uitnodigen"; id: string; naam: string }
+    | { modus: "aannemen"; id: string; naam: string; token: string }
+    | null
+  >(null);
 
   const { data: shares = [] } = useQuery({
     queryKey: ["shares", user?.id],
@@ -160,7 +165,7 @@ function VriendenPage() {
     },
   });
 
-  const mijn = shares.filter((s) => s.owner_id === user?.id);
+  const mijnAlles = shares.filter((s) => s.owner_id === user?.id);
   const metMijGedeeld = shares.filter(
     (s) => s.member_id === user?.id && s.owner_id !== user?.id && s.status === "accepted",
   );
@@ -169,15 +174,16 @@ function VriendenPage() {
   );
 
   const nodigUit = useMutation({
-    mutationFn: async (doelId: string) => {
+    mutationFn: async ({ doelId, kies }: { doelId: string; kies: Rechten }) => {
       const { error } = await supabase
         .from("shares")
-        .insert({ owner_id: user!.id, member_id: doelId, status: "pending", ...rechten });
+        .insert({ owner_id: user!.id, member_id: doelId, status: "pending", ...kies });
       if (error) throw error;
     },
     onSuccess: () => {
       setZoek("");
       setGezocht("");
+      setKeuze(null);
       qc.invalidateQueries({ queryKey: ["shares"] });
       qc.invalidateQueries({ queryKey: ["zoek-gebruiker"] });
       toast.success("Uitnodiging verstuurd. Die persoon ziet ze in de app.");
@@ -186,12 +192,34 @@ function VriendenPage() {
   });
 
   const antwoord = useMutation({
-    mutationFn: async ({ token, ja }: { token: string; ja: boolean }) => {
+    mutationFn: async ({
+      token,
+      ja,
+      vanWie,
+      kies,
+    }: {
+      token: string;
+      ja: boolean;
+      vanWie?: string;
+      kies?: Rechten | null;
+    }) => {
       const { error } = await supabase.rpc(ja ? "accept_share" : "decline_share", { _token: token });
       if (error) throw error;
+      if (!ja || !kies || !vanWie) return { terug: false };
+      const iets = Object.values(kies).some(Boolean);
+      if (!iets) return { terug: false };
+      const { error: fout } = await supabase
+        .from("shares")
+        .insert({ owner_id: user!.id, member_id: vanWie, status: "accepted", ...kies });
+      return { terug: !fout, mislukt: !!fout };
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
+      setKeuze(null);
       qc.invalidateQueries({ queryKey: ["shares"] });
+      if (res?.mislukt) {
+        toast.info("Je bent verbonden. Wat jij deelt, stel je in bij die vriend.");
+        return;
+      }
       toast.success("Bewaard");
     },
     onError: () => toast.error("Dat lukte niet"),
@@ -253,6 +281,26 @@ function VriendenPage() {
     }
     return [...map.values()];
   })();
+
+  // Namen van iedereen waarmee al een verbinding of uitnodiging loopt.
+  const verbondenNamen = new Set<string>(
+    [
+      ...vrienden.map((v) => namen[v.id]),
+      ...shares
+        .filter((s) => s.status === "pending" && s.member_id)
+        .map((s) => namen[s.owner_id === user?.id ? s.member_id! : s.owner_id]),
+    ]
+      .filter(Boolean)
+      .map((n) => n!.trim().toLowerCase()),
+  );
+
+  // Losse linkuitnodigingen verbergen zodra die persoon al in de app zit.
+  const mijn = mijnAlles.filter((s) => {
+    if (s.member_id) return true;
+    const naam = s.invited_name.trim().toLowerCase();
+    if (!naam) return true;
+    return ![...verbondenNamen].some((v) => v === naam || v.includes(naam) || naam.includes(v));
+  });
 
   function zoekStatus(id: string) {
     if (gezinLeden.some((m) => m.user_id === id)) return "gezin" as const;
@@ -410,7 +458,9 @@ function VriendenPage() {
                       </div>
                       {status === "nieuw" ? (
                         <Button
-                          onClick={() => nodigUit.mutate(g.id)}
+                          onClick={() =>
+                            setKeuze({ modus: "uitnodigen", id: g.id, naam: g.display_name })
+                          }
                           disabled={nodigUit.isPending}
                           className="h-12 shrink-0 text-base"
                         >
@@ -434,7 +484,7 @@ function VriendenPage() {
 
         {voorMij.length > 0 && (
           <section className="space-y-3">
-            <h2 className="font-display text-xl">Uitnodigingen voor jou</h2>
+            <h2 className="font-display text-xl">Uitnodigingen voor jou ({voorMij.length})</h2>
             {voorMij.map((s) => (
               <div key={s.id} className="rounded-2xl border border-border bg-card p-4">
                 <p className="text-lg font-semibold">
@@ -442,7 +492,14 @@ function VriendenPage() {
                 </p>
                 <div className="mt-3 flex flex-col gap-3 sm:flex-row">
                   <Button
-                    onClick={() => antwoord.mutate({ token: s.token, ja: true })}
+                    onClick={() =>
+                      setKeuze({
+                        modus: "aannemen",
+                        id: s.owner_id,
+                        naam: namen[s.owner_id] ?? "deze persoon",
+                        token: s.token,
+                      })
+                    }
                     className="h-14 w-full text-base sm:flex-1"
                   >
                     <Check className="size-5" /> Aannemen
@@ -613,7 +670,113 @@ function VriendenPage() {
           <Smartphone className="size-6" aria-hidden /> App op je telefoon zetten
         </Link>
       </div>
+
+      {keuze ? (
+        <RechtenVenster
+          titel={
+            keuze.modus === "uitnodigen"
+              ? `Wat wil je delen met ${keuze.naam}?`
+              : `Wat deel jij met ${keuze.naam}?`
+          }
+          uitleg={
+            keuze.modus === "uitnodigen"
+              ? "Kies wat deze persoon van jou mag zien. Je kan dit later altijd aanpassen."
+              : "Je neemt de uitnodiging aan. Kies nu wat jij op jouw beurt deelt — dat mag ook niets zijn."
+          }
+          bevestig={keuze.modus === "uitnodigen" ? "Uitnodiging versturen" : "Aannemen"}
+          bezig={nodigUit.isPending || antwoord.isPending}
+          extraKnop={keuze.modus === "aannemen" ? "Aannemen, nu niets delen" : null}
+          onExtra={() =>
+            antwoord.mutate({ token: (keuze as { token: string }).token, ja: true, kies: null })
+          }
+          onSluiten={() => setKeuze(null)}
+          onBevestig={(kies) => {
+            if (keuze.modus === "uitnodigen") {
+              nodigUit.mutate({ doelId: keuze.id, kies });
+            } else {
+              antwoord.mutate({ token: keuze.token, ja: true, vanWie: keuze.id, kies });
+            }
+          }}
+        />
+      ) : null}
     </AppShell>
+  );
+}
+
+function RechtenVenster({
+  titel,
+  uitleg,
+  bevestig,
+  bezig,
+  extraKnop,
+  onExtra,
+  onBevestig,
+  onSluiten,
+}: {
+  titel: string;
+  uitleg: string;
+  bevestig: string;
+  bezig: boolean;
+  extraKnop: string | null;
+  onExtra: () => void;
+  onBevestig: (rechten: Rechten) => void;
+  onSluiten: () => void;
+}) {
+  const [kies, setKies] = useState<Rechten>(STANDAARD);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center sm:p-6">
+      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-[2rem] bg-card p-5 sm:rounded-[2rem]">
+        <h2 className="font-display text-xl">{titel}</h2>
+        <p className="mt-1 text-base leading-relaxed text-muted-foreground">{uitleg}</p>
+
+        <div className="mt-4 space-y-2">
+          {RECHTEN.map((r) => (
+            <label
+              key={r.key}
+              className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-border px-4 py-2"
+            >
+              <Label className="text-base">{r.label}</Label>
+              <Switch
+                checked={kies[r.key]}
+                onCheckedChange={(v) =>
+                  setKies((h) => ({
+                    ...h,
+                    [r.key]: v,
+                    ...(v && r.key.endsWith("_edit")
+                      ? { [r.key.replace("_edit", "_view")]: true }
+                      : {}),
+                  }))
+                }
+              />
+            </label>
+          ))}
+        </div>
+
+        <div className="mt-5 space-y-3">
+          <Button
+            onClick={() => onBevestig(kies)}
+            disabled={bezig}
+            className="h-14 w-full text-base"
+          >
+            <Check className="size-5" /> {bevestig}
+          </Button>
+          {extraKnop ? (
+            <Button
+              variant="secondary"
+              onClick={onExtra}
+              disabled={bezig}
+              className="h-14 w-full text-base"
+            >
+              {extraKnop}
+            </Button>
+          ) : null}
+          <Button variant="outline" onClick={onSluiten} className="h-14 w-full text-base">
+            Annuleren
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
