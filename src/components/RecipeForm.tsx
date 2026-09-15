@@ -13,7 +13,8 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { uploadRecipePhoto, uploadDataUrl, fileToDataUrl } from "@/lib/photos";
+import { uploadRecipePhoto, uploadDataUrl, fileToDataUrl, isAfbeelding } from "@/lib/photos";
+import { FotoKiezer } from "@/components/FotoKiezer";
 import {
   importRecipeFromUrl,
   importRecipeFromText,
@@ -242,15 +243,19 @@ export function RecipeForm({
 
   async function handlePhoto(file: File) {
     if (!user) return;
+    if (!isAfbeelding(file)) {
+      toast.error("Kies een foto (jpg of png)");
+      return;
+    }
     setUploading(true);
     try {
       const path = await uploadRecipePhoto(file, user.id);
       setPhotoPath(path);
       setVoorstelFoto(null);
       setFotoGeweigerd(false);
-      toast.success("Foto toegevoegd");
+      toast.success("Foto bewaard");
     } catch {
-      toast.error("De foto kon niet worden opgeslagen");
+      toast.error("De foto kon niet worden opgeslagen. Probeer het opnieuw.");
     } finally {
       setUploading(false);
     }
@@ -692,24 +697,11 @@ export function RecipeForm({
               )}
             </div>
             <div className="space-y-2">
-              <label className="inline-flex min-h-14 cursor-pointer items-center gap-2 rounded-xl border border-border bg-secondary px-5 text-base font-semibold">
-                {uploading ? (
-                  <Loader2 className="size-5 animate-spin" />
-                ) : (
-                  <Camera className="size-5" />
-                )}
-                Foto kiezen
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="sr-only"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) void handlePhoto(f);
-                  }}
-                />
-              </label>
+              <FotoKiezer
+                bezig={uploading}
+                heeftFoto={!!(photoPath || voorstelFoto)}
+                onBestand={(f) => void handlePhoto(f)}
+              />
               {!photoPath && voorstelFoto && (
                 <p className="text-sm text-muted-foreground">
                   Voorgestelde foto. Niet goed? Klik op het kruisje.
