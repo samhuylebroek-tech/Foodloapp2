@@ -59,3 +59,12 @@
 - Recept van vriend met 1 knop naar eigen gerechten kopiëren
 - Volledig ingeplande dag in het weekmenu ingekleurd tonen
 - SSO: geen enkele lovable-verwijzing zichtbaar bij aanmelden
+
+
+## Slimme meldingen (klaar)
+- [x] Vijf soorten: menu van vandaag, weekmenu plannen, maaltijd komt eraan, boodschappen, tijd om te koken
+- [x] Instellingen per soort (aan/uit, tijd, dag, hoelang vooraf) + vergrendelscherm-privacy
+- [x] Onboardingstap "Blijf op schema" met toestemming pas bij eigen keuze
+- [x] Slimme regels: geen melding zonder geplande maaltijd, lege lijst of al geplande week; samenvoegen en dedupe
+- [x] Eigen Web Push (VAPID), kwartiertaak in de database, deep links, geen AI-credits
+- [x] Control Center → Meldingen: opt-in, aflevering, mislukt, engagement, standaardinstellingen
