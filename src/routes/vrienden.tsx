@@ -484,7 +484,7 @@ function VriendenPage() {
 
         {voorMij.length > 0 && (
           <section className="space-y-3">
-            <h2 className="font-display text-xl">Uitnodigingen voor jou</h2>
+            <h2 className="font-display text-xl">Uitnodigingen voor jou ({voorMij.length})</h2>
             {voorMij.map((s) => (
               <div key={s.id} className="rounded-2xl border border-border bg-card p-4">
                 <p className="text-lg font-semibold">
@@ -492,7 +492,14 @@ function VriendenPage() {
                 </p>
                 <div className="mt-3 flex flex-col gap-3 sm:flex-row">
                   <Button
-                    onClick={() => antwoord.mutate({ token: s.token, ja: true })}
+                    onClick={() =>
+                      setKeuze({
+                        modus: "aannemen",
+                        id: s.owner_id,
+                        naam: namen[s.owner_id] ?? "deze persoon",
+                        token: s.token,
+                      })
+                    }
                     className="h-14 w-full text-base sm:flex-1"
                   >
                     <Check className="size-5" /> Aannemen
