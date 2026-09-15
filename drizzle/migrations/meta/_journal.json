@@ -50,6 +50,13 @@
       "when": 1789416231973,
       "tag": "0006_profiel_voorkeuren_onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789455768872,
+      "tag": "0007_groepen_en_vrienden_zoeken",
+      "breakpoints": true
     }
   ]
 }
