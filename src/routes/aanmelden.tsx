@@ -41,8 +41,9 @@ function AanmeldenPage() {
   useEffect(() => {
     if (loading || !session) return;
     const code = sessionStorage.getItem("uitnodiging");
-    if (code) {
-      navigate({ to: "/uitnodiging", search: { code } });
+    const groep = sessionStorage.getItem("gezinsuitnodiging");
+    if (code || groep) {
+      navigate({ to: "/uitnodiging", search: { code: code ?? "", groep: groep ?? "" } });
       return;
     }
     navigate({ to: "/" });
