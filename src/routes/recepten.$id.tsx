@@ -465,6 +465,8 @@ function ReceptPage() {
           )}
         </section>
 
+        <Voedingswaarden ingredienten={ingredients} porties={aantal} />
+
         {/* Waar komt dit recept vandaan? */}
         <section className="space-y-3">
 
