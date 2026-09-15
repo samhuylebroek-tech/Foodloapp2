@@ -1,35 +1,62 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { adminAnalytics } from "@/lib/admin.functions";
-import { AdminShell, Kaart, Kpi } from "@/components/AdminShell";
+import { AdminShell, Kaart, Kpi, PeriodeKiezer, type Periode } from "@/components/AdminShell";
 
 export const Route = createFileRoute("/beheer/analytics")({ component: Analytics });
 
+const OMSCHRIJVING: Record<Periode, string> = {
+  dag: "laatste 24 uur",
+  week: "laatste 7 dagen",
+  maand: "laatste 30 dagen",
+  jaar: "laatste 12 maanden",
+};
+
 function Analytics() {
+  const [periode, setPeriode] = useState<Periode>("maand");
   const fn = useServerFn(adminAnalytics);
-  const { data, isLoading } = useQuery({ queryKey: ["admin-analytics"], queryFn: () => fn() });
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-analytics", periode],
+    queryFn: () => fn({ data: { periode } }),
+  });
   const max = Math.max(1, ...(data?.grafiek ?? []).map((g) => g.actieveGebruikers));
+  const tijd = OMSCHRIJVING[periode];
 
   return (
-    <AdminShell titel="Analytics" omschrijving="Hoe wordt de app gebruikt?">
+    <AdminShell
+      titel="Analytics"
+      omschrijving="Hoe wordt de app gebruikt?"
+      acties={<PeriodeKiezer waarde={periode} onKies={setPeriode} />}
+    >
       {isLoading || !data ? (
         <p className="text-slate-400">Laden…</p>
       ) : (
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <Kpi
+              label={`Actieve gebruikers (${tijd})`}
+              waarde={data.actieveGebruikers}
+              evolutie={data.evoluties.actieveGebruikers}
+              extra="vergeleken met de vorige periode"
+            />
             <Kpi label="Actief (7 dagen)" waarde={data.actieveGebruikers7} />
-            <Kpi label="Actief (30 dagen)" waarde={data.actieveGebruikers30} />
             <Kpi
               label="Gebruikers totaal"
               waarde={data.gebruikers}
               extra={`${data.makers} maakten al een gerecht`}
             />
-            <Kpi label="Gemeten handelingen" waarde={data.totaalEvents} extra="laatste 30 dagen" />
+            <Kpi
+              label="Gemeten handelingen"
+              waarde={data.totaalEvents}
+              evolutie={data.evoluties.events}
+              extra={tijd}
+            />
           </div>
 
           <Kaart>
-            <p className="mb-4 text-sm font-medium">Actieve gebruikers per dag</p>
+            <p className="mb-4 text-sm font-medium">Actieve gebruikers · {tijd}</p>
             <div className="flex h-32 items-end gap-1">
               {data.grafiek.map((g) => (
                 <div key={g.datum} className="flex-1" title={`${g.datum}: ${g.actieveGebruikers}`}>
@@ -39,6 +66,10 @@ function Analytics() {
                   />
                 </div>
               ))}
+            </div>
+            <div className="mt-2 flex justify-between text-[10px] text-slate-500">
+              <span>{data.grafiek[0]?.datum}</span>
+              <span>{data.grafiek[data.grafiek.length - 1]?.datum}</span>
             </div>
           </Kaart>
 

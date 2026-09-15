@@ -1,17 +1,28 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { adminAi } from "@/lib/admin.functions";
-import { AdminShell, Kaart } from "@/components/AdminShell";
+import { AdminShell, Kaart, PeriodeKiezer, type Periode } from "@/components/AdminShell";
 
 export const Route = createFileRoute("/beheer/ai")({ component: AiBeheer });
 
 function AiBeheer() {
+  const [periode, setPeriode] = useState<Periode>("week");
   const fn = useServerFn(adminAi);
-  const { data, isLoading } = useQuery({ queryKey: ["admin-ai"], queryFn: () => fn(), refetchInterval: 30_000 });
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-ai", periode],
+    queryFn: () => fn({ data: { periode } }),
+    refetchInterval: 30_000,
+  });
 
   return (
-    <AdminShell titel="AI & import" omschrijving="Kwaliteit en betrouwbaarheid van de AI-functies">
+    <AdminShell
+      titel="AI & import"
+      omschrijving="Kwaliteit en betrouwbaarheid van de AI-functies"
+      acties={<PeriodeKiezer waarde={periode} onKies={setPeriode} />}
+    >
+
       {isLoading || !data ? (
         <p className="text-slate-400">Laden…</p>
       ) : (

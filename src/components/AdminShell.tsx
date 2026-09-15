@@ -155,12 +155,75 @@ export function Kaart({ children, className = "" }: { children: ReactNode; class
   );
 }
 
-export function Kpi({ label, waarde, extra }: { label: string; waarde: ReactNode; extra?: string }) {
+export function Kpi({
+  label,
+  waarde,
+  extra,
+  evolutie,
+}: {
+  label: string;
+  waarde: ReactNode;
+  extra?: string;
+  evolutie?: number;
+}) {
   return (
     <Kaart>
       <p className="text-xs uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-1 text-2xl font-semibold">{waarde}</p>
+      <div className="mt-1 flex items-baseline gap-2">
+        <p className="text-2xl font-semibold">{waarde}</p>
+        {typeof evolutie === "number" ? (
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+              evolutie > 0
+                ? "bg-emerald-500/15 text-emerald-300"
+                : evolutie < 0
+                  ? "bg-red-500/15 text-red-300"
+                  : "bg-white/10 text-slate-300"
+            }`}
+            title="Vergeleken met de vorige periode"
+          >
+            {evolutie > 0 ? "+" : ""}
+            {evolutie}%
+          </span>
+        ) : null}
+      </div>
       {extra ? <p className="text-xs text-slate-400">{extra}</p> : null}
     </Kaart>
   );
 }
+
+export type Periode = "dag" | "week" | "maand" | "jaar";
+
+export const PERIODES: { waarde: Periode; label: string }[] = [
+  { waarde: "dag", label: "Dag" },
+  { waarde: "week", label: "Week" },
+  { waarde: "maand", label: "Maand" },
+  { waarde: "jaar", label: "Jaar" },
+];
+
+export function PeriodeKiezer({
+  waarde,
+  onKies,
+}: {
+  waarde: Periode;
+  onKies: (p: Periode) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1" role="group" aria-label="Tijdsperiode">
+      {PERIODES.map((p) => (
+        <button
+          key={p.waarde}
+          type="button"
+          onClick={() => onKies(p.waarde)}
+          aria-pressed={waarde === p.waarde}
+          className={`rounded-full px-3 py-1.5 text-sm transition ${
+            waarde === p.waarde ? "bg-emerald-500/20 text-emerald-300" : "text-slate-300 hover:bg-white/5"
+          }`}
+        >
+          {p.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
