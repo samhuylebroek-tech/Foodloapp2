@@ -26,12 +26,15 @@ function Gebruikers() {
   const blokFn = useServerFn(adminBlokkeerGebruiker);
   const exportFn = useServerFn(adminExportGebruiker);
   const wisFn = useServerFn(adminVerwijderGebruiker);
+  const creditFn = useServerFn(adminCreditsToekennen);
 
   const [zoek, setZoek] = useState("");
   const [pagina, setPagina] = useState(0);
   const [gekozen, setGekozen] = useState<string | null>(null);
   const [reden, setReden] = useState("");
   const [bevestig, setBevestig] = useState("");
+  const [creditAantal, setCreditAantal] = useState("");
+  const [creditReden, setCreditReden] = useState("");
 
   const lijst = useQuery({
     queryKey: ["admin-gebruikers", zoek, pagina],
