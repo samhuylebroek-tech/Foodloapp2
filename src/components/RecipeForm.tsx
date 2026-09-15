@@ -646,6 +646,11 @@ export function RecipeForm({
           />
         </div>
 
+        <Voedingswaarden
+          ingredienten={parseIngredientText(ingredientTekst)}
+          porties={Number(servings) || 1}
+        />
+
         <div>
           <Label htmlFor="stappen" className="text-base">
             Bereiding — één stap per regel
