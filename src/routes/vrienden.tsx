@@ -458,7 +458,9 @@ function VriendenPage() {
                       </div>
                       {status === "nieuw" ? (
                         <Button
-                          onClick={() => nodigUit.mutate(g.id)}
+                          onClick={() =>
+                            setKeuze({ modus: "uitnodigen", id: g.id, naam: g.display_name })
+                          }
                           disabled={nodigUit.isPending}
                           className="h-12 shrink-0 text-base"
                         >
