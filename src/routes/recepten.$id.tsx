@@ -24,6 +24,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { SterrenKiezer } from "@/components/Sterren";
 import { AppShell } from "@/components/AppShell";
 import { RecipePhoto } from "@/components/RecipePhoto";
+import { FotoKiezer } from "@/components/FotoKiezer";
+import { isAfbeelding, uploadRecipePhoto } from "@/lib/photos";
 import { Button } from "@/components/ui/button";
 import { importRecipeFromText } from "@/lib/ai.functions";
 import { useT, useVoorkeuren } from "@/lib/voorkeuren";
@@ -77,6 +79,28 @@ function ReceptPage() {
   const [stap, setStap] = useState(0);
   const [planOpen, setPlanOpen] = useState(false);
   const [aanvullen, setAanvullen] = useState(false);
+  const [fotoBezig, setFotoBezig] = useState(false);
+
+  async function vervangFoto(bestand: File) {
+    if (!user) return;
+    if (!isAfbeelding(bestand)) {
+      toast.error(t("Kies een foto (jpg of png)"));
+      return;
+    }
+    setFotoBezig(true);
+    try {
+      const pad = await uploadRecipePhoto(bestand, user.id);
+      const { error } = await supabase.from("recipes").update({ image_url: pad }).eq("id", id);
+      if (error) throw error;
+      await qc.invalidateQueries({ queryKey: ["recipe", id] });
+      await qc.invalidateQueries({ queryKey: ["recipes"] });
+      toast.success(t("Foto bewaard"));
+    } catch {
+      toast.error(t("De foto kon niet worden opgeslagen. Probeer het opnieuw."));
+    } finally {
+      setFotoBezig(false);
+    }
+  }
 
   useEffect(() => {
     markeerGezien(id);
@@ -353,7 +377,27 @@ function ReceptPage() {
           )}
         </div>
 
-        <RecipePhoto path={recipe.image_url} alt={recipe.title} className="h-56 w-full rounded-3xl" />
+        <div className="space-y-3">
+          <div className="relative">
+            <RecipePhoto
+              path={recipe.image_url}
+              alt={recipe.title}
+              className="h-56 w-full rounded-3xl"
+            />
+            {fotoBezig && (
+              <div className="absolute inset-0 flex items-center justify-center rounded-3xl bg-card/70">
+                <Loader2 className="size-8 animate-spin" aria-hidden />
+              </div>
+            )}
+          </div>
+          {isOwner && (
+            <FotoKiezer
+              bezig={fotoBezig}
+              heeftFoto={!!recipe.image_url}
+              onBestand={(f) => void vervangFoto(f)}
+            />
+          )}
+        </div>
 
         {recipe.description && <p className="text-lg leading-relaxed">{t(recipe.description)}</p>}
 
