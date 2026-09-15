@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 export const Route = createFileRoute("/uitnodiging")({
   validateSearch: (search: Record<string, unknown>) => ({
     code: typeof search["code"] === "string" ? search["code"] : "",
+    groep: typeof search["groep"] === "string" ? search["groep"] : "",
   }),
   head: () => ({
     meta: [
@@ -47,7 +48,8 @@ const TERUG: { key: TerugKey; label: string }[] = [
 ];
 
 function UitnodigingPage() {
-  const { code } = Route.useSearch();
+  const { code, groep } = Route.useSearch();
+  const [groepNaam, setGroepNaam] = useState<string | null>(null);
   const { session, loading } = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
@@ -62,7 +64,28 @@ function UitnodigingPage() {
 
   useEffect(() => {
     if (code) sessionStorage.setItem("uitnodiging", code);
-  }, [code]);
+    if (groep) sessionStorage.setItem("gezinsuitnodiging", groep);
+  }, [code, groep]);
+
+  useEffect(() => {
+    if (!groep || !session) return;
+    supabase
+      .rpc("groep_naam", { _token: groep })
+      .then(({ data }) => setGroepNaam((data as unknown as string) ?? null));
+  }, [groep, session]);
+
+  async function gezinAannemen() {
+    setBusy(true);
+    const { error } = await supabase.rpc("join_group", { _token: groep });
+    setBusy(false);
+    if (error) {
+      toast.error("Deze uitnodiging werkt niet meer. Vraag om een nieuwe.");
+      return;
+    }
+    sessionStorage.removeItem("gezinsuitnodiging");
+    toast.success("Je hoort er nu bij!");
+    navigate({ to: "/gezin" });
+  }
 
   async function aannemen() {
     setBusy(true);
@@ -113,7 +136,42 @@ function UitnodigingPage() {
         </div>
         <h1 className="mt-4 font-display text-3xl">Je bent uitgenodigd</h1>
 
-        {!code ? (
+        {groep ? (
+          loading ? (
+            <p className="mt-4 text-lg text-muted-foreground">Even geduld…</p>
+          ) : session ? (
+            <>
+              <p className="mt-4 text-lg leading-relaxed">
+                Je mag meedoen met{" "}
+                <strong>{groepNaam ?? "dit gezin"}</strong>. Jullie zien en bewerken dan samen
+                dezelfde recepten, het weekmenu en de boodschappenlijst.
+              </p>
+              <Button onClick={gezinAannemen} disabled={busy} className="mt-6 h-16 w-full text-lg">
+                {busy ? <Loader2 className="size-5 animate-spin" /> : null} Meedoen
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => navigate({ to: "/" })}
+                disabled={busy}
+                className="mt-3 h-14 w-full text-base"
+              >
+                Nee, bedankt
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="mt-4 text-lg leading-relaxed">
+                Meld je eerst aan of maak een account. Daarna staat de uitnodiging klaar.
+              </p>
+              <Button
+                onClick={() => navigate({ to: "/aanmelden" })}
+                className="mt-6 h-16 w-full text-lg"
+              >
+                Aanmelden of account maken
+              </Button>
+            </>
+          )
+        ) : !code ? (
           <p className="mt-4 text-lg">Deze uitnodiging is niet compleet. Vraag om een nieuwe link.</p>
         ) : loading ? (
           <p className="mt-4 text-lg text-muted-foreground">Even geduld…</p>

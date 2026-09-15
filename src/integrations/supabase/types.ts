@@ -526,6 +526,80 @@ export type Database = {
         }
         Relationships: []
       }
+      group_members: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          planner_edit: boolean
+          planner_view: boolean
+          recipes_edit: boolean
+          recipes_view: boolean
+          rol: string
+          shopping_edit: boolean
+          shopping_view: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          planner_edit?: boolean
+          planner_view?: boolean
+          recipes_edit?: boolean
+          recipes_view?: boolean
+          rol?: string
+          shopping_edit?: boolean
+          shopping_view?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          planner_edit?: boolean
+          planner_view?: boolean
+          recipes_edit?: boolean
+          recipes_view?: boolean
+          rol?: string
+          shopping_edit?: boolean
+          shopping_view?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          created_at: string
+          id: string
+          naam: string
+          owner_id: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          naam?: string
+          owner_id: string
+          token?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          naam?: string
+          owner_id?: string
+          token?: string
+        }
+        Relationships: []
+      }
       meal_plan: {
         Row: {
           created_at: string
@@ -594,6 +668,7 @@ export type Database = {
           blocked_at: string | null
           created_at: string
           display_name: string
+          handle: string | null
           id: string
           momenten: string[]
           onboarding_klaar: boolean
@@ -605,6 +680,7 @@ export type Database = {
           blocked_at?: string | null
           created_at?: string
           display_name?: string
+          handle?: string | null
           id: string
           momenten?: string[]
           onboarding_klaar?: boolean
@@ -616,6 +692,7 @@ export type Database = {
           blocked_at?: string | null
           created_at?: string
           display_name?: string
+          handle?: string | null
           id?: string
           momenten?: string[]
           onboarding_klaar?: boolean
@@ -1057,6 +1134,11 @@ export type Database = {
         Returns: number
       }
       decline_share: { Args: { _token: string }; Returns: boolean }
+      groep_naam: { Args: { _token: string }; Returns: string }
+      groep_recht: {
+        Args: { _owner: string; _perm: string; _viewer: string }
+        Returns: boolean
+      }
       has_admin_role: {
         Args: {
           _role: Database["public"]["Enums"]["admin_role"]
@@ -1068,7 +1150,18 @@ export type Database = {
         Args: { _owner: string; _perm: string; _viewer: string }
         Returns: boolean
       }
+      in_groep: { Args: { _group: string; _user: string }; Returns: boolean }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      join_group: { Args: { _token: string }; Returns: string }
+      samen_in_groep: { Args: { _a: string; _b: string }; Returns: boolean }
+      zoek_gebruiker: {
+        Args: { _term: string }
+        Returns: {
+          display_name: string
+          handle: string
+          id: string
+        }[]
+      }
     }
     Enums: {
       admin_role:

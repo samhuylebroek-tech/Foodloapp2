@@ -17,6 +17,7 @@ import { Route as CreditsRouteImport } from './routes/credits'
 import { Route as DeelRouteImport } from './routes/deel'
 import { Route as FeedbackRouteImport } from './routes/feedback'
 import { Route as GerechtenRouteImport } from './routes/gerechten'
+import { Route as GezinRouteImport } from './routes/gezin'
 import { Route as InfoRouteImport } from './routes/info'
 import { Route as InstallerenRouteImport } from './routes/installeren'
 import { Route as InstellingenRouteImport } from './routes/instellingen'
@@ -82,6 +83,11 @@ const FeedbackRoute = FeedbackRouteImport.update({
 const GerechtenRoute = GerechtenRouteImport.update({
   id: '/gerechten',
   path: '/gerechten',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GezinRoute = GezinRouteImport.update({
+  id: '/gezin',
+  path: '/gezin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InfoRoute = InfoRouteImport.update({
@@ -224,6 +230,7 @@ export interface FileRoutesByFullPath {
   '/deel': typeof DeelRoute
   '/feedback': typeof FeedbackRoute
   '/gerechten': typeof GerechtenRoute
+  '/gezin': typeof GezinRoute
   '/info': typeof InfoRoute
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
@@ -259,6 +266,7 @@ export interface FileRoutesByTo {
   '/deel': typeof DeelRoute
   '/feedback': typeof FeedbackRoute
   '/gerechten': typeof GerechtenRoute
+  '/gezin': typeof GezinRoute
   '/info': typeof InfoRoute
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
@@ -296,6 +304,7 @@ export interface FileRoutesById {
   '/deel': typeof DeelRoute
   '/feedback': typeof FeedbackRoute
   '/gerechten': typeof GerechtenRoute
+  '/gezin': typeof GezinRoute
   '/info': typeof InfoRoute
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
@@ -334,6 +343,7 @@ export interface FileRouteTypes {
     | '/deel'
     | '/feedback'
     | '/gerechten'
+    | '/gezin'
     | '/info'
     | '/installeren'
     | '/instellingen'
@@ -369,6 +379,7 @@ export interface FileRouteTypes {
     | '/deel'
     | '/feedback'
     | '/gerechten'
+    | '/gezin'
     | '/info'
     | '/installeren'
     | '/instellingen'
@@ -405,6 +416,7 @@ export interface FileRouteTypes {
     | '/deel'
     | '/feedback'
     | '/gerechten'
+    | '/gezin'
     | '/info'
     | '/installeren'
     | '/instellingen'
@@ -442,6 +454,7 @@ export interface RootRouteChildren {
   DeelRoute: typeof DeelRoute
   FeedbackRoute: typeof FeedbackRoute
   GerechtenRoute: typeof GerechtenRoute
+  GezinRoute: typeof GezinRoute
   InfoRoute: typeof InfoRoute
   InstallerenRoute: typeof InstallerenRoute
   InstellingenRoute: typeof InstellingenRoute
@@ -509,6 +522,13 @@ declare module '@tanstack/react-router' {
       path: '/gerechten'
       fullPath: '/gerechten'
       preLoaderRoute: typeof GerechtenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gezin': {
+      id: '/gezin'
+      path: '/gezin'
+      fullPath: '/gezin'
+      preLoaderRoute: typeof GezinRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/info': {
@@ -768,6 +788,7 @@ const rootRouteChildren: RootRouteChildren = {
   DeelRoute: DeelRoute,
   FeedbackRoute: FeedbackRoute,
   GerechtenRoute: GerechtenRoute,
+  GezinRoute: GezinRoute,
   InfoRoute: InfoRoute,
   InstallerenRoute: InstallerenRoute,
   InstellingenRoute: InstellingenRoute,

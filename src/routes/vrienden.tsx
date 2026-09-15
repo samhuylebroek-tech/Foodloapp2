@@ -2,7 +2,20 @@ import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCode from "qrcode";
-import { ChefHat, Copy, Plus, Share2, Smartphone, Trash2, UserPlus, X } from "lucide-react";
+import {
+  BookUser,
+  Check,
+  ChefHat,
+  Copy,
+  Home,
+  Plus,
+  Search,
+  Share2,
+  Smartphone,
+  Trash2,
+  UserPlus,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -81,6 +94,8 @@ function VriendenPage() {
   const [nieuwOpen, setNieuwOpen] = useState(false);
   const [nieuwId, setNieuwId] = useState<string | null>(null);
   const [voorWie, setVoorWie] = useState("");
+  const [zoek, setZoek] = useState("");
+  const [gezocht, setGezocht] = useState("");
 
   const { data: shares = [] } = useQuery({
     queryKey: ["shares", user?.id],
@@ -104,8 +119,88 @@ function VriendenPage() {
     },
   });
 
+  const { data: gevonden = [], isFetching: zoekt } = useQuery({
+    queryKey: ["zoek-gebruiker", gezocht],
+    enabled: gezocht.trim().length >= 3,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("zoek_gebruiker", { _term: gezocht.trim() });
+      if (error) throw error;
+      return (data ?? []) as { id: string; display_name: string; handle: string | null }[];
+    },
+  });
+
+  const { data: gezinId } = useQuery({
+    queryKey: ["gezin-kort", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("group_members")
+        .select("group_id")
+        .eq("user_id", user!.id)
+        .limit(1)
+        .maybeSingle();
+      return data?.group_id ?? null;
+    },
+  });
+
   const mijn = shares.filter((s) => s.owner_id === user?.id);
-  const metMijGedeeld = shares.filter((s) => s.member_id === user?.id && s.owner_id !== user?.id);
+  const metMijGedeeld = shares.filter(
+    (s) => s.member_id === user?.id && s.owner_id !== user?.id && s.status === "accepted",
+  );
+  const voorMij = shares.filter(
+    (s) => s.member_id === user?.id && s.owner_id !== user?.id && s.status === "pending",
+  );
+
+  const nodigUit = useMutation({
+    mutationFn: async (doelId: string) => {
+      const { error } = await supabase
+        .from("shares")
+        .insert({ owner_id: user!.id, member_id: doelId, status: "pending", ...rechten });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setZoek("");
+      setGezocht("");
+      qc.invalidateQueries({ queryKey: ["shares"] });
+      toast.success("Uitnodiging verstuurd. Die persoon ziet ze in de app.");
+    },
+    onError: () => toast.error("Uitnodigen lukte niet — misschien nodigde je die persoon al uit."),
+  });
+
+  const antwoord = useMutation({
+    mutationFn: async ({ token, ja }: { token: string; ja: boolean }) => {
+      const { error } = await supabase.rpc(ja ? "accept_share" : "decline_share", { _token: token });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["shares"] });
+      toast.success("Bewaard");
+    },
+    onError: () => toast.error("Dat lukte niet"),
+  });
+
+  async function uitContacten() {
+    type ContactsApi = {
+      select: (props: string[], opts: { multiple: boolean }) => Promise<{ email?: string[] }[]>;
+    };
+    const nav = navigator as Navigator & { contacts?: ContactsApi };
+    if (!nav.contacts) {
+      toast.info("Je telefoon laat dit niet toe. Zoek op e-mailadres of stuur een link door.");
+      return;
+    }
+    try {
+      const keuze = await nav.contacts.select(["name", "email"], { multiple: false });
+      const mail = keuze[0]?.email?.[0];
+      if (!mail) {
+        toast.info("Bij dat contact staat geen e-mailadres.");
+        return;
+      }
+      setZoek(mail);
+      setGezocht(mail);
+    } catch {
+      /* gebruiker annuleerde */
+    }
+  }
 
   // Alle mensen waarmee een verbinding bestaat, in beide richtingen.
   const vrienden = (() => {
@@ -197,6 +292,49 @@ function VriendenPage() {
           </button>
         </div>
 
+        <Link
+          to="/gezin"
+          className="flex min-h-16 items-center justify-between gap-3 rounded-2xl border border-border bg-card px-5 py-3"
+        >
+          <span className="flex items-center gap-3">
+            <Home className="size-6 text-primary" aria-hidden />
+            <span className="text-lg font-semibold">
+              {gezinId ? "Mijn gezin" : "Kook samen als gezin"}
+            </span>
+          </span>
+          <span className="text-base text-muted-foreground">
+            {gezinId ? "Bekijken" : "Starten"}
+          </span>
+        </Link>
+
+        {voorMij.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="font-display text-xl">Uitnodigingen voor jou</h2>
+            {voorMij.map((s) => (
+              <div key={s.id} className="rounded-2xl border border-border bg-card p-4">
+                <p className="text-lg font-semibold">
+                  {namen[s.owner_id] ?? "Iemand"} wil met je delen
+                </p>
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                  <Button
+                    onClick={() => antwoord.mutate({ token: s.token, ja: true })}
+                    className="h-14 w-full text-base sm:flex-1"
+                  >
+                    <Check className="size-5" /> Aannemen
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => antwoord.mutate({ token: s.token, ja: false })}
+                    className="h-14 w-full text-base sm:flex-1"
+                  >
+                    Nee, bedankt
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </section>
+        )}
+
         <section className="space-y-3">
           <h2 className="font-display text-xl">Mijn vrienden</h2>
           {vrienden.length === 0 ? (
@@ -277,6 +415,65 @@ function VriendenPage() {
           >
             <UserPlus className="size-5" /> Uitnodigingslink maken
           </Button>
+
+          <div className="space-y-3 rounded-2xl bg-secondary p-4">
+            <p className="text-base font-semibold">Gebruikt die persoon de app al?</p>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Zoek op het e-mailadres waarmee hij of zij aanmeldde, of op de Foodlo-naam (@naam).
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Input
+                value={zoek}
+                onChange={(e) => setZoek(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") setGezocht(zoek);
+                }}
+                aria-label="E-mailadres of Foodlo-naam"
+                placeholder="marie@voorbeeld.be of @marie"
+                className="h-14 flex-1 text-base"
+              />
+              <Button
+                variant="secondary"
+                onClick={() => setGezocht(zoek)}
+                className="h-14 text-base"
+              >
+                <Search className="size-5" /> Zoeken
+              </Button>
+            </div>
+            <Button variant="secondary" onClick={uitContacten} className="h-14 w-full text-base">
+              <BookUser className="size-5" /> Kies uit je contacten
+            </Button>
+
+            {gezocht.trim().length >= 3 &&
+              (zoekt ? (
+                <p className="text-base text-muted-foreground">Even zoeken…</p>
+              ) : gevonden.length === 0 ? (
+                <p className="text-base text-muted-foreground">
+                  Niemand gevonden. Stuur dan gewoon de uitnodigingslink door.
+                </p>
+              ) : (
+                gevonden.map((g) => (
+                  <div
+                    key={g.id}
+                    className="flex flex-col gap-3 rounded-xl bg-card p-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <span className="text-base font-semibold">
+                      {g.display_name}
+                      {g.handle ? (
+                        <span className="ml-2 text-muted-foreground">@{g.handle}</span>
+                      ) : null}
+                    </span>
+                    <Button
+                      onClick={() => nodigUit.mutate(g.id)}
+                      disabled={nodigUit.isPending}
+                      className="h-14 text-base"
+                    >
+                      <UserPlus className="size-5" /> Uitnodigen
+                    </Button>
+                  </div>
+                ))
+              ))}
+          </div>
         </section>
         )}
 

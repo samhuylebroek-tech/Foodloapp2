@@ -39,6 +39,43 @@ function InstellingenPage() {
   const { taal, zetTaal, thema, zetThema, momenten, zetMomenten, t } = useVoorkeuren();
   const creditFn = useServerFn(creditOverzicht);
   const credits = useQuery({ queryKey: ["credits"], queryFn: () => creditFn() });
+  const { user: ingelogd } = useAuth();
+  const [handle, setHandle] = useState("");
+  const [handleBezig, setHandleBezig] = useState(false);
+
+  useQuery({
+    queryKey: ["mijn-handle", ingelogd?.id],
+    enabled: !!ingelogd,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("handle")
+        .eq("id", ingelogd!.id)
+        .maybeSingle();
+      setHandle(data?.handle ?? "");
+      return data?.handle ?? "";
+    },
+  });
+
+  async function bewaarHandle() {
+    if (!ingelogd) return;
+    const schoon = handle.trim().replace(/^@/, "").toLowerCase();
+    if (schoon && !/^[a-z0-9._-]{3,20}$/.test(schoon)) {
+      toast.error(t("Kies 3 tot 20 tekens: letters, cijfers, punt of streepje"));
+      return;
+    }
+    setHandleBezig(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ handle: schoon || null })
+      .eq("id", ingelogd.id);
+    setHandleBezig(false);
+    if (error) toast.error(t("Die naam is al bezet. Kies een andere."));
+    else {
+      setHandle(schoon);
+      toast.success(t("Bewaard"));
+    }
+  }
 
 
   const [wachtwoord, setWachtwoord] = useState("");
@@ -82,6 +119,27 @@ function InstellingenPage() {
         </Link>
 
         <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+          <h2 className="text-xl font-bold tracking-tight">{t("Jouw Foodlo-naam")}</h2>
+          <p className="mt-2 text-base text-muted-foreground">
+            {t("Met deze naam kunnen vrienden je terugvinden. Bijvoorbeeld: marie")}
+          </p>
+          <Label htmlFor="handle" className="mt-4 block text-base font-semibold">
+            {t("Foodlo-naam")}
+          </Label>
+          <Input
+            id="handle"
+            value={handle}
+            onChange={(e) => setHandle(e.target.value)}
+            placeholder="marie"
+            className="mt-2 h-14 text-base"
+          />
+          <Button onClick={bewaarHandle} disabled={handleBezig} className="mt-3 h-14 w-full text-base">
+            {handleBezig ? <Loader2 className="size-5 animate-spin" /> : null} {t("Bewaren")}
+          </Button>
+        </section>
+
+        <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+
 
           <h2 className="text-xl font-bold tracking-tight">{t("Wachtwoord")}</h2>
           <Label htmlFor="pw" className="mt-4 block text-base font-semibold">
