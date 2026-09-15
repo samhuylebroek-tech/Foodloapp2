@@ -169,15 +169,16 @@ function VriendenPage() {
   );
 
   const nodigUit = useMutation({
-    mutationFn: async (doelId: string) => {
+    mutationFn: async ({ doelId, kies }: { doelId: string; kies: Rechten }) => {
       const { error } = await supabase
         .from("shares")
-        .insert({ owner_id: user!.id, member_id: doelId, status: "pending", ...rechten });
+        .insert({ owner_id: user!.id, member_id: doelId, status: "pending", ...kies });
       if (error) throw error;
     },
     onSuccess: () => {
       setZoek("");
       setGezocht("");
+      setKeuze(null);
       qc.invalidateQueries({ queryKey: ["shares"] });
       qc.invalidateQueries({ queryKey: ["zoek-gebruiker"] });
       toast.success("Uitnodiging verstuurd. Die persoon ziet ze in de app.");
@@ -186,12 +187,34 @@ function VriendenPage() {
   });
 
   const antwoord = useMutation({
-    mutationFn: async ({ token, ja }: { token: string; ja: boolean }) => {
+    mutationFn: async ({
+      token,
+      ja,
+      vanWie,
+      kies,
+    }: {
+      token: string;
+      ja: boolean;
+      vanWie?: string;
+      kies?: Rechten | null;
+    }) => {
       const { error } = await supabase.rpc(ja ? "accept_share" : "decline_share", { _token: token });
       if (error) throw error;
+      if (!ja || !kies || !vanWie) return { terug: false };
+      const iets = Object.values(kies).some(Boolean);
+      if (!iets) return { terug: false };
+      const { error: fout } = await supabase
+        .from("shares")
+        .insert({ owner_id: user!.id, member_id: vanWie, status: "accepted", ...kies });
+      return { terug: !fout, mislukt: !!fout };
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
+      setKeuze(null);
       qc.invalidateQueries({ queryKey: ["shares"] });
+      if (res?.mislukt) {
+        toast.info("Je bent verbonden. Wat jij deelt, stel je in bij die vriend.");
+        return;
+      }
       toast.success("Bewaard");
     },
     onError: () => toast.error("Dat lukte niet"),
