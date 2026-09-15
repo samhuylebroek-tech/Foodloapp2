@@ -1138,3 +1138,103 @@ export const adminCreditAanvraagAfhandelen = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
+
+// ============================================================
+// Klantenkaarten — winkels beheren en gebruik opvolgen.
+// Kaartnummers worden nooit volledig getoond.
+// ============================================================
+export const adminLoyalty = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await bewaker(context as Ctx, "content.manage", { schrijft: false });
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: winkels } = await supabaseAdmin
+      .from("loyalty_stores")
+      .select("slug, naam, kleur, standaard_formaat, actief, volgorde")
+      .order("volgorde");
+    const { data: kaarten } = await supabaseAdmin
+      .from("loyalty_cards")
+      .select("id, user_id, store_slug, winkel_naam, nummer, formaat, favoriet, gedeeld, created_at")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    const sinds = new Date(Date.now() - 30 * 24 * 3600_000).toISOString();
+    const { data: scans } = await supabaseAdmin
+      .from("loyalty_scan_events")
+      .select("id, methode, formaat, store_slug, ok, reden, created_at")
+      .gte("created_at", sinds)
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    const lijst = kaarten ?? [];
+    const perWinkel = new Map<string, { winkel: string; aantal: number }>();
+    for (const k of lijst) {
+      const sleutel = k.store_slug ?? "overig";
+      const rij = perWinkel.get(sleutel) ?? { winkel: k.winkel_naam, aantal: 0 };
+      rij.aantal += 1;
+      perWinkel.set(sleutel, rij);
+    }
+    const scanLijst = scans ?? [];
+    return {
+      winkels: winkels ?? [],
+      totaal: lijst.length,
+      gebruikers: new Set(lijst.map((k) => k.user_id)).size,
+      gedeeld: lijst.filter((k) => k.gedeeld).length,
+      perWinkel: [...perWinkel.values()].sort((a, b) => b.aantal - a.aantal),
+      perFormaat: [...new Set(lijst.map((k) => k.formaat))].map((f) => ({
+        formaat: f,
+        aantal: lijst.filter((k) => k.formaat === f).length,
+      })),
+      scans: {
+        totaal: scanLijst.length,
+        mislukt: scanLijst.filter((s) => !s.ok).length,
+        recent: scanLijst.slice(0, 30).map((s) => ({
+          id: s.id,
+          methode: s.methode,
+          formaat: s.formaat,
+          winkel: s.store_slug,
+          ok: s.ok,
+          reden: s.reden,
+          created_at: s.created_at,
+        })),
+      },
+      // Enkel de laatste vier cijfers, nooit het volledige nummer.
+      recent: lijst.slice(0, 30).map((k) => ({
+        id: k.id,
+        winkel: k.winkel_naam,
+        formaat: k.formaat,
+        gedeeld: k.gedeeld,
+        gemaskeerd: k.nummer.length > 4 ? `•••• ${k.nummer.slice(-4)}` : "••••",
+        created_at: k.created_at,
+      })),
+    };
+  });
+
+export const adminLoyaltyWinkel = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        slug: z
+          .string()
+          .min(2)
+          .max(40)
+          .regex(/^[a-z0-9-]+$/),
+        naam: z.string().min(2).max(60),
+        kleur: z
+          .string()
+          .regex(/^#[0-9a-fA-F]{6}$/)
+          .default("#475569"),
+        standaard_formaat: z.enum(["CODE128", "EAN13", "EAN8", "CODE39", "ITF", "QR"]).default("CODE128"),
+        actief: z.boolean().default(true),
+        volgorde: z.number().int().min(0).max(999).default(100),
+      })
+      .parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const { db, profiel } = await bewaker(context as Ctx, "content.manage");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("loyalty_stores").upsert(data, { onConflict: "slug" });
+    if (error) throw new Error(error.message);
+    await logboek(db, profiel, "loyalty.store_saved", "loyalty_store", data.slug, { naam: data.naam });
+    return { ok: true };
+  });

@@ -600,6 +600,111 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_cards: {
+        Row: {
+          created_at: string
+          favoriet: boolean
+          formaat: string
+          gedeeld: boolean
+          id: string
+          kaartnaam: string
+          nummer: string
+          store_slug: string | null
+          updated_at: string
+          user_id: string
+          winkel_naam: string
+        }
+        Insert: {
+          created_at?: string
+          favoriet?: boolean
+          formaat?: string
+          gedeeld?: boolean
+          id?: string
+          kaartnaam?: string
+          nummer: string
+          store_slug?: string | null
+          updated_at?: string
+          user_id: string
+          winkel_naam: string
+        }
+        Update: {
+          created_at?: string
+          favoriet?: boolean
+          formaat?: string
+          gedeeld?: boolean
+          id?: string
+          kaartnaam?: string
+          nummer?: string
+          store_slug?: string | null
+          updated_at?: string
+          user_id?: string
+          winkel_naam?: string
+        }
+        Relationships: []
+      }
+      loyalty_scan_events: {
+        Row: {
+          created_at: string
+          formaat: string | null
+          id: string
+          methode: string
+          ok: boolean
+          reden: string | null
+          store_slug: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          formaat?: string | null
+          id?: string
+          methode: string
+          ok?: boolean
+          reden?: string | null
+          store_slug?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          formaat?: string | null
+          id?: string
+          methode?: string
+          ok?: boolean
+          reden?: string | null
+          store_slug?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      loyalty_stores: {
+        Row: {
+          actief: boolean
+          created_at: string
+          kleur: string
+          naam: string
+          slug: string
+          standaard_formaat: string
+          volgorde: number
+        }
+        Insert: {
+          actief?: boolean
+          created_at?: string
+          kleur?: string
+          naam: string
+          slug: string
+          standaard_formaat?: string
+          volgorde?: number
+        }
+        Update: {
+          actief?: boolean
+          created_at?: string
+          kleur?: string
+          naam?: string
+          slug?: string
+          standaard_formaat?: string
+          volgorde?: number
+        }
+        Relationships: []
+      }
       meal_plan: {
         Row: {
           created_at: string

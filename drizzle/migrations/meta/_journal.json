@@ -64,6 +64,13 @@
       "when": 1789460792149,
       "tag": "0008_lock_admin_to_owner",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789461069668,
+      "tag": "0009_loyalty_cards",
+      "breakpoints": true
     }
   ]
 }
