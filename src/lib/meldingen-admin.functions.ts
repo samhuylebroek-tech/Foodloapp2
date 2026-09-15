@@ -12,7 +12,7 @@ export type MeldingStats = {
   engagementPercentage: number;
   perSoort: { soort: string; verstuurd: number; aangetikt: number; mislukt: number }[];
   aanPerSoort: { soort: string; aantal: number }[];
-  standaarden: { key: string; value: unknown; omschrijving: string }[];
+  standaarden: { key: string; value: string; omschrijving: string }[];
 };
 
 async function moetAdminZijn(supabase: ReturnType<typeof Object> extends never ? never : any, userId: string) {
@@ -79,19 +79,23 @@ export const meldingStatistieken = createServerFn({ method: "GET" })
       engagementPercentage: verstuurd ? Math.round((aangetikt / verstuurd) * 100) : 0,
       perSoort,
       aanPerSoort,
-      standaarden: (standaarden ?? []) as MeldingStats["standaarden"],
+      standaarden: (standaarden ?? []).map((s) => ({
+        key: s.key,
+        value: JSON.stringify(s.value),
+        omschrijving: s.omschrijving ?? "",
+      })),
     };
   });
 
 export const bewaarMeldingStandaard = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { key: string; value: Record<string, unknown> }) => input)
+  .inputValidator((input: { key: string; value: string }) => input)
   .handler(async ({ data, context }) => {
     await moetAdminZijn(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("notification_defaults")
-      .update({ value: data.value, updated_at: new Date().toISOString() })
+      .update({ value: JSON.parse(data.value) as never, updated_at: new Date().toISOString() })
       .eq("key", data.key);
     if (error) throw new Error(error.message);
     return { ok: true };

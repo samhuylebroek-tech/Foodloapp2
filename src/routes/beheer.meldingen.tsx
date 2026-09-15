@@ -4,7 +4,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 
 import { AdminShell, Kaart, Kpi } from "@/components/AdminShell";
-import { bewaarMeldingStandaard, meldingStatistieken } from "@/lib/meldingen-admin.functions";
+import {
+  bewaarMeldingStandaard,
+  meldingStatistieken,
+  type MeldingStats,
+} from "@/lib/meldingen-admin.functions";
 
 export const Route = createFileRoute("/beheer/meldingen")({ component: BeheerMeldingen });
 
@@ -20,7 +24,10 @@ function BeheerMeldingen() {
   const fn = useServerFn(meldingStatistieken);
   const bewaar = useServerFn(bewaarMeldingStandaard);
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["admin-meldingen"], queryFn: () => fn() });
+  const { data, isLoading } = useQuery<MeldingStats>({
+    queryKey: ["admin-meldingen"],
+    queryFn: () => fn() as Promise<MeldingStats>,
+  });
 
   return (
     <AdminShell titel="Meldingen" omschrijving="Bereik, aflevering en standaardinstellingen">
@@ -75,12 +82,12 @@ function BeheerMeldingen() {
                 <div key={s.key} className="flex flex-wrap items-center gap-3">
                   <span className="w-48 text-sm">{LABELS[s.key] ?? s.key}</span>
                   <input
-                    defaultValue={JSON.stringify(s.value)}
+                    defaultValue={s.value}
                     aria-label={`Standaard voor ${LABELS[s.key] ?? s.key}`}
                     onBlur={async (e) => {
                       try {
-                        const value = JSON.parse(e.target.value) as Record<string, unknown>;
-                        await bewaar({ data: { key: s.key, value } });
+                        JSON.parse(e.target.value);
+                        await bewaar({ data: { key: s.key, value: e.target.value } });
                         await qc.invalidateQueries({ queryKey: ["admin-meldingen"] });
                         toast.success("Bewaard");
                       } catch {
