@@ -247,6 +247,81 @@ function Welkom() {
           </section>
         )}
 
+        {stap === 3 && (
+          <section className="mt-4">
+            <h1 className="text-3xl font-bold tracking-tight">{t("Zo werkt het")}</h1>
+            <p className="mt-2 text-base text-muted-foreground">
+              {t("Vijf knoppen onderaan, meer heb je niet nodig.")}
+            </p>
+            <ul className="mt-5 space-y-3">
+              {RONDLEIDING.map((r) => {
+                const Icoon = r.icoon;
+                return (
+                  <li
+                    key={r.titel}
+                    className="flex items-start gap-4 rounded-2xl border border-border bg-card p-4"
+                  >
+                    <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
+                      <Icoon className="size-6" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="text-lg font-bold">{t(r.titel)}</p>
+                      <p className="mt-0.5 text-base text-muted-foreground">{t(r.tekst)}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        {stap === 4 && (
+          <section className="mt-4">
+            <h1 className="text-3xl font-bold tracking-tight">{t("Zet de app op je telefoon")}</h1>
+            <p className="mt-2 text-base text-muted-foreground">
+              {t(
+                "Foodlo is een web-app: je hoeft niets uit een app-winkel te halen. Zo staat hij binnen een halve minuut op je beginscherm:",
+              )}
+            </p>
+
+            <div className="mt-5 space-y-3">
+              <div className="rounded-2xl border border-border bg-card p-4">
+                <p className="flex items-center gap-2 text-lg font-bold">
+                  <Smartphone className="size-6 text-primary" aria-hidden /> iPhone of iPad
+                </p>
+                <ol className="mt-2 list-decimal space-y-1.5 pl-6 text-base">
+                  <li>{t("Open foodloapp.com in Safari.")}</li>
+                  <li className="flex flex-wrap items-center gap-1.5">
+                    {t('Tik onderaan op')}
+                    <Share className="inline size-5 text-primary" aria-hidden />
+                    {t("‘Deel’.")}
+                  </li>
+                  <li className="flex flex-wrap items-center gap-1.5">
+                    {t("Kies")}
+                    <SquarePlus className="inline size-5 text-primary" aria-hidden />
+                    {t("‘Zet op beginscherm’ en tik op ‘Voeg toe’.")}
+                  </li>
+                </ol>
+              </div>
+
+              <div className="rounded-2xl border border-border bg-card p-4">
+                <p className="flex items-center gap-2 text-lg font-bold">
+                  <Smartphone className="size-6 text-primary" aria-hidden /> Android
+                </p>
+                <ol className="mt-2 list-decimal space-y-1.5 pl-6 text-base">
+                  <li>{t("Open foodloapp.com in Chrome.")}</li>
+                  <li>{t("Tik rechtsboven op de drie puntjes.")}</li>
+                  <li>{t("Kies ‘App installeren’ of ‘Toevoegen aan startscherm’.")}</li>
+                </ol>
+              </div>
+
+              <p className="rounded-2xl bg-secondary px-4 py-3 text-base font-semibold text-secondary-foreground">
+                {t("Daarna open je Foodlo zoals elke andere app, met het groene potje op je scherm.")}
+              </p>
+            </div>
+          </section>
+        )}
+
         <div className="mt-8 flex gap-3">
           {stap > 0 && (
             <Button
