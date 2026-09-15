@@ -743,6 +743,132 @@ export type Database = {
           },
         ]
       }
+      notification_defaults: {
+        Row: {
+          key: string
+          omschrijving: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          omschrijving?: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          omschrijving?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      notification_log: {
+        Row: {
+          body: string
+          clicked_at: string | null
+          created_at: string
+          dedupe_key: string
+          fout: string | null
+          id: string
+          soort: string
+          status: string
+          titel: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          body?: string
+          clicked_at?: string | null
+          created_at?: string
+          dedupe_key: string
+          fout?: string | null
+          id?: string
+          soort: string
+          status?: string
+          titel?: string
+          url?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          clicked_at?: string | null
+          created_at?: string
+          dedupe_key?: string
+          fout?: string | null
+          id?: string
+          soort?: string
+          status?: string
+          titel?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_preferences: {
+        Row: {
+          cooking_lead_min: number
+          cooking_on: boolean
+          created_at: string
+          daily_menu_moments: string[]
+          daily_menu_on: boolean
+          daily_menu_time: string
+          lockscreen_details: boolean
+          meal_lead_min: number
+          meal_on: boolean
+          onboarding_gezien: boolean
+          shopping_on: boolean
+          shopping_time: string
+          tijdzone: string
+          updated_at: string
+          user_id: string
+          weekly_dow: number
+          weekly_on: boolean
+          weekly_time: string
+        }
+        Insert: {
+          cooking_lead_min?: number
+          cooking_on?: boolean
+          created_at?: string
+          daily_menu_moments?: string[]
+          daily_menu_on?: boolean
+          daily_menu_time?: string
+          lockscreen_details?: boolean
+          meal_lead_min?: number
+          meal_on?: boolean
+          onboarding_gezien?: boolean
+          shopping_on?: boolean
+          shopping_time?: string
+          tijdzone?: string
+          updated_at?: string
+          user_id: string
+          weekly_dow?: number
+          weekly_on?: boolean
+          weekly_time?: string
+        }
+        Update: {
+          cooking_lead_min?: number
+          cooking_on?: boolean
+          created_at?: string
+          daily_menu_moments?: string[]
+          daily_menu_on?: boolean
+          daily_menu_time?: string
+          lockscreen_details?: boolean
+          meal_lead_min?: number
+          meal_on?: boolean
+          onboarding_gezien?: boolean
+          shopping_on?: boolean
+          shopping_time?: string
+          tijdzone?: string
+          updated_at?: string
+          user_id?: string
+          weekly_dow?: number
+          weekly_on?: boolean
+          weekly_time?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           description: string
@@ -803,6 +929,45 @@ export type Database = {
           onboarding_klaar?: boolean
           taal?: string
           thema?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          actief: boolean
+          auth: string
+          created_at: string
+          endpoint: string
+          fail_count: number
+          id: string
+          last_ok_at: string | null
+          p256dh: string
+          user_agent: string
+          user_id: string
+        }
+        Insert: {
+          actief?: boolean
+          auth: string
+          created_at?: string
+          endpoint: string
+          fail_count?: number
+          id?: string
+          last_ok_at?: string | null
+          p256dh: string
+          user_agent?: string
+          user_id: string
+        }
+        Update: {
+          actief?: boolean
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          fail_count?: number
+          id?: string
+          last_ok_at?: string | null
+          p256dh?: string
+          user_agent?: string
+          user_id?: string
         }
         Relationships: []
       }
