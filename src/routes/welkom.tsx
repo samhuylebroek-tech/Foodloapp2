@@ -110,7 +110,7 @@ function Welkom() {
 
   const eenBlok = momenten.length === 1 && momenten[0] === EEN_BLOK[0];
 
-  async function klaar() {
+  async function klaar(doel: "/" | "/meldingen" = "/") {
     setBezig(true);
     if (user) {
       await supabase
@@ -122,8 +122,22 @@ function Welkom() {
       await queryClient.invalidateQueries({ queryKey: ["onboarding", user.id] });
     }
     window.localStorage.setItem("onboarding_klaar", "ja");
-    navigate({ to: "/" });
+    navigate({ to: doel });
   }
+
+  // De toestemming van de telefoon vragen we pas als je hier zelf voor kiest.
+  async function metMeldingen() {
+    setBezig(true);
+    const status = await zetMeldingenAan();
+    setBezig(false);
+    if (status === "aan") toast.success(t("Meldingen staan aan"));
+    else if (status === "geweigerd")
+      toast.error(t("Je telefoon blokkeert meldingen. Je kan ze later alsnog aanzetten."));
+    else if (status === "open-in-eigen-tab")
+      toast.message(t("Open Foodlo vanaf je beginscherm om meldingen aan te zetten."));
+    await klaar("/meldingen");
+  }
+
 
 
   return (
