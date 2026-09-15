@@ -1,6 +1,19 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  CalendarDays,
+  Check,
+  Loader2,
+  PlusCircle,
+  Share,
+  ShoppingCart,
+  Smartphone,
+  SquarePlus,
+  Users,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -34,7 +47,41 @@ export const Route = createFileRoute("/welkom")({
   component: Welkom,
 });
 
-const STAPPEN = ["Taal", "Kleuren", "Momenten van de dag"] as const;
+const STAPPEN = [
+  "Taal",
+  "Kleuren",
+  "Momenten van de dag",
+  "Zo werkt het",
+  "Op je telefoon",
+] as const;
+
+const RONDLEIDING = [
+  {
+    icoon: BookOpen,
+    titel: "Recepten",
+    tekst: "Al je gerechten op één plek. Zoek, filter op vlees, vis of vega en tik op een recept om te koken.",
+  },
+  {
+    icoon: PlusCircle,
+    titel: "Toevoegen",
+    tekst: "Plak een link van een receptensite of YouTube, typ zelf, of neem een foto. De app vult de rest in.",
+  },
+  {
+    icoon: CalendarDays,
+    titel: "Weekmenu",
+    tekst: "Plan per dag wat je eet. Een groene dag is volledig gepland.",
+  },
+  {
+    icoon: ShoppingCart,
+    titel: "Boodschappen",
+    tekst: "Je boodschappenlijst vult zichzelf vanuit je weekmenu of recepten. Vink af in de winkel.",
+  },
+  {
+    icoon: Users,
+    titel: "Vrienden",
+    tekst: "Nodig vrienden uit met een link en kook samen: zij zien jouw recepten, jij de hunne.",
+  },
+] as const;
 
 function Welkom() {
   const navigate = useNavigate();
