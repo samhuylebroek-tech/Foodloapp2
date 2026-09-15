@@ -119,9 +119,13 @@ function VriendenPage() {
     },
   });
 
-  const { data: gevonden = [], isFetching: zoekt } = useQuery({
+  const {
+    data: gevonden = [],
+    isFetching: zoekt,
+    isError: zoekMislukt,
+  } = useQuery({
     queryKey: ["zoek-gebruiker", gezocht],
-    enabled: gezocht.trim().length >= 3,
+    enabled: gezocht.trim().length >= 2,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("zoek_gebruiker", { _term: gezocht.trim() });
       if (error) throw error;
@@ -175,9 +179,10 @@ function VriendenPage() {
       setZoek("");
       setGezocht("");
       qc.invalidateQueries({ queryKey: ["shares"] });
+      qc.invalidateQueries({ queryKey: ["zoek-gebruiker"] });
       toast.success("Uitnodiging verstuurd. Die persoon ziet ze in de app.");
     },
-    onError: () => toast.error("Uitnodigen lukte niet — misschien nodigde je die persoon al uit."),
+    onError: () => toast.error("Deze persoon is al uitgenodigd of al met jou verbonden."),
   });
 
   const antwoord = useMutation({
@@ -248,6 +253,22 @@ function VriendenPage() {
     }
     return [...map.values()];
   })();
+
+  function zoekStatus(id: string) {
+    if (gezinLeden.some((m) => m.user_id === id)) return "gezin" as const;
+    if (vrienden.some((v) => v.id === id)) return "vriend" as const;
+    if (
+      shares.some(
+        (s) =>
+          ((s.owner_id === user?.id && s.member_id === id) ||
+            (s.owner_id === id && s.member_id === user?.id)) &&
+          s.status === "pending",
+      )
+    ) {
+      return "wacht" as const;
+    }
+    return "nieuw" as const;
+  }
 
   const maakUitnodiging = useMutation({
     mutationFn: async () => {
@@ -332,6 +353,84 @@ function VriendenPage() {
             {gezinId ? "Bekijken" : "Starten"}
           </span>
         </Link>
+
+        <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
+          <div>
+            <h2 className="font-display text-xl">Zoek iemand in Foodlo</h2>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              Zoek op naam, @Foodlo-naam of het volledige e-mailadres.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Input
+              value={zoek}
+              onChange={(e) => setZoek(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && zoek.trim().length >= 2) setGezocht(zoek.trim());
+              }}
+              aria-label="Naam, Foodlo-naam of e-mailadres"
+              placeholder="Bijvoorbeeld Sofie of @sofie"
+              className="h-14 flex-1 text-base"
+            />
+            <Button
+              variant="secondary"
+              onClick={() => setGezocht(zoek.trim())}
+              disabled={zoek.trim().length < 2}
+              className="h-14 text-base"
+            >
+              <Search className="size-5" /> Zoeken
+            </Button>
+          </div>
+          {zoek.length === 1 && (
+            <p className="text-sm text-muted-foreground">Typ minstens 2 tekens.</p>
+          )}
+          {gezocht.trim().length >= 2 &&
+            (zoekt ? (
+              <p className="text-base text-muted-foreground">Even zoeken…</p>
+            ) : zoekMislukt ? (
+              <p className="text-base text-destructive">Zoeken lukte even niet. Probeer opnieuw.</p>
+            ) : gevonden.length === 0 ? (
+              <p className="text-base text-muted-foreground">
+                Niemand gevonden. Controleer de naam of deel een uitnodigingslink.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {gevonden.map((g) => {
+                  const status = zoekStatus(g.id);
+                  return (
+                    <div
+                      key={g.id}
+                      className="flex min-h-16 items-center justify-between gap-3 rounded-xl bg-secondary p-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-base font-semibold">{g.display_name}</p>
+                        {g.handle ? (
+                          <p className="truncate text-sm text-muted-foreground">@{g.handle}</p>
+                        ) : null}
+                      </div>
+                      {status === "nieuw" ? (
+                        <Button
+                          onClick={() => nodigUit.mutate(g.id)}
+                          disabled={nodigUit.isPending}
+                          className="h-12 shrink-0 text-base"
+                        >
+                          <UserPlus className="size-5" /> Uitnodigen
+                        </Button>
+                      ) : (
+                        <span className="shrink-0 rounded-full bg-card px-3 py-2 text-sm font-semibold text-muted-foreground">
+                          {status === "gezin"
+                            ? "Gezinslid"
+                            : status === "vriend"
+                              ? "Al vriend"
+                              : "Uitgenodigd"}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+        </section>
 
         {voorMij.length > 0 && (
           <section className="space-y-3">
@@ -456,62 +555,10 @@ function VriendenPage() {
           </Button>
 
           <div className="space-y-3 rounded-2xl bg-secondary p-4">
-            <p className="text-base font-semibold">Gebruikt die persoon de app al?</p>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              Zoek op het e-mailadres waarmee hij of zij aanmeldde, of op de Foodlo-naam (@naam).
-            </p>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Input
-                value={zoek}
-                onChange={(e) => setZoek(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") setGezocht(zoek);
-                }}
-                aria-label="E-mailadres of Foodlo-naam"
-                placeholder="marie@voorbeeld.be of @marie"
-                className="h-14 flex-1 text-base"
-              />
-              <Button
-                variant="secondary"
-                onClick={() => setGezocht(zoek)}
-                className="h-14 text-base"
-              >
-                <Search className="size-5" /> Zoeken
-              </Button>
-            </div>
+            <p className="text-base font-semibold">Kies iemand uit je telefoon</p>
             <Button variant="secondary" onClick={uitContacten} className="h-14 w-full text-base">
               <BookUser className="size-5" /> Kies uit je contacten
             </Button>
-
-            {gezocht.trim().length >= 3 &&
-              (zoekt ? (
-                <p className="text-base text-muted-foreground">Even zoeken…</p>
-              ) : gevonden.length === 0 ? (
-                <p className="text-base text-muted-foreground">
-                  Niemand gevonden. Stuur dan gewoon de uitnodigingslink door.
-                </p>
-              ) : (
-                gevonden.map((g) => (
-                  <div
-                    key={g.id}
-                    className="flex flex-col gap-3 rounded-xl bg-card p-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <span className="text-base font-semibold">
-                      {g.display_name}
-                      {g.handle ? (
-                        <span className="ml-2 text-muted-foreground">@{g.handle}</span>
-                      ) : null}
-                    </span>
-                    <Button
-                      onClick={() => nodigUit.mutate(g.id)}
-                      disabled={nodigUit.isPending}
-                      className="h-14 text-base"
-                    >
-                      <UserPlus className="size-5" /> Uitnodigen
-                    </Button>
-                  </div>
-                ))
-              ))}
           </div>
         </section>
         )}
