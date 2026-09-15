@@ -56,6 +56,7 @@ export async function huidigeStatus(): Promise<MeldingStatus> {
 /** Vraagt toestemming en meldt het toestel aan. Alleen op een gebruikersactie oproepen. */
 export async function zetMeldingenAan(): Promise<MeldingStatus> {
   if (!meldingenMogelijk()) return "niet-ondersteund";
+  if (!(await isAangemeld())) return "uit";
   if (window.top !== window.self && Notification.permission !== "granted") return "open-in-eigen-tab";
 
   const toestemming =
