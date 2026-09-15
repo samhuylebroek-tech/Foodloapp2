@@ -1,6 +1,19 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  CalendarDays,
+  Check,
+  Loader2,
+  PlusCircle,
+  Share,
+  ShoppingCart,
+  Smartphone,
+  SquarePlus,
+  Users,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,12 +33,12 @@ export const Route = createFileRoute("/welkom")({
       { title: "Welkom bij Foodlo — je app instellen" },
       {
         name: "description",
-        content: "Kies je taal, je kleuren en de momenten van de dag. In drie korte stapjes klaar.",
+        content: "Kies je taal en kleuren, leer de app kennen en zet hem op je telefoon. In vijf korte stapjes klaar.",
       },
       { property: "og:title", content: "Welkom bij Foodlo — je app instellen" },
       {
         property: "og:description",
-        content: "Kies je taal, je kleuren en de momenten van de dag. In drie korte stapjes klaar.",
+        content: "Kies je taal en kleuren, leer de app kennen en zet hem op je telefoon. In vijf korte stapjes klaar.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -34,7 +47,41 @@ export const Route = createFileRoute("/welkom")({
   component: Welkom,
 });
 
-const STAPPEN = ["Taal", "Kleuren", "Momenten van de dag"] as const;
+const STAPPEN = [
+  "Taal",
+  "Kleuren",
+  "Momenten van de dag",
+  "Zo werkt het",
+  "Op je telefoon",
+] as const;
+
+const RONDLEIDING = [
+  {
+    icoon: BookOpen,
+    titel: "Recepten",
+    tekst: "Al je gerechten op één plek. Zoek, filter op vlees, vis of vega en tik op een recept om te koken.",
+  },
+  {
+    icoon: PlusCircle,
+    titel: "Toevoegen",
+    tekst: "Plak een link van een receptensite of YouTube, typ zelf, of neem een foto. De app vult de rest in.",
+  },
+  {
+    icoon: CalendarDays,
+    titel: "Weekmenu",
+    tekst: "Plan per dag wat je eet. Een groene dag is volledig gepland.",
+  },
+  {
+    icoon: ShoppingCart,
+    titel: "Boodschappen",
+    tekst: "Je boodschappenlijst vult zichzelf vanuit je weekmenu of recepten. Vink af in de winkel.",
+  },
+  {
+    icoon: Users,
+    titel: "Vrienden",
+    tekst: "Nodig vrienden uit met een link en kook samen: zij zien jouw recepten, jij de hunne.",
+  },
+] as const;
 
 function Welkom() {
   const navigate = useNavigate();
@@ -197,6 +244,81 @@ function Welkom() {
                 })}
               </div>
             )}
+          </section>
+        )}
+
+        {stap === 3 && (
+          <section className="mt-4">
+            <h1 className="text-3xl font-bold tracking-tight">{t("Zo werkt het")}</h1>
+            <p className="mt-2 text-base text-muted-foreground">
+              {t("Vijf knoppen onderaan, meer heb je niet nodig.")}
+            </p>
+            <ul className="mt-5 space-y-3">
+              {RONDLEIDING.map((r) => {
+                const Icoon = r.icoon;
+                return (
+                  <li
+                    key={r.titel}
+                    className="flex items-start gap-4 rounded-2xl border border-border bg-card p-4"
+                  >
+                    <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
+                      <Icoon className="size-6" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="text-lg font-bold">{t(r.titel)}</p>
+                      <p className="mt-0.5 text-base text-muted-foreground">{t(r.tekst)}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        {stap === 4 && (
+          <section className="mt-4">
+            <h1 className="text-3xl font-bold tracking-tight">{t("Zet de app op je telefoon")}</h1>
+            <p className="mt-2 text-base text-muted-foreground">
+              {t(
+                "Foodlo is een web-app: je hoeft niets uit een app-winkel te halen. Zo staat hij binnen een halve minuut op je beginscherm:",
+              )}
+            </p>
+
+            <div className="mt-5 space-y-3">
+              <div className="rounded-2xl border border-border bg-card p-4">
+                <p className="flex items-center gap-2 text-lg font-bold">
+                  <Smartphone className="size-6 text-primary" aria-hidden /> iPhone of iPad
+                </p>
+                <ol className="mt-2 list-decimal space-y-1.5 pl-6 text-base">
+                  <li>{t("Open foodloapp.com in Safari.")}</li>
+                  <li className="flex flex-wrap items-center gap-1.5">
+                    {t('Tik onderaan op')}
+                    <Share className="inline size-5 text-primary" aria-hidden />
+                    {t("‘Deel’.")}
+                  </li>
+                  <li className="flex flex-wrap items-center gap-1.5">
+                    {t("Kies")}
+                    <SquarePlus className="inline size-5 text-primary" aria-hidden />
+                    {t("‘Zet op beginscherm’ en tik op ‘Voeg toe’.")}
+                  </li>
+                </ol>
+              </div>
+
+              <div className="rounded-2xl border border-border bg-card p-4">
+                <p className="flex items-center gap-2 text-lg font-bold">
+                  <Smartphone className="size-6 text-primary" aria-hidden /> Android
+                </p>
+                <ol className="mt-2 list-decimal space-y-1.5 pl-6 text-base">
+                  <li>{t("Open foodloapp.com in Chrome.")}</li>
+                  <li>{t("Tik rechtsboven op de drie puntjes.")}</li>
+                  <li>{t("Kies ‘App installeren’ of ‘Toevoegen aan startscherm’.")}</li>
+                </ol>
+              </div>
+
+              <p className="rounded-2xl bg-secondary px-4 py-3 text-base font-semibold text-secondary-foreground">
+                {t("Daarna open je Foodlo zoals elke andere app, met het groene potje op je scherm.")}
+              </p>
+            </div>
           </section>
         )}
 
