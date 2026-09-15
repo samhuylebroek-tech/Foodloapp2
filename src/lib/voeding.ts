@@ -40,7 +40,7 @@ export type MicroSleutel = keyof Micro;
 
 export type Voeding = Macro & { micro: Micro };
 
-type Item = Macro & { micro?: Micro; aliassen?: string[] };
+type Item = Macro & { micro?: Micro | undefined; aliassen?: string[] | undefined };
 
 /** EU-referentie-inname (RI) per dag voor een gemiddelde volwassene. */
 export const RI = {
