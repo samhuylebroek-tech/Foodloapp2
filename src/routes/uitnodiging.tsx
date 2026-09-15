@@ -64,7 +64,28 @@ function UitnodigingPage() {
 
   useEffect(() => {
     if (code) sessionStorage.setItem("uitnodiging", code);
-  }, [code]);
+    if (groep) sessionStorage.setItem("gezinsuitnodiging", groep);
+  }, [code, groep]);
+
+  useEffect(() => {
+    if (!groep || !session) return;
+    supabase
+      .rpc("groep_naam", { _token: groep })
+      .then(({ data }) => setGroepNaam((data as unknown as string) ?? null));
+  }, [groep, session]);
+
+  async function gezinAannemen() {
+    setBusy(true);
+    const { error } = await supabase.rpc("join_group", { _token: groep });
+    setBusy(false);
+    if (error) {
+      toast.error("Deze uitnodiging werkt niet meer. Vraag om een nieuwe.");
+      return;
+    }
+    sessionStorage.removeItem("gezinsuitnodiging");
+    toast.success("Je hoort er nu bij!");
+    navigate({ to: "/gezin" });
+  }
 
   async function aannemen() {
     setBusy(true);
