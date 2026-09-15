@@ -55,6 +55,14 @@ const STAPPEN = [
   "Momenten van de dag",
   "Zo werkt het",
   "Op je telefoon",
+  "Blijf op schema",
+] as const;
+
+const MELDING_VOORBEELDEN = [
+  { emoji: "🍽️", titel: "Menu van vandaag", tekst: "Elke ochtend zie je wat er op het menu staat." },
+  { emoji: "🗓️", titel: "Weekmenu plannen", tekst: "Een duwtje om je week op tijd te plannen." },
+  { emoji: "🛒", titel: "Boodschappen", tekst: "Een seintje wanneer je lijst klaarstaat." },
+  { emoji: "👨‍🍳", titel: "Tijd om te koken", tekst: "Net op tijd om aan je gerecht te beginnen." },
 ] as const;
 
 const RONDLEIDING = [
