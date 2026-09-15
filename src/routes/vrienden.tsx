@@ -227,11 +227,21 @@ function VriendenPage() {
     for (const s of shares) {
       if (s.status !== "accepted") continue;
       if (s.owner_id === user?.id && s.member_id) {
-        const rij = map.get(s.member_id) ?? { id: s.member_id, ikDeel: null, zijDelen: null };
+        const rij = map.get(s.member_id) ?? {
+          id: s.member_id,
+          ikDeel: null,
+          zijDelen: null,
+          gezin: false,
+        };
         rij.ikDeel = s;
         map.set(s.member_id, rij);
       } else if (s.member_id === user?.id) {
-        const rij = map.get(s.owner_id) ?? { id: s.owner_id, ikDeel: null, zijDelen: null };
+        const rij = map.get(s.owner_id) ?? {
+          id: s.owner_id,
+          ikDeel: null,
+          zijDelen: null,
+          gezin: false,
+        };
         rij.zijDelen = s;
         map.set(s.owner_id, rij);
       }
