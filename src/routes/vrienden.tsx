@@ -670,7 +670,113 @@ function VriendenPage() {
           <Smartphone className="size-6" aria-hidden /> App op je telefoon zetten
         </Link>
       </div>
+
+      {keuze ? (
+        <RechtenVenster
+          titel={
+            keuze.modus === "uitnodigen"
+              ? `Wat wil je delen met ${keuze.naam}?`
+              : `Wat deel jij met ${keuze.naam}?`
+          }
+          uitleg={
+            keuze.modus === "uitnodigen"
+              ? "Kies wat deze persoon van jou mag zien. Je kan dit later altijd aanpassen."
+              : "Je neemt de uitnodiging aan. Kies nu wat jij op jouw beurt deelt — dat mag ook niets zijn."
+          }
+          bevestig={keuze.modus === "uitnodigen" ? "Uitnodiging versturen" : "Aannemen"}
+          bezig={nodigUit.isPending || antwoord.isPending}
+          extraKnop={keuze.modus === "aannemen" ? "Aannemen, nu niets delen" : null}
+          onExtra={() =>
+            antwoord.mutate({ token: (keuze as { token: string }).token, ja: true, kies: null })
+          }
+          onSluiten={() => setKeuze(null)}
+          onBevestig={(kies) => {
+            if (keuze.modus === "uitnodigen") {
+              nodigUit.mutate({ doelId: keuze.id, kies });
+            } else {
+              antwoord.mutate({ token: keuze.token, ja: true, vanWie: keuze.id, kies });
+            }
+          }}
+        />
+      ) : null}
     </AppShell>
+  );
+}
+
+function RechtenVenster({
+  titel,
+  uitleg,
+  bevestig,
+  bezig,
+  extraKnop,
+  onExtra,
+  onBevestig,
+  onSluiten,
+}: {
+  titel: string;
+  uitleg: string;
+  bevestig: string;
+  bezig: boolean;
+  extraKnop: string | null;
+  onExtra: () => void;
+  onBevestig: (rechten: Rechten) => void;
+  onSluiten: () => void;
+}) {
+  const [kies, setKies] = useState<Rechten>(STANDAARD);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center sm:p-6">
+      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-[2rem] bg-card p-5 sm:rounded-[2rem]">
+        <h2 className="font-display text-xl">{titel}</h2>
+        <p className="mt-1 text-base leading-relaxed text-muted-foreground">{uitleg}</p>
+
+        <div className="mt-4 space-y-2">
+          {RECHTEN.map((r) => (
+            <label
+              key={r.key}
+              className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-border px-4 py-2"
+            >
+              <Label className="text-base">{r.label}</Label>
+              <Switch
+                checked={kies[r.key]}
+                onCheckedChange={(v) =>
+                  setKies((h) => ({
+                    ...h,
+                    [r.key]: v,
+                    ...(v && r.key.endsWith("_edit")
+                      ? { [r.key.replace("_edit", "_view")]: true }
+                      : {}),
+                  }))
+                }
+              />
+            </label>
+          ))}
+        </div>
+
+        <div className="mt-5 space-y-3">
+          <Button
+            onClick={() => onBevestig(kies)}
+            disabled={bezig}
+            className="h-14 w-full text-base"
+          >
+            <Check className="size-5" /> {bevestig}
+          </Button>
+          {extraKnop ? (
+            <Button
+              variant="secondary"
+              onClick={onExtra}
+              disabled={bezig}
+              className="h-14 w-full text-base"
+            >
+              {extraKnop}
+            </Button>
+          ) : null}
+          <Button variant="outline" onClick={onSluiten} className="h-14 w-full text-base">
+            Annuleren
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
