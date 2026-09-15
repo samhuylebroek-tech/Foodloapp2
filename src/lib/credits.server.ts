@@ -21,7 +21,7 @@ export type CreditFout = "ONVOLDOENDE_CREDITS" | "DAGLIMIET" | "FUNCTIE_UIT";
 
 const BOODSCHAP: Record<CreditFout, string> = {
   ONVOLDOENDE_CREDITS:
-    "Je AI-credits zijn op. Alles in de app blijft gewoon werken; enkel de slimme functies hebben credits nodig.",
+    "Je credits zijn op. Alles in de app blijft gewoon werken; enkel de slimme functies hebben credits nodig.",
   DAGLIMIET: "Je hebt deze slimme functie vandaag al vaak gebruikt. Probeer het morgen opnieuw.",
   FUNCTIE_UIT: "Deze slimme functie staat tijdelijk uit.",
 };

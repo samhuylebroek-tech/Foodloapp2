@@ -12,12 +12,12 @@ import { useVoorkeuren } from "@/lib/voorkeuren";
 export const Route = createFileRoute("/credits")({
   head: () => ({
     meta: [
-      { title: "AI-credits – Foodlo" },
+      { title: "Credits – Foodlo" },
       {
         name: "description",
-        content: "Bekijk je AI-credits, waarvoor ze dienen en wat je er nog mee kan doen.",
+        content: "Bekijk je credits, waarvoor ze dienen en wat je er nog mee kan doen.",
       },
-      { property: "og:title", content: "AI-credits – Foodlo" },
+      { property: "og:title", content: "Credits – Foodlo" },
       { property: "og:description", content: "Slimme functies gebruiken credits. De rest van Foodlo blijft gratis." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -48,7 +48,7 @@ function CreditsPagina() {
   const laag = data ? saldo <= data.waarschuwingVanaf : false;
 
   return (
-    <AppShell title={t("AI-credits")}>
+    <AppShell title={t("Credits")}>
       {isLoading || !data ? (
         <p className="text-base text-muted-foreground">{t("Laden…")}</p>
       ) : (
@@ -56,14 +56,14 @@ function CreditsPagina() {
           <section className="rounded-[2rem] border border-border bg-card p-6 text-center shadow-sm">
             <Sparkles className="mx-auto size-8 text-primary" aria-hidden />
             <p className="mt-2 text-5xl font-bold tracking-tight">{saldo}</p>
-            <p className="mt-1 text-base text-muted-foreground">{t("AI-credits")}</p>
+            <p className="mt-1 text-base text-muted-foreground">{t("credits")}</p>
             {saldo === 0 ? (
               <p className="mt-4 rounded-2xl bg-muted p-3 text-base">
-                {t("Je AI-credits zijn op. Alle gewone functies blijven werken: recepten, weekmenu, boodschappen en kookstand.")}
+                {t("Je credits zijn op. Alle gewone functies blijven werken: recepten, weekmenu, boodschappen en kookstand.")}
               </p>
             ) : laag ? (
               <p className="mt-4 rounded-2xl bg-muted p-3 text-base">
-                {t("Je hebt nog weinig AI-credits over.")}
+                {t("Je hebt nog weinig credits over.")}
               </p>
             ) : null}
           </section>
