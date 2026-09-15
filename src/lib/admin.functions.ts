@@ -662,13 +662,17 @@ export const adminHernoemTag = createServerFn({ method: "POST" })
 
 export const adminAi = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d) => periodeSchema.parse(d ?? {}))
+  .handler(async ({ context, data: invoer }) => {
     const { db } = await bewaker(context as Ctx, "ai.view");
+    const periode = invoer.periode as Periode;
+    const sinds = new Date(Date.now() - PERIODE_DUUR[periode]).toISOString();
     const { data: events } = await db
       .from("ai_events")
       .select("*")
+      .gte("created_at", sinds)
       .order("created_at", { ascending: false })
-      .limit(200);
+      .limit(500);
     const perSoort = new Map<string, { totaal: number; fouten: number; ms: number }>();
     for (const e of events ?? []) {
       const s = perSoort.get(e.kind) ?? { totaal: 0, fouten: 0, ms: 0 };
@@ -681,9 +685,12 @@ export const adminAi = createServerFn({ method: "GET" })
       .from("recipes")
       .select("id, title, source_url, created_at, user_id, instructions")
       .not("source_url", "is", null)
+      .gte("created_at", sinds)
       .order("created_at", { ascending: false })
       .limit(50);
     return {
+      periode,
+
       events: events ?? [],
       samenvatting: [...perSoort.entries()].map(([kind, s]) => ({
         kind,
