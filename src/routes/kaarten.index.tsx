@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CreditCard, Plus, ScanLine, Star, Keyboard } from "lucide-react";
+import { CreditCard, Plus, ScanLine, Star, Keyboard, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,6 +23,7 @@ import {
   type Kaart,
   type Winkel,
 } from "@/lib/kaarten";
+import { leesCodeUitBestand, zxingFormaat } from "@/lib/kaart-scan";
 
 export const Route = createFileRoute("/kaarten/")({
   head: () => ({
@@ -189,8 +190,23 @@ function ToevoegVenster({
   const [favoriet, setFavoriet] = useState(false);
   const [gedeeld, setGedeeld] = useState(false);
   const [bezig, setBezig] = useState(false);
+  const [fotoBezig, setFotoBezig] = useState(false);
+  const fotoRef = useRef<HTMLInputElement>(null);
 
   const winkel = useMemo(() => winkels.find((w) => w.slug === slug) ?? null, [winkels, slug]);
+
+  const uitFoto = async (file: File | undefined) => {
+    if (!file) return;
+    setFotoBezig(true);
+    const gelezen = await leesCodeUitBestand(file);
+    setFotoBezig(false);
+    if (!gelezen) {
+      toast.error("We zien geen code op die foto. Probeer dichterbij en recht van boven, of typ het nummer zelf in.");
+      logScan(user?.id, "foto", null, null, false);
+      return;
+    }
+    gevonden(gelezen.waarde, zxingFormaat(gelezen.formaat));
+  };
 
   const gevonden = (waarde: string, scanFormaat: string) => {
     setScannen(false);
@@ -246,12 +262,31 @@ function ToevoegVenster({
             <ScanLine className="size-5" aria-hidden /> Kaart scannen
           </Button>
           <Button
+            variant="secondary"
+            disabled={fotoBezig}
+            onClick={() => fotoRef.current?.click()}
+            className="h-16 gap-2 text-base"
+          >
+            <ImageIcon className="size-5" aria-hidden /> {fotoBezig ? "Even kijken…" : "Foto kiezen"}
+          </Button>
+          <Button
             variant="outline"
             onClick={() => document.getElementById("kaartnummer")?.focus()}
-            className="h-16 gap-2 text-base"
+            className="h-16 gap-2 text-base sm:col-span-2"
           >
             <Keyboard className="size-5" aria-hidden /> Zelf invullen
           </Button>
+          <input
+            ref={fotoRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              void uitFoto(file);
+            }}
+          />
         </div>
 
         {nummer ? (
