@@ -148,12 +148,140 @@ function Gebruikers() {
                     ? new Date(detail.data.laatsteAanmelding).toLocaleString("nl-BE")
                     : "nooit"}
                 </p>
+                <p className="text-xs text-slate-500">
+                  Lid sinds{" "}
+                  {detail.data.aangemaakt
+                    ? new Date(detail.data.aangemaakt).toLocaleDateString("nl-BE")
+                    : "onbekend"}
+                  {" · "}
+                  {detail.data.aanmeldingen != null
+                    ? `${detail.data.aanmeldingen}× aangemeld`
+                    : "aantal aanmeldingen onbekend"}
+                  {detail.data.emailBevestigd ? " · e-mail bevestigd" : " · e-mail niet bevestigd"}
+                </p>
               </div>
               <div className="grid grid-cols-3 gap-2 text-center">
                 <Vak label="Recepten" waarde={detail.data.recepten.length} />
                 <Vak label="Lijsten" waarde={detail.data.lijsten} />
                 <Vak label="Planning" waarde={detail.data.planning} />
+                <Vak label="Favorieten" waarde={detail.data.favorieten} />
+                <Vak label="Kaarten" waarde={detail.data.kaarten} />
+                <Vak label="Boodschappen" waarde={detail.data.boodschappen} />
               </div>
+
+              <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                <p className="mb-2 text-xs uppercase text-slate-400">Credits</p>
+                <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                  <div>
+                    <p className="text-lg font-semibold text-emerald-300">{detail.data.credits?.balance ?? 0}</p>
+                    <p className="text-slate-400">saldo</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold">{detail.data.credits?.gebruikt_totaal ?? 0}</p>
+                    <p className="text-slate-400">gebruikt</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold">{detail.data.credits?.gratis_totaal ?? 0}</p>
+                    <p className="text-slate-400">gratis</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold">{detail.data.credits?.gekocht_totaal ?? 0}</p>
+                    <p className="text-slate-400">gekocht</p>
+                  </div>
+                </div>
+
+                {mag("users.manage") ? (
+                  <div className="mt-3 space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        value={creditAantal}
+                        onChange={(e) => setCreditAantal(e.target.value)}
+                        placeholder="Aantal (bv. 50 of -10)"
+                        inputMode="numeric"
+                        className="border-white/10 bg-slate-950 text-slate-100"
+                      />
+                      <Button
+                        disabled={!creditAantal.trim() || Number.isNaN(Number(creditAantal)) || creditsAanpassen.isPending}
+                        onClick={() => creditsAanpassen.mutate(Math.trunc(Number(creditAantal)))}
+                      >
+                        Toepassen
+                      </Button>
+                    </div>
+                    <Input
+                      value={creditReden}
+                      onChange={(e) => setCreditReden(e.target.value)}
+                      placeholder="Reden (komt in het logboek)"
+                      className="border-white/10 bg-slate-950 text-slate-100"
+                    />
+                    <div className="flex gap-2">
+                      {[25, 50, 100].map((n) => (
+                        <Button
+                          key={n}
+                          size="sm"
+                          variant="secondary"
+                          disabled={creditsAanpassen.isPending}
+                          onClick={() => creditsAanpassen.mutate(n)}
+                        >
+                          +{n}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {detail.data.aiPerFunctie.length > 0 ? (
+                  <ul className="mt-3 space-y-1 text-xs text-slate-300">
+                    {detail.data.aiPerFunctie.map((f) => (
+                      <li key={f.feature} className="flex justify-between">
+                        <span>{f.feature}</span>
+                        <span className="text-slate-400">
+                          {f.aantal}× · {f.credits} cr · {f.cache} gratis uit geheugen
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-3 text-xs text-slate-500">Nog geen slimme functies gebruikt.</p>
+                )}
+
+                {detail.data.boekingen.length > 0 ? (
+                  <div className="mt-3">
+                    <p className="mb-1 text-xs uppercase text-slate-400">Laatste boekingen</p>
+                    <ul className="max-h-40 space-y-1 overflow-auto text-xs text-slate-300">
+                      {detail.data.boekingen.map((b) => (
+                        <li key={b.id} className="flex justify-between gap-2">
+                          <span className="truncate">
+                            {new Date(b.created_at).toLocaleDateString("nl-BE")} · {b.type}
+                            {b.feature ? ` (${b.feature})` : ""}
+                          </span>
+                          <span className={b.amount < 0 ? "text-red-300" : "text-emerald-300"}>
+                            {b.amount > 0 ? "+" : ""}
+                            {b.amount}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+
+              <div>
+                <p className="mb-1 text-xs uppercase text-slate-400">
+                  Activiteit ({detail.data.handelingen} handelingen)
+                </p>
+                <ul className="max-h-32 space-y-1 overflow-auto text-xs text-slate-400">
+                  {detail.data.laatsteActie.map((a, i) => (
+                    <li key={i} className="flex justify-between gap-2">
+                      <span className="truncate">
+                        {a.event}
+                        {a.path ? ` · ${a.path}` : ""}
+                      </span>
+                      <span>{new Date(a.created_at).toLocaleString("nl-BE")}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
 
               <div>
                 <p className="mb-1 text-xs uppercase text-slate-400">Recepten</p>
