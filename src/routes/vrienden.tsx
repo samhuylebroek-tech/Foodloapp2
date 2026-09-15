@@ -398,7 +398,8 @@ function VriendenPage() {
                   </Link>
                 )}
               </div>
-            ))
+              );
+            })
           )}
         </section>
 
