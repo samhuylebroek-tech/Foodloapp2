@@ -103,7 +103,15 @@ export function AdminShell({
                 <h1 className="text-xl font-semibold tracking-tight">{titel}</h1>
                 {omschrijving ? <p className="text-sm text-slate-400">{omschrijving}</p> : null}
               </div>
-              <div className="flex items-center gap-2">{acties}</div>
+              <div className="flex items-center gap-2">
+                {acties}
+                <Link
+                  to="/"
+                  className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-300 hover:bg-emerald-500/20"
+                >
+                  Terug naar de app
+                </Link>
+              </div>
             </div>
             <nav className="mt-3 flex gap-1 overflow-x-auto lg:hidden">
               {MENU.filter((m) => mag(m.recht)).map((m) => (

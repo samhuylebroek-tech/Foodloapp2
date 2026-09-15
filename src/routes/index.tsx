@@ -274,9 +274,9 @@ function StartPage() {
             className="pointer-events-none absolute -bottom-24 -left-10 size-56 rounded-full bg-primary-foreground/10 blur-2xl"
           />
           <div className="relative p-6 sm:p-8">
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col-reverse items-start gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
               <div className="min-w-0">
-                <p className="text-3xl font-bold leading-tight tracking-tight sm:text-4xl">{t(groet(uur))}!</p>
+                <p className="text-[1.75rem] font-bold leading-tight tracking-tight sm:text-4xl">{t(groet(uur))}!</p>
                 <p className="mt-1 text-lg text-primary-foreground/85">{t("Wat eten we vandaag?")}</p>
               </div>
               {weerKlaar && weer && sfeer ? (
