@@ -415,6 +415,65 @@ function VriendenPage() {
           >
             <UserPlus className="size-5" /> Uitnodigingslink maken
           </Button>
+
+          <div className="space-y-3 rounded-2xl bg-secondary p-4">
+            <p className="text-base font-semibold">Gebruikt die persoon de app al?</p>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Zoek op het e-mailadres waarmee hij of zij aanmeldde, of op de Foodlo-naam (@naam).
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Input
+                value={zoek}
+                onChange={(e) => setZoek(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") setGezocht(zoek);
+                }}
+                aria-label="E-mailadres of Foodlo-naam"
+                placeholder="marie@voorbeeld.be of @marie"
+                className="h-14 flex-1 text-base"
+              />
+              <Button
+                variant="secondary"
+                onClick={() => setGezocht(zoek)}
+                className="h-14 text-base"
+              >
+                <Search className="size-5" /> Zoeken
+              </Button>
+            </div>
+            <Button variant="secondary" onClick={uitContacten} className="h-14 w-full text-base">
+              <BookUser className="size-5" /> Kies uit je contacten
+            </Button>
+
+            {gezocht.trim().length >= 3 &&
+              (zoekt ? (
+                <p className="text-base text-muted-foreground">Even zoeken…</p>
+              ) : gevonden.length === 0 ? (
+                <p className="text-base text-muted-foreground">
+                  Niemand gevonden. Stuur dan gewoon de uitnodigingslink door.
+                </p>
+              ) : (
+                gevonden.map((g) => (
+                  <div
+                    key={g.id}
+                    className="flex flex-col gap-3 rounded-xl bg-card p-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <span className="text-base font-semibold">
+                      {g.display_name}
+                      {g.handle ? (
+                        <span className="ml-2 text-muted-foreground">@{g.handle}</span>
+                      ) : null}
+                    </span>
+                    <Button
+                      onClick={() => nodigUit.mutate(g.id)}
+                      disabled={nodigUit.isPending}
+                      className="h-14 text-base"
+                    >
+                      <UserPlus className="size-5" /> Uitnodigen
+                    </Button>
+                  </div>
+                ))
+              ))}
+          </div>
         </section>
         )}
 
