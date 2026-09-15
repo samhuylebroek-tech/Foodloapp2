@@ -41,8 +41,14 @@ function euro(cent: number) {
 
 function CreditsPagina() {
   const { t } = useVoorkeuren();
+  const { user } = useAuth();
   const fn = useServerFn(creditOverzicht);
-  const { data, isLoading } = useQuery({ queryKey: ["credits"], queryFn: () => fn() });
+  const { data, isLoading } = useQuery({
+    queryKey: ["credits"],
+    queryFn: () => fn(),
+    enabled: !!user,
+    retry: false,
+  });
 
   const saldo = data?.saldo ?? 0;
   const laag = data ? saldo <= data.waarschuwingVanaf : false;
