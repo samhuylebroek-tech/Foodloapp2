@@ -148,6 +148,13 @@
       "when": 1789495315681,
       "tag": "0020_harden_credit_requests_and_group_members",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1789495543411,
+      "tag": "0021_harden_group_members_permissions",
+      "breakpoints": true
     }
   ]
 }
