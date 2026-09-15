@@ -47,6 +47,7 @@ import { Route as ReceptenIdRouteImport } from './routes/recepten.$id'
 import { Route as ReceptenNieuwRouteImport } from './routes/recepten.nieuw'
 import { Route as VriendenIdRouteImport } from './routes/vrienden.$id'
 import { Route as ReceptenIdBewerkenRouteImport } from './routes/recepten.$id.bewerken'
+import { Route as ApiPublicMeldingenRunRouteImport } from './routes/api/public/meldingen.run'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -238,6 +239,11 @@ const ReceptenIdBewerkenRoute = ReceptenIdBewerkenRouteImport.update({
   path: '/bewerken',
   getParentRoute: () => ReceptenIdRoute,
 } as any)
+const ApiPublicMeldingenRunRoute = ApiPublicMeldingenRunRouteImport.update({
+  id: '/api/public/meldingen/run',
+  path: '/api/public/meldingen/run',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -278,6 +284,7 @@ export interface FileRoutesByFullPath {
   '/beheer/': typeof BeheerIndexRoute
   '/kaarten/': typeof KaartenIndexRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
+  '/api/public/meldingen/run': typeof ApiPublicMeldingenRunRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -317,6 +324,7 @@ export interface FileRoutesByTo {
   '/beheer': typeof BeheerIndexRoute
   '/kaarten': typeof KaartenIndexRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
+  '/api/public/meldingen/run': typeof ApiPublicMeldingenRunRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -358,6 +366,7 @@ export interface FileRoutesById {
   '/beheer/': typeof BeheerIndexRoute
   '/kaarten/': typeof KaartenIndexRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
+  '/api/public/meldingen/run': typeof ApiPublicMeldingenRunRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -400,6 +409,7 @@ export interface FileRouteTypes {
     | '/beheer/'
     | '/kaarten/'
     | '/recepten/$id/bewerken'
+    | '/api/public/meldingen/run'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -439,6 +449,7 @@ export interface FileRouteTypes {
     | '/beheer'
     | '/kaarten'
     | '/recepten/$id/bewerken'
+    | '/api/public/meldingen/run'
   id:
     | '__root__'
     | '/'
@@ -479,6 +490,7 @@ export interface FileRouteTypes {
     | '/beheer/'
     | '/kaarten/'
     | '/recepten/$id/bewerken'
+    | '/api/public/meldingen/run'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -502,6 +514,7 @@ export interface RootRouteChildren {
   ReceptenIdRoute: typeof ReceptenIdRouteWithChildren
   ReceptenNieuwRoute: typeof ReceptenNieuwRoute
   KaartenIndexRoute: typeof KaartenIndexRoute
+  ApiPublicMeldingenRunRoute: typeof ApiPublicMeldingenRunRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -772,6 +785,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReceptenIdBewerkenRouteImport
       parentRoute: typeof ReceptenIdRoute
     }
+    '/api/public/meldingen/run': {
+      id: '/api/public/meldingen/run'
+      path: '/api/public/meldingen/run'
+      fullPath: '/api/public/meldingen/run'
+      preLoaderRoute: typeof ApiPublicMeldingenRunRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -861,6 +881,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReceptenIdRoute: ReceptenIdRouteWithChildren,
   ReceptenNieuwRoute: ReceptenNieuwRoute,
   KaartenIndexRoute: KaartenIndexRoute,
+  ApiPublicMeldingenRunRoute: ApiPublicMeldingenRunRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

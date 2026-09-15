@@ -211,7 +211,7 @@ async function draai() {
     const payload = {
       titel: toon ? titel : T.merk,
       body: toon ? body : T.prive,
-      url: eerste.url,
+      url: `${eerste.url}${eerste.url.includes("?") ? "&" : "?"}mld=${encodeURIComponent(eerste.sleutel)}`,
       tag: `foodlo-${tijd.datum}-${eerste.soort}`,
     };
 
