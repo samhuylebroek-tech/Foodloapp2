@@ -127,6 +127,20 @@
       "when": 1789465470292,
       "tag": "0017_group_members_column_level_update",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1789485303183,
+      "tag": "0018_notifications_system",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1789485766815,
+      "tag": "0019_cron_access_for_tooling",
+      "breakpoints": true
     }
   ]
 }

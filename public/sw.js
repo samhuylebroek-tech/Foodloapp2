@@ -1,6 +1,39 @@
 // Kleine offline-hulp: bewaart bezochte pagina's en bestanden,
 // zodat je je klantenkaart ook zonder internet kan tonen.
-const CACHE = "foodlo-offline-v2";
+const CACHE = "foodlo-offline-v3";
+
+// Meldingen tonen en naar de juiste pagina springen.
+self.addEventListener("push", (e) => {
+  let d = {};
+  try {
+    d = e.data ? e.data.json() : {};
+  } catch {
+    d = { titel: "Foodlo", body: e.data ? e.data.text() : "" };
+  }
+  e.waitUntil(
+    self.registration.showNotification(d.titel || "Foodlo", {
+      body: d.body || "",
+      icon: "/app-icon-512.png",
+      badge: "/favicon.png",
+      tag: d.tag || "foodlo",
+      renotify: false,
+      data: { url: d.url || "/" },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const doel = (e.notification.data && e.notification.data.url) || "/";
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((lijst) => {
+      for (const c of lijst) {
+        if ("navigate" in c) return c.navigate(doel).then((w) => w && w.focus());
+      }
+      return self.clients.openWindow(doel);
+    }),
+  );
+});
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();

@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Activity,
+  Bell,
   BarChart3,
   BookOpen,
   ChefHat,
@@ -34,6 +35,7 @@ const MENU: { pad: string; label: string; icoon: typeof Users; recht: Rechten }[
 
   { pad: "/beheer/kaarten", label: "Klantenkaarten", icoon: CreditCard, recht: "content.manage" },
   { pad: "/beheer/teksten", label: "Teksten & berichten", icoon: Megaphone, recht: "content.manage" },
+  { pad: "/beheer/meldingen", label: "Meldingen", icoon: Bell, recht: "dashboard.view" },
   { pad: "/beheer/analytics", label: "Analytics", icoon: LineChart, recht: "dashboard.view" },
   { pad: "/beheer/credits", label: "Credits & kosten", icoon: Coins, recht: "dashboard.view" },
 

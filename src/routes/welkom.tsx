@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import {
   ArrowLeft,
+  Bell,
   ArrowRight,
   BookOpen,
   CalendarDays,
@@ -28,6 +29,8 @@ import {
   type ThemaId,
 } from "@/lib/voorkeuren";
 import logo from "@/assets/logo.png";
+import { toast } from "sonner";
+import { zetMeldingenAan } from "@/lib/meldingen";
 
 export const Route = createFileRoute("/welkom")({
   head: () => ({
@@ -55,6 +58,14 @@ const STAPPEN = [
   "Momenten van de dag",
   "Zo werkt het",
   "Op je telefoon",
+  "Blijf op schema",
+] as const;
+
+const MELDING_VOORBEELDEN = [
+  { emoji: "🍽️", titel: "Menu van vandaag", tekst: "Elke ochtend zie je wat er op het menu staat." },
+  { emoji: "🗓️", titel: "Weekmenu plannen", tekst: "Een duwtje om je week op tijd te plannen." },
+  { emoji: "🛒", titel: "Boodschappen", tekst: "Een seintje wanneer je lijst klaarstaat." },
+  { emoji: "👨‍🍳", titel: "Tijd om te koken", tekst: "Net op tijd om aan je gerecht te beginnen." },
 ] as const;
 
 const RONDLEIDING = [
@@ -99,7 +110,7 @@ function Welkom() {
 
   const eenBlok = momenten.length === 1 && momenten[0] === EEN_BLOK[0];
 
-  async function klaar() {
+  async function klaar(doel: "/" | "/meldingen" = "/") {
     setBezig(true);
     if (user) {
       await supabase
@@ -111,8 +122,22 @@ function Welkom() {
       await queryClient.invalidateQueries({ queryKey: ["onboarding", user.id] });
     }
     window.localStorage.setItem("onboarding_klaar", "ja");
-    navigate({ to: "/" });
+    navigate({ to: doel });
   }
+
+  // De toestemming van de telefoon vragen we pas als je hier zelf voor kiest.
+  async function metMeldingen() {
+    setBezig(true);
+    const status = await zetMeldingenAan();
+    setBezig(false);
+    if (status === "aan") toast.success(t("Meldingen staan aan"));
+    else if (status === "geweigerd")
+      toast.error(t("Je telefoon blokkeert meldingen. Je kan ze later alsnog aanzetten."));
+    else if (status === "open-in-eigen-tab")
+      toast.message(t("Open Foodlo vanaf je beginscherm om meldingen aan te zetten."));
+    await klaar("/meldingen");
+  }
+
 
 
   return (
@@ -329,6 +354,34 @@ function Welkom() {
           </section>
         )}
 
+        {stap === 5 && (
+          <section className="mt-4">
+            <h1 className="text-3xl font-bold tracking-tight">{t("Blijf op schema")}</h1>
+            <p className="mt-2 text-base text-muted-foreground">
+              {t("Krijg handige herinneringen voor je maaltijden, je weekplanning en je boodschappen.")}
+            </p>
+            <ul className="mt-5 space-y-3">
+              {MELDING_VOORBEELDEN.map((m) => (
+                <li
+                  key={m.titel}
+                  className="flex items-start gap-4 rounded-2xl border border-border bg-card p-4"
+                >
+                  <span className="text-2xl" aria-hidden>
+                    {m.emoji}
+                  </span>
+                  <div>
+                    <p className="text-lg font-bold">{t(m.titel)}</p>
+                    <p className="mt-0.5 text-base text-muted-foreground">{t(m.tekst)}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 rounded-2xl bg-secondary px-4 py-3 text-base text-secondary-foreground">
+              {t("Je bepaalt zelf wat je krijgt en op welk uur. Uitzetten kan altijd.")}
+            </p>
+          </section>
+        )}
+
         <div className="mt-8 flex gap-3">
           {stap > 0 && (
             <Button
@@ -344,12 +397,22 @@ function Welkom() {
               {t("Verder")} <ArrowRight className="size-5" />
             </Button>
           ) : (
-            <Button onClick={() => void klaar()} disabled={bezig} className="h-16 flex-1 text-lg">
-              {bezig ? <Loader2 className="size-5 animate-spin" /> : <Check className="size-5" />}
-              {t("Klaar, begin maar")}
+            <Button onClick={() => void metMeldingen()} disabled={bezig} className="h-16 flex-1 text-lg">
+              {bezig ? <Loader2 className="size-5 animate-spin" /> : <Bell className="size-5" />}
+              {t("Meldingen instellen")}
             </Button>
           )}
         </div>
+        {stap === STAPPEN.length - 1 && (
+          <Button
+            variant="ghost"
+            onClick={() => void klaar()}
+            disabled={bezig}
+            className="mt-3 h-14 w-full text-base"
+          >
+            <Check className="size-5" /> {t("Nu niet, later misschien")}
+          </Button>
+        )}
       </div>
     </div>
   );
