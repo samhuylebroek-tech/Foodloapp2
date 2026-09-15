@@ -292,6 +292,49 @@ function VriendenPage() {
           </button>
         </div>
 
+        <Link
+          to="/gezin"
+          className="flex min-h-16 items-center justify-between gap-3 rounded-2xl border border-border bg-card px-5 py-3"
+        >
+          <span className="flex items-center gap-3">
+            <Home className="size-6 text-primary" aria-hidden />
+            <span className="text-lg font-semibold">
+              {gezinId ? "Mijn gezin" : "Kook samen als gezin"}
+            </span>
+          </span>
+          <span className="text-base text-muted-foreground">
+            {gezinId ? "Bekijken" : "Starten"}
+          </span>
+        </Link>
+
+        {voorMij.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="font-display text-xl">Uitnodigingen voor jou</h2>
+            {voorMij.map((s) => (
+              <div key={s.id} className="rounded-2xl border border-border bg-card p-4">
+                <p className="text-lg font-semibold">
+                  {namen[s.owner_id] ?? "Iemand"} wil met je delen
+                </p>
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                  <Button
+                    onClick={() => antwoord.mutate({ token: s.token, ja: true })}
+                    className="h-14 w-full text-base sm:flex-1"
+                  >
+                    <Check className="size-5" /> Aannemen
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => antwoord.mutate({ token: s.token, ja: false })}
+                    className="h-14 w-full text-base sm:flex-1"
+                  >
+                    Nee, bedankt
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </section>
+        )}
+
         <section className="space-y-3">
           <h2 className="font-display text-xl">Mijn vrienden</h2>
           {vrienden.length === 0 ? (
