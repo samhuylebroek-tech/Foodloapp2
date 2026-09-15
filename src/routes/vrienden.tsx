@@ -368,15 +368,27 @@ function VriendenPage() {
               Je hebt nog geen vrienden toegevoegd. Klik op + om iemand uit te nodigen.
             </p>
           ) : (
-            vrienden.map((v) => (
+            vrienden.map((v) => {
+              const zietGerechten =
+                v.gezin || !!(v.zijDelen && (v.zijDelen.recipes_view || v.zijDelen.recipes_edit));
+              return (
               <div key={v.id} className="rounded-2xl border border-border bg-card p-4">
-                <p className="text-lg font-semibold">{namen[v.id] ?? "Vriend"}</p>
-                <p className="mt-1 text-base text-muted-foreground">
-                  {v.zijDelen && (v.zijDelen.recipes_view || v.zijDelen.recipes_edit)
-                    ? "Deelt zijn of haar gerechten met jou"
-                    : "Deelt (nog) geen gerechten met jou"}
+                <p className="text-lg font-semibold">
+                  {namen[v.id] ?? "Vriend"}
+                  {v.gezin && (
+                    <span className="ml-2 inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
+                      Gezin
+                    </span>
+                  )}
                 </p>
-                {v.zijDelen && (v.zijDelen.recipes_view || v.zijDelen.recipes_edit) && (
+                <p className="mt-1 text-base text-muted-foreground">
+                  {v.gezin
+                    ? "Jullie delen alles samen"
+                    : zietGerechten
+                      ? "Deelt zijn of haar gerechten met jou"
+                      : "Deelt (nog) geen gerechten met jou"}
+                </p>
+                {zietGerechten && (
                   <Link
                     to="/vrienden/$id"
                     params={{ id: v.id }}
