@@ -119,8 +119,88 @@ function VriendenPage() {
     },
   });
 
+  const { data: gevonden = [], isFetching: zoekt } = useQuery({
+    queryKey: ["zoek-gebruiker", gezocht],
+    enabled: gezocht.trim().length >= 3,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("zoek_gebruiker", { _term: gezocht.trim() });
+      if (error) throw error;
+      return (data ?? []) as { id: string; display_name: string; handle: string | null }[];
+    },
+  });
+
+  const { data: gezinId } = useQuery({
+    queryKey: ["gezin-kort", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("group_members")
+        .select("group_id")
+        .eq("user_id", user!.id)
+        .limit(1)
+        .maybeSingle();
+      return data?.group_id ?? null;
+    },
+  });
+
   const mijn = shares.filter((s) => s.owner_id === user?.id);
-  const metMijGedeeld = shares.filter((s) => s.member_id === user?.id && s.owner_id !== user?.id);
+  const metMijGedeeld = shares.filter(
+    (s) => s.member_id === user?.id && s.owner_id !== user?.id && s.status === "accepted",
+  );
+  const voorMij = shares.filter(
+    (s) => s.member_id === user?.id && s.owner_id !== user?.id && s.status === "pending",
+  );
+
+  const nodigUit = useMutation({
+    mutationFn: async (doelId: string) => {
+      const { error } = await supabase
+        .from("shares")
+        .insert({ owner_id: user!.id, member_id: doelId, status: "pending", ...rechten });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setZoek("");
+      setGezocht("");
+      qc.invalidateQueries({ queryKey: ["shares"] });
+      toast.success("Uitnodiging verstuurd. Die persoon ziet ze in de app.");
+    },
+    onError: () => toast.error("Uitnodigen lukte niet — misschien nodigde je die persoon al uit."),
+  });
+
+  const antwoord = useMutation({
+    mutationFn: async ({ token, ja }: { token: string; ja: boolean }) => {
+      const { error } = await supabase.rpc(ja ? "accept_share" : "decline_share", { _token: token });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["shares"] });
+      toast.success("Bewaard");
+    },
+    onError: () => toast.error("Dat lukte niet"),
+  });
+
+  async function uitContacten() {
+    type ContactsApi = {
+      select: (props: string[], opts: { multiple: boolean }) => Promise<{ email?: string[] }[]>;
+    };
+    const nav = navigator as Navigator & { contacts?: ContactsApi };
+    if (!nav.contacts) {
+      toast.info("Je telefoon laat dit niet toe. Zoek op e-mailadres of stuur een link door.");
+      return;
+    }
+    try {
+      const keuze = await nav.contacts.select(["name", "email"], { multiple: false });
+      const mail = keuze[0]?.email?.[0];
+      if (!mail) {
+        toast.info("Bij dat contact staat geen e-mailadres.");
+        return;
+      }
+      setZoek(mail);
+      setGezocht(mail);
+    } catch {
+      /* gebruiker annuleerde */
+    }
+  }
 
   // Alle mensen waarmee een verbinding bestaat, in beide richtingen.
   const vrienden = (() => {
