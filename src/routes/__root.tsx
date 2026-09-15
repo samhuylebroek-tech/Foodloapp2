@@ -10,6 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { VoorkeurenProvider } from "@/lib/voorkeuren";
+import { synchroniseerTijdzone, verwerkMeldingKlik } from "@/lib/meldingen";
 
 
 import appCss from "../styles.css?url";
@@ -147,6 +148,12 @@ function RootComponent() {
       .register("/sw.js", { updateViaCache: "none" })
       .then((registratie) => registratie.update())
       .catch(() => undefined);
+  }, []);
+
+  // Klik op een melding registreren en de tijdzone bijhouden wanneer je reist.
+  useEffect(() => {
+    void verwerkMeldingKlik();
+    void synchroniseerTijdzone();
   }, []);
 
   return (
