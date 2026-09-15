@@ -8,6 +8,7 @@ import { AppShell } from "@/components/AppShell";
 import { Textarea } from "@/components/ui/textarea";
 import { creditOverzicht, mijnCreditAanvraag, vraagCredits } from "@/lib/credits.functions";
 import { useVoorkeuren } from "@/lib/voorkeuren";
+import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/credits")({
   head: () => ({
@@ -41,8 +42,14 @@ function euro(cent: number) {
 
 function CreditsPagina() {
   const { t } = useVoorkeuren();
+  const { user } = useAuth();
   const fn = useServerFn(creditOverzicht);
-  const { data, isLoading } = useQuery({ queryKey: ["credits"], queryFn: () => fn() });
+  const { data, isLoading } = useQuery({
+    queryKey: ["credits"],
+    queryFn: () => fn(),
+    enabled: !!user,
+    retry: false,
+  });
 
   const saldo = data?.saldo ?? 0;
   const laag = data ? saldo <= data.waarschuwingVanaf : false;
@@ -140,9 +147,15 @@ function CreditsPagina() {
 
 function ExtraVragen({ t }: { t: (s: string) => string }) {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const lezen = useServerFn(mijnCreditAanvraag);
   const sturen = useServerFn(vraagCredits);
-  const { data: aanvraag } = useQuery({ queryKey: ["credit-aanvraag"], queryFn: () => lezen() });
+  const { data: aanvraag } = useQuery({
+    queryKey: ["credit-aanvraag"],
+    queryFn: () => lezen(),
+    enabled: !!user,
+    retry: false,
+  });
   const [open, setOpen] = useState(false);
   const [bericht, setBericht] = useState("");
 

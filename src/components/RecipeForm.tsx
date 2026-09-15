@@ -102,7 +102,7 @@ export function RecipeForm({
   const laatsteFotoTitel = useRef("");
 
   const creditFn = useServerFn(creditOverzicht);
-  const credits = useQuery({ queryKey: ["credits"], queryFn: () => creditFn() });
+  const credits = useQuery({ queryKey: ["credits"], queryFn: () => creditFn(), enabled: !!user, retry: false });
   const qc = useQueryClient();
 
   function kost(feature: string): number {
