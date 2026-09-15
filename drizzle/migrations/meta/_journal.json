@@ -78,6 +78,20 @@
       "when": 1789463172272,
       "tag": "0010_admin_login_stats",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789464447600,
+      "tag": "0011_improve_existing_user_search",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789464517693,
+      "tag": "0012_search_users_by_account_name",
+      "breakpoints": true
     }
   ]
 }
