@@ -34,12 +34,15 @@ import { Route as BeheerGebruikersRouteImport } from './routes/beheer.gebruikers
 import { Route as BeheerImportsRouteImport } from './routes/beheer.imports'
 import { Route as BeheerInhoudRouteImport } from './routes/beheer.inhoud'
 import { Route as BeheerInstellingenRouteImport } from './routes/beheer.instellingen'
+import { Route as BeheerKaartenRouteImport } from './routes/beheer.kaarten'
 import { Route as BeheerLogboekRouteImport } from './routes/beheer.logboek'
 import { Route as BeheerReceptenRouteImport } from './routes/beheer.recepten'
 import { Route as BeheerSupportRouteImport } from './routes/beheer.support'
 import { Route as BeheerSysteemRouteImport } from './routes/beheer.systeem'
 import { Route as BeheerTeamRouteImport } from './routes/beheer.team'
 import { Route as BeheerTekstenRouteImport } from './routes/beheer.teksten'
+import { Route as KaartenIndexRouteImport } from './routes/kaarten.index'
+import { Route as KaartenIdRouteImport } from './routes/kaarten.$id'
 import { Route as ReceptenIdRouteImport } from './routes/recepten.$id'
 import { Route as ReceptenNieuwRouteImport } from './routes/recepten.nieuw'
 import { Route as VriendenIdRouteImport } from './routes/vrienden.$id'
@@ -170,6 +173,11 @@ const BeheerInstellingenRoute = BeheerInstellingenRouteImport.update({
   path: '/instellingen',
   getParentRoute: () => BeheerRoute,
 } as any)
+const BeheerKaartenRoute = BeheerKaartenRouteImport.update({
+  id: '/kaarten',
+  path: '/kaarten',
+  getParentRoute: () => BeheerRoute,
+} as any)
 const BeheerLogboekRoute = BeheerLogboekRouteImport.update({
   id: '/logboek',
   path: '/logboek',
@@ -199,6 +207,16 @@ const BeheerTekstenRoute = BeheerTekstenRouteImport.update({
   id: '/teksten',
   path: '/teksten',
   getParentRoute: () => BeheerRoute,
+} as any)
+const KaartenIndexRoute = KaartenIndexRouteImport.update({
+  id: '/kaarten/',
+  path: '/kaarten/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KaartenIdRoute = KaartenIdRouteImport.update({
+  id: '/kaarten/$id',
+  path: '/kaarten/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ReceptenIdRoute = ReceptenIdRouteImport.update({
   id: '/recepten/$id',
@@ -246,16 +264,19 @@ export interface FileRoutesByFullPath {
   '/beheer/imports': typeof BeheerImportsRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
+  '/beheer/kaarten': typeof BeheerKaartenRoute
   '/beheer/logboek': typeof BeheerLogboekRoute
   '/beheer/recepten': typeof BeheerReceptenRoute
   '/beheer/support': typeof BeheerSupportRoute
   '/beheer/systeem': typeof BeheerSysteemRoute
   '/beheer/team': typeof BeheerTeamRoute
   '/beheer/teksten': typeof BeheerTekstenRoute
+  '/kaarten/$id': typeof KaartenIdRoute
   '/recepten/$id': typeof ReceptenIdRouteWithChildren
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/vrienden/$id': typeof VriendenIdRoute
   '/beheer/': typeof BeheerIndexRoute
+  '/kaarten/': typeof KaartenIndexRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
 }
 export interface FileRoutesByTo {
@@ -282,16 +303,19 @@ export interface FileRoutesByTo {
   '/beheer/imports': typeof BeheerImportsRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
+  '/beheer/kaarten': typeof BeheerKaartenRoute
   '/beheer/logboek': typeof BeheerLogboekRoute
   '/beheer/recepten': typeof BeheerReceptenRoute
   '/beheer/support': typeof BeheerSupportRoute
   '/beheer/systeem': typeof BeheerSysteemRoute
   '/beheer/team': typeof BeheerTeamRoute
   '/beheer/teksten': typeof BeheerTekstenRoute
+  '/kaarten/$id': typeof KaartenIdRoute
   '/recepten/$id': typeof ReceptenIdRouteWithChildren
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/vrienden/$id': typeof VriendenIdRoute
   '/beheer': typeof BeheerIndexRoute
+  '/kaarten': typeof KaartenIndexRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
 }
 export interface FileRoutesById {
@@ -320,16 +344,19 @@ export interface FileRoutesById {
   '/beheer/imports': typeof BeheerImportsRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
+  '/beheer/kaarten': typeof BeheerKaartenRoute
   '/beheer/logboek': typeof BeheerLogboekRoute
   '/beheer/recepten': typeof BeheerReceptenRoute
   '/beheer/support': typeof BeheerSupportRoute
   '/beheer/systeem': typeof BeheerSysteemRoute
   '/beheer/team': typeof BeheerTeamRoute
   '/beheer/teksten': typeof BeheerTekstenRoute
+  '/kaarten/$id': typeof KaartenIdRoute
   '/recepten/$id': typeof ReceptenIdRouteWithChildren
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/vrienden/$id': typeof VriendenIdRoute
   '/beheer/': typeof BeheerIndexRoute
+  '/kaarten/': typeof KaartenIndexRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
 }
 export interface FileRouteTypes {
@@ -359,16 +386,19 @@ export interface FileRouteTypes {
     | '/beheer/imports'
     | '/beheer/inhoud'
     | '/beheer/instellingen'
+    | '/beheer/kaarten'
     | '/beheer/logboek'
     | '/beheer/recepten'
     | '/beheer/support'
     | '/beheer/systeem'
     | '/beheer/team'
     | '/beheer/teksten'
+    | '/kaarten/$id'
     | '/recepten/$id'
     | '/recepten/nieuw'
     | '/vrienden/$id'
     | '/beheer/'
+    | '/kaarten/'
     | '/recepten/$id/bewerken'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -395,16 +425,19 @@ export interface FileRouteTypes {
     | '/beheer/imports'
     | '/beheer/inhoud'
     | '/beheer/instellingen'
+    | '/beheer/kaarten'
     | '/beheer/logboek'
     | '/beheer/recepten'
     | '/beheer/support'
     | '/beheer/systeem'
     | '/beheer/team'
     | '/beheer/teksten'
+    | '/kaarten/$id'
     | '/recepten/$id'
     | '/recepten/nieuw'
     | '/vrienden/$id'
     | '/beheer'
+    | '/kaarten'
     | '/recepten/$id/bewerken'
   id:
     | '__root__'
@@ -432,16 +465,19 @@ export interface FileRouteTypes {
     | '/beheer/imports'
     | '/beheer/inhoud'
     | '/beheer/instellingen'
+    | '/beheer/kaarten'
     | '/beheer/logboek'
     | '/beheer/recepten'
     | '/beheer/support'
     | '/beheer/systeem'
     | '/beheer/team'
     | '/beheer/teksten'
+    | '/kaarten/$id'
     | '/recepten/$id'
     | '/recepten/nieuw'
     | '/vrienden/$id'
     | '/beheer/'
+    | '/kaarten/'
     | '/recepten/$id/bewerken'
   fileRoutesById: FileRoutesById
 }
@@ -462,8 +498,10 @@ export interface RootRouteChildren {
   UitnodigingRoute: typeof UitnodigingRoute
   VriendenRoute: typeof VriendenRouteWithChildren
   WelkomRoute: typeof WelkomRoute
+  KaartenIdRoute: typeof KaartenIdRoute
   ReceptenIdRoute: typeof ReceptenIdRouteWithChildren
   ReceptenNieuwRoute: typeof ReceptenNieuwRoute
+  KaartenIndexRoute: typeof KaartenIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -643,6 +681,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerInstellingenRouteImport
       parentRoute: typeof BeheerRoute
     }
+    '/beheer/kaarten': {
+      id: '/beheer/kaarten'
+      path: '/kaarten'
+      fullPath: '/beheer/kaarten'
+      preLoaderRoute: typeof BeheerKaartenRouteImport
+      parentRoute: typeof BeheerRoute
+    }
     '/beheer/logboek': {
       id: '/beheer/logboek'
       path: '/logboek'
@@ -685,6 +730,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerTekstenRouteImport
       parentRoute: typeof BeheerRoute
     }
+    '/kaarten/': {
+      id: '/kaarten/'
+      path: '/kaarten'
+      fullPath: '/kaarten/'
+      preLoaderRoute: typeof KaartenIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kaarten/$id': {
+      id: '/kaarten/$id'
+      path: '/kaarten/$id'
+      fullPath: '/kaarten/$id'
+      preLoaderRoute: typeof KaartenIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/recepten/$id': {
       id: '/recepten/$id'
       path: '/recepten/$id'
@@ -725,6 +784,7 @@ interface BeheerRouteChildren {
   BeheerImportsRoute: typeof BeheerImportsRoute
   BeheerInhoudRoute: typeof BeheerInhoudRoute
   BeheerInstellingenRoute: typeof BeheerInstellingenRoute
+  BeheerKaartenRoute: typeof BeheerKaartenRoute
   BeheerLogboekRoute: typeof BeheerLogboekRoute
   BeheerReceptenRoute: typeof BeheerReceptenRoute
   BeheerSupportRoute: typeof BeheerSupportRoute
@@ -743,6 +803,7 @@ const BeheerRouteChildren: BeheerRouteChildren = {
   BeheerImportsRoute: BeheerImportsRoute,
   BeheerInhoudRoute: BeheerInhoudRoute,
   BeheerInstellingenRoute: BeheerInstellingenRoute,
+  BeheerKaartenRoute: BeheerKaartenRoute,
   BeheerLogboekRoute: BeheerLogboekRoute,
   BeheerReceptenRoute: BeheerReceptenRoute,
   BeheerSupportRoute: BeheerSupportRoute,
@@ -796,8 +857,10 @@ const rootRouteChildren: RootRouteChildren = {
   UitnodigingRoute: UitnodigingRoute,
   VriendenRoute: VriendenRouteWithChildren,
   WelkomRoute: WelkomRoute,
+  KaartenIdRoute: KaartenIdRoute,
   ReceptenIdRoute: ReceptenIdRouteWithChildren,
   ReceptenNieuwRoute: ReceptenNieuwRoute,
+  KaartenIndexRoute: KaartenIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

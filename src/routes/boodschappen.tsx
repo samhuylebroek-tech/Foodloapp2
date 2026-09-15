@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
+import { Klantenkaarten } from "@/components/Klantenkaarten";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -170,6 +171,7 @@ function BoodschappenPage() {
   return (
     <AppShell title="Boodschappen">
       <div className="space-y-4">
+        <Klantenkaarten />
         <div className="flex flex-wrap gap-2" role="tablist" aria-label="Je lijstjes">
           {lijsten.map((l) => (
             <button
