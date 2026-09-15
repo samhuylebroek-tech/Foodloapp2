@@ -186,6 +186,9 @@ export const mijnAdminProfiel = createServerFn({ method: "GET" })
       context,
     }): Promise<{ profiel: AdminProfiel | null; rechten: Rechten[]; aal: string | null; mfaOk: boolean }> => {
       const ctx = context as Ctx;
+      if (ctx.userId !== EIGENAAR_ID) {
+        return { profiel: null, rechten: [], aal: null, mfaOk: true };
+      }
       const { data } = await ctx.supabase
         .from("admin_users")
         .select("user_id, role, active, can_view_private_content, note, read_only, mfa_required")
