@@ -94,6 +94,8 @@ function VriendenPage() {
   const [nieuwOpen, setNieuwOpen] = useState(false);
   const [nieuwId, setNieuwId] = useState<string | null>(null);
   const [voorWie, setVoorWie] = useState("");
+  const [zoek, setZoek] = useState("");
+  const [gezocht, setGezocht] = useState("");
 
   const { data: shares = [] } = useQuery({
     queryKey: ["shares", user?.id],
