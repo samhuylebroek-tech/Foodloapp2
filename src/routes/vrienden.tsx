@@ -219,8 +219,11 @@ function VriendenPage() {
   const vrienden = (() => {
     const map = new Map<
       string,
-      { id: string; ikDeel: Share | null; zijDelen: Share | null }
+      { id: string; ikDeel: Share | null; zijDelen: Share | null; gezin: boolean }
     >();
+    for (const m of gezinLeden) {
+      map.set(m.user_id, { id: m.user_id, ikDeel: null, zijDelen: null, gezin: true });
+    }
     for (const s of shares) {
       if (s.status !== "accepted") continue;
       if (s.owner_id === user?.id && s.member_id) {
