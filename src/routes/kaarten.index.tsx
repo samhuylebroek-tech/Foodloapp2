@@ -189,8 +189,23 @@ function ToevoegVenster({
   const [favoriet, setFavoriet] = useState(false);
   const [gedeeld, setGedeeld] = useState(false);
   const [bezig, setBezig] = useState(false);
+  const [fotoBezig, setFotoBezig] = useState(false);
+  const fotoRef = useRef<HTMLInputElement>(null);
 
   const winkel = useMemo(() => winkels.find((w) => w.slug === slug) ?? null, [winkels, slug]);
+
+  const uitFoto = async (file: File | undefined) => {
+    if (!file) return;
+    setFotoBezig(true);
+    const gelezen = await leesCodeUitBestand(file);
+    setFotoBezig(false);
+    if (!gelezen) {
+      toast.error("We zien geen code op die foto. Probeer dichterbij en recht van boven, of typ het nummer zelf in.");
+      logScan(user?.id, "foto", null, null, false);
+      return;
+    }
+    gevonden(gelezen.waarde, zxingFormaat(gelezen.formaat));
+  };
 
   const gevonden = (waarde: string, scanFormaat: string) => {
     setScannen(false);
