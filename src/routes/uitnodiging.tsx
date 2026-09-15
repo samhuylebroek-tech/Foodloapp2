@@ -136,7 +136,42 @@ function UitnodigingPage() {
         </div>
         <h1 className="mt-4 font-display text-3xl">Je bent uitgenodigd</h1>
 
-        {!code ? (
+        {groep ? (
+          loading ? (
+            <p className="mt-4 text-lg text-muted-foreground">Even geduld…</p>
+          ) : session ? (
+            <>
+              <p className="mt-4 text-lg leading-relaxed">
+                Je mag meedoen met{" "}
+                <strong>{groepNaam ?? "dit gezin"}</strong>. Jullie zien en bewerken dan samen
+                dezelfde recepten, het weekmenu en de boodschappenlijst.
+              </p>
+              <Button onClick={gezinAannemen} disabled={busy} className="mt-6 h-16 w-full text-lg">
+                {busy ? <Loader2 className="size-5 animate-spin" /> : null} Meedoen
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => navigate({ to: "/" })}
+                disabled={busy}
+                className="mt-3 h-14 w-full text-base"
+              >
+                Nee, bedankt
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="mt-4 text-lg leading-relaxed">
+                Meld je eerst aan of maak een account. Daarna staat de uitnodiging klaar.
+              </p>
+              <Button
+                onClick={() => navigate({ to: "/aanmelden" })}
+                className="mt-6 h-16 w-full text-lg"
+              >
+                Aanmelden of account maken
+              </Button>
+            </>
+          )
+        ) : !code ? (
           <p className="mt-4 text-lg">Deze uitnodiging is niet compleet. Vraag om een nieuwe link.</p>
         ) : loading ? (
           <p className="mt-4 text-lg text-muted-foreground">Even geduld…</p>
