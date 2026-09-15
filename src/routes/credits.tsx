@@ -8,6 +8,7 @@ import { AppShell } from "@/components/AppShell";
 import { Textarea } from "@/components/ui/textarea";
 import { creditOverzicht, mijnCreditAanvraag, vraagCredits } from "@/lib/credits.functions";
 import { useVoorkeuren } from "@/lib/voorkeuren";
+import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/credits")({
   head: () => ({
