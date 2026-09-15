@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import {
   ArrowLeft,
+  Bell,
   ArrowRight,
   BookOpen,
   CalendarDays,
@@ -28,6 +29,8 @@ import {
   type ThemaId,
 } from "@/lib/voorkeuren";
 import logo from "@/assets/logo.png";
+import { toast } from "sonner";
+import { zetMeldingenAan } from "@/lib/meldingen";
 
 export const Route = createFileRoute("/welkom")({
   head: () => ({
