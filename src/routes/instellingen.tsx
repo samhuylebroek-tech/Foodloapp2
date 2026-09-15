@@ -38,8 +38,13 @@ export const Route = createFileRoute("/instellingen")({
 function InstellingenPage() {
   const { taal, zetTaal, thema, zetThema, momenten, zetMomenten, t } = useVoorkeuren();
   const creditFn = useServerFn(creditOverzicht);
-  const credits = useQuery({ queryKey: ["credits"], queryFn: () => creditFn() });
   const { user: ingelogd } = useAuth();
+  const credits = useQuery({
+    queryKey: ["credits"],
+    queryFn: () => creditFn(),
+    enabled: !!ingelogd,
+    retry: false,
+  });
   const [handle, setHandle] = useState("");
   const [handleBezig, setHandleBezig] = useState(false);
 
