@@ -56,6 +56,17 @@ function Gebruikers() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const creditsAanpassen = useMutation({
+    mutationFn: (amount: number) => creditFn({ data: { user_id: gekozen!, amount, reden: creditReden } }),
+    onSuccess: () => {
+      toast.success("Credits aangepast");
+      setCreditAantal("");
+      setCreditReden("");
+      qc.invalidateQueries({ queryKey: ["admin-gebruiker"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
     <AdminShell titel="Gebruikers" omschrijving="Zoek, onderzoek en help gebruikers">
       <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
