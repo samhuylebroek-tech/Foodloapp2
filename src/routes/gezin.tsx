@@ -254,7 +254,7 @@ function GezinPage() {
               {data.leden.map((l) => (
                 <div key={l.id} className="rounded-2xl border border-border bg-card p-4">
                   <p className="text-lg font-semibold">
-                    {l.user_id === user?.id ? "Jij" : (namen[l.user_id] ?? "Gezinslid")}
+                    {l.user_id === user?.id ? "Jij" : (namen[l.user_id] ?? "Gezinslid")}{" "}
                     {l.rol === "eigenaar" && (
                       <span className="ml-2 rounded-full bg-secondary px-3 py-1 text-sm font-semibold text-muted-foreground">
                         gestart door
