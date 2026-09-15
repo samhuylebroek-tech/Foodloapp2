@@ -246,12 +246,31 @@ function ToevoegVenster({
             <ScanLine className="size-5" aria-hidden /> Kaart scannen
           </Button>
           <Button
+            variant="secondary"
+            disabled={fotoBezig}
+            onClick={() => fotoRef.current?.click()}
+            className="h-16 gap-2 text-base"
+          >
+            <ImageIcon className="size-5" aria-hidden /> {fotoBezig ? "Even kijken…" : "Foto kiezen"}
+          </Button>
+          <Button
             variant="outline"
             onClick={() => document.getElementById("kaartnummer")?.focus()}
-            className="h-16 gap-2 text-base"
+            className="h-16 gap-2 text-base sm:col-span-2"
           >
             <Keyboard className="size-5" aria-hidden /> Zelf invullen
           </Button>
+          <input
+            ref={fotoRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              void uitFoto(file);
+            }}
+          />
         </div>
 
         {nummer ? (
