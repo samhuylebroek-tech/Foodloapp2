@@ -147,9 +147,15 @@ function CreditsPagina() {
 
 function ExtraVragen({ t }: { t: (s: string) => string }) {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const lezen = useServerFn(mijnCreditAanvraag);
   const sturen = useServerFn(vraagCredits);
-  const { data: aanvraag } = useQuery({ queryKey: ["credit-aanvraag"], queryFn: () => lezen() });
+  const { data: aanvraag } = useQuery({
+    queryKey: ["credit-aanvraag"],
+    queryFn: () => lezen(),
+    enabled: !!user,
+    retry: false,
+  });
   const [open, setOpen] = useState(false);
   const [bericht, setBericht] = useState("");
 
