@@ -1,4 +1,5 @@
 /** Clientkant van de meldingen: toestemming vragen, abonneren en afmelden. */
+import { supabase } from "@/integrations/supabase/client";
 import {
   bewaarPushAbonnement,
   bewaarTijdzone,
@@ -29,6 +30,12 @@ function naarB64url(buffer: ArrayBuffer | null) {
   return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+/** Zonder aangemelde gebruiker heeft de server geen toegangsbewijs. */
+async function isAangemeld() {
+  const { data } = await supabase.auth.getSession();
+  return Boolean(data.session);
+}
+
 export function meldingenMogelijk() {
   return (
     typeof window !== "undefined" &&
@@ -49,6 +56,7 @@ export async function huidigeStatus(): Promise<MeldingStatus> {
 /** Vraagt toestemming en meldt het toestel aan. Alleen op een gebruikersactie oproepen. */
 export async function zetMeldingenAan(): Promise<MeldingStatus> {
   if (!meldingenMogelijk()) return "niet-ondersteund";
+  if (!(await isAangemeld())) return "uit";
   if (window.top !== window.self && Notification.permission !== "granted") return "open-in-eigen-tab";
 
   const toestemming =
@@ -96,6 +104,7 @@ export async function synchroniseerTijdzone() {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (!tz || window.localStorage.getItem("tijdzone") === tz) return;
+    if (!(await isAangemeld())) return;
     await bewaarTijdzone({ data: { tijdzone: tz } });
     window.localStorage.setItem("tijdzone", tz);
   } catch {
@@ -111,6 +120,7 @@ export async function verwerkMeldingKlik() {
     if (!sleutel) return;
     url.searchParams.delete("mld");
     window.history.replaceState({}, "", url.toString());
+    if (!(await isAangemeld())) return;
     await meldingAangetikt({ data: { sleutel } });
   } catch {
     // niet erg
