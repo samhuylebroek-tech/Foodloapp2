@@ -160,7 +160,7 @@ function VriendenPage() {
     },
   });
 
-  const mijn = shares.filter((s) => s.owner_id === user?.id);
+  const mijnAlles = shares.filter((s) => s.owner_id === user?.id);
   const metMijGedeeld = shares.filter(
     (s) => s.member_id === user?.id && s.owner_id !== user?.id && s.status === "accepted",
   );
