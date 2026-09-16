@@ -191,7 +191,7 @@ function Dashboard() {
                 </div>
                 <div className="flex h-36 items-end gap-1">
                   {data.grafiek.map((g) => (
-                    <div key={g.datum} className="flex flex-1 items-end gap-0.5" title={`${g.datum}: ${g.aantal} recepten · ${g.gebruikers} gebruikers`}>
+                    <div key={g.datum} className="flex h-full flex-1 items-end gap-0.5" title={`${g.datum}: ${g.aantal} recepten · ${g.gebruikers} gebruikers`}>
                       <div className="w-full rounded-t bg-emerald-500/70" style={{ height: `${Math.max(2, (g.aantal / max) * 100)}%` }} />
                       <div className="w-full rounded-t bg-sky-400/70" style={{ height: `${Math.max(2, (g.gebruikers / max) * 100)}%` }} />
                     </div>

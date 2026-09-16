@@ -117,7 +117,7 @@ function Activiteit() {
                 {(overzicht.data?.grafiek ?? []).map((g) => (
                   <div
                     key={g.dag}
-                    className="flex flex-1 items-end gap-0.5"
+                    className="flex h-full flex-1 items-end gap-0.5"
                     title={`${g.dag}: ${g.actief} actief · ${g.recepten} recepten · ${g.ai} AI · ${euro(g.kost)}`}
                   >
                     <div className="w-full rounded-t bg-sky-400/70" style={{ height: `${(g.actief / max) * 100}%` }} />
