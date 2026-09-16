@@ -1,6 +1,13 @@
 /** Vaste vertalingen voor meldingen: geen AI, geen credits. */
 
-export type Soort = "daily_menu" | "weekly" | "meal" | "shopping" | "cooking";
+export type Soort =
+  | "daily_menu"
+  | "weekly"
+  | "meal"
+  | "shopping"
+  | "cooking"
+  | "uitnodiging"
+  | "uitnodiging_ok";
 
 type Regels = {
   merk: string;
@@ -17,6 +24,10 @@ type Regels = {
   cooking_body: (gerecht: string) => string;
   test_titel: string;
   test_body: string;
+  uitnodiging_titel: string;
+  uitnodiging_body: (naam: string) => string;
+  uitnodiging_ok_titel: string;
+  uitnodiging_ok_body: (naam: string) => string;
 };
 
 const nl: Regels = {
