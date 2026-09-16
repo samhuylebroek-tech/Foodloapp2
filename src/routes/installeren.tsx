@@ -38,7 +38,7 @@ function InstallerenPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const url = "https://foodloapp.com/installeren";
+    const url = `${appOrigin()}/installeren`;
     setLink(url);
 
     QRCode.toDataURL(url, {
