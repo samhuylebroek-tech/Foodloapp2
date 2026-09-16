@@ -21,6 +21,7 @@ const STOPWOORDEN = new Set([
   "gemalen", "grof", "grove", "gedroogde", "gedroogd", "grote", "kleine",
   "klein", "groot", "extra", "beetje", "snuf", "naar", "smaak", "eventueel",
   "zwarte", "witte", "rode", "groene", "geraspte", "geraspt", "blikje", "blik",
+  "voor", "erbij", "extra's", "stuk", "stuks", "halve", "hele", "topping",
 ]);
 
 export function normaliseer(tekst: string): string {
