@@ -86,5 +86,5 @@
 - [x] Toestanden, microcopy, toegankelijkheid en mobiele eindcontrole
 
 ## Suggesties + planner-datum (lopend)
-- [ ] Suggestieblok herbruikbaar met "Zoek opnieuw"; ook op receptenpagina
-- [ ] Inplannen: dagkeuze werkt niet volgens gebruiker — reproduceren en fixen
+- [x] Suggestieblok herbruikbaar met "Zoek opnieuw"; ook op receptenpagina
+- [x] Inplannen: tweestapsflow (eerst gerecht, dan dag) gebouwd en getest
