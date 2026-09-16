@@ -339,7 +339,10 @@ function InstellingenPage() {
 
         <Button
           variant="ghost"
-          onClick={() => supabase.auth.signOut()}
+          onClick={async () => {
+            await beeindigSessie();
+            await supabase.auth.signOut();
+          }}
           className="h-16 w-full text-lg"
         >
           <LogOut className="size-5" /> {t("Afmelden")}
