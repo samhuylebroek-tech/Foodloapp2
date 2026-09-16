@@ -70,7 +70,7 @@ function StartPage() {
     },
   });
 
-  const { data: dagmenu } = useQuery({
+  const { data: dagmenu = [] } = useQuery({
     queryKey: ["home-dagmenu", user?.id, vandaag()],
     enabled: !!user,
     queryFn: async () => {
@@ -78,10 +78,8 @@ function StartPage() {
         .from("meal_plan")
         .select("id, custom_title, meal_type, recipe_id, recipes(*)")
         .eq("plan_date", vandaag())
-        .order("meal_type")
-        .limit(1)
-        .maybeSingle();
-      return data as { id: string; custom_title: string | null; meal_type: string; recipe_id: string | null; recipes: Recipe | null } | null;
+        .order("meal_type");
+      return (data ?? []) as { id: string; custom_title: string | null; meal_type: string; recipe_id: string | null; recipes: Recipe | null }[];
     },
   });
 
