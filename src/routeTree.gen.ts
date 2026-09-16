@@ -54,6 +54,7 @@ import { Route as VriendenIdRouteImport } from './routes/vrienden.$id'
 import { Route as BeheerGebruikerIdRouteImport } from './routes/beheer.gebruiker.$id'
 import { Route as ReceptenIdBewerkenRouteImport } from './routes/recepten.$id.bewerken'
 import { Route as ApiPublicMeldingenRunRouteImport } from './routes/api/public/meldingen.run'
+import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -280,6 +281,12 @@ const ApiPublicMeldingenRunRoute = ApiPublicMeldingenRunRouteImport.update({
   path: '/api/public/meldingen/run',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LovableEmailTransactionalPreviewRoute =
+  LovableEmailTransactionalPreviewRouteImport.update({
+    id: '/lovable/email/transactional/preview',
+    path: '/lovable/email/transactional/preview',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -327,6 +334,7 @@ export interface FileRoutesByFullPath {
   '/beheer/gebruiker/$id': typeof BeheerGebruikerIdRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
   '/api/public/meldingen/run': typeof ApiPublicMeldingenRunRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -373,6 +381,7 @@ export interface FileRoutesByTo {
   '/beheer/gebruiker/$id': typeof BeheerGebruikerIdRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
   '/api/public/meldingen/run': typeof ApiPublicMeldingenRunRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -421,6 +430,7 @@ export interface FileRoutesById {
   '/beheer/gebruiker/$id': typeof BeheerGebruikerIdRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
   '/api/public/meldingen/run': typeof ApiPublicMeldingenRunRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -470,6 +480,7 @@ export interface FileRouteTypes {
     | '/beheer/gebruiker/$id'
     | '/recepten/$id/bewerken'
     | '/api/public/meldingen/run'
+    | '/lovable/email/transactional/preview'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -516,6 +527,7 @@ export interface FileRouteTypes {
     | '/beheer/gebruiker/$id'
     | '/recepten/$id/bewerken'
     | '/api/public/meldingen/run'
+    | '/lovable/email/transactional/preview'
   id:
     | '__root__'
     | '/'
@@ -563,6 +575,7 @@ export interface FileRouteTypes {
     | '/beheer/gebruiker/$id'
     | '/recepten/$id/bewerken'
     | '/api/public/meldingen/run'
+    | '/lovable/email/transactional/preview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -589,6 +602,7 @@ export interface RootRouteChildren {
   KaartenIndexRoute: typeof KaartenIndexRoute
   VriendenIndexRoute: typeof VriendenIndexRoute
   ApiPublicMeldingenRunRoute: typeof ApiPublicMeldingenRunRoute
+  LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -908,6 +922,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMeldingenRunRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lovable/email/transactional/preview': {
+      id: '/lovable/email/transactional/preview'
+      path: '/lovable/email/transactional/preview'
+      fullPath: '/lovable/email/transactional/preview'
+      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -998,6 +1019,7 @@ const rootRouteChildren: RootRouteChildren = {
   KaartenIndexRoute: KaartenIndexRoute,
   VriendenIndexRoute: VriendenIndexRoute,
   ApiPublicMeldingenRunRoute: ApiPublicMeldingenRunRoute,
+  LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
