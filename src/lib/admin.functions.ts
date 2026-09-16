@@ -411,6 +411,19 @@ export const adminDashboard = createServerFn({ method: "GET" })
     };
   });
 
+/** Korte lijst van alle personen, om cijfers per persoon te kunnen bekijken. */
+export const adminPersonenLijst = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { db } = await bewaker(context as Ctx, "dashboard.view");
+    const { data } = await db
+      .from("profiles")
+      .select("id, display_name")
+      .order("display_name")
+      .limit(500);
+    return (data ?? []).map((p: any) => ({ id: p.id as string, naam: (p.display_name as string) || "Naamloos" }));
+  });
+
 
 // ---------------- gebruikers ----------------
 
