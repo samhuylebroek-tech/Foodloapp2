@@ -331,11 +331,11 @@ function InstellingenPage() {
         <Pakketten t={t} />
 
         <OverFoodlo t={t} />
-
-        <BeheerLink />
             </AccordionContent>
           </AccordionItem>
         </Accordion>
+
+        <BeheerLink />
 
         <Button
           variant="ghost"
