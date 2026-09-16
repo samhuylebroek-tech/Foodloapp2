@@ -14,6 +14,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { appOrigin } from "@/lib/app-url";
 import { beantwoordGezinsUitnodiging, nodigUitGezin } from "@/lib/gezin.functions";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { EmptyState } from "@/components/EmptyState";
+import { PageSkeleton } from "@/components/PageSkeleton";
 
 export const Route = createFileRoute("/gezin")({
   head: () => ({
@@ -259,9 +262,9 @@ function GezinPage() {
     <AppShell title="Mijn gezin">
       <div className="space-y-6">
         {isLoading ? (
-          <p className="text-base text-muted-foreground">Even geduld…</p>
+          <PageSkeleton rows={2} />
         ) : !data ? (
-          <section className="space-y-4 rounded-3xl border border-border bg-card p-5">
+          <section className="space-y-4">
             {uitnodiging && (
               <div className="space-y-3 rounded-2xl border-2 border-primary/40 bg-primary/5 p-4">
                 <p className="text-lg font-semibold">
@@ -286,15 +289,7 @@ function GezinPage() {
                 </div>
               </div>
             )}
-            <div className="flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-              <Home className="size-7" aria-hidden />
-            </div>
-            <h2 className="font-display text-xl">Kook samen als gezin</h2>
-            <p className="text-base leading-relaxed text-muted-foreground">
-              In een gezin zien en bewerken jullie elkaars recepten, weekmenu en boodschappenlijst.
-              Alsof jullie in dezelfde keuken staan. Je kan later nog per onderdeel kiezen wat je
-              deelt.
-            </p>
+            <EmptyState icon={<Home className="size-7" />} title="Kook samen als gezin" description="Deel recepten, je weekmenu en boodschappen met de mensen thuis." />
             <div>
               <Label htmlFor="gezinnaam" className="text-base">
                 Hoe noem je jullie gezin?
@@ -365,12 +360,10 @@ function GezinPage() {
               </div>
             </section>
 
-            <section className="space-y-3 rounded-3xl border border-border bg-card p-5">
-              <h2 className="font-display text-xl">Iemand uitnodigen</h2>
-              <p className="text-base text-muted-foreground">
-                Zoek op naam, @Foodlo-naam of het volledige e-mailadres. Die persoon krijgt meteen
-                een bericht in de app.
-              </p>
+            <Accordion type="single" collapsible className="rounded-2xl bg-card px-4 ring-1 ring-border/60">
+              <AccordionItem value="uitnodigen" className="border-0">
+                <AccordionTrigger className="min-h-16 text-lg no-underline hover:no-underline">Iemand uitnodigen</AccordionTrigger>
+                <AccordionContent className="space-y-3">
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Input
                   value={zoek}
@@ -438,7 +431,9 @@ function GezinPage() {
                     })}
                   </div>
                 ))}
-            </section>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
 
             {data.leden.some((l) => l.status === "uitgenodigd") && (
               <section className="space-y-3">
@@ -521,11 +516,10 @@ function GezinPage() {
             </section>
 
             {mijnRij && (
-              <section className="space-y-3 rounded-3xl border border-border bg-card p-5">
-                <h2 className="font-display text-xl">Wat deel ik met het gezin?</h2>
-                <p className="text-base text-muted-foreground">
-                  Standaard deel je alles. Zet gerust iets af als je dat liever voor jezelf houdt.
-                </p>
+              <Accordion type="single" collapsible className="rounded-2xl bg-card px-4 ring-1 ring-border/60">
+                <AccordionItem value="rechten" className="border-0">
+                  <AccordionTrigger className="min-h-16 text-lg no-underline hover:no-underline">Wat deel ik?</AccordionTrigger>
+                  <AccordionContent>
                 <ul className="space-y-1">
                   {RECHTEN.map((r) => (
                     <li
@@ -548,7 +542,9 @@ function GezinPage() {
                     </li>
                   ))}
                 </ul>
-              </section>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             )}
 
             {mijnRij && (
