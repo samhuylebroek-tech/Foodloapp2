@@ -56,36 +56,9 @@ export async function haalDrempels(db: any): Promise<Drempels> {
   return uit;
 }
 
-export const SEGMENTEN = [
-  "nieuw",
-  "zeer_actief",
-  "actief",
-  "licht_actief",
-  "inactief",
-  "churnrisico",
-  "hoge_ai",
-  "lage_ai",
-  "hoge_kost",
-  "lage_kost",
-  "gratis",
-  "betalend",
-] as const;
-export type Segment = (typeof SEGMENTEN)[number];
-
-export const SEGMENT_LABEL: Record<Segment, string> = {
-  nieuw: "Nieuwe gebruiker",
-  zeer_actief: "Zeer actief",
-  actief: "Actief",
-  licht_actief: "Licht actief",
-  inactief: "Inactief",
-  churnrisico: "Risico op afhaken",
-  hoge_ai: "Hoge AI-gebruiker",
-  lage_ai: "Lage AI-gebruiker",
-  hoge_kost: "Hoge kost",
-  lage_kost: "Lage kost",
-  gratis: "Gratis gebruiker",
-  betalend: "Betalende gebruiker",
-};
+export { SEGMENTEN, SEGMENT_LABEL } from "@/lib/segmenten";
+import type { Segment } from "@/lib/segmenten";
+export type { Segment };
 
 export function bepaalSegmenten(
   g: {

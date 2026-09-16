@@ -8,7 +8,7 @@ import {
   adminBerichten,
   adminOntvangersTellen,
 } from "@/lib/monitoring.functions";
-import { SEGMENT_LABEL, SEGMENTEN } from "@/lib/monitoring.server.types";
+import { SEGMENT_LABEL, SEGMENTEN } from "@/lib/segmenten";
 import { AdminShell, Kaart } from "@/components/AdminShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
