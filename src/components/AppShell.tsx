@@ -11,6 +11,7 @@ import {
   Settings,
   Sparkles,
   Menu,
+  Package,
   X,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -20,6 +21,7 @@ import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.png";
 import { Aankondigingen } from "@/components/Aankondigingen";
+import { InstallatieTip } from "@/components/InstallatieTip";
 import { meet } from "@/lib/meten";
 
 const NAV = [
@@ -28,6 +30,7 @@ const NAV = [
   { to: "/recepten/nieuw", label: "Toevoegen", icon: PlusCircle },
   { to: "/planner", label: "Weekmenu", icon: CalendarDays },
   { to: "/boodschappen", label: "Boodschappen", icon: ShoppingCart },
+  { to: "/voorraad", label: "Voorraadkast", icon: Package },
   { to: "/kaarten", label: "Klantenkaarten", icon: CreditCard },
   { to: "/vrienden", label: "Vrienden", icon: Users },
   { to: "/instellingen", label: "Instellingen", icon: Settings },
@@ -168,6 +171,7 @@ export function AppShell({
           <main className="mx-auto w-full max-w-3xl px-4 py-5 pb-32 lg:max-w-4xl lg:pb-16">
             <Aankondigingen />
             {children}
+            <InstallatieTip />
           </main>
         </div>
       </div>

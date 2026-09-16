@@ -381,6 +381,22 @@ export function RecipeForm({
 
       let recipeId = recipe?.id;
       if (recipeId) {
+        // Vorige versie bewaren zodat je ze later kan terugzetten.
+        try {
+          const [oud, oudeIngredienten] = await Promise.all([
+            supabase.from("recipes").select("*").eq("id", recipeId).maybeSingle(),
+            supabase.from("recipe_ingredients").select("*").eq("recipe_id", recipeId),
+          ]);
+          if (oud.data) {
+            await supabase.from("recipe_versions").insert({
+              recipe_id: recipeId,
+              gewijzigd_door: user.id,
+              momentopname: { recept: oud.data, ingredienten: oudeIngredienten.data ?? [] },
+            });
+          }
+        } catch {
+          /* geschiedenis mag het opslaan nooit tegenhouden */
+        }
         const { error } = await supabase.from("recipes").update(payload).eq("id", recipeId);
         if (error) throw error;
         await supabase.from("recipe_ingredients").delete().eq("recipe_id", recipeId);

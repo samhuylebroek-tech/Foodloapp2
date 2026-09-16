@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/hooks/useAuth";
-import { Bell, Loader2, LogOut, QrCode, Sparkles } from "lucide-react";
+import { Bell, Download, ExternalLink, Loader2, LogOut, QrCode, Sparkles } from "lucide-react";
+import { marketingUrl } from "@/lib/app-url";
+import { exporteerMijnGegevens } from "@/lib/export.functions";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { creditOverzicht } from "@/lib/credits.functions";
@@ -288,6 +290,8 @@ function InstellingenPage() {
 
         <Pakketten t={t} />
 
+        <OverFoodlo t={t} />
+
         <BeheerLink />
 
         <Button
@@ -323,6 +327,59 @@ function Pakketten({ t }: { t: (s: string) => string }) {
       </div>
       <Button disabled className="mt-4 h-14 w-full text-base">
         {t("Extra pakket kopen (binnenkort beschikbaar)")}
+      </Button>
+    </section>
+  );
+}
+
+function OverFoodlo({ t }: { t: (s: string) => string }) {
+  const [bezig, setBezig] = useState(false);
+  const links = [
+    { label: "Website", pad: "/" },
+    { label: "Over Foodlo", pad: "/over" },
+    { label: "Contact", pad: "/contact" },
+    { label: "Privacy", pad: "/privacy" },
+    { label: "Voorwaarden", pad: "/voorwaarden" },
+  ];
+
+  const download = async () => {
+    setBezig(true);
+    try {
+      const gegevens = await exporteerMijnGegevens();
+      const blob = new Blob([JSON.stringify(gegevens, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "foodlo-mijn-gegevens.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error(t("Downloaden lukte niet. Probeer het straks opnieuw."));
+    } finally {
+      setBezig(false);
+    }
+  };
+
+  return (
+    <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+      <h2 className="text-xl font-bold tracking-tight">{t("Over Foodlo")}</h2>
+      <ul className="mt-3 space-y-2">
+        {links.map((l) => (
+          <li key={l.pad}>
+            <a
+              href={marketingUrl(l.pad)}
+              target="_blank"
+              rel="noreferrer"
+              className="flex min-h-14 items-center justify-between rounded-2xl border border-border px-4 text-lg font-semibold"
+            >
+              {t(l.label)}
+              <ExternalLink className="size-5" aria-hidden />
+            </a>
+          </li>
+        ))}
+      </ul>
+      <Button onClick={() => void download()} disabled={bezig} className="mt-4 h-14 w-full text-base">
+        <Download className="size-5" /> {bezig ? t("Bezig…") : t("Mijn gegevens downloaden")}
       </Button>
     </section>
   );

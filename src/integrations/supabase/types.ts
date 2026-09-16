@@ -1154,6 +1154,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pantry_items: {
+        Row: {
+          created_at: string
+          eenheid: string
+          hoeveelheid: number | null
+          id: string
+          naam: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          eenheid?: string
+          hoeveelheid?: number | null
+          id?: string
+          naam: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          eenheid?: string
+          hoeveelheid?: number | null
+          id?: string
+          naam?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           description: string
@@ -1382,6 +1412,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "recipe_ratings_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipe_versions: {
+        Row: {
+          created_at: string
+          gewijzigd_door: string | null
+          id: string
+          momentopname: Json
+          recipe_id: string
+        }
+        Insert: {
+          created_at?: string
+          gewijzigd_door?: string | null
+          id?: string
+          momentopname: Json
+          recipe_id: string
+        }
+        Update: {
+          created_at?: string
+          gewijzigd_door?: string | null
+          id?: string
+          momentopname?: Json
+          recipe_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_versions_recipe_id_fkey"
             columns: ["recipe_id"]
             isOneToOne: false
             referencedRelation: "recipes"
