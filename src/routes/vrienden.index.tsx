@@ -28,7 +28,7 @@ import { Input } from "@/components/ui/input";
 import { appOrigin } from "@/lib/app-url";
 import { beantwoordUitnodiging, nodigUitVriend } from "@/lib/vrienden.functions";
 
-export const Route = createFileRoute("/vrienden")({
+export const Route = createFileRoute("/vrienden/")({
   head: () => ({
     meta: [
       { title: "Vrienden en gezin – Foodlo" },
