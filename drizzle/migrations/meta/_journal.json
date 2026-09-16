@@ -225,6 +225,13 @@
       "when": 1789568217304,
       "tag": "0031_restrict_admin_note_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1789594520829,
+      "tag": "0032_user_intelligence_sessions_events",
+      "breakpoints": true
     }
   ]
 }

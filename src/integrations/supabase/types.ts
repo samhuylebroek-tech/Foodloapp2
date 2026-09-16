@@ -205,6 +205,33 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_saved_views: {
+        Row: {
+          admin_id: string
+          created_at: string
+          filters: Json
+          id: string
+          naam: string
+          scherm: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          filters?: Json
+          id?: string
+          naam: string
+          scherm: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          filters?: Json
+          id?: string
+          naam?: string
+          scherm?: string
+        }
+        Relationships: []
+      }
       admin_sessions: {
         Row: {
           aal: string | null
@@ -429,32 +456,47 @@ export type Database = {
       }
       app_errors: {
         Row: {
+          app_version: string | null
           bericht: string
+          browser: string | null
           created_at: string
           detail: string
+          device: string | null
           feature: string
           id: string
           path: string | null
+          platform: string | null
+          session_id: string | null
           soort: string
           user_id: string | null
         }
         Insert: {
+          app_version?: string | null
           bericht?: string
+          browser?: string | null
           created_at?: string
           detail?: string
+          device?: string | null
           feature?: string
           id?: string
           path?: string | null
+          platform?: string | null
+          session_id?: string | null
           soort?: string
           user_id?: string | null
         }
         Update: {
+          app_version?: string | null
           bericht?: string
+          browser?: string | null
           created_at?: string
           detail?: string
+          device?: string | null
           feature?: string
           id?: string
           path?: string | null
+          platform?: string | null
+          session_id?: string | null
           soort?: string
           user_id?: string | null
         }
@@ -1680,27 +1722,60 @@ export type Database = {
       }
       usage_events: {
         Row: {
+          app_version: string | null
+          browser: string | null
           created_at: string
           detail: Json
+          device: string | null
+          duration_ms: number | null
+          entity_id: string | null
+          entity_label: string | null
+          entity_type: string | null
           event: string
+          feature: string | null
           id: string
+          ok: boolean | null
           path: string | null
+          platform: string | null
+          session_id: string | null
           user_id: string | null
         }
         Insert: {
+          app_version?: string | null
+          browser?: string | null
           created_at?: string
           detail?: Json
+          device?: string | null
+          duration_ms?: number | null
+          entity_id?: string | null
+          entity_label?: string | null
+          entity_type?: string | null
           event: string
+          feature?: string | null
           id?: string
+          ok?: boolean | null
           path?: string | null
+          platform?: string | null
+          session_id?: string | null
           user_id?: string | null
         }
         Update: {
+          app_version?: string | null
+          browser?: string | null
           created_at?: string
           detail?: Json
+          device?: string | null
+          duration_ms?: number | null
+          entity_id?: string | null
+          entity_label?: string | null
+          entity_type?: string | null
           event?: string
+          feature?: string | null
           id?: string
+          ok?: boolean | null
           path?: string | null
+          platform?: string | null
+          session_id?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -1731,6 +1806,57 @@ export type Database = {
           gekocht_totaal?: number
           gratis_totaal?: number
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_sessions: {
+        Row: {
+          app_version: string
+          browser: string
+          created_at: string
+          device: string
+          einde_geschat: boolean
+          ended_at: string | null
+          events: number
+          id: string
+          last_seen_at: string
+          platform: string
+          started_at: string
+          taal: string
+          tijdzone: string
+          user_id: string
+        }
+        Insert: {
+          app_version?: string
+          browser?: string
+          created_at?: string
+          device?: string
+          einde_geschat?: boolean
+          ended_at?: string | null
+          events?: number
+          id?: string
+          last_seen_at?: string
+          platform?: string
+          started_at?: string
+          taal?: string
+          tijdzone?: string
+          user_id: string
+        }
+        Update: {
+          app_version?: string
+          browser?: string
+          created_at?: string
+          device?: string
+          einde_geschat?: boolean
+          ended_at?: string | null
+          events?: number
+          id?: string
+          last_seen_at?: string
+          platform?: string
+          started_at?: string
+          taal?: string
+          tijdzone?: string
           user_id?: string
         }
         Relationships: []
