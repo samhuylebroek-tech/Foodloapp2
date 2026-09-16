@@ -5,6 +5,7 @@ import { Copy, Share2, Download, Smartphone, Check, Loader2, ArrowLeft } from "l
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/voorkeuren";
+import { appOrigin } from "@/lib/app-url";
 import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/installeren")({
