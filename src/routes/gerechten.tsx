@@ -352,6 +352,8 @@ function GerechtenPage() {
             ))}
           </ul>
         )}
+
+        <NieuweSuggesties recipes={recipes} favorites={favorites} />
       </div>
 
       {teVerwijderen && (
