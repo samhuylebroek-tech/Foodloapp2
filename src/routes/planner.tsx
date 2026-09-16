@@ -275,6 +275,7 @@ function PlannerPage() {
       return;
     }
     setKiezen(null);
+    setWeekStart(maandagVan(new Date(`${datum}T12:00:00`)));
     toast.success(basis ? "Ingepland en bewaard bij je recepten" : "In je weekmenu gezet");
     qc.invalidateQueries({ queryKey: ["meal-plan"] });
     qc.invalidateQueries({ queryKey: ["recipes"] });
