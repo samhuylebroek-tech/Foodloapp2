@@ -17,6 +17,8 @@ import {
   Trash2,
   X,
   CalendarPlus,
+  MoreHorizontal,
+  Share2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +38,9 @@ import { tijdLabel } from "@/lib/tijd";
 import { Voedingswaarden } from "@/components/Voedingswaarden";
 import { StapIngredienten } from "@/components/StapIngredienten";
 import { koppelStappen } from "@/lib/stap-ingredienten";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { PageSkeleton } from "@/components/PageSkeleton";
 
 
 export const Route = createFileRoute("/recepten/$id")({
@@ -167,7 +172,7 @@ function ReceptPage() {
   if (isLoading || !data) {
     return (
       <AppShell title="Recept">
-        <p className="py-10 text-center text-lg text-muted-foreground">Laden…</p>
+        <PageSkeleton rows={3} />
       </AppShell>
     );
   }
@@ -272,6 +277,15 @@ function ReceptPage() {
     else {
       toast.success("Recept verwijderd");
       navigate({ to: "/" });
+    }
+  }
+
+  async function deelRecept() {
+    const url = window.location.href;
+    if (navigator.share) await navigator.share({ title: recipe.title, url });
+    else {
+      await navigator.clipboard.writeText(url);
+      toast.success(t("Link gekopieerd"));
     }
   }
 
@@ -390,47 +404,32 @@ function ReceptPage() {
 
   return (
     <AppShell
-      title={t(recipe.title)}
+      title={t("Recept")}
       action={
-        <Button variant="ghost" onClick={toggleFavorite} className="h-12" aria-label={t("Favoriet")}>
-          <Heart className={isFavorite ? "size-6 fill-primary text-primary" : "size-6"} />
-        </Button>
+        <div className="flex items-center">
+          <Button variant="ghost" size="icon" onClick={toggleFavorite} aria-label={t("Favoriet")}>
+            <Heart className={isFavorite ? "fill-primary text-primary" : ""} />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => void deelRecept()} aria-label={t("Delen")}><Share2 /></Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label={t("Meer")}><MoreHorizontal /></Button></DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-52 rounded-xl p-2">
+              {isOwner ? <DropdownMenuItem asChild className="min-h-12 text-base"><Link to="/recepten/$id/bewerken" params={{ id: recipe.id }}><Pencil />{t("Aanpassen")}</Link></DropdownMenuItem> : <DropdownMenuItem onSelect={() => void kopieerNaarMij()} className="min-h-12 text-base"><Copy />{t("Zet in mijn gerechten")}</DropdownMenuItem>}
+              <DropdownMenuItem onSelect={() => setPlanOpen(true)} className="min-h-12 text-base"><CalendarPlus />{t("Inplannen")}</DropdownMenuItem>
+              {isOwner ? <><DropdownMenuSeparator /><DropdownMenuItem onSelect={() => void verwijder()} className="min-h-12 text-base text-destructive"><Trash2 />{t("Verwijderen")}</DropdownMenuItem></> : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       }
     >
-      <div className="space-y-6">
-        <div className="flex flex-wrap gap-2">
-          <Link
-            to="/gerechten"
-            className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-border bg-card px-4 text-base font-semibold"
-          >
-            <ArrowLeft className="size-5" aria-hidden /> {t("Alle gerechten")}
-          </Link>
-          {isOwner && (
-            <Link
-              to="/recepten/$id/bewerken"
-              params={{ id: recipe.id }}
-              className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-border bg-card px-4 text-base font-semibold"
-            >
-              <Pencil className="size-5" aria-hidden /> {t("Aanpassen")}
-            </Link>
-          )}
-          {!isOwner && (
-            <button
-              type="button"
-              onClick={kopieerNaarMij}
-              className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground"
-            >
-              <Copy className="size-5" aria-hidden /> {t("Zet in mijn gerechten")}
-            </button>
-          )}
-        </div>
-
+      <div className="space-y-5">
+        <Link to="/gerechten" className="inline-flex min-h-12 items-center gap-2 font-semibold text-muted-foreground"><ArrowLeft />{t("Recepten")}</Link>
         <div className="space-y-3">
           <div className="relative">
             <RecipePhoto
               path={recipe.image_url}
               alt={recipe.title}
-              className="h-56 w-full rounded-3xl"
+              className="aspect-[4/3] w-full rounded-2xl sm:aspect-[16/9]"
             />
             {fotoBezig && (
               <div className="absolute inset-0 flex items-center justify-center rounded-3xl bg-card/70">
@@ -438,7 +437,7 @@ function ReceptPage() {
               </div>
             )}
           </div>
-          {isOwner && (
+          {isOwner && !recipe.image_url && (
             <FotoKiezer
               bezig={fotoBezig}
               heeftFoto={!!recipe.image_url}
@@ -447,7 +446,15 @@ function ReceptPage() {
           )}
         </div>
 
-        {recipe.description && <p className="text-lg leading-relaxed">{t(recipe.description)}</p>}
+        <div>
+          <h1 className="font-display text-3xl font-semibold leading-tight">{t(recipe.title)}</h1>
+          <p className="mt-2 flex flex-wrap items-center gap-2 text-base text-muted-foreground">
+            {tijdLabel(recipe.prep_minutes, recipe.cook_minutes) ? <><Clock className="size-5" />{tijdLabel(recipe.prep_minutes, recipe.cook_minutes)}<span>·</span></> : null}
+            <span>{aantal} {t("personen")}</span>
+          </p>
+        </div>
+
+        {recipe.instructions.length > 0 ? <Button onClick={() => { setStap(0); void meet("kookmodus.gestart", undefined, { id }); setKookstand(true); }} className="h-14 w-full"><ChefHat />{t("Start koken")}</Button> : null}
 
         {isOwner && (ingredients.length === 0 || recipe.instructions.length === 0) && (
           <div className="rounded-2xl border border-primary/40 bg-secondary p-4">
@@ -469,25 +476,28 @@ function ReceptPage() {
           </div>
         )}
 
-        <div className="flex flex-wrap gap-3 text-base text-muted-foreground">
-          {tijdLabel(recipe.prep_minutes, recipe.cook_minutes) ? (
-            <span className="inline-flex items-center gap-2">
-              <Clock className="size-5" aria-hidden /> {tijdLabel(recipe.prep_minutes, recipe.cook_minutes)}
-            </span>
-          ) : null}
-          <span className="inline-flex items-center gap-2">
-            <ChefHat className="size-5" aria-hidden /> {t(recipe.difficulty)}
-          </span>
-          <span>{t(recipe.category)}</span>
-        </div>
+        <Tabs defaultValue="overzicht" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 overflow-x-auto">
+            <TabsTrigger value="overzicht">{t("Overzicht")}</TabsTrigger>
+            <TabsTrigger value="ingredienten">{t("Ingrediënten")}</TabsTrigger>
+            <TabsTrigger value="bereiding">{t("Bereiding")}</TabsTrigger>
+            <TabsTrigger value="voeding">{t("Voeding")}</TabsTrigger>
+          </TabsList>
 
-        <section className="rounded-3xl border border-border bg-card p-4">
-          <SterrenKiezer waarde={mijnScore} onKies={zetScore} label={t("Jouw score")} />
-        </section>
+          <TabsContent value="overzicht" className="pt-4">
+            <div className="space-y-5">
+              {recipe.description ? <p className="text-lg leading-relaxed">{t(recipe.description)}</p> : null}
+              <div className="flex flex-wrap gap-x-5 gap-y-2 text-base text-muted-foreground"><span>{t(recipe.category)}</span><span>{t(recipe.difficulty)}</span></div>
+              <SterrenKiezer waarde={mijnScore} onKies={zetScore} label={t("Jouw score")} />
+              <Button variant="secondary" onClick={() => setPlanOpen(!planOpen)} className="w-full"><CalendarPlus />{t("Inplannen")}</Button>
+              {planOpen ? <PlanKiezer momenten={momenten} onKies={planOp} /> : null}
+              {recipe.source_url ? <a href={recipe.source_url} target="_blank" rel="noreferrer" className="block text-base text-primary underline underline-offset-4">{t("Bekijk origineel op")} {bronNaam(recipe.source_url)}</a> : null}
+              {isOwner && recipe.image_url ? <FotoKiezer bezig={fotoBezig} heeftFoto onBestand={(file) => void vervangFoto(file)} /> : null}
+            </div>
+          </TabsContent>
 
-
-
-        <section className="rounded-3xl border border-border bg-card p-4">
+          <TabsContent value="ingredienten" className="pt-4">
+        <section className="rounded-2xl bg-card p-4 shadow-sm ring-1 ring-border/60">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-xl">Ingrediënten</h2>
             <div className="flex w-full items-center justify-between gap-2 rounded-2xl bg-secondary p-1 sm:w-auto sm:justify-end sm:bg-transparent sm:p-0">
@@ -534,6 +544,10 @@ function ReceptPage() {
           </Button>
         </section>
 
+        </section>
+          </TabsContent>
+
+          <TabsContent value="bereiding" className="pt-4">
         <section>
           <h2 className="text-xl">{t("Bereiding")}</h2>
 
@@ -548,66 +562,11 @@ function ReceptPage() {
               </li>
             ))}
           </ol>
-          {recipe.instructions.length > 0 && (
-            <Button
-              onClick={() => {
-                setStap(0);
-                void meet("kookmodus.gestart", undefined, { id });
-                setKookstand(true);
-              }}
-              className="mt-4 h-16 w-full text-lg"
-            >
-              {t("Start kookstand")}
-            </Button>
-          )}
         </section>
+          </TabsContent>
 
-        <Voedingswaarden ingredienten={ingredients} porties={aantal} />
-
-        {/* Waar komt dit recept vandaan? */}
-        <section className="space-y-3">
-
-          <Button
-            variant="secondary"
-            onClick={() => setPlanOpen(!planOpen)}
-            className="h-16 w-full text-lg"
-          >
-            <CalendarPlus className="size-5" /> {t("Inplannen")}
-          </Button>
-
-          {planOpen && <PlanKiezer momenten={momenten} onKies={planOp} />}
-
-          {recipe.source_url && (
-            <a
-              href={recipe.source_url}
-              target="_blank"
-              rel="noreferrer"
-              className="block py-2 text-base text-primary underline underline-offset-4"
-            >
-              {t("Ingelezen van")} {bronNaam(recipe.source_url)} — {t("bekijk het origineel")}
-            </a>
-          )}
-
-
-          {isOwner && (
-            <div className="flex gap-3">
-              <Link
-                to="/recepten/$id/bewerken"
-                params={{ id: recipe.id }}
-                className="inline-flex h-16 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card text-lg font-semibold"
-              >
-                <Pencil className="size-5" /> {t("Aanpassen")}
-              </Link>
-              <Button
-                variant="ghost"
-                onClick={verwijder}
-                className="h-16 flex-1 text-lg text-destructive"
-              >
-                <Trash2 className="size-5" /> {t("Verwijderen")}
-              </Button>
-            </div>
-          )}
-        </section>
+          <TabsContent value="voeding" className="pt-4"><Voedingswaarden ingredienten={ingredients} porties={aantal} /></TabsContent>
+        </Tabs>
 
       </div>
     </AppShell>
