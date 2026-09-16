@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Kaart } from "@/components/AdminShell";
 import { GEBEURTENISSEN, GEBEURTENIS_LABEL, FEATURES } from "@/lib/meten";
 import { uiExport, uiWeergaveBewaren, uiWeergaven, uiWeergaveVerwijderen } from "@/lib/user-intelligence.functions";
-import { downloadCsv } from "@/lib/csv-download";
+import { bewaarCsv } from "@/lib/csv-download";
 
 // ---------------- zoekparameters ----------------
 
@@ -174,7 +174,7 @@ export function FilterBalk({
     mutationFn: () => exportFn({ data: { soort: exportSoort ?? "gebruikers", filters: naarFilters(zoek) } }),
     onSuccess: (r: any) => {
       if (!r?.inhoud) return toast.error("Niets te exporteren");
-      downloadCsv(r.bestand, r.inhoud);
+      bewaarCsv(r.bestand, r.inhoud);
     },
     onError: (e: any) => toast.error(e?.message ?? "Export lukte niet"),
   });
