@@ -745,11 +745,21 @@ function ReceptKiezer({
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
       <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-t-3xl bg-card p-4 sm:rounded-3xl">
         <div className="flex items-start justify-between gap-3">
-          <h2 className="font-display text-xl">Inplannen deze week</h2>
+          <h2 className="font-display text-xl">Inplannen</h2>
           <Button variant="ghost" onClick={onSluit} aria-label="Sluiten" className="size-12">
             <X className="size-6" />
           </Button>
         </div>
+
+        <p className="mt-1 text-base font-semibold capitalize">{labelVoor(datum)}</p>
+
+        <input
+          type="date"
+          value={datum}
+          onChange={(e) => { if (e.target.value) setDatum(e.target.value); }}
+          aria-label="Kies een datum"
+          className="mt-2 h-14 w-full rounded-xl border border-input bg-background px-3 text-base"
+        />
 
         <div className="mt-2 flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Kies een dag">
           {week.map((d) => (
