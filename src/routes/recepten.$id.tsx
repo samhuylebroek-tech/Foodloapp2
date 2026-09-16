@@ -34,6 +34,8 @@ import { type Ingredient, type Recipe } from "@/lib/types";
 import { Copy } from "lucide-react";
 import { tijdLabel } from "@/lib/tijd";
 import { Voedingswaarden } from "@/components/Voedingswaarden";
+import { StapIngredienten } from "@/components/StapIngredienten";
+import { koppelStappen } from "@/lib/stap-ingredienten";
 
 
 export const Route = createFileRoute("/recepten/$id")({
