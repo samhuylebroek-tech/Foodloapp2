@@ -47,6 +47,7 @@ import { Route as BeheerSupportRouteImport } from './routes/beheer.support'
 import { Route as BeheerSysteemRouteImport } from './routes/beheer.systeem'
 import { Route as BeheerTeamRouteImport } from './routes/beheer.team'
 import { Route as BeheerTekstenRouteImport } from './routes/beheer.teksten'
+import { Route as BeheerUiRouteImport } from './routes/beheer.ui'
 import { Route as KaartenIndexRouteImport } from './routes/kaarten.index'
 import { Route as KaartenIdRouteImport } from './routes/kaarten.$id'
 import { Route as ReceptenIdRouteImport } from './routes/recepten.$id'
@@ -54,6 +55,7 @@ import { Route as ReceptenNieuwRouteImport } from './routes/recepten.nieuw'
 import { Route as VriendenIndexRouteImport } from './routes/vrienden.index'
 import { Route as VriendenIdRouteImport } from './routes/vrienden.$id'
 import { Route as BeheerGebruikerIdRouteImport } from './routes/beheer.gebruiker.$id'
+import { Route as BeheerUiIndexRouteImport } from './routes/beheer.ui.index'
 import { Route as ReceptenIdBewerkenRouteImport } from './routes/recepten.$id_.bewerken'
 import { Route as ApiPublicMeldingenRunRouteImport } from './routes/api/public/meldingen.run'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -248,6 +250,11 @@ const BeheerTekstenRoute = BeheerTekstenRouteImport.update({
   path: '/teksten',
   getParentRoute: () => BeheerRoute,
 } as any)
+const BeheerUiRoute = BeheerUiRouteImport.update({
+  id: '/ui',
+  path: '/ui',
+  getParentRoute: () => BeheerRoute,
+} as any)
 const KaartenIndexRoute = KaartenIndexRouteImport.update({
   id: '/kaarten/',
   path: '/kaarten/',
@@ -282,6 +289,11 @@ const BeheerGebruikerIdRoute = BeheerGebruikerIdRouteImport.update({
   id: '/gebruiker/$id',
   path: '/gebruiker/$id',
   getParentRoute: () => BeheerRoute,
+} as any)
+const BeheerUiIndexRoute = BeheerUiIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => BeheerUiRoute,
 } as any)
 const ReceptenIdBewerkenRoute = ReceptenIdBewerkenRouteImport.update({
   id: '/recepten/$id_/bewerken',
@@ -338,6 +350,7 @@ export interface FileRoutesByFullPath {
   '/beheer/systeem': typeof BeheerSysteemRoute
   '/beheer/team': typeof BeheerTeamRoute
   '/beheer/teksten': typeof BeheerTekstenRoute
+  '/beheer/ui': typeof BeheerUiRouteWithChildren
   '/kaarten/$id': typeof KaartenIdRoute
   '/recepten/$id': typeof ReceptenIdRoute
   '/recepten/nieuw': typeof ReceptenNieuwRoute
@@ -347,6 +360,7 @@ export interface FileRoutesByFullPath {
   '/vrienden/': typeof VriendenIndexRoute
   '/beheer/gebruiker/$id': typeof BeheerGebruikerIdRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
+  '/beheer/ui/': typeof BeheerUiIndexRoute
   '/api/public/meldingen/run': typeof ApiPublicMeldingenRunRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
@@ -396,6 +410,7 @@ export interface FileRoutesByTo {
   '/vrienden': typeof VriendenIndexRoute
   '/beheer/gebruiker/$id': typeof BeheerGebruikerIdRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
+  '/beheer/ui': typeof BeheerUiIndexRoute
   '/api/public/meldingen/run': typeof ApiPublicMeldingenRunRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
@@ -438,6 +453,7 @@ export interface FileRoutesById {
   '/beheer/systeem': typeof BeheerSysteemRoute
   '/beheer/team': typeof BeheerTeamRoute
   '/beheer/teksten': typeof BeheerTekstenRoute
+  '/beheer/ui': typeof BeheerUiRouteWithChildren
   '/kaarten/$id': typeof KaartenIdRoute
   '/recepten/$id': typeof ReceptenIdRoute
   '/recepten/nieuw': typeof ReceptenNieuwRoute
@@ -447,6 +463,7 @@ export interface FileRoutesById {
   '/vrienden/': typeof VriendenIndexRoute
   '/beheer/gebruiker/$id': typeof BeheerGebruikerIdRoute
   '/recepten/$id_/bewerken': typeof ReceptenIdBewerkenRoute
+  '/beheer/ui/': typeof BeheerUiIndexRoute
   '/api/public/meldingen/run': typeof ApiPublicMeldingenRunRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
@@ -490,6 +507,7 @@ export interface FileRouteTypes {
     | '/beheer/systeem'
     | '/beheer/team'
     | '/beheer/teksten'
+    | '/beheer/ui'
     | '/kaarten/$id'
     | '/recepten/$id'
     | '/recepten/nieuw'
@@ -499,6 +517,7 @@ export interface FileRouteTypes {
     | '/vrienden/'
     | '/beheer/gebruiker/$id'
     | '/recepten/$id/bewerken'
+    | '/beheer/ui/'
     | '/api/public/meldingen/run'
     | '/lovable/email/transactional/preview'
   fileRoutesByTo: FileRoutesByTo
@@ -548,6 +567,7 @@ export interface FileRouteTypes {
     | '/vrienden'
     | '/beheer/gebruiker/$id'
     | '/recepten/$id/bewerken'
+    | '/beheer/ui'
     | '/api/public/meldingen/run'
     | '/lovable/email/transactional/preview'
   id:
@@ -589,6 +609,7 @@ export interface FileRouteTypes {
     | '/beheer/systeem'
     | '/beheer/team'
     | '/beheer/teksten'
+    | '/beheer/ui'
     | '/kaarten/$id'
     | '/recepten/$id'
     | '/recepten/nieuw'
@@ -598,6 +619,7 @@ export interface FileRouteTypes {
     | '/vrienden/'
     | '/beheer/gebruiker/$id'
     | '/recepten/$id_/bewerken'
+    | '/beheer/ui/'
     | '/api/public/meldingen/run'
     | '/lovable/email/transactional/preview'
   fileRoutesById: FileRoutesById
@@ -900,6 +922,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerTekstenRouteImport
       parentRoute: typeof BeheerRoute
     }
+    '/beheer/ui': {
+      id: '/beheer/ui'
+      path: '/ui'
+      fullPath: '/beheer/ui'
+      preLoaderRoute: typeof BeheerUiRouteImport
+      parentRoute: typeof BeheerRoute
+    }
     '/kaarten/': {
       id: '/kaarten/'
       path: '/kaarten'
@@ -949,6 +978,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerGebruikerIdRouteImport
       parentRoute: typeof BeheerRoute
     }
+    '/beheer/ui/': {
+      id: '/beheer/ui/'
+      path: '/'
+      fullPath: '/beheer/ui/'
+      preLoaderRoute: typeof BeheerUiIndexRouteImport
+      parentRoute: typeof BeheerUiRoute
+    }
     '/recepten/$id_/bewerken': {
       id: '/recepten/$id_/bewerken'
       path: '/recepten/$id/bewerken'
@@ -973,6 +1009,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface BeheerUiRouteChildren {
+  BeheerUiIndexRoute: typeof BeheerUiIndexRoute
+}
+
+const BeheerUiRouteChildren: BeheerUiRouteChildren = {
+  BeheerUiIndexRoute: BeheerUiIndexRoute,
+}
+
+const BeheerUiRouteWithChildren = BeheerUiRoute._addFileChildren(
+  BeheerUiRouteChildren,
+)
+
 interface BeheerRouteChildren {
   BeheerActiviteitRoute: typeof BeheerActiviteitRoute
   BeheerAiRoute: typeof BeheerAiRoute
@@ -993,6 +1041,7 @@ interface BeheerRouteChildren {
   BeheerSysteemRoute: typeof BeheerSysteemRoute
   BeheerTeamRoute: typeof BeheerTeamRoute
   BeheerTekstenRoute: typeof BeheerTekstenRoute
+  BeheerUiRoute: typeof BeheerUiRouteWithChildren
   BeheerIndexRoute: typeof BeheerIndexRoute
   BeheerGebruikerIdRoute: typeof BeheerGebruikerIdRoute
 }
@@ -1017,6 +1066,7 @@ const BeheerRouteChildren: BeheerRouteChildren = {
   BeheerSysteemRoute: BeheerSysteemRoute,
   BeheerTeamRoute: BeheerTeamRoute,
   BeheerTekstenRoute: BeheerTekstenRoute,
+  BeheerUiRoute: BeheerUiRouteWithChildren,
   BeheerIndexRoute: BeheerIndexRoute,
   BeheerGebruikerIdRoute: BeheerGebruikerIdRoute,
 }
