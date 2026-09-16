@@ -328,6 +328,7 @@ function ReceptPage() {
           </div>
           <h2 className="mt-6 font-display text-3xl">{recipe.title}</h2>
           <p className="mt-6 text-2xl leading-relaxed">{stappen[stap]}</p>
+          <StapIngredienten ingredienten={stapIngredienten(stap)} factor={factor} groot />
           <div className="mt-10 flex gap-3">
             <Button
               variant="secondary"
