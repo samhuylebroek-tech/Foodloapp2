@@ -11,6 +11,7 @@ import { creditOverzicht } from "@/lib/credits.functions";
 
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { beeindigSessie } from "@/lib/meten";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
