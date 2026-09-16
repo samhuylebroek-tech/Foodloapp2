@@ -438,7 +438,13 @@ function PlannerPage() {
         </div>
 
         <Button
-          onClick={() => setKiezen({ datum: vandaag >= week[0]! && vandaag <= week[6]! ? vandaag : week[0]!, moment: momenten[momenten.length - 1] ?? "avondeten" })}
+          onClick={() =>
+            setKiezen({
+              datum: vandaag >= week[0]! && vandaag <= week[6]! ? vandaag : week[0]!,
+              moment: momenten[momenten.length - 1] ?? "avondeten",
+              vraagDag: true,
+            })
+          }
           className="h-16 w-full text-lg"
         >
           <Plus className="size-6" /> Gerecht inplannen deze week
