@@ -165,6 +165,8 @@ function StartPage() {
           </div>
         </section>
 
+        <NieuweSuggesties recipes={recipes} favorites={favorites} />
+
         {recent.length > 0 ? (
           <section aria-labelledby="favorieten-titel">
             <div className="flex items-center justify-between gap-4">
@@ -187,8 +189,6 @@ function StartPage() {
             </ul>
           </section>
         ) : null}
-
-        <NieuweSuggesties recipes={recipes} favorites={favorites} />
       </div>
     </AppShell>
   );

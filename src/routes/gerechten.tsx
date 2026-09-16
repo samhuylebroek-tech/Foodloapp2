@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Heart, Search, Clock, RotateCcw, Plus, Trash2, X, SlidersHorizontal } from "lucide-react";
+import { Heart, Search, Clock, RotateCcw, Plus, Trash2, X, SlidersHorizontal, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
@@ -65,6 +65,7 @@ function GerechtenPage() {
   const [teVerwijderen, setTeVerwijderen] = useState<Recipe | null>(null);
   const [bezig, setBezig] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [ideeenOpen, setIdeeenOpen] = useState(false);
 
   const { data: recipes = [], isLoading } = useQuery({
     queryKey: ["recipes"],
@@ -206,9 +207,19 @@ function GerechtenPage() {
     <AppShell
       title={t("Recepten")}
       action={
-        <Button asChild size="icon" aria-label={t("Recept toevoegen")}>
-          <Link to="/recepten/nieuw"><Plus /></Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="icon"
+            variant="secondary"
+            aria-label={t("Zoek nieuwe ideeën")}
+            onClick={() => setIdeeenOpen(true)}
+          >
+            <Sparkles />
+          </Button>
+          <Button asChild size="icon" aria-label={t("Recept toevoegen")}>
+            <Link to="/recepten/nieuw"><Plus /></Link>
+          </Button>
+        </div>
       }
     >
       <div className="space-y-4">
@@ -352,9 +363,28 @@ function GerechtenPage() {
             ))}
           </ul>
         )}
-
-        <NieuweSuggesties recipes={recipes} favorites={favorites} />
       </div>
+
+      {ideeenOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center" role="dialog" aria-modal="true" aria-label={t("Zoek nieuwe ideeën")}>
+          <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-background shadow-xl sm:rounded-3xl">
+            <div className="flex items-center justify-between gap-3 px-5 pt-5">
+              <h2 className="font-display text-xl">{t("Zoek nieuwe ideeën")}</h2>
+              <Button
+                variant="ghost"
+                onClick={() => setIdeeenOpen(false)}
+                aria-label={t("Sluiten")}
+                className="size-12"
+              >
+                <X className="size-6" />
+              </Button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6">
+              <NieuweSuggesties recipes={recipes} favorites={favorites} />
+            </div>
+          </div>
+        </div>
+      )}
 
       {teVerwijderen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">

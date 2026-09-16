@@ -88,3 +88,6 @@
 ## Suggesties + planner-datum (lopend)
 - [x] Suggestieblok herbruikbaar met "Zoek opnieuw"; ook op receptenpagina
 - [x] Inplannen: tweestapsflow (eerst gerecht, dan dag) gebouwd en getest
+
+## Open
+- [x] Controlecentrum-link weer zichtbaar onderaan instellingen
