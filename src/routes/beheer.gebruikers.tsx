@@ -68,7 +68,89 @@ function Gebruikers() {
   });
 
   return (
-    <AdminShell titel="Gebruikers" omschrijving="Zoek, onderzoek en help gebruikers">
+    <AdminShell
+      titel="Gebruikers"
+      omschrijving="Zoek, onderzoek en help gebruikers"
+      acties={
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={async () => {
+            const r = await csvFn({ data: { soort: "gebruikers" } });
+            bewaarCsv(r.bestand, r.inhoud);
+            toast.success("Bestand gedownload");
+          }}
+        >
+          Exporteer CSV
+        </Button>
+      }
+    >
+      <Kaart className="mb-4">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <p className="text-sm font-medium">Vergelijken</p>
+          <select
+            value={sorteer}
+            onChange={(e) => setSorteer(e.target.value as any)}
+            className="rounded-md border border-white/10 bg-slate-900 px-2 py-1 text-sm"
+          >
+            <option value="kost">Hoogste kosten</option>
+            <option value="activiteit">Meeste activiteit</option>
+            <option value="laag">Minste activiteit</option>
+            <option value="ai">Meeste AI</option>
+            <option value="login">Laatst actief</option>
+            <option value="stil">Langst stil</option>
+          </select>
+          <select
+            value={segment}
+            onChange={(e) => setSegment(e.target.value)}
+            className="rounded-md border border-white/10 bg-slate-900 px-2 py-1 text-sm"
+          >
+            <option value="">Alle segmenten</option>
+            {SEGMENTEN.map((s) => (
+              <option key={s} value={s}>
+                {SEGMENT_LABEL[s]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="max-h-[420px] overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="text-left text-xs uppercase text-slate-400">
+              <tr>
+                <th className="py-2">Gebruiker</th>
+                <th>Laatst actief</th>
+                <th>Handelingen</th>
+                <th>Sessies</th>
+                <th>AI</th>
+                <th>Credits</th>
+                <th>Recepten</th>
+                <th>Weekmenu</th>
+                <th className="text-right">Kost</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(tabel.data?.rijen ?? []).map((r) => (
+                <tr key={r.id} className="border-t border-white/5">
+                  <td className="py-2">
+                    <Link to="/beheer/gebruiker/$id" params={{ id: r.id }} className="text-emerald-300 hover:underline">
+                      {r.naam}
+                    </Link>
+                  </td>
+                  <td className="text-slate-400">{r.laatsteActiviteit ?? "—"}</td>
+                  <td>{r.handelingen}</td>
+                  <td>{r.sessies}</td>
+                  <td>{r.aiCalls}</td>
+                  <td>{r.creditsGebruikt}</td>
+                  <td>{r.recepten}</td>
+                  <td>{r.weekmenus}</td>
+                  <td className="text-right">€ {r.kostEur.toFixed(4)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Kaart>
+
       <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
         <Kaart>
           <div className="mb-3 flex gap-2">
