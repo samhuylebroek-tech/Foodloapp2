@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
+import { Rondleiding } from "@/components/Rondleiding";
 import { VoorkeurenProvider } from "@/lib/voorkeuren";
 import { synchroniseerTijdzone, verwerkMeldingKlik } from "@/lib/meldingen";
 import { meet, meldFout } from "@/lib/meten";
@@ -202,6 +203,7 @@ function RootComponent() {
       <VoorkeurenProvider>
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
+        <Rondleiding />
         <Toaster position="top-center" richColors />
       </VoorkeurenProvider>
     </QueryClientProvider>

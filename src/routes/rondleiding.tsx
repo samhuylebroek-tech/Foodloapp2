@@ -1,20 +1,8 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import {
-  Bell,
-  BookOpen,
-  CalendarDays,
-  ChefHat,
-  CreditCard,
-  Home,
-  Package,
-  PlusCircle,
-  ShoppingCart,
-  Smartphone,
-  Users,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useT } from "@/lib/voorkeuren";
+import { startRondleiding } from "@/lib/rondleiding";
+
+export { RONDLEIDING_SLEUTEL } from "@/lib/rondleiding";
 
 export const Route = createFileRoute("/rondleiding")({
   head: () => ({
@@ -37,130 +25,14 @@ export const Route = createFileRoute("/rondleiding")({
   component: RondleidingPage,
 });
 
-export const RONDLEIDING_SLEUTEL = "rondleiding_gezien";
-
-const STAPPEN = [
-  {
-    icoon: Home,
-    titel: "Je startscherm",
-    tekst:
-      "Hier zie je meteen wat je vandaag eet, wat je laatst bekeek en wat er nog op je lijstje staat. Alles begint hier.",
-  },
-  {
-    icoon: BookOpen,
-    titel: "Recepten",
-    tekst:
-      "Al je gerechten op één plek. Zoek op naam, filter op vlees, vis of vega, en tik op een gerecht om het te bekijken.",
-  },
-  {
-    icoon: PlusCircle,
-    titel: "Een gerecht toevoegen",
-    tekst:
-      "Plak een link van een website, Instagram of YouTube en de app vult het recept zelf in. Of typ het zelf, of neem een foto van je bord.",
-  },
-  {
-    icoon: CalendarDays,
-    titel: "Je weekmenu",
-    tekst:
-      "Plan per dag wat je eet. Kook je samen? Schakel bovenaan tussen “Mijn weekmenu” en “Weekmenu gezin”, zodat iedereen hetzelfde ziet.",
-  },
-  {
-    icoon: ShoppingCart,
-    titel: "Boodschappen",
-    tekst:
-      "Je lijst vult zichzelf vanuit je weekmenu en je recepten. In de winkel vink je gewoon af wat in je kar ligt.",
-  },
-  {
-    icoon: Package,
-    titel: "Voorraadkast",
-    tekst:
-      "Zet erin wat je al in huis hebt. Bij het boodschappen doen vink je in één tik weg wat je al hebt staan.",
-  },
-  {
-    icoon: CreditCard,
-    titel: "Klantenkaarten",
-    tekst:
-      "Scan je winkelkaarten één keer in. Aan de kassa toon je ze groot op je scherm — ook zonder internet.",
-  },
-  {
-    icoon: Users,
-    titel: "Vrienden en gezin",
-    tekst:
-      "Nodig iemand uit met een link of op naam. Jij kiest per persoon wat je deelt: recepten, weekmenu of boodschappen.",
-  },
-  {
-    icoon: ChefHat,
-    titel: "Kookstand",
-    tekst:
-      "Tik op “Start kookstand” en kook stap voor stap met grote letters. Per stap zie je hoeveel je van elk ingrediënt nodig hebt. Op het einde geef je sterren.",
-  },
-  {
-    icoon: Bell,
-    titel: "Meldingen",
-    tekst:
-      "Een seintje wanneer het tijd is om te plannen, te winkelen of te koken. Jij kiest zelf welke je wil — of geen enkele.",
-  },
-  {
-    icoon: Smartphone,
-    titel: "Op je telefoon zetten",
-    tekst:
-      "Zet Foodlo op je beginscherm, dan opent hij als een gewone app. Je vindt dit altijd terug bij Instellingen.",
-  },
-] as const;
-
+// De rondleiding loopt als overlay bovenop de echte app (zie src/components/Rondleiding.tsx).
 function RondleidingPage() {
   const navigate = useNavigate();
-  const t = useT();
-  const [i, setI] = useState(0);
-  const stap = STAPPEN[i]!;
-  const Icoon = stap.icoon;
-  const laatste = i === STAPPEN.length - 1;
 
-  function sluit() {
-    try {
-      window.localStorage.setItem(RONDLEIDING_SLEUTEL, "ja");
-    } catch {
-      /* niets */
-    }
+  useEffect(() => {
+    startRondleiding();
     navigate({ to: "/" });
-  }
+  }, [navigate]);
 
-  return (
-    <main className="flex min-h-screen items-center bg-background p-5">
-      <div className="mx-auto w-full max-w-xl">
-        <p className="text-base text-muted-foreground">
-          {t("Stap")} {i + 1} {t("van")} {STAPPEN.length}
-        </p>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-primary transition-all"
-            style={{ width: `${((i + 1) / STAPPEN.length) * 100}%` }}
-          />
-        </div>
-
-        <span className="mt-10 flex size-20 items-center justify-center rounded-2xl bg-secondary text-primary">
-          <Icoon className="size-10" aria-hidden />
-        </span>
-        <h1 className="mt-4 font-display text-3xl">{t(stap.titel)}</h1>
-        <p className="mt-3 max-w-lg text-lg leading-relaxed text-muted-foreground">{t(stap.tekst)}</p>
-
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          {i > 0 ? (
-            <Button variant="secondary" onClick={() => setI(i - 1)} className="h-16 text-lg sm:flex-1">
-              {t("Vorige")}
-            </Button>
-          ) : null}
-          <Button
-            onClick={() => (laatste ? sluit() : setI(i + 1))}
-            className="h-16 text-lg sm:flex-1"
-          >
-            {laatste ? t("Klaar, naar de app") : t("Volgende")}
-          </Button>
-        </div>
-        <Button variant="ghost" onClick={sluit} className="mt-3 h-14 w-full text-base">
-          {t("Overslaan")}
-        </Button>
-      </div>
-    </main>
-  );
+  return null;
 }
