@@ -230,3 +230,87 @@ export function PeriodeKiezer({
   );
 }
 
+export type WieKeuze = { wieModus: "alles" | "in" | "uit"; wieIds: string[] };
+
+export const WIE_ALLES: WieKeuze = { wieModus: "alles", wieIds: [] };
+
+/** Kies over wie de cijfers gaan: iedereen, enkele personen, of iedereen behalve. */
+export function WieKiezer({
+  waarde,
+  onKies,
+  personen,
+}: {
+  waarde: WieKeuze;
+  onKies: (w: WieKeuze) => void;
+  personen: { id: string; naam: string }[];
+}) {
+  const [open, setOpen] = useState(false);
+  const gekozen = waarde.wieIds.length;
+  const samenvatting =
+    waarde.wieModus === "alles" || gekozen === 0
+      ? "Iedereen"
+      : waarde.wieModus === "in"
+        ? `${gekozen} ${gekozen === 1 ? "persoon" : "personen"}`
+        : `Iedereen behalve ${gekozen}`;
+
+  function wissel(id: string) {
+    const nieuw = waarde.wieIds.includes(id)
+      ? waarde.wieIds.filter((x) => x !== id)
+      : [...waarde.wieIds, id];
+    onKies({ wieModus: waarde.wieModus === "alles" ? "in" : waarde.wieModus, wieIds: nieuw });
+  }
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200 hover:bg-white/10"
+      >
+        Wie: {samenvatting}
+      </button>
+      {open ? (
+        <div className="absolute right-0 z-20 mt-2 max-h-96 w-72 overflow-auto rounded-xl border border-white/10 bg-slate-900 p-3 shadow-xl">
+          <div className="flex gap-1 rounded-full border border-white/10 bg-white/5 p-1">
+            {(
+              [
+                { k: "alles", l: "Iedereen" },
+                { k: "in", l: "Alleen deze" },
+                { k: "uit", l: "Behalve deze" },
+              ] as const
+            ).map((m) => (
+              <button
+                key={m.k}
+                type="button"
+                onClick={() => onKies({ wieModus: m.k, wieIds: m.k === "alles" ? [] : waarde.wieIds })}
+                className={`flex-1 rounded-full px-2 py-1 text-xs ${
+                  waarde.wieModus === m.k ? "bg-emerald-500/20 text-emerald-300" : "text-slate-300"
+                }`}
+              >
+                {m.l}
+              </button>
+            ))}
+          </div>
+          <ul className="mt-2 space-y-1">
+            {personen.map((p) => (
+              <li key={p.id}>
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-slate-200 hover:bg-white/5">
+                  <input
+                    type="checkbox"
+                    checked={waarde.wieIds.includes(p.id)}
+                    onChange={() => wissel(p.id)}
+                    className="size-4 accent-emerald-500"
+                  />
+                  <span className="truncate">{p.naam}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+
