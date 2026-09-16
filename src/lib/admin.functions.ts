@@ -226,9 +226,29 @@ const PERIODE_DUUR: Record<Periode, number> = {
   jaar: 365 * 24 * 3600_000,
 };
 
+export const wieSchema = z
+  .object({
+    wieModus: z.enum(["alles", "in", "uit"]).default("alles"),
+    wieIds: z.array(z.string().uuid()).default([]),
+  })
+  .default({ wieModus: "alles", wieIds: [] });
+
+export type WieKeuze = { wieModus: "alles" | "in" | "uit"; wieIds: string[] };
+
+/** Past de personenkeuze toe op een kolom met gebruikers-id's. */
+export function pasWie(q: any, kolom: string, wie: WieKeuze) {
+  if (wie.wieModus === "alles" || wie.wieIds.length === 0) return q;
+  return wie.wieModus === "in" ? q.in(kolom, wie.wieIds) : q.not(kolom, "in", `(${wie.wieIds.join(",")})`);
+}
+
 const periodeSchema = z
-  .object({ periode: z.enum(["dag", "week", "maand", "jaar"]).default("week") })
-  .default({ periode: "week" });
+  .object({
+    periode: z.enum(["dag", "week", "maand", "jaar"]).default("week"),
+    wieModus: z.enum(["alles", "in", "uit"]).default("alles"),
+    wieIds: z.array(z.string().uuid()).default([]),
+  })
+  .default({ periode: "week", wieModus: "alles", wieIds: [] });
+
 
 function maakBuckets(periode: Periode) {
   const nu = Date.now();
