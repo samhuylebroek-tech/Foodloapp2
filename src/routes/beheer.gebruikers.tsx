@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -12,6 +12,9 @@ import {
   adminVerwijderGebruiker,
 } from "@/lib/admin.functions";
 import { AdminShell, Kaart } from "@/components/AdminShell";
+import { adminExportCsv, adminGebruikersTabel } from "@/lib/monitoring.functions";
+import { SEGMENTEN, SEGMENT_LABEL } from "@/lib/segmenten";
+import { bewaarCsv } from "@/lib/csv-download";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +32,14 @@ function Gebruikers() {
   const creditFn = useServerFn(adminCreditsToekennen);
 
   const [zoek, setZoek] = useState("");
+  const [sorteer, setSorteer] = useState<"kost" | "activiteit" | "laag" | "ai" | "login" | "stil">("kost");
+  const [segment, setSegment] = useState("");
+  const tabelFn = useServerFn(adminGebruikersTabel);
+  const csvFn = useServerFn(adminExportCsv);
+  const tabel = useQuery({
+    queryKey: ["admin-gebruikers-tabel", zoek, sorteer, segment],
+    queryFn: () => tabelFn({ data: { zoek, sorteer, segment } }),
+  });
   const [pagina, setPagina] = useState(0);
   const [gekozen, setGekozen] = useState<string | null>(null);
   const [reden, setReden] = useState("");
