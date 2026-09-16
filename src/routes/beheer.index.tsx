@@ -2,14 +2,23 @@ import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { adminDashboard } from "@/lib/admin.functions";
+import { adminDashboard, adminPersonenLijst } from "@/lib/admin.functions";
 import {
   adminAandacht,
   adminActiviteit,
   adminGebeurtenissen,
   adminKosten,
 } from "@/lib/monitoring.functions";
-import { AdminShell, Kaart, Kpi, PeriodeKiezer, type Periode } from "@/components/AdminShell";
+import {
+  AdminShell,
+  Kaart,
+  Kpi,
+  PeriodeKiezer,
+  WieKiezer,
+  WIE_ALLES,
+  type Periode,
+  type WieKeuze,
+} from "@/components/AdminShell";
 import { GEBEURTENIS_LABEL } from "@/lib/meten";
 
 export const Route = createFileRoute("/beheer/")({ component: Dashboard });
