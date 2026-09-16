@@ -1,3 +1,5 @@
+import type { StapKoppeling } from "@/lib/stap-ingredienten";
+
 export type Recipe = {
   id: string;
   user_id: string;
@@ -11,6 +13,7 @@ export type Recipe = {
   category: string;
   tags: string[];
   instructions: string[];
+  step_ingredients?: StapKoppeling | null;
   source_url: string | null;
   created_at: string;
   updated_at: string;
