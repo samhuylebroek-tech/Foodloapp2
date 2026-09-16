@@ -102,7 +102,9 @@ function PlannerPage() {
   const { momenten } = useVoorkeuren();
   const qc = useQueryClient();
   const [weekStart, setWeekStart] = useState(() => maandagVan(new Date()));
-  const [kiezen, setKiezen] = useState<{ datum: string; moment: string } | null>(null);
+  const [kiezen, setKiezen] = useState<{ datum: string; moment: string; vraagDag?: boolean } | null>(
+    null,
+  );
   const [lijstId, setLijstId] = useState<string>("");
   const [vraagLijst, setVraagLijst] = useState<{ recipeId: string; titel: string } | null>(null);
   const [weergave, setWeergave] = useState<"mij" | "gezin">("mij");
@@ -204,20 +206,31 @@ function PlannerPage() {
 
   async function plan_toevoegen(recipeId: string, datum: string, moment: string, titel: string) {
     if (!user) return;
-    const { error } = await supabase.from("meal_plan").insert({
-      user_id: user.id,
-      recipe_id: recipeId,
-      plan_date: datum,
-      meal_type: moment,
-      group_id: weergave === "gezin" ? gezin!.id : null,
-    });
+    const { data, error } = await supabase
+      .from("meal_plan")
+      .insert({
+        user_id: user.id,
+        recipe_id: recipeId,
+        plan_date: datum,
+        meal_type: moment,
+        group_id: weergave === "gezin" ? gezin!.id : null,
+      })
+      .select("id")
+      .single();
     if (error) {
       toast.error("Inplannen lukte niet");
       return;
     }
     setKiezen(null);
     setWeekStart(maandagVan(new Date(`${datum}T12:00:00`)));
-    toast.success(weergave === "gezin" ? "In het gezinsweekmenu gezet" : "In je weekmenu gezet");
+    toast.success(`${titel} staat op ${labelVoor(datum)}`, {
+      action: {
+        label: "Ongedaan maken",
+        onClick: () => {
+          void verwijder(data.id);
+        },
+      },
+    });
     qc.invalidateQueries({ queryKey: ["meal-plan"] });
     setVraagLijst({ recipeId, titel });
   }
@@ -425,7 +438,13 @@ function PlannerPage() {
         </div>
 
         <Button
-          onClick={() => setKiezen({ datum: vandaag >= week[0]! && vandaag <= week[6]! ? vandaag : week[0]!, moment: momenten[momenten.length - 1] ?? "avondeten" })}
+          onClick={() =>
+            setKiezen({
+              datum: vandaag >= week[0]! && vandaag <= week[6]! ? vandaag : week[0]!,
+              moment: momenten[momenten.length - 1] ?? "avondeten",
+              vraagDag: true,
+            })
+          }
           className="h-16 w-full text-lg"
         >
           <Plus className="size-6" /> Gerecht inplannen deze week
@@ -604,6 +623,42 @@ function PlannerPage() {
   );
 }
 
+function GerechtKaart({ recept, onKies }: { recept: Recipe; onKies: () => void }) {
+  const [fout, setFout] = useState(false);
+  const info = [tijdLabel(recept.prep_minutes, recept.cook_minutes), recept.category]
+    .filter(Boolean)
+    .join(" · ");
+  return (
+    <button
+      type="button"
+      onClick={onKies}
+      className="flex min-h-20 w-full items-center gap-3 rounded-2xl border border-border bg-card p-2 text-left active:bg-secondary"
+    >
+      {recept.image_url && !fout ? (
+        <img
+          src={recept.image_url}
+          alt=""
+          loading="lazy"
+          onError={() => setFout(true)}
+          className="size-16 shrink-0 rounded-xl object-cover"
+        />
+      ) : (
+        <span
+          aria-hidden
+          className="grid size-16 shrink-0 place-items-center rounded-xl bg-secondary font-display text-xl text-primary"
+        >
+          {recept.title.slice(0, 1).toUpperCase()}
+        </span>
+      )}
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-lg font-semibold">{recept.title}</span>
+        {info && <span className="block truncate text-base text-muted-foreground">{info}</span>}
+      </span>
+      <Plus className="size-5 shrink-0 text-primary" aria-hidden />
+    </button>
+  );
+}
+
 function ReceptKiezer({
   week,
   momenten,
@@ -614,15 +669,16 @@ function ReceptKiezer({
 }: {
   week: string[];
   momenten: string[];
-  start: { datum: string; moment: string };
+  start: { datum: string; moment: string; vraagDag?: boolean };
   onSluit: () => void;
   onKies: (id: string, datum: string, moment: string, titel: string) => void;
   onNieuw: (naam: string, basis: Basis | null, datum: string, moment: string) => void;
 }) {
+  const { user } = useAuth();
   const [zoek, setZoek] = useState("");
   const [datum, setDatum] = useState(start.datum);
   const [moment, setMoment] = useState(start.moment);
-  const [gerecht, setGerecht] = useState<Recipe | null>(null);
+  const [dagKiezen, setDagKiezen] = useState(!!start.vraagDag);
   const [aiBezig, setAiBezig] = useState(false);
   const [voorstel, setVoorstel] = useState<Basis | null>(null);
 
@@ -668,9 +724,63 @@ function ReceptKiezer({
     },
   });
 
+  const { data: favorieten = [] } = useQuery({
+    queryKey: ["favorites", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("favorites").select("recipe_id");
+      if (error) throw error;
+      return data.map((f) => f.recipe_id as string);
+    },
+  });
+
+  // Wanneer stond een gerecht voor het laatst (of eerstkomend) in de planning?
+  const { data: laatst = {} } = useQuery({
+    queryKey: ["planner-laatst", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("meal_plan")
+        .select("recipe_id, plan_date")
+        .not("recipe_id", "is", null)
+        .order("plan_date", { ascending: false })
+        .limit(400);
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      for (const r of data) {
+        const id = r.recipe_id as string;
+        if (!map[id]) map[id] = r.plan_date as string;
+      }
+      return map;
+    },
+  });
+
   const term = zoek.trim();
-  const lijst = recipes.filter((r) => r.title.toLowerCase().includes(term.toLowerCase()));
+  const treffers = recipes.filter((r) => r.title.toLowerCase().includes(term.toLowerCase()));
   const bestaatAl = recipes.some((r) => r.title.toLowerCase() === term.toLowerCase());
+
+  const dezeWeek = new Set(
+    Object.entries(laatst)
+      .filter(([, d]) => d >= week[0]! && d <= week[6]!)
+      .map(([id]) => id),
+  );
+  const favorietenLijst = recipes.filter((r) => favorieten.includes(r.id)).slice(0, 6);
+  const voorgesteld = recipes
+    .filter((r) => !dezeWeek.has(r.id))
+    .sort((a, b) => (laatst[a.id] ?? "").localeCompare(laatst[b.id] ?? ""))
+    .slice(0, 4);
+  const recent = recipes
+    .filter((r) => laatst[r.id])
+    .sort((a, b) => (laatst[b.id] ?? "").localeCompare(laatst[a.id] ?? ""))
+    .slice(0, 4);
+  const alles = [...recipes].sort((a, b) => a.title.localeCompare(b.title, "nl"));
+
+  const groepen: { titel: string; items: Recipe[] }[] = [
+    { titel: "Voorgesteld voor deze dag", items: voorgesteld },
+    { titel: "Favorieten", items: favorietenLijst },
+    { titel: "Recent gepland", items: recent },
+    { titel: "Al je recepten", items: alles },
+  ].filter((g) => g.items.length > 0);
 
   if (voorstel) {
     return (
@@ -732,7 +842,7 @@ function ReceptKiezer({
             </Button>
             <Button
               onClick={() => onNieuw(zoek.trim(), voorstel, datum, moment)}
-              className="h-14 flex-[2] text-base"
+              className="mt-0 h-14 flex-[2] text-base"
             >
               <Check className="size-5" /> Bevestigen
             </Button>
@@ -742,80 +852,77 @@ function ReceptKiezer({
     );
   }
 
-  // Stap 2: het gerecht is gekozen — kies nu rustig de dag en het moment.
-  if (gerecht) {
+  const dagKeuze = (
+    <div className="space-y-3">
+      <input
+        type="date"
+        value={datum}
+        onChange={(e) => {
+          if (e.target.value) setDatum(e.target.value);
+        }}
+        aria-label="Kies een datum"
+        className="h-14 w-full rounded-xl border border-input bg-background px-3 text-base"
+      />
+
+      <div className="grid grid-cols-4 gap-2" role="group" aria-label="Kies een dag">
+        {week.map((d) => (
+          <button
+            key={d}
+            type="button"
+            onClick={() => setDatum(d)}
+            aria-pressed={d === datum}
+            className={
+              d === datum
+                ? "min-h-12 rounded-xl bg-primary px-2 text-base font-semibold capitalize text-primary-foreground"
+                : "min-h-12 rounded-xl border border-border bg-secondary px-2 text-base font-semibold capitalize"
+            }
+          >
+            {kortLabel(d)}
+          </button>
+        ))}
+      </div>
+
+      {momenten.length > 1 && (
+        <div className="flex gap-2" role="group" aria-label="Kies een moment">
+          {momenten.map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMoment(m)}
+              aria-pressed={m === moment}
+              className={
+                m === moment
+                  ? "min-h-12 flex-1 rounded-xl bg-primary px-3 text-base font-semibold capitalize text-primary-foreground"
+                  : "min-h-12 flex-1 rounded-xl border border-border bg-secondary px-3 text-base font-semibold capitalize"
+              }
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  // Stap 1 (enkel bij de algemene knop): eerst de dag kiezen.
+  if (dagKiezen) {
     return (
       <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
-        <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-t-3xl bg-card p-4 sm:rounded-3xl">
+        <div className="w-full max-w-lg rounded-t-3xl bg-card p-4 sm:rounded-3xl">
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="font-display text-xl">Wanneer eten we dit?</h2>
-              <p className="mt-1 text-base font-semibold text-primary">{gerecht.title}</p>
-            </div>
+            <h2 className="font-display text-xl">Wanneer eten we iets?</h2>
             <Button variant="ghost" onClick={onSluit} aria-label="Sluiten" className="size-12">
               <X className="size-6" />
             </Button>
           </div>
 
-          <div className="mt-3 flex-1 space-y-3 overflow-y-auto">
-            <p className="text-base font-semibold capitalize">{labelVoor(datum)}</p>
+          <p className="mb-3 mt-1 text-base capitalize text-muted-foreground">{labelVoor(datum)}</p>
 
-            <input
-              type="date"
-              value={datum}
-              onChange={(e) => { if (e.target.value) setDatum(e.target.value); }}
-              aria-label="Kies een datum"
-              className="h-14 w-full rounded-xl border border-input bg-background px-3 text-base"
-            />
+          {dagKeuze}
 
-            <div className="grid grid-cols-4 gap-2" role="group" aria-label="Kies een dag">
-              {week.map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  onClick={() => setDatum(d)}
-                  aria-pressed={d === datum}
-                  className={
-                    d === datum
-                      ? "min-h-12 rounded-xl bg-primary px-2 text-base font-semibold capitalize text-primary-foreground"
-                      : "min-h-12 rounded-xl border border-border bg-secondary px-2 text-base font-semibold capitalize"
-                  }
-                >
-                  {kortLabel(d)}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex gap-2" role="group" aria-label="Kies een moment">
-              {momenten.map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setMoment(m)}
-                  aria-pressed={m === moment}
-                  className={
-                    m === moment
-                      ? "min-h-12 flex-1 rounded-xl bg-primary px-3 text-base font-semibold text-primary-foreground"
-                      : "min-h-12 flex-1 rounded-xl border border-border bg-secondary px-3 text-base font-semibold"
-                  }
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-3 flex gap-2">
-            <Button variant="ghost" onClick={() => setGerecht(null)} className="h-14 flex-1 text-base">
-              Terug
-            </Button>
-            <Button
-              onClick={() => onKies(gerecht.id, datum, moment, gerecht.title)}
-              className="h-14 flex-[2] text-base"
-            >
-              <Check className="size-5" /> Zet in planning
-            </Button>
-          </div>
+          <Button onClick={() => setDagKiezen(false)} className="mt-4 h-14 w-full text-base">
+            Verder · kies een gerecht
+          </Button>
         </div>
       </div>
     );
@@ -825,62 +932,26 @@ function ReceptKiezer({
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
       <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-t-3xl bg-card p-4 sm:rounded-3xl">
         <div className="flex items-start justify-between gap-3">
-          <h2 className="font-display text-xl">Inplannen</h2>
+          <div className="min-w-0">
+            <h2 className="font-display text-xl">Wat eten we?</h2>
+            <button
+              type="button"
+              onClick={() => setDagKiezen(true)}
+              className="mt-1 text-base font-semibold capitalize text-primary underline underline-offset-4"
+            >
+              {labelVoor(datum)}
+              {moment && moment !== "maaltijd" ? ` · ${moment}` : ""} — wijzigen
+            </button>
+          </div>
           <Button variant="ghost" onClick={onSluit} aria-label="Sluiten" className="size-12">
             <X className="size-6" />
           </Button>
         </div>
 
-        <p className="mt-1 text-base font-semibold capitalize">{labelVoor(datum)}</p>
-
-        <input
-          type="date"
-          value={datum}
-          onChange={(e) => { if (e.target.value) setDatum(e.target.value); }}
-          aria-label="Kies een datum"
-          className="mt-2 h-14 w-full rounded-xl border border-input bg-background px-3 text-base"
-        />
-
-        <div className="mt-2 flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Kies een dag">
-          {week.map((d) => (
-            <button
-              key={d}
-              type="button"
-              onClick={() => setDatum(d)}
-              aria-pressed={d === datum}
-              className={
-                d === datum
-                  ? "min-h-12 shrink-0 rounded-xl bg-primary px-4 text-base font-semibold capitalize text-primary-foreground"
-                  : "min-h-12 shrink-0 rounded-xl border border-border bg-secondary px-4 text-base font-semibold capitalize"
-              }
-            >
-              {kortLabel(d)}
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-2 flex gap-2" role="group" aria-label="Kies een moment">
-          {momenten.map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMoment(m)}
-              aria-pressed={m === moment}
-              className={
-                m === moment
-                  ? "min-h-12 flex-1 rounded-xl bg-primary px-3 text-base font-semibold text-primary-foreground"
-                  : "min-h-12 flex-1 rounded-xl border border-border bg-secondary px-3 text-base font-semibold"
-              }
-            >
-              {m}
-            </button>
-          ))}
-        </div>
-
         <Input
           value={zoek}
           onChange={(e) => setZoek(e.target.value)}
-          placeholder="Wat eten we? Zoek of typ een naam"
+          placeholder="Zoek een gerecht of typ een naam"
           aria-label="Zoek of typ een gerecht"
           className="mt-3 h-14 text-base"
         />
@@ -913,28 +984,46 @@ function ReceptKiezer({
           </div>
         )}
 
-        <ul className="mt-3 flex-1 space-y-2 overflow-y-auto">
-          {lijst.length === 0 ? (
-            <li className="py-6 text-center text-lg text-muted-foreground">
-              Geen recepten gevonden.
-            </li>
+        <div className="mt-3 flex-1 space-y-5 overflow-y-auto pb-2">
+          {term ? (
+            treffers.length === 0 ? (
+              <p className="py-6 text-center text-lg text-muted-foreground">
+                Geen recepten gevonden.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {treffers.map((r) => (
+                  <li key={r.id}>
+                    <GerechtKaart
+                      recept={r}
+                      onKies={() => onKies(r.id, datum, moment, r.title)}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )
+          ) : groepen.length === 0 ? (
+            <p className="py-6 text-center text-lg text-muted-foreground">
+              Je hebt nog geen recepten. Typ hierboven een naam om er eentje in te plannen.
+            </p>
           ) : (
-            lijst.map((r) => (
-              <li key={r.id}>
-                <button
-                  type="button"
-                  onClick={() => setGerecht(r)}
-                  className="min-h-16 w-full rounded-xl border border-border px-4 py-3 text-left text-lg active:bg-secondary"
-                >
-                  {r.title}
-                  <span className="block text-base text-muted-foreground">
-                    {[tijdLabel(r.prep_minutes, r.cook_minutes), r.category].filter(Boolean).join(" · ")}
-                  </span>
-                </button>
-              </li>
+            groepen.map((g) => (
+              <section key={g.titel}>
+                <h3 className="mb-2 text-base font-semibold text-muted-foreground">{g.titel}</h3>
+                <ul className="space-y-2">
+                  {g.items.map((r) => (
+                    <li key={r.id}>
+                      <GerechtKaart
+                        recept={r}
+                        onKies={() => onKies(r.id, datum, moment, r.title)}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </section>
             ))
           )}
-        </ul>
+        </div>
       </div>
     </div>
   );
