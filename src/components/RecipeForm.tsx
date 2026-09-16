@@ -695,6 +695,51 @@ export function RecipeForm({
           />
         </div>
 
+        {stappen.length > 0 && formIngredienten.length > 0 && (
+          <div>
+            <Label className="text-base">Wat gebruik je bij elke stap?</Label>
+            <p className="mt-1 text-sm text-muted-foreground">
+              We raden het zelf al aan. Tik een ingrediënt aan of uit om het bij te sturen.
+            </p>
+            <div className="mt-3 space-y-3">
+              {stappen.map((s, i) => {
+                const aan = new Set(
+                  (stapKoppeling[i] ?? []).map((idx) => normaliseer(formIngredienten[idx]!.name)),
+                );
+                return (
+                  <div key={i} className="rounded-2xl border border-border bg-card p-3">
+                    <p className="text-base">
+                      <span className="mr-2 font-semibold text-primary">{i + 1}</span>
+                      {s}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {formIngredienten.map((ing, idx) => {
+                        const actief = aan.has(normaliseer(ing.name));
+                        return (
+                          <button
+                            key={`${i}-${idx}`}
+                            type="button"
+                            aria-pressed={actief}
+                            onClick={() => wisselStapIngredient(i, ing.name)}
+                            className={
+                              actief
+                                ? "inline-flex min-h-11 items-center rounded-xl bg-primary px-3 text-base font-semibold text-primary-foreground"
+                                : "inline-flex min-h-11 items-center rounded-xl border border-border bg-secondary px-3 text-base text-muted-foreground"
+                            }
+                          >
+                            {ing.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+
         <div>
           <Label className="text-base">Foto van het gerecht</Label>
           <div className="mt-2 flex items-center gap-4">
