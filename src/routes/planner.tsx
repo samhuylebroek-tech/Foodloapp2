@@ -204,20 +204,31 @@ function PlannerPage() {
 
   async function plan_toevoegen(recipeId: string, datum: string, moment: string, titel: string) {
     if (!user) return;
-    const { error } = await supabase.from("meal_plan").insert({
-      user_id: user.id,
-      recipe_id: recipeId,
-      plan_date: datum,
-      meal_type: moment,
-      group_id: weergave === "gezin" ? gezin!.id : null,
-    });
+    const { data, error } = await supabase
+      .from("meal_plan")
+      .insert({
+        user_id: user.id,
+        recipe_id: recipeId,
+        plan_date: datum,
+        meal_type: moment,
+        group_id: weergave === "gezin" ? gezin!.id : null,
+      })
+      .select("id")
+      .single();
     if (error) {
       toast.error("Inplannen lukte niet");
       return;
     }
     setKiezen(null);
     setWeekStart(maandagVan(new Date(`${datum}T12:00:00`)));
-    toast.success(weergave === "gezin" ? "In het gezinsweekmenu gezet" : "In je weekmenu gezet");
+    toast.success(`${titel} staat op ${labelVoor(datum)}`, {
+      action: {
+        label: "Ongedaan maken",
+        onClick: () => {
+          void verwijder(data.id);
+        },
+      },
+    });
     qc.invalidateQueries({ queryKey: ["meal-plan"] });
     setVraagLijst({ recipeId, titel });
   }
