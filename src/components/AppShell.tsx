@@ -125,6 +125,7 @@ export function AppShell({
             <li key={item.to}>
               <Link
                 to={item.to}
+                data-tour={`nav-${item.to}`}
                 className={cn(
                   "flex min-h-14 items-center gap-3 rounded-xl px-3 text-base font-semibold transition-colors",
                   active
