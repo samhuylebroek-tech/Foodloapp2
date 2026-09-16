@@ -322,7 +322,7 @@ function Welkom() {
                   <Smartphone className="size-6 text-primary" aria-hidden /> iPhone of iPad
                 </p>
                 <ol className="mt-2 list-decimal space-y-1.5 pl-6 text-base">
-                  <li>{t("Open foodloapp.com in Safari.")}</li>
+                  <li>{t("Open app.foodloapp.com in Safari.")}</li>
                   <li className="flex flex-wrap items-center gap-1.5">
                     {t('Tik onderaan op')}
                     <Share className="inline size-5 text-primary" aria-hidden />
@@ -341,7 +341,7 @@ function Welkom() {
                   <Smartphone className="size-6 text-primary" aria-hidden /> Android
                 </p>
                 <ol className="mt-2 list-decimal space-y-1.5 pl-6 text-base">
-                  <li>{t("Open foodloapp.com in Chrome.")}</li>
+                  <li>{t("Open app.foodloapp.com in Chrome.")}</li>
                   <li>{t("Tik rechtsboven op de drie puntjes.")}</li>
                   <li>{t("Kies ‘App installeren’ of ‘Toevoegen aan startscherm’.")}</li>
                 </ol>

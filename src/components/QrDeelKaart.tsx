@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/voorkeuren";
 import { Copy, Share2, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { appOrigin } from "@/lib/app-url";
 
 export function QrDeelKaart({ compact = false }: { compact?: boolean }) {
   const t = useT();
@@ -13,7 +14,7 @@ export function QrDeelKaart({ compact = false }: { compact?: boolean }) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const appUrl = "https://foodloapp.com/installeren";
+    const appUrl = `${appOrigin()}/installeren`;
     setUrl(appUrl);
     let cancelled = false;
     toDataURL(appUrl, {
