@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { markeerGezien } from "@/lib/gezien";
+import { meet } from "@/lib/meten";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -104,6 +105,7 @@ function ReceptPage() {
 
   useEffect(() => {
     markeerGezien(id);
+    void meet("recept.bekeken", undefined, { id });
   }, [id]);
 
 
@@ -501,6 +503,7 @@ function ReceptPage() {
             <Button
               onClick={() => {
                 setStap(0);
+                void meet("kookmodus.gestart", undefined, { id });
                 setKookstand(true);
               }}
               className="mt-4 h-16 w-full text-lg"
