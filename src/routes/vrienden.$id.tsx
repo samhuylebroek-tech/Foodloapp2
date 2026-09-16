@@ -97,43 +97,95 @@ function VriendPage() {
     },
   });
 
+  // Delen we een gezin? Dan hoort het gezinsmenu en de gezinslijst er ook bij.
+  const { data: gezinId = null } = useQuery({
+    queryKey: ["vriend-gezin", id, user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const [mijn, hun] = await Promise.all([
+        supabase.from("group_members").select("group_id").eq("user_id", user!.id).eq("status", "actief"),
+        supabase.from("group_members").select("group_id").eq("user_id", id).eq("status", "actief"),
+      ]);
+      const mijne = new Set((mijn.data ?? []).map((r) => r.group_id));
+      const samen = (hun.data ?? []).find((r) => mijne.has(r.group_id));
+      return samen?.group_id ?? null;
+    },
+  });
+
   const { data: weekmenu = [] } = useQuery({
-    queryKey: ["vriend-weekmenu", id],
+    queryKey: ["vriend-weekmenu", id, gezinId],
     enabled: recht?.weekmenu === true,
     queryFn: async () => {
       const vandaag = new Date().toISOString().slice(0, 10);
-      const { data, error } = await supabase
-        .from("meal_plan")
-        .select("id, plan_date, meal_type, custom_title, recipe_id, recipes(title)")
-        .eq("user_id", id)
-        .gte("plan_date", vandaag)
-        .order("plan_date")
-        .limit(30);
-      if (error) throw error;
-      return (data ?? []) as {
+      const basis = () =>
+        supabase
+          .from("meal_plan")
+          .select("id, plan_date, meal_type, custom_title, recipe_id, group_id, recipes(title)")
+          .gte("plan_date", vandaag)
+          .order("plan_date")
+          .limit(60);
+      const [eigen, gezin] = await Promise.all([
+        basis().eq("user_id", id),
+        gezinId ? basis().eq("group_id", gezinId) : Promise.resolve({ data: [], error: null }),
+      ]);
+      if (eigen.error) throw eigen.error;
+      const alles = [...(eigen.data ?? []), ...((gezin as { data: unknown[] }).data ?? [])] as {
         id: string;
         plan_date: string;
         meal_type: string;
         custom_title: string | null;
         recipe_id: string | null;
+        group_id: string | null;
         recipes: { title: string } | null;
       }[];
+      const uniek = new Map(alles.map((r) => [r.id, r]));
+      return [...uniek.values()].sort((a, b) => a.plan_date.localeCompare(b.plan_date));
     },
   });
 
   const { data: boodschappen = [] } = useQuery({
-    queryKey: ["vriend-boodschappen", id],
+    queryKey: ["vriend-boodschappen", id, gezinId],
     enabled: recht?.boodschappen === true,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("shopping_items")
-        .select("id, name, quantity, unit, checked")
-        .eq("user_id", id)
-        .order("created_at");
-      if (error) throw error;
-      return data ?? [];
+      let gezinsLijstIds: string[] = [];
+      if (gezinId) {
+        const { data: lijsten } = await supabase
+          .from("shopping_lists")
+          .select("id")
+          .eq("group_id", gezinId);
+        gezinsLijstIds = (lijsten ?? []).map((l) => l.id);
+      }
+      const [eigen, gezin] = await Promise.all([
+        supabase
+          .from("shopping_items")
+          .select("id, name, quantity, unit, checked, list_id")
+          .eq("user_id", id)
+          .order("created_at"),
+        gezinsLijstIds.length
+          ? supabase
+              .from("shopping_items")
+              .select("id, name, quantity, unit, checked, list_id")
+              .in("list_id", gezinsLijstIds)
+              .order("created_at")
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+      if (eigen.error) throw eigen.error;
+      const alles = [...(eigen.data ?? []), ...((gezin as { data: unknown[] }).data ?? [])] as {
+        id: string;
+        name: string;
+        quantity: number | null;
+        unit: string;
+        checked: boolean;
+        list_id: string | null;
+      }[];
+      const uniek = new Map(alles.map((r) => [r.id, r]));
+      return [...uniek.values()].map((r) => ({
+        ...r,
+        gezin: Boolean(r.list_id && gezinsLijstIds.includes(r.list_id)),
+      }));
     },
   });
+
 
   const regels = [
     { aan: recht?.recepten, label: "Recepten" },
@@ -225,10 +277,16 @@ function VriendPage() {
             <h2 className="flex items-center gap-2 font-display text-xl">
               <CalendarDays className="size-5 text-primary" aria-hidden /> Weekmenu van {naam}
             </h2>
-            <p className="text-sm text-muted-foreground">Alleen bekijken.</p>
+            <p className="text-sm text-muted-foreground">
+              Alleen bekijken. {gezinId ? "Het gezinsmenu staat er ook bij." : ""}
+            </p>
             {weekmenu.length === 0 ? (
               <p className="rounded-2xl border border-dashed border-border p-5 text-base text-muted-foreground">
-                Er staat nog niets gepland.
+                Er staat nog niets gepland
+                {gezinId ? " in het gezinsmenu of in het eigen menu van " + naam : " door " + naam}.
+                {gezinId
+                  ? " Tip: plan je iets in je eigen weekmenu, zet het dan op “Weekmenu gezin” zodat iedereen het ziet."
+                  : ""}
               </p>
             ) : (
               <ul className="space-y-2">
@@ -240,8 +298,15 @@ function VriendPage() {
                     <span className="text-base capitalize text-muted-foreground">
                       {dagLabel(m.plan_date)} · {m.meal_type}
                     </span>
-                    <span className="truncate text-base font-semibold">
-                      {m.recipes?.title ?? m.custom_title ?? "Iets lekkers"}
+                    <span className="flex min-w-0 items-center gap-2">
+                      {m.group_id ? (
+                        <span className="shrink-0 rounded-full bg-secondary px-2 py-1 text-xs font-semibold">
+                          Gezin
+                        </span>
+                      ) : null}
+                      <span className="truncate text-base font-semibold">
+                        {m.recipes?.title ?? m.custom_title ?? "Iets lekkers"}
+                      </span>
                     </span>
                   </li>
                 ))}
@@ -250,15 +315,21 @@ function VriendPage() {
           </section>
         )}
 
+
         {recht?.boodschappen && (
           <section className="space-y-3">
             <h2 className="flex items-center gap-2 font-display text-xl">
               <ShoppingCart className="size-5 text-primary" aria-hidden /> Boodschappen van {naam}
             </h2>
-            <p className="text-sm text-muted-foreground">Alleen bekijken.</p>
+            <p className="text-sm text-muted-foreground">
+              Alleen bekijken. {gezinId ? "De gezinslijst staat er ook bij." : ""}
+            </p>
             {boodschappen.length === 0 ? (
               <p className="rounded-2xl border border-dashed border-border p-5 text-base text-muted-foreground">
                 De lijst is leeg.
+                {gezinId
+                  ? " Zet items op de gezinslijst zodat iedereen ze ziet."
+                  : ""}
               </p>
             ) : (
               <ul className="space-y-2">
@@ -267,8 +338,15 @@ function VriendPage() {
                     key={b.id}
                     className="flex min-h-14 items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4"
                   >
-                    <span className={`text-base ${b.checked ? "line-through opacity-60" : ""}`}>
-                      {b.name}
+                    <span className="flex min-w-0 items-center gap-2">
+                      {b.gezin ? (
+                        <span className="shrink-0 rounded-full bg-secondary px-2 py-1 text-xs font-semibold">
+                          Gezin
+                        </span>
+                      ) : null}
+                      <span className={`truncate text-base ${b.checked ? "line-through opacity-60" : ""}`}>
+                        {b.name}
+                      </span>
                     </span>
                     <span className="text-base text-muted-foreground">
                       {[b.quantity, b.unit].filter(Boolean).join(" ")}

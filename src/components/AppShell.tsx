@@ -12,6 +12,8 @@ import {
   Sparkles,
   Menu,
   Package,
+  Smartphone,
+
   X,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -35,15 +37,16 @@ const NAV = [
   { to: "/vrienden", label: "Vrienden", icon: Users },
   { to: "/instellingen", label: "Instellingen", icon: Settings },
   { to: "/feedback", label: "Feedback", icon: MessageSquareHeart },
+  { to: "/installeren", label: "Op je telefoon zetten", icon: Smartphone },
 ] as const;
 
 const TABS = [
   { to: "/", label: "Start", icon: Sparkles },
   { to: "/gerechten", label: "Recepten", icon: BookOpen },
-  { to: "/recepten/nieuw", label: "Nieuw", icon: PlusCircle },
   { to: "/planner", label: "Weekmenu", icon: CalendarDays },
   { to: "/boodschappen", label: "Lijst", icon: ShoppingCart },
 ] as const;
+
 
 
 export function AppShell({

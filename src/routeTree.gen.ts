@@ -23,6 +23,7 @@ import { Route as InstallerenRouteImport } from './routes/installeren'
 import { Route as InstellingenRouteImport } from './routes/instellingen'
 import { Route as MeldingenRouteImport } from './routes/meldingen'
 import { Route as PlannerRouteImport } from './routes/planner'
+import { Route as RondleidingRouteImport } from './routes/rondleiding'
 import { Route as UitnodigingRouteImport } from './routes/uitnodiging'
 import { Route as VoorraadRouteImport } from './routes/voorraad'
 import { Route as WelkomRouteImport } from './routes/welkom'
@@ -53,7 +54,7 @@ import { Route as ReceptenNieuwRouteImport } from './routes/recepten.nieuw'
 import { Route as VriendenIndexRouteImport } from './routes/vrienden.index'
 import { Route as VriendenIdRouteImport } from './routes/vrienden.$id'
 import { Route as BeheerGebruikerIdRouteImport } from './routes/beheer.gebruiker.$id'
-import { Route as ReceptenIdBewerkenRouteImport } from './routes/recepten.$id.bewerken'
+import { Route as ReceptenIdBewerkenRouteImport } from './routes/recepten.$id_.bewerken'
 import { Route as ApiPublicMeldingenRunRouteImport } from './routes/api/public/meldingen.run'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 
@@ -125,6 +126,11 @@ const MeldingenRoute = MeldingenRouteImport.update({
 const PlannerRoute = PlannerRouteImport.update({
   id: '/planner',
   path: '/planner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RondleidingRoute = RondleidingRouteImport.update({
+  id: '/rondleiding',
+  path: '/rondleiding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UitnodigingRoute = UitnodigingRouteImport.update({
@@ -278,9 +284,9 @@ const BeheerGebruikerIdRoute = BeheerGebruikerIdRouteImport.update({
   getParentRoute: () => BeheerRoute,
 } as any)
 const ReceptenIdBewerkenRoute = ReceptenIdBewerkenRouteImport.update({
-  id: '/bewerken',
-  path: '/bewerken',
-  getParentRoute: () => ReceptenIdRoute,
+  id: '/recepten/$id_/bewerken',
+  path: '/recepten/$id/bewerken',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicMeldingenRunRoute = ApiPublicMeldingenRunRouteImport.update({
   id: '/api/public/meldingen/run',
@@ -309,6 +315,7 @@ export interface FileRoutesByFullPath {
   '/instellingen': typeof InstellingenRoute
   '/meldingen': typeof MeldingenRoute
   '/planner': typeof PlannerRoute
+  '/rondleiding': typeof RondleidingRoute
   '/uitnodiging': typeof UitnodigingRoute
   '/voorraad': typeof VoorraadRoute
   '/welkom': typeof WelkomRoute
@@ -332,7 +339,7 @@ export interface FileRoutesByFullPath {
   '/beheer/team': typeof BeheerTeamRoute
   '/beheer/teksten': typeof BeheerTekstenRoute
   '/kaarten/$id': typeof KaartenIdRoute
-  '/recepten/$id': typeof ReceptenIdRouteWithChildren
+  '/recepten/$id': typeof ReceptenIdRoute
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/vrienden/$id': typeof VriendenIdRoute
   '/beheer/': typeof BeheerIndexRoute
@@ -357,6 +364,7 @@ export interface FileRoutesByTo {
   '/instellingen': typeof InstellingenRoute
   '/meldingen': typeof MeldingenRoute
   '/planner': typeof PlannerRoute
+  '/rondleiding': typeof RondleidingRoute
   '/uitnodiging': typeof UitnodigingRoute
   '/voorraad': typeof VoorraadRoute
   '/welkom': typeof WelkomRoute
@@ -380,7 +388,7 @@ export interface FileRoutesByTo {
   '/beheer/team': typeof BeheerTeamRoute
   '/beheer/teksten': typeof BeheerTekstenRoute
   '/kaarten/$id': typeof KaartenIdRoute
-  '/recepten/$id': typeof ReceptenIdRouteWithChildren
+  '/recepten/$id': typeof ReceptenIdRoute
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/vrienden/$id': typeof VriendenIdRoute
   '/beheer': typeof BeheerIndexRoute
@@ -407,6 +415,7 @@ export interface FileRoutesById {
   '/instellingen': typeof InstellingenRoute
   '/meldingen': typeof MeldingenRoute
   '/planner': typeof PlannerRoute
+  '/rondleiding': typeof RondleidingRoute
   '/uitnodiging': typeof UitnodigingRoute
   '/voorraad': typeof VoorraadRoute
   '/welkom': typeof WelkomRoute
@@ -430,14 +439,14 @@ export interface FileRoutesById {
   '/beheer/team': typeof BeheerTeamRoute
   '/beheer/teksten': typeof BeheerTekstenRoute
   '/kaarten/$id': typeof KaartenIdRoute
-  '/recepten/$id': typeof ReceptenIdRouteWithChildren
+  '/recepten/$id': typeof ReceptenIdRoute
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/vrienden/$id': typeof VriendenIdRoute
   '/beheer/': typeof BeheerIndexRoute
   '/kaarten/': typeof KaartenIndexRoute
   '/vrienden/': typeof VriendenIndexRoute
   '/beheer/gebruiker/$id': typeof BeheerGebruikerIdRoute
-  '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
+  '/recepten/$id_/bewerken': typeof ReceptenIdBewerkenRoute
   '/api/public/meldingen/run': typeof ApiPublicMeldingenRunRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
@@ -458,6 +467,7 @@ export interface FileRouteTypes {
     | '/instellingen'
     | '/meldingen'
     | '/planner'
+    | '/rondleiding'
     | '/uitnodiging'
     | '/voorraad'
     | '/welkom'
@@ -506,6 +516,7 @@ export interface FileRouteTypes {
     | '/instellingen'
     | '/meldingen'
     | '/planner'
+    | '/rondleiding'
     | '/uitnodiging'
     | '/voorraad'
     | '/welkom'
@@ -555,6 +566,7 @@ export interface FileRouteTypes {
     | '/instellingen'
     | '/meldingen'
     | '/planner'
+    | '/rondleiding'
     | '/uitnodiging'
     | '/voorraad'
     | '/welkom'
@@ -585,7 +597,7 @@ export interface FileRouteTypes {
     | '/kaarten/'
     | '/vrienden/'
     | '/beheer/gebruiker/$id'
-    | '/recepten/$id/bewerken'
+    | '/recepten/$id_/bewerken'
     | '/api/public/meldingen/run'
     | '/lovable/email/transactional/preview'
   fileRoutesById: FileRoutesById
@@ -605,15 +617,17 @@ export interface RootRouteChildren {
   InstellingenRoute: typeof InstellingenRoute
   MeldingenRoute: typeof MeldingenRoute
   PlannerRoute: typeof PlannerRoute
+  RondleidingRoute: typeof RondleidingRoute
   UitnodigingRoute: typeof UitnodigingRoute
   VoorraadRoute: typeof VoorraadRoute
   WelkomRoute: typeof WelkomRoute
   KaartenIdRoute: typeof KaartenIdRoute
-  ReceptenIdRoute: typeof ReceptenIdRouteWithChildren
+  ReceptenIdRoute: typeof ReceptenIdRoute
   ReceptenNieuwRoute: typeof ReceptenNieuwRoute
   VriendenIdRoute: typeof VriendenIdRoute
   KaartenIndexRoute: typeof KaartenIndexRoute
   VriendenIndexRoute: typeof VriendenIndexRoute
+  ReceptenIdBewerkenRoute: typeof ReceptenIdBewerkenRoute
   ApiPublicMeldingenRunRoute: typeof ApiPublicMeldingenRunRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
 }
@@ -716,6 +730,13 @@ declare module '@tanstack/react-router' {
       path: '/planner'
       fullPath: '/planner'
       preLoaderRoute: typeof PlannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rondleiding': {
+      id: '/rondleiding'
+      path: '/rondleiding'
+      fullPath: '/rondleiding'
+      preLoaderRoute: typeof RondleidingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/uitnodiging': {
@@ -928,12 +949,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerGebruikerIdRouteImport
       parentRoute: typeof BeheerRoute
     }
-    '/recepten/$id/bewerken': {
-      id: '/recepten/$id/bewerken'
-      path: '/bewerken'
+    '/recepten/$id_/bewerken': {
+      id: '/recepten/$id_/bewerken'
+      path: '/recepten/$id/bewerken'
       fullPath: '/recepten/$id/bewerken'
       preLoaderRoute: typeof ReceptenIdBewerkenRouteImport
-      parentRoute: typeof ReceptenIdRoute
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/meldingen/run': {
       id: '/api/public/meldingen/run'
@@ -1003,18 +1024,6 @@ const BeheerRouteChildren: BeheerRouteChildren = {
 const BeheerRouteWithChildren =
   BeheerRoute._addFileChildren(BeheerRouteChildren)
 
-interface ReceptenIdRouteChildren {
-  ReceptenIdBewerkenRoute: typeof ReceptenIdBewerkenRoute
-}
-
-const ReceptenIdRouteChildren: ReceptenIdRouteChildren = {
-  ReceptenIdBewerkenRoute: ReceptenIdBewerkenRoute,
-}
-
-const ReceptenIdRouteWithChildren = ReceptenIdRoute._addFileChildren(
-  ReceptenIdRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AanmeldenRoute: AanmeldenRoute,
@@ -1030,15 +1039,17 @@ const rootRouteChildren: RootRouteChildren = {
   InstellingenRoute: InstellingenRoute,
   MeldingenRoute: MeldingenRoute,
   PlannerRoute: PlannerRoute,
+  RondleidingRoute: RondleidingRoute,
   UitnodigingRoute: UitnodigingRoute,
   VoorraadRoute: VoorraadRoute,
   WelkomRoute: WelkomRoute,
   KaartenIdRoute: KaartenIdRoute,
-  ReceptenIdRoute: ReceptenIdRouteWithChildren,
+  ReceptenIdRoute: ReceptenIdRoute,
   ReceptenNieuwRoute: ReceptenNieuwRoute,
   VriendenIdRoute: VriendenIdRoute,
   KaartenIndexRoute: KaartenIndexRoute,
   VriendenIndexRoute: VriendenIndexRoute,
+  ReceptenIdBewerkenRoute: ReceptenIdBewerkenRoute,
   ApiPublicMeldingenRunRoute: ApiPublicMeldingenRunRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
 }
