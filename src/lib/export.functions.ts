@@ -9,7 +9,12 @@ export const exporteerMijnGegevens = createServerFn({ method: "POST" })
 
     const [profiel, recepten, ingredienten, weekmenu, lijsten, items, favorieten, voorraad, kaarten] =
       await Promise.all([
-        supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
+        supabase
+          .from("profiles")
+          .select("id, display_name, handle, taal, thema, momenten, onboarding_klaar, created_at")
+          .eq("id", userId)
+          .maybeSingle(),
+
         supabase.from("recipes").select("*").eq("user_id", userId),
         supabase.from("recipe_ingredients").select("*"),
         supabase.from("meal_plan").select("*").eq("user_id", userId),
