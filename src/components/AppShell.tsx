@@ -243,6 +243,8 @@ export function AppShell({
           </div>
         </div>
       )}
+
+      <Rondleiding />
     </div>
   );
 }
