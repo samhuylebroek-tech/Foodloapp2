@@ -165,6 +165,34 @@ function BoodschappenPage() {
     refresh();
   }
 
+  // Alles wat al in de voorraadkast staat in één tik afvinken.
+  async function vinkVoorraadAf() {
+    if (!user || !actief) return;
+    const { data } = await supabase.from("pantry_items").select("naam").eq("user_id", user.id);
+    const thuis = (data ?? []).map((r) => r.naam.trim().toLowerCase()).filter(Boolean);
+    if (thuis.length === 0) {
+      toast.info("Je voorraadkast is nog leeg.");
+      return;
+    }
+    const raak = items.filter((i) => {
+      const n = i.name.trim().toLowerCase();
+      return !i.checked && thuis.some((v) => n.includes(v) || v.includes(n));
+    });
+    if (raak.length === 0) {
+      toast.info("Niets op deze lijst staat al in je voorraadkast.");
+      return;
+    }
+    await supabase
+      .from("shopping_items")
+      .update({ checked: true })
+      .in(
+        "id",
+        raak.map((i) => i.id),
+      );
+    toast.success(`${raak.length} afgevinkt — je hebt ze al in huis.`);
+    refresh();
+  }
+
   async function wisAfgevinkt() {
     if (!actief) return;
     await supabase.from("shopping_items").delete().eq("checked", true).eq("list_id", actief);
@@ -295,6 +323,10 @@ function BoodschappenPage() {
             </li>
           )}
         </ul>
+
+        <Button variant="outline" onClick={vinkVoorraadAf} className="h-16 w-full text-lg">
+          <Package className="size-5" /> Vink af wat ik al in huis heb
+        </Button>
 
         <div className="flex gap-3">
           <Button variant="secondary" onClick={deel} className="h-16 flex-1 text-lg">
