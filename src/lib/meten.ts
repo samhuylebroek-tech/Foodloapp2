@@ -318,13 +318,13 @@ function pad(path?: string) {
 }
 
 export type MeetOpties = {
-  path?: string;
-  detail?: Record<string, unknown>;
-  entityType?: string;
-  entityId?: string;
-  entityLabel?: string;
-  ok?: boolean;
-  durationMs?: number;
+  path?: string | undefined;
+  detail?: Record<string, unknown> | undefined;
+  entityType?: string | undefined;
+  entityId?: string | undefined;
+  entityLabel?: string | undefined;
+  ok?: boolean | undefined;
+  durationMs?: number | undefined;
 };
 
 /**
