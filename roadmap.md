@@ -90,4 +90,4 @@
 - [x] Inplannen: tweestapsflow (eerst gerecht, dan dag) gebouwd en getest
 
 ## Open
-- [ ] Controlecentrum-link ontbreekt in instellingen (enkel zichtbaar voor Sam) — onderzoeken en herstellen
+- [x] Controlecentrum-link weer zichtbaar onderaan instellingen
