@@ -97,6 +97,10 @@ function StartPage() {
     return (favoriet.length ? favoriet : recipes).slice(0, 4);
   }, [favorites, recipes]);
   const naam = profiel?.display_name?.split(" ")[0];
+  const maaltijden = useMemo(
+    () => [...dagmenu].sort((a, b) => (b.recipes ? 1 : 0) - (a.recipes ? 1 : 0)),
+    [dagmenu],
+  );
 
   return (
     <AppShell title="Foodlo">
