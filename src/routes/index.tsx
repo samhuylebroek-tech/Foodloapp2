@@ -1,16 +1,24 @@
-import { useMemo } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, CalendarDays, ChevronRight, Clock, Heart, Plus, ShoppingCart } from "lucide-react";
+import { BookOpen, CalendarDays, ChevronRight, Clock, Heart, Plus, Sparkles, ShoppingCart } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState } from "@/components/EmptyState";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { RecipePhoto } from "@/components/RecipePhoto";
+import { Button } from "@/components/ui/button";
 import type { Recipe } from "@/lib/types";
 import { useT } from "@/lib/voorkeuren";
 import { tijdLabel } from "@/lib/tijd";
+import {
+  ontdekSuggesties,
+  importRecipeFromText,
+  gerechtFoto,
+  type InternetSuggestie,
+} from "@/lib/ai.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
