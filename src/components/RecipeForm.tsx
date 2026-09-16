@@ -350,10 +350,8 @@ export function RecipeForm({
           .split(",")
           .map((t) => t.trim().toLowerCase())
           .filter(Boolean),
-        instructions: stappenTekst
-          .split("\n")
-          .map((s) => s.replace(/^\s*\d+[.)]\s*/, "").trim())
-          .filter(Boolean),
+        instructions: stappen,
+        step_ingredients: Object.keys(stapKeuze).length ? stapKeuze : null,
         source_url: sourceUrl.trim() || null,
       };
 
