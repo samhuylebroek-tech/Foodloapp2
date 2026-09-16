@@ -133,7 +133,7 @@ export const uiOverzicht = createServerFn({ method: "POST" })
     const vorigVan = new Date(van.getTime() - duur).toISOString();
 
     const tel = async (tabel: string, kolom: string, extra?: (q: any) => any) => {
-      let q = db.from(tabel).select("*", { count: "exact", head: true });
+      let q = (db as any).from(tabel).select("*", { count: "exact", head: true });
       q = tijdFilter(q, kolom, vanIso, totIso);
       if (extra) q = extra(q);
       const { count } = await q;
@@ -148,7 +148,7 @@ export const uiOverzicht = createServerFn({ method: "POST" })
       { data: sessies },
       { data: ai },
       { data: fouten },
-      { count: nooit },
+      nooit,
     ] = await Promise.all([
       db.from("profiles").select("*", { count: "exact", head: true }),
       tel("profiles", "created_at"),
@@ -184,12 +184,11 @@ export const uiOverzicht = createServerFn({ method: "POST" })
         .gte("created_at", vanIso)
         .lte("created_at", totIso)
         .limit(50_000),
-      (async () => {
+      (async (): Promise<number> => {
         const { data: metEvent } = await db.from("usage_events").select("user_id").limit(200_000);
         const actieveOoit = new Set(((metEvent ?? []) as any[]).map((r) => r.user_id));
         const { data: alle } = await db.from("profiles").select("id").limit(100_000);
-        const n = ((alle ?? []) as any[]).filter((p) => !actieveOoit.has(p.id)).length;
-        return { count: n };
+        return ((alle ?? []) as any[]).filter((p) => !actieveOoit.has(p.id)).length;
       })(),
     ]);
 
@@ -245,7 +244,7 @@ export const uiOverzicht = createServerFn({ method: "POST" })
         kpi("actief", "Actieve gebruikers", actieveUsers, "gebruikers:actief"),
         kpi("terugkerend", "Terugkerend", terugkerend, "gebruikers:terugkerend"),
         kpi("inactief", "Inactief", Math.max(0, (totaalUsers ?? 0) - actieveUsers), "gebruikers:inactief"),
-        kpi("nooit", "Nooit actief geweest", nooit.count, "gebruikers:nooit"),
+        kpi("nooit", "Nooit actief geweest", nooit, "gebruikers:nooit"),
         kpi("nu", "Nu actief", nuActief, "sessies:open"),
         kpi("login_vandaag", "Ingelogd vandaag", loginsVandaag, "sessies:vandaag"),
         kpi("login_week", "Ingelogd deze week", loginsWeek, "sessies:week"),
@@ -549,7 +548,7 @@ export const uiGebeurtenis = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     const { db } = await bewaker(context as Ctx, "dashboard.view");
-    const { data: rij } = await db.from("usage_events").select("*").eq("id", data.id).maybeSingle();
+    const { data: rij } = (await db.from("usage_events").select("*").eq("id", data.id).maybeSingle()) as { data: any };
     if (!rij) return null;
     const namen = await profielMap(db, [rij.user_id]);
     let buren: any[] = [];
@@ -628,7 +627,7 @@ export const uiSessie = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     const { db } = await bewaker(context as Ctx, "dashboard.view");
-    const { data: sessie } = await db.from("user_sessions").select("*").eq("id", data.id).maybeSingle();
+    const { data: sessie } = (await db.from("user_sessions").select("*").eq("id", data.id).maybeSingle()) as { data: any };
     if (!sessie) return null;
     const [{ data: events }, { data: fouten }, { data: ai }] = await Promise.all([
       db.from("usage_events").select("*").eq("session_id", data.id).order("created_at").limit(2000),
@@ -697,7 +696,7 @@ export const uiAiDetail = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     const { db } = await bewaker(context as Ctx, "ai.view");
-    const { data: rij } = await db.from("ai_usage").select("*").eq("id", data.id).maybeSingle();
+    const { data: rij } = (await db.from("ai_usage").select("*").eq("id", data.id).maybeSingle()) as { data: any };
     if (!rij) return null;
     const namen = await profielMap(db, [rij.user_id]);
     const { data: transacties } = await db
@@ -780,7 +779,7 @@ export const uiFoutDetail = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     const { db } = await bewaker(context as Ctx, "dashboard.view");
-    const { data: rij } = await db.from("app_errors").select("*").eq("id", data.id).maybeSingle();
+    const { data: rij } = (await db.from("app_errors").select("*").eq("id", data.id).maybeSingle()) as { data: any };
     if (!rij) return null;
     const namen = await profielMap(db, [rij.user_id]);
     let rondom: any[] = [];
@@ -861,8 +860,8 @@ export const uiGebruiker = createServerFn({ method: "POST" })
     }
 
     // tijdlijn met filters
-    let tijdlijn = ev.map((e) => ({
-      soort: "event" as const,
+    let tijdlijn: any[] = ev.map((e) => ({
+      soort: "event",
       id: e.id,
       tijd: e.created_at,
       titel: e.event,
@@ -1037,7 +1036,7 @@ export const uiGroep = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     const { db } = await bewaker(context as Ctx, "users.view");
-    const { data: groep } = await db.from("groups").select("*").eq("id", data.id).maybeSingle();
+    const { data: groep } = (await db.from("groups").select("*").eq("id", data.id).maybeSingle()) as { data: any };
     if (!groep) return null;
     const { data: leden } = await db.from("group_members").select("*").eq("group_id", data.id);
     const ids = ((leden ?? []) as any[]).map((l) => l.user_id);
