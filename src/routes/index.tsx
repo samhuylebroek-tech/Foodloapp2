@@ -70,7 +70,7 @@ function StartPage() {
     },
   });
 
-  const { data: dagmenu } = useQuery({
+  const { data: dagmenu = [] } = useQuery({
     queryKey: ["home-dagmenu", user?.id, vandaag()],
     enabled: !!user,
     queryFn: async () => {
@@ -78,10 +78,8 @@ function StartPage() {
         .from("meal_plan")
         .select("id, custom_title, meal_type, recipe_id, recipes(*)")
         .eq("plan_date", vandaag())
-        .order("meal_type")
-        .limit(1)
-        .maybeSingle();
-      return data as { id: string; custom_title: string | null; meal_type: string; recipe_id: string | null; recipes: Recipe | null } | null;
+        .order("meal_type");
+      return (data ?? []) as { id: string; custom_title: string | null; meal_type: string; recipe_id: string | null; recipes: Recipe | null }[];
     },
   });
 
@@ -99,7 +97,10 @@ function StartPage() {
     return (favoriet.length ? favoriet : recipes).slice(0, 4);
   }, [favorites, recipes]);
   const naam = profiel?.display_name?.split(" ")[0];
-  const gepland = dagmenu?.recipes;
+  const maaltijden = useMemo(
+    () => [...dagmenu].sort((a, b) => (b.recipes ? 1 : 0) - (a.recipes ? 1 : 0)),
+    [dagmenu],
+  );
 
   return (
     <AppShell title="Foodlo">
@@ -111,25 +112,48 @@ function StartPage() {
 
         {isLoading ? (
           <PageSkeleton rows={2} />
-        ) : dagmenu ? (
-          <section className="overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border/60">
-            {gepland ? <RecipePhoto path={gepland.image_url} alt={gepland.title} className="aspect-[16/9] w-full rounded-none" /> : null}
-            <div className="p-5 sm:p-6">
-              <p className="text-sm font-semibold capitalize text-primary">{t(dagmenu.meal_type || "Vandaag")}</p>
-              <h3 className="mt-1 text-2xl">{t(gepland?.title ?? dagmenu.custom_title ?? "Maaltijd")}</h3>
-              {gepland ? (
-                <>
-                  <p className="mt-2 flex items-center gap-2 text-base text-muted-foreground">
-                    {tijdLabel(gepland.prep_minutes, gepland.cook_minutes) ? <Clock className="size-5" aria-hidden /> : null}
-                    {[tijdLabel(gepland.prep_minutes, gepland.cook_minutes), `${gepland.servings} ${t("personen")}`].filter(Boolean).join(" · ")}
-                  </p>
-                  <Link to="/recepten/$id" params={{ id: gepland.id }} className="mt-5 flex min-h-14 items-center justify-center rounded-xl bg-primary px-5 text-base font-semibold text-primary-foreground transition-transform active:scale-[0.98]">
-                    {t("Bekijk recept")}
-                  </Link>
-                </>
-              ) : null}
-            </div>
-          </section>
+        ) : maaltijden.length > 0 ? (
+          <div className="space-y-4">
+            {maaltijden.map((maaltijd) =>
+              maaltijd.recipes ? (
+                <Link
+                  key={maaltijd.id}
+                  to="/recepten/$id"
+                  params={{ id: maaltijd.recipes.id }}
+                  className="block overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border/60 transition-transform active:scale-[0.99]"
+                  aria-label={`${t("Bekijk recept")}: ${maaltijd.recipes.title}`}
+                >
+                  <RecipePhoto path={maaltijd.recipes.image_url} alt={maaltijd.recipes.title} className="aspect-[16/9] w-full rounded-none" />
+                  <div className="p-5 sm:p-6">
+                    <p className="text-sm font-semibold capitalize text-primary">{t(maaltijd.meal_type || "Vandaag")}</p>
+                    <h3 className="mt-1 text-2xl">{t(maaltijd.recipes.title)}</h3>
+                    <p className="mt-2 flex items-center gap-2 text-base text-muted-foreground">
+                      {tijdLabel(maaltijd.recipes.prep_minutes, maaltijd.recipes.cook_minutes) ? <Clock className="size-5" aria-hidden /> : null}
+                      {[tijdLabel(maaltijd.recipes.prep_minutes, maaltijd.recipes.cook_minutes), `${maaltijd.recipes.servings} ${t("personen")}`].filter(Boolean).join(" · ")}
+                    </p>
+                    <span className="mt-5 flex min-h-14 items-center justify-center rounded-xl bg-primary px-5 text-base font-semibold text-primary-foreground">
+                      {t("Bekijk recept")}
+                    </span>
+                  </div>
+                </Link>
+              ) : (
+                <Link
+                  key={maaltijd.id}
+                  to="/planner"
+                  className="block overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border/60"
+                  aria-label={t("Bekijk je planning")}
+                >
+                  <div className="p-5 sm:p-6">
+                    <p className="text-sm font-semibold capitalize text-primary">{t(maaltijd.meal_type || "Vandaag")}</p>
+                    <h3 className="mt-1 text-2xl">{t(maaltijd.custom_title ?? "Maaltijd")}</h3>
+                    <span className="mt-5 flex min-h-14 items-center justify-center rounded-xl bg-secondary px-5 text-base font-semibold text-secondary-foreground">
+                      {t("Bekijk je planning")}
+                    </span>
+                  </div>
+                </Link>
+              ),
+            )}
+          </div>
         ) : recipes.length === 0 ? (
           <EmptyState
             icon={<BookOpen className="size-7" aria-hidden />}
@@ -154,7 +178,7 @@ function StartPage() {
           <div className="mt-3 divide-y divide-border rounded-2xl bg-card px-4 ring-1 ring-border/60">
             <Link to="/planner" className="flex min-h-16 items-center gap-3 py-3">
               <span className="flex size-11 items-center justify-center rounded-xl bg-secondary text-primary"><CalendarDays className="size-5" /></span>
-              <span className="min-w-0 flex-1 font-semibold">{dagmenu ? t("Je menu staat klaar") : t("Plan je week")}</span>
+              <span className="min-w-0 flex-1 font-semibold">{maaltijden.length ? t("Je menu staat klaar") : t("Plan je week")}</span>
               <ChevronRight className="size-5 text-muted-foreground" />
             </Link>
             <Link to="/boodschappen" className="flex min-h-16 items-center gap-3 py-3">
