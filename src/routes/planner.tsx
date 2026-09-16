@@ -622,6 +622,7 @@ function ReceptKiezer({
   const [zoek, setZoek] = useState("");
   const [datum, setDatum] = useState(start.datum);
   const [moment, setMoment] = useState(start.moment);
+  const [gerecht, setGerecht] = useState<Recipe | null>(null);
   const [aiBezig, setAiBezig] = useState(false);
   const [voorstel, setVoorstel] = useState<Basis | null>(null);
 
