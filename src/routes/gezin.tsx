@@ -262,6 +262,30 @@ function GezinPage() {
           <p className="text-base text-muted-foreground">Even geduld…</p>
         ) : !data ? (
           <section className="space-y-4 rounded-3xl border border-border bg-card p-5">
+            {uitnodiging && (
+              <div className="space-y-3 rounded-2xl border-2 border-primary/40 bg-primary/5 p-4">
+                <p className="text-lg font-semibold">
+                  Je bent uitgenodigd voor gezin “{uitnodiging.naam}”
+                </p>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Button
+                    onClick={() => gezinAntwoord.mutate({ groupId: uitnodiging.id, ja: true })}
+                    disabled={gezinAntwoord.isPending}
+                    className="h-14 w-full text-base sm:flex-1"
+                  >
+                    <Check className="size-5" /> Aannemen
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => gezinAntwoord.mutate({ groupId: uitnodiging.id, ja: false })}
+                    disabled={gezinAntwoord.isPending}
+                    className="h-14 w-full text-base sm:flex-1"
+                  >
+                    Nee, bedankt
+                  </Button>
+                </div>
+              </div>
+            )}
             <div className="flex size-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
               <Home className="size-7" aria-hidden />
             </div>
