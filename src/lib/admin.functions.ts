@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -138,9 +137,8 @@ export async function bewaker(context: Ctx, recht: Rechten, opties: { schrijft?:
 }
 
 async function sessieLoggen(db: any, adminId: string, aal: string | null) {
-  const req = getRequest();
-  const ip = req?.headers.get("x-forwarded-for") ?? null;
-  const ua = req?.headers.get("user-agent") ?? null;
+  const { verzoekInfo } = await import("@/lib/admin-headers.server");
+  const { ip, ua } = verzoekInfo();
   const sinds = new Date(Date.now() - 30 * 60_000).toISOString();
   const { data: bestaand } = await db
     .from("admin_sessions")
@@ -164,7 +162,8 @@ export async function logboek(
   entity_id: string | null,
   details: Record<string, unknown> = {},
 ) {
-  const req = getRequest();
+  const { verzoekInfo } = await import("@/lib/admin-headers.server");
+  const { ip, ua } = verzoekInfo();
   await db.from("admin_audit_log").insert({
     actor_id: profiel.user_id,
     actor_role: profiel.role,
@@ -172,8 +171,8 @@ export async function logboek(
     entity_type,
     entity_id,
     details,
-    ip: req?.headers.get("x-forwarded-for") ?? null,
-    user_agent: req?.headers.get("user-agent") ?? null,
+    ip,
+    user_agent: ua,
   });
 }
 
