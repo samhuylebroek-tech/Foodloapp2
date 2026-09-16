@@ -358,25 +358,10 @@ function VriendenPage() {
     return [...map.values()];
   })();
 
-  // Namen van iedereen waarmee al een verbinding of uitnodiging loopt.
-  const verbondenNamen = new Set<string>(
-    [
-      ...vrienden.map((v) => namen[v.id]),
-      ...shares
-        .filter((s) => s.status === "pending" && s.member_id)
-        .map((s) => namen[s.owner_id === user?.id ? s.member_id! : s.owner_id]),
-    ]
-      .filter(Boolean)
-      .map((n) => n!.trim().toLowerCase()),
-  );
+  // Alle uitnodigingen met een link die nog niet zijn aangenomen, blijven zichtbaar
+  // zolang jij ze niet intrekt. Zo weet je altijd wie je al uitnodigde.
+  const linkUitnodigingen = mijnAlles.filter((s) => !s.member_id && s.status !== "accepted");
 
-  // Losse linkuitnodigingen verbergen zodra die persoon al in de app zit.
-  const linkUitnodigingen = mijnAlles.filter((s) => {
-    if (s.member_id) return false;
-    const naam = s.invited_name.trim().toLowerCase();
-    if (!naam) return true;
-    return ![...verbondenNamen].some((v) => v === naam || v.includes(naam) || naam.includes(v));
-  });
 
   const gevraagd = mijnAlles.filter((s) => s.member_id && s.status === "pending");
 
