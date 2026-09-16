@@ -17,8 +17,10 @@ const bereikSchema = z
     van: z.string().optional(),
     tot: z.string().optional(),
     bereik: z.enum(BEREIKEN).default("vandaag"),
+    wieModus: z.enum(["alles", "in", "uit"]).default("alles"),
+    wieIds: z.array(z.string().uuid()).default([]),
   })
-  .default({ bereik: "vandaag" });
+  .default({ bereik: "vandaag", wieModus: "alles", wieIds: [] });
 
 function dagString(d: Date) {
   return d.toISOString().slice(0, 10);
