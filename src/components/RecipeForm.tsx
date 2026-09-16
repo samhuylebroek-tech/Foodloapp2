@@ -86,6 +86,30 @@ export function RecipeForm({
   const [stapKeuze, setStapKeuze] = useState<StapKoppeling>(recipe?.step_ingredients ?? {});
   const [meerDetails, setMeerDetails] = useState(false);
 
+  // Stappen en ingrediënten zoals ze nu in het formulier staan
+  const stappen = stappenTekst
+    .split("\n")
+    .map((s) => s.replace(/^\s*\d+[.)]\s*/, "").trim())
+    .filter(Boolean);
+  const formIngredienten = parseIngredientText(ingredientTekst);
+  const stapKoppeling = koppelStappen(stappen, formIngredienten, stapKeuze);
+
+  /** Zet een ingrediënt aan of uit bij een stap; vanaf dan telt de eigen keuze. */
+  function wisselStapIngredient(stapIndex: number, naam: string) {
+    setStapKeuze((vorig) => {
+      const huidig =
+        vorig[String(stapIndex)] ??
+        (stapKoppeling[stapIndex] ?? []).map((idx) => formIngredienten[idx]!.name);
+      const staatAan = huidig.some((n) => normaliseer(n) === normaliseer(naam));
+      const nieuw = staatAan
+        ? huidig.filter((n) => normaliseer(n) !== normaliseer(naam))
+        : [...huidig, naam];
+      return { ...vorig, [String(stapIndex)]: nieuw };
+    });
+  }
+
+
+
   const [importUrl, setImportUrl] = useState(gedeeldeLink);
   const [vrijeTekst, setVrijeTekst] = useState(gedeeldeTekst);
 
