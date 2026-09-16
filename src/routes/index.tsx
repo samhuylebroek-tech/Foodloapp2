@@ -262,6 +262,26 @@ function StartPage() {
             </ul>
           </section>
         ) : null}
+
+        <section aria-labelledby="ideeen-titel" data-tour="ideeen">
+          <h2 id="ideeen-titel" className="text-xl">{t("Zin in iets nieuws?")}</h2>
+          {!ontdekAan ? (
+            <div className="mt-3 rounded-2xl bg-card p-5 ring-1 ring-border/60">
+              <p className="text-base text-muted-foreground">{t("Laat een paar verse ideeën zoeken op maat van wat jij lekker vindt.")}</p>
+              <Button onClick={() => setOntdekAan(true)} className="mt-4 w-full sm:w-auto"><Sparkles />{t("Zoek nieuwe ideeën")}</Button>
+            </div>
+          ) : ideeenBezig ? (
+            <p className="mt-3 text-base text-muted-foreground">{t("Even zoeken naar nieuwe ideeën…")}</p>
+          ) : ideeen.length === 0 ? (
+            <p className="mt-3 text-base text-muted-foreground">{t("Geen nieuwe suggesties gevonden. Probeer straks opnieuw.")}</p>
+          ) : (
+            <ul className="-mx-4 mt-3 flex snap-x gap-3 overflow-x-auto px-4 pb-2">
+              {ideeen.map((s) => (
+                <IdeeKaart key={s.title} s={s} t={t} bezig={bezig} onBewaar={() => void bewaarSuggestie(s)} />
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </AppShell>
   );
