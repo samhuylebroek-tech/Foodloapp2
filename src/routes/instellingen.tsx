@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { QrDeelKaart } from "@/components/QrDeelKaart";
 import { useLimiet } from "@/lib/limiet";
 import { ALLE_MOMENTEN, EEN_BLOK, TALEN, THEMAS, useVoorkeuren, type ThemaId } from "@/lib/voorkeuren";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export const Route = createFileRoute("/instellingen")({
   head: () => ({
@@ -159,7 +160,11 @@ function InstellingenPage() {
         </Link>
 
 
-        <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+        <Accordion type="multiple" defaultValue={["profiel"]} className="overflow-hidden rounded-2xl bg-card px-5 ring-1 ring-border/60">
+          <AccordionItem value="profiel">
+            <AccordionTrigger className="min-h-16 text-lg no-underline hover:no-underline">{t("Profiel en beveiliging")}</AccordionTrigger>
+            <AccordionContent className="space-y-5">
+        <section>
           <h2 className="text-xl font-bold tracking-tight">{t("Jouw Foodlo-naam")}</h2>
           <p className="mt-2 text-base text-muted-foreground">
             {t("Met deze naam kunnen vrienden je terugvinden. Bijvoorbeeld: marie")}
@@ -179,7 +184,7 @@ function InstellingenPage() {
           </Button>
         </section>
 
-        <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+        <section className="border-t border-border pt-5">
 
 
           <h2 className="text-xl font-bold tracking-tight">{t("Wachtwoord")}</h2>
@@ -212,8 +217,14 @@ function InstellingenPage() {
             {t("Wachtwoord bewaren")}
           </Button>
         </section>
+            </AccordionContent>
+          </AccordionItem>
 
-        <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+          <AccordionItem value="voorkeuren">
+            <AccordionTrigger className="min-h-16 text-lg no-underline hover:no-underline">{t("Voorkeuren")}</AccordionTrigger>
+            <AccordionContent className="space-y-5">
+
+        <section>
           <h2 className="text-xl font-bold tracking-tight">{t("Kleuren")}</h2>
           <div className="mt-4 grid grid-cols-2 gap-3">
             {THEMAS.map((k) => (
@@ -234,7 +245,7 @@ function InstellingenPage() {
           </div>
         </section>
 
-        <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+        <section className="border-t border-border pt-5">
           <h2 className="text-xl font-bold tracking-tight">{t("Taal")}</h2>
           <p className="mt-2 text-base text-muted-foreground">
             {t("De hele app en je recepten worden dan in die taal getoond.")}
@@ -253,7 +264,7 @@ function InstellingenPage() {
           </select>
         </section>
 
-        <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+        <section className="border-t border-border pt-5">
           <h2 className="text-xl font-bold tracking-tight">{t("Weekmenu")}</h2>
           <p className="mt-2 text-base text-muted-foreground">
             {t("Kies welke momenten je per dag wil inplannen.")}
@@ -293,8 +304,14 @@ function InstellingenPage() {
               ))}
           </div>
         </section>
+            </AccordionContent>
+          </AccordionItem>
 
-        <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+          <AccordionItem value="delen">
+            <AccordionTrigger className="min-h-16 text-lg no-underline hover:no-underline">{t("Delen en gegevens")}</AccordionTrigger>
+            <AccordionContent className="space-y-5">
+
+        <section>
           <h2 className="text-xl font-bold tracking-tight">{t("Deel met vrienden")}</h2>
           <p className="mt-2 text-base text-muted-foreground">
             {t("Laat anderen Foodlo openen zonder app store.")}
@@ -316,6 +333,9 @@ function InstellingenPage() {
         <OverFoodlo t={t} />
 
         <BeheerLink />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         <Button
           variant="ghost"

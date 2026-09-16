@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { KaartScanner } from "@/components/KaartScanner";
 import { Barcode } from "@/components/Barcode";
+import { EmptyState } from "@/components/EmptyState";
 import {
   FORMATEN,
   bewaarLokaal,
@@ -92,19 +93,7 @@ function KaartenPagina() {
       }
     >
       {kaarten.length === 0 ? (
-        <div className="rounded-[2rem] border border-border bg-card p-6 text-center">
-          <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-2xl bg-secondary">
-            <CreditCard className="size-7 text-primary" aria-hidden />
-          </div>
-          <h2 className="text-xl font-bold">Nog geen kaarten</h2>
-          <p className="mt-2 text-base text-muted-foreground">
-            Scan de streepjescode van je klantenkaart, en toon ze voortaan met je telefoon aan de kassa — ook
-            zonder internet.
-          </p>
-          <Button onClick={() => setToevoegen(true)} className="mt-4 h-14 w-full text-base">
-            Kaart toevoegen
-          </Button>
-        </div>
+        <EmptyState icon={<CreditCard className="size-7" />} title="Nog geen kaarten" description="Bewaar je klantenkaart één keer en toon ze daarna ook zonder internet." action={<Button onClick={() => setToevoegen(true)}>Kaart toevoegen</Button>} />
       ) : (
         <div className="space-y-6">
           <ul className="grid gap-3 sm:grid-cols-2">
@@ -257,25 +246,28 @@ function ToevoegVenster({
       <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-[2rem] bg-card p-5 sm:rounded-[2rem]">
         <h2 className="text-xl font-bold">Kaart toevoegen</h2>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <Button onClick={() => setScannen(true)} className="h-16 gap-2 text-base">
-            <ScanLine className="size-5" aria-hidden /> Kaart scannen
+        <div className="mt-4 space-y-3">
+          <Button onClick={() => setScannen(true)} className="h-14 w-full gap-2 text-base">
+            <ScanLine className="size-5" aria-hidden /> Scan je kaart
           </Button>
+          <p className="text-center text-sm text-muted-foreground">of</p>
+          <div className="grid grid-cols-2 gap-3">
           <Button
             variant="secondary"
             disabled={fotoBezig}
             onClick={() => fotoRef.current?.click()}
-            className="h-16 gap-2 text-base"
+            className="h-14 gap-2 text-base"
           >
             <ImageIcon className="size-5" aria-hidden /> {fotoBezig ? "Even kijken…" : "Foto kiezen"}
           </Button>
           <Button
             variant="outline"
             onClick={() => document.getElementById("kaartnummer")?.focus()}
-            className="h-16 gap-2 text-base sm:col-span-2"
+            className="h-14 gap-2 text-base"
           >
             <Keyboard className="size-5" aria-hidden /> Zelf invullen
           </Button>
+          </div>
           <input
             ref={fotoRef}
             type="file"
