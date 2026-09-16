@@ -216,7 +216,7 @@ async function naamKaart(db: any, ids: (string | null)[]) {
   const uniek = [...new Set(ids.filter(Boolean))] as string[];
   if (!uniek.length) return new Map<string, string>();
   const { data } = await db.from("profiles").select("id, display_name").in("id", uniek);
-  return new Map((data ?? []).map((p: any) => [p.id, p.display_name as string]));
+  return new Map<string, string>(((data ?? []) as any[]).map((p) => [p.id as string, (p.display_name ?? "") as string]));
 }
 
 // ---------------- gebruikers: vergelijkingstabel ----------------

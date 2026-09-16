@@ -42,7 +42,7 @@ function GebruikerDetail() {
       ) : (
         <Tabs defaultValue="overzicht" className="space-y-4">
           <TabsList className="flex flex-wrap bg-white/5">
-            {[
+            {([
               ["overzicht", "Overzicht"],
               ["activiteit", "Activiteit"],
               ["gebruik", "Gebruik"],
@@ -51,7 +51,7 @@ function GebruikerDetail() {
               ["meldingen", "Meldingen"],
               ["support", "Support"],
               ["fouten", "Fouten"],
-            ].map(([w, l]) => (
+            ] as [string, string][]).map(([w, l]) => (
               <TabsTrigger key={w} value={w}>
                 {l}
               </TabsTrigger>

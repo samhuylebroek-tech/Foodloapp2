@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { meet } from "@/lib/meten";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Star, Trash2, Maximize2 } from "lucide-react";
@@ -146,6 +147,9 @@ function KaartPagina() {
 
 // Volledig scherm, zo helder mogelijk, zonder afleiding: klaar voor de kassascanner.
 function Kassa({ kaart, onSluiten }: { kaart: Kaart; onSluiten: () => void }) {
+  useEffect(() => {
+    void meet("kaart.getoond");
+  }, []);
   useEffect(() => {
     let lock: any = null;
     const nav: any = navigator;

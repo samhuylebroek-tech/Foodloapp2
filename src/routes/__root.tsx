@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { VoorkeurenProvider } from "@/lib/voorkeuren";
 import { synchroniseerTijdzone, verwerkMeldingKlik } from "@/lib/meldingen";
+import { meet, meldFout } from "@/lib/meten";
 
 
 import appCss from "../styles.css?url";
@@ -154,6 +155,21 @@ function RootComponent() {
   useEffect(() => {
     void verwerkMeldingKlik();
     void synchroniseerTijdzone();
+    void meet("app.open");
+  }, []);
+
+  // Fouten die een gebruiker echt ervaart, komen in het Control Center terecht.
+  useEffect(() => {
+    const opFout = (e: ErrorEvent) =>
+      void meldFout({ soort: "runtime", bericht: e.message, detail: e.error?.stack ?? "" });
+    const opBelofte = (e: PromiseRejectionEvent) =>
+      void meldFout({ soort: "promise", bericht: String(e.reason?.message ?? e.reason ?? "onbekend"), detail: e.reason?.stack ?? "" });
+    window.addEventListener("error", opFout);
+    window.addEventListener("unhandledrejection", opBelofte);
+    return () => {
+      window.removeEventListener("error", opFout);
+      window.removeEventListener("unhandledrejection", opBelofte);
+    };
   }, []);
 
   return (

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { meet } from "@/lib/meten";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -93,6 +94,9 @@ type Basis = {
 };
 
 function PlannerPage() {
+  useEffect(() => {
+    void meet("weekmenu.bekeken");
+  }, []);
   const { user } = useAuth();
   const { momenten } = useVoorkeuren();
   const qc = useQueryClient();

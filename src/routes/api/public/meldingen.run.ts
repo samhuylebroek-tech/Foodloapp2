@@ -256,5 +256,17 @@ async function draai() {
     if (gelukt) verstuurd += 1;
   }
 
-  return Response.json({ ok: true, gebruikers: gebruikers.length, verstuurd });
+  // Dagcijfers voor het Control Center bijwerken en oude ruwe gebeurtenissen opruimen.
+  let aggregatie: unknown = null;
+  try {
+    const { aggregeerDagen, ruimOp } = await import("@/lib/monitoring.server");
+    aggregatie = await aggregeerDagen(supabaseAdmin, 2);
+    if (new Date().getUTCHours() === 3 && new Date().getUTCMinutes() < 15) {
+      await ruimOp(supabaseAdmin);
+    }
+  } catch {
+    /* meldingen mogen nooit falen door de cijfers */
+  }
+
+  return Response.json({ ok: true, gebruikers: gebruikers.length, verstuurd, aggregatie });
 }
