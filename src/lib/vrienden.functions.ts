@@ -40,8 +40,9 @@ function schoonRechten(input: Partial<Rechten> | null | undefined): Rechten {
  */
 async function stuurBericht(opts: {
   ontvanger: string;
-  soort: "uitnodiging" | "uitnodiging_ok";
+  soort: "uitnodiging" | "uitnodiging_ok" | "gezinsuitnodiging" | "gezin_ok";
   vanNaam: string;
+  gezinNaam?: string;
   url: string;
   sleutel: string;
 }) {
@@ -62,11 +63,23 @@ async function stuurBericht(opts: {
   ]);
 
   const T = teksten(profiel?.taal);
-  const titel = opts.soort === "uitnodiging" ? T.uitnodiging_titel : T.uitnodiging_ok_titel;
+  const g = opts.gezinNaam ?? "";
+  const titel =
+    opts.soort === "uitnodiging"
+      ? T.uitnodiging_titel
+      : opts.soort === "uitnodiging_ok"
+        ? T.uitnodiging_ok_titel
+        : opts.soort === "gezinsuitnodiging"
+          ? T.gezinsuitnodiging_titel
+          : T.gezin_ok_titel;
   const volleBody =
     opts.soort === "uitnodiging"
       ? T.uitnodiging_body(opts.vanNaam)
-      : T.uitnodiging_ok_body(opts.vanNaam);
+      : opts.soort === "uitnodiging_ok"
+        ? T.uitnodiging_ok_body(opts.vanNaam)
+        : opts.soort === "gezinsuitnodiging"
+          ? T.gezinsuitnodiging_body(opts.vanNaam, g)
+          : T.gezin_ok_body(opts.vanNaam, g);
   const body = voorkeur?.lockscreen_details === false ? T.prive : volleBody;
 
   await supabaseAdmin.from("notification_log").insert({

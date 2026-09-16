@@ -51,12 +51,26 @@ function BoodschappenPage() {
       await zorgVoorLijst(user.id);
       const { data, error } = await supabase
         .from("shopping_lists")
-        .select("id, name, created_at")
+        .select("id, name, created_at, group_id")
         .order("created_at");
       if (error) throw error;
       return data as ShoppingList[];
     },
   });
+
+  // De gezamenlijke gezinslijst ververst mee als een gezinslid iets aanpast.
+  useEffect(() => {
+    if (!user) return;
+    const kanaal = supabase
+      .channel("boodschappen-items")
+      .on("postgres_changes", { event: "*", schema: "public", table: "shopping_items" }, () => {
+        qc.invalidateQueries({ queryKey: ["shopping"] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(kanaal);
+    };
+  }, [user, qc]);
 
   useEffect(() => {
     if (!actief && lijsten.length) setActief(lijsten[0]!.id);
@@ -187,6 +201,17 @@ function BoodschappenPage() {
               }
             >
               {l.name}
+              {l.group_id ? (
+                <span
+                  className={
+                    l.id === actief
+                      ? "ml-2 rounded-full bg-primary-foreground/20 px-2 py-0.5 text-xs font-bold"
+                      : "ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary"
+                  }
+                >
+                  gezin
+                </span>
+              ) : null}
             </button>
           ))}
           <button

@@ -2,16 +2,18 @@ import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCode from "qrcode";
-import { ChefHat, Copy, Home, LogOut, Share2, Trash2, UserPlus } from "lucide-react";
+import { ChefHat, Copy, Home, LogOut, Search, Share2, Trash2, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
+import { Avatar } from "@/components/Avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { appOrigin } from "@/lib/app-url";
+import { nodigUitGezin } from "@/lib/gezin.functions";
 
 export const Route = createFileRoute("/gezin")({
   head: () => ({
@@ -48,6 +50,7 @@ type Lid = Rechten & {
   group_id: string;
   user_id: string;
   rol: string;
+  status: string;
 };
 
 type Groep = { id: string; naam: string; owner_id: string; token: string };
@@ -70,6 +73,8 @@ function GezinPage() {
   const qc = useQueryClient();
   const [naam, setNaam] = useState("Ons gezin");
   const [qr, setQr] = useState("");
+  const [zoek, setZoek] = useState("");
+  const [gezocht, setGezocht] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["gezin", user?.id],
@@ -79,6 +84,7 @@ function GezinPage() {
         .from("group_members")
         .select("group_id")
         .eq("user_id", user!.id)
+        .eq("status", "actief")
         .limit(1)
         .maybeSingle();
       if (error) throw error;
@@ -91,6 +97,21 @@ function GezinPage() {
       return { groep: groep as Groep, leden: (leden ?? []) as Lid[] };
     },
   });
+
+  // Live meeluisteren: nieuwe leden en antwoorden zijn meteen zichtbaar.
+  useEffect(() => {
+    if (!user) return;
+    const kanaal = supabase
+      .channel("gezin-leden")
+      .on("postgres_changes", { event: "*", schema: "public", table: "group_members" }, () => {
+        qc.invalidateQueries({ queryKey: ["gezin"] });
+        qc.invalidateQueries({ queryKey: ["gezinnamen"] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(kanaal);
+    };
+  }, [user, qc]);
 
   const ids = (data?.leden ?? []).map((l) => l.user_id);
   const { data: namen = {} } = useQuery({
@@ -114,6 +135,20 @@ function GezinPage() {
       .catch(() => setQr(""));
   }, [link]);
 
+  const {
+    data: gevonden = [],
+    isFetching: zoekt,
+    isError: zoekMislukt,
+  } = useQuery({
+    queryKey: ["zoek-gebruiker", gezocht],
+    enabled: gezocht.trim().length >= 2,
+    queryFn: async () => {
+      const { data: r, error } = await supabase.rpc("zoek_gebruiker", { _term: gezocht.trim() });
+      if (error) throw error;
+      return (r ?? []) as { id: string; display_name: string; handle: string | null }[];
+    },
+  });
+
   const maakGezin = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
@@ -126,6 +161,26 @@ function GezinPage() {
       toast.success("Je gezin staat klaar. Nodig nu de anderen uit.");
     },
     onError: () => toast.error("Het gezin maken lukte niet"),
+  });
+
+  const nodigUit = useMutation({
+    mutationFn: async (doelId: string) =>
+      nodigUitGezin({ data: { groupId: data!.groep.id, doelId } }),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ["gezin"] });
+      if (!res.ok) {
+        toast.info(
+          res.reden === "bestaat"
+            ? "Deze persoon is al uitgenodigd of hoort er al bij."
+            : "De uitnodiging lukte niet.",
+        );
+        return;
+      }
+      setZoek("");
+      setGezocht("");
+      toast.success("Uitnodiging verstuurd. Die persoon krijgt meteen een bericht.");
+    },
+    onError: () => toast.error("De uitnodiging versturen lukte niet"),
   });
 
   const wijzigRechten = useMutation({
@@ -249,18 +304,139 @@ function GezinPage() {
               </div>
             </section>
 
+            <section className="space-y-3 rounded-3xl border border-border bg-card p-5">
+              <h2 className="font-display text-xl">Iemand uitnodigen</h2>
+              <p className="text-base text-muted-foreground">
+                Zoek op naam, @Foodlo-naam of het volledige e-mailadres. Die persoon krijgt meteen
+                een bericht in de app.
+              </p>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Input
+                  value={zoek}
+                  onChange={(e) => setZoek(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && zoek.trim().length >= 2) setGezocht(zoek.trim());
+                  }}
+                  aria-label="Naam, Foodlo-naam of e-mailadres"
+                  placeholder="Bijvoorbeeld Sofie of @sofie"
+                  className="h-14 flex-1 text-base"
+                />
+                <Button
+                  variant="secondary"
+                  onClick={() => setGezocht(zoek.trim())}
+                  disabled={zoek.trim().length < 2}
+                  className="h-14 text-base"
+                >
+                  <Search className="size-5" /> Zoeken
+                </Button>
+              </div>
+              {gezocht.trim().length >= 2 &&
+                (zoekt ? (
+                  <p className="text-base text-muted-foreground">Even zoeken…</p>
+                ) : zoekMislukt ? (
+                  <p className="text-base text-destructive">Zoeken lukte even niet.</p>
+                ) : gevonden.length === 0 ? (
+                  <p className="text-base text-muted-foreground">
+                    Niemand gevonden. Deel anders de link of QR-code hierboven.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {gevonden.map((g) => {
+                      const lid = data.leden.find((l) => l.user_id === g.id);
+                      return (
+                        <div
+                          key={g.id}
+                          className="flex min-h-16 items-center justify-between gap-3 rounded-xl bg-secondary p-3"
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
+                            <Avatar naam={g.display_name} sleutel={g.id} className="size-12" />
+                            <div className="min-w-0">
+                              <p className="truncate text-base font-semibold">{g.display_name}</p>
+                              {g.handle ? (
+                                <p className="truncate text-sm text-muted-foreground">
+                                  @{g.handle}
+                                </p>
+                              ) : null}
+                            </div>
+                          </div>
+                          {lid ? (
+                            <span className="shrink-0 rounded-full bg-card px-3 py-2 text-sm font-semibold text-muted-foreground">
+                              {lid.status === "actief" ? "Hoort erbij" : "Uitgenodigd"}
+                            </span>
+                          ) : (
+                            <Button
+                              onClick={() => nodigUit.mutate(g.id)}
+                              disabled={nodigUit.isPending}
+                              className="h-12 shrink-0 text-base"
+                            >
+                              <UserPlus className="size-5" /> Uitnodigen
+                            </Button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+            </section>
+
+            {data.leden.some((l) => l.status === "uitgenodigd") && (
+              <section className="space-y-3">
+                <h2 className="font-display text-xl">Wacht op antwoord</h2>
+                {data.leden
+                  .filter((l) => l.status === "uitgenodigd")
+                  .map((l) => (
+                    <div
+                      key={l.id}
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <Avatar
+                          naam={namen[l.user_id] ?? "Gezinslid"}
+                          sleutel={l.user_id}
+                          className="size-12"
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate text-lg font-semibold">
+                            {namen[l.user_id] ?? "Gezinslid"}
+                          </p>
+                          <p className="text-base text-muted-foreground">Uitgenodigd</p>
+                        </div>
+                      </div>
+                      {ikBenEigenaar && (
+                        <Button
+                          variant="secondary"
+                          onClick={() => verwijderLid.mutate(l.id)}
+                          className="h-12 shrink-0 text-base"
+                        >
+                          <X className="size-5" /> Intrekken
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+              </section>
+            )}
+
             <section className="space-y-3">
               <h2 className="font-display text-xl">Wie hoort erbij</h2>
-              {data.leden.map((l) => (
+              {data.leden
+                .filter((l) => l.status === "actief")
+                .map((l) => (
                 <div key={l.id} className="rounded-2xl border border-border bg-card p-4">
-                  <p className="text-lg font-semibold">
-                    {l.user_id === user?.id ? "Jij" : (namen[l.user_id] ?? "Gezinslid")}{" "}
-                    {l.rol === "eigenaar" && (
-                      <span className="ml-2 rounded-full bg-secondary px-3 py-1 text-sm font-semibold text-muted-foreground">
-                        gestart door
-                      </span>
-                    )}
-                  </p>
+                  <div className="flex items-center gap-3">
+                    <Avatar
+                      naam={l.user_id === user?.id ? (namen[l.user_id] ?? "Jij") : (namen[l.user_id] ?? "Gezinslid")}
+                      sleutel={l.user_id}
+                      className="size-12"
+                    />
+                    <p className="min-w-0 flex-1 truncate text-lg font-semibold">
+                      {l.user_id === user?.id ? "Jij" : (namen[l.user_id] ?? "Gezinslid")}{" "}
+                      {l.rol === "eigenaar" && (
+                        <span className="ml-2 rounded-full bg-secondary px-3 py-1 text-sm font-semibold text-muted-foreground">
+                          gestart door
+                        </span>
+                      )}
+                    </p>
+                  </div>
                   {l.user_id !== user?.id && (
                     <Link
                       to="/vrienden/$id"

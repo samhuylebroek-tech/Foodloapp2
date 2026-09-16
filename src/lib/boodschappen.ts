@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type ShoppingList = { id: string; name: string; created_at: string };
+export type ShoppingList = { id: string; name: string; created_at: string; group_id?: string | null };
 
 export type NieuwItem = {
   name: string;

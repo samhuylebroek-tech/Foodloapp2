@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
+import { Avatar } from "@/components/Avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -51,6 +52,8 @@ type PlanRow = {
   meal_type: string;
   recipe_id: string | null;
   custom_title: string | null;
+  user_id: string;
+  group_id: string | null;
   recipes: Recipe | null;
 };
 
@@ -97,6 +100,7 @@ function PlannerPage() {
   const [kiezen, setKiezen] = useState<{ datum: string; moment: string } | null>(null);
   const [lijstId, setLijstId] = useState<string>("");
   const [vraagLijst, setVraagLijst] = useState<{ recipeId: string; titel: string } | null>(null);
+  const [weergave, setWeergave] = useState<"mij" | "gezin">("mij");
 
   const week = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
@@ -104,6 +108,27 @@ function PlannerPage() {
     return datumTekst(d);
   });
   const vandaag = datumTekst(new Date());
+
+  const { data: gezin } = useQuery({
+    queryKey: ["planner-gezin", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data: lid } = await supabase
+        .from("group_members")
+        .select("group_id")
+        .eq("user_id", user!.id)
+        .eq("status", "actief")
+        .limit(1)
+        .maybeSingle();
+      if (!lid) return null;
+      const { data: g } = await supabase
+        .from("groups")
+        .select("id, naam")
+        .eq("id", lid.group_id)
+        .maybeSingle();
+      return g ? ({ id: g.id, naam: g.naam } as { id: string; naam: string }) : null;
+    },
+  });
 
   const { data: lijsten = [] } = useQuery({
     queryKey: ["shopping-lists", user?.id],
@@ -113,25 +138,57 @@ function PlannerPage() {
       await zorgVoorLijst(user.id);
       const { data, error } = await supabase
         .from("shopping_lists")
-        .select("id, name, created_at")
+        .select("id, name, created_at, group_id")
         .order("created_at");
       if (error) throw error;
       return data as ShoppingList[];
     },
   });
 
+  const gezinsLijst = lijsten.find((l) => l.group_id && l.group_id === gezin?.id);
+
   const { data: plan = [] } = useQuery({
-    queryKey: ["meal-plan", user?.id, week[0]],
-    enabled: !!user,
+    queryKey: ["meal-plan", weergave, weergave === "gezin" ? gezin?.id : user?.id, week[0]],
+    enabled: !!user && (weergave === "mij" || !!gezin),
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("meal_plan")
-        .select("id, plan_date, meal_type, recipe_id, custom_title, recipes(*)")
+        .select("id, plan_date, meal_type, recipe_id, custom_title, user_id, group_id, recipes(*)")
         .gte("plan_date", week[0]!)
         .lte("plan_date", week[6]!)
         .order("plan_date");
+      q = weergave === "gezin" ? q.eq("group_id", gezin!.id) : q.is("group_id", null);
+      const { data, error } = await q;
       if (error) throw error;
       return data as unknown as PlanRow[];
+    },
+  });
+
+  // Het gezinsweekmenu ververst mee als een ander gezinslid iets aanpast.
+  useEffect(() => {
+    if (!user) return;
+    const kanaal = supabase
+      .channel("planner-meal-plan")
+      .on("postgres_changes", { event: "*", schema: "public", table: "meal_plan" }, () => {
+        qc.invalidateQueries({ queryKey: ["meal-plan"] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(kanaal);
+    };
+  }, [user, qc]);
+
+  const plannerIds = [...new Set(plan.map((p) => p.user_id))];
+  const { data: plannerNamen = {} } = useQuery({
+    queryKey: ["planner-namen", plannerIds.join(",")],
+    enabled: weergave === "gezin" && plannerIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", plannerIds);
+      if (error) throw error;
+      return Object.fromEntries(data.map((p) => [p.id, p.display_name])) as Record<string, string>;
     },
   });
 
@@ -147,13 +204,14 @@ function PlannerPage() {
       recipe_id: recipeId,
       plan_date: datum,
       meal_type: moment,
+      group_id: weergave === "gezin" ? gezin!.id : null,
     });
     if (error) {
       toast.error("Inplannen lukte niet");
       return;
     }
     setKiezen(null);
-    toast.success("In je weekmenu gezet");
+    toast.success(weergave === "gezin" ? "In het gezinsweekmenu gezet" : "In je weekmenu gezet");
     qc.invalidateQueries({ queryKey: ["meal-plan"] });
     setVraagLijst({ recipeId, titel });
   }
@@ -204,6 +262,7 @@ function PlannerPage() {
       custom_title: recipeId ? null : naam,
       plan_date: datum,
       meal_type: moment,
+      group_id: weergave === "gezin" ? gezin!.id : null,
     });
     if (error) {
       toast.error("Inplannen lukte niet");
@@ -252,7 +311,9 @@ function PlannerPage() {
       toast.error("Geen ingrediënten gevonden");
       return;
     }
-    const listId = lijstId || lijsten[0]?.id || (await zorgVoorLijst(user.id));
+    const standaardLijst =
+      weergave === "gezin" && gezinsLijst ? gezinsLijst.id : lijstId || lijsten[0]?.id;
+    const listId = standaardLijst || (await zorgVoorLijst(user.id));
     const { data, error } = await supabase
       .from("recipe_ingredients")
       .select("name, quantity, unit, recipe_id")
@@ -288,6 +349,44 @@ function PlannerPage() {
   return (
     <AppShell title="Weekmenu">
       <div className="space-y-4">
+        {gezin && (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2" role="tablist" aria-label="Wiens weekmenu?">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={weergave === "mij"}
+                onClick={() => setWeergave("mij")}
+                className={
+                  weergave === "mij"
+                    ? "min-h-14 rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground"
+                    : "min-h-14 rounded-xl border border-border bg-card px-4 text-base font-semibold"
+                }
+              >
+                Mijn weekmenu
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={weergave === "gezin"}
+                onClick={() => setWeergave("gezin")}
+                className={
+                  weergave === "gezin"
+                    ? "min-h-14 rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground"
+                    : "min-h-14 rounded-xl border border-border bg-card px-4 text-base font-semibold"
+                }
+              >
+                Weekmenu gezin
+              </button>
+            </div>
+            {weergave === "gezin" && (
+              <p className="text-center text-base text-muted-foreground">
+                Weekmenu van {gezin.naam} — iedereen vult mee aan.
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center gap-2">
           <Button
             variant="secondary"
@@ -328,7 +427,10 @@ function PlannerPage() {
         <div className="space-y-2">
           {lijsten.length > 1 && (
             <select
-              value={lijstId || lijsten[0]!.id}
+              value={
+                lijstId ||
+                (weergave === "gezin" && gezinsLijst ? gezinsLijst.id : lijsten[0]!.id)
+              }
               onChange={(e) => setLijstId(e.target.value)}
               aria-label="Naar welk lijstje?"
               className="h-14 w-full rounded-xl border border-input bg-card px-3 text-base"
@@ -374,6 +476,17 @@ function PlannerPage() {
                 <ul className="mt-2 space-y-2">
                   {items.map((p) => (
                     <li key={p.id} className="flex items-center gap-3">
+                      {weergave === "gezin" && p.user_id !== user?.id && (
+                        <span
+                          title={`Ingepland door ${plannerNamen[p.user_id] ?? "een gezinslid"}`}
+                        >
+                          <Avatar
+                            naam={plannerNamen[p.user_id] ?? "?"}
+                            sleutel={p.user_id}
+                            className="size-9 text-xs"
+                          />
+                        </span>
+                      )}
                       {p.recipe_id ? (
                         <Link
                           to="/recepten/$id"
