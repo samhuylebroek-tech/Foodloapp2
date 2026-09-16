@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCode from "qrcode";
-import { ChefHat, Copy, Home, LogOut, Search, Share2, Trash2, UserPlus, X } from "lucide-react";
+import { Check, ChefHat, Copy, Home, LogOut, Search, Share2, Trash2, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { appOrigin } from "@/lib/app-url";
-import { nodigUitGezin } from "@/lib/gezin.functions";
+import { beantwoordGezinsUitnodiging, nodigUitGezin } from "@/lib/gezin.functions";
 
 export const Route = createFileRoute("/gezin")({
   head: () => ({
