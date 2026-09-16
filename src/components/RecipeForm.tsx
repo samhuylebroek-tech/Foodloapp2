@@ -27,6 +27,7 @@ import {
 import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/types";
 import { parseIngredientText, ingredientToLine } from "@/lib/ingredienten";
 import { Voedingswaarden } from "@/components/Voedingswaarden";
+import { koppelStappen, normaliseer, type StapKoppeling } from "@/lib/stap-ingredienten";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { creditOverzicht } from "@/lib/credits.functions";
