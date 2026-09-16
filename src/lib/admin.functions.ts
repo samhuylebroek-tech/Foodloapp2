@@ -294,10 +294,22 @@ export const adminDashboard = createServerFn({ method: "GET" })
     const nu = Date.now();
     const sinds = new Date(nu - duur).toISOString();
     const sindsVorig = new Date(nu - 2 * duur).toISOString();
+    const wie: WieKeuze = { wieModus: data.wieModus, wieIds: data.wieIds };
+    // Welke kolom verwijst in welke tabel naar de gebruiker?
+    const KOLOM: Record<string, string> = {
+      profiles: "id",
+      recipes: "user_id",
+      shopping_lists: "user_id",
+      meal_plan: "user_id",
+      shares: "owner_id",
+      feedback: "user_id",
+    };
 
     const tel = async (tabel: string, filter?: (q: any) => any) => {
       let q = (db as any).from(tabel).select("*", { count: "exact", head: true });
       if (filter) q = filter(q);
+      if (KOLOM[tabel]) q = pasWie(q, KOLOM[tabel]!, wie);
+
       const { count } = await q;
       return count ?? 0;
     };
