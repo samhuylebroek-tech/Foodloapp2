@@ -258,7 +258,7 @@ function BoodschappenPage() {
         </div>
 
         {lijsten.length > 0 && !actieveLijst?.group_id && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="ghost" onClick={hernoem} className="h-12 text-base">
               <Pencil className="size-4" /> Naam wijzigen
             </Button>
