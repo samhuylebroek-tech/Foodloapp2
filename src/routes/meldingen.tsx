@@ -18,6 +18,7 @@ import {
   type MeldingVoorkeuren,
 } from "@/lib/meldingen.functions";
 import { huidigeStatus, zetMeldingenAan, zetMeldingenUit, type MeldingStatus } from "@/lib/meldingen";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export const Route = createFileRoute("/meldingen")({
   head: () => ({
@@ -130,7 +131,10 @@ function MeldingenPagina() {
         </section>
 
         {v && (
-          <>
+          <Accordion type="single" collapsible defaultValue="voorkeuren" className="rounded-2xl bg-card px-4 ring-1 ring-border/60">
+            <AccordionItem value="voorkeuren" className="border-0">
+              <AccordionTrigger className="min-h-16 text-lg no-underline hover:no-underline">{t("Kies je herinneringen")}</AccordionTrigger>
+              <AccordionContent className="space-y-4">
             <Blok
               titel={t("Menu van vandaag")}
               tekst={t("Elke dag een berichtje met wat er op het menu staat.")}
@@ -192,7 +196,7 @@ function MeldingenPagina() {
               <Vooraf waarde={v.cooking_lead_min} zet={(x) => opslaan.mutate({ cooking_lead_min: x })} t={t} />
             </Blok>
 
-            <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+            <section className="rounded-2xl bg-muted p-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-bold tracking-tight">{t("Toon gerechtnaam op vergrendelscherm")}</h2>
@@ -207,7 +211,9 @@ function MeldingenPagina() {
                 />
               </div>
             </section>
-          </>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         )}
       </div>
     </AppShell>
@@ -228,7 +234,7 @@ function Blok({
   children?: React.ReactNode;
 }) {
   return (
-    <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+    <section className="rounded-2xl border border-border/70 bg-background p-4">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold tracking-tight">{titel}</h2>

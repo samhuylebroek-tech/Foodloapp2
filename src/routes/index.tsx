@@ -1,50 +1,24 @@
-import { useEffect, useMemo, useState } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useMemo } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
-import {
-  Clock,
-  Globe2,
-  Heart,
-  Plus,
-  RefreshCw,
-  Search,
-  Sparkles,
-  Timer,
-  CalendarDays,
-  ChevronRight,
-  Compass,
-} from "lucide-react";
+import { BookOpen, CalendarDays, ChevronRight, Clock, Heart, Plus, ShoppingCart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
+import { EmptyState } from "@/components/EmptyState";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import type { Recipe } from "@/lib/types";
-import { haalWeer, sfeerVoorWeer, type Weer } from "@/lib/weer";
-import { gezienIds } from "@/lib/gezien";
 import { useT } from "@/lib/voorkeuren";
-import {
-  ontdekSuggesties,
-  importRecipeFromText,
-  gerechtFoto,
-  type InternetSuggestie,
-} from "@/lib/ai.functions";
 import { tijdLabel } from "@/lib/tijd";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Foodlo – wat eten we vandaag?" },
-      {
-        name: "description",
-        content:
-          "Elke dag verse kookinspiratie: suggesties op maat van het weer, je nieuwste recepten en het gerecht van de dag.",
-      },
+      { name: "description", content: "Zie wat er vandaag op het menu staat en ga meteen aan de slag." },
       { property: "og:title", content: "Foodlo – wat eten we vandaag?" },
-      {
-        property: "og:description",
-        content: "Kookinspiratie op maat van het weer, met je eigen recepten in de kijker.",
-      },
+      { property: "og:description", content: "Je recepten, weekmenu en boodschappen rustig bij elkaar." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -53,52 +27,33 @@ export const Route = createFileRoute("/")({
 });
 
 function groet(uur: number) {
-  if (uur < 6) return "Nog wakker?";
   if (uur < 11) return "Goeiemorgen";
-  if (uur < 14) return "Smakelijk middagje";
   if (uur < 18) return "Goeiemiddag";
-  if (uur < 22) return "Goeieavond";
-  return "Late trek?";
+  return "Goeieavond";
 }
 
-function dagIndex(lengte: number) {
-  if (lengte === 0) return 0;
-  const d = new Date();
-  const getal = d.getFullYear() * 400 + (d.getMonth() + 1) * 31 + d.getDate();
-  return getal % lengte;
+function vandaag() {
+  const nu = new Date();
+  return `${nu.getFullYear()}-${String(nu.getMonth() + 1).padStart(2, "0")}-${String(nu.getDate()).padStart(2, "0")}`;
 }
 
 function StartPage() {
   const { user } = useAuth();
   const t = useT();
-  const [weer, setWeer] = useState<Weer | null>(null);
-  const [weerKlaar, setWeerKlaar] = useState(false);
-  const [gezien, setGezien] = useState<string[]>([]);
 
-  useEffect(() => {
-    setGezien(gezienIds());
-  }, []);
-
-  useEffect(() => {
-    let actief = true;
-    haalWeer().then((w) => {
-      if (!actief) return;
-      setWeer(w);
-      setWeerKlaar(true);
-    });
-    return () => {
-      actief = false;
-    };
-  }, []);
+  const { data: profiel } = useQuery({
+    queryKey: ["home-profiel", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("display_name").eq("id", user?.id ?? "").maybeSingle();
+      return data;
+    },
+  });
 
   const { data: recipes = [], isLoading } = useQuery({
     queryKey: ["recipes"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("recipes")
-        .select("*")
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("recipes").select("*").is("deleted_at", null).order("created_at", { ascending: false });
       if (error) throw error;
       return data as Recipe[];
     },
@@ -110,485 +65,128 @@ function StartPage() {
     queryFn: async () => {
       const { data, error } = await supabase.from("favorites").select("recipe_id");
       if (error) throw error;
-      return data.map((f) => f.recipe_id as string);
+      return data.map((item) => item.recipe_id as string);
     },
   });
 
-  // Gerechten waaraan jij 4 of 5 sterren gaf: dit stuurt de internetsuggesties.
-  const { data: topRatings = [] } = useQuery({
-    queryKey: ["top-ratings", user?.id],
+  const { data: dagmenu } = useQuery({
+    queryKey: ["home-dagmenu", user?.id, vandaag()],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("recipe_ratings")
-        .select("recipe_id, stars")
-        .gte("stars", 4)
-        .order("stars", { ascending: false });
-      if (error) throw error;
-      return data as { recipe_id: string; stars: number }[];
+      const { data } = await supabase
+        .from("meal_plan")
+        .select("id, custom_title, meal_type, recipe_id, recipes(*)")
+        .eq("plan_date", vandaag())
+        .order("meal_type")
+        .limit(1)
+        .maybeSingle();
+      return data as { id: string; custom_title: string | null; meal_type: string; recipe_id: string | null; recipes: Recipe | null } | null;
     },
   });
 
-
-  const sfeer = weer ? sfeerVoorWeer(weer) : null;
-
-  const weerTips = useMemo(() => {
-    if (!sfeer) return [];
-    const scoor = (r: Recipe) => {
-      const tekst = `${r.title} ${r.tags.join(" ")} ${r.description}`.toLowerCase();
-      let score = 0;
-      if (sfeer.categorieen.includes(r.category)) score += 2;
-      for (const w of sfeer.woorden) if (tekst.includes(w)) score += 3;
-      return score;
-    };
-    return [...recipes]
-      .map((r) => ({ r, s: scoor(r) }))
-      .filter((x) => x.s > 0)
-      .sort((a, b) => b.s - a.s)
-      .slice(0, 6)
-      .map((x) => x.r);
-  }, [recipes, sfeer]);
-
-  // Gerechten die je nog niet bekeek: eerst die van vrienden, dan je eigen oudere recepten.
-  const ontdek = useMemo(() => {
-    const nietGezien = recipes.filter((r) => !gezien.includes(r.id) && !favorites.includes(r.id));
-    const vanVrienden = nietGezien.filter((r) => r.user_id !== user?.id);
-    const eigen = nietGezien.filter((r) => r.user_id === user?.id);
-    return [...vanVrienden, ...eigen].slice(0, 8);
-  }, [recipes, gezien, favorites, user?.id]);
-
-  const nieuwste = recipes.slice(0, 8);
-  const vandaag = recipes.length ? recipes[dagIndex(recipes.length)] : null;
-  const snel = recipes
-    .filter((r) => {
-      const m = r.prep_minutes + r.cook_minutes;
-      return m > 0 && m <= 20;
-    })
-    .slice(0, 8);
-  const favorietenLijst = recipes.filter((r) => favorites.includes(r.id)).slice(0, 8);
-
-  const uur = new Date().getHours();
-
-  // Nieuwe gerechten van het internet, gekozen op basis van je best beoordeelde recepten.
-  const bekend = useMemo(() => recipes.map((r) => r.title), [recipes]);
-  const bekendSleutel = bekend.length;
-
-  const favorietSmaak = useMemo(() => {
-    const perId = new Map(recipes.map((r) => [r.id, r]));
-    return topRatings
-      .map((rt) => {
-        const r = perId.get(rt.recipe_id);
-        if (!r) return null;
-        const extra = [r.category, ...r.tags].filter(Boolean).join(", ");
-        return `${r.title} (${rt.stars} sterren${extra ? `, ${extra}` : ""})`;
-      })
-      .filter((x): x is string => !!x)
-      .slice(0, 15);
-  }, [topRatings, recipes]);
-
-  const smaakSleutel = favorietSmaak.join("|");
-  const [ronde, setRonde] = useState(0);
-  // Slimme ideeën starten nooit vanzelf: jij beslist wanneer.
-  const [ontdekAan, setOntdekAan] = useState(false);
-  const {
-    data: internet = [],
-    isLoading: internetLaadt,
-    isFetching: internetVerst,
-  } = useQuery({
-    queryKey: ["internet-suggesties", bekendSleutel, smaakSleutel, sfeer?.titel ?? "", ronde],
-    enabled: !!user && weerKlaar && ontdekAan,
-
-    staleTime: 1000 * 60 * 60,
+  const { data: openItems = 0 } = useQuery({
+    queryKey: ["home-shopping", user?.id],
+    enabled: !!user,
     queryFn: async () => {
-      const lijst = await ontdekSuggesties({
-        data: {
-          bekend,
-          favorieten: favorietSmaak,
-          sfeer: sfeer ? `${sfeer.titel} – ${sfeer.uitleg}` : "",
-        },
-      });
-      const bestaand = new Set(bekend.map((tt) => tt.toLowerCase().trim()));
-      return lijst.filter((s) => !bestaand.has(s.title.toLowerCase().trim()));
+      const { count } = await supabase.from("shopping_items").select("id", { count: "exact", head: true }).eq("checked", false);
+      return count ?? 0;
     },
   });
 
-
-  const navigate = useNavigate();
-  const [bezig, setBezig] = useState<string | null>(null);
-
-  async function bewaarSuggestie(s: InternetSuggestie) {
-    if (!user) return;
-    setBezig(s.title);
-    try {
-      const ai = await importRecipeFromText({
-        data: { text: `Geef een volledig recept voor: ${s.title}. ${s.keuken ? `Keuken: ${s.keuken}.` : ""} ${s.waarom}` },
-      });
-      const { data, error } = await supabase
-        .from("recipes")
-        .insert({
-          user_id: user.id,
-          title: ai.title || s.title,
-          description: ai.description || s.waarom,
-          servings: ai.servings || 4,
-          prep_minutes: ai.prep_minutes || 0,
-          cook_minutes: ai.cook_minutes || 0,
-          category: ai.category || s.category,
-          difficulty: ai.difficulty || "makkelijk",
-          tags: ai.tags ?? [],
-          instructions: ai.instructions ?? [],
-        })
-        .select("id")
-        .single();
-      if (error) throw error;
-      if (ai.ingredients?.length) {
-        await supabase.from("recipe_ingredients").insert(
-          ai.ingredients.map((i, index) => ({
-            recipe_id: data.id,
-            name: i.name,
-            quantity: i.quantity,
-            unit: i.unit ?? "",
-            position: index,
-          })),
-        );
-      }
-      toast.success(t("Toegevoegd aan je gerechten"));
-      navigate({ to: "/recepten/$id", params: { id: data.id } });
-    } catch {
-      toast.error(t("Toevoegen lukte niet, probeer opnieuw"));
-    } finally {
-      setBezig(null);
-    }
-  }
+  const recent = useMemo(() => {
+    const favoriet = recipes.filter((recipe) => favorites.includes(recipe.id));
+    return (favoriet.length ? favoriet : recipes).slice(0, 4);
+  }, [favorites, recipes]);
+  const naam = profiel?.display_name?.split(" ")[0];
+  const gepland = dagmenu?.recipes;
 
   return (
-    <AppShell title={t("Foodlo")}>
-      <div className="space-y-8">
-        {/* Groet + weer */}
-        <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-primary via-accent to-primary text-primary-foreground shadow-lg shadow-primary/20">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full bg-primary-foreground/10 blur-2xl"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -bottom-24 -left-10 size-56 rounded-full bg-primary-foreground/10 blur-2xl"
-          />
-          <div className="relative p-6 sm:p-8">
-            <div className="flex flex-col-reverse items-start gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-              <div className="min-w-0">
-                <p className="text-[1.75rem] font-bold leading-tight tracking-tight sm:text-4xl">{t(groet(uur))}!</p>
-                <p className="mt-1 text-lg text-primary-foreground/85">{t("Wat eten we vandaag?")}</p>
-              </div>
-              {weerKlaar && weer && sfeer ? (
-                <div className="flex shrink-0 items-center gap-2 rounded-full bg-primary-foreground/15 px-3 py-2 backdrop-blur-sm">
-                  <span className="text-2xl leading-none" aria-hidden>
-                    {sfeer.emoji}
-                  </span>
-                  <span className="text-lg font-semibold">{weer.temperatuur}°</span>
-                </div>
+    <AppShell title="Foodlo">
+      <div className="space-y-9">
+        <header>
+          <p className="text-base font-medium text-muted-foreground">{t(groet(new Date().getHours()))}{naam ? `, ${naam}` : ""}</p>
+          <h2 className="mt-1 font-display text-3xl font-semibold">{t("Wat eten we vandaag?")}</h2>
+        </header>
+
+        {isLoading ? (
+          <PageSkeleton rows={2} />
+        ) : dagmenu ? (
+          <section className="overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border/60">
+            {gepland ? <RecipePhoto path={gepland.image_url} alt={gepland.title} className="aspect-[16/9] w-full rounded-none" /> : null}
+            <div className="p-5 sm:p-6">
+              <p className="text-sm font-semibold capitalize text-primary">{t(dagmenu.meal_type || "Vandaag")}</p>
+              <h3 className="mt-1 text-2xl">{t(gepland?.title ?? dagmenu.custom_title ?? "Maaltijd")}</h3>
+              {gepland ? (
+                <>
+                  <p className="mt-2 flex items-center gap-2 text-base text-muted-foreground">
+                    {tijdLabel(gepland.prep_minutes, gepland.cook_minutes) ? <Clock className="size-5" aria-hidden /> : null}
+                    {[tijdLabel(gepland.prep_minutes, gepland.cook_minutes), `${gepland.servings} ${t("personen")}`].filter(Boolean).join(" · ")}
+                  </p>
+                  <Link to="/recepten/$id" params={{ id: gepland.id }} className="mt-5 flex min-h-14 items-center justify-center rounded-xl bg-primary px-5 text-base font-semibold text-primary-foreground transition-transform active:scale-[0.98]">
+                    {t("Bekijk recept")}
+                  </Link>
+                </>
               ) : null}
             </div>
-
-            {weerKlaar && weer && sfeer && (
-              <p className="mt-4 text-base text-primary-foreground/90 sm:text-lg">
-                <span className="font-semibold">{t(sfeer.titel)}</span> · {t(sfeer.uitleg)}
-              </p>
-            )}
-
-            <div className="mt-6 grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-3">
-              <Link
-                to="/recepten/nieuw"
-                className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl bg-card px-2 text-center text-sm font-semibold text-foreground shadow-md transition-transform active:scale-95 sm:min-h-14 sm:flex-row sm:gap-2 sm:px-5 sm:text-base"
-              >
-                <Plus className="size-5 shrink-0" aria-hidden /> {t("Nieuw recept")}
-              </Link>
-              <Link
-                to="/gerechten"
-                className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-primary-foreground/25 bg-primary-foreground/10 px-2 text-center text-sm font-semibold text-primary-foreground backdrop-blur-sm transition-transform active:scale-95 sm:min-h-14 sm:flex-row sm:gap-2 sm:px-5 sm:text-base"
-              >
-                <Search className="size-5 shrink-0" aria-hidden /> {t("Gerechten")}
-              </Link>
-              <Link
-                to="/planner"
-                className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-primary-foreground/25 bg-primary-foreground/10 px-2 text-center text-sm font-semibold text-primary-foreground backdrop-blur-sm transition-transform active:scale-95 sm:min-h-14 sm:flex-row sm:gap-2 sm:px-5 sm:text-base"
-              >
-                <CalendarDays className="size-5 shrink-0" aria-hidden /> {t("Weekmenu")}
+          </section>
+        ) : recipes.length === 0 ? (
+          <EmptyState
+            icon={<BookOpen className="size-7" aria-hidden />}
+            title={t("Je kookboek is nog leeg")}
+            description={t("Bewaar een recept dat je lekker vindt.")}
+            action={<Link to="/recepten/nieuw" className="inline-flex min-h-14 items-center gap-2 rounded-xl bg-primary px-6 font-semibold text-primary-foreground"><Plus className="size-5" />{t("Recept toevoegen")}</Link>}
+          />
+        ) : (
+          <section className="overflow-hidden rounded-2xl bg-primary text-primary-foreground">
+            <div className="p-6">
+              <p className="text-sm font-semibold text-primary-foreground/75">{t("Nog niets gepland")}</p>
+              <h3 className="mt-1 text-2xl">{t("Plan iets lekkers voor vandaag")}</h3>
+              <Link to="/planner" className="mt-5 flex min-h-14 items-center justify-center rounded-xl bg-card px-5 font-semibold text-foreground">
+                <CalendarDays className="size-5" /> {t("Plan je maaltijd")}
               </Link>
             </div>
-          </div>
-        </section>
-
-        {/* Nieuw van het internet */}
-        {user && (
-          <section>
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <SectieTitel icoon={<Globe2 className="size-5" aria-hidden />}>
-                {t("Nieuw voor jou")}
-              </SectieTitel>
-              {ontdekAan ? (
-                <button
-                  type="button"
-                  onClick={() => setRonde((r) => r + 1)}
-                  disabled={internetVerst}
-                  className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-border bg-card px-4 text-base font-semibold disabled:opacity-60"
-                >
-                  <RefreshCw className={`size-4 ${internetVerst ? "animate-spin" : ""}`} aria-hidden />
-                  {t("Andere")}
-                </button>
-              ) : null}
-            </div>
-            {!ontdekAan ? (
-              <div className="rounded-2xl border border-border bg-card p-5">
-                <p className="text-lg">
-                  {t("Zin in iets nieuws? We zoeken gerechten die passen bij wat jij lekker vindt.")}
-                </p>
-                <p className="mt-1 text-base text-muted-foreground">
-                  {t("Dit gebruikt een paar credits. Alles wat je al hebt, blijft gratis.")}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setOntdekAan(true)}
-                  className="mt-4 inline-flex min-h-14 items-center gap-2 rounded-xl bg-primary px-5 text-base font-semibold text-primary-foreground"
-                >
-                  <Globe2 className="size-5" aria-hidden />
-                  {t("Zoek nieuwe ideeën")}
-                </button>
-              </div>
-            ) : internetLaadt ? (
-              <p className="text-lg text-muted-foreground">{t("Even zoeken naar nieuwe ideeën…")}</p>
-            ) : internet.length === 0 ? (
-              <p className="text-lg text-muted-foreground">
-                {t("Geen nieuwe suggesties gevonden. Probeer straks opnieuw.")}
-              </p>
-            ) : (
-              <ul className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2">
-                {internet.map((s) => (
-                  <InternetKaart
-                    key={s.title}
-                    s={s}
-                    t={t}
-                    bezig={bezig}
-                    onBewaar={() => bewaarSuggestie(s)}
-                  />
-                ))}
-              </ul>
-            )}
-
           </section>
         )}
 
-        {isLoading ? (
-          <p className="py-10 text-center text-lg text-muted-foreground">{t("Even laden…")}</p>
-        ) : recipes.length === 0 ? (
-          <div className="rounded-[2rem] border border-dashed border-border p-8 text-center">
-            <p className="text-2xl font-bold tracking-tight">{t("Nog niets in jullie kookboek")}</p>
-            <p className="mt-2 text-lg text-muted-foreground">
-              {t("Voeg een eerste gerecht toe met een link, een foto of gewoon zelf getypt.")}
-            </p>
-            <Link
-              to="/recepten/nieuw"
-              className="mt-5 inline-flex h-14 items-center rounded-2xl bg-primary px-6 text-base font-semibold text-primary-foreground shadow-md shadow-primary/15"
-            >
-              {t("Eerste recept toevoegen")}
+        <section aria-labelledby="vandaag-status">
+          <h2 id="vandaag-status" className="text-xl">{t("Vandaag")}</h2>
+          <div className="mt-3 divide-y divide-border rounded-2xl bg-card px-4 ring-1 ring-border/60">
+            <Link to="/planner" className="flex min-h-16 items-center gap-3 py-3">
+              <span className="flex size-11 items-center justify-center rounded-xl bg-secondary text-primary"><CalendarDays className="size-5" /></span>
+              <span className="min-w-0 flex-1 font-semibold">{dagmenu ? t("Je menu staat klaar") : t("Plan je week")}</span>
+              <ChevronRight className="size-5 text-muted-foreground" />
+            </Link>
+            <Link to="/boodschappen" className="flex min-h-16 items-center gap-3 py-3">
+              <span className="flex size-11 items-center justify-center rounded-xl bg-accent text-accent-foreground"><ShoppingCart className="size-5" /></span>
+              <span className="min-w-0 flex-1 font-semibold">{openItems ? `${openItems} ${t(openItems === 1 ? "boodschap" : "boodschappen")}` : t("Je lijst is leeg")}</span>
+              <ChevronRight className="size-5 text-muted-foreground" />
             </Link>
           </div>
-        ) : (
-          <>
-            {ontdek.length > 0 && (
-              <Rij
-                titel={t("Nog niet geproefd")}
-                recepten={ontdek}
-                t={t}
-                icoon={<Compass className="size-5" aria-hidden />}
-              />
-            )}
+        </section>
 
-            {/* Gerecht van de dag */}
-            {vandaag && (
-              <section>
-                <SectieTitel icoon={<Sparkles className="size-5" aria-hidden />}>
-                  {t("In de kijker vandaag")}
-                </SectieTitel>
-                <Link
-                  to="/recepten/$id"
-                  params={{ id: vandaag.id }}
-                  className="block overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm transition-shadow hover:shadow-md active:opacity-90"
-                >
-                  <RecipePhoto
-                    path={vandaag.image_url}
-                    alt={vandaag.title}
-                    className="h-48 w-full rounded-none sm:h-64"
-                  />
-                  <div className="p-5">
-                    <p className="text-2xl font-bold leading-tight tracking-tight">{t(vandaag.title)}</p>
-                    <p className="mt-1 flex items-center gap-2 text-base text-muted-foreground">
-                      {tijdLabel(vandaag.prep_minutes, vandaag.cook_minutes) ? (
-                        <Clock className="size-4" aria-hidden />
-                      ) : null}
-                      {[tijdLabel(vandaag.prep_minutes, vandaag.cook_minutes), t(vandaag.category)]
-                        .filter(Boolean)
-                        .join(" · ")}{" · "}
-                      {t(vandaag.difficulty)}
-                    </p>
-                    {vandaag.description && (
-                      <p className="mt-2 line-clamp-2 text-base">{t(vandaag.description)}</p>
-                    )}
-                  </div>
-                </Link>
-              </section>
-            )}
-
-            {weerTips.length > 0 && sfeer && (
-              <Rij
-                titel={`${sfeer.emoji} ${t("Past bij het weer")}`}
-                recepten={weerTips}
-                t={t}
-              />
-            )}
-
-            <Rij
-              titel={t("Net toegevoegd")}
-              recepten={nieuwste}
-              t={t}
-              icoon={<Plus className="size-5" aria-hidden />}
-            />
-
-            {snel.length > 0 && (
-              <Rij
-                titel={t("Klaar in 20 minuten")}
-                recepten={snel}
-                t={t}
-                icoon={<Timer className="size-5" aria-hidden />}
-              />
-            )}
-
-            {favorietenLijst.length > 0 && (
-              <Rij
-                titel={t("Jullie favorieten")}
-                recepten={favorietenLijst}
-                t={t}
-                icoon={<Heart className="size-5" aria-hidden />}
-              />
-            )}
-
-            <Link
-              to="/gerechten"
-              className="flex min-h-16 items-center justify-between rounded-2xl border border-border bg-card px-5 text-lg font-semibold transition-colors hover:bg-muted"
-            >
-              {t("Bekijk alle gerechten")}
-              <ChevronRight className="size-6" aria-hidden />
-            </Link>
-          </>
-        )}
+        {recent.length > 0 ? (
+          <section aria-labelledby="favorieten-titel">
+            <div className="flex items-center justify-between gap-4">
+              <h2 id="favorieten-titel" className="text-xl">{t(favorites.length ? "Favorieten" : "Recent")}</h2>
+              <Link to="/gerechten" className="font-semibold text-primary">{t("Alles bekijken")}</Link>
+            </div>
+            <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {recent.map((recipe) => (
+                <li key={recipe.id}>
+                  <Link to="/recepten/$id" params={{ id: recipe.id }} className="group block">
+                    <div className="relative overflow-hidden rounded-xl">
+                      <RecipePhoto path={recipe.image_url} alt={recipe.title} className="aspect-square w-full rounded-none transition-transform duration-300 group-hover:scale-[1.02]" />
+                      {favorites.includes(recipe.id) ? <Heart className="absolute right-3 top-3 size-6 fill-card text-card drop-shadow" aria-label={t("Favoriet")} /> : null}
+                    </div>
+                    <h3 className="mt-2 line-clamp-2 text-base font-semibold leading-snug">{t(recipe.title)}</h3>
+                    {tijdLabel(recipe.prep_minutes, recipe.cook_minutes) ? <p className="mt-1 text-sm text-muted-foreground">{tijdLabel(recipe.prep_minutes, recipe.cook_minutes)}</p> : null}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
       </div>
     </AppShell>
-  );
-}
-
-function SectieTitel({ children, icoon }: { children: React.ReactNode; icoon?: React.ReactNode }) {
-  return (
-    <h2 className="mb-3 flex min-w-0 items-center gap-2 text-xl font-bold tracking-tight sm:text-2xl">
-      <span className="shrink-0">{icoon}</span>
-      <span className="truncate">{children}</span>
-    </h2>
-  );
-}
-
-function Rij({
-  titel,
-  recepten,
-  t,
-  icoon,
-}: {
-  titel: string;
-  recepten: Recipe[];
-  t: (s: string) => string;
-  icoon?: React.ReactNode;
-}) {
-  if (recepten.length === 0) return null;
-  return (
-    <section>
-      <SectieTitel icoon={icoon}>{titel}</SectieTitel>
-      <ul className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2">
-        {recepten.map((r) => (
-          <li key={r.id} className="w-44 shrink-0 snap-start sm:w-52">
-            <Link
-              to="/recepten/$id"
-              params={{ id: r.id }}
-              className="block h-full overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-md active:opacity-90"
-            >
-              <RecipePhoto path={r.image_url} alt={r.title} className="h-28 w-full rounded-none" />
-              <div className="p-3">
-                <p className="line-clamp-2 text-lg font-bold leading-tight">{t(r.title)}</p>
-                {tijdLabel(r.prep_minutes, r.cook_minutes) ? (
-                  <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
-                    <Clock className="size-4" aria-hidden />
-                    {tijdLabel(r.prep_minutes, r.cook_minutes)}
-                  </p>
-                ) : null}
-              </div>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function InternetKaart({
-  s,
-  t,
-  bezig,
-  onBewaar,
-}: {
-  s: InternetSuggestie;
-  t: (x: string) => string;
-  bezig: string | null;
-  onBewaar: () => void;
-}) {
-  const { data: foto } = useQuery({
-    queryKey: ["gerecht-foto", s.title],
-    staleTime: Infinity,
-    gcTime: 1000 * 60 * 60 * 24,
-    retry: false,
-    queryFn: () => gerechtFoto({ data: { titel: s.title } }),
-  });
-
-  return (
-    <li className="w-60 shrink-0 snap-start">
-      <div className="flex h-full flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-        <div>
-          <p className="px-4 pt-4 text-xl font-bold leading-tight tracking-tight">{t(s.title)}</p>
-          {foto ? (
-            <img
-              src={foto}
-              alt={s.title}
-              className="mt-3 h-32 w-full object-cover"
-              loading="lazy"
-            />
-          ) : (
-            <div className="mt-3 h-32 w-full animate-pulse bg-muted" aria-hidden />
-          )}
-          <div className="px-4">
-            <p className="mt-3 text-sm font-medium text-muted-foreground">
-              {s.keuken ? `${t(s.keuken)} · ` : ""}
-              {s.minuten} min
-            </p>
-            <p className="mt-2 line-clamp-3 text-base">{t(s.waarom)}</p>
-          </div>
-        </div>
-        <div className="p-4">
-          <button
-            type="button"
-            onClick={onBewaar}
-            disabled={bezig !== null}
-            className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground shadow-md shadow-primary/15 transition-transform active:scale-95 disabled:opacity-60"
-          >
-            <Plus className="size-5" aria-hidden />
-            {bezig === s.title ? t("Bezig…") : t("Bij mijn gerechten")}
-          </button>
-        </div>
-      </div>
-    </li>
   );
 }

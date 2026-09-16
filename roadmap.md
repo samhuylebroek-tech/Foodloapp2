@@ -75,3 +75,12 @@
 - [x] Uitgenodigde leden met status, "Wacht op antwoord", intrekken door eigenaar
 - [x] Live verversing van leden, weekmenu en boodschappen (realtime)
 - [x] Weekmenu: schakel "Mijn weekmenu / Weekmenu gezin", wie iets inplande zichtbaar
+
+## Volledig UX-herontwerp (klaar)
+- [x] Gedeeld Foodlo-designsysteem en rustige navigatie
+- [x] Contextuele Home en visueel receptenoverzicht
+- [x] Receptdetail met tabs en vereenvoudigde kookstand
+- [x] Rustig weekmenu, boodschappen en voorraad
+- [x] Wallet en vrienden/gezin vereenvoudigen
+- [x] Meldingen, instellingen en onboarding stroomlijnen
+- [x] Toestanden, microcopy, toegankelijkheid en mobiele eindcontrole

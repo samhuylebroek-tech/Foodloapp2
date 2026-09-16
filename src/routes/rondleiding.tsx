@@ -127,7 +127,7 @@ function RondleidingPage() {
 
   return (
     <main className="flex min-h-screen items-center bg-background p-5">
-      <div className="mx-auto w-full max-w-xl rounded-3xl border border-border bg-card p-6 shadow-sm">
+      <div className="mx-auto w-full max-w-xl">
         <p className="text-base text-muted-foreground">
           {t("Stap")} {i + 1} {t("van")} {STAPPEN.length}
         </p>
@@ -138,11 +138,11 @@ function RondleidingPage() {
           />
         </div>
 
-        <span className="mt-6 flex size-16 items-center justify-center rounded-2xl bg-secondary text-primary">
-          <Icoon className="size-8" aria-hidden />
+        <span className="mt-10 flex size-20 items-center justify-center rounded-2xl bg-secondary text-primary">
+          <Icoon className="size-10" aria-hidden />
         </span>
         <h1 className="mt-4 font-display text-3xl">{t(stap.titel)}</h1>
-        <p className="mt-3 text-xl leading-relaxed text-muted-foreground">{t(stap.tekst)}</p>
+        <p className="mt-3 max-w-lg text-lg leading-relaxed text-muted-foreground">{t(stap.tekst)}</p>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           {i > 0 ? (

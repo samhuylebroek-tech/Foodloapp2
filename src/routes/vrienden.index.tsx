@@ -25,6 +25,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { EmptyState } from "@/components/EmptyState";
 import { appOrigin } from "@/lib/app-url";
 import { beantwoordUitnodiging, nodigUitVriend } from "@/lib/vrienden.functions";
 import { beantwoordGezinsUitnodiging } from "@/lib/gezin.functions";
@@ -461,19 +463,16 @@ function VriendenPage() {
   return (
     <AppShell title="Vrienden en gezin">
       <div className="space-y-6">
-        <div className="flex items-start justify-between gap-4">
-          <p className="text-lg leading-relaxed">
-            Hier staan de mensen waarmee je kookt. Klik op + om iemand uit te nodigen.
-          </p>
-          <button
-            type="button"
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-base text-muted-foreground">Samen plannen, delen en koken.</p>
+          <Button
+            size="icon"
             onClick={() => setNieuwOpen((v) => !v)}
             aria-label={nieuwOpen ? "Uitnodiging sluiten" : "Iemand toevoegen"}
             aria-expanded={nieuwOpen}
-            className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground"
           >
-            {nieuwOpen ? <X className="size-8" aria-hidden /> : <Plus className="size-8" aria-hidden />}
-          </button>
+            {nieuwOpen ? <X aria-hidden /> : <Plus aria-hidden />}
+          </Button>
         </div>
 
         {(voorMij.length > 0 || gezinsuitnodigingen.length > 0) && (
@@ -554,9 +553,7 @@ function VriendenPage() {
         <section className="space-y-3">
           <h2 className="font-display text-xl">Mijn mensen</h2>
           {vrienden.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-border p-5 text-base text-muted-foreground">
-              Je hebt nog niemand toegevoegd. Klik op + om iemand uit te nodigen.
-            </p>
+            <EmptyState title="Nog niemand toegevoegd" description="Zoek iemand of deel een uitnodigingslink." />
           ) : (
             vrienden.map((v) => (
               <PersoonKaart
@@ -587,13 +584,10 @@ function VriendenPage() {
           <span className="text-base text-muted-foreground">{gezinId ? "Bekijken" : "Starten"}</span>
         </Link>
 
-        <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
-          <div>
-            <h2 className="font-display text-xl">Iemand toevoegen</h2>
-            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              Zoek op naam, @Foodlo-naam of het volledige e-mailadres.
-            </p>
-          </div>
+        <Accordion type="single" collapsible defaultValue={vrienden.length === 0 ? "toevoegen" : ""} className="rounded-2xl bg-card px-4 ring-1 ring-border/60">
+          <AccordionItem value="toevoegen" className="border-0">
+            <AccordionTrigger className="min-h-16 text-lg no-underline hover:no-underline">Iemand toevoegen</AccordionTrigger>
+            <AccordionContent className="space-y-3">
           <div className="flex flex-col gap-3 sm:flex-row">
             <Input
               value={zoek}
@@ -666,7 +660,9 @@ function VriendenPage() {
                 })}
               </div>
             ))}
-        </section>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         {nieuwOpen && (
           <section className="space-y-4 rounded-3xl border border-border bg-card p-5">
@@ -775,12 +771,6 @@ function VriendenPage() {
           </section>
         )}
 
-        <Link
-          to="/installeren"
-          className="flex min-h-16 items-center justify-center gap-3 rounded-2xl border border-border bg-card px-5 text-lg font-semibold"
-        >
-          <Smartphone className="size-6" aria-hidden /> App op je telefoon zetten
-        </Link>
       </div>
 
       {keuze ? (

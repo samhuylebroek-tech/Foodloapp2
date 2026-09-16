@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { meet } from "@/lib/meten";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Share2, ListPlus, Pencil, Package } from "lucide-react";
+import { Plus, Trash2, Share2, ListPlus, Pencil, Package, MoreHorizontal, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +13,10 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { zorgVoorLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
 import { parseIngredientLine } from "@/lib/ingredienten";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { EmptyState } from "@/components/EmptyState";
 
 export const Route = createFileRoute("/boodschappen")({
   head: () => ({
@@ -46,6 +50,8 @@ function BoodschappenPage() {
   const qc = useQueryClient();
   const [nieuw, setNieuw] = useState("");
   const [actief, setActief] = useState<string | null>(null);
+  const [naamVenster, setNaamVenster] = useState<"nieuw" | "hernoem" | null>(null);
+  const [lijstNaam, setLijstNaam] = useState("");
 
   const { data: lijsten = [] } = useQuery({
     queryKey: ["shopping-lists", user?.id],
@@ -105,8 +111,8 @@ function BoodschappenPage() {
 
   async function nieuwLijstje() {
     if (!user) return;
-    const naam = window.prompt("Hoe noem je dit lijstje?", "Nieuw lijstje");
-    if (!naam?.trim()) return;
+    const naam = lijstNaam.trim();
+    if (!naam) return;
     const { data, error } = await supabase
       .from("shopping_lists")
       .insert({ user_id: user.id, name: naam.trim() })
@@ -117,15 +123,19 @@ function BoodschappenPage() {
       return;
     }
     setActief(data.id);
+    setNaamVenster(null);
+    setLijstNaam("");
     refreshLijsten();
   }
 
   async function hernoem() {
     const huidig = lijsten.find((l) => l.id === actief);
     if (!huidig) return;
-    const naam = window.prompt("Nieuwe naam voor dit lijstje", huidig.name);
-    if (!naam?.trim()) return;
-    await supabase.from("shopping_lists").update({ name: naam.trim() }).eq("id", huidig.id);
+    const naam = lijstNaam.trim();
+    if (!naam) return;
+    await supabase.from("shopping_lists").update({ name: naam }).eq("id", huidig.id);
+    setNaamVenster(null);
+    setLijstNaam("");
     refreshLijsten();
   }
 
@@ -219,8 +229,8 @@ function BoodschappenPage() {
   return (
     <AppShell title="Boodschappen">
       <div className="space-y-4">
-        <Klantenkaarten />
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Je lijstjes">
+        <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Je lijstjes">
           {lijsten.map((l) => (
             <button
               key={l.id}
@@ -248,30 +258,20 @@ function BoodschappenPage() {
               ) : null}
             </button>
           ))}
-          <button
-            type="button"
-            onClick={nieuwLijstje}
-            className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-dashed border-border px-4 text-base font-semibold"
-          >
-            <ListPlus className="size-5" aria-hidden /> Nieuw lijstje
-          </button>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild><Button variant="outline" size="icon" aria-label="Lijsten beheren"><MoreHorizontal /></Button></DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-56 rounded-xl p-2">
+              <DropdownMenuItem onSelect={() => { setLijstNaam(""); setNaamVenster("nieuw"); }} className="min-h-12 text-base"><ListPlus />Nieuw lijstje</DropdownMenuItem>
+              {actieveLijst && !actieveLijst.group_id ? <DropdownMenuItem onSelect={() => { setLijstNaam(actieveNaam); setNaamVenster("hernoem"); }} className="min-h-12 text-base"><Pencil />Naam wijzigen</DropdownMenuItem> : null}
+              {lijsten.length > 1 && !actieveLijst?.group_id ? <><DropdownMenuSeparator /><DropdownMenuItem onSelect={() => setVraagVerwijder(true)} className="min-h-12 text-base text-destructive"><Trash2 />Lijst verwijderen</DropdownMenuItem></> : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
-        {lijsten.length > 0 && !actieveLijst?.group_id && (
-          <div className="flex flex-wrap gap-2">
-            <Button variant="ghost" onClick={hernoem} className="h-12 text-base">
-              <Pencil className="size-4" /> Naam wijzigen
-            </Button>
-            {lijsten.length > 1 && (
-              <Button variant="ghost" onClick={() => setVraagVerwijder(true)} className="h-12 text-base text-destructive">
-                <Trash2 className="size-4" /> Lijstje verwijderen
-              </Button>
-            )}
-          </div>
-        )}
         {actieveLijst?.group_id && (
-          <p className="text-base text-muted-foreground">
-            Deze lijst is van het hele gezin — iedereen vult aan en vinkt af.
+          <p className="rounded-xl bg-secondary px-4 py-3 text-sm text-secondary-foreground">
+            Gezinslijst · iedereen kan aanvullen en afvinken
           </p>
         )}
 
@@ -318,25 +318,30 @@ function BoodschappenPage() {
             </li>
           ))}
           {items.length === 0 && (
-            <li className="rounded-2xl border border-dashed border-border p-8 text-center text-lg text-muted-foreground">
-              Dit lijstje is nog leeg.
-            </li>
+            <li><EmptyState title="Je lijst is leeg" description="Voeg hierboven toe wat je nog nodig hebt." /></li>
           )}
         </ul>
 
-        <Button variant="outline" onClick={vinkVoorraadAf} className="h-16 w-full text-lg">
-          <Package className="size-5" /> Vink af wat ik al in huis heb
-        </Button>
-
-        <div className="flex gap-3">
-          <Button variant="secondary" onClick={deel} className="h-16 flex-1 text-lg">
-            <Share2 className="size-5" /> Delen
-          </Button>
-          <Button variant="ghost" onClick={wisAfgevinkt} className="h-16 flex-1 text-lg">
-            Afgevinkte wissen
-          </Button>
-        </div>
+        <Accordion type="single" collapsible className="rounded-2xl bg-card px-4 ring-1 ring-border/60">
+          <AccordionItem value="handig" className="border-0">
+            <AccordionTrigger className="min-h-14 text-base no-underline hover:no-underline">Meer voor deze lijst</AccordionTrigger>
+            <AccordionContent className="space-y-2">
+              <Button variant="outline" onClick={vinkVoorraadAf} className="w-full justify-start"><Package />Vink af wat ik al in huis heb</Button>
+              <Button variant="outline" onClick={deel} className="w-full justify-start"><Share2 />Lijst delen</Button>
+              <Button variant="ghost" onClick={wisAfgevinkt} className="w-full justify-start">Afgevinkte wissen</Button>
+              <div className="pt-2"><Klantenkaarten /></div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
+
+      <Dialog open={naamVenster !== null} onOpenChange={(open) => { if (!open) setNaamVenster(null); }}>
+        <DialogContent className="rounded-2xl sm:max-w-md">
+          <DialogHeader><DialogTitle>{naamVenster === "nieuw" ? "Nieuw lijstje" : "Naam wijzigen"}</DialogTitle><DialogDescription>Geef dit lijstje een herkenbare naam.</DialogDescription></DialogHeader>
+          <Input autoFocus value={lijstNaam} onChange={(event) => setLijstNaam(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void (naamVenster === "nieuw" ? nieuwLijstje() : hernoem()); }} className="h-14 text-base" />
+          <DialogFooter><Button variant="outline" onClick={() => setNaamVenster(null)}>Annuleren</Button><Button onClick={() => void (naamVenster === "nieuw" ? nieuwLijstje() : hernoem())}>Bewaren</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {vraagVerwijder && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">

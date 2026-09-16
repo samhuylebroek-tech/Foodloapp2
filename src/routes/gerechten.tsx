@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Heart, Search, Clock, RotateCcw, Plus, Trash2, X } from "lucide-react";
+import { Heart, Search, Clock, RotateCcw, Plus, Trash2, X, SlidersHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
@@ -22,6 +22,8 @@ import { Sterren } from "@/components/Sterren";
 import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
 import { tijdLabel } from "@/lib/tijd";
+import { EmptyState } from "@/components/EmptyState";
+import { PageSkeleton } from "@/components/PageSkeleton";
 
 export const Route = createFileRoute("/gerechten")({
   head: () => ({
@@ -61,6 +63,7 @@ function GerechtenPage() {
   const [minSterren, setMinSterren] = useState(0);
   const [teVerwijderen, setTeVerwijderen] = useState<Recipe | null>(null);
   const [bezig, setBezig] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const { data: recipes = [], isLoading } = useQuery({
     queryKey: ["recipes"],
@@ -199,15 +202,15 @@ function GerechtenPage() {
   }
 
   return (
-    <AppShell title={t("Gerechten")}>
+    <AppShell
+      title={t("Recepten")}
+      action={
+        <Button asChild size="icon" aria-label={t("Recept toevoegen")}>
+          <Link to="/recepten/nieuw"><Plus /></Link>
+        </Button>
+      }
+    >
       <div className="space-y-4">
-        <Link
-          to="/recepten/nieuw"
-          className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-6 text-base font-semibold text-primary-foreground"
-        >
-          <Plus className="size-6" aria-hidden /> {t("Nieuw recept toevoegen")}
-        </Link>
-
         <div className="relative">
           <Search
             className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
@@ -216,13 +219,26 @@ function GerechtenPage() {
           <Input
             value={zoek}
             onChange={(e) => setZoek(e.target.value)}
-            placeholder={t("Zoek op gerecht of ingrediënt")}
-            className="h-12 pl-11 text-base"
+            placeholder={t("Zoek een recept…")}
+            className="h-14 rounded-xl border-0 bg-card pl-12 text-base shadow-sm ring-1 ring-border/60"
             aria-label={t("Zoeken")}
           />
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-2">
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          <Button
+            variant={alleenFavorieten ? "default" : "secondary"}
+            onClick={() => setAlleenFavorieten(!alleenFavorieten)}
+            aria-pressed={alleenFavorieten}
+          >
+            <Heart className={cn(alleenFavorieten && "fill-current")} /> {t("Favorieten")}
+          </Button>
+          <Button variant={filtersOpen ? "default" : "outline"} onClick={() => setFiltersOpen(!filtersOpen)} aria-expanded={filtersOpen}>
+            <SlidersHorizontal /> {t("Filters")}{actieveFilters ? ` (${actieveFilters})` : ""}
+          </Button>
+        </div>
+
+        {filtersOpen ? <div className="rounded-2xl bg-card p-3 shadow-sm ring-1 ring-border/60">
           <div className="grid grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap">
             <FilterSelect
               label={t("Soort")}
@@ -278,66 +294,39 @@ function GerechtenPage() {
               ]}
             />
 
-            <button
-              type="button"
-              onClick={() => setAlleenFavorieten(!alleenFavorieten)}
-              className={cn(
-                "inline-flex h-10 items-center justify-center gap-2 rounded-lg border px-3 text-sm font-semibold",
-                alleenFavorieten
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-foreground",
-              )}
-              aria-pressed={alleenFavorieten}
-            >
-              <Heart className={cn("size-4", alleenFavorieten && "fill-current")} aria-hidden />
-              {t("Favorieten")}
-            </button>
-
             {actieveFilters > 0 && (
-              <button
-                type="button"
-                onClick={wisFilters}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold text-primary"
-              >
+              <Button variant="ghost" onClick={wisFilters} className="text-primary">
                 <RotateCcw className="size-4" aria-hidden /> {t("Wissen")}
-              </button>
+              </Button>
             )}
           </div>
-        </div>
+        </div> : null}
 
         <p className="text-sm text-muted-foreground">
           {zichtbaar.length} {t(zichtbaar.length === 1 ? "gerecht" : "gerechten")}
         </p>
 
         {isLoading ? (
-          <p className="py-10 text-center text-lg text-muted-foreground">{t("Recepten laden…")}</p>
+          <PageSkeleton rows={3} />
         ) : zichtbaar.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-border p-8 text-center">
-            <p className="text-lg">{t("Nog geen recepten gevonden.")}</p>
-            <Link
-              to="/recepten/nieuw"
-              className="mt-4 inline-flex h-14 items-center rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground"
-            >
-              {t("Eerste recept toevoegen")}
-            </Link>
-          </div>
+          <EmptyState icon={<Search className="size-7" />} title={t("Geen recepten gevonden")} description={t("Probeer een andere zoekterm of maak je filters leeg.")} action={<Button onClick={wisFilters}>{t("Filters wissen")}</Button>} />
         ) : (
-          <ul className="space-y-3">
+          <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {zichtbaar.map((r) => (
               <li key={r.id}>
                 <SwipeRij onVerwijder={() => setTeVerwijderen(r)}>
                   <Link
                     to="/recepten/$id"
                     params={{ id: r.id }}
-                    className="flex min-h-28 items-stretch gap-3 rounded-2xl border border-border bg-card p-3 active:bg-secondary"
+                    className="group block overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border/50 transition-shadow hover:shadow-md"
                   >
                     <RecipePhoto
                       path={r.image_url}
                       alt={r.title}
-                      className="size-24 shrink-0 rounded-xl"
+                      className="aspect-square w-full rounded-none transition-transform duration-300 group-hover:scale-[1.02]"
                     />
-                    <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
-                      <p className="flex items-start gap-2 font-display text-lg leading-snug">
+                    <div className="p-3">
+                      <p className="flex items-start gap-2 font-display text-base font-semibold leading-snug">
                         <span className="min-w-0 flex-1">{t(r.title)}</span>
                         {favorites.includes(r.id) && (
                           <Heart
@@ -346,25 +335,15 @@ function GerechtenPage() {
                           />
                         )}
                       </p>
-                      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
                         {tijdLabel(r.prep_minutes, r.cook_minutes) ? (
                           <span className="inline-flex items-center gap-1">
                             <Clock className="size-4" aria-hidden />
                             {tijdLabel(r.prep_minutes, r.cook_minutes)}
                           </span>
                         ) : null}
-                        <span className="rounded-full bg-secondary px-2 py-0.5">
-                          {t(r.category)}
-                        </span>
-                        <span className="rounded-full bg-secondary px-2 py-0.5">
-                          {t(r.difficulty)}
-                        </span>
+                        <span>{r.servings} {t("personen")}</span>
                       </p>
-                      {(scores[r.id] ?? 0) > 0 && (
-                        <span className="inline-block">
-                          <Sterren waarde={scores[r.id] ?? 0} klein />
-                        </span>
-                      )}
                     </div>
                   </Link>
                 </SwipeRij>
