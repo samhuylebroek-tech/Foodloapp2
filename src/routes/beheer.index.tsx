@@ -81,7 +81,9 @@ function Dashboard() {
     >
       <div className="space-y-6">
         <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">Vandaag</h2>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+            {KOP[periode]} · {tijd}
+          </h2>
           {!v ? (
             <p className="text-slate-400">Laden…</p>
           ) : (
@@ -101,7 +103,7 @@ function Dashboard() {
         <div className="grid gap-4 xl:grid-cols-2">
           <Kaart>
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm font-medium">Recente activiteit</p>
+              <p className="text-sm font-medium">Recente activiteit · {tijd}</p>
               <Link to="/beheer/activiteit" className="text-xs text-emerald-400 hover:underline">
                 Alles bekijken
               </Link>
@@ -122,7 +124,9 @@ function Dashboard() {
                   </span>
                 </div>
               ))}
-              {!(recent.data ?? []).length ? <p className="text-slate-400">Nog niets vandaag.</p> : null}
+              {!(recent.data ?? []).length ? (
+                <p className="text-slate-400">Nog niets in deze periode.</p>
+              ) : null}
             </div>
           </Kaart>
 
@@ -138,12 +142,12 @@ function Dashboard() {
             ) : (
               <>
                 <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                  <Cijfer label={KOP[periode]} waarde={euro(kosten.data.periodeKost)} />
                   <Cijfer label="Vandaag" waarde={euro(kosten.data.vandaag)} />
                   <Cijfer label="Gisteren" waarde={euro(kosten.data.gisteren)} />
-                  <Cijfer label="7 dagen" waarde={euro(kosten.data.zeven)} />
                   <Cijfer label="30 dagen" waarde={euro(kosten.data.dertig)} />
                 </div>
-                <p className="mt-3 text-xs uppercase tracking-wide text-slate-400">Per functie (30 dagen)</p>
+                <p className="mt-3 text-xs uppercase tracking-wide text-slate-400">Per functie · {tijd}</p>
                 <div className="mt-1 space-y-1 text-sm">
                   {kosten.data.perFeature.slice(0, 6).map((f) => (
                     <div key={f.sleutel} className="flex justify-between border-b border-white/5 py-1">
