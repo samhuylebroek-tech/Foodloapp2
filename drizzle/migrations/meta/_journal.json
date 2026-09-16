@@ -162,6 +162,13 @@
       "when": 1789540467243,
       "tag": "0022_shares_realtime_and_unique_invite",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1789540562862,
+      "tag": "0023_profiles_zichtbaar_bij_openstaande_uitnodiging",
+      "breakpoints": true
     }
   ]
 }
