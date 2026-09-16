@@ -801,6 +801,7 @@ export const adminBerichtVersturen = createServerFn({ method: "POST" })
       })
       .select()
       .single();
+    if (!bericht) throw new Error("Bericht kon niet worden aangemaakt.");
 
     let ok = 0;
     let mis = 0;
