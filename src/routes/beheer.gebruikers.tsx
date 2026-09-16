@@ -86,6 +86,7 @@ function Gebruikers() {
         <Button
           size="sm"
           variant="outline"
+          className="border-white/15 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white"
           onClick={async () => {
             const r = await csvFn({ data: { soort: "gebruikers" } });
             bewaarCsv(r.bestand, r.inhoud);
