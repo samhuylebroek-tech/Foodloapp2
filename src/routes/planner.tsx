@@ -923,7 +923,7 @@ function ReceptKiezer({
               <li key={r.id}>
                 <button
                   type="button"
-                  onClick={() => onKies(r.id, datum, moment, r.title)}
+                  onClick={() => setGerecht(r)}
                   className="min-h-16 w-full rounded-xl border border-border px-4 py-3 text-left text-lg active:bg-secondary"
                 >
                   {r.title}
