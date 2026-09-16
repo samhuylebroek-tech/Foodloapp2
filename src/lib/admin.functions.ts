@@ -104,7 +104,7 @@ const SCHRIJFRECHTEN: Rechten[] = [
 // Max aantal beheeracties per minuut per beheerder.
 const LIMIET_PER_MINUUT = 120;
 
-async function bewaker(context: Ctx, recht: Rechten, opties: { schrijft?: boolean } = {}) {
+export async function bewaker(context: Ctx, recht: Rechten, opties: { schrijft?: boolean } = {}) {
   if (context.userId !== EIGENAAR_ID) throw new Error("Geen toegang tot het Control Center.");
   const { data, error } = await context.supabase
     .from("admin_users")
@@ -156,7 +156,7 @@ async function sessieLoggen(db: any, adminId: string, aal: string | null) {
   }
 }
 
-async function logboek(
+export async function logboek(
   db: any,
   profiel: AdminProfiel,
   action: string,

@@ -183,6 +183,13 @@
       "when": 1789541627431,
       "tag": "0025_gezinsnaam_zichtbaar_voor_uitgenodigden",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1789543362973,
+      "tag": "0026_monitoring_module",
+      "breakpoints": true
     }
   ]
 }
