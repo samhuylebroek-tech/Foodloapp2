@@ -429,9 +429,12 @@ export const adminKosten = createServerFn({ method: "GET" })
     const kostIn = (filter: (r: any) => boolean) =>
       euro(rijen.filter(filter).reduce((s, r) => s + Number(r.kost_eur ?? 0), 0));
 
+    const sindsPeriode = dagString(new Date(Date.now() - (dagen - 1) * 86400_000));
+    const inPeriode = rijen.filter((r) => String(r.created_at).slice(0, 10) >= sindsPeriode);
+
     const groepeer = (veld: string) => {
       const m = new Map<string, { sleutel: string; aantal: number; credits: number; kost: number }>();
-      for (const r of rijen) {
+      for (const r of inPeriode) {
         const k = r[veld] || "(onbekend)";
         const x = m.get(k) ?? { sleutel: k, aantal: 0, credits: 0, kost: 0 };
         x.aantal += 1;
