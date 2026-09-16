@@ -106,7 +106,7 @@ const stroomSchema = z
   .object({
     van: z.string().optional(),
     tot: z.string().optional(),
-    bereik: z.enum(["vandaag", "gisteren", "zeven", "dertig", "eigen"]).default("vandaag"),
+    bereik: z.enum(BEREIKEN).default("vandaag"),
     event: z.string().default(""),
     userId: z.string().default(""),
     groupId: z.string().default(""),
@@ -405,9 +405,17 @@ export const adminAandacht = createServerFn({ method: "GET" })
 
 export const adminKosten = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d) =>
+    z
+      .object({ dagen: z.number().int().min(1).max(365).default(30) })
+      .default({ dagen: 30 })
+      .parse(d ?? {}),
+  )
+  .handler(async ({ context, data }) => {
     const { db } = await bewaker(context as Ctx, "dashboard.view");
-    const sinds = new Date(Date.now() - 30 * 86400_000).toISOString();
+    const dagen = data.dagen;
+    const venster = Math.max(30, dagen);
+    const sinds = new Date(Date.now() - venster * 86400_000).toISOString();
     const { data: ai } = await db
       .from("ai_usage")
       .select("user_id, feature, model, provider, credits, kost_eur, cache_hit, ok, created_at")
