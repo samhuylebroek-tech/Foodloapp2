@@ -478,10 +478,10 @@ function ReceptPage() {
 
         <Tabs defaultValue="overzicht" className="w-full">
           <TabsList className="grid w-full grid-cols-4 overflow-x-auto">
-            <TabsTrigger value="overzicht">{t("Overzicht")}</TabsTrigger>
-            <TabsTrigger value="ingredienten">{t("Ingrediënten")}</TabsTrigger>
-            <TabsTrigger value="bereiding">{t("Bereiding")}</TabsTrigger>
-            <TabsTrigger value="voeding">{t("Voeding")}</TabsTrigger>
+            <TabsTrigger value="overzicht" className="px-1 text-sm sm:px-3 sm:text-base">{t("Overzicht")}</TabsTrigger>
+            <TabsTrigger value="ingredienten" className="px-1 text-sm sm:px-3 sm:text-base">{t("Ingrediënten")}</TabsTrigger>
+            <TabsTrigger value="bereiding" className="px-1 text-sm sm:px-3 sm:text-base">{t("Bereiding")}</TabsTrigger>
+            <TabsTrigger value="voeding" className="px-1 text-sm sm:px-3 sm:text-base">{t("Voeding")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overzicht" className="pt-4">
@@ -544,7 +544,6 @@ function ReceptPage() {
           </Button>
         </section>
 
-        </section>
           </TabsContent>
 
           <TabsContent value="bereiding" className="pt-4">
