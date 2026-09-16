@@ -90,7 +90,6 @@ export type CreditAanvraag = {
   bericht: string;
   status: string;
   toegekend: number;
-  admin_note: string;
   created_at: string;
 };
 
@@ -99,15 +98,17 @@ export const mijnCreditAanvraag = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<CreditAanvraag | null> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Interne notities van het team blijven bewust buiten dit antwoord.
     const { data } = await supabaseAdmin
       .from("credit_requests")
-      .select("id, aantal, bericht, status, toegekend, admin_note, created_at")
+      .select("id, aantal, bericht, status, toegekend, created_at")
       .eq("user_id", context.userId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
     return (data as CreditAanvraag | null) ?? null;
   });
+
 
 /** Gebruiker vraagt extra credits aan bij het team. */
 export const vraagCredits = createServerFn({ method: "POST" })
