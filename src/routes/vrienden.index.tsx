@@ -491,9 +491,41 @@ function VriendenPage() {
           </button>
         </div>
 
-        {voorMij.length > 0 && (
+        {(voorMij.length > 0 || gezinsuitnodigingen.length > 0) && (
           <section className="space-y-3 rounded-3xl border-2 border-primary/40 bg-primary/5 p-4">
-            <h2 className="font-display text-xl">Uitnodigingen voor jou ({voorMij.length})</h2>
+            <h2 className="font-display text-xl">
+              Uitnodigingen voor jou ({voorMij.length + gezinsuitnodigingen.length})
+            </h2>
+            {gezinsuitnodigingen.map((g) => (
+              <div key={g.group_id} className="rounded-2xl border border-border bg-card p-4">
+                <div className="flex items-center gap-3">
+                  <Avatar naam={g.naam} sleutel={g.group_id} />
+                  <div className="min-w-0">
+                    <p className="truncate text-lg font-semibold">Gezin “{g.naam}”</p>
+                    <p className="text-base text-muted-foreground">
+                      Je bent uitgenodigd om lid te worden
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                  <Button
+                    onClick={() => gezinAntwoord.mutate({ groupId: g.group_id, ja: true })}
+                    disabled={gezinAntwoord.isPending}
+                    className="h-14 w-full text-base sm:flex-1"
+                  >
+                    <Check className="size-5" /> Aannemen
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => gezinAntwoord.mutate({ groupId: g.group_id, ja: false })}
+                    disabled={gezinAntwoord.isPending}
+                    className="h-14 w-full text-base sm:flex-1"
+                  >
+                    Nee, bedankt
+                  </Button>
+                </div>
+              </div>
+            ))}
             {voorMij.map((s) => (
               <div key={s.id} className="rounded-2xl border border-border bg-card p-4">
                 <div className="flex items-center gap-3">
