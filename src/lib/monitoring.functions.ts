@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { bewaker, logboek } from "@/lib/admin.functions";
+import { bewaker, logboek, pasWie, type WieKeuze } from "@/lib/admin.functions";
 
 // ============================================================
 // Monitoring — alles server-side, alleen voor het Control Center.
@@ -17,8 +17,10 @@ const bereikSchema = z
     van: z.string().optional(),
     tot: z.string().optional(),
     bereik: z.enum(BEREIKEN).default("vandaag"),
+    wieModus: z.enum(["alles", "in", "uit"]).default("alles"),
+    wieIds: z.array(z.string().uuid()).default([]),
   })
-  .default({ bereik: "vandaag" });
+  .default({ bereik: "vandaag", wieModus: "alles", wieIds: [] });
 
 function dagString(d: Date) {
   return d.toISOString().slice(0, 10);
@@ -53,6 +55,56 @@ export const adminActiviteit = createServerFn({ method: "POST" })
     await aggregeerDagen(db, 2);
 
     const { van, tot } = bereikNaarDagen(data);
+    const wie: WieKeuze = { wieModus: data.wieModus, wieIds: data.wieIds };
+    const perPersoon = wie.wieModus !== "alles" && wie.wieIds.length > 0;
+
+    // Gaat het over bepaalde personen, dan tellen we hun eigen dagcijfers op.
+    if (perPersoon) {
+      const { data: eigen } = await pasWie(
+        db
+          .from("daily_user_stats")
+          .select("*")
+          .gte("dag", van)
+          .lte("dag", tot)
+          .limit(50_000),
+        "user_id",
+        wie,
+      );
+      const rijenP = (eigen ?? []) as any[];
+      const somP = (v: string) => rijenP.reduce((s, r) => s + Number(r[v] ?? 0), 0);
+      const actief = new Set(rijenP.filter((r) => Number(r.handelingen ?? 0) > 0).map((r) => r.user_id)).size;
+      const kostP = euro(somP("kost_eur"));
+      const perDag = new Map<string, { dag: string; actief: number; recepten: number; ai: number; kost: number }>();
+      for (const r of rijenP) {
+        const x = perDag.get(r.dag) ?? { dag: r.dag, actief: 0, recepten: 0, ai: 0, kost: 0 };
+        if (Number(r.handelingen ?? 0) > 0) x.actief += 1;
+        x.recepten += Number(r.recepten ?? 0);
+        x.ai += Number(r.ai_calls ?? 0);
+        x.kost += Number(r.kost_eur ?? 0);
+        perDag.set(r.dag, x);
+      }
+      return {
+        van,
+        tot,
+        kpi: {
+          nieuweGebruikers: 0,
+          actieveGebruikers: actief,
+          sessies: somP("sessies"),
+          handelingen: somP("handelingen"),
+          nieuweRecepten: somP("recepten"),
+          imports: somP("imports"),
+          weekmenus: somP("plan_items"),
+          lijsten: 0,
+          aiCalls: somP("ai_calls"),
+          credits: somP("credits"),
+          kostEur: kostP,
+          kostPerActieve: actief ? euro(kostP / actief) : 0,
+          fouten: somP("fouten"),
+        },
+        grafiek: [...perDag.values()].sort((a, b) => a.dag.localeCompare(b.dag)),
+      };
+    }
+
     const { data: rijen } = await db
       .from("daily_platform_stats")
       .select("*")
@@ -407,8 +459,12 @@ export const adminKosten = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
     z
-      .object({ dagen: z.number().int().min(1).max(365).default(30) })
-      .default({ dagen: 30 })
+      .object({
+        dagen: z.number().int().min(1).max(365).default(30),
+        wieModus: z.enum(["alles", "in", "uit"]).default("alles"),
+        wieIds: z.array(z.string().uuid()).default([]),
+      })
+      .default({ dagen: 30, wieModus: "alles", wieIds: [] })
       .parse(d ?? {}),
   )
   .handler(async ({ context, data }) => {
@@ -416,11 +472,15 @@ export const adminKosten = createServerFn({ method: "GET" })
     const dagen = data.dagen;
     const venster = Math.max(30, dagen);
     const sinds = new Date(Date.now() - venster * 86400_000).toISOString();
-    const { data: ai } = await db
-      .from("ai_usage")
-      .select("user_id, feature, model, provider, credits, kost_eur, cache_hit, ok, created_at")
-      .gte("created_at", sinds)
-      .limit(50_000);
+    const { data: ai } = await pasWie(
+      db
+        .from("ai_usage")
+        .select("user_id, feature, model, provider, credits, kost_eur, cache_hit, ok, created_at")
+        .gte("created_at", sinds)
+        .limit(50_000),
+      "user_id",
+      { wieModus: data.wieModus, wieIds: data.wieIds },
+    );
     const rijen = (ai ?? []) as any[];
     const vandaag = dagString(new Date());
     const gisteren = dagString(new Date(Date.now() - 86400_000));

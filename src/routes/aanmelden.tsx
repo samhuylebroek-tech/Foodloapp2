@@ -35,7 +35,8 @@ function AanmeldenPage() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+  const [voornaam, setVoornaam] = useState("");
+  const [achternaam, setAchternaam] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -54,12 +55,23 @@ function AanmeldenPage() {
     setBusy(true);
     try {
       if (mode === "signup") {
+        const volledigeNaam = `${voornaam.trim()} ${achternaam.trim()}`.trim();
+        if (!voornaam.trim() || !achternaam.trim()) {
+          toast.error("Vul je voornaam en achternaam in");
+          setBusy(false);
+          return;
+        }
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: appOrigin(),
-            data: { display_name: name },
+            data: {
+              display_name: volledigeNaam,
+              full_name: volledigeNaam,
+              voornaam: voornaam.trim(),
+              achternaam: achternaam.trim(),
+            },
           },
         });
         if (error) throw error;
@@ -171,17 +183,35 @@ function AanmeldenPage() {
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             {mode === "signup" && (
-              <div>
-                <Label htmlFor="name" className="text-base font-semibold text-foreground">
-                  Jouw naam
-                </Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="mt-2 h-14 rounded-2xl border-input bg-muted px-5 text-base placeholder:text-muted-foreground focus-visible:ring-primary/20"
-                  autoComplete="name"
-                />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="voornaam" className="text-base font-semibold text-foreground">
+                    Voornaam
+                  </Label>
+                  <Input
+                    id="voornaam"
+                    required
+                    value={voornaam}
+                    onChange={(e) => setVoornaam(e.target.value)}
+                    placeholder="Marie"
+                    className="mt-2 h-14 rounded-2xl border-input bg-muted px-5 text-base placeholder:text-muted-foreground focus-visible:ring-primary/20"
+                    autoComplete="given-name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="achternaam" className="text-base font-semibold text-foreground">
+                    Achternaam
+                  </Label>
+                  <Input
+                    id="achternaam"
+                    required
+                    value={achternaam}
+                    onChange={(e) => setAchternaam(e.target.value)}
+                    placeholder="Janssens"
+                    className="mt-2 h-14 rounded-2xl border-input bg-muted px-5 text-base placeholder:text-muted-foreground focus-visible:ring-primary/20"
+                    autoComplete="family-name"
+                  />
+                </div>
               </div>
             )}
             <div>

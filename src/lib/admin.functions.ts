@@ -226,9 +226,29 @@ const PERIODE_DUUR: Record<Periode, number> = {
   jaar: 365 * 24 * 3600_000,
 };
 
+export const wieSchema = z
+  .object({
+    wieModus: z.enum(["alles", "in", "uit"]).default("alles"),
+    wieIds: z.array(z.string().uuid()).default([]),
+  })
+  .default({ wieModus: "alles", wieIds: [] });
+
+export type WieKeuze = { wieModus: "alles" | "in" | "uit"; wieIds: string[] };
+
+/** Past de personenkeuze toe op een kolom met gebruikers-id's. */
+export function pasWie(q: any, kolom: string, wie: WieKeuze) {
+  if (wie.wieModus === "alles" || wie.wieIds.length === 0) return q;
+  return wie.wieModus === "in" ? q.in(kolom, wie.wieIds) : q.not(kolom, "in", `(${wie.wieIds.join(",")})`);
+}
+
 const periodeSchema = z
-  .object({ periode: z.enum(["dag", "week", "maand", "jaar"]).default("week") })
-  .default({ periode: "week" });
+  .object({
+    periode: z.enum(["dag", "week", "maand", "jaar"]).default("week"),
+    wieModus: z.enum(["alles", "in", "uit"]).default("alles"),
+    wieIds: z.array(z.string().uuid()).default([]),
+  })
+  .default({ periode: "week", wieModus: "alles", wieIds: [] });
+
 
 function maakBuckets(periode: Periode) {
   const nu = Date.now();
@@ -274,10 +294,22 @@ export const adminDashboard = createServerFn({ method: "GET" })
     const nu = Date.now();
     const sinds = new Date(nu - duur).toISOString();
     const sindsVorig = new Date(nu - 2 * duur).toISOString();
+    const wie: WieKeuze = { wieModus: data.wieModus, wieIds: data.wieIds };
+    // Welke kolom verwijst in welke tabel naar de gebruiker?
+    const KOLOM: Record<string, string> = {
+      profiles: "id",
+      recipes: "user_id",
+      shopping_lists: "user_id",
+      meal_plan: "user_id",
+      shares: "owner_id",
+      feedback: "user_id",
+    };
 
     const tel = async (tabel: string, filter?: (q: any) => any) => {
       let q = (db as any).from(tabel).select("*", { count: "exact", head: true });
       if (filter) q = filter(q);
+      if (KOLOM[tabel]) q = pasWie(q, KOLOM[tabel]!, wie);
+
       const { count } = await q;
       return count ?? 0;
     };
@@ -330,17 +362,16 @@ export const adminDashboard = createServerFn({ method: "GET" })
         : 0;
 
     const buckets = maakBuckets(periode);
-    const { data: groei } = await db
-      .from("recipes")
-      .select("created_at")
-      .gte("created_at", sinds)
-      .order("created_at")
-      .limit(20000);
-    const { data: nieuweLeden } = await db
-      .from("profiles")
-      .select("created_at")
-      .gte("created_at", sinds)
-      .limit(20000);
+    const { data: groei } = await pasWie(
+      db.from("recipes").select("created_at").gte("created_at", sinds).order("created_at").limit(20000),
+      "user_id",
+      wie,
+    );
+    const { data: nieuweLeden } = await pasWie(
+      db.from("profiles").select("created_at").gte("created_at", sinds).limit(20000),
+      "id",
+      wie,
+    );
 
     const receptPer = new Map(buckets.map((b) => [b.key, 0]));
     const gebruikerPer = new Map(buckets.map((b) => [b.key, 0]));
@@ -378,6 +409,19 @@ export const adminDashboard = createServerFn({ method: "GET" })
         gebruikers: gebruikerPer.get(b.key) ?? 0,
       })),
     };
+  });
+
+/** Korte lijst van alle personen, om cijfers per persoon te kunnen bekijken. */
+export const adminPersonenLijst = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { db } = await bewaker(context as Ctx, "dashboard.view");
+    const { data } = await db
+      .from("profiles")
+      .select("id, display_name")
+      .order("display_name")
+      .limit(500);
+    return (data ?? []).map((p: any) => ({ id: p.id as string, naam: (p.display_name as string) || "Naamloos" }));
   });
 
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/hooks/useAuth";
-import { Bell, Download, ExternalLink, Loader2, LogOut, QrCode, Sparkles } from "lucide-react";
+import { Bell, Compass, Download, ExternalLink, Loader2, LogOut, QrCode, Smartphone, Sparkles } from "lucide-react";
 import { marketingUrl } from "@/lib/app-url";
 import { exporteerMijnGegevens } from "@/lib/export.functions";
 import { useQuery } from "@tanstack/react-query";
@@ -135,6 +135,29 @@ function InstellingenPage() {
           </span>
           <span className="text-base text-muted-foreground">{t("Instellen")}</span>
         </Link>
+
+        <Link
+          to="/installeren"
+          className="flex min-h-16 items-center justify-between gap-3 rounded-[2rem] border border-border bg-card px-5 shadow-sm transition-colors hover:bg-muted"
+        >
+          <span className="flex items-center gap-3">
+            <Smartphone className="size-5 text-primary" aria-hidden />
+            <span className="text-base font-semibold">{t("Foodlo op je telefoon zetten")}</span>
+          </span>
+          <span className="text-base text-muted-foreground">{t("Tonen")}</span>
+        </Link>
+
+        <Link
+          to="/rondleiding"
+          className="flex min-h-16 items-center justify-between gap-3 rounded-[2rem] border border-border bg-card px-5 shadow-sm transition-colors hover:bg-muted"
+        >
+          <span className="flex items-center gap-3">
+            <Compass className="size-5 text-primary" aria-hidden />
+            <span className="text-base font-semibold">{t("Rondleiding opnieuw bekijken")}</span>
+          </span>
+          <span className="text-base text-muted-foreground">{t("Starten")}</span>
+        </Link>
+
 
         <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
           <h2 className="text-xl font-bold tracking-tight">{t("Jouw Foodlo-naam")}</h2>

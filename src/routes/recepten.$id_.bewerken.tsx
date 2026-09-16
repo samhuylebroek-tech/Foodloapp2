@@ -6,7 +6,7 @@ import { RecipeForm } from "@/components/RecipeForm";
 import { ReceptGeschiedenis } from "@/components/ReceptGeschiedenis";
 import type { Ingredient, Recipe } from "@/lib/types";
 
-export const Route = createFileRoute("/recepten/$id/bewerken")({
+export const Route = createFileRoute("/recepten/$id_/bewerken")({
   head: () => ({
     meta: [
       { title: "Recept aanpassen – Foodlo" },

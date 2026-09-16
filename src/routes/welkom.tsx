@@ -110,7 +110,7 @@ function Welkom() {
 
   const eenBlok = momenten.length === 1 && momenten[0] === EEN_BLOK[0];
 
-  async function klaar(doel: "/" | "/meldingen" = "/") {
+  async function klaar(doel: "/" | "/meldingen" | "/rondleiding" = "/rondleiding") {
     setBezig(true);
     if (user) {
       await supabase

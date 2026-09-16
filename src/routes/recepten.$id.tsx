@@ -80,6 +80,7 @@ function ReceptPage() {
   const [personen, setPersonen] = useState<number | null>(null);
   const [kookstand, setKookstand] = useState(false);
   const [stap, setStap] = useState(0);
+  const [klaarVragen, setKlaarVragen] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
   const [aanvullen, setAanvullen] = useState(false);
   const [fotoBezig, setFotoBezig] = useState(false);
@@ -313,8 +314,44 @@ function ReceptPage() {
   }
 
 
+  if (kookstand && klaarVragen) {
+    return (
+      <div className="flex min-h-screen items-center bg-background p-5">
+        <div className="mx-auto w-full max-w-2xl rounded-3xl border border-border bg-card p-6 text-center">
+          <h2 className="font-display text-3xl">{t("Smakelijk gegeten?")}</h2>
+          <p className="mt-3 text-xl text-muted-foreground">
+            {t("Hoeveel sterren geef je")} “{recipe.title}”?
+          </p>
+          <div className="mt-6 flex justify-center">
+            <SterrenKiezer
+              waarde={mijnScore}
+              onKies={async (n) => {
+                await zetScore(n);
+                toast.success(t("Bedankt voor je score"));
+                setKlaarVragen(false);
+                setKookstand(false);
+              }}
+              label={t("Jouw score")}
+            />
+          </div>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setKlaarVragen(false);
+              setKookstand(false);
+            }}
+            className="mt-6 h-16 w-full text-lg"
+          >
+            {t("Later")}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (kookstand) {
     const stappen = recipe.instructions;
+    const laatste = stap >= stappen.length - 1;
     return (
       <div className="min-h-screen bg-background p-5">
         <div className="mx-auto max-w-2xl">
@@ -339,17 +376,17 @@ function ReceptPage() {
               Vorige
             </Button>
             <Button
-              disabled={stap >= stappen.length - 1}
-              onClick={() => setStap(stap + 1)}
+              onClick={() => (laatste ? setKlaarVragen(true) : setStap(stap + 1))}
               className="h-20 flex-1 text-lg"
             >
-              Volgende
+              {laatste ? t("Klaar met koken") : "Volgende"}
             </Button>
           </div>
         </div>
       </div>
     );
   }
+
 
   return (
     <AppShell
