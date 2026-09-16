@@ -242,9 +242,9 @@ const VriendenIndexRoute = VriendenIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const VriendenIdRoute = VriendenIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => VriendenRoute,
+  id: '/vrienden/$id',
+  path: '/vrienden/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ReceptenIdBewerkenRoute = ReceptenIdBewerkenRouteImport.update({
   id: '/bewerken',
@@ -537,6 +537,7 @@ export interface RootRouteChildren {
   KaartenIdRoute: typeof KaartenIdRoute
   ReceptenIdRoute: typeof ReceptenIdRouteWithChildren
   ReceptenNieuwRoute: typeof ReceptenNieuwRoute
+  VriendenIdRoute: typeof VriendenIdRoute
   KaartenIndexRoute: typeof KaartenIndexRoute
   VriendenIndexRoute: typeof VriendenIndexRoute
   ApiPublicMeldingenRunRoute: typeof ApiPublicMeldingenRunRoute
@@ -812,10 +813,10 @@ declare module '@tanstack/react-router' {
     }
     '/vrienden/$id': {
       id: '/vrienden/$id'
-      path: '/$id'
+      path: '/vrienden/$id'
       fullPath: '/vrienden/$id'
       preLoaderRoute: typeof VriendenIdRouteImport
-      parentRoute: typeof VriendenRoute
+      parentRoute: typeof rootRouteImport
     }
     '/recepten/$id/bewerken': {
       id: '/recepten/$id/bewerken'
@@ -909,6 +910,7 @@ const rootRouteChildren: RootRouteChildren = {
   KaartenIdRoute: KaartenIdRoute,
   ReceptenIdRoute: ReceptenIdRouteWithChildren,
   ReceptenNieuwRoute: ReceptenNieuwRoute,
+  VriendenIdRoute: VriendenIdRoute,
   KaartenIndexRoute: KaartenIndexRoute,
   VriendenIndexRoute: VriendenIndexRoute,
   ApiPublicMeldingenRunRoute: ApiPublicMeldingenRunRoute,
