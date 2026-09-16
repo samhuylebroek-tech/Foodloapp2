@@ -10,11 +10,13 @@ import { bewaker, logboek } from "@/lib/admin.functions";
 
 type Ctx = { supabase: any; userId: string; claims?: any };
 
+const BEREIKEN = ["vandaag", "gisteren", "zeven", "dertig", "jaar", "eigen"] as const;
+
 const bereikSchema = z
   .object({
     van: z.string().optional(),
     tot: z.string().optional(),
-    bereik: z.enum(["vandaag", "gisteren", "zeven", "dertig", "eigen"]).default("vandaag"),
+    bereik: z.enum(BEREIKEN).default("vandaag"),
   })
   .default({ bereik: "vandaag" });
 
@@ -22,7 +24,7 @@ function dagString(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
-function bereikNaarDagen(b: z.infer<typeof bereikSchema>) {
+function bereikNaarDagen(b: { bereik: (typeof BEREIKEN)[number]; van?: string | undefined; tot?: string | undefined }) {
   const nu = new Date();
   const vandaag = dagString(nu);
   if (b.bereik === "eigen" && b.van && b.tot) return { van: b.van, tot: b.tot };
@@ -32,6 +34,7 @@ function bereikNaarDagen(b: z.infer<typeof bereikSchema>) {
   }
   if (b.bereik === "zeven") return { van: dagString(new Date(nu.getTime() - 6 * 86400_000)), tot: vandaag };
   if (b.bereik === "dertig") return { van: dagString(new Date(nu.getTime() - 29 * 86400_000)), tot: vandaag };
+  if (b.bereik === "jaar") return { van: dagString(new Date(nu.getTime() - 364 * 86400_000)), tot: vandaag };
   return { van: vandaag, tot: vandaag };
 }
 
@@ -103,7 +106,7 @@ const stroomSchema = z
   .object({
     van: z.string().optional(),
     tot: z.string().optional(),
-    bereik: z.enum(["vandaag", "gisteren", "zeven", "dertig", "eigen"]).default("vandaag"),
+    bereik: z.enum(BEREIKEN).default("vandaag"),
     event: z.string().default(""),
     userId: z.string().default(""),
     groupId: z.string().default(""),
@@ -402,9 +405,17 @@ export const adminAandacht = createServerFn({ method: "GET" })
 
 export const adminKosten = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d) =>
+    z
+      .object({ dagen: z.number().int().min(1).max(365).default(30) })
+      .default({ dagen: 30 })
+      .parse(d ?? {}),
+  )
+  .handler(async ({ context, data }) => {
     const { db } = await bewaker(context as Ctx, "dashboard.view");
-    const sinds = new Date(Date.now() - 30 * 86400_000).toISOString();
+    const dagen = data.dagen;
+    const venster = Math.max(30, dagen);
+    const sinds = new Date(Date.now() - venster * 86400_000).toISOString();
     const { data: ai } = await db
       .from("ai_usage")
       .select("user_id, feature, model, provider, credits, kost_eur, cache_hit, ok, created_at")
@@ -418,9 +429,12 @@ export const adminKosten = createServerFn({ method: "GET" })
     const kostIn = (filter: (r: any) => boolean) =>
       euro(rijen.filter(filter).reduce((s, r) => s + Number(r.kost_eur ?? 0), 0));
 
+    const sindsPeriode = dagString(new Date(Date.now() - (dagen - 1) * 86400_000));
+    const inPeriode = rijen.filter((r) => String(r.created_at).slice(0, 10) >= sindsPeriode);
+
     const groepeer = (veld: string) => {
       const m = new Map<string, { sleutel: string; aantal: number; credits: number; kost: number }>();
-      for (const r of rijen) {
+      for (const r of inPeriode) {
         const k = r[veld] || "(onbekend)";
         const x = m.get(k) ?? { sleutel: k, aantal: 0, credits: 0, kost: 0 };
         x.aantal += 1;
@@ -439,6 +453,8 @@ export const adminKosten = createServerFn({ method: "GET" })
       gisteren: kostIn((r) => r.created_at.slice(0, 10) === gisteren),
       zeven: kostIn((r) => r.created_at.slice(0, 10) >= sinds7),
       dertig: totaal30,
+      dagen,
+      periodeKost: kostIn((r) => String(r.created_at).slice(0, 10) >= sindsPeriode),
       perActieveGebruiker: actieve ? euro(totaal30 / actieve) : 0,
       perFeature: groepeer("feature"),
       perModel: groepeer("model"),

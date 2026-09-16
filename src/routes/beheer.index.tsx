@@ -21,6 +21,22 @@ const OMSCHRIJVING: Record<Periode, string> = {
   jaar: "laatste 12 maanden",
 };
 
+const KOP: Record<Periode, string> = {
+  dag: "Vandaag",
+  week: "Deze week",
+  maand: "Deze maand",
+  jaar: "Dit jaar",
+};
+
+const BEREIK: Record<Periode, "vandaag" | "zeven" | "dertig" | "jaar"> = {
+  dag: "vandaag",
+  week: "zeven",
+  maand: "dertig",
+  jaar: "jaar",
+};
+
+const DAGEN: Record<Periode, number> = { dag: 1, week: 7, maand: 30, jaar: 365 };
+
 const euro = (n: number) => `€ ${Number(n ?? 0).toFixed(Number(n) < 1 ? 4 : 2)}`;
 const klok = (iso: string) => new Date(iso).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" });
 
@@ -36,17 +52,21 @@ function Dashboard() {
     queryKey: ["admin-dashboard", periode],
     queryFn: () => fn({ data: { periode } }),
   });
+  const bereik = BEREIK[periode];
   const vandaag = useQuery({
-    queryKey: ["admin-vandaag"],
-    queryFn: () => vandaagFn({ data: { bereik: "vandaag" } }),
-    refetchInterval: 60_000,
+    queryKey: ["admin-vandaag", bereik],
+    queryFn: () => vandaagFn({ data: { bereik } }),
+    refetchInterval: periode === "dag" ? 60_000 : false,
   });
   const recent = useQuery({
-    queryKey: ["admin-recent"],
-    queryFn: () => recentFn({ data: { bereik: "vandaag", limiet: 20 } }),
-    refetchInterval: 30_000,
+    queryKey: ["admin-recent", bereik],
+    queryFn: () => recentFn({ data: { bereik, limiet: 20 } }),
+    refetchInterval: periode === "dag" ? 30_000 : false,
   });
-  const kosten = useQuery({ queryKey: ["admin-kosten"], queryFn: () => kostFn() });
+  const kosten = useQuery({
+    queryKey: ["admin-kosten", periode],
+    queryFn: () => kostFn({ data: { dagen: DAGEN[periode] } }),
+  });
   const aandacht = useQuery({ queryKey: ["admin-aandacht"], queryFn: () => aandachtFn() });
 
   const max = Math.max(1, ...(data?.grafiek ?? []).map((g) => Math.max(g.aantal, g.gebruikers)));
@@ -61,7 +81,9 @@ function Dashboard() {
     >
       <div className="space-y-6">
         <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">Vandaag</h2>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
+            {KOP[periode]} · {tijd}
+          </h2>
           {!v ? (
             <p className="text-slate-400">Laden…</p>
           ) : (
@@ -81,7 +103,7 @@ function Dashboard() {
         <div className="grid gap-4 xl:grid-cols-2">
           <Kaart>
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm font-medium">Recente activiteit</p>
+              <p className="text-sm font-medium">Recente activiteit · {tijd}</p>
               <Link to="/beheer/activiteit" className="text-xs text-emerald-400 hover:underline">
                 Alles bekijken
               </Link>
@@ -102,7 +124,9 @@ function Dashboard() {
                   </span>
                 </div>
               ))}
-              {!(recent.data ?? []).length ? <p className="text-slate-400">Nog niets vandaag.</p> : null}
+              {!(recent.data ?? []).length ? (
+                <p className="text-slate-400">Nog niets in deze periode.</p>
+              ) : null}
             </div>
           </Kaart>
 
@@ -118,12 +142,12 @@ function Dashboard() {
             ) : (
               <>
                 <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                  <Cijfer label={KOP[periode]} waarde={euro(kosten.data.periodeKost)} />
                   <Cijfer label="Vandaag" waarde={euro(kosten.data.vandaag)} />
                   <Cijfer label="Gisteren" waarde={euro(kosten.data.gisteren)} />
-                  <Cijfer label="7 dagen" waarde={euro(kosten.data.zeven)} />
                   <Cijfer label="30 dagen" waarde={euro(kosten.data.dertig)} />
                 </div>
-                <p className="mt-3 text-xs uppercase tracking-wide text-slate-400">Per functie (30 dagen)</p>
+                <p className="mt-3 text-xs uppercase tracking-wide text-slate-400">Per functie · {tijd}</p>
                 <div className="mt-1 space-y-1 text-sm">
                   {kosten.data.perFeature.slice(0, 6).map((f) => (
                     <div key={f.sleutel} className="flex justify-between border-b border-white/5 py-1">
@@ -167,7 +191,7 @@ function Dashboard() {
                 </div>
                 <div className="flex h-36 items-end gap-1">
                   {data.grafiek.map((g) => (
-                    <div key={g.datum} className="flex flex-1 items-end gap-0.5" title={`${g.datum}: ${g.aantal} recepten · ${g.gebruikers} gebruikers`}>
+                    <div key={g.datum} className="flex h-full flex-1 items-end gap-0.5" title={`${g.datum}: ${g.aantal} recepten · ${g.gebruikers} gebruikers`}>
                       <div className="w-full rounded-t bg-emerald-500/70" style={{ height: `${Math.max(2, (g.aantal / max) * 100)}%` }} />
                       <div className="w-full rounded-t bg-sky-400/70" style={{ height: `${Math.max(2, (g.gebruikers / max) * 100)}%` }} />
                     </div>
