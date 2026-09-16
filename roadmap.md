@@ -68,3 +68,10 @@
 - [x] Slimme regels: geen melding zonder geplande maaltijd, lege lijst of al geplande week; samenvoegen en dedupe
 - [x] Eigen Web Push (VAPID), kwartiertaak in de database, deep links, geen AI-credits
 - [x] Control Center → Meldingen: opt-in, aflevering, mislukt, engagement, standaardinstellingen
+
+## Gezin écht samen (klaar)
+- [x] Eén gezamenlijk weekmenu en één gezamenlijke gezinslijst per gezin (group_id op meal_plan en shopping_lists)
+- [x] Gezinsuitnodigingen op naam/@naam met bericht + push, aannemen/weigeren in app en push
+- [x] Uitgenodigde leden met status, "Wacht op antwoord", intrekken door eigenaar
+- [x] Live verversing van leden, weekmenu en boodschappen (realtime)
+- [x] Weekmenu: schakel "Mijn weekmenu / Weekmenu gezin", wie iets inplande zichtbaar
