@@ -99,7 +99,6 @@ function StartPage() {
     return (favoriet.length ? favoriet : recipes).slice(0, 4);
   }, [favorites, recipes]);
   const naam = profiel?.display_name?.split(" ")[0];
-  const gepland = dagmenu?.recipes;
 
   return (
     <AppShell title="Foodlo">
