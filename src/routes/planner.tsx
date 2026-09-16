@@ -102,7 +102,9 @@ function PlannerPage() {
   const { momenten } = useVoorkeuren();
   const qc = useQueryClient();
   const [weekStart, setWeekStart] = useState(() => maandagVan(new Date()));
-  const [kiezen, setKiezen] = useState<{ datum: string; moment: string } | null>(null);
+  const [kiezen, setKiezen] = useState<{ datum: string; moment: string; vraagDag?: boolean } | null>(
+    null,
+  );
   const [lijstId, setLijstId] = useState<string>("");
   const [vraagLijst, setVraagLijst] = useState<{ recipeId: string; titel: string } | null>(null);
   const [weergave, setWeergave] = useState<"mij" | "gezin">("mij");
