@@ -584,7 +584,7 @@ function VriendenPage() {
           <span className="text-base text-muted-foreground">{gezinId ? "Bekijken" : "Starten"}</span>
         </Link>
 
-        <Accordion type="single" collapsible defaultValue={vrienden.length === 0 ? "toevoegen" : undefined} className="rounded-2xl bg-card px-4 ring-1 ring-border/60">
+        <Accordion type="single" collapsible defaultValue={vrienden.length === 0 ? "toevoegen" : ""} className="rounded-2xl bg-card px-4 ring-1 ring-border/60">
           <AccordionItem value="toevoegen" className="border-0">
             <AccordionTrigger className="min-h-16 text-lg no-underline hover:no-underline">Iemand toevoegen</AccordionTrigger>
             <AccordionContent className="space-y-3">
