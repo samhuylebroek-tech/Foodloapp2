@@ -175,6 +175,12 @@ function ReceptPage() {
   const aantal = personen ?? recipe.servings;
   const factor = recipe.servings > 0 ? aantal / recipe.servings : 1;
   const isOwner = user?.id === recipe.user_id;
+  const stapKoppeling = koppelStappen(
+    recipe.instructions,
+    ingredients,
+    (recipe as Recipe).step_ingredients ?? null,
+  );
+  const stapIngredienten = (i: number) => (stapKoppeling[i] ?? []).map((idx) => ingredients[idx]!);
 
   async function toggleFavorite() {
     if (!user) return;
