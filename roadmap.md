@@ -76,11 +76,11 @@
 - [x] Live verversing van leden, weekmenu en boodschappen (realtime)
 - [x] Weekmenu: schakel "Mijn weekmenu / Weekmenu gezin", wie iets inplande zichtbaar
 
-## Volledig UX-herontwerp (bezig)
-- [ ] Gedeeld Foodlo-designsysteem en rustige navigatie
-- [ ] Contextuele Home en visueel receptenoverzicht
-- [ ] Receptdetail met tabs en vereenvoudigde kookstand
-- [ ] Rustig weekmenu, boodschappen en voorraad
-- [ ] Wallet en vrienden/gezin vereenvoudigen
-- [ ] Meldingen, instellingen en onboarding stroomlijnen
-- [ ] Toestanden, microcopy, toegankelijkheid en mobiele eindcontrole
+## Volledig UX-herontwerp (klaar)
+- [x] Gedeeld Foodlo-designsysteem en rustige navigatie
+- [x] Contextuele Home en visueel receptenoverzicht
+- [x] Receptdetail met tabs en vereenvoudigde kookstand
+- [x] Rustig weekmenu, boodschappen en voorraad
+- [x] Wallet en vrienden/gezin vereenvoudigen
+- [x] Meldingen, instellingen en onboarding stroomlijnen
+- [x] Toestanden, microcopy, toegankelijkheid en mobiele eindcontrole
