@@ -56,6 +56,12 @@ import { Route as VriendenIndexRouteImport } from './routes/vrienden.index'
 import { Route as VriendenIdRouteImport } from './routes/vrienden.$id'
 import { Route as BeheerGebruikerIdRouteImport } from './routes/beheer.gebruiker.$id'
 import { Route as BeheerUiIndexRouteImport } from './routes/beheer.ui.index'
+import { Route as BeheerUiAiRouteImport } from './routes/beheer.ui.ai'
+import { Route as BeheerUiCreditsRouteImport } from './routes/beheer.ui.credits'
+import { Route as BeheerUiFoutenRouteImport } from './routes/beheer.ui.fouten'
+import { Route as BeheerUiGebeurtenissenRouteImport } from './routes/beheer.ui.gebeurtenissen'
+import { Route as BeheerUiGebruikersRouteImport } from './routes/beheer.ui.gebruikers'
+import { Route as BeheerUiSessiesRouteImport } from './routes/beheer.ui.sessies'
 import { Route as ReceptenIdBewerkenRouteImport } from './routes/recepten.$id_.bewerken'
 import { Route as ApiPublicMeldingenRunRouteImport } from './routes/api/public/meldingen.run'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -295,6 +301,36 @@ const BeheerUiIndexRoute = BeheerUiIndexRouteImport.update({
   path: '/',
   getParentRoute: () => BeheerUiRoute,
 } as any)
+const BeheerUiAiRoute = BeheerUiAiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
+  getParentRoute: () => BeheerUiRoute,
+} as any)
+const BeheerUiCreditsRoute = BeheerUiCreditsRouteImport.update({
+  id: '/credits',
+  path: '/credits',
+  getParentRoute: () => BeheerUiRoute,
+} as any)
+const BeheerUiFoutenRoute = BeheerUiFoutenRouteImport.update({
+  id: '/fouten',
+  path: '/fouten',
+  getParentRoute: () => BeheerUiRoute,
+} as any)
+const BeheerUiGebeurtenissenRoute = BeheerUiGebeurtenissenRouteImport.update({
+  id: '/gebeurtenissen',
+  path: '/gebeurtenissen',
+  getParentRoute: () => BeheerUiRoute,
+} as any)
+const BeheerUiGebruikersRoute = BeheerUiGebruikersRouteImport.update({
+  id: '/gebruikers',
+  path: '/gebruikers',
+  getParentRoute: () => BeheerUiRoute,
+} as any)
+const BeheerUiSessiesRoute = BeheerUiSessiesRouteImport.update({
+  id: '/sessies',
+  path: '/sessies',
+  getParentRoute: () => BeheerUiRoute,
+} as any)
 const ReceptenIdBewerkenRoute = ReceptenIdBewerkenRouteImport.update({
   id: '/recepten/$id_/bewerken',
   path: '/recepten/$id/bewerken',
@@ -359,6 +395,12 @@ export interface FileRoutesByFullPath {
   '/kaarten/': typeof KaartenIndexRoute
   '/vrienden/': typeof VriendenIndexRoute
   '/beheer/gebruiker/$id': typeof BeheerGebruikerIdRoute
+  '/beheer/ui/ai': typeof BeheerUiAiRoute
+  '/beheer/ui/credits': typeof BeheerUiCreditsRoute
+  '/beheer/ui/fouten': typeof BeheerUiFoutenRoute
+  '/beheer/ui/gebeurtenissen': typeof BeheerUiGebeurtenissenRoute
+  '/beheer/ui/gebruikers': typeof BeheerUiGebruikersRoute
+  '/beheer/ui/sessies': typeof BeheerUiSessiesRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
   '/beheer/ui/': typeof BeheerUiIndexRoute
   '/api/public/meldingen/run': typeof ApiPublicMeldingenRunRoute
@@ -409,6 +451,12 @@ export interface FileRoutesByTo {
   '/kaarten': typeof KaartenIndexRoute
   '/vrienden': typeof VriendenIndexRoute
   '/beheer/gebruiker/$id': typeof BeheerGebruikerIdRoute
+  '/beheer/ui/ai': typeof BeheerUiAiRoute
+  '/beheer/ui/credits': typeof BeheerUiCreditsRoute
+  '/beheer/ui/fouten': typeof BeheerUiFoutenRoute
+  '/beheer/ui/gebeurtenissen': typeof BeheerUiGebeurtenissenRoute
+  '/beheer/ui/gebruikers': typeof BeheerUiGebruikersRoute
+  '/beheer/ui/sessies': typeof BeheerUiSessiesRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
   '/beheer/ui': typeof BeheerUiIndexRoute
   '/api/public/meldingen/run': typeof ApiPublicMeldingenRunRoute
@@ -462,6 +510,12 @@ export interface FileRoutesById {
   '/kaarten/': typeof KaartenIndexRoute
   '/vrienden/': typeof VriendenIndexRoute
   '/beheer/gebruiker/$id': typeof BeheerGebruikerIdRoute
+  '/beheer/ui/ai': typeof BeheerUiAiRoute
+  '/beheer/ui/credits': typeof BeheerUiCreditsRoute
+  '/beheer/ui/fouten': typeof BeheerUiFoutenRoute
+  '/beheer/ui/gebeurtenissen': typeof BeheerUiGebeurtenissenRoute
+  '/beheer/ui/gebruikers': typeof BeheerUiGebruikersRoute
+  '/beheer/ui/sessies': typeof BeheerUiSessiesRoute
   '/recepten/$id_/bewerken': typeof ReceptenIdBewerkenRoute
   '/beheer/ui/': typeof BeheerUiIndexRoute
   '/api/public/meldingen/run': typeof ApiPublicMeldingenRunRoute
@@ -516,6 +570,12 @@ export interface FileRouteTypes {
     | '/kaarten/'
     | '/vrienden/'
     | '/beheer/gebruiker/$id'
+    | '/beheer/ui/ai'
+    | '/beheer/ui/credits'
+    | '/beheer/ui/fouten'
+    | '/beheer/ui/gebeurtenissen'
+    | '/beheer/ui/gebruikers'
+    | '/beheer/ui/sessies'
     | '/recepten/$id/bewerken'
     | '/beheer/ui/'
     | '/api/public/meldingen/run'
@@ -566,6 +626,12 @@ export interface FileRouteTypes {
     | '/kaarten'
     | '/vrienden'
     | '/beheer/gebruiker/$id'
+    | '/beheer/ui/ai'
+    | '/beheer/ui/credits'
+    | '/beheer/ui/fouten'
+    | '/beheer/ui/gebeurtenissen'
+    | '/beheer/ui/gebruikers'
+    | '/beheer/ui/sessies'
     | '/recepten/$id/bewerken'
     | '/beheer/ui'
     | '/api/public/meldingen/run'
@@ -618,6 +684,12 @@ export interface FileRouteTypes {
     | '/kaarten/'
     | '/vrienden/'
     | '/beheer/gebruiker/$id'
+    | '/beheer/ui/ai'
+    | '/beheer/ui/credits'
+    | '/beheer/ui/fouten'
+    | '/beheer/ui/gebeurtenissen'
+    | '/beheer/ui/gebruikers'
+    | '/beheer/ui/sessies'
     | '/recepten/$id_/bewerken'
     | '/beheer/ui/'
     | '/api/public/meldingen/run'
@@ -985,6 +1057,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerUiIndexRouteImport
       parentRoute: typeof BeheerUiRoute
     }
+    '/beheer/ui/ai': {
+      id: '/beheer/ui/ai'
+      path: '/ai'
+      fullPath: '/beheer/ui/ai'
+      preLoaderRoute: typeof BeheerUiAiRouteImport
+      parentRoute: typeof BeheerUiRoute
+    }
+    '/beheer/ui/credits': {
+      id: '/beheer/ui/credits'
+      path: '/credits'
+      fullPath: '/beheer/ui/credits'
+      preLoaderRoute: typeof BeheerUiCreditsRouteImport
+      parentRoute: typeof BeheerUiRoute
+    }
+    '/beheer/ui/fouten': {
+      id: '/beheer/ui/fouten'
+      path: '/fouten'
+      fullPath: '/beheer/ui/fouten'
+      preLoaderRoute: typeof BeheerUiFoutenRouteImport
+      parentRoute: typeof BeheerUiRoute
+    }
+    '/beheer/ui/gebeurtenissen': {
+      id: '/beheer/ui/gebeurtenissen'
+      path: '/gebeurtenissen'
+      fullPath: '/beheer/ui/gebeurtenissen'
+      preLoaderRoute: typeof BeheerUiGebeurtenissenRouteImport
+      parentRoute: typeof BeheerUiRoute
+    }
+    '/beheer/ui/gebruikers': {
+      id: '/beheer/ui/gebruikers'
+      path: '/gebruikers'
+      fullPath: '/beheer/ui/gebruikers'
+      preLoaderRoute: typeof BeheerUiGebruikersRouteImport
+      parentRoute: typeof BeheerUiRoute
+    }
+    '/beheer/ui/sessies': {
+      id: '/beheer/ui/sessies'
+      path: '/sessies'
+      fullPath: '/beheer/ui/sessies'
+      preLoaderRoute: typeof BeheerUiSessiesRouteImport
+      parentRoute: typeof BeheerUiRoute
+    }
     '/recepten/$id_/bewerken': {
       id: '/recepten/$id_/bewerken'
       path: '/recepten/$id/bewerken'
@@ -1010,10 +1124,22 @@ declare module '@tanstack/react-router' {
 }
 
 interface BeheerUiRouteChildren {
+  BeheerUiAiRoute: typeof BeheerUiAiRoute
+  BeheerUiCreditsRoute: typeof BeheerUiCreditsRoute
+  BeheerUiFoutenRoute: typeof BeheerUiFoutenRoute
+  BeheerUiGebeurtenissenRoute: typeof BeheerUiGebeurtenissenRoute
+  BeheerUiGebruikersRoute: typeof BeheerUiGebruikersRoute
+  BeheerUiSessiesRoute: typeof BeheerUiSessiesRoute
   BeheerUiIndexRoute: typeof BeheerUiIndexRoute
 }
 
 const BeheerUiRouteChildren: BeheerUiRouteChildren = {
+  BeheerUiAiRoute: BeheerUiAiRoute,
+  BeheerUiCreditsRoute: BeheerUiCreditsRoute,
+  BeheerUiFoutenRoute: BeheerUiFoutenRoute,
+  BeheerUiGebeurtenissenRoute: BeheerUiGebeurtenissenRoute,
+  BeheerUiGebruikersRoute: BeheerUiGebruikersRoute,
+  BeheerUiSessiesRoute: BeheerUiSessiesRoute,
   BeheerUiIndexRoute: BeheerUiIndexRoute,
 }
 
