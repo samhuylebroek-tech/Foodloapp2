@@ -6,7 +6,7 @@ import { TEMPLATES } from './registry'
 // Server-only: reads LOVABLE_API_KEY. Never import from client components.
 
 // Configuration baked in at scaffold time
-const SITE_NAME = "Shared Kitchen"
+const SITE_NAME = "Foodlo"
 // SENDER_DOMAIN is the verified sender subdomain FQDN (e.g., "notify.example.com").
 // It MUST match the subdomain delegated to Lovable's nameservers. NEVER use the root domain.
 const SENDER_DOMAIN = "notify.foodloapp.com"
