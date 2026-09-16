@@ -1,6 +1,13 @@
 /** Vaste vertalingen voor meldingen: geen AI, geen credits. */
 
-export type Soort = "daily_menu" | "weekly" | "meal" | "shopping" | "cooking";
+export type Soort =
+  | "daily_menu"
+  | "weekly"
+  | "meal"
+  | "shopping"
+  | "cooking"
+  | "uitnodiging"
+  | "uitnodiging_ok";
 
 type Regels = {
   merk: string;
@@ -17,6 +24,10 @@ type Regels = {
   cooking_body: (gerecht: string) => string;
   test_titel: string;
   test_body: string;
+  uitnodiging_titel: string;
+  uitnodiging_body: (naam: string) => string;
+  uitnodiging_ok_titel: string;
+  uitnodiging_ok_body: (naam: string) => string;
 };
 
 const nl: Regels = {
@@ -34,6 +45,10 @@ const nl: Regels = {
   cooking_body: (g) => `Klaar om aan ${g} te beginnen?`,
   test_titel: "Testmelding ✅",
   test_body: "Zo zien je Foodlo-meldingen eruit.",
+  uitnodiging_titel: "Nieuwe uitnodiging 👋",
+  uitnodiging_body: (n) => `${n} wil met jou delen in Foodlo.`,
+  uitnodiging_ok_titel: "Jullie zijn verbonden 🎉",
+  uitnodiging_ok_body: (n) => `${n} heeft je uitnodiging aangenomen.`,
 };
 
 const en: Regels = {
@@ -51,6 +66,10 @@ const en: Regels = {
   cooking_body: (g) => `Ready to start ${g}?`,
   test_titel: "Test notification ✅",
   test_body: "This is how your Foodlo reminders look.",
+  uitnodiging_titel: "New invitation 👋",
+  uitnodiging_body: (n) => `${n} wants to share with you on Foodlo.`,
+  uitnodiging_ok_titel: "You're connected 🎉",
+  uitnodiging_ok_body: (n) => `${n} accepted your invitation.`,
 };
 
 const fr: Regels = {
@@ -68,6 +87,10 @@ const fr: Regels = {
   cooking_body: (g) => `Prêt à commencer ${g} ?`,
   test_titel: "Notification test ✅",
   test_body: "Voilà à quoi ressemblent vos rappels Foodlo.",
+  uitnodiging_titel: "Nouvelle invitation 👋",
+  uitnodiging_body: (n) => `${n} souhaite partager avec vous sur Foodlo.`,
+  uitnodiging_ok_titel: "Vous êtes connectés 🎉",
+  uitnodiging_ok_body: (n) => `${n} a accepté votre invitation.`,
 };
 
 const de: Regels = {
@@ -85,6 +108,10 @@ const de: Regels = {
   cooking_body: (g) => `Bereit für ${g}?`,
   test_titel: "Testbenachrichtigung ✅",
   test_body: "So sehen deine Foodlo-Erinnerungen aus.",
+  uitnodiging_titel: "Neue Einladung 👋",
+  uitnodiging_body: (n) => `${n} möchte mit dir in Foodlo teilen.`,
+  uitnodiging_ok_titel: "Ihr seid verbunden 🎉",
+  uitnodiging_ok_body: (n) => `${n} hat deine Einladung angenommen.`,
 };
 
 const TALEN: Record<string, Regels> = { nl, en, fr, de };
