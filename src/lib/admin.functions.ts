@@ -362,17 +362,16 @@ export const adminDashboard = createServerFn({ method: "GET" })
         : 0;
 
     const buckets = maakBuckets(periode);
-    const { data: groei } = await db
-      .from("recipes")
-      .select("created_at")
-      .gte("created_at", sinds)
-      .order("created_at")
-      .limit(20000);
-    const { data: nieuweLeden } = await db
-      .from("profiles")
-      .select("created_at")
-      .gte("created_at", sinds)
-      .limit(20000);
+    const { data: groei } = await pasWie(
+      db.from("recipes").select("created_at").gte("created_at", sinds).order("created_at").limit(20000),
+      "user_id",
+      wie,
+    );
+    const { data: nieuweLeden } = await pasWie(
+      db.from("profiles").select("created_at").gte("created_at", sinds).limit(20000),
+      "id",
+      wie,
+    );
 
     const receptPer = new Map(buckets.map((b) => [b.key, 0]));
     const gebruikerPer = new Map(buckets.map((b) => [b.key, 0]));
