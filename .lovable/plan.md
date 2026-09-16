@@ -12,7 +12,7 @@ De gekozen richting ligt vast:
 ## Bevestigde UX-problemen
 - Home kan tot zes receptstroken, AI-inhoud en meerdere links naar hetzelfde receptenoverzicht tonen.
 - Het receptenoverzicht toont zes filters tegelijk en plaatst toevoegen vóór de frequentere zoekactie.
-- Het receptscherm toont alle onderdelen in één lange pagina en herhaalt bewerkacties.
+- Het receptscherm moet werken met duidelijke tabs in plaats van één lange pagina; dubbele bewerkacties verdwijnen.
 - Boodschappen, vrienden/gezin en instellingen stapelen meerdere verschillende taken op één scherm.
 - Instellingen bevat twaalf verschillende onderwerpen in één lange lijst.
 - Onboarding, rondleiding en installatiehulp overlappen inhoudelijk en gebruiken verschillende voortgangsstatussen.
