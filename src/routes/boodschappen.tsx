@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { meet } from "@/lib/meten";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, Share2, ListPlus, Pencil } from "lucide-react";
@@ -38,6 +39,9 @@ type Item = {
 };
 
 function BoodschappenPage() {
+  useEffect(() => {
+    void meet("boodschappen.bekeken");
+  }, []);
   const { user } = useAuth();
   const qc = useQueryClient();
   const [nieuw, setNieuw] = useState("");
@@ -152,6 +156,7 @@ function BoodschappenPage() {
 
   async function vink(item: Item) {
     await supabase.from("shopping_items").update({ checked: !item.checked }).eq("id", item.id);
+    void meet("boodschappen.afgevinkt");
     refresh();
   }
 
