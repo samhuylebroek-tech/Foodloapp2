@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.png";
 import { Aankondigingen } from "@/components/Aankondigingen";
 import { InstallatieTip } from "@/components/InstallatieTip";
+import { Rondleiding } from "@/components/Rondleiding";
 import { meet } from "@/lib/meten";
 
 const NAV = [
