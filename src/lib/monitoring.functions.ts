@@ -10,11 +10,13 @@ import { bewaker, logboek } from "@/lib/admin.functions";
 
 type Ctx = { supabase: any; userId: string; claims?: any };
 
+const BEREIKEN = ["vandaag", "gisteren", "zeven", "dertig", "jaar", "eigen"] as const;
+
 const bereikSchema = z
   .object({
     van: z.string().optional(),
     tot: z.string().optional(),
-    bereik: z.enum(["vandaag", "gisteren", "zeven", "dertig", "eigen"]).default("vandaag"),
+    bereik: z.enum(BEREIKEN).default("vandaag"),
   })
   .default({ bereik: "vandaag" });
 
@@ -22,7 +24,7 @@ function dagString(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
-function bereikNaarDagen(b: z.infer<typeof bereikSchema>) {
+function bereikNaarDagen(b: { bereik: (typeof BEREIKEN)[number]; van?: string | undefined; tot?: string | undefined }) {
   const nu = new Date();
   const vandaag = dagString(nu);
   if (b.bereik === "eigen" && b.van && b.tot) return { van: b.van, tot: b.tot };
@@ -32,6 +34,7 @@ function bereikNaarDagen(b: z.infer<typeof bereikSchema>) {
   }
   if (b.bereik === "zeven") return { van: dagString(new Date(nu.getTime() - 6 * 86400_000)), tot: vandaag };
   if (b.bereik === "dertig") return { van: dagString(new Date(nu.getTime() - 29 * 86400_000)), tot: vandaag };
+  if (b.bereik === "jaar") return { van: dagString(new Date(nu.getTime() - 364 * 86400_000)), tot: vandaag };
   return { van: vandaag, tot: vandaag };
 }
 
