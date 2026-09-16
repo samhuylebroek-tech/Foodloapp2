@@ -1400,6 +1400,7 @@ export type Database = {
           prep_minutes: number
           servings: number
           source_url: string | null
+          step_ingredients: Json | null
           tags: string[]
           title: string
           updated_at: string
@@ -1418,6 +1419,7 @@ export type Database = {
           prep_minutes?: number
           servings?: number
           source_url?: string | null
+          step_ingredients?: Json | null
           tags?: string[]
           title: string
           updated_at?: string
@@ -1436,6 +1438,7 @@ export type Database = {
           prep_minutes?: number
           servings?: number
           source_url?: string | null
+          step_ingredients?: Json | null
           tags?: string[]
           title?: string
           updated_at?: string

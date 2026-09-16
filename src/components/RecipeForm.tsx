@@ -27,6 +27,7 @@ import {
 import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/types";
 import { parseIngredientText, ingredientToLine } from "@/lib/ingredienten";
 import { Voedingswaarden } from "@/components/Voedingswaarden";
+import { koppelStappen, normaliseer, type StapKoppeling } from "@/lib/stap-ingredienten";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { creditOverzicht } from "@/lib/credits.functions";
@@ -82,7 +83,32 @@ export function RecipeForm({
     (ingredients ?? []).map(ingredientToLine).join("\n"),
   );
   const [stappenTekst, setStappenTekst] = useState((recipe?.instructions ?? []).join("\n"));
+  const [stapKeuze, setStapKeuze] = useState<StapKoppeling>(recipe?.step_ingredients ?? {});
   const [meerDetails, setMeerDetails] = useState(false);
+
+  // Stappen en ingrediënten zoals ze nu in het formulier staan
+  const stappen = stappenTekst
+    .split("\n")
+    .map((s) => s.replace(/^\s*\d+[.)]\s*/, "").trim())
+    .filter(Boolean);
+  const formIngredienten = parseIngredientText(ingredientTekst);
+  const stapKoppeling = koppelStappen(stappen, formIngredienten, stapKeuze);
+
+  /** Zet een ingrediënt aan of uit bij een stap; vanaf dan telt de eigen keuze. */
+  function wisselStapIngredient(stapIndex: number, naam: string) {
+    setStapKeuze((vorig) => {
+      const huidig =
+        vorig[String(stapIndex)] ??
+        (stapKoppeling[stapIndex] ?? []).map((idx) => formIngredienten[idx]!.name);
+      const staatAan = huidig.some((n) => normaliseer(n) === normaliseer(naam));
+      const nieuw = staatAan
+        ? huidig.filter((n) => normaliseer(n) !== normaliseer(naam))
+        : [...huidig, naam];
+      return { ...vorig, [String(stapIndex)]: nieuw };
+    });
+  }
+
+
 
   const [importUrl, setImportUrl] = useState(gedeeldeLink);
   const [vrijeTekst, setVrijeTekst] = useState(gedeeldeTekst);
@@ -348,10 +374,8 @@ export function RecipeForm({
           .split(",")
           .map((t) => t.trim().toLowerCase())
           .filter(Boolean),
-        instructions: stappenTekst
-          .split("\n")
-          .map((s) => s.replace(/^\s*\d+[.)]\s*/, "").trim())
-          .filter(Boolean),
+        instructions: stappen,
+        step_ingredients: Object.keys(stapKeuze).length ? stapKeuze : null,
         source_url: sourceUrl.trim() || null,
       };
 
@@ -670,6 +694,51 @@ export function RecipeForm({
             className="mt-2 text-base"
           />
         </div>
+
+        {stappen.length > 0 && formIngredienten.length > 0 && (
+          <div>
+            <Label className="text-base">Wat gebruik je bij elke stap?</Label>
+            <p className="mt-1 text-sm text-muted-foreground">
+              We raden het zelf al aan. Tik een ingrediënt aan of uit om het bij te sturen.
+            </p>
+            <div className="mt-3 space-y-3">
+              {stappen.map((s, i) => {
+                const aan = new Set(
+                  (stapKoppeling[i] ?? []).map((idx) => normaliseer(formIngredienten[idx]!.name)),
+                );
+                return (
+                  <div key={i} className="rounded-2xl border border-border bg-card p-3">
+                    <p className="text-base">
+                      <span className="mr-2 font-semibold text-primary">{i + 1}</span>
+                      {s}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {formIngredienten.map((ing, idx) => {
+                        const actief = aan.has(normaliseer(ing.name));
+                        return (
+                          <button
+                            key={`${i}-${idx}`}
+                            type="button"
+                            aria-pressed={actief}
+                            onClick={() => wisselStapIngredient(i, ing.name)}
+                            className={
+                              actief
+                                ? "inline-flex min-h-11 items-center rounded-xl bg-primary px-3 text-base font-semibold text-primary-foreground"
+                                : "inline-flex min-h-11 items-center rounded-xl border border-border bg-secondary px-3 text-base text-muted-foreground"
+                            }
+                          >
+                            {ing.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
 
         <div>
           <Label className="text-base">Foto van het gerecht</Label>

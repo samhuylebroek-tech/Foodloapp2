@@ -34,6 +34,8 @@ import { type Ingredient, type Recipe } from "@/lib/types";
 import { Copy } from "lucide-react";
 import { tijdLabel } from "@/lib/tijd";
 import { Voedingswaarden } from "@/components/Voedingswaarden";
+import { StapIngredienten } from "@/components/StapIngredienten";
+import { koppelStappen } from "@/lib/stap-ingredienten";
 
 
 export const Route = createFileRoute("/recepten/$id")({
@@ -173,6 +175,12 @@ function ReceptPage() {
   const aantal = personen ?? recipe.servings;
   const factor = recipe.servings > 0 ? aantal / recipe.servings : 1;
   const isOwner = user?.id === recipe.user_id;
+  const stapKoppeling = koppelStappen(
+    recipe.instructions,
+    ingredients,
+    (recipe as Recipe).step_ingredients ?? null,
+  );
+  const stapIngredienten = (i: number) => (stapKoppeling[i] ?? []).map((idx) => ingredients[idx]!);
 
   async function toggleFavorite() {
     if (!user) return;
@@ -320,6 +328,7 @@ function ReceptPage() {
           </div>
           <h2 className="mt-6 font-display text-3xl">{recipe.title}</h2>
           <p className="mt-6 text-2xl leading-relaxed">{stappen[stap]}</p>
+          <StapIngredienten ingredienten={stapIngredienten(stap)} factor={factor} groot />
           <div className="mt-10 flex gap-3">
             <Button
               variant="secondary"
@@ -495,7 +504,10 @@ function ReceptPage() {
             {recipe.instructions.map((s, i) => (
               <li key={i} className="flex gap-3 rounded-2xl border border-border bg-card p-4">
                 <span className="font-display text-xl text-primary">{i + 1}</span>
-                <p className="text-lg leading-relaxed">{t(s)}</p>
+                <div className="min-w-0">
+                  <p className="text-lg leading-relaxed">{t(s)}</p>
+                  <StapIngredienten ingredienten={stapIngredienten(i)} factor={factor} />
+                </div>
               </li>
             ))}
           </ol>
