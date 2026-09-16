@@ -178,7 +178,7 @@ function StartPage() {
           <div className="mt-3 divide-y divide-border rounded-2xl bg-card px-4 ring-1 ring-border/60">
             <Link to="/planner" className="flex min-h-16 items-center gap-3 py-3">
               <span className="flex size-11 items-center justify-center rounded-xl bg-secondary text-primary"><CalendarDays className="size-5" /></span>
-              <span className="min-w-0 flex-1 font-semibold">{dagmenu ? t("Je menu staat klaar") : t("Plan je week")}</span>
+              <span className="min-w-0 flex-1 font-semibold">{maaltijden.length ? t("Je menu staat klaar") : t("Plan je week")}</span>
               <ChevronRight className="size-5 text-muted-foreground" />
             </Link>
             <Link to="/boodschappen" className="flex min-h-16 items-center gap-3 py-3">
