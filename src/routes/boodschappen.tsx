@@ -96,7 +96,8 @@ function BoodschappenPage() {
   const refresh = () => qc.invalidateQueries({ queryKey: ["shopping"] });
   const refreshLijsten = () => qc.invalidateQueries({ queryKey: ["shopping-lists"] });
   const [vraagVerwijder, setVraagVerwijder] = useState(false);
-  const actieveNaam = lijsten.find((l) => l.id === actief)?.name ?? "";
+  const actieveLijst = lijsten.find((l) => l.id === actief);
+  const actieveNaam = actieveLijst?.name ?? "";
 
   async function nieuwLijstje() {
     if (!user) return;
