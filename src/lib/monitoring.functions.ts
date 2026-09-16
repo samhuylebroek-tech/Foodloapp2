@@ -55,6 +55,56 @@ export const adminActiviteit = createServerFn({ method: "POST" })
     await aggregeerDagen(db, 2);
 
     const { van, tot } = bereikNaarDagen(data);
+    const wie: WieKeuze = { wieModus: data.wieModus, wieIds: data.wieIds };
+    const perPersoon = wie.wieModus !== "alles" && wie.wieIds.length > 0;
+
+    // Gaat het over bepaalde personen, dan tellen we hun eigen dagcijfers op.
+    if (perPersoon) {
+      const { data: eigen } = await pasWie(
+        db
+          .from("daily_user_stats")
+          .select("*")
+          .gte("dag", van)
+          .lte("dag", tot)
+          .limit(50_000),
+        "user_id",
+        wie,
+      );
+      const rijenP = (eigen ?? []) as any[];
+      const somP = (v: string) => rijenP.reduce((s, r) => s + Number(r[v] ?? 0), 0);
+      const actief = new Set(rijenP.filter((r) => Number(r.handelingen ?? 0) > 0).map((r) => r.user_id)).size;
+      const kostP = euro(somP("kost_eur"));
+      const perDag = new Map<string, { dag: string; actief: number; recepten: number; ai: number; kost: number }>();
+      for (const r of rijenP) {
+        const x = perDag.get(r.dag) ?? { dag: r.dag, actief: 0, recepten: 0, ai: 0, kost: 0 };
+        if (Number(r.handelingen ?? 0) > 0) x.actief += 1;
+        x.recepten += Number(r.recepten ?? 0);
+        x.ai += Number(r.ai_calls ?? 0);
+        x.kost += Number(r.kost_eur ?? 0);
+        perDag.set(r.dag, x);
+      }
+      return {
+        van,
+        tot,
+        kpi: {
+          nieuweGebruikers: 0,
+          actieveGebruikers: actief,
+          sessies: somP("sessies"),
+          handelingen: somP("handelingen"),
+          nieuweRecepten: somP("recepten"),
+          imports: somP("imports"),
+          weekmenus: somP("plan_items"),
+          lijsten: 0,
+          aiCalls: somP("ai_calls"),
+          credits: somP("credits"),
+          kostEur: kostP,
+          kostPerActieve: actief ? euro(kostP / actief) : 0,
+          fouten: somP("fouten"),
+        },
+        grafiek: [...perDag.values()].sort((a, b) => a.dag.localeCompare(b.dag)),
+      };
+    }
+
     const { data: rijen } = await db
       .from("daily_platform_stats")
       .select("*")
