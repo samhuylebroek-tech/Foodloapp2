@@ -12,6 +12,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { VoorkeurenProvider } from "@/lib/voorkeuren";
 import { synchroniseerTijdzone, verwerkMeldingKlik } from "@/lib/meldingen";
 import { meet, meldFout } from "@/lib/meten";
+import { supabase } from "@/integrations/supabase/client";
+import { meldNieuweGebruiker } from "@/lib/welkom-mail.functions";
 
 
 import appCss from "../styles.css?url";
@@ -156,6 +158,29 @@ function RootComponent() {
     void verwerkMeldingKlik();
     void synchroniseerTijdzone();
     void meet("app.open");
+  }, []);
+
+  // Eén keer per nieuw profiel een berichtje naar de beheerder.
+  useEffect(() => {
+    let klaar = false;
+    const probeer = async () => {
+      if (klaar) return;
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) return;
+      klaar = true;
+      if (sessionStorage.getItem("welkom-mail") === "ok") return;
+      sessionStorage.setItem("welkom-mail", "ok");
+      try {
+        await meldNieuweGebruiker();
+      } catch {
+        /* nooit de app blokkeren */
+      }
+    };
+    void probeer();
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN") void probeer();
+    });
+    return () => sub.subscription.unsubscribe();
   }, []);
 
   // Fouten die een gebruiker echt ervaart, komen in het Control Center terecht.
