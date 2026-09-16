@@ -84,3 +84,7 @@
 - [x] Wallet en vrienden/gezin vereenvoudigen
 - [x] Meldingen, instellingen en onboarding stroomlijnen
 - [x] Toestanden, microcopy, toegankelijkheid en mobiele eindcontrole
+
+## Suggesties + planner-datum (lopend)
+- [ ] Suggestieblok herbruikbaar met "Zoek opnieuw"; ook op receptenpagina
+- [ ] Inplannen: dagkeuze werkt niet volgens gebruiker — reproduceren en fixen
