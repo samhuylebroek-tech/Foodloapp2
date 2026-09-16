@@ -58,7 +58,7 @@ export const template = {
     email: "jana@example.com",
     taal: "nl",
     moment: "16 september 2026 om 14:05",
-    profielUrl: "https://foodloapp.com/beheer/gebruiker/123",
+    profielUrl: "https://app.foodloapp.com/beheer/gebruiker/123",
   },
 } satisfies TemplateEntry;
 
