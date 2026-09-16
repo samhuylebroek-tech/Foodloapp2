@@ -223,7 +223,7 @@ function BoodschappenPage() {
           </button>
         </div>
 
-        {lijsten.length > 0 && (
+        {lijsten.length > 0 && !actieveLijst?.group_id && (
           <div className="flex gap-2">
             <Button variant="ghost" onClick={hernoem} className="h-12 text-base">
               <Pencil className="size-4" /> Naam wijzigen
@@ -234,6 +234,11 @@ function BoodschappenPage() {
               </Button>
             )}
           </div>
+        )}
+        {actieveLijst?.group_id && (
+          <p className="text-base text-muted-foreground">
+            Deze lijst is van het hele gezin — iedereen vult aan en vinkt af.
+          </p>
         )}
 
         <div className="flex gap-2">
