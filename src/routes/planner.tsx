@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { Avatar } from "@/components/Avatar";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -428,7 +429,10 @@ function PlannerPage() {
           <Plus className="size-6" /> Gerecht inplannen deze week
         </Button>
 
-        <div className="space-y-2">
+        <Accordion type="single" collapsible className="rounded-2xl bg-card px-4 ring-1 ring-border/60">
+          <AccordionItem value="boodschappen" className="border-0">
+            <AccordionTrigger className="min-h-14 text-base no-underline hover:no-underline"><span className="flex items-center gap-2"><ShoppingCart className="size-5 text-primary" />Boodschappen voor deze week</span></AccordionTrigger>
+            <AccordionContent className="space-y-2">
           {lijsten.length > 1 && (
             <select
               value={
@@ -449,7 +453,9 @@ function PlannerPage() {
           <Button variant="secondary" onClick={alleBoodschappen} className="h-16 w-full text-lg">
             <ShoppingCart className="size-5" /> Hele week op de lijst zetten
           </Button>
-        </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         {week.map((dag) => {
           const items = plan.filter((p) => p.plan_date === dag);
@@ -460,7 +466,7 @@ function PlannerPage() {
               key={dag}
               className={
                 volledig
-                  ? "rounded-2xl border-2 border-primary bg-primary p-4 text-primary-foreground [&_a]:text-primary-foreground [&_button]:text-primary-foreground [&_span]:text-primary-foreground"
+                  ? "rounded-2xl border border-primary/40 bg-secondary p-4"
                   : dag === vandaag
                     ? "rounded-2xl border-2 border-primary bg-card p-4"
                     : "rounded-2xl border border-border bg-card p-4"
@@ -471,7 +477,7 @@ function PlannerPage() {
                 {dag === vandaag ? " · vandaag" : ""}
                 {volledig && (
                   <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-primary-foreground/20 px-2 py-0.5 align-middle text-xs font-bold normal-case">
-                    <Check className="size-3.5" aria-hidden /> volledig
+                    <Check className="size-3.5" aria-hidden /> klaar
                   </span>
                 )}
               </h2>
@@ -551,7 +557,7 @@ function PlannerPage() {
                 ))}
                 {volledig && (
                   <p className="text-base font-semibold text-primary">
-                    Alles is ingepland voor deze dag.
+                    Helemaal gepland
                   </p>
                 )}
               </div>

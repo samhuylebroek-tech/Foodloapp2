@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { useT } from "@/lib/voorkeuren";
 import { meet } from "@/lib/meten";
 import { parseIngredientLine } from "@/lib/ingredienten";
+import { EmptyState } from "@/components/EmptyState";
+import { PageSkeleton } from "@/components/PageSkeleton";
 
 export const Route = createFileRoute("/voorraad")({
   head: () => ({
@@ -93,9 +95,7 @@ function VoorraadPage() {
 
   return (
     <AppShell title={t("Voorraadkast")}>
-      <p className="text-lg text-muted-foreground">
-        {t("Noteer wat je thuis hebt staan. Bij een recept zie je dan meteen wat je nog moet kopen.")}
-      </p>
+      <p className="text-base text-muted-foreground">{t("Wat heb je al in huis?")}</p>
 
       <div className="mt-5 flex flex-col gap-2 sm:flex-row">
         <Input
@@ -109,17 +109,14 @@ function VoorraadPage() {
           className="h-14 text-lg"
         />
         <Button onClick={() => void voegToe()} className="h-14 px-5 text-lg">
-          <Plus className="mr-1 size-5" aria-hidden />
-          {t("Toevoegen")}
+          <Plus aria-hidden /><span className="sr-only sm:not-sr-only">{t("Toevoegen")}</span>
         </Button>
       </div>
 
       {isLoading ? (
-        <p className="mt-6 text-lg text-muted-foreground">{t("Even geduld…")}</p>
+        <div className="mt-6"><PageSkeleton rows={2} /></div>
       ) : items.length === 0 ? (
-        <p className="mt-6 rounded-2xl border border-border bg-card p-5 text-lg text-muted-foreground">
-          {t("Je voorraadkast is nog leeg.")}
-        </p>
+        <EmptyState title={t("Je voorraadkast is nog leeg")} description={t("Voeg toe wat je vaak in huis hebt.")} />
       ) : (
         <ul className="mt-6 space-y-2">
           {items.map((item) => (
