@@ -1190,6 +1190,7 @@ export type Database = {
           onboarding_klaar: boolean
           taal: string
           thema: string
+          welkom_mail_op: string | null
         }
         Insert: {
           admin_note?: string
@@ -1202,6 +1203,7 @@ export type Database = {
           onboarding_klaar?: boolean
           taal?: string
           thema?: string
+          welkom_mail_op?: string | null
         }
         Update: {
           admin_note?: string
@@ -1214,6 +1216,7 @@ export type Database = {
           onboarding_klaar?: boolean
           taal?: string
           thema?: string
+          welkom_mail_op?: string | null
         }
         Relationships: []
       }
