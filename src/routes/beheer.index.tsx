@@ -52,17 +52,21 @@ function Dashboard() {
     queryKey: ["admin-dashboard", periode],
     queryFn: () => fn({ data: { periode } }),
   });
+  const bereik = BEREIK[periode];
   const vandaag = useQuery({
-    queryKey: ["admin-vandaag"],
-    queryFn: () => vandaagFn({ data: { bereik: "vandaag" } }),
-    refetchInterval: 60_000,
+    queryKey: ["admin-vandaag", bereik],
+    queryFn: () => vandaagFn({ data: { bereik } }),
+    refetchInterval: periode === "dag" ? 60_000 : false,
   });
   const recent = useQuery({
-    queryKey: ["admin-recent"],
-    queryFn: () => recentFn({ data: { bereik: "vandaag", limiet: 20 } }),
-    refetchInterval: 30_000,
+    queryKey: ["admin-recent", bereik],
+    queryFn: () => recentFn({ data: { bereik, limiet: 20 } }),
+    refetchInterval: periode === "dag" ? 30_000 : false,
   });
-  const kosten = useQuery({ queryKey: ["admin-kosten"], queryFn: () => kostFn() });
+  const kosten = useQuery({
+    queryKey: ["admin-kosten", periode],
+    queryFn: () => kostFn({ data: { dagen: DAGEN[periode] } }),
+  });
   const aandacht = useQuery({ queryKey: ["admin-aandacht"], queryFn: () => aandachtFn() });
 
   const max = Math.max(1, ...(data?.grafiek ?? []).map((g) => Math.max(g.aantal, g.gebruikers)));
