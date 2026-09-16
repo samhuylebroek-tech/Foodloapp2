@@ -363,6 +363,7 @@ function GerechtenPage() {
             ))}
           </ul>
         )}
+      </div>
 
       {ideeenOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center" role="dialog" aria-modal="true" aria-label={t("Zoek nieuwe ideeën")}>
