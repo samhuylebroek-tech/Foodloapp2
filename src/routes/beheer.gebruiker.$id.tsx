@@ -67,7 +67,7 @@ function GebruikerDetail() {
               ))}
             </div>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <Kpi label="Laatst actief" waarde={stip(m.laatsteActiviteit)} />
+              <Kpi label="Laatst actief" waarde={stip(m.laatsteActiviteit)} extra={`aanmelding ${stip(d.laatsteAanmelding)}`} />
               <Kpi label="Lid sinds" waarde={d.profiel?.created_at ? new Date(d.profiel.created_at).toLocaleDateString("nl-BE") : "—"} />
               <Kpi label="Sessies (30 d)" waarde={m.sessies30} extra={`${m.sessies24} vandaag · ${m.sessies7} deze week`} />
               <Kpi label="Handelingen (30 d)" waarde={m.dertig.handelingen} />
@@ -113,11 +113,11 @@ function GebruikerDetail() {
 
           <TabsContent value="gebruik">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <Kpi label="Recepten" waarde={d.tellers?.recepten ?? 0} />
-              <Kpi label="Favorieten" waarde={d.tellers?.favorieten ?? 0} />
-              <Kpi label="Ingeplande maaltijden" waarde={d.tellers?.plan ?? 0} />
-              <Kpi label="Boodschappenlijsten" waarde={d.tellers?.lijsten ?? 0} />
-              <Kpi label="Klantenkaarten" waarde={d.tellers?.kaarten ?? 0} />
+              <Kpi label="Recepten" waarde={(d.recepten ?? []).length} />
+              <Kpi label="Favorieten" waarde={d.favorieten ?? 0} />
+              <Kpi label="Ingeplande maaltijden" waarde={d.planning ?? 0} />
+              <Kpi label="Boodschappenlijsten" waarde={d.lijsten ?? 0} />
+              <Kpi label="Klantenkaarten" waarde={d.kaarten ?? 0} />
               <Kpi label="Connecties" waarde={m.connecties} extra={`${m.openUitnodigingen} open uitnodigingen`} />
               <Kpi label="Gezinnen" waarde={m.gezinnen.length} />
               <Kpi label="Fouten (30 d)" waarde={m.dertig.fouten} />
