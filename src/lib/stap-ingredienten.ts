@@ -68,8 +68,15 @@ function stapWoorden(stap: string): Set<string> {
 function komtVoor(naam: string, woorden: Set<string>): boolean {
   const kern = kernwoorden(naam);
   if (!kern.length) return false;
-  // minstens één kernwoord moet exact (na stam) in de stap staan
-  return kern.some((k) => k.length >= 3 && woorden.has(k));
+  return kern.some((k) => {
+    if (k.length < 3) return false;
+    if (woorden.has(k)) return true;
+    // samengestelde namen: "bloem" in de stap hoort bij "patisseriebloem"
+    for (const w of woorden) {
+      if (w.length >= 4 && k.length >= 4 && (k.endsWith(w) || w.endsWith(k))) return true;
+    }
+    return false;
+  });
 }
 
 /**
