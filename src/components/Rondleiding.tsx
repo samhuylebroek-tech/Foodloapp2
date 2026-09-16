@@ -9,13 +9,13 @@ type Stap = { route: string; doel?: string; titel: string; tekst: string };
 const STAPPEN: Stap[] = [
   {
     route: "/",
-    doel: '[data-tour="nav-/"]',
+    doel: '[data-tour="nav-/"],[data-tour="tab-/"]',
     titel: "Je startscherm",
     tekst: "Hier zie je wat je vandaag eet, wat er op je lijstje staat en je favorieten.",
   },
   {
     route: "/gerechten",
-    doel: '[data-tour="nav-/gerechten"]',
+    doel: '[data-tour="nav-/gerechten"],[data-tour="tab-/gerechten"]',
     titel: "Al je recepten",
     tekst: "Zoek op naam of filter, en tik op een gerecht om het te bekijken of te koken.",
   },
@@ -26,13 +26,13 @@ const STAPPEN: Stap[] = [
   },
   {
     route: "/planner",
-    doel: '[data-tour="nav-/planner"]',
+    doel: '[data-tour="nav-/planner"],[data-tour="tab-/planner"]',
     titel: "Je weekmenu",
     tekst: "Plan per dag wat je eet. Kook je samen? Schakel bovenaan naar het gezinsmenu.",
   },
   {
     route: "/boodschappen",
-    doel: '[data-tour="nav-/boodschappen"]',
+    doel: '[data-tour="nav-/boodschappen"],[data-tour="tab-/boodschappen"]',
     titel: "Boodschappen",
     tekst: "Je lijst vult zichzelf vanuit je weekmenu. In de winkel vink je gewoon af.",
   },
@@ -89,7 +89,8 @@ export function Rondleiding() {
     let stop = false;
     function meet() {
       if (stop) return;
-      const el = stap?.doel ? document.querySelector(stap.doel) : null;
+      const kandidaten = stap?.doel ? Array.from(document.querySelectorAll(stap.doel)) : [];
+      const el = kandidaten.find((k) => k.getBoundingClientRect().width > 0);
       if (el) {
         const r = el.getBoundingClientRect();
         setKader({ top: r.top, left: r.left, width: r.width, height: r.height });
