@@ -82,6 +82,7 @@ export function RecipeForm({
     (ingredients ?? []).map(ingredientToLine).join("\n"),
   );
   const [stappenTekst, setStappenTekst] = useState((recipe?.instructions ?? []).join("\n"));
+  const [stapKeuze, setStapKeuze] = useState<StapKoppeling>(recipe?.step_ingredients ?? {});
   const [meerDetails, setMeerDetails] = useState(false);
 
   const [importUrl, setImportUrl] = useState(gedeeldeLink);
