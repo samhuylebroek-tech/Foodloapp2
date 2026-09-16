@@ -190,6 +190,13 @@
       "when": 1789543362973,
       "tag": "0026_monitoring_module",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1789550511969,
+      "tag": "0027_harden_definer_functions_admin_users_stores_shares",
+      "breakpoints": true
     }
   ]
 }
