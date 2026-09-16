@@ -9,7 +9,7 @@ import {
   Users,
   MessageSquareHeart,
   Settings,
-  Sparkles,
+  Home,
   Menu,
   Package,
   Smartphone,
@@ -27,9 +27,8 @@ import { InstallatieTip } from "@/components/InstallatieTip";
 import { meet } from "@/lib/meten";
 
 const NAV = [
-  { to: "/", label: "Start", icon: Sparkles },
+  { to: "/", label: "Start", icon: Home },
   { to: "/gerechten", label: "Recepten", icon: BookOpen },
-  { to: "/recepten/nieuw", label: "Toevoegen", icon: PlusCircle },
   { to: "/planner", label: "Weekmenu", icon: CalendarDays },
   { to: "/boodschappen", label: "Boodschappen", icon: ShoppingCart },
   { to: "/voorraad", label: "Voorraadkast", icon: Package },
@@ -41,7 +40,7 @@ const NAV = [
 ] as const;
 
 const TABS = [
-  { to: "/", label: "Start", icon: Sparkles },
+  { to: "/", label: "Start", icon: Home },
   { to: "/gerechten", label: "Recepten", icon: BookOpen },
   { to: "/planner", label: "Weekmenu", icon: CalendarDays },
   { to: "/boodschappen", label: "Lijst", icon: ShoppingCart },
@@ -80,7 +79,7 @@ export function AppShell({
       const { data } = await supabase
         .from("profiles")
         .select("onboarding_klaar")
-        .eq("id", session!.user.id)
+        .eq("id", session?.user.id ?? "")
         .maybeSingle();
       return data;
     },
@@ -114,7 +113,7 @@ export function AppShell({
         </div>
         <p className="text-2xl font-bold tracking-tight text-foreground">Foodlo</p>
       </Link>
-      <ul className="mt-6 space-y-1">
+      <ul className="mt-8 space-y-1">
         {NAV.map((item) => {
           const active =
             item.to === "/"
@@ -126,7 +125,7 @@ export function AppShell({
               <Link
                 to={item.to}
                 className={cn(
-                  "flex min-h-14 items-center gap-3 rounded-xl px-3 text-lg font-semibold transition-colors",
+                  "flex min-h-14 items-center gap-3 rounded-xl px-3 text-base font-semibold transition-colors",
                   active
                     ? "bg-primary text-primary-foreground"
                     : "text-foreground hover:bg-muted",
@@ -145,14 +144,14 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex w-full max-w-7xl">
-        <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-border bg-card px-4 py-6 lg:block">
+        <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-border bg-card px-5 py-7 lg:block">
           {menu}
           {sidebar ? <div className="mt-8 border-t border-border pt-6">{sidebar}</div> : null}
         </aside>
 
         <div className="min-w-0 flex-1">
           <header
-            className="sticky top-0 z-20 border-b border-border/70 bg-card/80 backdrop-blur-xl"
+            className="sticky top-0 z-20 border-b border-border/60 bg-background/90 backdrop-blur-xl"
             style={{ paddingTop: "env(safe-area-inset-top)" }}
           >
             <div className="flex items-center gap-3 px-4 py-3">
@@ -164,14 +163,14 @@ export function AppShell({
               >
                 <Menu className="size-6" aria-hidden />
               </button>
-              <h1 className="min-w-0 flex-1 truncate text-[1.6rem] font-bold leading-tight tracking-tight">
+              <h1 className="min-w-0 flex-1 truncate font-display text-[1.6rem] font-semibold leading-tight">
                 {title}
               </h1>
               {action}
             </div>
           </header>
 
-          <main className="mx-auto w-full max-w-3xl px-4 py-5 pb-32 lg:max-w-4xl lg:pb-16">
+          <main className="mx-auto w-full max-w-3xl px-4 py-6 pb-32 sm:px-6 lg:max-w-4xl lg:py-8 lg:pb-16">
             <Aankondigingen />
             {children}
             <InstallatieTip />
@@ -182,7 +181,7 @@ export function AppShell({
       {/* Mobiele tabbalk onderaan */}
       <nav
         aria-label="Snelmenu"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-border/70 bg-card/90 backdrop-blur-xl lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-border/60 bg-card/95 backdrop-blur-xl lg:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <ul className="mx-auto flex max-w-lg items-stretch justify-between px-2">
@@ -197,13 +196,13 @@ export function AppShell({
                 <Link
                   to={item.to}
                   className={cn(
-                    "flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-xs font-semibold transition-colors",
+                    "flex min-h-16 flex-col items-center justify-center gap-1 px-1 py-2 text-xs font-semibold transition-colors",
                     active ? "text-primary" : "text-muted-foreground",
                   )}
                 >
                   <span
                     className={cn(
-                      "flex size-9 items-center justify-center rounded-xl transition-colors",
+                      "flex size-9 items-center justify-center rounded-lg transition-colors",
                       active ? "bg-primary/12 text-primary" : "text-muted-foreground",
                     )}
                   >
