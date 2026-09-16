@@ -622,6 +622,7 @@ function ReceptKiezer({
   const [zoek, setZoek] = useState("");
   const [datum, setDatum] = useState(start.datum);
   const [moment, setMoment] = useState(start.moment);
+  const [gerecht, setGerecht] = useState<Recipe | null>(null);
   const [aiBezig, setAiBezig] = useState(false);
   const [voorstel, setVoorstel] = useState<Basis | null>(null);
 
@@ -741,6 +742,85 @@ function ReceptKiezer({
     );
   }
 
+  // Stap 2: het gerecht is gekozen — kies nu rustig de dag en het moment.
+  if (gerecht) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
+        <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-t-3xl bg-card p-4 sm:rounded-3xl">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="font-display text-xl">Wanneer eten we dit?</h2>
+              <p className="mt-1 text-base font-semibold text-primary">{gerecht.title}</p>
+            </div>
+            <Button variant="ghost" onClick={onSluit} aria-label="Sluiten" className="size-12">
+              <X className="size-6" />
+            </Button>
+          </div>
+
+          <div className="mt-3 flex-1 space-y-3 overflow-y-auto">
+            <p className="text-base font-semibold capitalize">{labelVoor(datum)}</p>
+
+            <input
+              type="date"
+              value={datum}
+              onChange={(e) => { if (e.target.value) setDatum(e.target.value); }}
+              aria-label="Kies een datum"
+              className="h-14 w-full rounded-xl border border-input bg-background px-3 text-base"
+            />
+
+            <div className="grid grid-cols-4 gap-2" role="group" aria-label="Kies een dag">
+              {week.map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setDatum(d)}
+                  aria-pressed={d === datum}
+                  className={
+                    d === datum
+                      ? "min-h-12 rounded-xl bg-primary px-2 text-base font-semibold capitalize text-primary-foreground"
+                      : "min-h-12 rounded-xl border border-border bg-secondary px-2 text-base font-semibold capitalize"
+                  }
+                >
+                  {kortLabel(d)}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-2" role="group" aria-label="Kies een moment">
+              {momenten.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMoment(m)}
+                  aria-pressed={m === moment}
+                  className={
+                    m === moment
+                      ? "min-h-12 flex-1 rounded-xl bg-primary px-3 text-base font-semibold text-primary-foreground"
+                      : "min-h-12 flex-1 rounded-xl border border-border bg-secondary px-3 text-base font-semibold"
+                  }
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-3 flex gap-2">
+            <Button variant="ghost" onClick={() => setGerecht(null)} className="h-14 flex-1 text-base">
+              Terug
+            </Button>
+            <Button
+              onClick={() => onKies(gerecht.id, datum, moment, gerecht.title)}
+              className="h-14 flex-[2] text-base"
+            >
+              <Check className="size-5" /> Zet in planning
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
       <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-t-3xl bg-card p-4 sm:rounded-3xl">
@@ -843,7 +923,7 @@ function ReceptKiezer({
               <li key={r.id}>
                 <button
                   type="button"
-                  onClick={() => onKies(r.id, datum, moment, r.title)}
+                  onClick={() => setGerecht(r)}
                   className="min-h-16 w-full rounded-xl border border-border px-4 py-3 text-left text-lg active:bg-secondary"
                 >
                   {r.title}

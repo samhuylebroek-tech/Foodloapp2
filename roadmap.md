@@ -84,3 +84,7 @@
 - [x] Wallet en vrienden/gezin vereenvoudigen
 - [x] Meldingen, instellingen en onboarding stroomlijnen
 - [x] Toestanden, microcopy, toegankelijkheid en mobiele eindcontrole
+
+## Suggesties + planner-datum (lopend)
+- [x] Suggestieblok herbruikbaar met "Zoek opnieuw"; ook op receptenpagina
+- [x] Inplannen: tweestapsflow (eerst gerecht, dan dag) gebouwd en getest

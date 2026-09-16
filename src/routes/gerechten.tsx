@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { tijdLabel } from "@/lib/tijd";
 import { EmptyState } from "@/components/EmptyState";
 import { PageSkeleton } from "@/components/PageSkeleton";
+import { NieuweSuggesties } from "@/components/NieuweSuggesties";
 
 export const Route = createFileRoute("/gerechten")({
   head: () => ({
@@ -351,6 +352,8 @@ function GerechtenPage() {
             ))}
           </ul>
         )}
+
+        <NieuweSuggesties recipes={recipes} favorites={favorites} />
       </div>
 
       {teVerwijderen && (
