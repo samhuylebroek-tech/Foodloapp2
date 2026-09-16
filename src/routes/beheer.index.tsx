@@ -21,6 +21,22 @@ const OMSCHRIJVING: Record<Periode, string> = {
   jaar: "laatste 12 maanden",
 };
 
+const KOP: Record<Periode, string> = {
+  dag: "Vandaag",
+  week: "Deze week",
+  maand: "Deze maand",
+  jaar: "Dit jaar",
+};
+
+const BEREIK: Record<Periode, "vandaag" | "zeven" | "dertig" | "jaar"> = {
+  dag: "vandaag",
+  week: "zeven",
+  maand: "dertig",
+  jaar: "jaar",
+};
+
+const DAGEN: Record<Periode, number> = { dag: 1, week: 7, maand: 30, jaar: 365 };
+
 const euro = (n: number) => `€ ${Number(n ?? 0).toFixed(Number(n) < 1 ? 4 : 2)}`;
 const klok = (iso: string) => new Date(iso).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" });
 
