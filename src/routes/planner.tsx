@@ -633,11 +633,12 @@ function GerechtKaart({ recept, onKies }: { recept: Recipe; onKies: () => void }
       onClick={onKies}
       className="flex min-h-20 w-full items-center gap-3 rounded-2xl border border-border bg-card p-2 text-left active:bg-secondary"
     >
-      {recept.image_url ? (
+      {recept.image_url && !fout ? (
         <img
           src={recept.image_url}
           alt=""
           loading="lazy"
+          onError={() => setFout(true)}
           className="size-16 shrink-0 rounded-xl object-cover"
         />
       ) : (
