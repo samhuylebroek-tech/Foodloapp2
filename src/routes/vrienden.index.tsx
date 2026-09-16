@@ -27,6 +27,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { appOrigin } from "@/lib/app-url";
 import { beantwoordUitnodiging, nodigUitVriend } from "@/lib/vrienden.functions";
+import { beantwoordGezinsUitnodiging } from "@/lib/gezin.functions";
 
 export const Route = createFileRoute("/vrienden/")({
   head: () => ({
@@ -181,6 +182,7 @@ function VriendenPage() {
         .from("group_members")
         .select("group_id")
         .eq("user_id", user!.id)
+        .eq("status", "actief")
         .limit(1)
         .maybeSingle();
       return data?.group_id ?? null;
@@ -194,10 +196,64 @@ function VriendenPage() {
       const { data, error } = await supabase
         .from("group_members")
         .select("user_id, recipes_view, recipes_edit")
-        .eq("group_id", gezinId!);
+        .eq("group_id", gezinId!)
+        .eq("status", "actief");
       if (error) throw error;
       return (data ?? []).filter((m) => m.user_id !== user!.id);
     },
+  });
+
+  // Gezinsuitnodigingen voor jou (nog niet beantwoord).
+  const { data: gezinsuitnodigingen = [] } = useQuery({
+    queryKey: ["gezinsuitnodigingen", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("group_members")
+        .select("group_id")
+        .eq("user_id", user!.id)
+        .eq("status", "uitgenodigd");
+      if (error) throw error;
+      const ids = (data ?? []).map((r) => r.group_id);
+      if (ids.length === 0) return [] as { group_id: string; naam: string; owner_id: string }[];
+      const { data: groepen, error: gErr } = await supabase
+        .from("groups")
+        .select("id, naam, owner_id")
+        .in("id", ids);
+      if (gErr) throw gErr;
+      return (groepen ?? []).map((g) => ({ group_id: g.id, naam: g.naam, owner_id: g.owner_id }));
+    },
+  });
+
+  // Nieuwe of beantwoorde gezinsuitnodigingen meteen tonen.
+  useEffect(() => {
+    if (!user) return;
+    const kanaal = supabase
+      .channel("vrienden-gezin")
+      .on("postgres_changes", { event: "*", schema: "public", table: "group_members" }, () => {
+        qc.invalidateQueries({ queryKey: ["gezinsuitnodigingen"] });
+        qc.invalidateQueries({ queryKey: ["gezin-kort"] });
+        qc.invalidateQueries({ queryKey: ["gezin-leden-kort"] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(kanaal);
+    };
+  }, [user, qc]);
+
+  const gezinAntwoord = useMutation({
+    mutationFn: async ({ groupId, ja }: { groupId: string; ja: boolean }) =>
+      beantwoordGezinsUitnodiging({ data: { groupId, ja } }),
+    onSuccess: (_res, vars) => {
+      qc.invalidateQueries({ queryKey: ["gezinsuitnodigingen"] });
+      qc.invalidateQueries({ queryKey: ["gezin-kort"] });
+      qc.invalidateQueries({ queryKey: ["gezin-leden-kort"] });
+      qc.invalidateQueries({ queryKey: ["gezin"] });
+      qc.invalidateQueries({ queryKey: ["planner-gezin"] });
+      qc.invalidateQueries({ queryKey: ["shopping-lists"] });
+      toast.success(vars.ja ? "Je hoort er nu bij!" : "Uitnodiging geweigerd.");
+    },
+    onError: () => toast.error("Dat lukte niet. Probeer het opnieuw."),
   });
 
   const mijnAlles = shares.filter((s) => s.owner_id === user?.id);
@@ -435,9 +491,41 @@ function VriendenPage() {
           </button>
         </div>
 
-        {voorMij.length > 0 && (
+        {(voorMij.length > 0 || gezinsuitnodigingen.length > 0) && (
           <section className="space-y-3 rounded-3xl border-2 border-primary/40 bg-primary/5 p-4">
-            <h2 className="font-display text-xl">Uitnodigingen voor jou ({voorMij.length})</h2>
+            <h2 className="font-display text-xl">
+              Uitnodigingen voor jou ({voorMij.length + gezinsuitnodigingen.length})
+            </h2>
+            {gezinsuitnodigingen.map((g) => (
+              <div key={g.group_id} className="rounded-2xl border border-border bg-card p-4">
+                <div className="flex items-center gap-3">
+                  <Avatar naam={g.naam} sleutel={g.group_id} />
+                  <div className="min-w-0">
+                    <p className="truncate text-lg font-semibold">Gezin “{g.naam}”</p>
+                    <p className="text-base text-muted-foreground">
+                      Je bent uitgenodigd om lid te worden
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                  <Button
+                    onClick={() => gezinAntwoord.mutate({ groupId: g.group_id, ja: true })}
+                    disabled={gezinAntwoord.isPending}
+                    className="h-14 w-full text-base sm:flex-1"
+                  >
+                    <Check className="size-5" /> Aannemen
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => gezinAntwoord.mutate({ groupId: g.group_id, ja: false })}
+                    disabled={gezinAntwoord.isPending}
+                    className="h-14 w-full text-base sm:flex-1"
+                  >
+                    Nee, bedankt
+                  </Button>
+                </div>
+              </div>
+            ))}
             {voorMij.map((s) => (
               <div key={s.id} className="rounded-2xl border border-border bg-card p-4">
                 <div className="flex items-center gap-3">

@@ -538,6 +538,7 @@ export type Database = {
           rol: string
           shopping_edit: boolean
           shopping_view: boolean
+          status: string
           user_id: string
         }
         Insert: {
@@ -551,6 +552,7 @@ export type Database = {
           rol?: string
           shopping_edit?: boolean
           shopping_view?: boolean
+          status?: string
           user_id: string
         }
         Update: {
@@ -564,6 +566,7 @@ export type Database = {
           rol?: string
           shopping_edit?: boolean
           shopping_view?: boolean
+          status?: string
           user_id?: string
         }
         Relationships: [
@@ -709,6 +712,7 @@ export type Database = {
         Row: {
           created_at: string
           custom_title: string | null
+          group_id: string | null
           id: string
           meal_type: string
           plan_date: string
@@ -718,6 +722,7 @@ export type Database = {
         Insert: {
           created_at?: string
           custom_title?: string | null
+          group_id?: string | null
           id?: string
           meal_type?: string
           plan_date: string
@@ -727,6 +732,7 @@ export type Database = {
         Update: {
           created_at?: string
           custom_title?: string | null
+          group_id?: string | null
           id?: string
           meal_type?: string
           plan_date?: string
@@ -734,6 +740,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "meal_plan_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "meal_plan_recipe_id_fkey"
             columns: ["recipe_id"]
@@ -1266,6 +1279,7 @@ export type Database = {
       shopping_lists: {
         Row: {
           created_at: string
+          group_id: string | null
           id: string
           name: string
           updated_at: string
@@ -1273,6 +1287,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          group_id?: string | null
           id?: string
           name?: string
           updated_at?: string
@@ -1280,12 +1295,21 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          group_id?: string | null
           id?: string
           name?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "shopping_lists_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       site_content: {
         Row: {
@@ -1374,6 +1398,7 @@ export type Database = {
     }
     Functions: {
       accept_share: { Args: { _token: string }; Returns: string }
+      accepteer_gezin: { Args: { _group: string }; Returns: string }
       admin_login_stats: {
         Args: { _user: string }
         Returns: {
@@ -1431,6 +1456,10 @@ export type Database = {
       in_groep: { Args: { _group: string; _user: string }; Returns: boolean }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       join_group: { Args: { _token: string }; Returns: string }
+      nodig_gezinslid: {
+        Args: { _group: string; _user: string }
+        Returns: string
+      }
       samen_in_groep: { Args: { _a: string; _b: string }; Returns: boolean }
       zoek_gebruiker: {
         Args: { _term: string }

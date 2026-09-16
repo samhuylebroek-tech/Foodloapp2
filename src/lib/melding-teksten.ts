@@ -7,7 +7,9 @@ export type Soort =
   | "shopping"
   | "cooking"
   | "uitnodiging"
-  | "uitnodiging_ok";
+  | "uitnodiging_ok"
+  | "gezinsuitnodiging"
+  | "gezin_ok";
 
 type Regels = {
   merk: string;
@@ -28,6 +30,10 @@ type Regels = {
   uitnodiging_body: (naam: string) => string;
   uitnodiging_ok_titel: string;
   uitnodiging_ok_body: (naam: string) => string;
+  gezinsuitnodiging_titel: string;
+  gezinsuitnodiging_body: (naam: string, gezin: string) => string;
+  gezin_ok_titel: string;
+  gezin_ok_body: (naam: string, gezin: string) => string;
 };
 
 const nl: Regels = {
@@ -49,6 +55,10 @@ const nl: Regels = {
   uitnodiging_body: (n) => `${n} wil met jou delen in Foodlo.`,
   uitnodiging_ok_titel: "Jullie zijn verbonden 🎉",
   uitnodiging_ok_body: (n) => `${n} heeft je uitnodiging aangenomen.`,
+  gezinsuitnodiging_titel: "Uitnodiging voor je gezin 🏠",
+  gezinsuitnodiging_body: (n, g) => `${n} nodigt je uit voor gezin “${g}”.`,
+  gezin_ok_titel: "Je gezin groeit 🎉",
+  gezin_ok_body: (n, g) => `${n} is nu lid van gezin “${g}”.`,
 };
 
 const en: Regels = {
@@ -70,6 +80,10 @@ const en: Regels = {
   uitnodiging_body: (n) => `${n} wants to share with you on Foodlo.`,
   uitnodiging_ok_titel: "You're connected 🎉",
   uitnodiging_ok_body: (n) => `${n} accepted your invitation.`,
+  gezinsuitnodiging_titel: "Family invitation 🏠",
+  gezinsuitnodiging_body: (n, g) => `${n} invites you to the family “${g}”.`,
+  gezin_ok_titel: "Your family is growing 🎉",
+  gezin_ok_body: (n, g) => `${n} is now a member of “${g}”.`,
 };
 
 const fr: Regels = {
@@ -91,6 +105,10 @@ const fr: Regels = {
   uitnodiging_body: (n) => `${n} souhaite partager avec vous sur Foodlo.`,
   uitnodiging_ok_titel: "Vous êtes connectés 🎉",
   uitnodiging_ok_body: (n) => `${n} a accepté votre invitation.`,
+  gezinsuitnodiging_titel: "Invitation famille 🏠",
+  gezinsuitnodiging_body: (n, g) => `${n} vous invite dans la famille « ${g} ».`,
+  gezin_ok_titel: "Votre famille s'agrandit 🎉",
+  gezin_ok_body: (n, g) => `${n} fait maintenant partie de « ${g} ».`,
 };
 
 const de: Regels = {
@@ -112,6 +130,10 @@ const de: Regels = {
   uitnodiging_body: (n) => `${n} möchte mit dir in Foodlo teilen.`,
   uitnodiging_ok_titel: "Ihr seid verbunden 🎉",
   uitnodiging_ok_body: (n) => `${n} hat deine Einladung angenommen.`,
+  gezinsuitnodiging_titel: "Familien-Einladung 🏠",
+  gezinsuitnodiging_body: (n, g) => `${n} lädt dich in die Familie „${g}“ ein.`,
+  gezin_ok_titel: "Deine Familie wächst 🎉",
+  gezin_ok_body: (n, g) => `${n} ist jetzt Mitglied von „${g}“.`,
 };
 
 const TALEN: Record<string, Regels> = { nl, en, fr, de };

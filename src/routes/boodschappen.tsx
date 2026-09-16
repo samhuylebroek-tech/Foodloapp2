@@ -51,12 +51,26 @@ function BoodschappenPage() {
       await zorgVoorLijst(user.id);
       const { data, error } = await supabase
         .from("shopping_lists")
-        .select("id, name, created_at")
+        .select("id, name, created_at, group_id")
         .order("created_at");
       if (error) throw error;
       return data as ShoppingList[];
     },
   });
+
+  // De gezamenlijke gezinslijst ververst mee als een gezinslid iets aanpast.
+  useEffect(() => {
+    if (!user) return;
+    const kanaal = supabase
+      .channel("boodschappen-items")
+      .on("postgres_changes", { event: "*", schema: "public", table: "shopping_items" }, () => {
+        qc.invalidateQueries({ queryKey: ["shopping"] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(kanaal);
+    };
+  }, [user, qc]);
 
   useEffect(() => {
     if (!actief && lijsten.length) setActief(lijsten[0]!.id);
@@ -82,7 +96,8 @@ function BoodschappenPage() {
   const refresh = () => qc.invalidateQueries({ queryKey: ["shopping"] });
   const refreshLijsten = () => qc.invalidateQueries({ queryKey: ["shopping-lists"] });
   const [vraagVerwijder, setVraagVerwijder] = useState(false);
-  const actieveNaam = lijsten.find((l) => l.id === actief)?.name ?? "";
+  const actieveLijst = lijsten.find((l) => l.id === actief);
+  const actieveNaam = actieveLijst?.name ?? "";
 
   async function nieuwLijstje() {
     if (!user) return;
@@ -187,6 +202,17 @@ function BoodschappenPage() {
               }
             >
               {l.name}
+              {l.group_id ? (
+                <span
+                  className={
+                    l.id === actief
+                      ? "ml-2 rounded-full bg-primary-foreground/20 px-2 py-0.5 text-xs font-bold"
+                      : "ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary"
+                  }
+                >
+                  gezin
+                </span>
+              ) : null}
             </button>
           ))}
           <button
@@ -198,7 +224,7 @@ function BoodschappenPage() {
           </button>
         </div>
 
-        {lijsten.length > 0 && (
+        {lijsten.length > 0 && !actieveLijst?.group_id && (
           <div className="flex gap-2">
             <Button variant="ghost" onClick={hernoem} className="h-12 text-base">
               <Pencil className="size-4" /> Naam wijzigen
@@ -209,6 +235,11 @@ function BoodschappenPage() {
               </Button>
             )}
           </div>
+        )}
+        {actieveLijst?.group_id && (
+          <p className="text-base text-muted-foreground">
+            Deze lijst is van het hele gezin — iedereen vult aan en vinkt af.
+          </p>
         )}
 
         <div className="flex gap-2">
