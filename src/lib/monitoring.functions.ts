@@ -453,6 +453,8 @@ export const adminKosten = createServerFn({ method: "GET" })
       gisteren: kostIn((r) => r.created_at.slice(0, 10) === gisteren),
       zeven: kostIn((r) => r.created_at.slice(0, 10) >= sinds7),
       dertig: totaal30,
+      dagen,
+      periodeKost: kostIn((r) => String(r.created_at).slice(0, 10) >= sindsPeriode),
       perActieveGebruiker: actieve ? euro(totaal30 / actieve) : 0,
       perFeature: groepeer("feature"),
       perModel: groepeer("model"),
