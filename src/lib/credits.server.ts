@@ -34,22 +34,68 @@ function vertaalFout(e: unknown): Error {
   return e instanceof Error ? e : new Error(tekst);
 }
 
-async function meet(row: {
-  user_id: string | null;
-  feature: string;
-  model: string;
-  cache_hit: boolean;
-  credits: number;
-  duration_ms: number;
-  ok: boolean;
-}) {
+/** Verbruiksmeter die een AI-taak zelf kan invullen (tokens, beelden). */
+export type AiMeter = {
+  tokens_in: number;
+  tokens_out: number;
+  beelden: number;
+  provider: string;
+  error_code: string | null;
+  group_id: string | null;
+};
+
+export function nieuweMeter(): AiMeter {
+  return { tokens_in: 0, tokens_out: 0, beelden: 0, provider: "lovable", error_code: null, group_id: null };
+}
+
+/** Werkelijke kost in euro op basis van de prijslijst in het Control Center. */
+export async function berekenKost(model: string, m: AiMeter): Promise<number> {
   try {
     const db = await admin();
-    await db.from("ai_usage").insert(row);
+    const { data } = await db.from("model_prices").select("*").eq("model", model).maybeSingle();
+    if (!data) return 0;
+    const kost =
+      (m.tokens_in / 1_000_000) * Number(data.eur_per_1m_in ?? 0) +
+      (m.tokens_out / 1_000_000) * Number(data.eur_per_1m_out ?? 0) +
+      m.beelden * Number(data.eur_per_beeld ?? 0) +
+      Number(data.eur_per_call ?? 0);
+    return Math.round(kost * 1_000_000) / 1_000_000;
+  } catch {
+    return 0;
+  }
+}
+
+async function meet(
+  row: {
+    user_id: string | null;
+    feature: string;
+    model: string;
+    cache_hit: boolean;
+    credits: number;
+    duration_ms: number;
+    ok: boolean;
+  },
+  m?: AiMeter,
+) {
+  try {
+    const db = await admin();
+    const meter = m ?? nieuweMeter();
+    const kost = row.cache_hit ? 0 : await berekenKost(row.model, meter);
+    await db.from("ai_usage").insert({
+      ...row,
+      provider: meter.provider,
+      tokens_in: meter.tokens_in,
+      tokens_out: meter.tokens_out,
+      beelden: meter.beelden,
+      kost_eur: kost,
+      group_id: meter.group_id,
+      error_code: meter.error_code,
+    });
   } catch {
     // meten mag de app nooit breken
   }
 }
+
 
 /**
  * Voert een dure AI-taak uit met cache en credits.
@@ -57,12 +103,22 @@ async function meet(row: {
  * - Mislukking = credits worden teruggestort.
  */
 export async function metCredits<T>(
-  opts: { userId: string; feature: string; cacheSleutel?: string; model?: string; promptVersie?: number },
-  run: () => Promise<T>,
+  opts: {
+    userId: string;
+    feature: string;
+    cacheSleutel?: string;
+    model?: string;
+    promptVersie?: number;
+    groupId?: string | null;
+  },
+  run: (meter: AiMeter) => Promise<T>,
 ): Promise<{ resultaat: T; credits: number; cache: boolean; saldo: number | null }> {
   const db = await admin();
   const model = opts.model ?? "";
+  const meter = nieuweMeter();
+  meter.group_id = opts.groupId ?? null;
   const start = Date.now();
+
   const hash = opts.cacheSleutel
     ? hashInvoer(opts.feature, opts.cacheSleutel, opts.promptVersie ?? 1)
     : null;
@@ -86,7 +142,7 @@ export async function metCredits<T>(
         credits: 0,
         duration_ms: Date.now() - start,
         ok: true,
-      });
+      }, meter);
       return { resultaat: data.result as T, credits: 0, cache: true, saldo: null };
     }
   }
@@ -104,7 +160,7 @@ export async function metCredits<T>(
   }
 
   try {
-    const resultaat = await run();
+    const resultaat = await run(meter);
     if (reservering.txn) await db.rpc("credits_afronden", { _txn: reservering.txn });
     if (hash) {
       await db.from("ai_cache").upsert(
@@ -126,7 +182,7 @@ export async function metCredits<T>(
       credits: reservering.kosten,
       duration_ms: Date.now() - start,
       ok: true,
-    });
+    }, meter);
     return { resultaat, credits: reservering.kosten, cache: false, saldo: reservering.saldo };
   } catch (e) {
     if (reservering.txn) await db.rpc("credits_terugstorten", { _txn: reservering.txn });
@@ -138,7 +194,7 @@ export async function metCredits<T>(
       credits: 0,
       duration_ms: Date.now() - start,
       ok: false,
-    });
+    }, meter);
     throw vertaalFout(e);
   }
 }

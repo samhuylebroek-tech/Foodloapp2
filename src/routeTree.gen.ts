@@ -26,11 +26,14 @@ import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as UitnodigingRouteImport } from './routes/uitnodiging'
 import { Route as WelkomRouteImport } from './routes/welkom'
 import { Route as BeheerIndexRouteImport } from './routes/beheer.index'
+import { Route as BeheerActiviteitRouteImport } from './routes/beheer.activiteit'
 import { Route as BeheerAiRouteImport } from './routes/beheer.ai'
 import { Route as BeheerAnalyticsRouteImport } from './routes/beheer.analytics'
 import { Route as BeheerBeveiligingRouteImport } from './routes/beheer.beveiliging'
+import { Route as BeheerCommunicatieRouteImport } from './routes/beheer.communicatie'
 import { Route as BeheerCreditsRouteImport } from './routes/beheer.credits'
 import { Route as BeheerGebruikersRouteImport } from './routes/beheer.gebruikers'
+import { Route as BeheerGroepenRouteImport } from './routes/beheer.groepen'
 import { Route as BeheerImportsRouteImport } from './routes/beheer.imports'
 import { Route as BeheerInhoudRouteImport } from './routes/beheer.inhoud'
 import { Route as BeheerInstellingenRouteImport } from './routes/beheer.instellingen'
@@ -48,6 +51,7 @@ import { Route as ReceptenIdRouteImport } from './routes/recepten.$id'
 import { Route as ReceptenNieuwRouteImport } from './routes/recepten.nieuw'
 import { Route as VriendenIndexRouteImport } from './routes/vrienden.index'
 import { Route as VriendenIdRouteImport } from './routes/vrienden.$id'
+import { Route as BeheerGebruikerIdRouteImport } from './routes/beheer.gebruiker.$id'
 import { Route as ReceptenIdBewerkenRouteImport } from './routes/recepten.$id.bewerken'
 import { Route as ApiPublicMeldingenRunRouteImport } from './routes/api/public/meldingen.run'
 
@@ -136,6 +140,11 @@ const BeheerIndexRoute = BeheerIndexRouteImport.update({
   path: '/',
   getParentRoute: () => BeheerRoute,
 } as any)
+const BeheerActiviteitRoute = BeheerActiviteitRouteImport.update({
+  id: '/activiteit',
+  path: '/activiteit',
+  getParentRoute: () => BeheerRoute,
+} as any)
 const BeheerAiRoute = BeheerAiRouteImport.update({
   id: '/ai',
   path: '/ai',
@@ -151,6 +160,11 @@ const BeheerBeveiligingRoute = BeheerBeveiligingRouteImport.update({
   path: '/beveiliging',
   getParentRoute: () => BeheerRoute,
 } as any)
+const BeheerCommunicatieRoute = BeheerCommunicatieRouteImport.update({
+  id: '/communicatie',
+  path: '/communicatie',
+  getParentRoute: () => BeheerRoute,
+} as any)
 const BeheerCreditsRoute = BeheerCreditsRouteImport.update({
   id: '/credits',
   path: '/credits',
@@ -159,6 +173,11 @@ const BeheerCreditsRoute = BeheerCreditsRouteImport.update({
 const BeheerGebruikersRoute = BeheerGebruikersRouteImport.update({
   id: '/gebruikers',
   path: '/gebruikers',
+  getParentRoute: () => BeheerRoute,
+} as any)
+const BeheerGroepenRoute = BeheerGroepenRouteImport.update({
+  id: '/groepen',
+  path: '/groepen',
   getParentRoute: () => BeheerRoute,
 } as any)
 const BeheerImportsRoute = BeheerImportsRouteImport.update({
@@ -246,6 +265,11 @@ const VriendenIdRoute = VriendenIdRouteImport.update({
   path: '/vrienden/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BeheerGebruikerIdRoute = BeheerGebruikerIdRouteImport.update({
+  id: '/gebruiker/$id',
+  path: '/gebruiker/$id',
+  getParentRoute: () => BeheerRoute,
+} as any)
 const ReceptenIdBewerkenRoute = ReceptenIdBewerkenRouteImport.update({
   id: '/bewerken',
   path: '/bewerken',
@@ -274,11 +298,14 @@ export interface FileRoutesByFullPath {
   '/planner': typeof PlannerRoute
   '/uitnodiging': typeof UitnodigingRoute
   '/welkom': typeof WelkomRoute
+  '/beheer/activiteit': typeof BeheerActiviteitRoute
   '/beheer/ai': typeof BeheerAiRoute
   '/beheer/analytics': typeof BeheerAnalyticsRoute
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
+  '/beheer/communicatie': typeof BeheerCommunicatieRoute
   '/beheer/credits': typeof BeheerCreditsRoute
   '/beheer/gebruikers': typeof BeheerGebruikersRoute
+  '/beheer/groepen': typeof BeheerGroepenRoute
   '/beheer/imports': typeof BeheerImportsRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
@@ -297,6 +324,7 @@ export interface FileRoutesByFullPath {
   '/beheer/': typeof BeheerIndexRoute
   '/kaarten/': typeof KaartenIndexRoute
   '/vrienden/': typeof VriendenIndexRoute
+  '/beheer/gebruiker/$id': typeof BeheerGebruikerIdRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
   '/api/public/meldingen/run': typeof ApiPublicMeldingenRunRoute
 }
@@ -316,11 +344,14 @@ export interface FileRoutesByTo {
   '/planner': typeof PlannerRoute
   '/uitnodiging': typeof UitnodigingRoute
   '/welkom': typeof WelkomRoute
+  '/beheer/activiteit': typeof BeheerActiviteitRoute
   '/beheer/ai': typeof BeheerAiRoute
   '/beheer/analytics': typeof BeheerAnalyticsRoute
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
+  '/beheer/communicatie': typeof BeheerCommunicatieRoute
   '/beheer/credits': typeof BeheerCreditsRoute
   '/beheer/gebruikers': typeof BeheerGebruikersRoute
+  '/beheer/groepen': typeof BeheerGroepenRoute
   '/beheer/imports': typeof BeheerImportsRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
@@ -339,6 +370,7 @@ export interface FileRoutesByTo {
   '/beheer': typeof BeheerIndexRoute
   '/kaarten': typeof KaartenIndexRoute
   '/vrienden': typeof VriendenIndexRoute
+  '/beheer/gebruiker/$id': typeof BeheerGebruikerIdRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
   '/api/public/meldingen/run': typeof ApiPublicMeldingenRunRoute
 }
@@ -360,11 +392,14 @@ export interface FileRoutesById {
   '/planner': typeof PlannerRoute
   '/uitnodiging': typeof UitnodigingRoute
   '/welkom': typeof WelkomRoute
+  '/beheer/activiteit': typeof BeheerActiviteitRoute
   '/beheer/ai': typeof BeheerAiRoute
   '/beheer/analytics': typeof BeheerAnalyticsRoute
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
+  '/beheer/communicatie': typeof BeheerCommunicatieRoute
   '/beheer/credits': typeof BeheerCreditsRoute
   '/beheer/gebruikers': typeof BeheerGebruikersRoute
+  '/beheer/groepen': typeof BeheerGroepenRoute
   '/beheer/imports': typeof BeheerImportsRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
@@ -383,6 +418,7 @@ export interface FileRoutesById {
   '/beheer/': typeof BeheerIndexRoute
   '/kaarten/': typeof KaartenIndexRoute
   '/vrienden/': typeof VriendenIndexRoute
+  '/beheer/gebruiker/$id': typeof BeheerGebruikerIdRoute
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
   '/api/public/meldingen/run': typeof ApiPublicMeldingenRunRoute
 }
@@ -405,11 +441,14 @@ export interface FileRouteTypes {
     | '/planner'
     | '/uitnodiging'
     | '/welkom'
+    | '/beheer/activiteit'
     | '/beheer/ai'
     | '/beheer/analytics'
     | '/beheer/beveiliging'
+    | '/beheer/communicatie'
     | '/beheer/credits'
     | '/beheer/gebruikers'
+    | '/beheer/groepen'
     | '/beheer/imports'
     | '/beheer/inhoud'
     | '/beheer/instellingen'
@@ -428,6 +467,7 @@ export interface FileRouteTypes {
     | '/beheer/'
     | '/kaarten/'
     | '/vrienden/'
+    | '/beheer/gebruiker/$id'
     | '/recepten/$id/bewerken'
     | '/api/public/meldingen/run'
   fileRoutesByTo: FileRoutesByTo
@@ -447,11 +487,14 @@ export interface FileRouteTypes {
     | '/planner'
     | '/uitnodiging'
     | '/welkom'
+    | '/beheer/activiteit'
     | '/beheer/ai'
     | '/beheer/analytics'
     | '/beheer/beveiliging'
+    | '/beheer/communicatie'
     | '/beheer/credits'
     | '/beheer/gebruikers'
+    | '/beheer/groepen'
     | '/beheer/imports'
     | '/beheer/inhoud'
     | '/beheer/instellingen'
@@ -470,6 +513,7 @@ export interface FileRouteTypes {
     | '/beheer'
     | '/kaarten'
     | '/vrienden'
+    | '/beheer/gebruiker/$id'
     | '/recepten/$id/bewerken'
     | '/api/public/meldingen/run'
   id:
@@ -490,11 +534,14 @@ export interface FileRouteTypes {
     | '/planner'
     | '/uitnodiging'
     | '/welkom'
+    | '/beheer/activiteit'
     | '/beheer/ai'
     | '/beheer/analytics'
     | '/beheer/beveiliging'
+    | '/beheer/communicatie'
     | '/beheer/credits'
     | '/beheer/gebruikers'
+    | '/beheer/groepen'
     | '/beheer/imports'
     | '/beheer/inhoud'
     | '/beheer/instellingen'
@@ -513,6 +560,7 @@ export interface FileRouteTypes {
     | '/beheer/'
     | '/kaarten/'
     | '/vrienden/'
+    | '/beheer/gebruiker/$id'
     | '/recepten/$id/bewerken'
     | '/api/public/meldingen/run'
   fileRoutesById: FileRoutesById
@@ -664,6 +712,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerIndexRouteImport
       parentRoute: typeof BeheerRoute
     }
+    '/beheer/activiteit': {
+      id: '/beheer/activiteit'
+      path: '/activiteit'
+      fullPath: '/beheer/activiteit'
+      preLoaderRoute: typeof BeheerActiviteitRouteImport
+      parentRoute: typeof BeheerRoute
+    }
     '/beheer/ai': {
       id: '/beheer/ai'
       path: '/ai'
@@ -685,6 +740,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerBeveiligingRouteImport
       parentRoute: typeof BeheerRoute
     }
+    '/beheer/communicatie': {
+      id: '/beheer/communicatie'
+      path: '/communicatie'
+      fullPath: '/beheer/communicatie'
+      preLoaderRoute: typeof BeheerCommunicatieRouteImport
+      parentRoute: typeof BeheerRoute
+    }
     '/beheer/credits': {
       id: '/beheer/credits'
       path: '/credits'
@@ -697,6 +759,13 @@ declare module '@tanstack/react-router' {
       path: '/gebruikers'
       fullPath: '/beheer/gebruikers'
       preLoaderRoute: typeof BeheerGebruikersRouteImport
+      parentRoute: typeof BeheerRoute
+    }
+    '/beheer/groepen': {
+      id: '/beheer/groepen'
+      path: '/groepen'
+      fullPath: '/beheer/groepen'
+      preLoaderRoute: typeof BeheerGroepenRouteImport
       parentRoute: typeof BeheerRoute
     }
     '/beheer/imports': {
@@ -818,6 +887,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VriendenIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/beheer/gebruiker/$id': {
+      id: '/beheer/gebruiker/$id'
+      path: '/gebruiker/$id'
+      fullPath: '/beheer/gebruiker/$id'
+      preLoaderRoute: typeof BeheerGebruikerIdRouteImport
+      parentRoute: typeof BeheerRoute
+    }
     '/recepten/$id/bewerken': {
       id: '/recepten/$id/bewerken'
       path: '/bewerken'
@@ -836,11 +912,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface BeheerRouteChildren {
+  BeheerActiviteitRoute: typeof BeheerActiviteitRoute
   BeheerAiRoute: typeof BeheerAiRoute
   BeheerAnalyticsRoute: typeof BeheerAnalyticsRoute
   BeheerBeveiligingRoute: typeof BeheerBeveiligingRoute
+  BeheerCommunicatieRoute: typeof BeheerCommunicatieRoute
   BeheerCreditsRoute: typeof BeheerCreditsRoute
   BeheerGebruikersRoute: typeof BeheerGebruikersRoute
+  BeheerGroepenRoute: typeof BeheerGroepenRoute
   BeheerImportsRoute: typeof BeheerImportsRoute
   BeheerInhoudRoute: typeof BeheerInhoudRoute
   BeheerInstellingenRoute: typeof BeheerInstellingenRoute
@@ -853,14 +932,18 @@ interface BeheerRouteChildren {
   BeheerTeamRoute: typeof BeheerTeamRoute
   BeheerTekstenRoute: typeof BeheerTekstenRoute
   BeheerIndexRoute: typeof BeheerIndexRoute
+  BeheerGebruikerIdRoute: typeof BeheerGebruikerIdRoute
 }
 
 const BeheerRouteChildren: BeheerRouteChildren = {
+  BeheerActiviteitRoute: BeheerActiviteitRoute,
   BeheerAiRoute: BeheerAiRoute,
   BeheerAnalyticsRoute: BeheerAnalyticsRoute,
   BeheerBeveiligingRoute: BeheerBeveiligingRoute,
+  BeheerCommunicatieRoute: BeheerCommunicatieRoute,
   BeheerCreditsRoute: BeheerCreditsRoute,
   BeheerGebruikersRoute: BeheerGebruikersRoute,
+  BeheerGroepenRoute: BeheerGroepenRoute,
   BeheerImportsRoute: BeheerImportsRoute,
   BeheerInhoudRoute: BeheerInhoudRoute,
   BeheerInstellingenRoute: BeheerInstellingenRoute,
@@ -873,6 +956,7 @@ const BeheerRouteChildren: BeheerRouteChildren = {
   BeheerTeamRoute: BeheerTeamRoute,
   BeheerTekstenRoute: BeheerTekstenRoute,
   BeheerIndexRoute: BeheerIndexRoute,
+  BeheerGebruikerIdRoute: BeheerGebruikerIdRoute,
 }
 
 const BeheerRouteWithChildren =

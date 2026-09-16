@@ -95,6 +95,95 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_message_recipients: {
+        Row: {
+          created_at: string
+          fout: string | null
+          id: string
+          kanaal: string
+          message_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fout?: string | null
+          id?: string
+          kanaal?: string
+          message_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fout?: string | null
+          id?: string
+          kanaal?: string
+          message_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_message_recipients_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "admin_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_messages: {
+        Row: {
+          actor_id: string | null
+          bericht: string
+          created_at: string
+          doel_id: string | null
+          doelgroep: string
+          fout: string | null
+          id: string
+          kanaal: string
+          mislukt: number
+          onderwerp: string
+          ontvangers: number
+          segment: string | null
+          status: string
+          verzonden: number
+        }
+        Insert: {
+          actor_id?: string | null
+          bericht?: string
+          created_at?: string
+          doel_id?: string | null
+          doelgroep?: string
+          fout?: string | null
+          id?: string
+          kanaal?: string
+          mislukt?: number
+          onderwerp?: string
+          ontvangers?: number
+          segment?: string | null
+          status?: string
+          verzonden?: number
+        }
+        Update: {
+          actor_id?: string | null
+          bericht?: string
+          created_at?: string
+          doel_id?: string | null
+          doelgroep?: string
+          fout?: string | null
+          id?: string
+          kanaal?: string
+          mislukt?: number
+          onderwerp?: string
+          ontvangers?: number
+          segment?: string | null
+          status?: string
+          verzonden?: number
+        }
+        Relationships: []
+      }
       admin_rate_limits: {
         Row: {
           action: string
@@ -247,36 +336,57 @@ export type Database = {
       }
       ai_usage: {
         Row: {
+          beelden: number
           cache_hit: boolean
           created_at: string
           credits: number
           duration_ms: number
+          error_code: string | null
           feature: string
+          group_id: string | null
           id: string
+          kost_eur: number
           model: string
           ok: boolean
+          provider: string
+          tokens_in: number
+          tokens_out: number
           user_id: string | null
         }
         Insert: {
+          beelden?: number
           cache_hit?: boolean
           created_at?: string
           credits?: number
           duration_ms?: number
+          error_code?: string | null
           feature: string
+          group_id?: string | null
           id?: string
+          kost_eur?: number
           model?: string
           ok?: boolean
+          provider?: string
+          tokens_in?: number
+          tokens_out?: number
           user_id?: string | null
         }
         Update: {
+          beelden?: number
           cache_hit?: boolean
           created_at?: string
           credits?: number
           duration_ms?: number
+          error_code?: string | null
           feature?: string
+          group_id?: string | null
           id?: string
+          kost_eur?: number
           model?: string
           ok?: boolean
+          provider?: string
+          tokens_in?: number
+          tokens_out?: number
           user_id?: string | null
         }
         Relationships: []
@@ -314,6 +424,39 @@ export type Database = {
           level?: string
           starts_at?: string
           title?: string
+        }
+        Relationships: []
+      }
+      app_errors: {
+        Row: {
+          bericht: string
+          created_at: string
+          detail: string
+          feature: string
+          id: string
+          path: string | null
+          soort: string
+          user_id: string | null
+        }
+        Insert: {
+          bericht?: string
+          created_at?: string
+          detail?: string
+          feature?: string
+          id?: string
+          path?: string | null
+          soort?: string
+          user_id?: string | null
+        }
+        Update: {
+          bericht?: string
+          created_at?: string
+          detail?: string
+          feature?: string
+          id?: string
+          path?: string | null
+          soort?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -454,6 +597,102 @@ export type Database = {
           reference_id?: string | null
           status?: string
           type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_platform_stats: {
+        Row: {
+          actieve_gebruikers: number
+          ai_calls: number
+          bijgewerkt: string
+          credits: number
+          dag: string
+          fouten: number
+          handelingen: number
+          imports: number
+          kost_eur: number
+          lijsten: number
+          nieuwe_gebruikers: number
+          nieuwe_recepten: number
+          sessies: number
+          weekmenus: number
+        }
+        Insert: {
+          actieve_gebruikers?: number
+          ai_calls?: number
+          bijgewerkt?: string
+          credits?: number
+          dag: string
+          fouten?: number
+          handelingen?: number
+          imports?: number
+          kost_eur?: number
+          lijsten?: number
+          nieuwe_gebruikers?: number
+          nieuwe_recepten?: number
+          sessies?: number
+          weekmenus?: number
+        }
+        Update: {
+          actieve_gebruikers?: number
+          ai_calls?: number
+          bijgewerkt?: string
+          credits?: number
+          dag?: string
+          fouten?: number
+          handelingen?: number
+          imports?: number
+          kost_eur?: number
+          lijsten?: number
+          nieuwe_gebruikers?: number
+          nieuwe_recepten?: number
+          sessies?: number
+          weekmenus?: number
+        }
+        Relationships: []
+      }
+      daily_user_stats: {
+        Row: {
+          ai_calls: number
+          bijgewerkt: string
+          credits: number
+          dag: string
+          fouten: number
+          handelingen: number
+          imports: number
+          kost_eur: number
+          plan_items: number
+          recepten: number
+          sessies: number
+          user_id: string
+        }
+        Insert: {
+          ai_calls?: number
+          bijgewerkt?: string
+          credits?: number
+          dag: string
+          fouten?: number
+          handelingen?: number
+          imports?: number
+          kost_eur?: number
+          plan_items?: number
+          recepten?: number
+          sessies?: number
+          user_id: string
+        }
+        Update: {
+          ai_calls?: number
+          bijgewerkt?: string
+          credits?: number
+          dag?: string
+          fouten?: number
+          handelingen?: number
+          imports?: number
+          kost_eur?: number
+          plan_items?: number
+          recepten?: number
+          sessies?: number
           user_id?: string
         }
         Relationships: []
@@ -755,6 +994,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      model_prices: {
+        Row: {
+          actief: boolean
+          eur_per_1m_in: number
+          eur_per_1m_out: number
+          eur_per_beeld: number
+          eur_per_call: number
+          model: string
+          provider: string
+          updated_at: string
+        }
+        Insert: {
+          actief?: boolean
+          eur_per_1m_in?: number
+          eur_per_1m_out?: number
+          eur_per_beeld?: number
+          eur_per_call?: number
+          model: string
+          provider?: string
+          updated_at?: string
+        }
+        Update: {
+          actief?: boolean
+          eur_per_1m_in?: number
+          eur_per_1m_out?: number
+          eur_per_beeld?: number
+          eur_per_call?: number
+          model?: string
+          provider?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       notification_defaults: {
         Row: {
@@ -1341,6 +1613,7 @@ export type Database = {
       usage_events: {
         Row: {
           created_at: string
+          detail: Json
           event: string
           id: string
           path: string | null
@@ -1348,6 +1621,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          detail?: Json
           event: string
           id?: string
           path?: string | null
@@ -1355,6 +1629,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          detail?: Json
           event?: string
           id?: string
           path?: string | null

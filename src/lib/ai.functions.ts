@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { metCredits } from "@/lib/credits.server";
+import { metCredits, type AiMeter } from "@/lib/credits.server";
 import {
   adapterVoor,
   detecteerPlatform,
@@ -33,7 +33,7 @@ async function logAi(kind: string, ok: boolean, ms: number, error?: string) {
   }
 }
 
-async function askAI(messages: unknown[], kind = "chat") {
+async function askAI(messages: unknown[], kind = "chat", meter?: AiMeter) {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new Error("AI is niet beschikbaar.");
   const start = Date.now();
@@ -53,7 +53,14 @@ async function askAI(messages: unknown[], kind = "chat") {
         throw new Error("De slimme functies zijn tijdelijk niet beschikbaar. Probeer het later opnieuw.");
       throw new Error(`AI-fout: ${res.status} ${text.slice(0, 200)}`);
     }
-    const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    const json = (await res.json()) as {
+      choices?: { message?: { content?: string } }[];
+      usage?: { prompt_tokens?: number; completion_tokens?: number };
+    };
+    if (meter) {
+      meter.tokens_in += json.usage?.prompt_tokens ?? 0;
+      meter.tokens_out += json.usage?.completion_tokens ?? 0;
+    }
     await logAi(kind, true, Date.now() - start);
     return json.choices?.[0]?.message?.content ?? "";
   } catch (e) {
@@ -423,7 +430,7 @@ export const importRecipeFromUrl = createServerFn({ method: "POST" })
     try {
       uitkomst = await metCredits(
         { userId: context.userId, feature: "import_url", cacheSleutel: `${url}|${bron.slice(0, 4000)}`, model: MODEL },
-        async () => {
+        async (meter) => {
           const raw = await askAI(
             [
               {
@@ -435,7 +442,8 @@ export const importRecipeFromUrl = createServerFn({ method: "POST" })
               { role: "user", content: `Bron: ${url}\n\nTekst:\n${bron}` },
             ],
             "import_url",
-          );
+           meter,
+        );
           const parsed = parseJson<Partial<ImportedRecipe>>(raw, {});
           if (!parsed.title) {
             throw new Error(
@@ -481,7 +489,7 @@ export const recipeFromPhoto = createServerFn({ method: "POST" })
         cacheSleutel: data.imageDataUrl.slice(0, 5000),
         model: MODEL,
       },
-      async () => {
+      async (meter) => {
         const raw = await askAI(
           [
             {
@@ -497,6 +505,7 @@ export const recipeFromPhoto = createServerFn({ method: "POST" })
             },
           ],
           "gerecht_foto",
+         meter,
         );
         return vulAan(parseJson<Partial<ImportedRecipe>>(raw, {}), { is_suggestie: true, bron: "foto" });
       },
@@ -515,7 +524,7 @@ export const importRecipeFromScreenshot = createServerFn({ method: "POST" })
         cacheSleutel: data.imageDataUrl.slice(0, 5000),
         model: MODEL,
       },
-      async () => {
+      async (meter) => {
         const raw = await askAI(
           [
             {
@@ -531,6 +540,7 @@ export const importRecipeFromScreenshot = createServerFn({ method: "POST" })
             },
           ],
           "import_foto",
+         meter,
         );
         return vulAan(parseJson<Partial<ImportedRecipe>>(raw, {}), { bron: "schermafbeelding" });
       },
@@ -544,7 +554,7 @@ export const importRecipeFromText = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<ImportedRecipe> => {
     const { resultaat } = await metCredits(
       { userId: context.userId, feature: "import_tekst", cacheSleutel: data.text, model: MODEL },
-      async () => {
+      async (meter) => {
         const raw = await askAI(
           [
             {
@@ -554,6 +564,7 @@ export const importRecipeFromText = createServerFn({ method: "POST" })
             { role: "user", content: data.text },
           ],
           "import_tekst",
+         meter,
         );
         return vulAan(parseJson<Partial<ImportedRecipe>>(raw, {}), { bron: "tekst" });
       },
@@ -572,7 +583,7 @@ export const recognizeIngredients = createServerFn({ method: "POST" })
         cacheSleutel: data.imageDataUrl.slice(0, 5000),
         model: MODEL,
       },
-      async () => {
+      async (meter) => {
         const raw = await askAI(
           [
             {
@@ -589,6 +600,7 @@ export const recognizeIngredients = createServerFn({ method: "POST" })
             },
           ],
           "ingredienten_foto",
+         meter,
         );
         const list = parseJson<string[]>(raw, []);
         return Array.isArray(list) ? list.filter((x) => typeof x === "string").slice(0, 25) : [];
@@ -626,7 +638,7 @@ export const ontdekSuggesties = createServerFn({ method: "POST" })
         cacheSleutel: `${maand}|${data.sfeer}|${data.favorieten.slice(0, 15).join(",")}|${data.bekend.slice(0, 40).join(",")}`,
         model: MODEL,
       },
-      async () => {
+      async (meter) => {
         const raw = await askAI(
           [
             {
@@ -645,6 +657,7 @@ ${data.bekend.slice(0, 120).join(", ") || "(nog geen)"}`,
             },
           ],
           "suggesties",
+         meter,
         );
         const list = parseJson<Partial<InternetSuggestie>[]>(raw, []);
         if (!Array.isArray(list)) return [];
@@ -677,7 +690,8 @@ export const gerechtFoto = createServerFn({ method: "POST" })
           cacheSleutel: data.titel,
           model: "google/gemini-3.1-flash-lite-image",
         },
-        async () => {
+        async (meter) => {
+          meter.beelden += 1;
           const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
             method: "POST",
             headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
