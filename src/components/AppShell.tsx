@@ -197,6 +197,7 @@ export function AppShell({
               <li key={item.to} className="flex-1">
                 <Link
                   to={item.to}
+                  data-tour={`tab-${item.to}`}
                   className={cn(
                     "flex min-h-16 flex-col items-center justify-center gap-1 px-1 py-2 text-xs font-semibold transition-colors",
                     active ? "text-primary" : "text-muted-foreground",
