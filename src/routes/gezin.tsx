@@ -98,6 +98,42 @@ function GezinPage() {
     },
   });
 
+  // Staat er een gezinsuitnodiging voor jou klaar? Dan toont het startscherm die.
+  const { data: uitnodiging } = useQuery({
+    queryKey: ["gezin-uitnodiging", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data: rij, error } = await supabase
+        .from("group_members")
+        .select("group_id")
+        .eq("user_id", user!.id)
+        .eq("status", "uitgenodigd")
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      if (!rij) return null;
+      const { data: groep } = await supabase
+        .from("groups")
+        .select("id, naam")
+        .eq("id", rij.group_id)
+        .maybeSingle();
+      return groep ? ({ id: groep.id, naam: groep.naam } as { id: string; naam: string }) : null;
+    },
+  });
+
+  const gezinAntwoord = useMutation({
+    mutationFn: async ({ groupId, ja }: { groupId: string; ja: boolean }) =>
+      beantwoordGezinsUitnodiging({ data: { groupId, ja } }),
+    onSuccess: (_res, vars) => {
+      qc.invalidateQueries({ queryKey: ["gezin-uitnodiging"] });
+      qc.invalidateQueries({ queryKey: ["gezin"] });
+      qc.invalidateQueries({ queryKey: ["planner-gezin"] });
+      qc.invalidateQueries({ queryKey: ["shopping-lists"] });
+      toast.success(vars.ja ? "Je hoort er nu bij!" : "Uitnodiging geweigerd.");
+    },
+    onError: () => toast.error("Dat lukte niet. Probeer het opnieuw."),
+  });
+
   // Live meeluisteren: nieuwe leden en antwoorden zijn meteen zichtbaar.
   useEffect(() => {
     if (!user) return;
@@ -106,6 +142,7 @@ function GezinPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "group_members" }, () => {
         qc.invalidateQueries({ queryKey: ["gezin"] });
         qc.invalidateQueries({ queryKey: ["gezinnamen"] });
+        qc.invalidateQueries({ queryKey: ["gezin-uitnodiging"] });
       })
       .subscribe();
     return () => {
