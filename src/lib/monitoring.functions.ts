@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { bewaker, logboek } from "@/lib/admin.functions";
+import { bewaker, logboek, pasWie, type WieKeuze } from "@/lib/admin.functions";
 
 // ============================================================
 // Monitoring — alles server-side, alleen voor het Control Center.
