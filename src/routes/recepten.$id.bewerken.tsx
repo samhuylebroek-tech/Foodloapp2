@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { RecipeForm } from "@/components/RecipeForm";
+import { ReceptGeschiedenis } from "@/components/ReceptGeschiedenis";
 import type { Ingredient, Recipe } from "@/lib/types";
 
 export const Route = createFileRoute("/recepten/$id/bewerken")({
@@ -45,7 +46,10 @@ function BewerkenPage() {
       {isLoading || !data ? (
         <p className="py-10 text-center text-lg text-muted-foreground">Laden…</p>
       ) : (
-        <RecipeForm recipe={data.recipe} ingredients={data.ingredients} />
+        <>
+          <RecipeForm recipe={data.recipe} ingredients={data.ingredients} />
+          <ReceptGeschiedenis recipeId={id} />
+        </>
       )}
     </AppShell>
   );

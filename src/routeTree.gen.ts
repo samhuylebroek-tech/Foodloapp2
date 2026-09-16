@@ -24,6 +24,7 @@ import { Route as InstellingenRouteImport } from './routes/instellingen'
 import { Route as MeldingenRouteImport } from './routes/meldingen'
 import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as UitnodigingRouteImport } from './routes/uitnodiging'
+import { Route as VoorraadRouteImport } from './routes/voorraad'
 import { Route as WelkomRouteImport } from './routes/welkom'
 import { Route as BeheerIndexRouteImport } from './routes/beheer.index'
 import { Route as BeheerActiviteitRouteImport } from './routes/beheer.activiteit'
@@ -129,6 +130,11 @@ const PlannerRoute = PlannerRouteImport.update({
 const UitnodigingRoute = UitnodigingRouteImport.update({
   id: '/uitnodiging',
   path: '/uitnodiging',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VoorraadRoute = VoorraadRouteImport.update({
+  id: '/voorraad',
+  path: '/voorraad',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WelkomRoute = WelkomRouteImport.update({
@@ -304,6 +310,7 @@ export interface FileRoutesByFullPath {
   '/meldingen': typeof MeldingenRoute
   '/planner': typeof PlannerRoute
   '/uitnodiging': typeof UitnodigingRoute
+  '/voorraad': typeof VoorraadRoute
   '/welkom': typeof WelkomRoute
   '/beheer/activiteit': typeof BeheerActiviteitRoute
   '/beheer/ai': typeof BeheerAiRoute
@@ -351,6 +358,7 @@ export interface FileRoutesByTo {
   '/meldingen': typeof MeldingenRoute
   '/planner': typeof PlannerRoute
   '/uitnodiging': typeof UitnodigingRoute
+  '/voorraad': typeof VoorraadRoute
   '/welkom': typeof WelkomRoute
   '/beheer/activiteit': typeof BeheerActiviteitRoute
   '/beheer/ai': typeof BeheerAiRoute
@@ -400,6 +408,7 @@ export interface FileRoutesById {
   '/meldingen': typeof MeldingenRoute
   '/planner': typeof PlannerRoute
   '/uitnodiging': typeof UitnodigingRoute
+  '/voorraad': typeof VoorraadRoute
   '/welkom': typeof WelkomRoute
   '/beheer/activiteit': typeof BeheerActiviteitRoute
   '/beheer/ai': typeof BeheerAiRoute
@@ -450,6 +459,7 @@ export interface FileRouteTypes {
     | '/meldingen'
     | '/planner'
     | '/uitnodiging'
+    | '/voorraad'
     | '/welkom'
     | '/beheer/activiteit'
     | '/beheer/ai'
@@ -497,6 +507,7 @@ export interface FileRouteTypes {
     | '/meldingen'
     | '/planner'
     | '/uitnodiging'
+    | '/voorraad'
     | '/welkom'
     | '/beheer/activiteit'
     | '/beheer/ai'
@@ -545,6 +556,7 @@ export interface FileRouteTypes {
     | '/meldingen'
     | '/planner'
     | '/uitnodiging'
+    | '/voorraad'
     | '/welkom'
     | '/beheer/activiteit'
     | '/beheer/ai'
@@ -594,6 +606,7 @@ export interface RootRouteChildren {
   MeldingenRoute: typeof MeldingenRoute
   PlannerRoute: typeof PlannerRoute
   UitnodigingRoute: typeof UitnodigingRoute
+  VoorraadRoute: typeof VoorraadRoute
   WelkomRoute: typeof WelkomRoute
   KaartenIdRoute: typeof KaartenIdRoute
   ReceptenIdRoute: typeof ReceptenIdRouteWithChildren
@@ -710,6 +723,13 @@ declare module '@tanstack/react-router' {
       path: '/uitnodiging'
       fullPath: '/uitnodiging'
       preLoaderRoute: typeof UitnodigingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/voorraad': {
+      id: '/voorraad'
+      path: '/voorraad'
+      fullPath: '/voorraad'
+      preLoaderRoute: typeof VoorraadRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/welkom': {
@@ -1011,6 +1031,7 @@ const rootRouteChildren: RootRouteChildren = {
   MeldingenRoute: MeldingenRoute,
   PlannerRoute: PlannerRoute,
   UitnodigingRoute: UitnodigingRoute,
+  VoorraadRoute: VoorraadRoute,
   WelkomRoute: WelkomRoute,
   KaartenIdRoute: KaartenIdRoute,
   ReceptenIdRoute: ReceptenIdRouteWithChildren,
