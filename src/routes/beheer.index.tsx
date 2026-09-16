@@ -42,20 +42,24 @@ const klok = (iso: string) => new Date(iso).toLocaleTimeString("nl-BE", { hour: 
 
 function Dashboard() {
   const [periode, setPeriode] = useState<Periode>("week");
+  const [wie, setWie] = useState<WieKeuze>(WIE_ALLES);
   const fn = useServerFn(adminDashboard);
   const vandaagFn = useServerFn(adminActiviteit);
   const recentFn = useServerFn(adminGebeurtenissen);
   const kostFn = useServerFn(adminKosten);
   const aandachtFn = useServerFn(adminAandacht);
+  const personenFn = useServerFn(adminPersonenLijst);
+
+  const personen = useQuery({ queryKey: ["admin-personen"], queryFn: () => personenFn() });
 
   const { data, isLoading } = useQuery({
-    queryKey: ["admin-dashboard", periode],
-    queryFn: () => fn({ data: { periode } }),
+    queryKey: ["admin-dashboard", periode, wie],
+    queryFn: () => fn({ data: { periode, ...wie } }),
   });
   const bereik = BEREIK[periode];
   const vandaag = useQuery({
-    queryKey: ["admin-vandaag", bereik],
-    queryFn: () => vandaagFn({ data: { bereik } }),
+    queryKey: ["admin-vandaag", bereik, wie],
+    queryFn: () => vandaagFn({ data: { bereik, ...wie } }),
     refetchInterval: periode === "dag" ? 60_000 : false,
   });
   const recent = useQuery({
@@ -64,8 +68,8 @@ function Dashboard() {
     refetchInterval: periode === "dag" ? 30_000 : false,
   });
   const kosten = useQuery({
-    queryKey: ["admin-kosten", periode],
-    queryFn: () => kostFn({ data: { dagen: DAGEN[periode] } }),
+    queryKey: ["admin-kosten", periode, wie],
+    queryFn: () => kostFn({ data: { dagen: DAGEN[periode], ...wie } }),
   });
   const aandacht = useQuery({ queryKey: ["admin-aandacht"], queryFn: () => aandachtFn() });
 
@@ -77,8 +81,14 @@ function Dashboard() {
     <AdminShell
       titel="Dashboard"
       omschrijving="Overzicht van het platform"
-      acties={<PeriodeKiezer waarde={periode} onKies={setPeriode} />}
+      acties={
+        <div className="flex items-center gap-2">
+          <WieKiezer waarde={wie} onKies={setWie} personen={personen.data ?? []} />
+          <PeriodeKiezer waarde={periode} onKies={setPeriode} />
+        </div>
+      }
     >
+
       <div className="space-y-6">
         <section>
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
