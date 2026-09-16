@@ -112,42 +112,48 @@ function StartPage() {
 
         {isLoading ? (
           <PageSkeleton rows={2} />
-        ) : dagmenu ? (
-          dagmenu.recipes ? (
-            <Link
-              to="/recepten/$id"
-              params={{ id: dagmenu.recipes.id }}
-              className="block overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border/60 transition-transform active:scale-[0.99]"
-              aria-label={`${t("Bekijk recept")}: ${dagmenu.recipes.title}`}
-            >
-              <RecipePhoto path={dagmenu.recipes.image_url} alt={dagmenu.recipes.title} className="aspect-[16/9] w-full rounded-none" />
-              <div className="p-5 sm:p-6">
-                <p className="text-sm font-semibold capitalize text-primary">{t(dagmenu.meal_type || "Vandaag")}</p>
-                <h3 className="mt-1 text-2xl">{t(dagmenu.recipes.title)}</h3>
-                <p className="mt-2 flex items-center gap-2 text-base text-muted-foreground">
-                  {tijdLabel(dagmenu.recipes.prep_minutes, dagmenu.recipes.cook_minutes) ? <Clock className="size-5" aria-hidden /> : null}
-                  {[tijdLabel(dagmenu.recipes.prep_minutes, dagmenu.recipes.cook_minutes), `${dagmenu.recipes.servings} ${t("personen")}`].filter(Boolean).join(" · ")}
-                </p>
-                <span className="mt-5 flex min-h-14 items-center justify-center rounded-xl bg-primary px-5 text-base font-semibold text-primary-foreground">
-                  {t("Bekijk recept")}
-                </span>
-              </div>
-            </Link>
-          ) : (
-            <Link
-              to="/planner"
-              className="block overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border/60"
-              aria-label={t("Plan je maaltijd")}
-            >
-              <div className="p-5 sm:p-6">
-                <p className="text-sm font-semibold capitalize text-primary">{t(dagmenu.meal_type || "Vandaag")}</p>
-                <h3 className="mt-1 text-2xl">{t(dagmenu.custom_title ?? "Maaltijd")}</h3>
-                <span className="mt-5 flex min-h-14 items-center justify-center rounded-xl bg-primary px-5 text-base font-semibold text-primary-foreground">
-                  {t("Plan je maaltijd")}
-                </span>
-              </div>
-            </Link>
-          )
+        ) : maaltijden.length > 0 ? (
+          <div className="space-y-4">
+            {maaltijden.map((maaltijd) =>
+              maaltijd.recipes ? (
+                <Link
+                  key={maaltijd.id}
+                  to="/recepten/$id"
+                  params={{ id: maaltijd.recipes.id }}
+                  className="block overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border/60 transition-transform active:scale-[0.99]"
+                  aria-label={`${t("Bekijk recept")}: ${maaltijd.recipes.title}`}
+                >
+                  <RecipePhoto path={maaltijd.recipes.image_url} alt={maaltijd.recipes.title} className="aspect-[16/9] w-full rounded-none" />
+                  <div className="p-5 sm:p-6">
+                    <p className="text-sm font-semibold capitalize text-primary">{t(maaltijd.meal_type || "Vandaag")}</p>
+                    <h3 className="mt-1 text-2xl">{t(maaltijd.recipes.title)}</h3>
+                    <p className="mt-2 flex items-center gap-2 text-base text-muted-foreground">
+                      {tijdLabel(maaltijd.recipes.prep_minutes, maaltijd.recipes.cook_minutes) ? <Clock className="size-5" aria-hidden /> : null}
+                      {[tijdLabel(maaltijd.recipes.prep_minutes, maaltijd.recipes.cook_minutes), `${maaltijd.recipes.servings} ${t("personen")}`].filter(Boolean).join(" · ")}
+                    </p>
+                    <span className="mt-5 flex min-h-14 items-center justify-center rounded-xl bg-primary px-5 text-base font-semibold text-primary-foreground">
+                      {t("Bekijk recept")}
+                    </span>
+                  </div>
+                </Link>
+              ) : (
+                <Link
+                  key={maaltijd.id}
+                  to="/planner"
+                  className="block overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border/60"
+                  aria-label={t("Bekijk je planning")}
+                >
+                  <div className="p-5 sm:p-6">
+                    <p className="text-sm font-semibold capitalize text-primary">{t(maaltijd.meal_type || "Vandaag")}</p>
+                    <h3 className="mt-1 text-2xl">{t(maaltijd.custom_title ?? "Maaltijd")}</h3>
+                    <span className="mt-5 flex min-h-14 items-center justify-center rounded-xl bg-secondary px-5 text-base font-semibold text-secondary-foreground">
+                      {t("Bekijk je planning")}
+                    </span>
+                  </div>
+                </Link>
+              ),
+            )}
+          </div>
         ) : recipes.length === 0 ? (
           <EmptyState
             icon={<BookOpen className="size-7" aria-hidden />}
