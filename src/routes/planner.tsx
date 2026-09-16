@@ -624,6 +624,7 @@ function PlannerPage() {
 }
 
 function GerechtKaart({ recept, onKies }: { recept: Recipe; onKies: () => void }) {
+  const [fout, setFout] = useState(false);
   const info = [tijdLabel(recept.prep_minutes, recept.cook_minutes), recept.category]
     .filter(Boolean)
     .join(" · ");
