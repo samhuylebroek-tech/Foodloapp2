@@ -561,6 +561,15 @@ function ReceptPage() {
               </li>
             ))}
           </ol>
+
+          {recipe.instructions.length > 0 ? (
+            <Button
+              onClick={() => { setStap(0); void meet("kookmodus.gestart", undefined, { id }); setKookstand(true); }}
+              className="mt-4 h-16 w-full text-lg"
+            >
+              <ChefHat className="size-5" /> {t("Start koken")}
+            </Button>
+          ) : null}
         </section>
           </TabsContent>
 
