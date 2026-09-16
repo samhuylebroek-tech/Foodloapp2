@@ -286,3 +286,51 @@ function StartPage() {
     </AppShell>
   );
 }
+
+function IdeeKaart({
+  s,
+  t,
+  bezig,
+  onBewaar,
+}: {
+  s: InternetSuggestie;
+  t: (x: string) => string;
+  bezig: string | null;
+  onBewaar: () => void;
+}) {
+  const { data: foto } = useQuery({
+    queryKey: ["gerecht-foto", s.title],
+    staleTime: Infinity,
+    gcTime: 1000 * 60 * 60 * 24,
+    retry: false,
+    queryFn: () => gerechtFoto({ data: { titel: s.title } }),
+  });
+
+  return (
+    <li className="w-60 shrink-0 snap-start">
+      <div className="flex h-full flex-col justify-between overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border/60">
+        <div>
+          {foto ? (
+            <img src={foto} alt={s.title} className="h-32 w-full object-cover" loading="lazy" />
+          ) : (
+            <div className="h-32 w-full animate-pulse bg-muted" aria-hidden />
+          )}
+          <div className="p-4">
+            <p className="text-lg font-semibold leading-tight">{t(s.title)}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {s.keuken ? `${t(s.keuken)} · ` : ""}
+              {s.minuten} min
+            </p>
+            <p className="mt-2 line-clamp-3 text-base">{t(s.waarom)}</p>
+          </div>
+        </div>
+        <div className="px-4 pb-4">
+          <Button onClick={onBewaar} disabled={bezig !== null} className="w-full">
+            <Plus />
+            {bezig === s.title ? t("Bezig…") : t("Bewaar bij mijn recepten")}
+          </Button>
+        </div>
+      </div>
+    </li>
+  );
+}
