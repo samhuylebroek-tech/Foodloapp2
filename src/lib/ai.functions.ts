@@ -971,13 +971,18 @@ export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
         if (tekst.length < 8) continue;
         // breadcrumbs ("site › pad › Titel") wegfilteren
         const delen = tekst.split("›").map((d) => d.trim()).filter(Boolean);
-        const kern = delen.length > 1 ? delen[delen.length - 1]! : tekst;
-        const titel = kern.slice(0, 120);
-        if (!titel || /^https?:/i.test(titel)) continue;
+        let kern = delen.length > 1 ? delen[delen.length - 1]! : tekst;
+        // losse url-stukjes en bereidingstijden vooraan weghalen
+        kern = kern
+          .replace(/^[a-z0-9][a-z0-9-]{4,}(\.html?)?\s+/i, "")
+          .replace(/^(\d+\s*(u|uur|min|m)[.,]?\s*)+/i, "")
+          .trim();
+        const titel = kern.slice(0, 110);
+        if (titel.length < 6 || /^https?:/i.test(titel)) continue;
 
         gezien.add(net);
         gezien.add(host);
-        const fragment = (kern.length > 120 ? kern.slice(120) : tekst).slice(0, 180);
+        const fragment = (kern.length > 110 ? kern.slice(110) : tekst).slice(0, 180);
         rijen.push({ titel, url: net, site: host, fragment, score: scoreVan(host) });
         if (rijen.length >= 12) break;
       }
