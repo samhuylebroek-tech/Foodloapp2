@@ -22,6 +22,9 @@ import {
   recognizeIngredients,
   recipeFromPhoto,
   gerechtFoto,
+  gerechtVoorstellen,
+  receptVanNaam,
+  type GerechtVoorstel,
   type ImportedRecipe,
 } from "@/lib/ai.functions";
 import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/types";
@@ -38,7 +41,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-type Manier = "link" | "tekst" | "foto" | "zelf";
+type Manier = "zoek" | "link" | "tekst" | "foto" | "zelf";
 
 const PLATFORM_NAAM: Record<string, string> = {
   instagram: "Instagram",
