@@ -757,7 +757,25 @@ export function RecipeForm({
                 </div>
               )}
 
-              {webResultaten && !voorstellen && (
+              {webResultaten && webResultaten.length === 0 && (
+                <div className="mt-4 rounded-2xl border border-border bg-card p-4">
+                  <p className="text-base font-semibold">
+                    We vonden geen betrouwbaar recept voor “{zoekTerm.trim()}”.
+                  </p>
+                  <p className="mt-1 text-base text-muted-foreground">
+                    Laat de AI het recept uitschrijven. Je kan het daarna nog nakijken en aanpassen.
+                  </p>
+                  <Button
+                    onClick={() => void schrijfMetAi(zoekTerm.trim())}
+                    className="mt-3 h-14 w-full text-base"
+                  >
+                    <Sparkles className="size-5" />
+                    Laat de AI dit recept uitschrijven
+                  </Button>
+                </div>
+              )}
+
+              {webResultaten && webResultaten.length > 0 && !voorstellen && (
                 <Button
                   variant="outline"
                   onClick={() => void handleIdeeen()}
