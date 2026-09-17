@@ -1317,7 +1317,7 @@ export function RecipeForm({
         </p>
       )}
 
-      <Button onClick={handleSave} disabled={saving} className="h-16 w-full text-lg">
+      <Button onClick={() => void handleSave()} disabled={saving} className="h-16 w-full text-lg">
         {saving ? <Loader2 className="size-5 animate-spin" /> : null}
         Recept opslaan
       </Button>
