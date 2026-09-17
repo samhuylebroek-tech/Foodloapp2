@@ -35,7 +35,7 @@ async function logAi(kind: string, ok: boolean, ms: number, error?: string, mode
   }
 }
 
-async function askAI(messages: unknown[], kind = "chat", meter?: AiMeter) {
+async function askAI(messages: unknown[], kind = "chat", meter?: AiMeter, model = MODEL) {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new Error("AI is niet beschikbaar.");
   const start = Date.now();
@@ -46,7 +46,11 @@ async function askAI(messages: unknown[], kind = "chat", meter?: AiMeter) {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ model: MODEL, messages }),
+      body: JSON.stringify({
+        model,
+        messages,
+        ...(model === ZOEK_MODEL ? { reasoning_effort: "low" } : {}),
+      }),
     });
     if (!res.ok) {
       const text = await res.text();
