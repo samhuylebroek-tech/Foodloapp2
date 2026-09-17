@@ -198,9 +198,9 @@ export const uiOverzicht = createServerFn({ method: "POST" })
         .lte("created_at", totIso)
         .range(a, b), 50000),
       (async (): Promise<number> => {
-        const { data: metEvent } = await await pagineer((a, b) => db.from("usage_events").select("user_id").range(a, b), 200000);
+        const { data: metEvent } = await pagineer((a, b) => db.from("usage_events").select("user_id").range(a, b), 200000);
         const actieveOoit = new Set(((metEvent ?? []) as any[]).map((r) => r.user_id));
-        const { data: alle } = await await pagineer((a, b) => db.from("profiles").select("id").range(a, b), 100000);
+        const { data: alle } = await pagineer((a, b) => db.from("profiles").select("id").range(a, b), 100000);
         return ((alle ?? []) as any[]).filter((p) => !actieveOoit.has(p.id)).length;
       })(),
     ]);
@@ -232,7 +232,7 @@ export const uiOverzicht = createServerFn({ method: "POST" })
     const telEv = (naam: string) => ev.filter((e) => e.event === naam).length;
 
     // terugkerend = actief in deze periode én al eerder actief
-    const { data: eerder } = await await pagineer((a, b) => db
+    const { data: eerder } = await pagineer((a, b) => db
       .from("usage_events")
       .select("user_id")
       .lt("created_at", vanIso)
@@ -1220,29 +1220,29 @@ export const uiExport = createServerFn({ method: "POST" })
       let q = db.from("user_sessions").select("*");
       q = tijdFilter(q, "started_at", vanIso, totIso);
       if (f.userIds.length) q = q.in("user_id", f.userIds);
-      rijen = ((await q.limit(50_000)).data ?? []) as any[];
+      rijen = ((await pagineer((a, b) => q.range(a, b), 50000)).data ?? []) as any[];
     } else if (data.soort === "gebeurtenissen") {
       let q = db.from("usage_events").select("*");
       q = tijdFilter(q, "created_at", vanIso, totIso);
       q = pasGebeurtenisFilters(q, f as Filters);
-      rijen = ((await q.limit(50_000)).data ?? []) as any[];
+      rijen = ((await pagineer((a, b) => q.range(a, b), 50000)).data ?? []) as any[];
     } else if (data.soort === "ai") {
       let q = db.from("ai_usage").select("*");
       q = tijdFilter(q, "created_at", vanIso, totIso);
       if (f.userIds.length) q = q.in("user_id", f.userIds);
-      rijen = ((await q.limit(50_000)).data ?? []) as any[];
+      rijen = ((await pagineer((a, b) => q.range(a, b), 50000)).data ?? []) as any[];
     } else if (data.soort === "credits") {
       let q = db.from("credit_transactions").select("*");
       q = tijdFilter(q, "created_at", vanIso, totIso);
       if (f.userIds.length) q = q.in("user_id", f.userIds);
-      rijen = ((await q.limit(50_000)).data ?? []) as any[];
+      rijen = ((await pagineer((a, b) => q.range(a, b), 50000)).data ?? []) as any[];
     } else if (data.soort === "fouten") {
       let q = db.from("app_errors").select("*");
       q = tijdFilter(q, "created_at", vanIso, totIso);
       if (f.userIds.length) q = q.in("user_id", f.userIds);
-      rijen = ((await q.limit(50_000)).data ?? []) as any[];
+      rijen = ((await pagineer((a, b) => q.range(a, b), 50000)).data ?? []) as any[];
     } else {
-      const { data: p } = await await pagineer((a, b) => db.from("profiles").select("id, display_name, handle, created_at, blocked_at").range(a, b), 50000);
+      const { data: p } = await pagineer((a, b) => db.from("profiles").select("id, display_name, handle, created_at, blocked_at").range(a, b), 50000);
       rijen = (p ?? []) as any[];
     }
 
