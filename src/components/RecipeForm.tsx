@@ -636,6 +636,58 @@ export function RecipeForm({
                 </div>
               )}
 
+              {webResultaten && webResultaten.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-base font-semibold">Gevonden op het web</p>
+                  <ul className="mt-2 space-y-2">
+                    {webResultaten.map((r) => (
+                      <li key={r.url}>
+                        <button
+                          type="button"
+                          disabled={webOphalen !== null}
+                          onClick={() => void kiesWeb(r)}
+                          className="flex min-h-16 w-full items-start gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-left hover:bg-muted"
+                        >
+                          {webOphalen === r.url ? (
+                            <Loader2 className="mt-0.5 size-5 shrink-0 animate-spin text-primary" aria-hidden />
+                          ) : (
+                            <Link2 className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+                          )}
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-base font-semibold">{r.titel}</span>
+                            <span className="mt-0.5 block text-sm text-primary">{r.site}</span>
+                            {r.fragment ? (
+                              <span className="mt-0.5 block text-base text-muted-foreground">
+                                {r.fragment}
+                              </span>
+                            ) : null}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    We halen het recept van de gekozen pagina op, met bronvermelding.
+                  </p>
+                </div>
+              )}
+
+              {webResultaten && !voorstellen && (
+                <Button
+                  variant="outline"
+                  onClick={() => void handleIdeeen()}
+                  disabled={zoekBezig}
+                  className="mt-4 h-14 w-full text-base"
+                >
+                  {zoekBezig ? (
+                    <Loader2 className="size-5 animate-spin" />
+                  ) : (
+                    <Sparkles className="size-5" />
+                  )}
+                  Nieuwe ideeën met AI
+                </Button>
+              )}
+
               {voorstellen && voorstellen.length > 0 && (
                 <div className="mt-4">
                   <p className="text-base font-semibold">Nieuwe ideeën</p>
