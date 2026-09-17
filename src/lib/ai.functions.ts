@@ -922,56 +922,68 @@ export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
       // cache is nooit verplicht
     }
 
-    // 2. zoeken via een sleutelloze zoekpagina
-    let html = "";
-    try {
-      const res = await fetch(
-        `https://html.duckduckgo.com/html/?q=${encodeURIComponent(`${term} recept`)}`,
-        {
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
-            "Accept-Language": "nl-BE,nl;q=0.9,en;q=0.6",
-          },
-        },
-      );
-      if (res.ok) html = await res.text();
-    } catch {
-      return [];
-    }
-    if (!html) return [];
+    // 2. zoeken via sleutelloze zoekpagina's (tweede bron als de eerste hapert)
+    const kop = {
+      "User-Agent":
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+      "Accept-Language": "nl-BE,nl;q=0.9,en;q=0.6",
+    };
+    const vraag = encodeURIComponent(`${term} recept`);
+    const bronnen = [
+      `https://search.brave.com/search?q=${vraag}`,
+      `https://html.duckduckgo.com/html/?q=${vraag}`,
+    ];
 
-    // 3. resultaten uitlezen
-    const blokken = html.split('class="result__body"').slice(1);
     const gezien = new Set<string>();
     const rijen: (WebResultaat & { score: number })[] = [];
 
-    for (const blok of blokken) {
-      const linkMatch = blok.match(/class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
-      if (!linkMatch?.[1]) continue;
-      const doel = echteUrl(linkMatch[1].replace(/&amp;/g, "&"));
-      if (!doel) continue;
-
-      let net = "";
+    for (const bron of bronnen) {
+      if (rijen.length >= 6) break;
+      let html = "";
       try {
-        net = veiligeUrl(canoniekeUrl(doel));
+        const res = await fetch(bron, { headers: kop });
+        if (res.ok) html = await res.text();
       } catch {
         continue;
       }
-      const host = new URL(net).hostname.replace(/^www\./i, "").toLowerCase();
-      if (ZOEK_RUIS.some((r) => host.includes(r))) continue;
-      if (gezien.has(net) || gezien.has(host)) continue;
-      gezien.add(net);
-      gezien.add(host);
+      if (!html) continue;
 
-      const titel = ontdubbelTekst(linkMatch[2] ?? "").slice(0, 140);
-      if (!titel) continue;
-      const fragment = ontdubbelTekst(
-        blok.match(/class="result__snippet"[^>]*>([\s\S]*?)<\/a>/i)?.[1] ?? "",
-      ).slice(0, 180);
+      const links = [
+        ...html.matchAll(/<a\b[^>]*href="(https?:\/\/[^"]+)"[^>]*>([\s\S]{0,6000}?)<\/a>/gi),
+      ];
 
-      rijen.push({ titel, url: net, site: host, fragment, score: scoreVan(host) });
+      for (const link of links) {
+        const doel = echteUrl((link[1] ?? "").replace(/&amp;/g, "&"));
+        if (!doel) continue;
+
+        let net = "";
+        try {
+          net = veiligeUrl(canoniekeUrl(doel));
+        } catch {
+          continue;
+        }
+        const host = new URL(net).hostname.replace(/^www\./i, "").toLowerCase();
+        if (ZOEK_RUIS.some((r) => host.includes(r))) continue;
+        if (/brave\.|duckduckgo\.|hackerone\.|mozilla\.|search\./.test(host)) continue;
+        if (gezien.has(net) || gezien.has(host)) continue;
+
+        const tekst = ontdubbelTekst(link[2] ?? "").replace(/\u203a/g, "›");
+        if (tekst.length < 8) continue;
+        // breadcrumbs ("site › pad › Titel") wegfilteren
+        const delen = tekst.split("›").map((d) => d.trim()).filter(Boolean);
+        const kern = delen.length > 1 ? delen[delen.length - 1]! : tekst;
+        const titel = kern.slice(0, 120);
+        if (!titel || /^https?:/i.test(titel)) continue;
+
+        gezien.add(net);
+        gezien.add(host);
+        const fragment = (kern.length > 120 ? kern.slice(120) : tekst).slice(0, 180);
+        rijen.push({ titel, url: net, site: host, fragment, score: scoreVan(host) });
+        if (rijen.length >= 12) break;
+      }
     }
+    if (rijen.length === 0) return [];
+
 
     const resultaat = rijen
       .map((r, i) => ({ ...r, volgorde: i }))
