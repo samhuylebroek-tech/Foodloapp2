@@ -143,6 +143,45 @@ export function RecipeForm({
   const [webBezig, setWebBezig] = useState(false);
   const [webOphalen, setWebOphalen] = useState<string | null>(null);
   const [uitschrijven, setUitschrijven] = useState<string | null>(null);
+  // Voorbeeld van een gevonden recept: eerst bekijken/aanpassen, dan pas overnemen.
+  const [voorbeeld, setVoorbeeld] = useState<ImportedRecipe | null>(null);
+  const [vbTitel, setVbTitel] = useState("");
+  const [vbIngredienten, setVbIngredienten] = useState("");
+  const [vbStappen, setVbStappen] = useState("");
+
+  /** Toont het gevonden recept in een venster om na te kijken. */
+  function toonVoorbeeld(data: ImportedRecipe) {
+    setVoorbeeld(data);
+    setVbTitel(data.title);
+    setVbIngredienten(
+      data.ingredients
+        .map((i) => ingredientToLine({ name: i.name, quantity: i.quantity, unit: i.unit ?? "" }))
+        .join("\n"),
+    );
+    setVbStappen(data.instructions.join("\n"));
+  }
+
+  /** Neemt het nagekeken voorbeeld over in het formulier. */
+  function bevestigVoorbeeld() {
+    if (!voorbeeld) return;
+    const bijgewerkt: ImportedRecipe = {
+      ...voorbeeld,
+      title: vbTitel.trim() || voorbeeld.title,
+      ingredients: parseIngredientText(vbIngredienten).map((i) => ({
+        name: i.name,
+        quantity: i.quantity,
+        unit: i.unit ?? "",
+      })),
+      instructions: vbStappen
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    };
+    vulIn(bijgewerkt);
+    if (bijgewerkt.source_url) setSourceUrl(bijgewerkt.source_url);
+    setVoorbeeld(null);
+    toast.success("Het recept staat in het formulier. Sla het op als het klopt.");
+  }
   const bestaande = useQuery({
     queryKey: ["gerecht-zoeken", zoekTerm.trim().toLowerCase()],
     enabled: zoekTerm.trim().length > 2,
