@@ -1026,7 +1026,9 @@ export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
       }),
     );
 
-    const resultaat = gekeurd.filter((r): r is WebResultaat => r !== null).slice(0, 5);
+    const resultaat: WebResultaat[] = gekeurd
+      .filter((r) => r !== null)
+      .slice(0, 5) as WebResultaat[];
     if (resultaat.length === 0) return [];
 
     // 4. bewaren voor 24 u
