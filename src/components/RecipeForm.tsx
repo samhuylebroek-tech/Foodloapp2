@@ -533,9 +533,25 @@ export function RecipeForm({
 
 
 
-  async function handleSave() {
+  /** Gegevens die het venster meteen kan opslaan, zonder op de formulierstate te wachten. */
+  type DirecteOpslag = {
+    title: string;
+    description: string;
+    servings: number;
+    prep: number;
+    cook: number;
+    category: string;
+    difficulty: string;
+    tags: string[];
+    stappen: string[];
+    ingredienten: string;
+    sourceUrl: string | null;
+  };
+
+  async function handleSave(over?: DirecteOpslag) {
     if (!user) return;
-    if (!title.trim()) {
+    const naam = (over?.title ?? title).trim();
+    if (!naam) {
       toast.error("Geef het gerecht een naam");
       return;
     }
@@ -550,24 +566,28 @@ export function RecipeForm({
           bewaardeFoto = null;
         }
       }
+      const ingredientenBron = over ? over.ingredienten : ingredientTekst;
       const payload = {
         user_id: user.id,
-        title: title.trim(),
-        description: description.trim(),
+        title: naam,
+        description: (over?.description ?? description).trim(),
         image_url: bewaardeFoto,
-        servings: Number(servings) || 1,
-        prep_minutes: Number(prep) || 0,
-        cook_minutes: Number(cook) || 0,
-        difficulty,
-        category,
-        tags: tags
-          .split(",")
-          .map((t) => t.trim().toLowerCase())
-          .filter(Boolean),
-        instructions: stappen,
-        step_ingredients: Object.keys(stapKeuze).length ? stapKeuze : null,
-        source_url: sourceUrl.trim() || null,
+        servings: over ? over.servings : Number(servings) || 1,
+        prep_minutes: over ? over.prep : Number(prep) || 0,
+        cook_minutes: over ? over.cook : Number(cook) || 0,
+        difficulty: over?.difficulty ?? difficulty,
+        category: over?.category ?? category,
+        tags: over
+          ? over.tags
+          : tags
+              .split(",")
+              .map((t) => t.trim().toLowerCase())
+              .filter(Boolean),
+        instructions: over ? over.stappen : stappen,
+        step_ingredients: !over && Object.keys(stapKeuze).length ? stapKeuze : null,
+        source_url: over ? over.sourceUrl : sourceUrl.trim() || null,
       };
+
 
       let recipeId = recipe?.id;
       if (recipeId) {
