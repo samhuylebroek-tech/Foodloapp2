@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link as RouterLink } from "@tanstack/react-router";
 import {
+  BookOpen,
   Camera,
   Link2,
   Loader2,
