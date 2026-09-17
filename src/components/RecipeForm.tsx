@@ -1341,16 +1341,14 @@ export function RecipeForm({
             ) : null}
           </div>
           <DialogFooter className="gap-2 sm:justify-between">
-            <Button
-              variant="outline"
-              onClick={() => setVoorbeeld(null)}
-              className="h-14 text-base"
-            >
+            <Button variant="outline" onClick={sluitVenster} className="h-14 text-base">
               Annuleren
             </Button>
-            <Button onClick={bevestigVoorbeeld} className="h-14 text-base">
-              Dit recept overnemen
-            </Button>
+            {voorbeeld && !vbBezig ? (
+              <Button onClick={bevestigVoorbeeld} className="h-14 text-base">
+                Dit recept overnemen
+              </Button>
+            ) : null}
           </DialogFooter>
         </DialogContent>
       </Dialog>
