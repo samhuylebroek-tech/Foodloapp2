@@ -23,7 +23,8 @@ import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.png";
 import { Aankondigingen } from "@/components/Aankondigingen";
-import { InstallatieTip } from "@/components/InstallatieTip";
+import { InstallatieTip, installatieTipAf } from "@/components/InstallatieTip";
+import { MeldingVraag, telAanmelding } from "@/components/MeldingVraag";
 import { meet } from "@/lib/meten";
 
 const NAV = [
@@ -96,6 +97,14 @@ export function AppShell({
   useEffect(() => {
     if (session) meet("pagina", pathname);
   }, [pathname, session]);
+
+  // Eén keer per aanmelding tellen; bepaalt welke popup aan bod komt.
+  const [installTip, setInstallTip] = useState(false);
+  useEffect(() => {
+    if (!session) return;
+    telAanmelding();
+    setInstallTip(!installatieTipAf());
+  }, [session]);
 
   if (loading || !session) {
     return (
