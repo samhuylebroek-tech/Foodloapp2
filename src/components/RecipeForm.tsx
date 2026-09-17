@@ -8,6 +8,7 @@ import {
   ClipboardType,
   ChevronDown,
   Pencil,
+  Search,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -495,6 +496,7 @@ export function RecipeForm({
   }
 
   const manieren: { id: Manier; label: string; icon: typeof Link2 }[] = [
+    { id: "zoek", label: "Zoeken", icon: Search },
     { id: "link", label: "AI link", icon: Link2 },
     { id: "tekst", label: "AI tekst", icon: ClipboardType },
     { id: "foto", label: "AI foto", icon: Camera },
