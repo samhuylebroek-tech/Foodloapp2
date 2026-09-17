@@ -377,8 +377,7 @@ export async function leesReceptKop(url: string): Promise<ReceptKop | null> {
     if (!titel || aantal < 2) continue;
     const minuten =
       duurNaarMinuten(recept["totalTime"]) ??
-      (duurNaarMinuten(recept["cookTime"]) ?? 0) + (duurNaarMinuten(recept["prepTime"]) ?? 0) ||
-      null;
+      (duurNaarMinuten(recept["cookTime"]) ?? 0) + (duurNaarMinuten(recept["prepTime"]) ?? 0);
     return {
       titel: titel.slice(0, 160),
       aantalIngredienten: aantal,
