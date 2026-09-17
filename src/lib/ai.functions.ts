@@ -840,6 +840,7 @@ const ZOEK_RUIS = [
 
 /** Bekende receptsites krijgen voorrang in de volgorde. */
 const ZOEK_VOORKEUR = [
+  "dagelijksekost.vrt.be",
   "dagelijksekost.een.be",
   "vtm.be",
   "njam.tv",
@@ -924,16 +925,16 @@ export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
     // 2. zoeken via een sleutelloze zoekpagina
     let html = "";
     try {
-      const res = await fetch("https://html.duckduckgo.com/html/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent":
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
-          "Accept-Language": "nl-BE,nl;q=0.9,en;q=0.6",
+      const res = await fetch(
+        `https://html.duckduckgo.com/html/?q=${encodeURIComponent(`${term} recept`)}`,
+        {
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+            "Accept-Language": "nl-BE,nl;q=0.9,en;q=0.6",
+          },
         },
-        body: new URLSearchParams({ q: `${term} recept`, kl: "be-nl" }).toString(),
-      });
+      );
       if (res.ok) html = await res.text();
     } catch {
       return [];
