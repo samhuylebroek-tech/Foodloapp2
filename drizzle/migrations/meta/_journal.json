@@ -253,6 +253,13 @@
       "when": 1789653408005,
       "tag": "0035_group_members_trigger_service_role_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1789673697696,
+      "tag": "0036_harden_group_members_credits_recipe_versions",
+      "breakpoints": true
     }
   ]
 }
