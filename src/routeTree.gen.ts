@@ -68,7 +68,12 @@ import { Route as BeheerUiSessiesRouteImport } from './routes/beheer.ui.sessies'
 import { Route as BeheerUiZoekRouteImport } from './routes/beheer.ui.zoek'
 import { Route as ReceptenIdBewerkenRouteImport } from './routes/recepten.$id_.bewerken'
 import { Route as ApiPublicMeldingenRunRouteImport } from './routes/api/public/meldingen.run'
+import { Route as BeheerUiAiActieIdRouteImport } from './routes/beheer.ui.ai-actie.$id'
+import { Route as BeheerUiFoutIdRouteImport } from './routes/beheer.ui.fout.$id'
+import { Route as BeheerUiGebeurtenisIdRouteImport } from './routes/beheer.ui.gebeurtenis.$id'
+import { Route as BeheerUiGebruikerIdRouteImport } from './routes/beheer.ui.gebruiker.$id'
 import { Route as BeheerUiGroepIdRouteImport } from './routes/beheer.ui.groep.$id'
+import { Route as BeheerUiSessieIdRouteImport } from './routes/beheer.ui.sessie.$id'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 
 const IndexRoute = IndexRouteImport.update({
@@ -366,9 +371,34 @@ const ApiPublicMeldingenRunRoute = ApiPublicMeldingenRunRouteImport.update({
   path: '/api/public/meldingen/run',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BeheerUiAiActieIdRoute = BeheerUiAiActieIdRouteImport.update({
+  id: '/ai-actie/$id',
+  path: '/ai-actie/$id',
+  getParentRoute: () => BeheerUiRoute,
+} as any)
+const BeheerUiFoutIdRoute = BeheerUiFoutIdRouteImport.update({
+  id: '/fout/$id',
+  path: '/fout/$id',
+  getParentRoute: () => BeheerUiRoute,
+} as any)
+const BeheerUiGebeurtenisIdRoute = BeheerUiGebeurtenisIdRouteImport.update({
+  id: '/gebeurtenis/$id',
+  path: '/gebeurtenis/$id',
+  getParentRoute: () => BeheerUiRoute,
+} as any)
+const BeheerUiGebruikerIdRoute = BeheerUiGebruikerIdRouteImport.update({
+  id: '/gebruiker/$id',
+  path: '/gebruiker/$id',
+  getParentRoute: () => BeheerUiRoute,
+} as any)
 const BeheerUiGroepIdRoute = BeheerUiGroepIdRouteImport.update({
   id: '/groep/$id',
   path: '/groep/$id',
+  getParentRoute: () => BeheerUiRoute,
+} as any)
+const BeheerUiSessieIdRoute = BeheerUiSessieIdRouteImport.update({
+  id: '/sessie/$id',
+  path: '/sessie/$id',
   getParentRoute: () => BeheerUiRoute,
 } as any)
 const LovableEmailTransactionalPreviewRoute =
@@ -438,7 +468,12 @@ export interface FileRoutesByFullPath {
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
   '/beheer/ui/': typeof BeheerUiIndexRoute
   '/api/public/meldingen/run': typeof ApiPublicMeldingenRunRoute
+  '/beheer/ui/ai-actie/$id': typeof BeheerUiAiActieIdRoute
+  '/beheer/ui/fout/$id': typeof BeheerUiFoutIdRoute
+  '/beheer/ui/gebeurtenis/$id': typeof BeheerUiGebeurtenisIdRoute
+  '/beheer/ui/gebruiker/$id': typeof BeheerUiGebruikerIdRoute
   '/beheer/ui/groep/$id': typeof BeheerUiGroepIdRoute
+  '/beheer/ui/sessie/$id': typeof BeheerUiSessieIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesByTo {
@@ -499,7 +534,12 @@ export interface FileRoutesByTo {
   '/recepten/$id/bewerken': typeof ReceptenIdBewerkenRoute
   '/beheer/ui': typeof BeheerUiIndexRoute
   '/api/public/meldingen/run': typeof ApiPublicMeldingenRunRoute
+  '/beheer/ui/ai-actie/$id': typeof BeheerUiAiActieIdRoute
+  '/beheer/ui/fout/$id': typeof BeheerUiFoutIdRoute
+  '/beheer/ui/gebeurtenis/$id': typeof BeheerUiGebeurtenisIdRoute
+  '/beheer/ui/gebruiker/$id': typeof BeheerUiGebruikerIdRoute
   '/beheer/ui/groep/$id': typeof BeheerUiGroepIdRoute
+  '/beheer/ui/sessie/$id': typeof BeheerUiSessieIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRoutesById {
@@ -563,7 +603,12 @@ export interface FileRoutesById {
   '/recepten/$id_/bewerken': typeof ReceptenIdBewerkenRoute
   '/beheer/ui/': typeof BeheerUiIndexRoute
   '/api/public/meldingen/run': typeof ApiPublicMeldingenRunRoute
+  '/beheer/ui/ai-actie/$id': typeof BeheerUiAiActieIdRoute
+  '/beheer/ui/fout/$id': typeof BeheerUiFoutIdRoute
+  '/beheer/ui/gebeurtenis/$id': typeof BeheerUiGebeurtenisIdRoute
+  '/beheer/ui/gebruiker/$id': typeof BeheerUiGebruikerIdRoute
   '/beheer/ui/groep/$id': typeof BeheerUiGroepIdRoute
+  '/beheer/ui/sessie/$id': typeof BeheerUiSessieIdRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
 }
 export interface FileRouteTypes {
@@ -628,7 +673,12 @@ export interface FileRouteTypes {
     | '/recepten/$id/bewerken'
     | '/beheer/ui/'
     | '/api/public/meldingen/run'
+    | '/beheer/ui/ai-actie/$id'
+    | '/beheer/ui/fout/$id'
+    | '/beheer/ui/gebeurtenis/$id'
+    | '/beheer/ui/gebruiker/$id'
     | '/beheer/ui/groep/$id'
+    | '/beheer/ui/sessie/$id'
     | '/lovable/email/transactional/preview'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -689,7 +739,12 @@ export interface FileRouteTypes {
     | '/recepten/$id/bewerken'
     | '/beheer/ui'
     | '/api/public/meldingen/run'
+    | '/beheer/ui/ai-actie/$id'
+    | '/beheer/ui/fout/$id'
+    | '/beheer/ui/gebeurtenis/$id'
+    | '/beheer/ui/gebruiker/$id'
     | '/beheer/ui/groep/$id'
+    | '/beheer/ui/sessie/$id'
     | '/lovable/email/transactional/preview'
   id:
     | '__root__'
@@ -752,7 +807,12 @@ export interface FileRouteTypes {
     | '/recepten/$id_/bewerken'
     | '/beheer/ui/'
     | '/api/public/meldingen/run'
+    | '/beheer/ui/ai-actie/$id'
+    | '/beheer/ui/fout/$id'
+    | '/beheer/ui/gebeurtenis/$id'
+    | '/beheer/ui/gebruiker/$id'
     | '/beheer/ui/groep/$id'
+    | '/beheer/ui/sessie/$id'
     | '/lovable/email/transactional/preview'
   fileRoutesById: FileRoutesById
 }
@@ -1201,11 +1261,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMeldingenRunRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/beheer/ui/ai-actie/$id': {
+      id: '/beheer/ui/ai-actie/$id'
+      path: '/ai-actie/$id'
+      fullPath: '/beheer/ui/ai-actie/$id'
+      preLoaderRoute: typeof BeheerUiAiActieIdRouteImport
+      parentRoute: typeof BeheerUiRoute
+    }
+    '/beheer/ui/fout/$id': {
+      id: '/beheer/ui/fout/$id'
+      path: '/fout/$id'
+      fullPath: '/beheer/ui/fout/$id'
+      preLoaderRoute: typeof BeheerUiFoutIdRouteImport
+      parentRoute: typeof BeheerUiRoute
+    }
+    '/beheer/ui/gebeurtenis/$id': {
+      id: '/beheer/ui/gebeurtenis/$id'
+      path: '/gebeurtenis/$id'
+      fullPath: '/beheer/ui/gebeurtenis/$id'
+      preLoaderRoute: typeof BeheerUiGebeurtenisIdRouteImport
+      parentRoute: typeof BeheerUiRoute
+    }
+    '/beheer/ui/gebruiker/$id': {
+      id: '/beheer/ui/gebruiker/$id'
+      path: '/gebruiker/$id'
+      fullPath: '/beheer/ui/gebruiker/$id'
+      preLoaderRoute: typeof BeheerUiGebruikerIdRouteImport
+      parentRoute: typeof BeheerUiRoute
+    }
     '/beheer/ui/groep/$id': {
       id: '/beheer/ui/groep/$id'
       path: '/groep/$id'
       fullPath: '/beheer/ui/groep/$id'
       preLoaderRoute: typeof BeheerUiGroepIdRouteImport
+      parentRoute: typeof BeheerUiRoute
+    }
+    '/beheer/ui/sessie/$id': {
+      id: '/beheer/ui/sessie/$id'
+      path: '/sessie/$id'
+      fullPath: '/beheer/ui/sessie/$id'
+      preLoaderRoute: typeof BeheerUiSessieIdRouteImport
       parentRoute: typeof BeheerUiRoute
     }
     '/lovable/email/transactional/preview': {
@@ -1230,7 +1325,12 @@ interface BeheerUiRouteChildren {
   BeheerUiSessiesRoute: typeof BeheerUiSessiesRoute
   BeheerUiZoekRoute: typeof BeheerUiZoekRoute
   BeheerUiIndexRoute: typeof BeheerUiIndexRoute
+  BeheerUiAiActieIdRoute: typeof BeheerUiAiActieIdRoute
+  BeheerUiFoutIdRoute: typeof BeheerUiFoutIdRoute
+  BeheerUiGebeurtenisIdRoute: typeof BeheerUiGebeurtenisIdRoute
+  BeheerUiGebruikerIdRoute: typeof BeheerUiGebruikerIdRoute
   BeheerUiGroepIdRoute: typeof BeheerUiGroepIdRoute
+  BeheerUiSessieIdRoute: typeof BeheerUiSessieIdRoute
 }
 
 const BeheerUiRouteChildren: BeheerUiRouteChildren = {
@@ -1245,7 +1345,12 @@ const BeheerUiRouteChildren: BeheerUiRouteChildren = {
   BeheerUiSessiesRoute: BeheerUiSessiesRoute,
   BeheerUiZoekRoute: BeheerUiZoekRoute,
   BeheerUiIndexRoute: BeheerUiIndexRoute,
+  BeheerUiAiActieIdRoute: BeheerUiAiActieIdRoute,
+  BeheerUiFoutIdRoute: BeheerUiFoutIdRoute,
+  BeheerUiGebeurtenisIdRoute: BeheerUiGebeurtenisIdRoute,
+  BeheerUiGebruikerIdRoute: BeheerUiGebruikerIdRoute,
   BeheerUiGroepIdRoute: BeheerUiGroepIdRoute,
+  BeheerUiSessieIdRoute: BeheerUiSessieIdRoute,
 }
 
 const BeheerUiRouteWithChildren = BeheerUiRoute._addFileChildren(
