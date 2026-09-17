@@ -232,6 +232,13 @@
       "when": 1789594520829,
       "tag": "0032_user_intelligence_sessions_events",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1789626729652,
+      "tag": "0033_restrict_group_members_self_update",
+      "breakpoints": true
     }
   ]
 }
