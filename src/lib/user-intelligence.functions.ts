@@ -122,6 +122,19 @@ function csv(rijen: Record<string, unknown>[]) {
 // Overzicht
 // ============================================================
 
+/** PostgREST geeft maximaal 1000 rijen per verzoek; dit haalt alles in stukken op. */
+async function pagineer<T = any>(bouw: (a: number, b: number) => any, max = 200_000): Promise<{ data: T[] }> {
+  const stap = 1000;
+  const uit: T[] = [];
+  for (let a = 0; a < max; a += stap) {
+    const { data } = await bouw(a, Math.min(a + stap, max) - 1);
+    const r = (data ?? []) as T[];
+    uit.push(...r);
+    if (r.length < stap) break;
+  }
+  return { data: uit };
+}
+
 export const uiOverzicht = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => filterSchema.parse(d ?? {}))
@@ -160,34 +173,34 @@ export const uiOverzicht = createServerFn({ method: "POST" })
           .lt("created_at", vanIso);
         return count ?? 0;
       })(),
-      db
+      await pagineer((a, b) => db
         .from("usage_events")
         .select("user_id, event, feature, created_at, session_id")
         .gte("created_at", vanIso)
         .lte("created_at", totIso)
-        .limit(200_000),
-      db
+        .range(a, b), 200000),
+      await pagineer((a, b) => db
         .from("user_sessions")
         .select("id, user_id, started_at, ended_at, einde_geschat, last_seen_at")
         .gte("started_at", vanIso)
         .lte("started_at", totIso)
-        .limit(100_000),
-      db
+        .range(a, b), 100000),
+      await pagineer((a, b) => db
         .from("ai_usage")
         .select("user_id, credits, kost_eur, ok, created_at")
         .gte("created_at", vanIso)
         .lte("created_at", totIso)
-        .limit(100_000),
-      db
+        .range(a, b), 100000),
+      await pagineer((a, b) => db
         .from("app_errors")
         .select("user_id, created_at")
         .gte("created_at", vanIso)
         .lte("created_at", totIso)
-        .limit(50_000),
+        .range(a, b), 50000),
       (async (): Promise<number> => {
-        const { data: metEvent } = await db.from("usage_events").select("user_id").limit(200_000);
+        const { data: metEvent } = await pagineer((a, b) => db.from("usage_events").select("user_id").range(a, b), 200000);
         const actieveOoit = new Set(((metEvent ?? []) as any[]).map((r) => r.user_id));
-        const { data: alle } = await db.from("profiles").select("id").limit(100_000);
+        const { data: alle } = await pagineer((a, b) => db.from("profiles").select("id").range(a, b), 100000);
         return ((alle ?? []) as any[]).filter((p) => !actieveOoit.has(p.id)).length;
       })(),
     ]);
@@ -219,11 +232,11 @@ export const uiOverzicht = createServerFn({ method: "POST" })
     const telEv = (naam: string) => ev.filter((e) => e.event === naam).length;
 
     // terugkerend = actief in deze periode én al eerder actief
-    const { data: eerder } = await db
+    const { data: eerder } = await pagineer((a, b) => db
       .from("usage_events")
       .select("user_id")
       .lt("created_at", vanIso)
-      .limit(200_000);
+      .range(a, b), 200000);
     const eerderSet = new Set(((eerder ?? []) as any[]).map((r) => r.user_id));
     const actieveSet = new Set(ev.map((e) => e.user_id));
     const terugkerend = [...actieveSet].filter((u) => eerderSet.has(u)).length;
@@ -351,15 +364,15 @@ export const uiGebruikers = createServerFn({ method: "POST" })
 
     const [{ data: profielen }, { data: events }, { data: sessies }, { data: ai }, { data: fouten }, { data: leden }] =
       await Promise.all([
-        db.from("profiles").select("id, display_name, handle, created_at, blocked_at, taal").limit(100_000),
-        db.from("usage_events").select("user_id, event, feature, created_at").limit(300_000),
-        db
+        await pagineer((a, b) => db.from("profiles").select("id, display_name, handle, created_at, blocked_at, taal").range(a, b), 100000),
+        await pagineer((a, b) => db.from("usage_events").select("user_id, event, feature, created_at").range(a, b), 300000),
+        await pagineer((a, b) => db
           .from("user_sessions")
           .select("user_id, started_at, ended_at, device, platform, browser, app_version")
-          .limit(200_000),
-        db.from("ai_usage").select("user_id, credits, kost_eur, created_at").limit(200_000),
-        db.from("app_errors").select("user_id, created_at").limit(100_000),
-        db.from("group_members").select("user_id, group_id, status").limit(50_000),
+          .range(a, b), 200000),
+        await pagineer((a, b) => db.from("ai_usage").select("user_id, credits, kost_eur, created_at").range(a, b), 200000),
+        await pagineer((a, b) => db.from("app_errors").select("user_id, created_at").range(a, b), 100000),
+        await pagineer((a, b) => db.from("group_members").select("user_id, group_id, status").range(a, b), 50000),
       ]);
 
     const ev = (events ?? []) as any[];
@@ -593,8 +606,8 @@ export const uiSessies = createServerFn({ method: "POST" })
     const tellingen = new Map<string, { events: number; fouten: number }>();
     if (ids.length) {
       const [{ data: ev }, { data: fo }] = await Promise.all([
-        db.from("usage_events").select("session_id").in("session_id", ids).limit(100_000),
-        db.from("app_errors").select("session_id").in("session_id", ids).limit(50_000),
+        await pagineer((a, b) => db.from("usage_events").select("session_id").in("session_id", ids).range(a, b), 100000),
+        await pagineer((a, b) => db.from("app_errors").select("session_id").in("session_id", ids).range(a, b), 50000),
       ]);
       for (const e of (ev ?? []) as any[]) {
         const r = tellingen.get(e.session_id) ?? { events: 0, fouten: 0 };
@@ -630,7 +643,7 @@ export const uiSessie = createServerFn({ method: "POST" })
     const { data: sessie } = (await db.from("user_sessions").select("*").eq("id", data.id).maybeSingle()) as { data: any };
     if (!sessie) return null;
     const [{ data: events }, { data: fouten }, { data: ai }] = await Promise.all([
-      db.from("usage_events").select("*").eq("session_id", data.id).order("created_at").limit(2000),
+      await pagineer((a, b) => db.from("usage_events").select("*").eq("session_id", data.id).order("created_at").range(a, b), 2000),
       db.from("app_errors").select("*").eq("session_id", data.id).order("created_at").limit(500),
       db
         .from("ai_usage")
@@ -833,7 +846,7 @@ export const uiGebruiker = createServerFn({ method: "POST" })
       { data: shares },
     ] = await Promise.all([
       db.from("profiles").select("*").eq("id", id).maybeSingle(),
-      db.from("usage_events").select("*").eq("user_id", id).order("created_at", { ascending: false }).limit(2000),
+      await pagineer((a, b) => db.from("usage_events").select("*").eq("user_id", id).order("created_at", { ascending: false }).range(a, b), 2000),
       db.from("user_sessions").select("*").eq("user_id", id).order("started_at", { ascending: false }).limit(200),
       db.from("ai_usage").select("*").eq("user_id", id).order("created_at", { ascending: false }).limit(500),
       db.from("app_errors").select("*").eq("user_id", id).order("created_at", { ascending: false }).limit(200),
@@ -958,10 +971,10 @@ export const uiVergelijk = createServerFn({ method: "POST" })
     const { db } = await bewaker(context as Ctx, "users.view");
     const [{ data: prof }, { data: ev }, { data: ss }, { data: ai }, { data: fo }] = await Promise.all([
       db.from("profiles").select("id, display_name").in("id", data.ids),
-      db.from("usage_events").select("user_id, event, created_at").in("user_id", data.ids).limit(100_000),
-      db.from("user_sessions").select("user_id, started_at").in("user_id", data.ids).limit(20_000),
-      db.from("ai_usage").select("user_id, credits, kost_eur").in("user_id", data.ids).limit(20_000),
-      db.from("app_errors").select("user_id").in("user_id", data.ids).limit(20_000),
+      await pagineer((a, b) => db.from("usage_events").select("user_id, event, created_at").in("user_id", data.ids).range(a, b), 100000),
+      await pagineer((a, b) => db.from("user_sessions").select("user_id, started_at").in("user_id", data.ids).range(a, b), 20000),
+      await pagineer((a, b) => db.from("ai_usage").select("user_id, credits, kost_eur").in("user_id", data.ids).range(a, b), 20000),
+      await pagineer((a, b) => db.from("app_errors").select("user_id").in("user_id", data.ids).range(a, b), 20000),
     ]);
     return ((prof ?? []) as any[]).map((p) => {
       const mijn = ((ev ?? []) as any[]).filter((e) => e.user_id === p.id);
@@ -991,10 +1004,10 @@ export const uiGroepen = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { db } = await bewaker(context as Ctx, "users.view");
     const [{ data: groepen }, { data: leden }, { data: ev }, { data: ai }] = await Promise.all([
-      db.from("groups").select("id, naam, owner_id, created_at").limit(2000),
-      db.from("group_members").select("group_id, user_id, status").limit(20_000),
-      db.from("usage_events").select("user_id, created_at, event").limit(200_000),
-      db.from("ai_usage").select("user_id, credits, kost_eur").limit(100_000),
+      await pagineer((a, b) => db.from("groups").select("id, naam, owner_id, created_at").range(a, b), 2000),
+      await pagineer((a, b) => db.from("group_members").select("group_id, user_id, status").range(a, b), 20000),
+      await pagineer((a, b) => db.from("usage_events").select("user_id, created_at, event").range(a, b), 200000),
+      await pagineer((a, b) => db.from("ai_usage").select("user_id, credits, kost_eur").range(a, b), 100000),
     ]);
     const evPer = new Map<string, { n: number; laatste: string }>();
     for (const e of (ev ?? []) as any[]) {
@@ -1048,11 +1061,11 @@ export const uiGroep = createServerFn({ method: "POST" })
         .in("user_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"])
         .order("created_at", { ascending: false })
         .limit(500),
-      db
+      await pagineer((a, b) => db
         .from("ai_usage")
         .select("user_id, credits, kost_eur, feature, created_at")
         .in("user_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"])
-        .limit(5000),
+        .range(a, b), 5000),
       db.from("meal_plan").select("id, plan_date, meal_type, custom_title").eq("group_id", data.id).limit(500),
       db.from("shopping_lists").select("id, name, created_at").eq("group_id", data.id).limit(200),
     ]);
@@ -1078,11 +1091,11 @@ export const uiAandacht = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { db } = await bewaker(context as Ctx, "users.view");
     const [{ data: prof }, { data: ev }, { data: ai }, { data: fo }, { data: imports }] = await Promise.all([
-      db.from("profiles").select("id, display_name, created_at").limit(50_000),
-      db.from("usage_events").select("user_id, created_at, event").limit(200_000),
-      db.from("ai_usage").select("user_id, credits, created_at").limit(100_000),
-      db.from("app_errors").select("user_id, created_at").limit(50_000),
-      db.from("recipe_import_jobs").select("user_id, status, created_at").limit(20_000),
+      await pagineer((a, b) => db.from("profiles").select("id, display_name, created_at").range(a, b), 50000),
+      await pagineer((a, b) => db.from("usage_events").select("user_id, created_at, event").range(a, b), 200000),
+      await pagineer((a, b) => db.from("ai_usage").select("user_id, credits, created_at").range(a, b), 100000),
+      await pagineer((a, b) => db.from("app_errors").select("user_id, created_at").range(a, b), 50000),
+      await pagineer((a, b) => db.from("recipe_import_jobs").select("user_id, status, created_at").range(a, b), 20000),
     ]);
     const nu = Date.now();
     const per = new Map<string, any>();
@@ -1207,29 +1220,29 @@ export const uiExport = createServerFn({ method: "POST" })
       let q = db.from("user_sessions").select("*");
       q = tijdFilter(q, "started_at", vanIso, totIso);
       if (f.userIds.length) q = q.in("user_id", f.userIds);
-      rijen = ((await q.limit(50_000)).data ?? []) as any[];
+      rijen = ((await pagineer((a, b) => q.range(a, b), 50000)).data ?? []) as any[];
     } else if (data.soort === "gebeurtenissen") {
       let q = db.from("usage_events").select("*");
       q = tijdFilter(q, "created_at", vanIso, totIso);
       q = pasGebeurtenisFilters(q, f as Filters);
-      rijen = ((await q.limit(50_000)).data ?? []) as any[];
+      rijen = ((await pagineer((a, b) => q.range(a, b), 50000)).data ?? []) as any[];
     } else if (data.soort === "ai") {
       let q = db.from("ai_usage").select("*");
       q = tijdFilter(q, "created_at", vanIso, totIso);
       if (f.userIds.length) q = q.in("user_id", f.userIds);
-      rijen = ((await q.limit(50_000)).data ?? []) as any[];
+      rijen = ((await pagineer((a, b) => q.range(a, b), 50000)).data ?? []) as any[];
     } else if (data.soort === "credits") {
       let q = db.from("credit_transactions").select("*");
       q = tijdFilter(q, "created_at", vanIso, totIso);
       if (f.userIds.length) q = q.in("user_id", f.userIds);
-      rijen = ((await q.limit(50_000)).data ?? []) as any[];
+      rijen = ((await pagineer((a, b) => q.range(a, b), 50000)).data ?? []) as any[];
     } else if (data.soort === "fouten") {
       let q = db.from("app_errors").select("*");
       q = tijdFilter(q, "created_at", vanIso, totIso);
       if (f.userIds.length) q = q.in("user_id", f.userIds);
-      rijen = ((await q.limit(50_000)).data ?? []) as any[];
+      rijen = ((await pagineer((a, b) => q.range(a, b), 50000)).data ?? []) as any[];
     } else {
-      const { data: p } = await db.from("profiles").select("id, display_name, handle, created_at, blocked_at").limit(50_000);
+      const { data: p } = await pagineer((a, b) => db.from("profiles").select("id, display_name, handle, created_at, blocked_at").range(a, b), 50000);
       rijen = (p ?? []) as any[];
     }
 

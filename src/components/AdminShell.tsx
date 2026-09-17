@@ -28,6 +28,7 @@ import type { Rechten } from "@/lib/admin.functions";
 const MENU: { pad: string; label: string; icoon: typeof Users; recht: Rechten }[] = [
   { pad: "/beheer", label: "Dashboard", icoon: BarChart3, recht: "dashboard.view" },
   { pad: "/beheer/activiteit", label: "Activiteit", icoon: Activity, recht: "dashboard.view" },
+  { pad: "/beheer/ui", label: "User Intelligence", icoon: LineChart, recht: "dashboard.view" },
   { pad: "/beheer/gebruikers", label: "Gebruikers", icoon: Users, recht: "users.view" },
   { pad: "/beheer/groepen", label: "Gezinnen", icoon: Users, recht: "users.view" },
   { pad: "/beheer/communicatie", label: "Communicatie", icoon: Megaphone, recht: "users.view" },
