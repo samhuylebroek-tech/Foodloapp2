@@ -183,10 +183,10 @@ export function RecipeForm({
     setVbStappen(data.instructions.join("\n"));
   }
 
-  /** Neemt het nagekeken voorbeeld over in het formulier. */
-  function bevestigVoorbeeld() {
-    if (!voorbeeld) return;
-    const bijgewerkt: ImportedRecipe = {
+  /** Bouwt het nagekeken recept uit de velden in het venster. */
+  function voorbeeldRecept(): ImportedRecipe | null {
+    if (!voorbeeld) return null;
+    return {
       ...voorbeeld,
       title: vbTitel.trim() || voorbeeld.title,
       ingredients: parseIngredientText(vbIngredienten).map((i) => ({
@@ -199,10 +199,40 @@ export function RecipeForm({
         .map((s) => s.trim())
         .filter(Boolean),
     };
+  }
+
+  /** Neemt het nagekeken voorbeeld over in het formulier om nog aan te passen. */
+  function bevestigVoorbeeld() {
+    const bijgewerkt = voorbeeldRecept();
+    if (!bijgewerkt) return;
     vulIn(bijgewerkt);
     if (bijgewerkt.source_url) setSourceUrl(bijgewerkt.source_url);
     sluitVenster();
     toast.success("Het recept staat in het formulier. Sla het op als het klopt.");
+  }
+
+  /** Bewaart het nagekeken recept meteen bij jouw gerechten. */
+  async function bewaarVoorbeeld() {
+    const r = voorbeeldRecept();
+    if (!r) return;
+    vulIn(r);
+    if (r.source_url) setSourceUrl(r.source_url);
+    sluitVenster();
+    await handleSave({
+      title: r.title,
+      description: r.description,
+      servings: Number(r.servings) || 1,
+      prep: Number(r.prep_minutes) || 0,
+      cook: Number(r.cook_minutes) || 0,
+      category: CATEGORIES.includes(r.category as never) ? r.category : "hoofdgerecht",
+      difficulty: DIFFICULTIES.includes(r.difficulty as never) ? r.difficulty : "makkelijk",
+      tags: r.tags.map((t) => t.trim().toLowerCase()).filter(Boolean),
+      stappen: r.instructions,
+      ingredienten: r.ingredients
+        .map((i) => ingredientToLine({ name: i.name, quantity: i.quantity, unit: i.unit ?? "" }))
+        .join("\n"),
+      sourceUrl: r.source_url ?? null,
+    });
   }
   const bestaande = useQuery({
     queryKey: ["gerecht-zoeken", zoekTerm.trim().toLowerCase()],
@@ -533,9 +563,25 @@ export function RecipeForm({
 
 
 
-  async function handleSave() {
+  /** Gegevens die het venster meteen kan opslaan, zonder op de formulierstate te wachten. */
+  type DirecteOpslag = {
+    title: string;
+    description: string;
+    servings: number;
+    prep: number;
+    cook: number;
+    category: string;
+    difficulty: string;
+    tags: string[];
+    stappen: string[];
+    ingredienten: string;
+    sourceUrl: string | null;
+  };
+
+  async function handleSave(over?: DirecteOpslag) {
     if (!user) return;
-    if (!title.trim()) {
+    const naam = (over?.title ?? title).trim();
+    if (!naam) {
       toast.error("Geef het gerecht een naam");
       return;
     }
@@ -550,24 +596,28 @@ export function RecipeForm({
           bewaardeFoto = null;
         }
       }
+      const ingredientenBron = over ? over.ingredienten : ingredientTekst;
       const payload = {
         user_id: user.id,
-        title: title.trim(),
-        description: description.trim(),
+        title: naam,
+        description: (over?.description ?? description).trim(),
         image_url: bewaardeFoto,
-        servings: Number(servings) || 1,
-        prep_minutes: Number(prep) || 0,
-        cook_minutes: Number(cook) || 0,
-        difficulty,
-        category,
-        tags: tags
-          .split(",")
-          .map((t) => t.trim().toLowerCase())
-          .filter(Boolean),
-        instructions: stappen,
-        step_ingredients: Object.keys(stapKeuze).length ? stapKeuze : null,
-        source_url: sourceUrl.trim() || null,
+        servings: over ? over.servings : Number(servings) || 1,
+        prep_minutes: over ? over.prep : Number(prep) || 0,
+        cook_minutes: over ? over.cook : Number(cook) || 0,
+        difficulty: over?.difficulty ?? difficulty,
+        category: over?.category ?? category,
+        tags: over
+          ? over.tags
+          : tags
+              .split(",")
+              .map((t) => t.trim().toLowerCase())
+              .filter(Boolean),
+        instructions: over ? over.stappen : stappen,
+        step_ingredients: !over && Object.keys(stapKeuze).length ? stapKeuze : null,
+        source_url: over ? over.sourceUrl : sourceUrl.trim() || null,
       };
+
 
       let recipeId = recipe?.id;
       if (recipeId) {
@@ -600,7 +650,7 @@ export function RecipeForm({
         recipeId = data.id;
       }
 
-      const cleanRows = parseIngredientText(ingredientTekst).map((r, index) => ({
+      const cleanRows = parseIngredientText(ingredientenBron).map((r, index) => ({
         recipe_id: recipeId!,
         name: r.name,
         quantity: r.quantity,
@@ -1267,7 +1317,7 @@ export function RecipeForm({
         </p>
       )}
 
-      <Button onClick={handleSave} disabled={saving} className="h-16 w-full text-lg">
+      <Button onClick={() => void handleSave()} disabled={saving} className="h-16 w-full text-lg">
         {saving ? <Loader2 className="size-5 animate-spin" /> : null}
         Recept opslaan
       </Button>
@@ -1341,14 +1391,24 @@ export function RecipeForm({
             ) : null}
           </div>
           <DialogFooter className="gap-2 sm:justify-between">
-            <Button variant="outline" onClick={sluitVenster} className="h-14 text-base">
-              Annuleren
-            </Button>
             {voorbeeld && !vbBezig ? (
-              <Button onClick={bevestigVoorbeeld} className="h-14 text-base">
-                Dit recept overnemen
+              <>
+                <Button variant="outline" onClick={bevestigVoorbeeld} className="h-14 text-base">
+                  Eerst aanpassen
+                </Button>
+                <Button
+                  onClick={() => void bewaarVoorbeeld()}
+                  disabled={saving}
+                  className="h-14 text-base"
+                >
+                  {saving ? "Bezig met bewaren…" : "Bewaar bij mijn recepten"}
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" onClick={sluitVenster} className="h-14 text-base">
+                Annuleren
               </Button>
-            ) : null}
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
