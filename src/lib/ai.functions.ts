@@ -811,3 +811,187 @@ export const receptVanNaam = createServerFn({ method: "POST" })
     );
     return resultaat;
   });
+
+// ---------------- echte receptpagina's zoeken op het web ----------------
+
+export type WebResultaat = {
+  titel: string;
+  url: string;
+  site: string;
+  fragment: string;
+};
+
+/** Sites die zelden een volledig recept bevatten of niet te lezen zijn. */
+const ZOEK_RUIS = [
+  "youtube.com",
+  "youtu.be",
+  "tiktok.com",
+  "instagram.com",
+  "facebook.com",
+  "pinterest.com",
+  "pinterest.be",
+  "x.com",
+  "twitter.com",
+  "reddit.com",
+  "amazon.",
+  "bol.com",
+  "wikipedia.org",
+];
+
+/** Bekende receptsites krijgen voorrang in de volgorde. */
+const ZOEK_VOORKEUR = [
+  "dagelijksekost.een.be",
+  "vtm.be",
+  "njam.tv",
+  "libelle-lekker.be",
+  "15gram.be",
+  "colruyt.be",
+  "delhaize.be",
+  "ah.nl",
+  "allerhande.nl",
+  "leukerecepten.nl",
+  "24kitchen.nl",
+  "smulweb.nl",
+  "jeroenmeus.be",
+  "lekkervanbijons.be",
+  "solomijnrecepten.be",
+];
+
+function ontdubbelTekst(ruw: string): string {
+  return ruw
+    .replace(/<[^>]*>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;|&#39;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Zet een DuckDuckGo-omleiding om naar de echte pagina-URL. */
+function echteUrl(href: string): string | null {
+  try {
+    const u = new URL(href, "https://duckduckgo.com");
+    const door = u.searchParams.get("uddg");
+    const doel = door ? decodeURIComponent(door) : u.toString();
+    if (!/^https?:\/\//i.test(doel)) return null;
+    return doel;
+  } catch {
+    return null;
+  }
+}
+
+function scoreVan(host: string): number {
+  if (ZOEK_VOORKEUR.some((h) => host === h || host.endsWith(`.${h}`))) return 3;
+  if (host.endsWith(".be")) return 2;
+  if (host.endsWith(".nl")) return 1;
+  return 0;
+}
+
+/**
+ * Zoekt echte receptpagina's op het web. Kost geen credits: we lezen enkel
+ * de zoekresultaten. Pas als je een resultaat kiest, loopt het door de
+ * gewone import (structuurdata eerst, AI enkel als het echt nodig is).
+ */
+export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ term: z.string().min(3).max(120) }).parse(data))
+  .handler(async ({ data }): Promise<WebResultaat[]> => {
+    const term = data.term.trim();
+    const sleutel = `web|${term.toLowerCase()}`;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // 1. eerst de cache: hetzelfde zoekwoord binnen 24 u hoeft niet opnieuw
+    try {
+      const { data: cache } = await supabaseAdmin
+        .from("ai_cache")
+        .select("result, expires_at, hits")
+        .eq("input_hash", sleutel)
+        .maybeSingle();
+      if (cache?.result && (!cache.expires_at || new Date(cache.expires_at) > new Date())) {
+        void supabaseAdmin
+          .from("ai_cache")
+          .update({ hits: (cache.hits ?? 0) + 1 })
+          .eq("input_hash", sleutel);
+        return cache.result as WebResultaat[];
+      }
+    } catch {
+      // cache is nooit verplicht
+    }
+
+    // 2. zoeken via een sleutelloze zoekpagina
+    let html = "";
+    try {
+      const res = await fetch("https://html.duckduckgo.com/html/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+          "Accept-Language": "nl-BE,nl;q=0.9,en;q=0.6",
+        },
+        body: new URLSearchParams({ q: `${term} recept`, kl: "be-nl" }).toString(),
+      });
+      if (res.ok) html = await res.text();
+    } catch {
+      return [];
+    }
+    if (!html) return [];
+
+    // 3. resultaten uitlezen
+    const blokken = html.split('class="result__body"').slice(1);
+    const gezien = new Set<string>();
+    const rijen: (WebResultaat & { score: number })[] = [];
+
+    for (const blok of blokken) {
+      const linkMatch = blok.match(/class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
+      if (!linkMatch?.[1]) continue;
+      const doel = echteUrl(linkMatch[1].replace(/&amp;/g, "&"));
+      if (!doel) continue;
+
+      let net = "";
+      try {
+        net = veiligeUrl(canoniekeUrl(doel));
+      } catch {
+        continue;
+      }
+      const host = new URL(net).hostname.replace(/^www\./i, "").toLowerCase();
+      if (ZOEK_RUIS.some((r) => host.includes(r))) continue;
+      if (gezien.has(net) || gezien.has(host)) continue;
+      gezien.add(net);
+      gezien.add(host);
+
+      const titel = ontdubbelTekst(linkMatch[2] ?? "").slice(0, 140);
+      if (!titel) continue;
+      const fragment = ontdubbelTekst(
+        blok.match(/class="result__snippet"[^>]*>([\s\S]*?)<\/a>/i)?.[1] ?? "",
+      ).slice(0, 180);
+
+      rijen.push({ titel, url: net, site: host, fragment, score: scoreVan(host) });
+    }
+
+    const resultaat = rijen
+      .map((r, i) => ({ ...r, volgorde: i }))
+      .sort((a, b) => b.score - a.score || a.volgorde - b.volgorde)
+      .slice(0, 6)
+      .map(({ titel, url, site, fragment }) => ({ titel, url, site, fragment }));
+
+    // 4. bewaren voor 24 u
+    try {
+      await supabaseAdmin.from("ai_cache").upsert({
+        input_hash: sleutel,
+        feature: "web_zoeken",
+        model: "geen",
+        prompt_version: 1,
+        result: resultaat,
+        hits: 0,
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      });
+    } catch {
+      // cache is nooit verplicht
+    }
+
+    return resultaat;
+  });
