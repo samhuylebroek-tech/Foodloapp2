@@ -276,7 +276,51 @@ export function RecipeForm({
     }
   }
 
+  /** Zoekt echte receptpagina's op het web. Kost geen credits. */
   async function handleZoek() {
+    const term = zoekTerm.trim();
+    if (term.length < 3) {
+      toast.error("Typ eerst de naam van een gerecht");
+      return;
+    }
+    setWebBezig(true);
+    setVoorstellen(null);
+    try {
+      const lijst = await zoekReceptenOpWeb({ data: { term } });
+      setWebResultaten(lijst);
+      if (!lijst.length) {
+        toast.message("Niets gevonden op het web. Probeer 'Nieuwe ideeën'.");
+      }
+    } catch (err) {
+      setWebResultaten([]);
+      meldFout(err, "Zoeken is niet gelukt");
+    } finally {
+      setWebBezig(false);
+    }
+  }
+
+  /** Haalt het gekozen webrecept op via de gewone import. */
+  async function kiesWeb(r: WebResultaat) {
+    setWebOphalen(r.url);
+    try {
+      const data = await importRecipeFromUrl({ data: { url: r.url } });
+      if (data.fout) {
+        toast.error(data.fout);
+        return;
+      }
+      vulIn(data);
+      setSourceUrl(data.source_url ?? r.url);
+      naAiActie();
+      toast.success("Het recept staat klaar. Lees het even na en sla op.");
+    } catch (err) {
+      meldFout(err, "We konden dit recept niet ophalen");
+    } finally {
+      setWebOphalen(null);
+    }
+  }
+
+  /** Extra: laat de AI varianten bedenken (kost credits). */
+  async function handleIdeeen() {
     const term = zoekTerm.trim();
     if (term.length < 3) {
       toast.error("Typ eerst de naam van een gerecht");
