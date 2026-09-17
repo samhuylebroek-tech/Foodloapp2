@@ -156,9 +156,23 @@ export function RecipeForm({
   const [vbTitel, setVbTitel] = useState("");
   const [vbIngredienten, setVbIngredienten] = useState("");
   const [vbStappen, setVbStappen] = useState("");
+  const [vensterOpen, setVensterOpen] = useState(false);
+  const [vbBezig, setVbBezig] = useState(false);
+  const [vbFout, setVbFout] = useState<string | null>(null);
+
+  /** Sluit het venster en maakt alles leeg. */
+  function sluitVenster() {
+    setVensterOpen(false);
+    setVoorbeeld(null);
+    setVbBezig(false);
+    setVbFout(null);
+  }
 
   /** Toont het gevonden recept in een venster om na te kijken. */
   function toonVoorbeeld(data: ImportedRecipe) {
+    setVensterOpen(true);
+    setVbBezig(false);
+    setVbFout(null);
     setVoorbeeld(data);
     setVbTitel(data.title);
     setVbIngredienten(
@@ -187,7 +201,7 @@ export function RecipeForm({
     };
     vulIn(bijgewerkt);
     if (bijgewerkt.source_url) setSourceUrl(bijgewerkt.source_url);
-    setVoorbeeld(null);
+    sluitVenster();
     toast.success("Het recept staat in het formulier. Sla het op als het klopt.");
   }
   const bestaande = useQuery({
@@ -346,21 +360,46 @@ export function RecipeForm({
     }
   }
 
-  /** Haalt het gekozen webrecept op via de gewone import. */
+  /** Haalt het gekozen webrecept op via de gewone import. Het venster gaat meteen open. */
   async function kiesWeb(r: WebResultaat) {
     setWebOphalen(r.url);
+    setVoorbeeld(null);
+    setVbFout(null);
+    setVbBezig(true);
+    setVensterOpen(true);
     try {
       const data = await importRecipeFromUrl({ data: { url: r.url } });
       if (data.fout) {
-        toast.error(data.fout);
+        setVbBezig(false);
+        setVbFout(data.fout);
         return;
       }
       toonVoorbeeld({ ...data, source_url: data.source_url ?? r.url });
       naAiActie();
     } catch (err) {
+      setVbBezig(false);
+      setVbFout("We konden dit recept niet ophalen van de website.");
       meldFout(err, "We konden dit recept niet ophalen");
     } finally {
       setWebOphalen(null);
+    }
+  }
+
+  /** Laat de AI het recept uitschrijven (kost credits) en toont het in hetzelfde venster. */
+  async function schrijfMetAi(titel: string) {
+    if (!magStarten("import_tekst")) return;
+    setVoorbeeld(null);
+    setVbFout(null);
+    setVbBezig(true);
+    setVensterOpen(true);
+    try {
+      const data = await receptVanNaam({ data: { titel } });
+      toonVoorbeeld(data);
+      naAiActie();
+    } catch (err) {
+      setVbBezig(false);
+      setVbFout("We konden dit recept niet uitschrijven.");
+      meldFout(err, "We konden dit recept niet uitschrijven");
     }
   }
 
@@ -718,7 +757,25 @@ export function RecipeForm({
                 </div>
               )}
 
-              {webResultaten && !voorstellen && (
+              {webResultaten && webResultaten.length === 0 && (
+                <div className="mt-4 rounded-2xl border border-border bg-card p-4">
+                  <p className="text-base font-semibold">
+                    We vonden geen betrouwbaar recept voor “{zoekTerm.trim()}”.
+                  </p>
+                  <p className="mt-1 text-base text-muted-foreground">
+                    Laat de AI het recept uitschrijven. Je kan het daarna nog nakijken en aanpassen.
+                  </p>
+                  <Button
+                    onClick={() => void schrijfMetAi(zoekTerm.trim())}
+                    className="mt-3 h-14 w-full text-base"
+                  >
+                    <Sparkles className="size-5" />
+                    Laat de AI dit recept uitschrijven
+                  </Button>
+                </div>
+              )}
+
+              {webResultaten && webResultaten.length > 0 && !voorstellen && (
                 <Button
                   variant="outline"
                   onClick={() => void handleIdeeen()}
@@ -1215,7 +1272,7 @@ export function RecipeForm({
         Recept opslaan
       </Button>
 
-      <Dialog open={voorbeeld !== null} onOpenChange={(open) => !open && setVoorbeeld(null)}>
+      <Dialog open={vensterOpen} onOpenChange={(open) => !open && sluitVenster()}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-left text-xl">Gevonden recept</DialogTitle>
@@ -1223,7 +1280,25 @@ export function RecipeForm({
               Kijk het even na en pas aan wat je anders wil. Daarna neem je het over.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          {vbBezig && (
+            <p className="flex items-center gap-3 py-6 text-base text-muted-foreground">
+              <Loader2 className="size-5 animate-spin text-primary" aria-hidden />
+              Recept wordt opgehaald…
+            </p>
+          )}
+          {!vbBezig && vbFout && (
+            <div className="py-2">
+              <p className="text-base">{vbFout}</p>
+              <Button
+                onClick={() => void schrijfMetAi(zoekTerm.trim() || vbTitel)}
+                className="mt-3 h-14 w-full text-base"
+              >
+                <Sparkles className="size-5" />
+                Laat de AI dit recept uitschrijven
+              </Button>
+            </div>
+          )}
+          <div className={voorbeeld && !vbBezig ? "space-y-4" : "hidden"}>
             <div>
               <Label htmlFor="vb-titel" className="text-base">
                 Naam
@@ -1266,16 +1341,14 @@ export function RecipeForm({
             ) : null}
           </div>
           <DialogFooter className="gap-2 sm:justify-between">
-            <Button
-              variant="outline"
-              onClick={() => setVoorbeeld(null)}
-              className="h-14 text-base"
-            >
+            <Button variant="outline" onClick={sluitVenster} className="h-14 text-base">
               Annuleren
             </Button>
-            <Button onClick={bevestigVoorbeeld} className="h-14 text-base">
-              Dit recept overnemen
-            </Button>
+            {voorbeeld && !vbBezig ? (
+              <Button onClick={bevestigVoorbeeld} className="h-14 text-base">
+                Dit recept overnemen
+              </Button>
+            ) : null}
           </DialogFooter>
         </DialogContent>
       </Dialog>

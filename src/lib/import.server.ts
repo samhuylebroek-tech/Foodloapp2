@@ -270,3 +270,128 @@ export function velden(recept: {
     ontbrekend: checks.filter(([, ok]) => !ok).map(([n]) => n),
   };
 }
+
+// ---------------- snelle receptcontrole voor zoekresultaten ----------------
+
+export type ReceptKop = {
+  titel: string;
+  aantalIngredienten: number;
+  minuten: number | null;
+};
+
+function jsonLdBlokken(html: string): unknown[] {
+  const uit: unknown[] = [];
+  const matches = html.matchAll(
+    /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
+  );
+  for (const m of matches) {
+    const ruw = (m[1] ?? "").trim().replace(/<!--[\s\S]*?-->/g, "");
+    try {
+      uit.push(JSON.parse(ruw));
+    } catch {
+      // kapotte json-ld negeren we gewoon
+    }
+  }
+  return uit;
+}
+
+function isRecept(node: unknown): node is Record<string, unknown> {
+  if (!node || typeof node !== "object") return false;
+  const t = (node as Record<string, unknown>)["@type"];
+  const lijst = Array.isArray(t) ? t : [t];
+  return lijst.some((x) => typeof x === "string" && x.toLowerCase() === "recipe");
+}
+
+function zoekRecept(node: unknown, diep = 0): Record<string, unknown> | null {
+  if (diep > 4 || !node) return null;
+  if (Array.isArray(node)) {
+    for (const k of node) {
+      const r = zoekRecept(k, diep + 1);
+      if (r) return r;
+    }
+    return null;
+  }
+  if (typeof node !== "object") return null;
+  if (isRecept(node)) return node as Record<string, unknown>;
+  const obj = node as Record<string, unknown>;
+  for (const sleutel of ["@graph", "mainEntity", "itemListElement", "mainEntityOfPage"]) {
+    const r = zoekRecept(obj[sleutel], diep + 1);
+    if (r) return r;
+  }
+  return null;
+}
+
+/** ISO-duur (PT1H20M) naar minuten. */
+function duurNaarMinuten(waarde: unknown): number | null {
+  if (typeof waarde !== "string") return null;
+  const m = waarde.match(/^P(?:\d+D)?T?(?:(\d+)H)?(?:(\d+)M)?/i);
+  if (!m) return null;
+  const uren = Number(m[1] ?? 0);
+  const min = Number(m[2] ?? 0);
+  const totaal = uren * 60 + min;
+  return totaal > 0 ? totaal : null;
+}
+
+function tekstVan(waarde: unknown): string {
+  if (typeof waarde === "string") return waarde.trim();
+  if (Array.isArray(waarde)) return tekstVan(waarde[0]);
+  if (waarde && typeof waarde === "object") {
+    const o = waarde as Record<string, unknown>;
+    return tekstVan(o["name"] ?? o["@value"] ?? o["headline"]);
+  }
+  return "";
+}
+
+/**
+ * Controleert of een pagina écht een recept bevat en geeft de juiste titel terug.
+ * Gebruikt enkel gestructureerde gegevens (JSON-LD/microdata) — geen AI, geen credits.
+ */
+export async function leesReceptKop(url: string): Promise<ReceptKop | null> {
+  let html = "";
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": BROWSER_UA,
+        Accept: "text/html,application/xhtml+xml",
+        "Accept-Language": "nl,en;q=0.8",
+      },
+      redirect: "follow",
+    });
+    if (!res.ok) return null;
+    html = await res.text();
+  } catch {
+    return null;
+  }
+  if (!html) return null;
+
+  for (const blok of jsonLdBlokken(html)) {
+    const recept = zoekRecept(blok);
+    if (!recept) continue;
+    const titel = tekstVan(recept["name"]);
+    const ingr = recept["recipeIngredient"] ?? recept["ingredients"];
+    const aantal = Array.isArray(ingr)
+      ? ingr.filter((x) => tekstVan(x).length > 1).length
+      : typeof ingr === "string" && ingr.trim()
+        ? 1
+        : 0;
+    if (!titel || aantal < 2) continue;
+    const minuten =
+      duurNaarMinuten(recept["totalTime"]) ??
+      (duurNaarMinuten(recept["cookTime"]) ?? 0) + (duurNaarMinuten(recept["prepTime"]) ?? 0);
+    return {
+      titel: titel.slice(0, 160),
+      aantalIngredienten: aantal,
+      minuten: minuten && minuten > 0 ? minuten : null,
+    };
+  }
+
+  // microdata als reserve
+  if (/itemtype=["']https?:\/\/schema\.org\/Recipe["']/i.test(html)) {
+    const ingrs = [...html.matchAll(/itemprop=["']recipeIngredient["'][^>]*>([^<]{2,120})</gi)];
+    const naam = html.match(/itemprop=["']name["'][^>]*>([^<]{2,160})</i)?.[1];
+    if (naam && ingrs.length >= 2) {
+      return { titel: schoon(naam).slice(0, 160), aantalIngredienten: ingrs.length, minuten: null };
+    }
+  }
+  return null;
+}
