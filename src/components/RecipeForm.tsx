@@ -1272,7 +1272,7 @@ export function RecipeForm({
         Recept opslaan
       </Button>
 
-      <Dialog open={voorbeeld !== null} onOpenChange={(open) => !open && setVoorbeeld(null)}>
+      <Dialog open={vensterOpen} onOpenChange={(open) => !open && sluitVenster()}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-left text-xl">Gevonden recept</DialogTitle>
@@ -1280,7 +1280,25 @@ export function RecipeForm({
               Kijk het even na en pas aan wat je anders wil. Daarna neem je het over.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          {vbBezig && (
+            <p className="flex items-center gap-3 py-6 text-base text-muted-foreground">
+              <Loader2 className="size-5 animate-spin text-primary" aria-hidden />
+              Recept wordt opgehaald…
+            </p>
+          )}
+          {!vbBezig && vbFout && (
+            <div className="py-2">
+              <p className="text-base">{vbFout}</p>
+              <Button
+                onClick={() => void schrijfMetAi(zoekTerm.trim() || vbTitel)}
+                className="mt-3 h-14 w-full text-base"
+              >
+                <Sparkles className="size-5" />
+                Laat de AI dit recept uitschrijven
+              </Button>
+            </div>
+          )}
+          <div className={voorbeeld && !vbBezig ? "space-y-4" : "hidden"}>
             <div>
               <Label htmlFor="vb-titel" className="text-base">
                 Naam
