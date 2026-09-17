@@ -1906,6 +1906,20 @@ export type Database = {
         Returns: number
       }
       decline_share: { Args: { _token: string }; Returns: boolean }
+      groep_lid_update_ok: {
+        Args: {
+          _id: string
+          _pe: boolean
+          _pv: boolean
+          _re: boolean
+          _rol: string
+          _rv: boolean
+          _se: boolean
+          _status: string
+          _sv: boolean
+        }
+        Returns: boolean
+      }
       groep_naam: { Args: { _token: string }; Returns: string }
       groep_recht: {
         Args: { _owner: string; _perm: string; _viewer: string }
