@@ -671,15 +671,13 @@ export function RecipeForm({
                   )}
                 </div>
               )}
-            </div>
 
-          )}
-
-          {manier === "tekst" && (
-            <div className="mt-4">
-              <p className="text-base text-muted-foreground">
-                Plak een tekst van Instagram, een bericht of je eigen notities.
-              </p>
+              <div className="mt-5 border-t border-border pt-4">
+                <p className="text-base text-muted-foreground">
+                  Of plak hier gewoon de tekst van het recept: van Instagram, een bericht of je
+                  eigen notities.
+                </p>
+              </div>
               <Textarea
                 value={vrijeTekst}
                 onChange={(e) => setVrijeTekst(e.target.value)}
