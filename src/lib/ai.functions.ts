@@ -977,12 +977,20 @@ export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
           .replace(/^[a-z0-9][a-z0-9-]{4,}(\.html?)?\s+/i, "")
           .replace(/^(\d+\s*(u|uur|min|m)[.,]?\s*)+/i, "")
           .trim();
-        const titel = kern.slice(0, 110);
+        // Titel = eerste zin/regel, netjes op een woordgrens afgekapt.
+        const eersteZin = kern.split(/(?<=[.!?])\s+|\s+[-–|]\s+/)[0]!.trim();
+        let titel = eersteZin.length >= 6 ? eersteZin : kern;
+        if (titel.length > 140) {
+          const kort = titel.slice(0, 140);
+          const spatie = kort.lastIndexOf(" ");
+          titel = `${(spatie > 60 ? kort.slice(0, spatie) : kort).trim()}…`;
+        }
         if (titel.length < 6 || /^https?:/i.test(titel)) continue;
 
         gezien.add(net);
         gezien.add(host);
-        const fragment = (kern.length > 110 ? kern.slice(110) : tekst).slice(0, 180);
+        const rest = kern.slice(eersteZin.length).trim();
+        const fragment = (rest.length > 10 ? rest : tekst).slice(0, 180);
         rijen.push({ titel, url: net, site: host, fragment, score: scoreVan(host) });
         if (rijen.length >= 12) break;
       }
