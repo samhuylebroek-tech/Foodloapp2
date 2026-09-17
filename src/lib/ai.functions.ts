@@ -67,10 +67,10 @@ async function askAI(messages: unknown[], kind = "chat", meter?: AiMeter, model 
       meter.tokens_in += json.usage?.prompt_tokens ?? 0;
       meter.tokens_out += json.usage?.completion_tokens ?? 0;
     }
-    await logAi(kind, true, Date.now() - start);
+    await logAi(kind, true, Date.now() - start, undefined, model);
     return json.choices?.[0]?.message?.content ?? "";
   } catch (e) {
-    await logAi(kind, false, Date.now() - start, e instanceof Error ? e.message : String(e));
+    await logAi(kind, false, Date.now() - start, e instanceof Error ? e.message : String(e), model);
     throw e;
   }
 }
@@ -748,7 +748,7 @@ export const gerechtVoorstellen = createServerFn({ method: "POST" })
         userId: context.userId,
         feature: "suggesties",
         cacheSleutel: `zoek|${term.toLowerCase()}`,
-        model: MODEL,
+        model: ZOEK_MODEL,
       },
       async (meter) => {
         const raw = await askAI(
@@ -762,6 +762,7 @@ export const gerechtVoorstellen = createServerFn({ method: "POST" })
           ],
           "gerecht_zoeken",
           meter,
+          ZOEK_MODEL,
         );
         const list = parseJson<Partial<GerechtVoorstel>[]>(raw, []);
         if (!Array.isArray(list)) return [];
@@ -790,7 +791,7 @@ export const receptVanNaam = createServerFn({ method: "POST" })
         userId: context.userId,
         feature: "import_tekst",
         cacheSleutel: `naam|${data.titel.toLowerCase()}|${data.hint}`,
-        model: MODEL,
+        model: ZOEK_MODEL,
       },
       async (meter) => {
         const raw = await askAI(
@@ -803,6 +804,7 @@ export const receptVanNaam = createServerFn({ method: "POST" })
           ],
           "gerecht_zoeken_recept",
           meter,
+          ZOEK_MODEL,
         );
         return vulAan(parseJson<Partial<ImportedRecipe>>(raw, {}), { bron: "tekst" });
       },
