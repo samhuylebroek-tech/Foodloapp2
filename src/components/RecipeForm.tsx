@@ -201,7 +201,7 @@ export function RecipeForm({
     };
     vulIn(bijgewerkt);
     if (bijgewerkt.source_url) setSourceUrl(bijgewerkt.source_url);
-    setVoorbeeld(null);
+    sluitVenster();
     toast.success("Het recept staat in het formulier. Sla het op als het klopt.");
   }
   const bestaande = useQuery({
