@@ -1204,6 +1204,71 @@ export function RecipeForm({
         {saving ? <Loader2 className="size-5 animate-spin" /> : null}
         Recept opslaan
       </Button>
+
+      <Dialog open={voorbeeld !== null} onOpenChange={(open) => !open && setVoorbeeld(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-left text-xl">Gevonden recept</DialogTitle>
+            <DialogDescription className="text-left text-base">
+              Kijk het even na en pas aan wat je anders wil. Daarna neem je het over.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="vb-titel" className="text-base">
+                Naam
+              </Label>
+              <Input
+                id="vb-titel"
+                value={vbTitel}
+                onChange={(e) => setVbTitel(e.target.value)}
+                className="mt-2 h-14 text-base"
+              />
+            </div>
+            <div>
+              <Label htmlFor="vb-ing" className="text-base">
+                Ingrediënten
+              </Label>
+              <Textarea
+                id="vb-ing"
+                value={vbIngredienten}
+                onChange={(e) => setVbIngredienten(e.target.value)}
+                rows={6}
+                className="mt-2 text-base"
+              />
+            </div>
+            <div>
+              <Label htmlFor="vb-stap" className="text-base">
+                Bereiding
+              </Label>
+              <Textarea
+                id="vb-stap"
+                value={vbStappen}
+                onChange={(e) => setVbStappen(e.target.value)}
+                rows={8}
+                className="mt-2 text-base"
+              />
+            </div>
+            {voorbeeld?.source_url ? (
+              <p className="break-words text-sm text-muted-foreground">
+                Bron: {voorbeeld.source_url}
+              </p>
+            ) : null}
+          </div>
+          <DialogFooter className="gap-2 sm:justify-between">
+            <Button
+              variant="outline"
+              onClick={() => setVoorbeeld(null)}
+              className="h-14 text-base"
+            >
+              Annuleren
+            </Button>
+            <Button onClick={bevestigVoorbeeld} className="h-14 text-base">
+              Dit recept overnemen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
