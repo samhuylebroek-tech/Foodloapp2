@@ -17,13 +17,15 @@ import {
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 const MODEL = "google/gemini-3.8-flash";
+/** Model voor het zoeken naar gerechten en het uitschrijven ervan. */
+const ZOEK_MODEL = "openai/gpt-6-astra";
 
-async function logAi(kind: string, ok: boolean, ms: number, error?: string) {
+async function logAi(kind: string, ok: boolean, ms: number, error?: string, model = MODEL) {
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("ai_events").insert({
       kind,
-      model: MODEL,
+      model,
       ok,
       duration_ms: Math.round(ms),
       error: error ? error.slice(0, 500) : null,
