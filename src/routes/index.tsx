@@ -155,7 +155,10 @@ function StartPage() {
                   aria-label={t("Bekijk je planning")}
                 >
                   <div className="p-5 sm:p-6">
-                    <p className="text-sm font-semibold capitalize text-primary">{t(maaltijd.meal_type || "Vandaag")}</p>
+                    <p className="text-sm font-semibold capitalize text-primary">
+                      {t(maaltijd.meal_type || "Vandaag")}
+                      {maaltijd.group_id ? <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-secondary-foreground">{t("Gezin")}</span> : null}
+                    </p>
                     <h3 className="mt-1 text-2xl">{t(maaltijd.custom_title ?? "Maaltijd")}</h3>
                     <span className="mt-5 flex min-h-14 items-center justify-center rounded-xl bg-secondary px-5 text-base font-semibold text-secondary-foreground">
                       {t("Bekijk je planning")}
