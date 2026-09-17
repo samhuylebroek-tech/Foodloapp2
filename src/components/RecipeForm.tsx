@@ -25,7 +25,9 @@ import {
   gerechtFoto,
   gerechtVoorstellen,
   receptVanNaam,
+  zoekReceptenOpWeb,
   type GerechtVoorstel,
+  type WebResultaat,
   type ImportedRecipe,
 } from "@/lib/ai.functions";
 import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/types";
@@ -137,6 +139,9 @@ export function RecipeForm({
   const [zoekTerm, setZoekTerm] = useState("");
   const [zoekBezig, setZoekBezig] = useState(false);
   const [voorstellen, setVoorstellen] = useState<GerechtVoorstel[] | null>(null);
+  const [webResultaten, setWebResultaten] = useState<WebResultaat[] | null>(null);
+  const [webBezig, setWebBezig] = useState(false);
+  const [webOphalen, setWebOphalen] = useState<string | null>(null);
   const [uitschrijven, setUitschrijven] = useState<string | null>(null);
   const bestaande = useQuery({
     queryKey: ["gerecht-zoeken", zoekTerm.trim().toLowerCase()],
@@ -271,7 +276,51 @@ export function RecipeForm({
     }
   }
 
+  /** Zoekt echte receptpagina's op het web. Kost geen credits. */
   async function handleZoek() {
+    const term = zoekTerm.trim();
+    if (term.length < 3) {
+      toast.error("Typ eerst de naam van een gerecht");
+      return;
+    }
+    setWebBezig(true);
+    setVoorstellen(null);
+    try {
+      const lijst = await zoekReceptenOpWeb({ data: { term } });
+      setWebResultaten(lijst);
+      if (!lijst.length) {
+        toast.message("Niets gevonden op het web. Probeer 'Nieuwe ideeën'.");
+      }
+    } catch (err) {
+      setWebResultaten([]);
+      meldFout(err, "Zoeken is niet gelukt");
+    } finally {
+      setWebBezig(false);
+    }
+  }
+
+  /** Haalt het gekozen webrecept op via de gewone import. */
+  async function kiesWeb(r: WebResultaat) {
+    setWebOphalen(r.url);
+    try {
+      const data = await importRecipeFromUrl({ data: { url: r.url } });
+      if (data.fout) {
+        toast.error(data.fout);
+        return;
+      }
+      vulIn(data);
+      setSourceUrl(data.source_url ?? r.url);
+      naAiActie();
+      toast.success("Het recept staat klaar. Lees het even na en sla op.");
+    } catch (err) {
+      meldFout(err, "We konden dit recept niet ophalen");
+    } finally {
+      setWebOphalen(null);
+    }
+  }
+
+  /** Extra: laat de AI varianten bedenken (kost credits). */
+  async function handleIdeeen() {
     const term = zoekTerm.trim();
     if (term.length < 3) {
       toast.error("Typ eerst de naam van een gerecht");
@@ -544,8 +593,8 @@ export function RecipeForm({
           {manier === "zoek" && (
             <div className="mt-4">
               <p className="text-base text-muted-foreground">
-                Typ de naam van een gerecht, bijvoorbeeld “balletjes in tomatensaus”. Je ziet eerst
-                wat je al hebt, daarna een paar nieuwe ideeën.
+                Typ de naam van een gerecht, bijvoorbeeld “balletjes in tomatensaus Jeroen Meus”. Je
+                ziet wat je al hebt en echte recepten van het web. Zoeken kost geen credits.
               </p>
               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                 <Input
@@ -561,8 +610,8 @@ export function RecipeForm({
                     }
                   }}
                 />
-                <Button onClick={() => void handleZoek()} disabled={zoekBezig} className="h-14 px-6 text-base">
-                  {zoekBezig ? <Loader2 className="size-5 animate-spin" /> : <Search className="size-5" />}
+                <Button onClick={() => void handleZoek()} disabled={webBezig} className="h-14 px-6 text-base">
+                  {webBezig ? <Loader2 className="size-5 animate-spin" /> : <Search className="size-5" />}
                   Zoeken
                 </Button>
               </div>
@@ -585,6 +634,58 @@ export function RecipeForm({
                     ))}
                   </ul>
                 </div>
+              )}
+
+              {webResultaten && webResultaten.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-base font-semibold">Gevonden op het web</p>
+                  <ul className="mt-2 space-y-2">
+                    {webResultaten.map((r) => (
+                      <li key={r.url}>
+                        <button
+                          type="button"
+                          disabled={webOphalen !== null}
+                          onClick={() => void kiesWeb(r)}
+                          className="flex min-h-16 w-full items-start gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-left hover:bg-muted"
+                        >
+                          {webOphalen === r.url ? (
+                            <Loader2 className="mt-0.5 size-5 shrink-0 animate-spin text-primary" aria-hidden />
+                          ) : (
+                            <Link2 className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+                          )}
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-base font-semibold">{r.titel}</span>
+                            <span className="mt-0.5 block text-sm text-primary">{r.site}</span>
+                            {r.fragment ? (
+                              <span className="mt-0.5 block text-base text-muted-foreground">
+                                {r.fragment}
+                              </span>
+                            ) : null}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    We halen het recept van de gekozen pagina op, met bronvermelding.
+                  </p>
+                </div>
+              )}
+
+              {webResultaten && !voorstellen && (
+                <Button
+                  variant="outline"
+                  onClick={() => void handleIdeeen()}
+                  disabled={zoekBezig}
+                  className="mt-4 h-14 w-full text-base"
+                >
+                  {zoekBezig ? (
+                    <Loader2 className="size-5 animate-spin" />
+                  ) : (
+                    <Sparkles className="size-5" />
+                  )}
+                  Nieuwe ideeën met AI
+                </Button>
               )}
 
               {voorstellen && voorstellen.length > 0 && (
