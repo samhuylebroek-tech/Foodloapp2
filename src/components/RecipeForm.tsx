@@ -509,7 +509,7 @@ export function RecipeForm({
       {!recipe && (
         <section className="rounded-2xl border border-border bg-card p-4">
           <h2 className="text-lg">Hoe wil je beginnen?</h2>
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {manieren.map((m) => {
               const Icon = m.icon;
               const actief = manier === m.id;
