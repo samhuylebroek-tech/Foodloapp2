@@ -819,6 +819,8 @@ export type WebResultaat = {
   url: string;
   site: string;
   fragment: string;
+  aantalIngredienten?: number;
+  minuten?: number | null;
 };
 
 /** Sites die zelden een volledig recept bevatten of niet te lezen zijn. */
