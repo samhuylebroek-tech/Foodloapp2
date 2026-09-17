@@ -347,10 +347,8 @@ export function RecipeForm({
         toast.error(data.fout);
         return;
       }
-      vulIn(data);
-      setSourceUrl(data.source_url ?? r.url);
+      toonVoorbeeld({ ...data, source_url: data.source_url ?? r.url });
       naAiActie();
-      toast.success("Het recept staat klaar. Lees het even na en sla op.");
     } catch (err) {
       meldFout(err, "We konden dit recept niet ophalen");
     } finally {
