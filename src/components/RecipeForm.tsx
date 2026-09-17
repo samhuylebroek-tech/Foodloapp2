@@ -593,8 +593,8 @@ export function RecipeForm({
           {manier === "zoek" && (
             <div className="mt-4">
               <p className="text-base text-muted-foreground">
-                Typ de naam van een gerecht, bijvoorbeeld “balletjes in tomatensaus”. Je ziet eerst
-                wat je al hebt, daarna een paar nieuwe ideeën.
+                Typ de naam van een gerecht, bijvoorbeeld “balletjes in tomatensaus Jeroen Meus”. Je
+                ziet wat je al hebt en echte recepten van het web. Zoeken kost geen credits.
               </p>
               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                 <Input
@@ -610,8 +610,8 @@ export function RecipeForm({
                     }
                   }}
                 />
-                <Button onClick={() => void handleZoek()} disabled={zoekBezig} className="h-14 px-6 text-base">
-                  {zoekBezig ? <Loader2 className="size-5 animate-spin" /> : <Search className="size-5" />}
+                <Button onClick={() => void handleZoek()} disabled={webBezig} className="h-14 px-6 text-base">
+                  {webBezig ? <Loader2 className="size-5 animate-spin" /> : <Search className="size-5" />}
                   Zoeken
                 </Button>
               </div>
