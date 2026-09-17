@@ -270,6 +270,41 @@ export function RecipeForm({
     }
   }
 
+  async function handleZoek() {
+    const term = zoekTerm.trim();
+    if (term.length < 3) {
+      toast.error("Typ eerst de naam van een gerecht");
+      return;
+    }
+    if (!magStarten("suggesties")) return;
+    setZoekBezig(true);
+    try {
+      const lijst = await gerechtVoorstellen({ data: { term } });
+      setVoorstellen(lijst);
+      naAiActie();
+      if (!lijst.length) toast.error("We vonden hier geen varianten van");
+    } catch (err) {
+      meldFout(err, "Zoeken is niet gelukt");
+    } finally {
+      setZoekBezig(false);
+    }
+  }
+
+  async function kiesVoorstel(v: GerechtVoorstel) {
+    if (!magStarten("import_tekst")) return;
+    setUitschrijven(v.title);
+    try {
+      const data = await receptVanNaam({ data: { titel: v.title, hint: v.omschrijving } });
+      vulIn(data);
+      naAiActie();
+      toast.success("Het recept staat klaar. Lees het even na en sla op.");
+    } catch (err) {
+      meldFout(err, "We konden dit recept niet uitschrijven");
+    } finally {
+      setUitschrijven(null);
+    }
+  }
+
   async function handleTekst() {
     if (vrijeTekst.trim().length < 5) {
       toast.error("Plak eerst wat tekst");
