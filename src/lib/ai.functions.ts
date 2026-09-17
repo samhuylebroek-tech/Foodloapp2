@@ -7,6 +7,7 @@ import {
   detecteerPlatform,
   haalPagina,
   isSociaal,
+  leesReceptKop,
   logImport,
   PLATFORM_LABEL,
   velden,
