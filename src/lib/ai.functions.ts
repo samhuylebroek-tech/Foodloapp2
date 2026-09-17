@@ -724,3 +724,82 @@ export const gerechtFoto = createServerFn({ method: "POST" })
       return null;
     }
   });
+
+export type GerechtVoorstel = {
+  title: string;
+  omschrijving: string;
+  minuten: number;
+};
+
+/** Zoekt varianten van een gerecht op naam, zodat je de juiste kan kiezen. */
+export const gerechtVoorstellen = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ term: z.string().min(2).max(120) }).parse(data))
+  .handler(async ({ data, context }): Promise<GerechtVoorstel[]> => {
+    const term = data.term.trim();
+    const { resultaat } = await metCredits(
+      {
+        userId: context.userId,
+        feature: "suggesties",
+        cacheSleutel: `zoek|${term.toLowerCase()}`,
+        model: MODEL,
+      },
+      async (meter) => {
+        const raw = await askAI(
+          [
+            {
+              role: "system",
+              content:
+                'Je kent klassieke en moderne gerechten. De gebruiker typt een gerechtnaam en jij geeft 5 concrete varianten van dat gerecht. Antwoord uitsluitend met een JSON-array: [{"title":"","omschrijving":"","minuten":30}]. "title" is de naam van de variant in het Nederlands, "omschrijving" is één korte zin met wat het onderscheidt. Geen uitleg buiten de JSON.',
+            },
+            { role: "user", content: term },
+          ],
+          "gerecht_zoeken",
+          meter,
+        );
+        const list = parseJson<Partial<GerechtVoorstel>[]>(raw, []);
+        if (!Array.isArray(list)) return [];
+        return list
+          .filter((s) => typeof s?.title === "string" && s.title.trim())
+          .slice(0, 5)
+          .map((s) => ({
+            title: String(s.title).trim(),
+            omschrijving: String(s.omschrijving ?? "").trim(),
+            minuten: Number(s.minuten) || 30,
+          }));
+      },
+    );
+    return resultaat;
+  });
+
+/** Schrijft een volledig recept uit op basis van enkel de naam van een gerecht. */
+export const receptVanNaam = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({ titel: z.string().min(2).max(160), hint: z.string().max(300).default("") }).parse(data),
+  )
+  .handler(async ({ data, context }): Promise<ImportedRecipe> => {
+    const { resultaat } = await metCredits(
+      {
+        userId: context.userId,
+        feature: "import_tekst",
+        cacheSleutel: `naam|${data.titel.toLowerCase()}|${data.hint}`,
+        model: MODEL,
+      },
+      async (meter) => {
+        const raw = await askAI(
+          [
+            {
+              role: "system",
+              content: `Je schrijft een volledig, realistisch recept voor het gerecht dat de gebruiker noemt. Gebruik gangbare hoeveelheden voor 4 personen. ${STAP_REGELS} Antwoord uitsluitend met JSON in het Nederlands, zonder uitleg. ${JSON_FORMAAT}`,
+            },
+            { role: "user", content: `${data.titel}${data.hint ? `\n${data.hint}` : ""}` },
+          ],
+          "gerecht_zoeken_recept",
+          meter,
+        );
+        return vulAan(parseJson<Partial<ImportedRecipe>>(raw, {}), { bron: "tekst" });
+      },
+    );
+    return resultaat;
+  });

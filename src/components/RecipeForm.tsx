@@ -8,6 +8,7 @@ import {
   ClipboardType,
   ChevronDown,
   Pencil,
+  Search,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -22,6 +23,9 @@ import {
   recognizeIngredients,
   recipeFromPhoto,
   gerechtFoto,
+  gerechtVoorstellen,
+  receptVanNaam,
+  type GerechtVoorstel,
   type ImportedRecipe,
 } from "@/lib/ai.functions";
 import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/types";
@@ -38,7 +42,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-type Manier = "link" | "tekst" | "foto" | "zelf";
+type Manier = "zoek" | "link" | "tekst" | "foto" | "zelf";
 
 const PLATFORM_NAAM: Record<string, string> = {
   instagram: "Instagram",
@@ -128,6 +132,25 @@ export function RecipeForm({
   const [fotoBezig, setFotoBezig] = useState(false);
   const [fotoGeweigerd, setFotoGeweigerd] = useState(false);
   const laatsteFotoTitel = useRef("");
+
+  // Een gerecht zoeken op naam
+  const [zoekTerm, setZoekTerm] = useState("");
+  const [zoekBezig, setZoekBezig] = useState(false);
+  const [voorstellen, setVoorstellen] = useState<GerechtVoorstel[] | null>(null);
+  const [uitschrijven, setUitschrijven] = useState<string | null>(null);
+  const bestaande = useQuery({
+    queryKey: ["gerecht-zoeken", zoekTerm.trim().toLowerCase()],
+    enabled: zoekTerm.trim().length > 2,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("recipes")
+        .select("id, title, image_url, user_id")
+        .is("deleted_at", null)
+        .ilike("title", `%${zoekTerm.trim()}%`)
+        .limit(5);
+      return data ?? [];
+    },
+  });
 
   const creditFn = useServerFn(creditOverzicht);
   const credits = useQuery({ queryKey: ["credits"], queryFn: () => creditFn(), enabled: !!user, retry: false });
@@ -245,6 +268,41 @@ export function RecipeForm({
       meldFout(err, "We konden geen recept uit deze afbeelding halen");
     } finally {
       setScreenshotBezig(false);
+    }
+  }
+
+  async function handleZoek() {
+    const term = zoekTerm.trim();
+    if (term.length < 3) {
+      toast.error("Typ eerst de naam van een gerecht");
+      return;
+    }
+    if (!magStarten("suggesties")) return;
+    setZoekBezig(true);
+    try {
+      const lijst = await gerechtVoorstellen({ data: { term } });
+      setVoorstellen(lijst);
+      naAiActie();
+      if (!lijst.length) toast.error("We vonden hier geen varianten van");
+    } catch (err) {
+      meldFout(err, "Zoeken is niet gelukt");
+    } finally {
+      setZoekBezig(false);
+    }
+  }
+
+  async function kiesVoorstel(v: GerechtVoorstel) {
+    if (!magStarten("import_tekst")) return;
+    setUitschrijven(v.title);
+    try {
+      const data = await receptVanNaam({ data: { titel: v.title, hint: v.omschrijving } });
+      vulIn(data);
+      naAiActie();
+      toast.success("Het recept staat klaar. Lees het even na en sla op.");
+    } catch (err) {
+      meldFout(err, "We konden dit recept niet uitschrijven");
+    } finally {
+      setUitschrijven(null);
     }
   }
 
@@ -438,6 +496,7 @@ export function RecipeForm({
   }
 
   const manieren: { id: Manier; label: string; icon: typeof Link2 }[] = [
+    { id: "zoek", label: "Zoeken", icon: Search },
     { id: "link", label: "AI link", icon: Link2 },
     { id: "tekst", label: "AI tekst", icon: ClipboardType },
     { id: "foto", label: "AI foto", icon: Camera },
@@ -450,7 +509,7 @@ export function RecipeForm({
       {!recipe && (
         <section className="rounded-2xl border border-border bg-card p-4">
           <h2 className="text-lg">Hoe wil je beginnen?</h2>
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
             {manieren.map((m) => {
               const Icon = m.icon;
               const actief = manier === m.id;
@@ -482,6 +541,92 @@ export function RecipeForm({
             </p>
           )}
 
+
+          {manier === "zoek" && (
+            <div className="mt-4">
+              <p className="text-base text-muted-foreground">
+                Typ de naam van een gerecht, bijvoorbeeld “balletjes in tomatensaus”. Je ziet eerst
+                wat je al hebt, daarna een paar nieuwe ideeën.
+              </p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <Input
+                  value={zoekTerm}
+                  onChange={(e) => setZoekTerm(e.target.value)}
+                  placeholder="Balletjes in tomatensaus"
+                  aria-label="Naam van het gerecht"
+                  className="h-14 text-base"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void handleZoek();
+                    }
+                  }}
+                />
+                <Button onClick={() => void handleZoek()} disabled={zoekBezig} className="h-14 px-6 text-base">
+                  {zoekBezig ? <Loader2 className="size-5 animate-spin" /> : <Search className="size-5" />}
+                  Zoeken
+                </Button>
+              </div>
+
+              {(bestaande.data?.length ?? 0) > 0 && (
+                <div className="mt-4">
+                  <p className="text-base font-semibold">Al in je app</p>
+                  <ul className="mt-2 space-y-2">
+                    {(bestaande.data ?? []).map((r) => (
+                      <li key={r.id}>
+                        <button
+                          type="button"
+                          onClick={() => navigate({ to: "/recepten/$id", params: { id: r.id } })}
+                          className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-border bg-card px-4 text-left text-base font-semibold hover:bg-muted"
+                        >
+                          <BookOpen className="size-5 shrink-0 text-primary" aria-hidden />
+                          <span className="min-w-0 flex-1 truncate">{r.title}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {voorstellen && voorstellen.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-base font-semibold">Nieuwe ideeën</p>
+                  <ul className="mt-2 space-y-2">
+                    {voorstellen.map((v) => (
+                      <li key={v.title}>
+                        <button
+                          type="button"
+                          disabled={uitschrijven !== null}
+                          onClick={() => void kiesVoorstel(v)}
+                          className="flex min-h-16 w-full items-start gap-3 rounded-2xl border border-border bg-secondary px-4 py-3 text-left hover:bg-muted"
+                        >
+                          {uitschrijven === v.title ? (
+                            <Loader2 className="mt-0.5 size-5 shrink-0 animate-spin text-primary" aria-hidden />
+                          ) : (
+                            <Sparkles className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+                          )}
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-base font-semibold">{v.title}</span>
+                            {v.omschrijving ? (
+                              <span className="mt-0.5 block text-base text-muted-foreground">
+                                {v.omschrijving}
+                              </span>
+                            ) : null}
+                            <span className="mt-0.5 block text-sm text-muted-foreground">
+                              ± {v.minuten} min
+                            </span>
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Een idee kiezen schrijft het volledige recept uit met AI.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {manier === "link" && (
             <div className="mt-4">
