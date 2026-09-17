@@ -184,6 +184,8 @@ export function AppShell({
             <Aankondigingen />
             {children}
             <InstallatieTip />
+            {/* De installatiepopup krijgt voorrang; de meldingenvraag komt dan later. */}
+            <MeldingVraag actief={!installTip} />
           </main>
         </div>
       </div>
