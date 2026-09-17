@@ -40,6 +40,7 @@ import { Route as BeheerImportsRouteImport } from './routes/beheer.imports'
 import { Route as BeheerInhoudRouteImport } from './routes/beheer.inhoud'
 import { Route as BeheerInstellingenRouteImport } from './routes/beheer.instellingen'
 import { Route as BeheerKaartenRouteImport } from './routes/beheer.kaarten'
+import { Route as BeheerKostenRouteImport } from './routes/beheer.kosten'
 import { Route as BeheerLogboekRouteImport } from './routes/beheer.logboek'
 import { Route as BeheerMeldingenRouteImport } from './routes/beheer.meldingen'
 import { Route as BeheerReceptenRouteImport } from './routes/beheer.recepten'
@@ -229,6 +230,11 @@ const BeheerInstellingenRoute = BeheerInstellingenRouteImport.update({
 const BeheerKaartenRoute = BeheerKaartenRouteImport.update({
   id: '/kaarten',
   path: '/kaarten',
+  getParentRoute: () => BeheerRoute,
+} as any)
+const BeheerKostenRoute = BeheerKostenRouteImport.update({
+  id: '/kosten',
+  path: '/kosten',
   getParentRoute: () => BeheerRoute,
 } as any)
 const BeheerLogboekRoute = BeheerLogboekRouteImport.update({
@@ -439,6 +445,7 @@ export interface FileRoutesByFullPath {
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
   '/beheer/kaarten': typeof BeheerKaartenRoute
+  '/beheer/kosten': typeof BeheerKostenRoute
   '/beheer/logboek': typeof BeheerLogboekRoute
   '/beheer/meldingen': typeof BeheerMeldingenRoute
   '/beheer/recepten': typeof BeheerReceptenRoute
@@ -506,6 +513,7 @@ export interface FileRoutesByTo {
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
   '/beheer/kaarten': typeof BeheerKaartenRoute
+  '/beheer/kosten': typeof BeheerKostenRoute
   '/beheer/logboek': typeof BeheerLogboekRoute
   '/beheer/meldingen': typeof BeheerMeldingenRoute
   '/beheer/recepten': typeof BeheerReceptenRoute
@@ -574,6 +582,7 @@ export interface FileRoutesById {
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
   '/beheer/kaarten': typeof BeheerKaartenRoute
+  '/beheer/kosten': typeof BeheerKostenRoute
   '/beheer/logboek': typeof BeheerLogboekRoute
   '/beheer/meldingen': typeof BeheerMeldingenRoute
   '/beheer/recepten': typeof BeheerReceptenRoute
@@ -644,6 +653,7 @@ export interface FileRouteTypes {
     | '/beheer/inhoud'
     | '/beheer/instellingen'
     | '/beheer/kaarten'
+    | '/beheer/kosten'
     | '/beheer/logboek'
     | '/beheer/meldingen'
     | '/beheer/recepten'
@@ -711,6 +721,7 @@ export interface FileRouteTypes {
     | '/beheer/inhoud'
     | '/beheer/instellingen'
     | '/beheer/kaarten'
+    | '/beheer/kosten'
     | '/beheer/logboek'
     | '/beheer/meldingen'
     | '/beheer/recepten'
@@ -778,6 +789,7 @@ export interface FileRouteTypes {
     | '/beheer/inhoud'
     | '/beheer/instellingen'
     | '/beheer/kaarten'
+    | '/beheer/kosten'
     | '/beheer/logboek'
     | '/beheer/meldingen'
     | '/beheer/recepten'
@@ -1063,6 +1075,13 @@ declare module '@tanstack/react-router' {
       path: '/kaarten'
       fullPath: '/beheer/kaarten'
       preLoaderRoute: typeof BeheerKaartenRouteImport
+      parentRoute: typeof BeheerRoute
+    }
+    '/beheer/kosten': {
+      id: '/beheer/kosten'
+      path: '/kosten'
+      fullPath: '/beheer/kosten'
+      preLoaderRoute: typeof BeheerKostenRouteImport
       parentRoute: typeof BeheerRoute
     }
     '/beheer/logboek': {
@@ -1370,6 +1389,7 @@ interface BeheerRouteChildren {
   BeheerInhoudRoute: typeof BeheerInhoudRoute
   BeheerInstellingenRoute: typeof BeheerInstellingenRoute
   BeheerKaartenRoute: typeof BeheerKaartenRoute
+  BeheerKostenRoute: typeof BeheerKostenRoute
   BeheerLogboekRoute: typeof BeheerLogboekRoute
   BeheerMeldingenRoute: typeof BeheerMeldingenRoute
   BeheerReceptenRoute: typeof BeheerReceptenRoute
@@ -1395,6 +1415,7 @@ const BeheerRouteChildren: BeheerRouteChildren = {
   BeheerInhoudRoute: BeheerInhoudRoute,
   BeheerInstellingenRoute: BeheerInstellingenRoute,
   BeheerKaartenRoute: BeheerKaartenRoute,
+  BeheerKostenRoute: BeheerKostenRoute,
   BeheerLogboekRoute: BeheerLogboekRoute,
   BeheerMeldingenRoute: BeheerMeldingenRoute,
   BeheerReceptenRoute: BeheerReceptenRoute,
