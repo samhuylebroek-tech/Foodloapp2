@@ -246,6 +246,13 @@
       "when": 1789653388440,
       "tag": "0034_harden_admin_messages_credit_ledger_group_members",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1789653408005,
+      "tag": "0035_group_members_trigger_service_role_guard",
+      "breakpoints": true
     }
   ]
 }
