@@ -509,7 +509,7 @@ export function RecipeForm({
       {!recipe && (
         <section className="rounded-2xl border border-border bg-card p-4">
           <h2 className="text-lg">Hoe wil je beginnen?</h2>
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
             {manieren.map((m) => {
               const Icon = m.icon;
               const actief = manier === m.id;
@@ -541,6 +541,92 @@ export function RecipeForm({
             </p>
           )}
 
+
+          {manier === "zoek" && (
+            <div className="mt-4">
+              <p className="text-base text-muted-foreground">
+                Typ de naam van een gerecht, bijvoorbeeld “balletjes in tomatensaus”. Je ziet eerst
+                wat je al hebt, daarna een paar nieuwe ideeën.
+              </p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <Input
+                  value={zoekTerm}
+                  onChange={(e) => setZoekTerm(e.target.value)}
+                  placeholder="Balletjes in tomatensaus"
+                  aria-label="Naam van het gerecht"
+                  className="h-14 text-base"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void handleZoek();
+                    }
+                  }}
+                />
+                <Button onClick={() => void handleZoek()} disabled={zoekBezig} className="h-14 px-6 text-base">
+                  {zoekBezig ? <Loader2 className="size-5 animate-spin" /> : <Search className="size-5" />}
+                  Zoeken
+                </Button>
+              </div>
+
+              {(bestaande.data?.length ?? 0) > 0 && (
+                <div className="mt-4">
+                  <p className="text-base font-semibold">Al in je app</p>
+                  <ul className="mt-2 space-y-2">
+                    {(bestaande.data ?? []).map((r) => (
+                      <li key={r.id}>
+                        <button
+                          type="button"
+                          onClick={() => navigate({ to: "/recepten/$id", params: { id: r.id } })}
+                          className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-border bg-card px-4 text-left text-base font-semibold hover:bg-muted"
+                        >
+                          <BookOpen className="size-5 shrink-0 text-primary" aria-hidden />
+                          <span className="min-w-0 flex-1 truncate">{r.title}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {voorstellen && voorstellen.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-base font-semibold">Nieuwe ideeën</p>
+                  <ul className="mt-2 space-y-2">
+                    {voorstellen.map((v) => (
+                      <li key={v.title}>
+                        <button
+                          type="button"
+                          disabled={uitschrijven !== null}
+                          onClick={() => void kiesVoorstel(v)}
+                          className="flex min-h-16 w-full items-start gap-3 rounded-2xl border border-border bg-secondary px-4 py-3 text-left hover:bg-muted"
+                        >
+                          {uitschrijven === v.title ? (
+                            <Loader2 className="mt-0.5 size-5 shrink-0 animate-spin text-primary" aria-hidden />
+                          ) : (
+                            <Sparkles className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+                          )}
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-base font-semibold">{v.title}</span>
+                            {v.omschrijving ? (
+                              <span className="mt-0.5 block text-base text-muted-foreground">
+                                {v.omschrijving}
+                              </span>
+                            ) : null}
+                            <span className="mt-0.5 block text-sm text-muted-foreground">
+                              ± {v.minuten} min
+                            </span>
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Een idee kiezen schrijft het volledige recept uit met AI.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {manier === "link" && (
             <div className="mt-4">
