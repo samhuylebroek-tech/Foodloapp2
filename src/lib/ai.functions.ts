@@ -1000,11 +1000,33 @@ export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
     if (rijen.length === 0) return [];
 
 
-    const resultaat = rijen
+    // 3. elke kandidaat nakijken: staat er écht een recept op de pagina?
+    const kandidaten = rijen
       .map((r, i) => ({ ...r, volgorde: i }))
       .sort((a, b) => b.score - a.score || a.volgorde - b.volgorde)
-      .slice(0, 6)
-      .map(({ titel, url, site, fragment }) => ({ titel, url, site, fragment }));
+      .slice(0, 8);
+
+    const gekeurd = await Promise.all(
+      kandidaten.map(async (r) => {
+        const kop = await leesReceptKop(r.url);
+        if (!kop) return null;
+        const stukjes = [
+          `${kop.aantalIngredienten} ingrediënten`,
+          kop.minuten ? `${kop.minuten} min` : "",
+        ].filter(Boolean);
+        return {
+          titel: kop.titel,
+          url: r.url,
+          site: r.site,
+          fragment: stukjes.join(" · "),
+          aantalIngredienten: kop.aantalIngredienten,
+          minuten: kop.minuten,
+        } satisfies WebResultaat;
+      }),
+    );
+
+    const resultaat = gekeurd.filter((r): r is WebResultaat => r !== null).slice(0, 5);
+    if (resultaat.length === 0) return [];
 
     // 4. bewaren voor 24 u
     try {
