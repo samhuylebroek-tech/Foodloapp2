@@ -97,10 +97,18 @@ function StartPage() {
     return (favoriet.length ? favoriet : recipes).slice(0, 4);
   }, [favorites, recipes]);
   const naam = profiel?.display_name?.split(" ")[0];
-  const maaltijden = useMemo(
-    () => [...dagmenu].sort((a, b) => (b.recipes ? 1 : 0) - (a.recipes ? 1 : 0)),
-    [dagmenu],
-  );
+  // Hetzelfde gerecht kan zowel persoonlijk als via het gezin gepland staan:
+  // toon het maar één keer, met voorrang voor de persoonlijke rij.
+  const maaltijden = useMemo(() => {
+    const perSleutel = new Map<string, (typeof dagmenu)[number]>();
+    for (const maaltijd of dagmenu) {
+      const sleutel = `${maaltijd.meal_type}|${maaltijd.recipe_id ?? maaltijd.custom_title ?? maaltijd.id}`;
+      const bestaand = perSleutel.get(sleutel);
+      if (!bestaand || (bestaand.group_id && !maaltijd.group_id)) perSleutel.set(sleutel, maaltijd);
+    }
+    return [...perSleutel.values()].sort((a, b) => (b.recipes ? 1 : 0) - (a.recipes ? 1 : 0));
+  }, [dagmenu]);
+
 
   return (
     <AppShell title="Foodlo">
