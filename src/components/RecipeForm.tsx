@@ -25,7 +25,9 @@ import {
   gerechtFoto,
   gerechtVoorstellen,
   receptVanNaam,
+  zoekReceptenOpWeb,
   type GerechtVoorstel,
+  type WebResultaat,
   type ImportedRecipe,
 } from "@/lib/ai.functions";
 import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/types";
@@ -137,6 +139,9 @@ export function RecipeForm({
   const [zoekTerm, setZoekTerm] = useState("");
   const [zoekBezig, setZoekBezig] = useState(false);
   const [voorstellen, setVoorstellen] = useState<GerechtVoorstel[] | null>(null);
+  const [webResultaten, setWebResultaten] = useState<WebResultaat[] | null>(null);
+  const [webBezig, setWebBezig] = useState(false);
+  const [webOphalen, setWebOphalen] = useState<string | null>(null);
   const [uitschrijven, setUitschrijven] = useState<string | null>(null);
   const bestaande = useQuery({
     queryKey: ["gerecht-zoeken", zoekTerm.trim().toLowerCase()],
