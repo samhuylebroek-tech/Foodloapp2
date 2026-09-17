@@ -43,6 +43,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type Manier = "zoek" | "link" | "foto" | "zelf";
 
@@ -143,6 +151,45 @@ export function RecipeForm({
   const [webBezig, setWebBezig] = useState(false);
   const [webOphalen, setWebOphalen] = useState<string | null>(null);
   const [uitschrijven, setUitschrijven] = useState<string | null>(null);
+  // Voorbeeld van een gevonden recept: eerst bekijken/aanpassen, dan pas overnemen.
+  const [voorbeeld, setVoorbeeld] = useState<ImportedRecipe | null>(null);
+  const [vbTitel, setVbTitel] = useState("");
+  const [vbIngredienten, setVbIngredienten] = useState("");
+  const [vbStappen, setVbStappen] = useState("");
+
+  /** Toont het gevonden recept in een venster om na te kijken. */
+  function toonVoorbeeld(data: ImportedRecipe) {
+    setVoorbeeld(data);
+    setVbTitel(data.title);
+    setVbIngredienten(
+      data.ingredients
+        .map((i) => ingredientToLine({ name: i.name, quantity: i.quantity, unit: i.unit ?? "" }))
+        .join("\n"),
+    );
+    setVbStappen(data.instructions.join("\n"));
+  }
+
+  /** Neemt het nagekeken voorbeeld over in het formulier. */
+  function bevestigVoorbeeld() {
+    if (!voorbeeld) return;
+    const bijgewerkt: ImportedRecipe = {
+      ...voorbeeld,
+      title: vbTitel.trim() || voorbeeld.title,
+      ingredients: parseIngredientText(vbIngredienten).map((i) => ({
+        name: i.name,
+        quantity: i.quantity,
+        unit: i.unit ?? "",
+      })),
+      instructions: vbStappen
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    };
+    vulIn(bijgewerkt);
+    if (bijgewerkt.source_url) setSourceUrl(bijgewerkt.source_url);
+    setVoorbeeld(null);
+    toast.success("Het recept staat in het formulier. Sla het op als het klopt.");
+  }
   const bestaande = useQuery({
     queryKey: ["gerecht-zoeken", zoekTerm.trim().toLowerCase()],
     enabled: zoekTerm.trim().length > 2,
@@ -308,10 +355,8 @@ export function RecipeForm({
         toast.error(data.fout);
         return;
       }
-      vulIn(data);
-      setSourceUrl(data.source_url ?? r.url);
+      toonVoorbeeld({ ...data, source_url: data.source_url ?? r.url });
       naAiActie();
-      toast.success("Het recept staat klaar. Lees het even na en sla op.");
     } catch (err) {
       meldFout(err, "We konden dit recept niet ophalen");
     } finally {
@@ -345,9 +390,8 @@ export function RecipeForm({
     setUitschrijven(v.title);
     try {
       const data = await receptVanNaam({ data: { titel: v.title, hint: v.omschrijving } });
-      vulIn(data);
+      toonVoorbeeld(data);
       naAiActie();
-      toast.success("Het recept staat klaar. Lees het even na en sla op.");
     } catch (err) {
       meldFout(err, "We konden dit recept niet uitschrijven");
     } finally {
@@ -625,10 +669,10 @@ export function RecipeForm({
                         <button
                           type="button"
                           onClick={() => navigate({ to: "/recepten/$id", params: { id: r.id } })}
-                          className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-border bg-card px-4 text-left text-base font-semibold hover:bg-muted"
+                          className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-left text-base font-semibold hover:bg-muted"
                         >
                           <BookOpen className="size-5 shrink-0 text-primary" aria-hidden />
-                          <span className="min-w-0 flex-1 truncate">{r.title}</span>
+                          <span className="min-w-0 flex-1 break-words">{r.title}</span>
                         </button>
                       </li>
                     ))}
@@ -654,7 +698,9 @@ export function RecipeForm({
                             <Link2 className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
                           )}
                           <span className="min-w-0 flex-1">
-                            <span className="block text-base font-semibold">{r.titel}</span>
+                            <span className="block break-words text-base font-semibold">
+                              {r.titel}
+                            </span>
                             <span className="mt-0.5 block text-sm text-primary">{r.site}</span>
                             {r.fragment ? (
                               <span className="mt-0.5 block text-base text-muted-foreground">
@@ -1168,6 +1214,71 @@ export function RecipeForm({
         {saving ? <Loader2 className="size-5 animate-spin" /> : null}
         Recept opslaan
       </Button>
+
+      <Dialog open={voorbeeld !== null} onOpenChange={(open) => !open && setVoorbeeld(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-left text-xl">Gevonden recept</DialogTitle>
+            <DialogDescription className="text-left text-base">
+              Kijk het even na en pas aan wat je anders wil. Daarna neem je het over.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="vb-titel" className="text-base">
+                Naam
+              </Label>
+              <Input
+                id="vb-titel"
+                value={vbTitel}
+                onChange={(e) => setVbTitel(e.target.value)}
+                className="mt-2 h-14 text-base"
+              />
+            </div>
+            <div>
+              <Label htmlFor="vb-ing" className="text-base">
+                Ingrediënten
+              </Label>
+              <Textarea
+                id="vb-ing"
+                value={vbIngredienten}
+                onChange={(e) => setVbIngredienten(e.target.value)}
+                rows={6}
+                className="mt-2 text-base"
+              />
+            </div>
+            <div>
+              <Label htmlFor="vb-stap" className="text-base">
+                Bereiding
+              </Label>
+              <Textarea
+                id="vb-stap"
+                value={vbStappen}
+                onChange={(e) => setVbStappen(e.target.value)}
+                rows={8}
+                className="mt-2 text-base"
+              />
+            </div>
+            {voorbeeld?.source_url ? (
+              <p className="break-words text-sm text-muted-foreground">
+                Bron: {voorbeeld.source_url}
+              </p>
+            ) : null}
+          </div>
+          <DialogFooter className="gap-2 sm:justify-between">
+            <Button
+              variant="outline"
+              onClick={() => setVoorbeeld(null)}
+              className="h-14 text-base"
+            >
+              Annuleren
+            </Button>
+            <Button onClick={bevestigVoorbeeld} className="h-14 text-base">
+              Dit recept overnemen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
