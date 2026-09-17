@@ -993,3 +993,146 @@ export const adminAggregeerNu = createServerFn({ method: "POST" })
     await logboek(db, profiel, "monitoring.aggregate", "monitoring", null, uit);
     return uit;
   });
+
+// ---------------- volledig kostenoverzicht ----------------
+
+/**
+ * Eén waarheid over wat de app kost: AI (gemeten), hosting (ingesteld) en
+ * de creditprijs. Leest enkel bestaande tabellen — geen tweede meetsysteem.
+ */
+export const adminKostenOverzicht = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => bereikSchema.parse(d ?? {}))
+  .handler(async ({ context, data }) => {
+    const { db } = await bewaker(context as Ctx, "dashboard.view");
+    const { van, tot } = bereikNaarDagen(data);
+    const dagen = Math.max(1, Math.round((Date.parse(tot) - Date.parse(van)) / 86400_000) + 1);
+
+    const [{ data: instellingen }, { data: kosten }, { data: prijzen }] = await Promise.all([
+      db.from("platform_settings").select("key, value"),
+      db.from("credit_costs").select("*"),
+      db.from("model_prices").select("*").order("model"),
+    ]);
+    const inst = new Map((instellingen ?? []).map((r: any) => [r.key, r.value]));
+    const getal = (k: string, standaard: number) => {
+      const v = inst.get(k);
+      const n = typeof v === "number" ? v : Number(String(v ?? "").replace(/"/g, ""));
+      return Number.isFinite(n) ? n : standaard;
+    };
+    const creditEur = getal("kost_credit_eur", 0.25);
+    const hostingPerDag = getal("hosting_credits_per_dag", 0.3);
+    const gratisCloud = getal("kost_gratis_cloud_credits", 20);
+    const alarmEur = getal("kost_alarm_eur", 5);
+
+    const { data: ai } = await pasWie(
+      db
+        .from("ai_usage")
+        .select("user_id, feature, model, credits, kost_eur, cache_hit, ok, tokens_in, tokens_out, beelden, created_at")
+        .gte("created_at", `${van}T00:00:00Z`)
+        .lte("created_at", `${tot}T23:59:59Z`)
+        .limit(50_000),
+      "user_id",
+      { wieModus: data.wieModus, wieIds: data.wieIds },
+    );
+    const rijen = (ai ?? []) as any[];
+    const gemeten = (r: any) => !r.cache_hit && (r.tokens_in > 0 || r.tokens_out > 0 || r.beelden > 0);
+
+    const labels = new Map((kosten ?? []).map((c: any) => [c.feature, c]));
+    const perFeature = new Map<
+      string,
+      { feature: string; label: string; aantal: number; gemeten: number; cache: number; credits: number; kost: number }
+    >();
+    const perDag = new Map<string, { dag: string; kost: number; aantal: number; credits: number }>();
+    const perGebruiker = new Map<string, { user_id: string; aantal: number; credits: number; kost: number }>();
+
+    for (const r of rijen) {
+      const c: any = labels.get(r.feature);
+      const f = perFeature.get(r.feature) ?? {
+        feature: r.feature,
+        label: c?.label ?? r.feature,
+        aantal: 0,
+        gemeten: 0,
+        cache: 0,
+        credits: 0,
+        kost: 0,
+      };
+      f.aantal += 1;
+      if (r.cache_hit) f.cache += 1;
+      if (gemeten(r)) f.gemeten += 1;
+      f.credits += r.credits ?? 0;
+      f.kost += Number(r.kost_eur ?? 0);
+      perFeature.set(r.feature, f);
+
+      const dag = String(r.created_at).slice(0, 10);
+      const d = perDag.get(dag) ?? { dag, kost: 0, aantal: 0, credits: 0 };
+      d.kost += Number(r.kost_eur ?? 0);
+      d.aantal += 1;
+      d.credits += r.credits ?? 0;
+      perDag.set(dag, d);
+
+      if (r.user_id) {
+        const u = perGebruiker.get(r.user_id) ?? { user_id: r.user_id, aantal: 0, credits: 0, kost: 0 };
+        u.aantal += 1;
+        u.credits += r.credits ?? 0;
+        u.kost += Number(r.kost_eur ?? 0);
+        perGebruiker.set(r.user_id, u);
+      }
+    }
+
+    const acties = [...perFeature.values()]
+      .map((f) => ({
+        ...f,
+        kost: euro(f.kost),
+        gemiddeld: f.gemeten ? euro(f.kost / f.gemeten) : null,
+        creditPrijs: (labels.get(f.feature) as any)?.credit_cost ?? null,
+      }))
+      .sort((a, b) => b.kost - a.kost);
+
+    const topIds = [...perGebruiker.values()].sort((a, b) => b.kost - a.kost).slice(0, 20);
+    const { data: profielen } = topIds.length
+      ? await db.from("profiles").select("id, display_name").in("id", topIds.map((u) => u.user_id))
+      : { data: [] };
+    const naam = new Map((profielen ?? []).map((p: any) => [p.id, p.display_name]));
+    const gebruikers = topIds.map((u) => ({ ...u, kost: euro(u.kost), naam: naam.get(u.user_id) ?? "onbekend" }));
+
+    const reeks: { dag: string; kost: number; aantal: number; credits: number }[] = [];
+    for (let i = 0; i < dagen && i < 400; i++) {
+      const dag = dagString(new Date(Date.parse(van) + i * 86400_000));
+      const d = perDag.get(dag);
+      reeks.push({ dag, kost: euro(d?.kost ?? 0), aantal: d?.aantal ?? 0, credits: d?.credits ?? 0 });
+    }
+
+    const aiKost = euro(rijen.reduce((s, r) => s + Number(r.kost_eur ?? 0), 0));
+    const nietGemeten = rijen.filter((r) => !r.cache_hit && !gemeten(r)).length;
+    const hostingCredits = euro(hostingPerDag * dagen);
+    const hostingKost = euro(Math.max(0, hostingPerDag * 30 - gratisCloud) * (dagen / 30) * creditEur);
+
+    const vandaag = dagString(new Date());
+    const kostVandaag = euro(
+      rijen.filter((r) => String(r.created_at).slice(0, 10) === vandaag).reduce((s, r) => s + Number(r.kost_eur ?? 0), 0),
+    );
+
+    return {
+      van,
+      tot,
+      dagen,
+      instellingen: { creditEur, hostingPerDag, gratisCloud, alarmEur },
+      totaal: {
+        ai: aiKost,
+        hosting: hostingKost,
+        alles: euro(aiKost + hostingKost),
+        perDag: euro((aiKost + hostingKost) / dagen),
+        perGebruiker: perGebruiker.size ? euro(aiKost / perGebruiker.size) : 0,
+        aiOproepen: rijen.length,
+        cacheTreffers: rijen.filter((r) => r.cache_hit).length,
+        nietGemeten,
+        hostingCredits,
+        actieveGebruikers: perGebruiker.size,
+      },
+      alarm: kostVandaag > alarmEur ? { kostVandaag, grens: alarmEur } : null,
+      acties,
+      gebruikers,
+      reeks,
+      prijzen: (prijzen ?? []) as any[],
+    };
+  });
