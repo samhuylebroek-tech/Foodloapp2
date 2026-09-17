@@ -42,6 +42,7 @@ const MENU: { pad: string; label: string; icoon: typeof Users; recht: Rechten }[
   { pad: "/beheer/meldingen", label: "Meldingen", icoon: Bell, recht: "dashboard.view" },
   { pad: "/beheer/analytics", label: "Analytics", icoon: LineChart, recht: "dashboard.view" },
   { pad: "/beheer/credits", label: "Credits & kosten", icoon: Coins, recht: "dashboard.view" },
+  { pad: "/beheer/kosten", label: "Kosten", icoon: Coins, recht: "dashboard.view" },
 
   { pad: "/beheer/beveiliging", label: "Beveiliging", icoon: Lock, recht: "dashboard.view" },
   { pad: "/beheer/support", label: "Support", icoon: LifeBuoy, recht: "support.view" },
