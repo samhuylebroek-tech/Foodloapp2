@@ -133,7 +133,10 @@ function StartPage() {
                 >
                   <RecipePhoto path={maaltijd.recipes.image_url} alt={maaltijd.recipes.title} className="aspect-[16/9] w-full rounded-none" />
                   <div className="p-5 sm:p-6">
-                    <p className="text-sm font-semibold capitalize text-primary">{t(maaltijd.meal_type || "Vandaag")}</p>
+                    <p className="text-sm font-semibold capitalize text-primary">
+                      {t(maaltijd.meal_type || "Vandaag")}
+                      {maaltijd.group_id ? <span className="ml-2 rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-secondary-foreground">{t("Gezin")}</span> : null}
+                    </p>
                     <h3 className="mt-1 text-2xl">{t(maaltijd.recipes.title)}</h3>
                     <p className="mt-2 flex items-center gap-2 text-base text-muted-foreground">
                       {tijdLabel(maaltijd.recipes.prep_minutes, maaltijd.recipes.cook_minutes) ? <Clock className="size-5" aria-hidden /> : null}
