@@ -698,7 +698,9 @@ export function RecipeForm({
                             <Link2 className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
                           )}
                           <span className="min-w-0 flex-1">
-                            <span className="block text-base font-semibold">{r.titel}</span>
+                            <span className="block break-words text-base font-semibold">
+                              {r.titel}
+                            </span>
                             <span className="mt-0.5 block text-sm text-primary">{r.site}</span>
                             {r.fragment ? (
                               <span className="mt-0.5 block text-base text-muted-foreground">
