@@ -360,21 +360,46 @@ export function RecipeForm({
     }
   }
 
-  /** Haalt het gekozen webrecept op via de gewone import. */
+  /** Haalt het gekozen webrecept op via de gewone import. Het venster gaat meteen open. */
   async function kiesWeb(r: WebResultaat) {
     setWebOphalen(r.url);
+    setVoorbeeld(null);
+    setVbFout(null);
+    setVbBezig(true);
+    setVensterOpen(true);
     try {
       const data = await importRecipeFromUrl({ data: { url: r.url } });
       if (data.fout) {
-        toast.error(data.fout);
+        setVbBezig(false);
+        setVbFout(data.fout);
         return;
       }
       toonVoorbeeld({ ...data, source_url: data.source_url ?? r.url });
       naAiActie();
     } catch (err) {
+      setVbBezig(false);
+      setVbFout("We konden dit recept niet ophalen van de website.");
       meldFout(err, "We konden dit recept niet ophalen");
     } finally {
       setWebOphalen(null);
+    }
+  }
+
+  /** Laat de AI het recept uitschrijven (kost credits) en toont het in hetzelfde venster. */
+  async function schrijfMetAi(titel: string) {
+    if (!magStarten("import_tekst")) return;
+    setVoorbeeld(null);
+    setVbFout(null);
+    setVbBezig(true);
+    setVensterOpen(true);
+    try {
+      const data = await receptVanNaam({ data: { titel } });
+      toonVoorbeeld(data);
+      naAiActie();
+    } catch (err) {
+      setVbBezig(false);
+      setVbFout("We konden dit recept niet uitschrijven.");
+      meldFout(err, "We konden dit recept niet uitschrijven");
     }
   }
 
