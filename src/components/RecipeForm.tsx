@@ -382,9 +382,8 @@ export function RecipeForm({
     setUitschrijven(v.title);
     try {
       const data = await receptVanNaam({ data: { titel: v.title, hint: v.omschrijving } });
-      vulIn(data);
+      toonVoorbeeld(data);
       naAiActie();
-      toast.success("Het recept staat klaar. Lees het even na en sla op.");
     } catch (err) {
       meldFout(err, "We konden dit recept niet uitschrijven");
     } finally {
