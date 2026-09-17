@@ -1,6 +1,6 @@
 // Kleine offline-hulp: bewaart bezochte pagina's en bestanden,
 // zodat je je klantenkaart ook zonder internet kan tonen.
-const CACHE = "foodlo-offline-v4";
+const CACHE = "foodlo-offline-v5";
 
 // Meldingen tonen en naar de juiste pagina springen.
 self.addEventListener("push", (e) => {
@@ -57,10 +57,24 @@ self.addEventListener("fetch", (e) => {
   e.respondWith(
     fetch(req)
       .then((res) => {
-        // Enkel geslaagde, gewone antwoorden bewaren voor offline gebruik.
+        // Enkel geslaagde, gewone én volledig ontvangen antwoorden bewaren.
+        // Een halve pagina (afgebroken verbinding) mag nooit in de cache belanden.
         if (res && res.ok && res.type === "basic") {
           const kopie = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, kopie)).catch(() => undefined);
+          e.waitUntil(
+            kopie
+              .arrayBuffer()
+              .then(async (body) => {
+                const volledig = new Response(body, {
+                  status: kopie.status,
+                  statusText: kopie.statusText,
+                  headers: kopie.headers,
+                });
+                const c = await caches.open(CACHE);
+                await c.put(req, volledig);
+              })
+              .catch(() => undefined),
+          );
         }
         return res;
       })
