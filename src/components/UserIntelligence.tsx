@@ -173,7 +173,10 @@ export function FilterBalk({
   const exporteren = useMutation({
     mutationFn: () => exportFn({ data: { soort: exportSoort ?? "gebruikers", filters: naarFilters(zoek) } }),
     onSuccess: (r: any) => {
-      if (!r?.inhoud) return toast.error("Niets te exporteren");
+      if (!r?.inhoud) {
+        toast.error("Niets te exporteren");
+        return;
+      }
       bewaarCsv(r.bestand, r.inhoud);
     },
     onError: (e: any) => toast.error(e?.message ?? "Export lukte niet"),

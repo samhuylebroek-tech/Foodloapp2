@@ -93,7 +93,7 @@ function Gebruiker() {
                 ["fouten", "Fouten"],
                 ["gezin", "Gezin & delen"],
               ].map(([w, l]) => (
-                <TabsTrigger key={w} value={w}>
+                <TabsTrigger key={w as string} value={w as string}>
                   {l}
                 </TabsTrigger>
               ))}
@@ -262,7 +262,7 @@ function Gebruiker() {
                   <ul className="text-sm">
                     {d.shares.map((s: any, n: number) => (
                       <li key={n} className="py-1 text-slate-300">
-                        {s.owner_id === d.profiel.id ? "deelt met iemand" : "krijgt gedeeld"} · {s.status}
+                        {s.owner_id === d.profiel!.id ? "deelt met iemand" : "krijgt gedeeld"} · {s.status}
                       </li>
                     ))}
                     {d.shares.length === 0 ? <li className="text-slate-500">Deelt niets.</li> : null}
