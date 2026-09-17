@@ -132,6 +132,25 @@ export function RecipeForm({
   const [fotoGeweigerd, setFotoGeweigerd] = useState(false);
   const laatsteFotoTitel = useRef("");
 
+  // Een gerecht zoeken op naam
+  const [zoekTerm, setZoekTerm] = useState("");
+  const [zoekBezig, setZoekBezig] = useState(false);
+  const [voorstellen, setVoorstellen] = useState<GerechtVoorstel[] | null>(null);
+  const [uitschrijven, setUitschrijven] = useState<string | null>(null);
+  const bestaande = useQuery({
+    queryKey: ["gerecht-zoeken", zoekTerm.trim().toLowerCase()],
+    enabled: zoekTerm.trim().length > 2,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("recipes")
+        .select("id, title, image_url, user_id")
+        .is("deleted_at", null)
+        .ilike("title", `%${zoekTerm.trim()}%`)
+        .limit(5);
+      return data ?? [];
+    },
+  });
+
   const creditFn = useServerFn(creditOverzicht);
   const credits = useQuery({ queryKey: ["credits"], queryFn: () => creditFn(), enabled: !!user, retry: false });
   const qc = useQueryClient();
