@@ -156,9 +156,23 @@ export function RecipeForm({
   const [vbTitel, setVbTitel] = useState("");
   const [vbIngredienten, setVbIngredienten] = useState("");
   const [vbStappen, setVbStappen] = useState("");
+  const [vensterOpen, setVensterOpen] = useState(false);
+  const [vbBezig, setVbBezig] = useState(false);
+  const [vbFout, setVbFout] = useState<string | null>(null);
+
+  /** Sluit het venster en maakt alles leeg. */
+  function sluitVenster() {
+    setVensterOpen(false);
+    setVoorbeeld(null);
+    setVbBezig(false);
+    setVbFout(null);
+  }
 
   /** Toont het gevonden recept in een venster om na te kijken. */
   function toonVoorbeeld(data: ImportedRecipe) {
+    setVensterOpen(true);
+    setVbBezig(false);
+    setVbFout(null);
     setVoorbeeld(data);
     setVbTitel(data.title);
     setVbIngredienten(
