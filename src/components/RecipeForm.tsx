@@ -183,10 +183,10 @@ export function RecipeForm({
     setVbStappen(data.instructions.join("\n"));
   }
 
-  /** Neemt het nagekeken voorbeeld over in het formulier. */
-  function bevestigVoorbeeld() {
-    if (!voorbeeld) return;
-    const bijgewerkt: ImportedRecipe = {
+  /** Bouwt het nagekeken recept uit de velden in het venster. */
+  function voorbeeldRecept(): ImportedRecipe | null {
+    if (!voorbeeld) return null;
+    return {
       ...voorbeeld,
       title: vbTitel.trim() || voorbeeld.title,
       ingredients: parseIngredientText(vbIngredienten).map((i) => ({
@@ -199,10 +199,40 @@ export function RecipeForm({
         .map((s) => s.trim())
         .filter(Boolean),
     };
+  }
+
+  /** Neemt het nagekeken voorbeeld over in het formulier om nog aan te passen. */
+  function bevestigVoorbeeld() {
+    const bijgewerkt = voorbeeldRecept();
+    if (!bijgewerkt) return;
     vulIn(bijgewerkt);
     if (bijgewerkt.source_url) setSourceUrl(bijgewerkt.source_url);
     sluitVenster();
     toast.success("Het recept staat in het formulier. Sla het op als het klopt.");
+  }
+
+  /** Bewaart het nagekeken recept meteen bij jouw gerechten. */
+  async function bewaarVoorbeeld() {
+    const r = voorbeeldRecept();
+    if (!r) return;
+    vulIn(r);
+    if (r.source_url) setSourceUrl(r.source_url);
+    sluitVenster();
+    await handleSave({
+      title: r.title,
+      description: r.description,
+      servings: Number(r.servings) || 1,
+      prep: Number(r.prep_minutes) || 0,
+      cook: Number(r.cook_minutes) || 0,
+      category: CATEGORIES.includes(r.category as never) ? r.category : "hoofdgerecht",
+      difficulty: DIFFICULTIES.includes(r.difficulty as never) ? r.difficulty : "makkelijk",
+      tags: r.tags.map((t) => t.trim().toLowerCase()).filter(Boolean),
+      stappen: r.instructions,
+      ingredienten: r.ingredients
+        .map((i) => ingredientToLine({ name: i.name, quantity: i.quantity, unit: i.unit ?? "" }))
+        .join("\n"),
+      sourceUrl: r.source_url ?? null,
+    });
   }
   const bestaande = useQuery({
     queryKey: ["gerecht-zoeken", zoekTerm.trim().toLowerCase()],
@@ -620,7 +650,7 @@ export function RecipeForm({
         recipeId = data.id;
       }
 
-      const cleanRows = parseIngredientText(ingredientTekst).map((r, index) => ({
+      const cleanRows = parseIngredientText(ingredientenBron).map((r, index) => ({
         recipe_id: recipeId!,
         name: r.name,
         quantity: r.quantity,
