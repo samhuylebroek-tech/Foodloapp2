@@ -1391,14 +1391,24 @@ export function RecipeForm({
             ) : null}
           </div>
           <DialogFooter className="gap-2 sm:justify-between">
-            <Button variant="outline" onClick={sluitVenster} className="h-14 text-base">
-              Annuleren
-            </Button>
             {voorbeeld && !vbBezig ? (
-              <Button onClick={bevestigVoorbeeld} className="h-14 text-base">
-                Dit recept overnemen
+              <>
+                <Button variant="outline" onClick={bevestigVoorbeeld} className="h-14 text-base">
+                  Eerst aanpassen
+                </Button>
+                <Button
+                  onClick={() => void bewaarVoorbeeld()}
+                  disabled={saving}
+                  className="h-14 text-base"
+                >
+                  {saving ? "Bezig met bewaren…" : "Bewaar bij mijn recepten"}
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" onClick={sluitVenster} className="h-14 text-base">
+                Annuleren
               </Button>
-            ) : null}
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
