@@ -17,13 +17,15 @@ import {
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 const MODEL = "google/gemini-3.8-flash";
+/** Model voor het zoeken naar gerechten en het uitschrijven ervan. */
+const ZOEK_MODEL = "openai/gpt-6-astra";
 
-async function logAi(kind: string, ok: boolean, ms: number, error?: string) {
+async function logAi(kind: string, ok: boolean, ms: number, error?: string, model = MODEL) {
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("ai_events").insert({
       kind,
-      model: MODEL,
+      model,
       ok,
       duration_ms: Math.round(ms),
       error: error ? error.slice(0, 500) : null,
@@ -33,7 +35,7 @@ async function logAi(kind: string, ok: boolean, ms: number, error?: string) {
   }
 }
 
-async function askAI(messages: unknown[], kind = "chat", meter?: AiMeter) {
+async function askAI(messages: unknown[], kind = "chat", meter?: AiMeter, model = MODEL) {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new Error("AI is niet beschikbaar.");
   const start = Date.now();
@@ -44,7 +46,11 @@ async function askAI(messages: unknown[], kind = "chat", meter?: AiMeter) {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ model: MODEL, messages }),
+      body: JSON.stringify({
+        model,
+        messages,
+        ...(model === ZOEK_MODEL ? { reasoning_effort: "low" } : {}),
+      }),
     });
     if (!res.ok) {
       const text = await res.text();
@@ -61,10 +67,10 @@ async function askAI(messages: unknown[], kind = "chat", meter?: AiMeter) {
       meter.tokens_in += json.usage?.prompt_tokens ?? 0;
       meter.tokens_out += json.usage?.completion_tokens ?? 0;
     }
-    await logAi(kind, true, Date.now() - start);
+    await logAi(kind, true, Date.now() - start, undefined, model);
     return json.choices?.[0]?.message?.content ?? "";
   } catch (e) {
-    await logAi(kind, false, Date.now() - start, e instanceof Error ? e.message : String(e));
+    await logAi(kind, false, Date.now() - start, e instanceof Error ? e.message : String(e), model);
     throw e;
   }
 }
@@ -742,7 +748,7 @@ export const gerechtVoorstellen = createServerFn({ method: "POST" })
         userId: context.userId,
         feature: "suggesties",
         cacheSleutel: `zoek|${term.toLowerCase()}`,
-        model: MODEL,
+        model: ZOEK_MODEL,
       },
       async (meter) => {
         const raw = await askAI(
@@ -756,6 +762,7 @@ export const gerechtVoorstellen = createServerFn({ method: "POST" })
           ],
           "gerecht_zoeken",
           meter,
+          ZOEK_MODEL,
         );
         const list = parseJson<Partial<GerechtVoorstel>[]>(raw, []);
         if (!Array.isArray(list)) return [];
@@ -784,7 +791,7 @@ export const receptVanNaam = createServerFn({ method: "POST" })
         userId: context.userId,
         feature: "import_tekst",
         cacheSleutel: `naam|${data.titel.toLowerCase()}|${data.hint}`,
-        model: MODEL,
+        model: ZOEK_MODEL,
       },
       async (meter) => {
         const raw = await askAI(
@@ -797,6 +804,7 @@ export const receptVanNaam = createServerFn({ method: "POST" })
           ],
           "gerecht_zoeken_recept",
           meter,
+          ZOEK_MODEL,
         );
         return vulAan(parseJson<Partial<ImportedRecipe>>(raw, {}), { bron: "tekst" });
       },

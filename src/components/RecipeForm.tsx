@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link as RouterLink } from "@tanstack/react-router";
 import {
+  BookOpen,
   Camera,
   Link2,
   Loader2,
   Sparkles,
-  ClipboardType,
   ChevronDown,
   Pencil,
   Search,
@@ -42,7 +42,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-type Manier = "zoek" | "link" | "tekst" | "foto" | "zelf";
+type Manier = "zoek" | "link" | "foto" | "zelf";
 
 const PLATFORM_NAAM: Record<string, string> = {
   instagram: "Instagram",
@@ -70,7 +70,7 @@ export function RecipeForm({
   const gedeeldeLink =
     gedeeld?.url ?? [gedeeld?.text, gedeeld?.title].join(" ").match(/https?:\/\/\S+/)?.[0] ?? "";
 
-  const [manier, setManier] = useState<Manier>(gedeeldeLink ? "link" : gedeeldeTekst ? "tekst" : "link");
+  const [manier, setManier] = useState<Manier>("link");
   const [ingevuld, setIngevuld] = useState(Boolean(recipe));
 
   const [title, setTitle] = useState(recipe?.title ?? "");
@@ -497,8 +497,7 @@ export function RecipeForm({
 
   const manieren: { id: Manier; label: string; icon: typeof Link2 }[] = [
     { id: "zoek", label: "Zoeken", icon: Search },
-    { id: "link", label: "AI link", icon: Link2 },
-    { id: "tekst", label: "AI tekst", icon: ClipboardType },
+    { id: "link", label: "Plak link of tekst", icon: Link2 },
     { id: "foto", label: "AI foto", icon: Camera },
     { id: "zelf", label: "Zelf typen", icon: Pencil },
   ];
@@ -509,7 +508,7 @@ export function RecipeForm({
       {!recipe && (
         <section className="rounded-2xl border border-border bg-card p-4">
           <h2 className="text-lg">Hoe wil je beginnen?</h2>
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {manieren.map((m) => {
               const Icon = m.icon;
               const actief = manier === m.id;
@@ -671,15 +670,13 @@ export function RecipeForm({
                   )}
                 </div>
               )}
-            </div>
 
-          )}
-
-          {manier === "tekst" && (
-            <div className="mt-4">
-              <p className="text-base text-muted-foreground">
-                Plak een tekst van Instagram, een bericht of je eigen notities.
-              </p>
+              <div className="mt-5 border-t border-border pt-4">
+                <p className="text-base text-muted-foreground">
+                  Of plak hier gewoon de tekst van het recept: van Instagram, een bericht of je
+                  eigen notities.
+                </p>
+              </div>
               <Textarea
                 value={vrijeTekst}
                 onChange={(e) => setVrijeTekst(e.target.value)}

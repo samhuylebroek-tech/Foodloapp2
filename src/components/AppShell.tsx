@@ -183,9 +183,9 @@ export function AppShell({
           <main className="mx-auto w-full max-w-3xl px-4 py-6 pb-32 sm:px-6 lg:max-w-4xl lg:py-8 lg:pb-16">
             <Aankondigingen />
             {children}
-            <InstallatieTip />
-            {/* De installatiepopup krijgt voorrang; de meldingenvraag komt dan later. */}
-            <MeldingVraag actief={!installTip} />
+            {/* Enkel op het startscherm, en de installatiepopup krijgt voorrang. */}
+            <InstallatieTip actief={pathname === "/"} />
+            <MeldingVraag actief={pathname === "/" && !installTip} />
           </main>
         </div>
       </div>
