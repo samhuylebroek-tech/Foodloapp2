@@ -6,7 +6,6 @@ import {
   Link2,
   Loader2,
   Sparkles,
-  ClipboardType,
   ChevronDown,
   Pencil,
   Search,
@@ -43,7 +42,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-type Manier = "zoek" | "link" | "tekst" | "foto" | "zelf";
+type Manier = "zoek" | "link" | "foto" | "zelf";
 
 const PLATFORM_NAAM: Record<string, string> = {
   instagram: "Instagram",
@@ -71,7 +70,7 @@ export function RecipeForm({
   const gedeeldeLink =
     gedeeld?.url ?? [gedeeld?.text, gedeeld?.title].join(" ").match(/https?:\/\/\S+/)?.[0] ?? "";
 
-  const [manier, setManier] = useState<Manier>(gedeeldeLink ? "link" : gedeeldeTekst ? "tekst" : "link");
+  const [manier, setManier] = useState<Manier>("link");
   const [ingevuld, setIngevuld] = useState(Boolean(recipe));
 
   const [title, setTitle] = useState(recipe?.title ?? "");
