@@ -1416,6 +1416,10 @@ export function RecipeForm({
                 className="mt-2 text-base"
               />
             </div>
+            <div>
+              <p className="text-base font-medium">Soort gerecht</p>
+              <SoortKeuze waarde={vbSoort} onKies={setVbSoort} />
+            </div>
             {voorbeeld?.source_url ? (
               <p className="break-words text-sm text-muted-foreground">
                 Bron: {voorbeeld.source_url}
@@ -1444,6 +1448,38 @@ export function RecipeForm({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+     </div>
+  );
+}
+
+/** Grote knoppen om de soort van een gerecht te kiezen. */
+function SoortKeuze({
+  waarde,
+  onKies,
+}: {
+  waarde: string;
+  onKies: (soort: string) => void;
+}) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-2">
+      {CATEGORIES.map((c) => {
+        const actief = waarde === c;
+        return (
+          <button
+            key={c}
+            type="button"
+            aria-pressed={actief}
+            onClick={() => onKies(c)}
+            className={
+              actief
+                ? "min-h-12 rounded-xl bg-primary px-4 text-base font-medium text-primary-foreground"
+                : "min-h-12 rounded-xl border border-input bg-card px-4 text-base"
+            }
+          >
+            {c}
+          </button>
+        );
+      })}
     </div>
   );
 }
