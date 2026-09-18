@@ -90,6 +90,8 @@ export function RecipeForm({
   const [prep, setPrep] = useState(String(recipe?.prep_minutes ?? 15));
   const [cook, setCook] = useState(String(recipe?.cook_minutes ?? 20));
   const [category, setCategory] = useState(recipe?.category ?? "hoofdgerecht");
+  // Zodra jij zelf een soort kiest, laten we de automatische gok los.
+  const [soortHandmatig, setSoortHandmatig] = useState(Boolean(recipe));
   const [difficulty, setDifficulty] = useState(recipe?.difficulty ?? "makkelijk");
   const [tags, setTags] = useState((recipe?.tags ?? []).join(", "));
   const [photoPath, setPhotoPath] = useState<string | null>(recipe?.image_url ?? null);
@@ -157,6 +159,7 @@ export function RecipeForm({
   const [vbTitel, setVbTitel] = useState("");
   const [vbIngredienten, setVbIngredienten] = useState("");
   const [vbStappen, setVbStappen] = useState("");
+  const [vbSoort, setVbSoort] = useState<string>("hoofdgerecht");
   const [vensterOpen, setVensterOpen] = useState(false);
   const [vbBezig, setVbBezig] = useState(false);
   const [vbFout, setVbFout] = useState<string | null>(null);
@@ -182,6 +185,14 @@ export function RecipeForm({
         .join("\n"),
     );
     setVbStappen(data.instructions.join("\n"));
+    setVbSoort(
+      kiesSoort(
+        data.category,
+        data.title,
+        data.tags,
+        data.ingredients.map((i) => i.name),
+      ),
+    );
   }
 
   /** Bouwt het nagekeken recept uit de velden in het venster. */
@@ -195,6 +206,7 @@ export function RecipeForm({
         quantity: i.quantity,
         unit: i.unit ?? "",
       })),
+      category: vbSoort,
       instructions: vbStappen
         .split("\n")
         .map((s) => s.trim())
@@ -225,7 +237,12 @@ export function RecipeForm({
       servings: Number(r.servings) || 1,
       prep: Number(r.prep_minutes) || 0,
       cook: Number(r.cook_minutes) || 0,
-      category: CATEGORIES.includes(r.category as never) ? r.category : "hoofdgerecht",
+      category: kiesSoort(
+        r.category,
+        r.title,
+        r.tags,
+        r.ingredients.map((i) => i.name),
+      ),
       difficulty: DIFFICULTIES.includes(r.difficulty as never) ? r.difficulty : "makkelijk",
       tags: r.tags.map((t) => t.trim().toLowerCase()).filter(Boolean),
       stappen: r.instructions,
