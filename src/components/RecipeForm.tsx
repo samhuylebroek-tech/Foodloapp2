@@ -331,7 +331,15 @@ export function RecipeForm({
     setServings(String(data.servings));
     setPrep(String(data.prep_minutes));
     setCook(String(data.cook_minutes));
-    setCategory(CATEGORIES.includes(data.category as never) ? data.category : "hoofdgerecht");
+    setCategory(
+      kiesSoort(
+        data.category,
+        data.title,
+        data.tags,
+        data.ingredients.map((i) => i.name),
+      ),
+    );
+    setSoortHandmatig(true);
     setDifficulty(DIFFICULTIES.includes(data.difficulty as never) ? data.difficulty : "makkelijk");
     setTags(data.tags.join(", "));
     if (data.ingredients.length)
