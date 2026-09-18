@@ -325,6 +325,19 @@ export function RecipeForm({
   // Bewust geen automatische AI-foto: slimme functies starten alleen als jij erop tikt.
 
 
+  // Raadt de soort mee terwijl je typt, tot je zelf een soort kiest.
+  useEffect(() => {
+    if (soortHandmatig) return;
+    if (!title.trim() && !ingredientTekst.trim()) return;
+    setCategory(
+      raadSoort(
+        title,
+        tags.split(",").map((t) => t.trim()),
+        parseIngredientText(ingredientTekst).map((i) => i.name),
+      ),
+    );
+  }, [title, tags, ingredientTekst, soortHandmatig]);
+
   function vulIn(data: ImportedRecipe) {
     setTitle(data.title);
     setDescription(data.description);
