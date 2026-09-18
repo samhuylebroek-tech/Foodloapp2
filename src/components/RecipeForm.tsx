@@ -32,6 +32,7 @@ import {
 } from "@/lib/ai.functions";
 import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/types";
 import { parseIngredientText, ingredientToLine } from "@/lib/ingredienten";
+import { kiesSoort, raadSoort } from "@/lib/soort";
 import { Voedingswaarden } from "@/components/Voedingswaarden";
 import { koppelStappen, normaliseer, type StapKoppeling } from "@/lib/stap-ingredienten";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -89,6 +90,8 @@ export function RecipeForm({
   const [prep, setPrep] = useState(String(recipe?.prep_minutes ?? 15));
   const [cook, setCook] = useState(String(recipe?.cook_minutes ?? 20));
   const [category, setCategory] = useState(recipe?.category ?? "hoofdgerecht");
+  // Zodra jij zelf een soort kiest, laten we de automatische gok los.
+  const [soortHandmatig, setSoortHandmatig] = useState(Boolean(recipe));
   const [difficulty, setDifficulty] = useState(recipe?.difficulty ?? "makkelijk");
   const [tags, setTags] = useState((recipe?.tags ?? []).join(", "));
   const [photoPath, setPhotoPath] = useState<string | null>(recipe?.image_url ?? null);
@@ -156,6 +159,7 @@ export function RecipeForm({
   const [vbTitel, setVbTitel] = useState("");
   const [vbIngredienten, setVbIngredienten] = useState("");
   const [vbStappen, setVbStappen] = useState("");
+  const [vbSoort, setVbSoort] = useState<string>("hoofdgerecht");
   const [vensterOpen, setVensterOpen] = useState(false);
   const [vbBezig, setVbBezig] = useState(false);
   const [vbFout, setVbFout] = useState<string | null>(null);
@@ -181,6 +185,14 @@ export function RecipeForm({
         .join("\n"),
     );
     setVbStappen(data.instructions.join("\n"));
+    setVbSoort(
+      kiesSoort(
+        data.category,
+        data.title,
+        data.tags,
+        data.ingredients.map((i) => i.name),
+      ),
+    );
   }
 
   /** Bouwt het nagekeken recept uit de velden in het venster. */
@@ -194,6 +206,7 @@ export function RecipeForm({
         quantity: i.quantity,
         unit: i.unit ?? "",
       })),
+      category: vbSoort,
       instructions: vbStappen
         .split("\n")
         .map((s) => s.trim())
@@ -224,7 +237,12 @@ export function RecipeForm({
       servings: Number(r.servings) || 1,
       prep: Number(r.prep_minutes) || 0,
       cook: Number(r.cook_minutes) || 0,
-      category: CATEGORIES.includes(r.category as never) ? r.category : "hoofdgerecht",
+      category: kiesSoort(
+        r.category,
+        r.title,
+        r.tags,
+        r.ingredients.map((i) => i.name),
+      ),
       difficulty: DIFFICULTIES.includes(r.difficulty as never) ? r.difficulty : "makkelijk",
       tags: r.tags.map((t) => t.trim().toLowerCase()).filter(Boolean),
       stappen: r.instructions,
@@ -307,13 +325,34 @@ export function RecipeForm({
   // Bewust geen automatische AI-foto: slimme functies starten alleen als jij erop tikt.
 
 
+  // Raadt de soort mee terwijl je typt, tot je zelf een soort kiest.
+  useEffect(() => {
+    if (soortHandmatig) return;
+    if (!title.trim() && !ingredientTekst.trim()) return;
+    setCategory(
+      raadSoort(
+        title,
+        tags.split(",").map((t) => t.trim()),
+        parseIngredientText(ingredientTekst).map((i) => i.name),
+      ),
+    );
+  }, [title, tags, ingredientTekst, soortHandmatig]);
+
   function vulIn(data: ImportedRecipe) {
     setTitle(data.title);
     setDescription(data.description);
     setServings(String(data.servings));
     setPrep(String(data.prep_minutes));
     setCook(String(data.cook_minutes));
-    setCategory(CATEGORIES.includes(data.category as never) ? data.category : "hoofdgerecht");
+    setCategory(
+      kiesSoort(
+        data.category,
+        data.title,
+        data.tags,
+        data.ingredients.map((i) => i.name),
+      ),
+    );
+    setSoortHandmatig(true);
     setDifficulty(DIFFICULTIES.includes(data.difficulty as never) ? data.difficulty : "makkelijk");
     setTags(data.tags.join(", "));
     if (data.ingredients.length)
@@ -1260,22 +1299,15 @@ export function RecipeForm({
                   className="mt-2 h-14 text-base"
                 />
               </div>
-              <div>
-                <Label htmlFor="category" className="text-base">
-                  Soort gerecht
-                </Label>
-                <select
-                  id="category"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="mt-2 h-14 w-full rounded-xl border border-input bg-card px-3 text-base"
-                >
-                  {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+              <div className="sm:col-span-2">
+                <p className="text-base font-medium">Soort gerecht</p>
+                <SoortKeuze
+                  waarde={category}
+                  onKies={(c) => {
+                    setCategory(c);
+                    setSoortHandmatig(true);
+                  }}
+                />
               </div>
               <div>
                 <Label htmlFor="difficulty" className="text-base">
@@ -1384,6 +1416,10 @@ export function RecipeForm({
                 className="mt-2 text-base"
               />
             </div>
+            <div>
+              <p className="text-base font-medium">Soort gerecht</p>
+              <SoortKeuze waarde={vbSoort} onKies={setVbSoort} />
+            </div>
             {voorbeeld?.source_url ? (
               <p className="break-words text-sm text-muted-foreground">
                 Bron: {voorbeeld.source_url}
@@ -1412,6 +1448,38 @@ export function RecipeForm({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+     </div>
+  );
+}
+
+/** Grote knoppen om de soort van een gerecht te kiezen. */
+function SoortKeuze({
+  waarde,
+  onKies,
+}: {
+  waarde: string;
+  onKies: (soort: string) => void;
+}) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-2">
+      {CATEGORIES.map((c) => {
+        const actief = waarde === c;
+        return (
+          <button
+            key={c}
+            type="button"
+            aria-pressed={actief}
+            onClick={() => onKies(c)}
+            className={
+              actief
+                ? "min-h-12 rounded-xl bg-primary px-4 text-base font-medium text-primary-foreground"
+                : "min-h-12 rounded-xl border border-input bg-card px-4 text-base"
+            }
+          >
+            {c}
+          </button>
+        );
+      })}
     </div>
   );
 }
