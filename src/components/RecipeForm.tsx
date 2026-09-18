@@ -32,6 +32,7 @@ import {
 } from "@/lib/ai.functions";
 import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/types";
 import { parseIngredientText, ingredientToLine } from "@/lib/ingredienten";
+import { kiesSoort, raadSoort } from "@/lib/soort";
 import { Voedingswaarden } from "@/components/Voedingswaarden";
 import { koppelStappen, normaliseer, type StapKoppeling } from "@/lib/stap-ingredienten";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
