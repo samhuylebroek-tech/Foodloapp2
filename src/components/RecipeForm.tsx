@@ -1278,22 +1278,15 @@ export function RecipeForm({
                   className="mt-2 h-14 text-base"
                 />
               </div>
-              <div>
-                <Label htmlFor="category" className="text-base">
-                  Soort gerecht
-                </Label>
-                <select
-                  id="category"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="mt-2 h-14 w-full rounded-xl border border-input bg-card px-3 text-base"
-                >
-                  {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+              <div className="sm:col-span-2">
+                <p className="text-base font-medium">Soort gerecht</p>
+                <SoortKeuze
+                  waarde={category}
+                  onKies={(c) => {
+                    setCategory(c);
+                    setSoortHandmatig(true);
+                  }}
+                />
               </div>
               <div>
                 <Label htmlFor="difficulty" className="text-base">
