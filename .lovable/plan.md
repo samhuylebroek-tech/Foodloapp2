@@ -16,7 +16,9 @@ Boven in het weekmenu komt een tweede knop: **Weekmenu laten voorstellen**. Die 
    - Alleen mijn eigen recepten (gratis, geen credits)
    - Ook nieuwe ideeën van buiten mijn recepten (kost credits, wordt getoond)
 
-Daarna zie je het voorstel: per dag één gerecht met foto en naam. Je kan per dag **wisselen** (ander voorstel) of een dag **overslaan**, en daarna op **Zet in mijn weekmenu** duwen. Dagen waar al iets ingepland staat worden niet overschreven; die worden getoond als "al ingepland".
+Daarna zie je het voorstel: per dag één gerecht met foto en naam. Bij elke dag staat een **vinkje** waarmee je aanduidt of je dat gerecht aanvaardt, plus bovenaan **Alles aanvinken / Alles uitvinken** om in één tik alle dagen te aanvaarden. Per dag kan je ook **wisselen** (ander voorstel) of de dag **overslaan**.
+
+Onderaan staat: **Zet 4 dagen in mijn weekmenu** — het aantal volgt je vinkjes, en zonder vinkjes is de knop uit. Alleen aangevinkte dagen worden ingepland. Dagen waar al iets staat worden niet overschreven; die tonen "al ingepland" en staan standaard uit.
 
 ## 3. Instellingen: waar houdt Foodlo rekening mee
 
