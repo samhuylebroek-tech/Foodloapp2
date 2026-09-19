@@ -1090,6 +1090,7 @@ export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
       gekeurd = [...eerste, ...extra];
     }
 
+    console.log("[zoek] gekeurd", gekeurd.length, "van", kandidaten.length);
     const resultaat: WebResultaat[] = gekeurd.slice(0, 5);
     if (resultaat.length === 0) return [];
 
