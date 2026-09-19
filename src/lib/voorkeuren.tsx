@@ -130,6 +130,14 @@ export function VoorkeurenProvider({ children }: { children: ReactNode }) {
         // negeren
       }
     }
+    const bewaardWeekmenu = window.localStorage.getItem("weekmenu");
+    if (bewaardWeekmenu) {
+      try {
+        setWeekmenu({ ...WEEKMENU_STANDAARD, ...(JSON.parse(bewaardWeekmenu) as object) });
+      } catch {
+        // negeren
+      }
+    }
   }, []);
 
   // Voorkeuren van het account halen: zo staan ze ook goed op een ander toestel.
@@ -138,7 +146,7 @@ export function VoorkeurenProvider({ children }: { children: ReactNode }) {
     async function haal(userId: string) {
       const { data } = await supabase
         .from("profiles")
-        .select("taal, thema, momenten")
+        .select("taal, thema, momenten, weekmenu")
         .eq("id", userId)
         .maybeSingle();
       if (!actief || !data) return;
@@ -153,6 +161,11 @@ export function VoorkeurenProvider({ children }: { children: ReactNode }) {
       if (Array.isArray(data.momenten) && data.momenten.length) {
         setMomenten(data.momenten);
         window.localStorage.setItem("momenten", JSON.stringify(data.momenten));
+      }
+      if (data.weekmenu && typeof data.weekmenu === "object" && !Array.isArray(data.weekmenu)) {
+        const w = { ...WEEKMENU_STANDAARD, ...(data.weekmenu as Partial<WeekmenuInstelling>) };
+        setWeekmenu(w);
+        window.localStorage.setItem("weekmenu", JSON.stringify(w));
       }
     }
     void supabase.auth.getSession().then(({ data }) => {
