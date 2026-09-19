@@ -109,6 +109,13 @@ export function RecipeForm({
   const [stapKeuze, setStapKeuze] = useState<StapKoppeling>(recipe?.step_ingredients ?? {});
   const [meerDetails, setMeerDetails] = useState(false);
 
+  // Na het bewaren van een nieuw recept: meteen inplannen?
+  const [netOpgeslagen, setNetOpgeslagen] = useState<{ id: string; titel: string } | null>(null);
+  const [planDatum, setPlanDatum] = useState(() => new Date().toISOString().slice(0, 10));
+  const [planMoment, setPlanMoment] = useState("");
+  const [planBezig, setPlanBezig] = useState(false);
+  const actiefMoment = planMoment || momenten[0] || "maaltijd";
+
   // Stappen en ingrediënten zoals ze nu in het formulier staan
   const stappen = stappenTekst
     .split("\n")
@@ -1507,6 +1514,60 @@ export function RecipeForm({
                 Annuleren
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!netOpgeslagen}
+        onOpenChange={(open) => {
+          if (!open) sluitInplannen();
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Meteen inplannen?</DialogTitle>
+            <DialogDescription>
+              Zet “{netOpgeslagen?.titel}” meteen in je weekmenu.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <input
+              type="date"
+              value={planDatum}
+              onChange={(e) => {
+                if (e.target.value) setPlanDatum(e.target.value);
+              }}
+              aria-label="Kies een datum"
+              className="h-14 w-full rounded-xl border border-input bg-background px-3 text-base"
+            />
+            {momenten.length > 1 && (
+              <div className="flex gap-2" role="group" aria-label="Kies een dagdeel">
+                {momenten.map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setPlanMoment(m)}
+                    aria-pressed={actiefMoment === m}
+                    className={
+                      actiefMoment === m
+                        ? "min-h-12 flex-1 rounded-xl bg-primary px-3 text-base font-semibold capitalize text-primary-foreground"
+                        : "min-h-12 flex-1 rounded-xl border border-border bg-secondary px-3 text-base font-semibold capitalize"
+                    }
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2 sm:justify-between">
+            <Button variant="outline" onClick={sluitInplannen} className="h-14 text-base">
+              Nu niet
+            </Button>
+            <Button disabled={planBezig} onClick={() => void planNu()} className="h-14 text-base">
+              {planBezig ? "Bezig…" : "Plan in het weekmenu"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
