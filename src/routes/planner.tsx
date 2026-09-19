@@ -612,7 +612,13 @@ function PlannerPage() {
 
         <Button
           variant="secondary"
-          onClick={() => setVoorstelOpen(true)}
+          onClick={() => {
+            if (!voorstelDagen.length) {
+              toast("Er zijn in deze week geen komende dagen meer. Kies een volgende week.");
+              return;
+            }
+            setVoorstelOpen(true);
+          }}
           className="h-16 w-full text-lg"
         >
           <Sparkles className="size-6" /> Maak een weekmenu
@@ -795,7 +801,7 @@ function PlannerPage() {
 
       {kiezen && (
         <ReceptKiezer
-          week={zichtbareDagen}
+          week={voorstelDagen}
           momenten={momenten}
           instelling={weekmenu}
           start={kiezen}
@@ -1692,6 +1698,11 @@ function WeekmenuInstellingen({
                 </Button>
               ))}
             </div>
+            {Object.keys(instelling.perDag).length ? (
+              <p className="mt-4 rounded-xl bg-secondary px-4 py-3 text-base text-muted-foreground">
+                Je vaste voorkeuren per weekdag worden hier automatisch meegeteld. Je kunt ze bij elk voorstel aanpassen.
+              </p>
+            ) : null}
             </AccordionContent>
           </AccordionItem>
 
@@ -1958,7 +1969,30 @@ function WeekmenuVoorstel({
         recentPerRecept: recent,
         uitgesloten: getoondeRecepten.current,
       });
-      for (const keuze of keuzes) {
+      const eersteKeuzes = new Map(keuzes.map((keuze) => [`${keuze.datum}|${keuze.moment}`, keuze]));
+      for (const regel of lijst) {
+        const sleutel = `${regel.datum}|${regel.moment}`;
+        const keuze = eersteKeuzes.get(sleutel);
+        if (keuze?.recept || !(getoondeRecepten.current[sleutel]?.length)) continue;
+        const [herstart] = kiesUitEigen({
+          recepten,
+          ingredienten,
+          regels: [regel],
+          doelen: { vlees: 0, vis: 0, vega: 0 },
+          vermijd: instelling.vermijd,
+          recentPerRecept: recent,
+        });
+        if (herstart) eersteKeuzes.set(sleutel, herstart);
+        getoondeRecepten.current[sleutel] = [];
+      }
+      const afgerondeKeuzes = lijst.map(
+        (regel) => eersteKeuzes.get(`${regel.datum}|${regel.moment}`) ?? {
+          datum: regel.datum,
+          moment: regel.moment,
+          recept: null,
+        },
+      );
+      for (const keuze of afgerondeKeuzes) {
         if (!keuze.recept) continue;
         const sleutel = `${keuze.datum}|${keuze.moment}`;
         getoondeRecepten.current[sleutel] = [
@@ -1966,7 +2000,7 @@ function WeekmenuVoorstel({
           keuze.recept.id,
         ];
       }
-      let nieuw: Rij[] = keuzes.map((k) => {
+      let nieuw: Rij[] = afgerondeKeuzes.map((k) => {
         const staatAl = bezet.has(`${k.datum}|${k.moment}`);
         const regel = lijst.find((r) => r.datum === k.datum && r.moment === k.moment);
         return {
@@ -2035,7 +2069,26 @@ function WeekmenuVoorstel({
       uitgesloten: getoondeRecepten.current,
     });
     if (!keuze?.recept) {
-      toast("Geen ander passend gerecht gevonden");
+      getoondeRecepten.current[sleutel] = [];
+      const [herstart] = kiesUitEigen({
+        recepten: over,
+        ingredienten,
+        regels: [{ ...regelVoor(datum), moment }],
+        doelen: { vlees: 0, vis: 0, vega: 0 },
+        vermijd: instelling.vermijd,
+        recentPerRecept: recent,
+      });
+      if (!herstart?.recept) {
+        toast("Geen ander passend gerecht gevonden");
+        return;
+      }
+      setRijen((v) =>
+        v.map((r) =>
+          r.datum === datum && r.moment === moment
+            ? { ...r, recept: herstart.recept, idee: null, aan: true }
+            : r,
+        ),
+      );
       return;
     }
     setRijen((v) =>
