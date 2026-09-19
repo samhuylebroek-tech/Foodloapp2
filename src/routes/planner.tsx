@@ -112,12 +112,17 @@ function PlannerPage() {
   const [weergave, setWeergave] = useState<"mij" | "gezin">("mij");
   const [instellingenOpen, setInstellingenOpen] = useState(false);
 
+  // De week begint op maandag of (als je dat kiest) op zondag.
   const week = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
-    d.setDate(weekStart.getDate() + i);
+    d.setDate(weekStart.getDate() + i - (weekmenu.startdag === 6 ? 1 : 0));
     return datumTekst(d);
   });
   const vandaag = datumTekst(new Date());
+  // Alleen de dagen die je wil zien (0 = maandag … 6 = zondag).
+  const zichtbareDagen = week.filter((dag) =>
+    weekmenu.dagen.includes((new Date(`${dag}T12:00:00`).getDay() + 6) % 7),
+  );
 
   const { data: gezin } = useQuery({
     queryKey: ["planner-gezin", user?.id],
