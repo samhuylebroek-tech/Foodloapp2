@@ -477,6 +477,15 @@ function PlannerPage() {
           <Plus className="size-6" /> Gerecht inplannen deze week
         </Button>
 
+        <Button
+          variant="secondary"
+          onClick={() => setVoorstelOpen(true)}
+          className="h-16 w-full text-lg"
+        >
+          <Sparkles className="size-6" /> Laat Foodlo een weekmenu voorstellen
+        </Button>
+
+
         <Accordion type="single" collapsible className="rounded-2xl bg-card px-4 ring-1 ring-border/60">
           <AccordionItem value="boodschappen" className="border-0">
             <AccordionTrigger className="min-h-14 text-base no-underline hover:no-underline"><span className="flex items-center gap-2"><ShoppingCart className="size-5 text-primary" />Boodschappen voor deze week</span></AccordionTrigger>
