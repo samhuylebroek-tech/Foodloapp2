@@ -106,10 +106,10 @@ function kortLabel(datum: string) {
 function weekLabel(start: Date, kort = false) {
   const einde = new Date(start);
   einde.setDate(einde.getDate() + 6);
-  const beginTekst = start.toLocaleDateString("nl-BE", {
-    day: "numeric",
-    month: kort ? "short" : "long",
-  });
+  const zelfdeMaand = start.getMonth() === einde.getMonth() && start.getFullYear() === einde.getFullYear();
+  const beginTekst = zelfdeMaand
+    ? String(start.getDate())
+    : start.toLocaleDateString("nl-BE", { day: "numeric", month: kort ? "short" : "long" });
   const eindeTekst = einde.toLocaleDateString("nl-BE", {
     day: "numeric",
     month: kort ? "short" : "long",
@@ -572,7 +572,7 @@ function PlannerPage() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-4 gap-2" aria-label="Snel een week kiezen">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Snel een week kiezen">
           {snelleWeken.map((start, index) => {
             const actief = datumTekst(start) === datumTekst(weekStart);
             return (
@@ -580,9 +580,9 @@ function PlannerPage() {
                 key={datumTekst(start)}
                 variant={actief ? "default" : "secondary"}
                 onClick={() => setWeekStart(start)}
-                className="h-12 min-w-0 px-2 text-sm"
+                className="h-12 min-w-0 px-3 text-sm"
               >
-                <span className="truncate">{index === 0 ? "Deze week" : index === 1 ? "Volgende" : "+2 weken"}</span>
+                <span>{index === 0 ? "Deze week" : index === 1 ? "Volgende week" : "+2 weken"}</span>
               </Button>
             );
           })}
