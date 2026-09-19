@@ -267,6 +267,13 @@
       "when": 1789811635332,
       "tag": "0037_profiles_weekmenu_instellingen",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1789822202616,
+      "tag": "0038_expliciete_leesrechten_admin_en_eigenaar",
+      "breakpoints": true
     }
   ]
 }
