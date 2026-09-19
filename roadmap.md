@@ -118,8 +118,8 @@
 - [ ] Foto van gevonden recept mee bewaren bij direct opslaan
 - [ ] Externe foto naar eigen opslag kopiëren
 - [ ] Foto tonen in voorbeeldvenster
-- [ ] Weekmenuvoorstel nooit een gerecht dat al in het weekmenu staat
-- [ ] AI-zoeken en meer info merkbaar sneller maken
-- [ ] Controlecentrum: e-mail van de persoon duidelijk tonen
-- [ ] Controlecentrum: laatste aanmelding per persoon in het overzicht
+- [x] Weekmenuvoorstel nooit een gerecht dat al in het weekmenu staat
+- [x] AI-zoeken en meer info merkbaar sneller maken
+- [x] Controlecentrum: e-mail van de persoon duidelijk tonen
+- [x] Controlecentrum: laatste aanmelding per persoon in het overzicht
 - [x] Fotoʼs tonen niet goed in het weekmenu
