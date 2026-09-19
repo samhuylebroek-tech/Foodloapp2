@@ -49,5 +49,6 @@ Ik loop de volledige flow na op gsm en desktop en herstel wat hapert:
 - Alles in `src/routes/boodschappen.tsx` plus kleine helpers in `src/lib/boodschappen.ts` / `src/lib/categorie.ts`; geen tweede boodschappensysteem.
 - Winkelmodus is een extra weergave binnen dezelfde route (geen aparte tabel, geen aparte gegevens).
 - Delen hergebruikt de bestaande `shares`-tabel met `shopping_view`/`shopping_edit` en de bestaande `/uitnodiging`-pagina; geen nieuwe tabellen of migraties.
-- Weekmenu: enkel herstelwerk in `src/routes/planner.tsx` en `src/lib/weekmenu-voorstel.ts` op basis van wat de doorloop toont.
+- Weekmenu: herstelwerk in `src/routes/planner.tsx` en `src/lib/weekmenu-voorstel.ts` op basis van wat de doorloop toont.
+- Koppeling weekmenu ↔ boodschappen via de bestaande `recipe_id` op `shopping_items`; toevoegen loopt via de bestaande `voegToeAanLijst`-logica, geen nieuwe tabellen.
 - Na afloop: bouw- en veiligheidscontrole groen, daarna pas publiceren.
