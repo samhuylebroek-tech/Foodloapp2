@@ -982,7 +982,7 @@ export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
     const vraag = encodeURIComponent(`${term} ${TAAL_ZOEK[taal].woord}`);
     const bronnen = [
       `https://search.brave.com/search?q=${vraag}`,
-      `https://html.duckduckgo.com/html/?q=${vraag}`,
+      `https://lite.duckduckgo.com/lite/?q=${vraag}`,
     ];
 
     const gezien = new Set<string>();
@@ -1010,7 +1010,7 @@ export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
       if (!html) continue;
 
       const links = [
-        ...html.matchAll(/<a\b[^>]*href="(https?:\/\/[^"]+)"[^>]*>([\s\S]{0,6000}?)<\/a>/gi),
+        ...html.matchAll(/<a\b[^>]*href="((?:https?:)?\/\/[^"]+)"[^>]*>([\s\S]{0,6000}?)<\/a>/gi),
       ];
 
       for (const link of links) {
