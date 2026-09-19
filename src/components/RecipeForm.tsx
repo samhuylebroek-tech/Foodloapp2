@@ -71,13 +71,16 @@ export function RecipeForm({
   recipe,
   ingredients,
   gedeeld,
+  vraagInplannen = false,
 }: {
   recipe?: Recipe;
   ingredients?: Ingredient[];
   gedeeld?: { title?: string | undefined; text?: string | undefined; url?: string | undefined };
+  /** Vraagt na het bewaren van een nieuw recept of je het meteen inplant. */
+  vraagInplannen?: boolean;
 }) {
   const { user } = useAuth();
-  const { taal } = useVoorkeuren();
+  const { taal, momenten } = useVoorkeuren();
   const navigate = useNavigate();
 
   const gedeeldeTekst = [gedeeld?.title, gedeeld?.text].filter(Boolean).join("\n\n");
@@ -708,7 +711,11 @@ export function RecipeForm({
       }
 
       toast.success("Recept opgeslagen");
-      navigate({ to: "/recepten/$id", params: { id: recipeId! } });
+      if (vraagInplannen && !recipe?.id) {
+        setNetOpgeslagen({ id: recipeId!, titel: title.trim() || "Je nieuwe recept" });
+      } else {
+        navigate({ to: "/recepten/$id", params: { id: recipeId! } });
+      }
     } catch (err) {
       const melding = err instanceof Error ? err.message : "";
       if (melding.includes("RECEPT_LIMIET")) {
@@ -720,6 +727,38 @@ export function RecipeForm({
     } finally {
       setSaving(false);
     }
+  }
+
+  /** Zet het net bewaarde recept meteen in het weekmenu. */
+  async function planNu() {
+    if (!user || !netOpgeslagen) return;
+    setPlanBezig(true);
+    const { error } = await supabase.from("meal_plan").insert({
+      user_id: user.id,
+      recipe_id: netOpgeslagen.id,
+      plan_date: planDatum,
+      meal_type: actiefMoment,
+      group_id: null,
+    });
+    setPlanBezig(false);
+    if (error) {
+      toast.error("Inplannen lukte niet");
+      return;
+    }
+    toast.success(
+      `${netOpgeslagen.titel} staat op ${new Date(`${planDatum}T12:00:00`).toLocaleDateString(
+        "nl-BE",
+        { weekday: "long", day: "numeric", month: "long" },
+      )}`,
+    );
+    navigate({ to: "/planner" });
+  }
+
+  /** Verlaat het inplannen-scherm zonder in te plannen. */
+  function sluitInplannen() {
+    const id = netOpgeslagen?.id;
+    setNetOpgeslagen(null);
+    if (id) navigate({ to: "/recepten/$id", params: { id } });
   }
 
   const manieren: { id: Manier; label: string; icon: typeof Link2 }[] = [
