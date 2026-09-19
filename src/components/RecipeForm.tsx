@@ -1093,7 +1093,24 @@ export function RecipeForm({
             </Button>
             <span className="shrink-0 text-base text-muted-foreground">personen</span>
           </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Weet je het niet zeker? Laat het gerust staan — je kan de hoeveelheden later altijd
+            omrekenen.
+            {schatting && schatting !== (Number(servings) || 0) ? (
+              <>
+                {" "}
+                <button
+                  type="button"
+                  onClick={() => setServings(String(schatting))}
+                  className="underline underline-offset-4"
+                >
+                  Lijkt op {schatting} personen — overnemen
+                </button>
+              </>
+            ) : null}
+          </p>
         </div>
+
 
 
         <div>
