@@ -1137,3 +1137,140 @@ function LijstVraag({
     </div>
   );
 }
+
+const DAG_NAMEN = ["maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag"];
+
+/** Het tandwiel: hier stel je in hoe jouw weekmenu eruitziet. */
+function WeekmenuInstellingen({
+  instelling,
+  algemeneMomenten,
+  onZet,
+  onSluit,
+}: {
+  instelling: WeekmenuInstelling;
+  algemeneMomenten: string[];
+  onZet: (deel: Partial<WeekmenuInstelling>) => void;
+  onSluit: () => void;
+}) {
+  const momenten = instelling.momenten.length ? instelling.momenten : algemeneMomenten;
+
+  function wisselDag(n: number) {
+    const aan = instelling.dagen.includes(n);
+    onZet({ dagen: aan ? instelling.dagen.filter((d) => d !== n) : [...instelling.dagen, n].sort() });
+  }
+
+  function wisselMoment(m: string) {
+    const aan = momenten.includes(m);
+    const nieuw = aan ? momenten.filter((x) => x !== m) : [...momenten, m];
+    onZet({ momenten: nieuw.length ? nieuw : [m] });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
+      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-card p-5 sm:rounded-3xl">
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="font-display text-xl">Instellingen weekmenu</h2>
+          <Button variant="ghost" onClick={onSluit} aria-label="Sluiten" className="size-12">
+            <X className="size-5" />
+          </Button>
+        </div>
+
+        <div className="mt-4 space-y-6">
+          <div>
+            <h3 className="text-base font-semibold">Hoe wil je het zien?</h3>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {([
+                { id: "lijst", label: "Onder elkaar" },
+                { id: "kaarten", label: "Naast elkaar (swipen)" },
+              ] as const).map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  aria-pressed={instelling.weergave === o.id}
+                  onClick={() => onZet({ weergave: o.id })}
+                  className={
+                    instelling.weergave === o.id
+                      ? "min-h-14 rounded-xl bg-primary px-3 text-base font-semibold text-primary-foreground"
+                      : "min-h-14 rounded-xl border border-border px-3 text-base font-semibold"
+                  }
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-base font-semibold">De week begint op</h3>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {([
+                { id: 0, label: "Maandag" },
+                { id: 6, label: "Zondag" },
+              ] as const).map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  aria-pressed={instelling.startdag === o.id}
+                  onClick={() => onZet({ startdag: o.id })}
+                  className={
+                    instelling.startdag === o.id
+                      ? "min-h-14 rounded-xl bg-primary px-3 text-base font-semibold text-primary-foreground"
+                      : "min-h-14 rounded-xl border border-border px-3 text-base font-semibold"
+                  }
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-base font-semibold">Welke dagen toon je?</h3>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {DAG_NAMEN.map((naam, n) => (
+                <button
+                  key={naam}
+                  type="button"
+                  aria-pressed={instelling.dagen.includes(n)}
+                  onClick={() => wisselDag(n)}
+                  className={
+                    instelling.dagen.includes(n)
+                      ? "min-h-12 rounded-xl bg-primary px-4 text-base font-semibold capitalize text-primary-foreground"
+                      : "min-h-12 rounded-xl border border-border px-4 text-base font-semibold capitalize"
+                  }
+                >
+                  {naam.slice(0, 2)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-base font-semibold">Welke dagdelen plan je?</h3>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {ALLE_MOMENTEN.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  aria-pressed={momenten.includes(m)}
+                  onClick={() => wisselMoment(m)}
+                  className={
+                    momenten.includes(m)
+                      ? "min-h-12 rounded-xl bg-primary px-4 text-base font-semibold capitalize text-primary-foreground"
+                      : "min-h-12 rounded-xl border border-border px-4 text-base font-semibold capitalize"
+                  }
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <Button onClick={onSluit} className="mt-6 h-14 w-full text-base">
+          Klaar
+        </Button>
+      </div>
+    </div>
+  );
+}
