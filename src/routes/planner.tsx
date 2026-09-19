@@ -253,6 +253,66 @@ function PlannerPage() {
     setVraagLijst({ recipeId, titel });
   }
 
+  /** Zet de aangevinkte dagen uit het voorstel in het weekmenu. */
+  async function zetVoorstel(
+    rijen: { datum: string; moment: string; recept: Recipe | null; idee: WeekmenuIdee | null }[],
+  ) {
+    if (!user) return;
+    let gelukt = 0;
+    for (const rij of rijen) {
+      try {
+        let recipeId = rij.recept?.id ?? null;
+        if (!recipeId && rij.idee) {
+          const basis = await receptVanNaam({ data: { titel: rij.idee.title, hint: "" } });
+          const { data, error } = await supabase
+            .from("recipes")
+            .insert({
+              user_id: user.id,
+              title: basis.title || rij.idee.title,
+              description: basis.description ?? "",
+              servings: basis.servings ?? 4,
+              prep_minutes: basis.prep_minutes ?? 0,
+              cook_minutes: basis.cook_minutes ?? 0,
+              category: basis.category ?? "hoofdgerecht",
+              difficulty: basis.difficulty ?? "makkelijk",
+              tags: basis.tags ?? [],
+              instructions: basis.instructions ?? [],
+            })
+            .select("id")
+            .single();
+          if (error) throw error;
+          recipeId = data.id;
+          if (basis.ingredienten?.length) {
+            await supabase.from("recipe_ingredients").insert(
+              basis.ingredienten.map((i, index) => ({
+                recipe_id: recipeId!,
+                name: i.name,
+                quantity: i.quantity,
+                unit: i.unit,
+                position: index,
+              })),
+            );
+          }
+        }
+        if (!recipeId) continue;
+        const { error } = await supabase.from("meal_plan").insert({
+          user_id: user.id,
+          recipe_id: recipeId,
+          plan_date: rij.datum,
+          meal_type: rij.moment,
+          group_id: weergave === "gezin" ? gezin!.id : null,
+        });
+        if (error) throw error;
+        gelukt += 1;
+      } catch {
+        toast.error(`${labelVoor(rij.datum)} inplannen lukte niet`);
+      }
+    }
+    qc.invalidateQueries({ queryKey: ["meal-plan"] });
+    if (gelukt) toast.success(`${gelukt} ${gelukt === 1 ? "dag" : "dagen"} ingepland`);
+    setVoorstelOpen(false);
+  }
+
   async function nieuw_gerecht(naam: string, basis: Basis | null, datum: string, moment: string) {
     if (!user) return;
     let recipeId: string | null = null;
