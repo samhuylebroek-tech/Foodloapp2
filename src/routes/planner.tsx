@@ -152,6 +152,10 @@ function PlannerPage() {
   );
   const [lijstId, setLijstId] = useState<string>("");
   const [vraagLijst, setVraagLijst] = useState<{ recipeId: string; titel: string } | null>(null);
+  const [opruimVraag, setOpruimVraag] = useState<{ titel: string; items: { id: string; naam: string }[] } | null>(null);
+  const [naVoorstel, setNaVoorstel] = useState<{ recipeId: string; titel: string }[] | null>(null);
+  const [naGekozen, setNaGekozen] = useState<Set<string>>(new Set());
+
   const [weergave, setWeergave] = useState<"mij" | "gezin">("mij");
   const [instellingenOpen, setInstellingenOpen] = useState(false);
   const [voorstelOpen, setVoorstelOpen] = useState(false);
@@ -260,10 +264,38 @@ function PlannerPage() {
     },
   });
 
-  async function verwijder(id: string) {
+  async function verwijder(id: string, recipeId?: string | null, titel?: string) {
     await supabase.from("meal_plan").delete().eq("id", id);
     qc.invalidateQueries({ queryKey: ["meal-plan"] });
+    if (!recipeId) return;
+    // Staan de ingrediënten van dit gerecht nog op een boodschappenlijst?
+    const { data } = await supabase
+      .from("shopping_items")
+      .select("id, name, quantity, unit, checked")
+      .eq("recipe_id", recipeId)
+      .eq("checked", false);
+    if (data?.length) {
+      setOpruimVraag({
+        titel: titel ?? "Dit gerecht",
+        items: data.map((r) => ({
+          id: r.id as string,
+          naam: [r.quantity ?? "", r.unit ?? "", r.name].join(" ").replace(/\s+/g, " ").trim(),
+        })),
+      });
+    }
   }
+
+  async function opruimenBevestigen() {
+    if (!opruimVraag) return;
+    await supabase
+      .from("shopping_items")
+      .delete()
+      .in("id", opruimVraag.items.map((i) => i.id));
+    setOpruimVraag(null);
+    qc.invalidateQueries({ queryKey: ["shopping"] });
+    toast.success("Ingrediënten van je boodschappenlijst gehaald");
+  }
+
 
   async function plan_toevoegen(recipeId: string, datum: string, moment: string, titel: string) {
     if (!user) return;
@@ -302,6 +334,7 @@ function PlannerPage() {
   ) {
     if (!user) return;
     let gelukt = 0;
+    const ingepland: { recipeId: string; titel: string }[] = [];
     for (const rij of rijen) {
       try {
         let recipeId = rij.recept?.id ?? null;
@@ -347,6 +380,7 @@ function PlannerPage() {
         });
         if (error) throw error;
         gelukt += 1;
+        ingepland.push({ recipeId, titel: rij.recept?.title ?? rij.idee?.title ?? "Gerecht" });
       } catch {
         toast.error(`${labelVoor(rij.datum)} inplannen lukte niet`);
       }
@@ -354,7 +388,51 @@ function PlannerPage() {
     qc.invalidateQueries({ queryKey: ["meal-plan"] });
     if (gelukt) toast.success(`${gelukt} ${gelukt === 1 ? "dag" : "dagen"} ingepland`);
     setVoorstelOpen(false);
+    if (ingepland.length) {
+      setNaVoorstel(ingepland);
+      setNaGekozen(new Set(ingepland.map((r) => r.recipeId)));
+    }
   }
+
+  /** Alle aangevinkte gerechten in één keer op de boodschappenlijst zetten. */
+  async function zetAllesOpLijst() {
+    if (!user || !naVoorstel) return;
+    const ids = naVoorstel.filter((r) => naGekozen.has(r.recipeId)).map((r) => r.recipeId);
+    if (!ids.length) {
+      setNaVoorstel(null);
+      return;
+    }
+    const listId =
+      (weergave === "gezin" && gezinsLijst ? gezinsLijst.id : lijstId || lijsten[0]?.id) ||
+      (await zorgVoorLijst(user.id));
+    const { data, error } = await supabase
+      .from("recipe_ingredients")
+      .select("name, quantity, unit, recipe_id")
+      .in("recipe_id", ids);
+    if (error || !data?.length) {
+      toast.error("Geen ingrediënten gevonden");
+      setNaVoorstel(null);
+      return;
+    }
+    try {
+      await voegToeAanLijst(
+        user.id,
+        listId,
+        data.map((i) => ({
+          name: i.name as string,
+          quantity: i.quantity as number | null,
+          unit: (i.unit as string) ?? "",
+          recipe_id: i.recipe_id as string,
+        })),
+      );
+      toast.success("Alles staat op je boodschappenlijst");
+      qc.invalidateQueries({ queryKey: ["shopping"] });
+    } catch {
+      toast.error("Toevoegen lukte niet");
+    }
+    setNaVoorstel(null);
+  }
+
 
   async function nieuw_gerecht(naam: string, basis: Basis | null, datum: string, moment: string) {
     if (!user) return;
@@ -751,7 +829,7 @@ function PlannerPage() {
                       )}
                       <Button
                         variant="ghost"
-                        onClick={() => verwijder(p.id)}
+                        onClick={() => verwijder(p.id, p.recipe_id, p.recipes?.title ?? "Dit gerecht")}
                         aria-label="Uit weekmenu halen"
                         className="size-12"
                       >
@@ -822,6 +900,78 @@ function PlannerPage() {
           onKies={plan_toevoegen}
           onNieuw={nieuw_gerecht}
         />
+      )}
+
+      {opruimVraag && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-0 sm:items-center sm:p-4">
+          <div className="w-full max-w-md rounded-t-3xl bg-card p-5 sm:rounded-3xl">
+            <h2 className="font-display text-xl">Ook de ingrediënten weghalen?</h2>
+            <p className="mt-2 text-base text-muted-foreground">
+              {opruimVraag.titel} staat niet meer in je weekmenu. Deze boodschappen staan er nog wel op:
+            </p>
+            <ul className="mt-3 max-h-48 space-y-1 overflow-y-auto text-base">
+              {opruimVraag.items.map((i) => (
+                <li key={i.id} className="rounded-lg bg-secondary px-3 py-2">{i.naam}</li>
+              ))}
+            </ul>
+            <div className="mt-4 flex gap-2">
+              <Button variant="ghost" onClick={() => setOpruimVraag(null)} className="h-14 flex-1 text-base">
+                Laat staan
+              </Button>
+              <Button onClick={() => void opruimenBevestigen()} className="h-14 flex-1 text-base">
+                <Trash2 className="size-5" /> Weghalen
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {naVoorstel && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-0 sm:items-center sm:p-4">
+          <div className="w-full max-w-md rounded-t-3xl bg-card p-5 sm:rounded-3xl">
+            <h2 className="font-display text-xl">Alles op je boodschappenlijst?</h2>
+            <p className="mt-2 text-base text-muted-foreground">
+              Kies voor welke gerechten we de ingrediënten toevoegen.
+            </p>
+            <ul className="mt-3 max-h-64 space-y-1 overflow-y-auto">
+              {naVoorstel.map((r) => (
+                <li key={r.recipeId}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setNaGekozen((oud) => {
+                        const set = new Set(oud);
+                        if (set.has(r.recipeId)) set.delete(r.recipeId);
+                        else set.add(r.recipeId);
+                        return set;
+                      })
+                    }
+                    className="flex min-h-14 w-full items-center gap-3 rounded-xl bg-secondary px-3 text-left text-base"
+                  >
+                    <span
+                      className={
+                        naGekozen.has(r.recipeId)
+                          ? "flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground"
+                          : "flex size-7 items-center justify-center rounded-md border-2 border-border"
+                      }
+                    >
+                      {naGekozen.has(r.recipeId) ? <Check className="size-5" /> : null}
+                    </span>
+                    <span className="min-w-0 flex-1">{r.titel}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-4 flex gap-2">
+              <Button variant="ghost" onClick={() => setNaVoorstel(null)} className="h-14 flex-1 text-base">
+                Niet nu
+              </Button>
+              <Button onClick={() => void zetAllesOpLijst()} className="h-14 flex-1 text-base">
+                <ShoppingCart className="size-5" /> Toevoegen
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {vraagLijst && user && (

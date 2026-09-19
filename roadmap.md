@@ -123,3 +123,13 @@
 - [x] Controlecentrum: e-mail van de persoon duidelijk tonen
 - [x] Controlecentrum: laatste aanmelding per persoon in het overzicht
 - [x] Fotoʼs tonen niet goed in het weekmenu
+
+## Actief — boodschappen scherper + weekmenu
+- [x] Overzicht per categorie, compacte regels, voortgang
+- [x] Snel bewerken, verwijderen met ongedaan maken, meerdere tegelijk
+- [x] Winkelmodus (schermvullend)
+- [x] Lijst delen via link (account nodig bij openen)
+- [ ] Weekmenu doorlopen en herstellen
+- [x] Recept uit weekmenu halen: vraag om ingrediënten mee te verwijderen
+- [x] Na weekmenu bevestigen: gekozen gerechten in één keer op de boodschappenlijst
+- [x] Bij één recept snel labels en details aanpassen
