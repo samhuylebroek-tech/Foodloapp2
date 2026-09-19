@@ -55,6 +55,7 @@ import {
 import { kiesUitEigen, type DagRegel, type Soortkeuze } from "@/lib/weekmenu-voorstel";
 import { zorgVoorLijst, maakLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
 import { tijdLabel } from "@/lib/tijd";
+import { useSignedUrl } from "@/lib/photos";
 
 export const Route = createFileRoute("/planner")({
   head: () => ({
