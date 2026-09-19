@@ -260,10 +260,38 @@ function PlannerPage() {
     },
   });
 
-  async function verwijder(id: string) {
+  async function verwijder(id: string, recipeId?: string | null, titel?: string) {
     await supabase.from("meal_plan").delete().eq("id", id);
     qc.invalidateQueries({ queryKey: ["meal-plan"] });
+    if (!recipeId) return;
+    // Staan de ingrediënten van dit gerecht nog op een boodschappenlijst?
+    const { data } = await supabase
+      .from("shopping_items")
+      .select("id, name, quantity, unit, checked")
+      .eq("recipe_id", recipeId)
+      .eq("checked", false);
+    if (data?.length) {
+      setOpruimVraag({
+        titel: titel ?? "Dit gerecht",
+        items: data.map((r) => ({
+          id: r.id as string,
+          naam: [r.quantity ?? "", r.unit ?? "", r.name].join(" ").replace(/\s+/g, " ").trim(),
+        })),
+      });
+    }
   }
+
+  async function opruimenBevestigen() {
+    if (!opruimVraag) return;
+    await supabase
+      .from("shopping_items")
+      .delete()
+      .in("id", opruimVraag.items.map((i) => i.id));
+    setOpruimVraag(null);
+    qc.invalidateQueries({ queryKey: ["shopping"] });
+    toast.success("Ingrediënten van je boodschappenlijst gehaald");
+  }
+
 
   async function plan_toevoegen(recipeId: string, datum: string, moment: string, titel: string) {
     if (!user) return;
