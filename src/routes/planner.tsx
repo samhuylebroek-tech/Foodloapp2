@@ -1351,6 +1351,46 @@ function ReceptKiezer({
         )}
 
         <div className="mt-3 flex-1 space-y-5 overflow-y-auto pb-2">
+          {webResultaten && webResultaten.length > 0 && (
+            <section>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <h3 className="text-base font-semibold text-muted-foreground">
+                  Recepten van het web
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setWebResultaten(null)}
+                  className="min-h-11 text-sm text-muted-foreground underline underline-offset-4"
+                >
+                  Verberg
+                </button>
+              </div>
+              <ul className="space-y-2">
+                {webResultaten.map((r) => (
+                  <li key={r.url}>
+                    <button
+                      type="button"
+                      disabled={webBezig}
+                      onClick={() => void kiesWeb(r)}
+                      className="w-full rounded-xl border border-border bg-secondary p-3 text-left disabled:opacity-60"
+                    >
+                      <span className="block text-base font-semibold">{r.titel}</span>
+                      <span className="block text-sm text-muted-foreground">
+                        {[r.site, r.minuten ? `±${r.minuten} min` : ""]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {webBezig && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Het recept wordt ingelezen…
+                </p>
+              )}
+            </section>
+          )}
           {term ? (
             treffers.length === 0 ? (
               <p className="py-6 text-center text-lg text-muted-foreground">
