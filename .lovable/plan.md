@@ -39,10 +39,16 @@ Ik loop de volledige flow na op gsm en desktop en herstel wat hapert:
 - de foto van het recept en de kooktijd die per dag aanpasbaar is,
 - de pijlen naar de volgende en vorige week, inclusief dat voorbije dagen niet meer worden voorgesteld.
 
+## 6. Weekmenu en boodschappen samen
+
+- Haal je een gerecht uit je weekmenu en staan de ingrediënten al op een lijst, dan vraagt Foodlo: "Ook de ingrediënten van dit gerecht van je boodschappenlijst halen?" met de items erbij. Al afgevinkte of zelf toegevoegde items blijven staan.
+- Aan het einde van het weekmenu-voorstel komt een extra stap "Alles op je boodschappenlijst": je vinkt aan voor welke gerechten je de ingrediënten wilt, kiest de lijst en zet ze in één keer klaar — met optelling van dubbele ingrediënten zoals nu.
+
 ## Technisch
 
 - Alles in `src/routes/boodschappen.tsx` plus kleine helpers in `src/lib/boodschappen.ts` / `src/lib/categorie.ts`; geen tweede boodschappensysteem.
 - Winkelmodus is een extra weergave binnen dezelfde route (geen aparte tabel, geen aparte gegevens).
 - Delen hergebruikt de bestaande `shares`-tabel met `shopping_view`/`shopping_edit` en de bestaande `/uitnodiging`-pagina; geen nieuwe tabellen of migraties.
-- Weekmenu: enkel herstelwerk in `src/routes/planner.tsx` en `src/lib/weekmenu-voorstel.ts` op basis van wat de doorloop toont.
+- Weekmenu: herstelwerk in `src/routes/planner.tsx` en `src/lib/weekmenu-voorstel.ts` op basis van wat de doorloop toont.
+- Koppeling weekmenu ↔ boodschappen via de bestaande `recipe_id` op `shopping_items`; toevoegen loopt via de bestaande `voegToeAanLijst`-logica, geen nieuwe tabellen.
 - Na afloop: bouw- en veiligheidscontrole groen, daarna pas publiceren.
