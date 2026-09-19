@@ -260,6 +260,13 @@
       "when": 1789673697696,
       "tag": "0036_harden_group_members_credits_recipe_versions",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1789811635332,
+      "tag": "0037_profiles_weekmenu_instellingen",
+      "breakpoints": true
     }
   ]
 }

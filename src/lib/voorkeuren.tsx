@@ -36,6 +36,21 @@ export type ThemaId = (typeof THEMAS)[number]["id"];
 export const ALLE_MOMENTEN = ["ontbijt", "middageten", "avondeten"] as const;
 export const EEN_BLOK = ["maaltijd"] as const;
 
+/** Hoe je je weekmenu wil zien en welke dagen/dagdelen meetellen. */
+export type WeekmenuInstelling = {
+  weergave: "lijst" | "kaarten";
+  dagen: number[]; // 0 = maandag … 6 = zondag
+  startdag: 0 | 6; // week begint op maandag of zondag
+  momenten: string[]; // leeg = de algemene momenten gebruiken
+};
+
+export const WEEKMENU_STANDAARD: WeekmenuInstelling = {
+  weergave: "lijst",
+  dagen: [0, 1, 2, 3, 4, 5, 6],
+  startdag: 0,
+  momenten: [],
+};
+
 type Ctx = {
   taal: string;
   zetTaal: (t: string) => void;
@@ -43,6 +58,8 @@ type Ctx = {
   zetThema: (t: ThemaId) => void;
   momenten: string[];
   zetMomenten: (m: string[]) => void;
+  weekmenu: WeekmenuInstelling;
+  zetWeekmenu: (w: Partial<WeekmenuInstelling>) => void;
   t: (tekst: string) => string;
 };
 
@@ -53,6 +70,8 @@ const VoorkeurenCtx = createContext<Ctx>({
   zetThema: () => {},
   momenten: [...ALLE_MOMENTEN],
   zetMomenten: () => {},
+  weekmenu: WEEKMENU_STANDAARD,
+  zetWeekmenu: () => {},
   t: (tekst) => tekst,
 });
 
@@ -74,6 +93,7 @@ async function bewaarOpAccount(velden: {
   taal?: string;
   thema?: string;
   momenten?: string[];
+  weekmenu?: WeekmenuInstelling;
 }) {
   try {
     const { data } = await supabase.auth.getSession();
@@ -89,6 +109,7 @@ export function VoorkeurenProvider({ children }: { children: ReactNode }) {
   const [taal, setTaal] = useState("nl");
   const [thema, setThema] = useState<ThemaId>("sage");
   const [momenten, setMomenten] = useState<string[]>([...ALLE_MOMENTEN]);
+  const [weekmenu, setWeekmenu] = useState<WeekmenuInstelling>(WEEKMENU_STANDAARD);
   const [cache, setCache] = useState<Record<string, string>>({});
 
   const wachtrij = useRef<Set<string>>(new Set());
@@ -109,6 +130,14 @@ export function VoorkeurenProvider({ children }: { children: ReactNode }) {
         // negeren
       }
     }
+    const bewaardWeekmenu = window.localStorage.getItem("weekmenu");
+    if (bewaardWeekmenu) {
+      try {
+        setWeekmenu({ ...WEEKMENU_STANDAARD, ...(JSON.parse(bewaardWeekmenu) as object) });
+      } catch {
+        // negeren
+      }
+    }
   }, []);
 
   // Voorkeuren van het account halen: zo staan ze ook goed op een ander toestel.
@@ -117,7 +146,7 @@ export function VoorkeurenProvider({ children }: { children: ReactNode }) {
     async function haal(userId: string) {
       const { data } = await supabase
         .from("profiles")
-        .select("taal, thema, momenten")
+        .select("taal, thema, momenten, weekmenu")
         .eq("id", userId)
         .maybeSingle();
       if (!actief || !data) return;
@@ -132,6 +161,11 @@ export function VoorkeurenProvider({ children }: { children: ReactNode }) {
       if (Array.isArray(data.momenten) && data.momenten.length) {
         setMomenten(data.momenten);
         window.localStorage.setItem("momenten", JSON.stringify(data.momenten));
+      }
+      if (data.weekmenu && typeof data.weekmenu === "object" && !Array.isArray(data.weekmenu)) {
+        const w = { ...WEEKMENU_STANDAARD, ...(data.weekmenu as Partial<WeekmenuInstelling>) };
+        setWeekmenu(w);
+        window.localStorage.setItem("weekmenu", JSON.stringify(w));
       }
     }
     void supabase.auth.getSession().then(({ data }) => {
@@ -226,8 +260,20 @@ export function VoorkeurenProvider({ children }: { children: ReactNode }) {
     void bewaarOpAccount({ momenten: lijst });
   }, []);
 
+  const zetWeekmenu = useCallback((deel: Partial<WeekmenuInstelling>) => {
+    setWeekmenu((vorig) => {
+      const nieuw = { ...vorig, ...deel };
+      if (!nieuw.dagen.length) nieuw.dagen = [...WEEKMENU_STANDAARD.dagen];
+      window.localStorage.setItem("weekmenu", JSON.stringify(nieuw));
+      void bewaarOpAccount({ weekmenu: nieuw });
+      return nieuw;
+    });
+  }, []);
+
   return (
-    <VoorkeurenCtx.Provider value={{ taal, zetTaal, thema, zetThema, momenten, zetMomenten, t }}>
+    <VoorkeurenCtx.Provider
+      value={{ taal, zetTaal, thema, zetThema, momenten, zetMomenten, weekmenu, zetWeekmenu, t }}
+    >
       {children}
     </VoorkeurenCtx.Provider>
   );

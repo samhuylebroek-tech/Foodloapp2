@@ -14,6 +14,7 @@ import {
   Sparkles,
   ListPlus,
   Type,
+  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,7 +27,7 @@ import { Input } from "@/components/ui/input";
 
 import { type Recipe } from "@/lib/types";
 import { importRecipeFromText } from "@/lib/ai.functions";
-import { useVoorkeuren } from "@/lib/voorkeuren";
+import { useVoorkeuren, ALLE_MOMENTEN, type WeekmenuInstelling } from "@/lib/voorkeuren";
 import { zorgVoorLijst, maakLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
 import { tijdLabel } from "@/lib/tijd";
 
@@ -99,7 +100,9 @@ function PlannerPage() {
     void meet("weekmenu.bekeken");
   }, []);
   const { user } = useAuth();
-  const { momenten } = useVoorkeuren();
+  const { momenten: algemeneMomenten, weekmenu, zetWeekmenu } = useVoorkeuren();
+  // Dagdelen: eigen keuze voor het weekmenu, anders je algemene momenten.
+  const momenten = weekmenu.momenten.length ? weekmenu.momenten : algemeneMomenten;
   const qc = useQueryClient();
   const [weekStart, setWeekStart] = useState(() => maandagVan(new Date()));
   const [kiezen, setKiezen] = useState<{ datum: string; moment: string; vraagDag?: boolean } | null>(
@@ -108,13 +111,19 @@ function PlannerPage() {
   const [lijstId, setLijstId] = useState<string>("");
   const [vraagLijst, setVraagLijst] = useState<{ recipeId: string; titel: string } | null>(null);
   const [weergave, setWeergave] = useState<"mij" | "gezin">("mij");
+  const [instellingenOpen, setInstellingenOpen] = useState(false);
 
+  // De week begint op maandag of (als je dat kiest) op zondag.
   const week = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
-    d.setDate(weekStart.getDate() + i);
+    d.setDate(weekStart.getDate() + i - (weekmenu.startdag === 6 ? 1 : 0));
     return datumTekst(d);
   });
   const vandaag = datumTekst(new Date());
+  // Alleen de dagen die je wil zien (0 = maandag … 6 = zondag).
+  const zichtbareDagen = week.filter((dag) =>
+    weekmenu.dagen.includes((new Date(`${dag}T12:00:00`).getDay() + 6) % 7),
+  );
 
   const { data: gezin } = useQuery({
     queryKey: ["planner-gezin", user?.id],
@@ -435,7 +444,16 @@ function PlannerPage() {
           >
             <ChevronRight className="size-6" />
           </Button>
+          <Button
+            variant="ghost"
+            onClick={() => setInstellingenOpen(true)}
+            aria-label="Instellingen weekmenu"
+            className="size-14"
+          >
+            <Settings className="size-6" />
+          </Button>
         </div>
+
 
         <Button
           onClick={() =>
@@ -478,19 +496,28 @@ function PlannerPage() {
           </AccordionItem>
         </Accordion>
 
-        {week.map((dag) => {
+        <div
+          className={
+            weekmenu.weergave === "kaarten"
+              ? "-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2"
+              : "space-y-4"
+          }
+        >
+        {zichtbareDagen.map((dag) => {
           const items = plan.filter((p) => p.plan_date === dag);
           const openMomenten = momenten.filter((m) => !items.some((p) => p.meal_type === m));
           const volledig = momenten.length > 0 && openMomenten.length === 0;
+          const kaart = weekmenu.weergave === "kaarten" ? "w-[85%] shrink-0 snap-start " : "";
           return (
             <section
               key={dag}
               className={
-                volledig
+                kaart +
+                (volledig
                   ? "rounded-2xl border border-primary/40 bg-secondary p-4"
                   : dag === vandaag
                     ? "rounded-2xl border-2 border-primary bg-card p-4"
-                    : "rounded-2xl border border-border bg-card p-4"
+                    : "rounded-2xl border border-border bg-card p-4")
               }
             >
               <h2 className="text-lg capitalize">
@@ -585,11 +612,22 @@ function PlannerPage() {
             </section>
           );
         })}
+        </div>
       </div>
+
+      {instellingenOpen && (
+        <WeekmenuInstellingen
+          instelling={weekmenu}
+          algemeneMomenten={algemeneMomenten}
+          onZet={zetWeekmenu}
+          onSluit={() => setInstellingenOpen(false)}
+        />
+      )}
+
 
       {kiezen && (
         <ReceptKiezer
-          week={week}
+          week={zichtbareDagen}
           momenten={momenten}
           start={kiezen}
           onSluit={() => setKiezen(null)}
@@ -1094,6 +1132,143 @@ function LijstVraag({
 
         <Button variant="ghost" onClick={onSluit} className="mt-3 h-14 w-full text-base">
           Nee, bedankt
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+const DAG_NAMEN = ["maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag"];
+
+/** Het tandwiel: hier stel je in hoe jouw weekmenu eruitziet. */
+function WeekmenuInstellingen({
+  instelling,
+  algemeneMomenten,
+  onZet,
+  onSluit,
+}: {
+  instelling: WeekmenuInstelling;
+  algemeneMomenten: string[];
+  onZet: (deel: Partial<WeekmenuInstelling>) => void;
+  onSluit: () => void;
+}) {
+  const momenten = instelling.momenten.length ? instelling.momenten : algemeneMomenten;
+
+  function wisselDag(n: number) {
+    const aan = instelling.dagen.includes(n);
+    onZet({ dagen: aan ? instelling.dagen.filter((d) => d !== n) : [...instelling.dagen, n].sort() });
+  }
+
+  function wisselMoment(m: string) {
+    const aan = momenten.includes(m);
+    const nieuw = aan ? momenten.filter((x) => x !== m) : [...momenten, m];
+    onZet({ momenten: nieuw.length ? nieuw : [m] });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
+      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-card p-5 sm:rounded-3xl">
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="font-display text-xl">Instellingen weekmenu</h2>
+          <Button variant="ghost" onClick={onSluit} aria-label="Sluiten" className="size-12">
+            <X className="size-5" />
+          </Button>
+        </div>
+
+        <div className="mt-4 space-y-6">
+          <div>
+            <h3 className="text-base font-semibold">Hoe wil je het zien?</h3>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {([
+                { id: "lijst", label: "Onder elkaar" },
+                { id: "kaarten", label: "Naast elkaar (swipen)" },
+              ] as const).map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  aria-pressed={instelling.weergave === o.id}
+                  onClick={() => onZet({ weergave: o.id })}
+                  className={
+                    instelling.weergave === o.id
+                      ? "min-h-14 rounded-xl bg-primary px-3 text-base font-semibold text-primary-foreground"
+                      : "min-h-14 rounded-xl border border-border px-3 text-base font-semibold"
+                  }
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-base font-semibold">De week begint op</h3>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {([
+                { id: 0, label: "Maandag" },
+                { id: 6, label: "Zondag" },
+              ] as const).map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  aria-pressed={instelling.startdag === o.id}
+                  onClick={() => onZet({ startdag: o.id })}
+                  className={
+                    instelling.startdag === o.id
+                      ? "min-h-14 rounded-xl bg-primary px-3 text-base font-semibold text-primary-foreground"
+                      : "min-h-14 rounded-xl border border-border px-3 text-base font-semibold"
+                  }
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-base font-semibold">Welke dagen toon je?</h3>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {DAG_NAMEN.map((naam, n) => (
+                <button
+                  key={naam}
+                  type="button"
+                  aria-pressed={instelling.dagen.includes(n)}
+                  onClick={() => wisselDag(n)}
+                  className={
+                    instelling.dagen.includes(n)
+                      ? "min-h-12 rounded-xl bg-primary px-4 text-base font-semibold capitalize text-primary-foreground"
+                      : "min-h-12 rounded-xl border border-border px-4 text-base font-semibold capitalize"
+                  }
+                >
+                  {naam.slice(0, 2)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-base font-semibold">Welke dagdelen plan je?</h3>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {ALLE_MOMENTEN.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  aria-pressed={momenten.includes(m)}
+                  onClick={() => wisselMoment(m)}
+                  className={
+                    momenten.includes(m)
+                      ? "min-h-12 rounded-xl bg-primary px-4 text-base font-semibold capitalize text-primary-foreground"
+                      : "min-h-12 rounded-xl border border-border px-4 text-base font-semibold capitalize"
+                  }
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <Button onClick={onSluit} className="mt-6 h-14 w-full text-base">
+          Klaar
         </Button>
       </div>
     </div>
