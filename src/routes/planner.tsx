@@ -2403,7 +2403,7 @@ function WeekmenuVoorstel({
               </div>
             ) : null}
 
-            <div className="sticky bottom-0 -mx-5 mt-6 border-t border-border bg-card px-5 py-4">
+            <div className={`${keuzeOpen ? "" : "sticky bottom-0"} -mx-5 mt-6 border-t border-border bg-card px-5 py-4`}>
               {actieveStap < rijen.length - 1 ? (
                 <div className="grid grid-cols-[1fr_2fr] gap-2">
                   <Button variant="ghost" onClick={() => gaVerder(false)} className="h-14 text-base">Overslaan</Button>
