@@ -61,4 +61,5 @@ Bij een stap komen enkel nog de ingrediënten die je op dát moment echt nodig h
 - **Optellen**: `voegToeAanLijst` in `src/lib/boodschappen.ts` krijgt een sterkere sleutel (genormaliseerde naam met enkelvoud/meervoud, eenheden omgerekend naar basis g/ml) zodat dubbels samensmelten; bestaande items worden bijgeteld zoals nu.
 - **Vinkje + bevestiging**: in `src/routes/recepten.$id.tsx` een query op `shopping_items` met `recipe_id = r.id`; bij hergebruik een `AlertDialog` voor de bevestiging.
 - **Porties**: label- en hulptekstwijziging in `RecipeForm.tsx`, plus schatfunctie in `src/lib/porties.ts` die alleen gebruikt wordt als de bron geen `servings` geeft.
+- **Stap-ingrediënten**: in `src/lib/stap-ingredienten.ts` vervalt de losse suffix-match in `komtVoor` (alleen exacte stam-treffer, minimale woordlengte 4), en `koppelStappen` beperkt zich tot max 4 automatische treffers per stap; niet-gematchte ingrediënten blijven gewoon in de ingrediëntenlijst staan. `StapIngredienten.tsx` toont al niets bij een lege stap, dus daar volstaat dit.
 - Geen tweede systeem: alle wijzigingen bouwen voort op bestaande tabellen, importpipeline en credits.
