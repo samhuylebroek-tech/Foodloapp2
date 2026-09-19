@@ -50,6 +50,10 @@ async function askAI(messages: unknown[], kind = "chat", meter?: AiMeter, model 
       body: JSON.stringify({
         model,
         messages,
+        // Stukje per stukje antwoorden: zo blijft de verbinding levend en
+        // lopen lange antwoorden niet meer vast op een tijdslimiet.
+        stream: true,
+        stream_options: { include_usage: true },
         ...(model === ZOEK_MODEL ? { reasoning_effort: "low" } : {}),
       }),
     });
@@ -60,17 +64,41 @@ async function askAI(messages: unknown[], kind = "chat", meter?: AiMeter, model 
         throw new Error("De slimme functies zijn tijdelijk niet beschikbaar. Probeer het later opnieuw.");
       throw new Error(`AI-fout: ${res.status} ${text.slice(0, 200)}`);
     }
-    const json = (await res.json()) as {
-      choices?: { message?: { content?: string } }[];
-      usage?: { prompt_tokens?: number; completion_tokens?: number };
-    };
-    if (meter) {
-      meter.tokens_in += json.usage?.prompt_tokens ?? 0;
-      meter.tokens_out += json.usage?.completion_tokens ?? 0;
+    if (!res.body) throw new Error("AI gaf geen antwoord.");
+
+    const lezer = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let antwoord = "";
+    while (true) {
+      const { done, value } = await lezer.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const regels = buffer.split("\n");
+      buffer = regels.pop() ?? "";
+      for (const regel of regels) {
+        const rij = regel.trim();
+        if (!rij.startsWith("data:")) continue;
+        const inhoud = rij.slice(5).trim();
+        if (!inhoud || inhoud === "[DONE]") continue;
+        try {
+          const brok = JSON.parse(inhoud) as {
+            choices?: { delta?: { content?: string } }[];
+            usage?: { prompt_tokens?: number; completion_tokens?: number };
+          };
+          antwoord += brok.choices?.[0]?.delta?.content ?? "";
+          if (meter && brok.usage) {
+            meter.tokens_in += brok.usage.prompt_tokens ?? 0;
+            meter.tokens_out += brok.usage.completion_tokens ?? 0;
+          }
+        } catch {
+          // een half stukje negeren we; het volgende blok vult aan
+        }
+      }
     }
     // De meting mag het antwoord niet vertragen: ze loopt op de achtergrond.
     void logAi(kind, true, Date.now() - start, undefined, model);
-    return json.choices?.[0]?.message?.content ?? "";
+    return antwoord;
   } catch (e) {
     void logAi(kind, false, Date.now() - start, e instanceof Error ? e.message : String(e), model);
     throw e;
@@ -960,15 +988,20 @@ export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
     const gezien = new Set<string>();
     const rijen: (WebResultaat & { score: number })[] = [];
 
-    for (const bron of bronnen) {
-      if (rijen.length >= 6) break;
-      let html = "";
-      try {
-        const res = await fetch(bron, { headers: kop });
-        if (res.ok) html = await res.text();
-      } catch {
-        continue;
-      }
+    // Beide zoekbronnen tegelijk bevragen; een trage bron houdt niets op.
+    const paginas = await Promise.all(
+      bronnen.map(async (bron) => {
+        try {
+          const res = await fetch(bron, { headers: kop, signal: AbortSignal.timeout(6000) });
+          return res.ok ? await res.text() : "";
+        } catch {
+          return "";
+        }
+      }),
+    );
+
+    for (const html of paginas) {
+      if (rijen.length >= 12) break;
       if (!html) continue;
 
       const links = [
@@ -1027,28 +1060,36 @@ export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
       .sort((a, b) => b.score - a.score || a.volgorde - b.volgorde)
       .slice(0, 8);
 
-    const gekeurd = await Promise.all(
-      kandidaten.map(async (r) => {
-        const kop = await leesReceptKop(r.url);
-        if (!kop) return null;
-        const stukjes = [
-          `${kop.aantalIngredienten} ingrediënten`,
-          kop.minuten ? `${kop.minuten} min` : "",
-        ].filter(Boolean);
-        return {
-          titel: kop.titel,
-          url: r.url,
-          site: r.site,
-          fragment: stukjes.join(" · "),
-          aantalIngredienten: kop.aantalIngredienten,
-          minuten: kop.minuten,
-        } satisfies WebResultaat;
-      }),
-    );
+    async function keur(r: (typeof kandidaten)[number]): Promise<WebResultaat | null> {
+      const kop = await leesReceptKop(r.url);
+      if (!kop) return null;
+      const stukjes = [
+        `${kop.aantalIngredienten} ingrediënten`,
+        kop.minuten ? `${kop.minuten} min` : "",
+      ].filter(Boolean);
+      return {
+        titel: kop.titel,
+        url: r.url,
+        site: r.site,
+        fragment: stukjes.join(" · "),
+        aantalIngredienten: kop.aantalIngredienten,
+        minuten: kop.minuten,
+      } satisfies WebResultaat;
+    }
 
-    const resultaat: WebResultaat[] = gekeurd
-      .filter((r) => r !== null)
-      .slice(0, 5) as WebResultaat[];
+    // Eerst de vijf beste; enkel als er te weinig overblijven kijken we verder.
+    const eerste = (await Promise.all(kandidaten.slice(0, 5).map(keur))).filter(
+      (r): r is WebResultaat => r !== null,
+    );
+    let gekeurd = eerste;
+    if (eerste.length < 3 && kandidaten.length > 5) {
+      const extra = (await Promise.all(kandidaten.slice(5).map(keur))).filter(
+        (r): r is WebResultaat => r !== null,
+      );
+      gekeurd = [...eerste, ...extra];
+    }
+
+    const resultaat: WebResultaat[] = gekeurd.slice(0, 5);
     if (resultaat.length === 0) return [];
 
     // 4. bewaren voor 24 u

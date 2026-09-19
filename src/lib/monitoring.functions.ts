@@ -295,9 +295,27 @@ export const adminGebruikersTabel = createServerFn({ method: "POST" })
     await aggregeerDagen(db, 2);
     const drempels = await haalDrempels(db);
 
-    let q = db.from("profiles").select("id, display_name, created_at, blocked_at").limit(2000);
-    if (data.zoek.trim()) q = q.ilike("display_name", `%${data.zoek.trim()}%`);
-    const { data: profielen } = await q;
+    const { data: profielen } = await db
+      .from("profiles")
+      .select("id, display_name, created_at, blocked_at")
+      .limit(2000);
+
+    // E-mail en laatste aanmelding komen uit het aanmeldsysteem (gepagineerd).
+    const mailMap = new Map<string, string>();
+    const loginMap = new Map<string, string | null>();
+    try {
+      for (let pagina = 1; pagina <= 20; pagina++) {
+        const { data: auth } = await db.auth.admin.listUsers({ page: pagina, perPage: 200 });
+        const lijst = (auth?.users ?? []) as any[];
+        for (const u of lijst) {
+          if (u.email) mailMap.set(u.id, u.email);
+          loginMap.set(u.id, u.last_sign_in_at ?? null);
+        }
+        if (lijst.length < 200) break;
+      }
+    } catch {
+      // zonder e-mail tonen we gewoon de rest
+    }
 
     const sinds30 = dagString(new Date(Date.now() - 29 * 86400_000));
     const [{ data: stats }, { data: credits }, { data: aankopen }, { data: recepten }, { data: plan }] =
@@ -359,6 +377,8 @@ export const adminGebruikersTabel = createServerFn({ method: "POST" })
       return {
         id: p.id,
         naam: p.display_name || "(geen naam)",
+        email: mailMap.get(p.id) ?? null,
+        laatsteAanmelding: loginMap.get(p.id) ?? null,
         geblokkeerd: Boolean(p.blocked_at),
         lidSinds: p.created_at,
         laatsteActiviteit: s.laatste,
@@ -376,7 +396,14 @@ export const adminGebruikersTabel = createServerFn({ method: "POST" })
       };
     });
 
-    const gefilterd = data.segment ? rijen.filter((r) => r.segmenten.includes(data.segment as any)) : rijen;
+    const zoekterm = data.zoek.trim().toLowerCase();
+    const gezocht = zoekterm
+      ? rijen.filter(
+          (r) =>
+            r.naam.toLowerCase().includes(zoekterm) || (r.email ?? "").toLowerCase().includes(zoekterm),
+        )
+      : rijen;
+    const gefilterd = data.segment ? gezocht.filter((r) => r.segmenten.includes(data.segment as any)) : gezocht;
     const sorters: Record<string, (a: any, b: any) => number> = {
       kost: (a, b) => b.kostEur - a.kostEur,
       activiteit: (a, b) => b.handelingen - a.handelingen,
