@@ -226,13 +226,11 @@ export function NieuweSuggesties({
 function IdeeKaart({
   s,
   t,
-  bezig,
-  onBewaar,
+  onBekijk,
 }: {
   s: InternetSuggestie;
   t: (x: string) => string;
-  bezig: string | null;
-  onBewaar: () => void;
+  onBekijk: () => void;
 }) {
   const { data: foto } = useQuery({
     queryKey: ["gerecht-foto", s.title],
@@ -244,7 +242,11 @@ function IdeeKaart({
 
   return (
     <li className="w-60 shrink-0 snap-start">
-      <div className="flex h-full flex-col justify-between overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border/60">
+      <button
+        type="button"
+        onClick={onBekijk}
+        className="flex h-full w-full flex-col justify-between overflow-hidden rounded-2xl bg-card text-left shadow-sm ring-1 ring-border/60 transition hover:ring-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      >
         <div>
           {foto ? (
             <img src={foto} alt={s.title} className="h-32 w-full object-cover" loading="lazy" />
@@ -260,13 +262,8 @@ function IdeeKaart({
             <p className="mt-2 line-clamp-3 text-base">{t(s.waarom)}</p>
           </div>
         </div>
-        <div className="px-4 pb-4">
-          <Button onClick={onBewaar} disabled={bezig !== null} className="w-full">
-            <Plus />
-            {bezig === s.title ? t("Bezig…") : t("Bewaar bij mijn recepten")}
-          </Button>
-        </div>
-      </div>
+        <span className="px-4 pb-4 text-base font-medium text-primary">{t("Bekijk recept")}</span>
+      </button>
     </li>
   );
 }
