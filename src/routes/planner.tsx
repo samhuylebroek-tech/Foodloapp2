@@ -538,7 +538,7 @@ function PlannerPage() {
             <PopoverTrigger asChild>
               <Button variant="ghost" className="h-14 min-w-0 flex-1 gap-2 px-2 text-base font-semibold">
                 <CalendarDays className="size-5 shrink-0" />
-                <span className="truncate">{weekLabel(weekStart)}</span>
+                <span className="truncate">{weekLabel(new Date(`${week[0]}T12:00:00`))}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="center">
@@ -598,13 +598,18 @@ function PlannerPage() {
 
 
         <Button
-          onClick={() =>
+          onClick={() => {
+            const startDag = voorstelDagen.includes(vandaag) ? vandaag : voorstelDagen[0];
+            if (!startDag) {
+              toast("Kies een huidige of volgende week om een gerecht in te plannen.");
+              return;
+            }
             setKiezen({
-              datum: vandaag >= week[0]! && vandaag <= week[6]! ? vandaag : week[0]!,
+              datum: startDag,
               moment: momenten[momenten.length - 1] ?? "avondeten",
               vraagDag: true,
-            })
-          }
+            });
+          }}
           className="h-16 w-full text-lg"
         >
           <Plus className="size-6" /> Gerecht inplannen
