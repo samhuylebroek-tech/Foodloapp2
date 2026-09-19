@@ -334,6 +334,7 @@ function PlannerPage() {
   ) {
     if (!user) return;
     let gelukt = 0;
+    const ingepland: { recipeId: string; titel: string }[] = [];
     for (const rij of rijen) {
       try {
         let recipeId = rij.recept?.id ?? null;
@@ -379,6 +380,7 @@ function PlannerPage() {
         });
         if (error) throw error;
         gelukt += 1;
+        ingepland.push({ recipeId, titel: rij.recept?.title ?? rij.idee?.title ?? "Gerecht" });
       } catch {
         toast.error(`${labelVoor(rij.datum)} inplannen lukte niet`);
       }
@@ -386,7 +388,51 @@ function PlannerPage() {
     qc.invalidateQueries({ queryKey: ["meal-plan"] });
     if (gelukt) toast.success(`${gelukt} ${gelukt === 1 ? "dag" : "dagen"} ingepland`);
     setVoorstelOpen(false);
+    if (ingepland.length) {
+      setNaVoorstel(ingepland);
+      setNaGekozen(new Set(ingepland.map((r) => r.recipeId)));
+    }
   }
+
+  /** Alle aangevinkte gerechten in één keer op de boodschappenlijst zetten. */
+  async function zetAllesOpLijst() {
+    if (!user || !naVoorstel) return;
+    const ids = naVoorstel.filter((r) => naGekozen.has(r.recipeId)).map((r) => r.recipeId);
+    if (!ids.length) {
+      setNaVoorstel(null);
+      return;
+    }
+    const listId =
+      (weergave === "gezin" && gezinsLijst ? gezinsLijst.id : lijstId || lijsten[0]?.id) ||
+      (await zorgVoorLijst(user.id));
+    const { data, error } = await supabase
+      .from("recipe_ingredients")
+      .select("name, quantity, unit, recipe_id")
+      .in("recipe_id", ids);
+    if (error || !data?.length) {
+      toast.error("Geen ingrediënten gevonden");
+      setNaVoorstel(null);
+      return;
+    }
+    try {
+      await voegToeAanLijst(
+        user.id,
+        listId,
+        data.map((i) => ({
+          name: i.name as string,
+          quantity: i.quantity as number | null,
+          unit: (i.unit as string) ?? "",
+          recipe_id: i.recipe_id as string,
+        })),
+      );
+      toast.success("Alles staat op je boodschappenlijst");
+      qc.invalidateQueries({ queryKey: ["shopping"] });
+    } catch {
+      toast.error("Toevoegen lukte niet");
+    }
+    setNaVoorstel(null);
+  }
+
 
   async function nieuw_gerecht(naam: string, basis: Basis | null, datum: string, moment: string) {
     if (!user) return;
