@@ -611,7 +611,18 @@ function PlannerPage() {
             </section>
           );
         })}
+        </div>
       </div>
+
+      {instellingenOpen && (
+        <WeekmenuInstellingen
+          instelling={weekmenu}
+          algemeneMomenten={algemeneMomenten}
+          onZet={zetWeekmenu}
+          onSluit={() => setInstellingenOpen(false)}
+        />
+      )}
+
 
       {kiezen && (
         <ReceptKiezer
