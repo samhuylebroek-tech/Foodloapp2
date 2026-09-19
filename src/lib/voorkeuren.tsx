@@ -260,8 +260,20 @@ export function VoorkeurenProvider({ children }: { children: ReactNode }) {
     void bewaarOpAccount({ momenten: lijst });
   }, []);
 
+  const zetWeekmenu = useCallback((deel: Partial<WeekmenuInstelling>) => {
+    setWeekmenu((vorig) => {
+      const nieuw = { ...vorig, ...deel };
+      if (!nieuw.dagen.length) nieuw.dagen = [...WEEKMENU_STANDAARD.dagen];
+      window.localStorage.setItem("weekmenu", JSON.stringify(nieuw));
+      void bewaarOpAccount({ weekmenu: nieuw });
+      return nieuw;
+    });
+  }, []);
+
   return (
-    <VoorkeurenCtx.Provider value={{ taal, zetTaal, thema, zetThema, momenten, zetMomenten, t }}>
+    <VoorkeurenCtx.Provider
+      value={{ taal, zetTaal, thema, zetThema, momenten, zetMomenten, weekmenu, zetWeekmenu, t }}
+    >
       {children}
     </VoorkeurenCtx.Provider>
   );
