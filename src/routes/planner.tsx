@@ -549,12 +549,15 @@ function PlannerPage() {
                         <Link
                           to="/recepten/$id"
                           params={{ id: p.recipe_id }}
-                          className="flex-1 text-lg underline-offset-4 hover:underline"
+                          className="flex flex-1 items-center gap-3 text-lg underline-offset-4 hover:underline"
                         >
-                          {p.meal_type && p.meal_type !== "maaltijd" ? (
-                            <span className="text-base capitalize text-muted-foreground">{p.meal_type}: </span>
-                          ) : null}
-                          {p.recipes?.title ?? "Recept"}
+                          <ReceptFoto url={p.recipes?.image_url ?? null} />
+                          <span>
+                            {p.meal_type && p.meal_type !== "maaltijd" ? (
+                              <span className="text-base capitalize text-muted-foreground">{p.meal_type}: </span>
+                            ) : null}
+                            {p.recipes?.title ?? "Recept"}
+                          </span>
                         </Link>
                       ) : (
                         <span className="flex-1 text-lg">
