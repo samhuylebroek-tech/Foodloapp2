@@ -25,6 +25,7 @@ import { tijdLabel } from "@/lib/tijd";
 import { EmptyState } from "@/components/EmptyState";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { NieuweSuggesties } from "@/components/NieuweSuggesties";
+import { zoekScore, zoekWoorden } from "@/lib/zoeken";
 
 export const Route = createFileRoute("/gerechten")({
   head: () => ({
@@ -136,23 +137,47 @@ function GerechtenPage() {
     },
   });
 
+  const ingredientenPerRecept = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const rij of alleIngredienten) {
+      const lijst = map.get(rij.recipe_id) ?? [];
+      lijst.push(rij.name);
+      map.set(rij.recipe_id, lijst);
+    }
+    return map;
+  }, [alleIngredienten]);
+
   const zichtbaar = useMemo(() => {
-    const q = zoek.trim().toLowerCase();
-    return recipes.filter((r) => {
+    const woorden = zoekWoorden(zoek);
+    const gefilterd = recipes.filter((r) => {
       if (categorie && r.category !== categorie) return false;
       if (moeilijkheid && r.difficulty !== moeilijkheid) return false;
       if (dieet && dieetPerRecept.get(r.id) !== dieet) return false;
       if (maxTijd && r.prep_minutes + r.cook_minutes > maxTijd) return false;
       if (alleenFavorieten && !favorites.includes(r.id)) return false;
       if (minSterren && (scores[r.id] ?? 0) < minSterren) return false;
-      if (!q) return true;
-      return (
-        r.title.toLowerCase().includes(q) ||
-        r.description.toLowerCase().includes(q) ||
-        r.tags.some((tag) => tag.includes(q)) ||
-        ingredientMatches.includes(r.id)
-      );
+      return true;
     });
+    if (!woorden.length) return gefilterd;
+
+    return gefilterd
+      .map((r) => ({
+        r,
+        score:
+          zoekScore(
+            {
+              titel: r.title,
+              beschrijving: r.description,
+              labels: r.tags,
+              soort: r.category,
+              ingredienten: ingredientenPerRecept.get(r.id) ?? [],
+            },
+            woorden,
+          ) || (ingredientMatches.includes(r.id) ? 1 : 0),
+      }))
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map((x) => x.r);
   }, [
     recipes,
     zoek,
@@ -166,6 +191,7 @@ function GerechtenPage() {
     scores,
     favorites,
     ingredientMatches,
+    ingredientenPerRecept,
   ]);
 
   const actieveFilters =

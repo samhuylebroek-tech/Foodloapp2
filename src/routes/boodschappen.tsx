@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { meet } from "@/lib/meten";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -17,6 +17,15 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { EmptyState } from "@/components/EmptyState";
+import {
+  CATEGORIE_LABEL,
+  CATEGORIE_VOLGORDE,
+  bewaarCorrectie,
+  categorieVan,
+  leesCorrecties,
+  type CategorieId,
+} from "@/lib/categorie";
+import { normaliseerTekst } from "@/lib/zoeken";
 
 export const Route = createFileRoute("/boodschappen")({
   head: () => ({
@@ -102,6 +111,43 @@ function BoodschappenPage() {
       return data as Item[];
     },
   });
+
+  // Wat al in je voorraadkast staat, hoort ook bij "heb je waarschijnlijk al".
+  const { data: voorraad = [] } = useQuery({
+    queryKey: ["pantry-namen", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("pantry_items").select("naam").eq("user_id", user!.id);
+      if (error) throw error;
+      return (data ?? []).map((r) => (r.naam as string).trim().toLowerCase()).filter(Boolean);
+    },
+  });
+
+  const [correcties, setCorrecties] = useState<Record<string, CategorieId>>({});
+  useEffect(() => {
+    setCorrecties(leesCorrecties());
+  }, []);
+
+  function zetCategorie(naam: string, categorie: CategorieId) {
+    setCorrecties(bewaarCorrectie(naam, categorie));
+  }
+
+  const groepen = useMemo(() => {
+    const per = new Map<CategorieId, Item[]>();
+    for (const item of items) {
+      const naam = item.name.trim().toLowerCase();
+      const handmatig = correcties[normaliseerTekst(item.name)];
+      const thuis = voorraad.some((v) => naam.includes(v) || v.includes(naam));
+      const id: CategorieId = handmatig ?? (thuis ? "voorraadkast" : categorieVan(item.name, correcties));
+      const lijst = per.get(id) ?? [];
+      lijst.push(item);
+      per.set(id, lijst);
+    }
+    return CATEGORIE_VOLGORDE.filter((id) => (per.get(id)?.length ?? 0) > 0).map((id) => ({
+      id,
+      lijst: per.get(id)!,
+    }));
+  }, [items, voorraad, correcties]);
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["shopping"] });
   const refreshLijsten = () => qc.invalidateQueries({ queryKey: ["shopping-lists"] });
@@ -288,39 +334,55 @@ function BoodschappenPage() {
           </Button>
         </div>
 
-        <ul className="space-y-2">
-          {items.map((item) => (
-            <li
-              key={item.id}
-              className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4"
-            >
-              <Checkbox
-                checked={item.checked}
-                onCheckedChange={() => vink(item)}
-                className="size-7"
-                aria-label={item.name}
-              />
-              <span
-                className={
-                  item.checked ? "flex-1 text-lg text-muted-foreground line-through" : "flex-1 text-lg"
-                }
-              >
-                {[item.quantity ?? "", item.unit, item.name].join(" ").replace(/\s+/g, " ").trim()}
-              </span>
-              <Button
-                variant="ghost"
-                onClick={() => verwijder(item.id)}
-                aria-label="Verwijderen"
-                className="size-12"
-              >
-                <Trash2 className="size-5" />
-              </Button>
-            </li>
-          ))}
-          {items.length === 0 && (
-            <li><EmptyState title="Je lijst is leeg" description="Voeg hierboven toe wat je nog nodig hebt." /></li>
-          )}
-        </ul>
+        {items.length === 0 ? (
+          <EmptyState title="Je lijst is leeg" description="Voeg hierboven toe wat je nog nodig hebt." />
+        ) : (
+          <div className="space-y-4">
+            {groepen.map(({ id, lijst }) =>
+              id === "voorraadkast" ? (
+                <Accordion key={id} type="single" collapsible className="rounded-2xl bg-card px-4 ring-1 ring-border/60">
+                  <AccordionItem value={id} className="border-0">
+                    <AccordionTrigger className="min-h-14 text-base no-underline hover:no-underline">
+                      {CATEGORIE_LABEL[id]} ({lijst.length})
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-2 pb-4">
+                      <p className="text-sm text-muted-foreground">
+                        Basisproducten die je meestal al in huis hebt.
+                      </p>
+                      {lijst.map((item) => (
+                        <ItemRij
+                          key={item.id}
+                          item={item}
+                          onVink={() => vink(item)}
+                          onVerwijder={() => verwijder(item.id)}
+                          onCategorie={(c) => zetCategorie(item.name, c)}
+                        />
+                      ))}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              ) : (
+                <section key={id} aria-label={CATEGORIE_LABEL[id]}>
+                  <h2 className="mb-2 px-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    {CATEGORIE_LABEL[id]}
+                  </h2>
+                  <ul className="space-y-2">
+                    {lijst.map((item) => (
+                      <li key={item.id}>
+                        <ItemRij
+                          item={item}
+                          onVink={() => vink(item)}
+                          onVerwijder={() => verwijder(item.id)}
+                          onCategorie={(c) => zetCategorie(item.name, c)}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ),
+            )}
+          </div>
+        )}
 
         <Accordion type="single" collapsible className="rounded-2xl bg-card px-4 ring-1 ring-border/60">
           <AccordionItem value="handig" className="border-0">
@@ -370,5 +432,45 @@ function BoodschappenPage() {
         </div>
       )}
     </AppShell>
+  );
+}
+
+function ItemRij({
+  item,
+  onVink,
+  onVerwijder,
+  onCategorie,
+}: {
+  item: Item;
+  onVink: () => void;
+  onVerwijder: () => void;
+  onCategorie: (categorie: CategorieId) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4">
+      <Checkbox checked={item.checked} onCheckedChange={onVink} className="size-7" aria-label={item.name} />
+      <span className={item.checked ? "flex-1 text-lg text-muted-foreground line-through" : "flex-1 text-lg"}>
+        {[item.quantity ?? "", item.unit, item.name].join(" ").replace(/\s+/g, " ").trim()}
+      </span>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="size-12" aria-label={`Opties voor ${item.name}`}>
+            <MoreHorizontal className="size-5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-56 rounded-xl p-2">
+          {CATEGORIE_VOLGORDE.map((c) => (
+            <DropdownMenuItem key={c} onSelect={() => onCategorie(c)} className="min-h-11 text-base">
+              Zet bij {CATEGORIE_LABEL[c]}
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={onVerwijder} className="min-h-11 text-base text-destructive">
+            <Trash2 />
+            Verwijderen
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }

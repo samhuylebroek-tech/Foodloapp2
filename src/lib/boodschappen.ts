@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { normaliseerTekst } from "@/lib/zoeken";
+import { stam } from "@/lib/stap-ingredienten";
 
 export type ShoppingList = { id: string; name: string; created_at: string; group_id?: string | null };
 
@@ -39,8 +41,33 @@ export async function maakLijst(userId: string, naam: string): Promise<string> {
   return data.id;
 }
 
+/** Enkelvoud/meervoud en schrijfvarianten samenbrengen: "Uien" = "ui". */
+function naamSleutel(name: string): string {
+  return normaliseerTekst(name)
+    .split(" ")
+    .map((w) => stam(w))
+    .filter(Boolean)
+    .sort()
+    .join(" ");
+}
+
+/** g/kg en ml/l naar één basiseenheid, zodat hoeveelheden optelbaar zijn. */
+function basisEenheid(unit: string | null | undefined): string {
+  const u = (unit ?? "").trim().toLowerCase();
+  if (u === "kg") return "g";
+  if (u === "l") return "ml";
+  return u;
+}
+
+function naarBasis(quantity: number | null | undefined, unit: string | null | undefined): number | null {
+  if (quantity === null || quantity === undefined) return null;
+  const u = (unit ?? "").trim().toLowerCase();
+  if (u === "kg" || u === "l") return quantity * 1000;
+  return quantity;
+}
+
 function sleutel(name: string, unit: string | null | undefined) {
-  return `${name.trim().toLowerCase()}|${(unit ?? "").trim().toLowerCase()}`;
+  return `${naamSleutel(name)}|${basisEenheid(unit)}`;
 }
 
 function telOp(a: number | null, b: number | null | undefined): number | null {
@@ -64,35 +91,39 @@ export async function voegToeAanLijst(
     .select("id, name, quantity, unit")
     .eq("list_id", listId);
 
-  const bestaande = new Map<string, { id: string; quantity: number | null }>();
+  const bestaande = new Map<string, { id: string; quantity: number | null; unit: string }>();
   for (const rij of bestaand ?? []) {
     bestaande.set(sleutel(rij.name as string, rij.unit as string), {
       id: rij.id as string,
-      quantity: rij.quantity as number | null,
+      quantity: naarBasis(rij.quantity as number | null, rij.unit as string),
+      unit: basisEenheid(rij.unit as string),
     });
   }
 
   const nieuwe = new Map<string, { name: string; quantity: number | null; unit: string; recipe_id: string | null }>();
+  const aangeraakt = new Set<string>();
 
   for (const item of items) {
     const naam = item.name.trim();
     if (!naam) continue;
-    const unit = (item.unit ?? "").trim();
-    const k = sleutel(naam, unit);
+    const unit = basisEenheid(item.unit);
+    const aantal = naarBasis(item.quantity ?? null, item.unit);
+    const k = sleutel(naam, item.unit ?? "");
+    aangeraakt.add(k);
 
     const raak = bestaande.get(k);
     if (raak) {
-      raak.quantity = telOp(raak.quantity, item.quantity ?? null);
+      raak.quantity = telOp(raak.quantity, aantal);
       continue;
     }
     const alGepland = nieuwe.get(k);
     if (alGepland) {
-      alGepland.quantity = telOp(alGepland.quantity, item.quantity ?? null);
+      alGepland.quantity = telOp(alGepland.quantity, aantal);
       continue;
     }
     nieuwe.set(k, {
       name: naam,
-      quantity: item.quantity ?? null,
+      quantity: aantal,
       unit,
       recipe_id: item.recipe_id ?? null,
     });
@@ -112,11 +143,11 @@ export async function voegToeAanLijst(
   }
 
   const updates = [...bestaande.entries()]
-    .filter(([k]) => items.some((i) => sleutel(i.name, i.unit ?? "") === k))
+    .filter(([k]) => aangeraakt.has(k))
     .map(([, rij]) =>
       supabase
         .from("shopping_items")
-        .update({ quantity: rij.quantity, checked: false })
+        .update({ quantity: rij.quantity, unit: rij.unit, checked: false })
         .eq("id", rij.id),
     );
   await Promise.all(updates);

@@ -31,6 +31,7 @@ import {
   type ImportedRecipe,
 } from "@/lib/ai.functions";
 import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/types";
+import { useVoorkeuren } from "@/lib/voorkeuren";
 import { parseIngredientText, ingredientToLine } from "@/lib/ingredienten";
 import { kiesSoort, raadSoort } from "@/lib/soort";
 import { Voedingswaarden } from "@/components/Voedingswaarden";
@@ -75,6 +76,7 @@ export function RecipeForm({
   gedeeld?: { title?: string | undefined; text?: string | undefined; url?: string | undefined };
 }) {
   const { user } = useAuth();
+  const { taal } = useVoorkeuren();
   const navigate = useNavigate();
 
   const gedeeldeTekst = [gedeeld?.title, gedeeld?.text].filter(Boolean).join("\n\n");
@@ -416,7 +418,8 @@ export function RecipeForm({
     setWebBezig(true);
     setVoorstellen(null);
     try {
-      const lijst = await zoekReceptenOpWeb({ data: { term } });
+      const gekozenTaal = (["nl", "en", "fr", "de"] as const).find((c) => c === taal) ?? "nl";
+      const lijst = await zoekReceptenOpWeb({ data: { term, taal: gekozenTaal } });
       setWebResultaten(lijst);
       if (!lijst.length) {
         toast.message("Niets gevonden op het web. Probeer 'Nieuwe ideeën'.");

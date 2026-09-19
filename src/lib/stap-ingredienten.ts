@@ -68,16 +68,14 @@ function stapWoorden(stap: string): Set<string> {
 function komtVoor(naam: string, woorden: Set<string>): boolean {
   const kern = kernwoorden(naam);
   if (!kern.length) return false;
-  return kern.some((k) => {
-    if (k.length < 3) return false;
-    if (woorden.has(k)) return true;
-    // samengestelde namen: "bloem" in de stap hoort bij "patisseriebloem"
-    for (const w of woorden) {
-      if (w.length >= 4 && k.length >= 4 && (k.endsWith(w) || w.endsWith(k))) return true;
-    }
-    return false;
-  });
+  // Enkel een echte woordtreffer telt: zo hangt niet half de ingrediëntenlijst
+  // aan één stap en blijft het kort en bruikbaar tijdens het koken.
+  return kern.some((k) => k.length >= 4 && woorden.has(k));
 }
+
+/** Meer dan dit per stap wordt onoverzichtelijk om te lezen tijdens het koken. */
+const MAX_PER_STAP = 4;
+
 
 /**
  * Geeft per stap de indexen van de ingrediënten die erbij horen.
@@ -109,11 +107,12 @@ export function koppelStappen(
     Object.keys(handmatig ?? {}).filter((k) => (handmatig?.[k]?.length ?? 0) >= 0),
   );
 
-  // 2. automatische herkenning voor de rest
+  // 2. automatische herkenning voor de rest, met een rem per stap
   ingredienten.forEach((ing, idx) => {
     if (gebruikt.has(idx)) return;
     for (let i = 0; i < stappen.length; i++) {
       if (handmatigeStappen.has(String(i))) continue; // stap staat onder eigen beheer
+      if (resultaat[i]!.length >= MAX_PER_STAP) continue;
       if (komtVoor(ing.name, woordenPerStap[i]!)) {
         resultaat[i]!.push(idx);
         gebruikt.add(idx);
