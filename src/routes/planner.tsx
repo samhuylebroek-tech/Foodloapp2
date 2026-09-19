@@ -807,6 +807,7 @@ function GerechtKaart({ recept, onKies }: { recept: Recipe; onKies: () => void }
 function ReceptKiezer({
   week,
   momenten,
+  instelling,
   start,
   onSluit,
   onKies,
@@ -814,21 +815,155 @@ function ReceptKiezer({
 }: {
   week: string[];
   momenten: string[];
+  instelling: WeekmenuInstelling;
   start: { datum: string; moment: string; vraagDag?: boolean };
   onSluit: () => void;
   onKies: (id: string, datum: string, moment: string, titel: string) => void;
   onNieuw: (naam: string, basis: Basis | null, datum: string, moment: string) => void;
 }) {
   const { user } = useAuth();
+  const { taal } = useVoorkeuren();
   const [zoek, setZoek] = useState("");
   const [datum, setDatum] = useState(start.datum);
   const [moment, setMoment] = useState(start.moment);
   const [dagKiezen, setDagKiezen] = useState(!!start.vraagDag);
   const [aiBezig, setAiBezig] = useState(false);
   const [voorstel, setVoorstel] = useState<Basis | null>(null);
+  const [voorstelNaam, setVoorstelNaam] = useState("");
+  const [ideeen, setIdeeen] = useState<WeekmenuIdee[] | null>(null);
+  const [ideeenBezig, setIdeeenBezig] = useState(false);
+  const [webOpen, setWebOpen] = useState(false);
+  const [webTerm, setWebTerm] = useState("");
+  const [webBezig, setWebBezig] = useState(false);
+  const [webResultaten, setWebResultaten] = useState<WebResultaat[] | null>(null);
+
+  /** Zet een AI- of webrecept klaar in het bevestigscherm. */
+  function toonVoorstel(
+    naam: string,
+    r: {
+      title: string;
+      description?: string | null;
+      servings?: number;
+      prep_minutes?: number;
+      cook_minutes?: number;
+      category?: string;
+      difficulty?: string;
+      tags?: string[];
+      instructions?: string[];
+      image_url?: string | null;
+      source_url?: string | null;
+      ingredients?: { name: string; quantity: number | null; unit: string }[];
+    },
+  ) {
+    setVoorstelNaam(r.title || naam);
+    setVoorstel({
+      title: r.title || naam,
+      description: r.description ?? "",
+      servings: r.servings ?? 4,
+      prep_minutes: r.prep_minutes ?? 0,
+      cook_minutes: r.cook_minutes ?? 0,
+      category: r.category ?? "hoofdgerecht",
+      difficulty: r.difficulty ?? "makkelijk",
+      tags: r.tags ?? [],
+      instructions: r.instructions ?? [],
+      image_url: r.image_url ?? null,
+      source_url: r.source_url ?? null,
+      ingredienten: (r.ingredients ?? []).map((i) => ({
+        name: i.name,
+        quantity: i.quantity,
+        unit: i.unit ?? "",
+      })),
+    });
+  }
+
+  /** Drie passende AI-ideeën voor deze dag, met je weekvoorkeuren. */
+  async function laadIdeeen() {
+    setIdeeenBezig(true);
+    try {
+      const dagIdx = (new Date(`${datum}T12:00:00`).getDay() + 6) % 7;
+      const dagVoorkeur = instelling.perDag[String(dagIdx)];
+      const wensen = [
+        instelling.vlees ? `vlees: ${instelling.vlees}` : "",
+        instelling.vis ? `vis: ${instelling.vis}` : "",
+        instelling.vega ? `vega: ${instelling.vega}` : "",
+        dagVoorkeur?.soort ? `deze dag liefst ${dagVoorkeur.soort}` : "",
+      ]
+        .filter(Boolean)
+        .join(", ");
+      const res = await weekmenuIdeeen({
+        data: {
+          aantal: 3,
+          wensen,
+          vermijd: instelling.vermijd,
+          maxMinuten: dagVoorkeur?.maxMinuten ?? instelling.maxMinuten,
+          bekend: recipes.map((r) => r.title).slice(0, 60),
+        },
+      });
+      setIdeeen(res);
+      if (!res.length) toast.error("De AI vond nu geen ideeën. Probeer later opnieuw.");
+    } catch {
+      toast.error("Ideeën ophalen lukte niet");
+    } finally {
+      setIdeeenBezig(false);
+    }
+  }
+
+  /** Maakt van een gekozen idee meteen een volledig recept om te bevestigen. */
+  async function maakReceptVanIdee(titel: string) {
+    setAiBezig(true);
+    try {
+      const r = await receptVanNaam({
+        data: { titel, hint: instelling.vermijd ? `Vermijd: ${instelling.vermijd}` : "" },
+      });
+      toonVoorstel(titel, r);
+    } catch {
+      toast.error("De AI kon geen recept maken. Probeer opnieuw.");
+    } finally {
+      setAiBezig(false);
+    }
+  }
+
+  /** Zoekt echte receptpagina's op het web (gratis). */
+  async function zoekWeb(zoekterm: string) {
+    const opgekuist = zoekterm.trim();
+    if (opgekuist.length < 3) return;
+    setWebBezig(true);
+    try {
+      const taalkeuze = (["nl", "en", "fr", "de"].includes(taal) ? taal : "nl") as
+        | "nl"
+        | "en"
+        | "fr"
+        | "de";
+      const res = await zoekReceptenOpWeb({ data: { term: opgekuist, taal: taalkeuze } });
+      setWebResultaten(res);
+      if (!res.length) toast.error("Geen receptpagina's gevonden. Probeer een andere naam.");
+    } catch {
+      toast.error("Zoeken op het web lukte niet");
+    } finally {
+      setWebBezig(false);
+    }
+  }
+
+  /** Leest het gekozen webrecept in en toont het ter bevestiging. */
+  async function kiesWeb(r: WebResultaat) {
+    setWebBezig(true);
+    try {
+      const imp = await importRecipeFromUrl({ data: { url: r.url } });
+      if (!imp.title || imp.fout) {
+        toast.error(imp.fout || "Op die pagina staat geen leesbaar recept");
+        return;
+      }
+      toonVoorstel(imp.title, imp);
+    } catch {
+      toast.error("Recept inlezen lukte niet");
+    } finally {
+      setWebBezig(false);
+    }
+  }
 
   async function maakVoorstel(naam: string) {
     setAiBezig(true);
+    setVoorstelNaam(naam);
     try {
       const ai = await importRecipeFromText({
         data: { text: `Maak een volledig recept voor: ${naam}` },
