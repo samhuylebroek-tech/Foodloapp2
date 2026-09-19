@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { meet } from "@/lib/meten";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Share2, ListPlus, Pencil, Package, MoreHorizontal, CreditCard } from "lucide-react";
+import { Plus, Trash2, Share2, ListPlus, Pencil, Package, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,6 +16,7 @@ import { parseIngredientLine } from "@/lib/ingredienten";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmptyState } from "@/components/EmptyState";
 import {
   CATEGORIE_LABEL,
@@ -61,6 +62,11 @@ function BoodschappenPage() {
   const [actief, setActief] = useState<string | null>(null);
   const [naamVenster, setNaamVenster] = useState<"nieuw" | "hernoem" | null>(null);
   const [lijstNaam, setLijstNaam] = useState("");
+  const [bewerkItem, setBewerkItem] = useState<Item | null>(null);
+  const [bewerkNaam, setBewerkNaam] = useState("");
+  const [bewerkAantal, setBewerkAantal] = useState("");
+  const [bewerkEenheid, setBewerkEenheid] = useState("");
+  const [wisVraag, setWisVraag] = useState<"afgevinkt" | "alles" | null>(null);
 
   const { data: lijsten = [] } = useQuery({
     queryKey: ["shopping-lists", user?.id],
@@ -134,7 +140,7 @@ function BoodschappenPage() {
 
   const groepen = useMemo(() => {
     const per = new Map<CategorieId, Item[]>();
-    for (const item of items) {
+    for (const item of items.filter((rij) => !rij.checked)) {
       const naam = item.name.trim().toLowerCase();
       const handmatig = correcties[normaliseerTekst(item.name)];
       const thuis = voorraad.some((v) => naam.includes(v) || v.includes(naam));
@@ -154,6 +160,8 @@ function BoodschappenPage() {
   const [vraagVerwijder, setVraagVerwijder] = useState(false);
   const actieveLijst = lijsten.find((l) => l.id === actief);
   const actieveNaam = actieveLijst?.name ?? "";
+  const openAantal = items.filter((item) => !item.checked).length;
+  const klaar = items.filter((item) => item.checked);
 
   async function nieuwLijstje() {
     if (!user) return;
@@ -221,6 +229,33 @@ function BoodschappenPage() {
     refresh();
   }
 
+  function openBewerken(item: Item) {
+    setBewerkItem(item);
+    setBewerkNaam(item.name);
+    setBewerkAantal(item.quantity == null ? "" : String(item.quantity));
+    setBewerkEenheid(item.unit);
+  }
+
+  async function bewaarItem() {
+    if (!bewerkItem || !bewerkNaam.trim()) return;
+    const hoeveelheid = bewerkAantal.trim() ? Number(bewerkAantal.replace(",", ".")) : null;
+    if (hoeveelheid !== null && (!Number.isFinite(hoeveelheid) || hoeveelheid < 0)) {
+      toast.error("Vul een geldig aantal in");
+      return;
+    }
+    const { error } = await supabase
+      .from("shopping_items")
+      .update({ name: bewerkNaam.trim(), quantity: hoeveelheid, unit: bewerkEenheid.trim() })
+      .eq("id", bewerkItem.id);
+    if (error) {
+      toast.error("Aanpassen lukte niet");
+      return;
+    }
+    setBewerkItem(null);
+    refresh();
+    toast.success("Boodschap aangepast");
+  }
+
   // Alles wat al in de voorraadkast staat in één tik afvinken.
   async function vinkVoorraadAf() {
     if (!user || !actief) return;
@@ -251,8 +286,26 @@ function BoodschappenPage() {
 
   async function wisAfgevinkt() {
     if (!actief) return;
-    await supabase.from("shopping_items").delete().eq("checked", true).eq("list_id", actief);
+    const { error } = await supabase.from("shopping_items").delete().eq("checked", true).eq("list_id", actief);
+    if (error) {
+      toast.error("Opruimen lukte niet");
+      return;
+    }
+    setWisVraag(null);
     refresh();
+    toast.success("Afgevinkte boodschappen verwijderd");
+  }
+
+  async function wisAlles() {
+    if (!actief) return;
+    const { error } = await supabase.from("shopping_items").delete().eq("list_id", actief);
+    if (error) {
+      toast.error("Lijst leegmaken lukte niet");
+      return;
+    }
+    setWisVraag(null);
+    refresh();
+    toast.success("Boodschappenlijst leeggemaakt");
   }
 
   async function deel() {
@@ -337,7 +390,29 @@ function BoodschappenPage() {
         {items.length === 0 ? (
           <EmptyState title="Je lijst is leeg" description="Voeg hierboven toe wat je nog nodig hebt." />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
+            <div className="flex min-h-11 items-center justify-between gap-3 px-1">
+              <p className="text-sm font-semibold text-muted-foreground">
+                {openAantal === 1 ? "Nog 1 boodschap" : `Nog ${openAantal} boodschappen`}
+              </p>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-2" aria-label="Boodschappen opruimen">
+                    <Trash2 className="size-4" /> Opruimen
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-56 rounded-xl p-2">
+                  {klaar.length > 0 ? (
+                    <DropdownMenuItem onSelect={() => setWisVraag("afgevinkt")} className="min-h-11 text-base">
+                      <Trash2 /> Afgevinkte verwijderen ({klaar.length})
+                    </DropdownMenuItem>
+                  ) : null}
+                  <DropdownMenuItem onSelect={() => setWisVraag("alles")} className="min-h-11 text-base text-destructive">
+                    <Trash2 /> Hele lijst leegmaken
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             {groepen.map(({ id, lijst }) =>
               id === "voorraadkast" ? (
                 <Accordion key={id} type="single" collapsible className="rounded-2xl bg-card px-4 ring-1 ring-border/60">
@@ -354,6 +429,7 @@ function BoodschappenPage() {
                           key={item.id}
                           item={item}
                           onVink={() => vink(item)}
+                           onBewerk={() => openBewerken(item)}
                           onVerwijder={() => verwijder(item.id)}
                           onCategorie={(c) => zetCategorie(item.name, c)}
                         />
@@ -372,6 +448,7 @@ function BoodschappenPage() {
                         <ItemRij
                           item={item}
                           onVink={() => vink(item)}
+                          onBewerk={() => openBewerken(item)}
                           onVerwijder={() => verwijder(item.id)}
                           onCategorie={(c) => zetCategorie(item.name, c)}
                         />
@@ -381,6 +458,30 @@ function BoodschappenPage() {
                 </section>
               ),
             )}
+            {klaar.length > 0 ? (
+              <Accordion type="single" collapsible className="border-t border-border">
+                <AccordionItem value="klaar" className="border-0">
+                  <AccordionTrigger className="min-h-12 px-1 text-sm font-semibold text-muted-foreground no-underline hover:no-underline">
+                    Afgevinkt ({klaar.length})
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-1 pb-2">
+                    {klaar.map((item) => (
+                      <ItemRij
+                        key={item.id}
+                        item={item}
+                        onVink={() => vink(item)}
+                        onBewerk={() => openBewerken(item)}
+                        onVerwijder={() => verwijder(item.id)}
+                        onCategorie={(c) => zetCategorie(item.name, c)}
+                      />
+                    ))}
+                    <Button variant="ghost" onClick={() => setWisVraag("afgevinkt")} className="mt-2 w-full justify-center text-destructive">
+                      <Trash2 /> Wis afgevinkte boodschappen
+                    </Button>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            ) : null}
           </div>
         )}
 
@@ -390,7 +491,8 @@ function BoodschappenPage() {
             <AccordionContent className="space-y-2">
               <Button variant="outline" onClick={vinkVoorraadAf} className="w-full justify-start"><Package />Vink af wat ik al in huis heb</Button>
               <Button variant="outline" onClick={deel} className="w-full justify-start"><Share2 />Lijst delen</Button>
-              <Button variant="ghost" onClick={wisAfgevinkt} className="w-full justify-start">Afgevinkte wissen</Button>
+              {klaar.length > 0 ? <Button variant="ghost" onClick={() => setWisVraag("afgevinkt")} className="w-full justify-start"><Trash2 />Afgevinkte wissen</Button> : null}
+              {items.length > 0 ? <Button variant="ghost" onClick={() => setWisVraag("alles")} className="w-full justify-start text-destructive"><Trash2 />Hele lijst leegmaken</Button> : null}
               <div className="pt-2"><Klantenkaarten /></div>
             </AccordionContent>
           </AccordionItem>
@@ -404,6 +506,45 @@ function BoodschappenPage() {
           <DialogFooter><Button variant="outline" onClick={() => setNaamVenster(null)}>Annuleren</Button><Button onClick={() => void (naamVenster === "nieuw" ? nieuwLijstje() : hernoem())}>Bewaren</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={bewerkItem !== null} onOpenChange={(open) => { if (!open) setBewerkItem(null); }}>
+        <DialogContent className="rounded-2xl sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Boodschap aanpassen</DialogTitle>
+            <DialogDescription>Pas de naam, hoeveelheid of eenheid aan.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input autoFocus aria-label="Naam" value={bewerkNaam} onChange={(event) => setBewerkNaam(event.target.value)} className="h-14 text-base" />
+            <div className="grid grid-cols-2 gap-3">
+              <Input inputMode="decimal" aria-label="Hoeveelheid" placeholder="Hoeveelheid" value={bewerkAantal} onChange={(event) => setBewerkAantal(event.target.value)} className="h-14 text-base" />
+              <Input aria-label="Eenheid" placeholder="Eenheid" value={bewerkEenheid} onChange={(event) => setBewerkEenheid(event.target.value)} className="h-14 text-base" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBewerkItem(null)}>Annuleren</Button>
+            <Button onClick={() => void bewaarItem()}>Bewaren</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={wisVraag !== null} onOpenChange={(open) => { if (!open) setWisVraag(null); }}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{wisVraag === "alles" ? "Hele lijst leegmaken?" : "Afgevinkte boodschappen wissen?"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {wisVraag === "alles"
+                ? `Alle ${items.length} boodschappen verdwijnen uit “${actieveNaam}”.`
+                : `${klaar.length} afgevinkte boodschappen verdwijnen uit de lijst.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void (wisVraag === "alles" ? wisAlles() : wisAfgevinkt())} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              <Trash2 /> Verwijderen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {vraagVerwijder && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
@@ -438,27 +579,33 @@ function BoodschappenPage() {
 function ItemRij({
   item,
   onVink,
+  onBewerk,
   onVerwijder,
   onCategorie,
 }: {
   item: Item;
   onVink: () => void;
+  onBewerk: () => void;
   onVerwijder: () => void;
   onCategorie: (categorie: CategorieId) => void;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4">
-      <Checkbox checked={item.checked} onCheckedChange={onVink} className="size-7" aria-label={item.name} />
-      <span className={item.checked ? "flex-1 text-lg text-muted-foreground line-through" : "flex-1 text-lg"}>
+    <div className="flex min-h-12 items-center gap-2 border-b border-border/70 bg-card px-2 py-1.5 last:border-b-0">
+      <Checkbox checked={item.checked} onCheckedChange={onVink} className="size-6" aria-label={item.name} />
+      <button type="button" onClick={onBewerk} className={item.checked ? "min-w-0 flex-1 text-left text-base text-muted-foreground line-through" : "min-w-0 flex-1 text-left text-base"}>
         {[item.quantity ?? "", item.unit, item.name].join(" ").replace(/\s+/g, " ").trim()}
-      </span>
+      </button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="size-12" aria-label={`Opties voor ${item.name}`}>
+          <Button variant="ghost" size="icon" className="size-10 shrink-0" aria-label={`Opties voor ${item.name}`}>
             <MoreHorizontal className="size-5" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-56 rounded-xl p-2">
+          <DropdownMenuItem onSelect={onBewerk} className="min-h-11 text-base">
+            <Pencil /> Aanpassen
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           {CATEGORIE_VOLGORDE.map((c) => (
             <DropdownMenuItem key={c} onSelect={() => onCategorie(c)} className="min-h-11 text-base">
               Zet bij {CATEGORIE_LABEL[c]}
