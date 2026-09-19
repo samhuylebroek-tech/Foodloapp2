@@ -17,6 +17,8 @@ import {
   Settings,
   CookingPot,
   RefreshCw,
+  Lightbulb,
+  Globe,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,7 +30,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { type Recipe } from "@/lib/types";
-import { importRecipeFromText, receptVanNaam, weekmenuIdeeen, type WeekmenuIdee } from "@/lib/ai.functions";
+import {
+  importRecipeFromText,
+  importRecipeFromUrl,
+  receptVanNaam,
+  weekmenuIdeeen,
+  zoekReceptenOpWeb,
+  type WeekmenuIdee,
+  type WebResultaat,
+} from "@/lib/ai.functions";
 import {
   useVoorkeuren,
   ALLE_MOMENTEN,
@@ -101,6 +111,8 @@ type Basis = {
   tags: string[];
   instructions: string[];
   ingredienten: { name: string; quantity: number | null; unit: string }[];
+  image_url?: string | null;
+  source_url?: string | null;
 };
 
 function PlannerPage() {
@@ -331,6 +343,8 @@ function PlannerPage() {
           difficulty: basis.difficulty,
           tags: basis.tags,
           instructions: basis.instructions,
+          image_url: basis.image_url ?? null,
+          source_url: basis.source_url ?? null,
         })
         .select("id")
         .single();
@@ -721,6 +735,7 @@ function PlannerPage() {
         <ReceptKiezer
           week={zichtbareDagen}
           momenten={momenten}
+          instelling={weekmenu}
           start={kiezen}
           onSluit={() => setKiezen(null)}
           onKies={plan_toevoegen}
