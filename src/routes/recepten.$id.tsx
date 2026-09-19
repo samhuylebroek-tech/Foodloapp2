@@ -735,3 +735,171 @@ function PlanKiezer({
     </div>
   );
 }
+
+/** Snel de labels van dit gerecht bijwerken zonder het hele formulier te openen. */
+function SnelAanpassen({ recipe, onKlaar }: { recipe: Recipe; onKlaar: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [nieuwLabel, setNieuwLabel] = useState("");
+  const [bezig, setBezig] = useState(false);
+
+  async function bewaar(velden: Partial<Recipe>) {
+    setBezig(true);
+    const { error } = await supabase.from("recipes").update(velden).eq("id", recipe.id);
+    setBezig(false);
+    if (error) {
+      toast.error("Aanpassen lukte niet");
+      return;
+    }
+    onKlaar();
+    toast.success("Aangepast");
+  }
+
+  if (!open) {
+    return (
+      <Button variant="outline" onClick={() => setOpen(true)} className="h-14 w-full justify-start text-base">
+        <Pencil className="size-5" /> Snel aanpassen
+      </Button>
+    );
+  }
+
+  return (
+    <section className="space-y-4 rounded-2xl bg-card p-4 ring-1 ring-border/60" aria-label="Snel aanpassen">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">Snel aanpassen</h3>
+        <Button variant="ghost" size="icon" aria-label="Sluiten" onClick={() => setOpen(false)}>
+          <X className="size-5" />
+        </Button>
+      </div>
+
+      <div>
+        <p className="text-base font-medium">Soort gerecht</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {CATEGORIES.map((c) => (
+            <button
+              key={c}
+              type="button"
+              aria-pressed={recipe.category === c}
+              disabled={bezig}
+              onClick={() => void bewaar({ category: c })}
+              className={
+                recipe.category === c
+                  ? "min-h-12 rounded-xl bg-primary px-4 text-base font-medium text-primary-foreground"
+                  : "min-h-12 rounded-xl border border-input bg-card px-4 text-base"
+              }
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="text-base font-medium">Moeilijkheid</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {DIFFICULTIES.map((d) => (
+            <button
+              key={d}
+              type="button"
+              aria-pressed={recipe.difficulty === d}
+              disabled={bezig}
+              onClick={() => void bewaar({ difficulty: d })}
+              className={
+                recipe.difficulty === d
+                  ? "min-h-12 rounded-xl bg-primary px-4 text-base font-medium text-primary-foreground"
+                  : "min-h-12 rounded-xl border border-input bg-card px-4 text-base"
+              }
+            >
+              {d}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="text-base font-medium">Labels</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {(recipe.tags ?? []).map((tag) => (
+            <span key={tag} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-secondary px-3 text-base">
+              {tag}
+              <button
+                type="button"
+                aria-label={`Label ${tag} verwijderen`}
+                onClick={() => void bewaar({ tags: (recipe.tags ?? []).filter((x) => x !== tag) })}
+                className="text-muted-foreground"
+              >
+                <X className="size-4" />
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="mt-2 flex gap-2">
+          <Input
+            value={nieuwLabel}
+            onChange={(e) => setNieuwLabel(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter" || !nieuwLabel.trim()) return;
+              e.preventDefault();
+              void bewaar({ tags: [...new Set([...(recipe.tags ?? []), nieuwLabel.trim()])] });
+              setNieuwLabel("");
+            }}
+            placeholder="Nieuw label"
+            aria-label="Nieuw label"
+            className="h-14 text-base"
+          />
+          <Button
+            className="h-14 px-5"
+            disabled={!nieuwLabel.trim() || bezig}
+            onClick={() => {
+              void bewaar({ tags: [...new Set([...(recipe.tags ?? []), nieuwLabel.trim()])] });
+              setNieuwLabel("");
+            }}
+          >
+            <Plus className="size-5" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <label className="text-base">
+          Personen
+          <Input
+            type="number"
+            min={1}
+            defaultValue={recipe.servings}
+            onBlur={(e) => {
+              const n = Number(e.target.value);
+              if (Number.isFinite(n) && n > 0 && n !== recipe.servings) void bewaar({ servings: n });
+            }}
+            className="mt-1 h-14 text-base"
+          />
+        </label>
+        <label className="text-base">
+          Voorbereiden
+          <Input
+            type="number"
+            min={0}
+            defaultValue={recipe.prep_minutes}
+            onBlur={(e) => {
+              const n = Number(e.target.value);
+              if (Number.isFinite(n) && n >= 0 && n !== recipe.prep_minutes) void bewaar({ prep_minutes: n });
+            }}
+            className="mt-1 h-14 text-base"
+          />
+        </label>
+        <label className="text-base">
+          Koken
+          <Input
+            type="number"
+            min={0}
+            defaultValue={recipe.cook_minutes}
+            onBlur={(e) => {
+              const n = Number(e.target.value);
+              if (Number.isFinite(n) && n >= 0 && n !== recipe.cook_minutes) void bewaar({ cook_minutes: n });
+            }}
+            className="mt-1 h-14 text-base"
+          />
+        </label>
+      </div>
+    </section>
+  );
+}
