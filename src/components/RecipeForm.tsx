@@ -32,6 +32,7 @@ import {
 } from "@/lib/ai.functions";
 import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/types";
 import { useVoorkeuren } from "@/lib/voorkeuren";
+import { schatPersonen } from "@/lib/porties";
 import { parseIngredientText, ingredientToLine } from "@/lib/ingredienten";
 import { kiesSoort, raadSoort } from "@/lib/soort";
 import { Voedingswaarden } from "@/components/Voedingswaarden";
