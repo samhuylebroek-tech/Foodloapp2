@@ -29,6 +29,18 @@ Achter het tandwiel van het weekmenu komt een extra blok **Wat wil je eten in ee
 
 Deze keuzes worden bewaard bij je account en worden automatisch meegenomen zodra je een voorstel vraagt.
 
+## 4. Per dag anders (slim en snel)
+
+De instellingen hierboven zijn je standaard. In het voorstelscherm staat bij elke dag een klein lijntje zoals "max 30 min · vlees" waar je op tikt om die dag apart te regelen:
+
+- **Hoeveel tijd heb je die dag?** — snelle keuzes: "snel (max 20 min)", "gewoon (max 45 min)", "rustig koken", of "maakt niet uit"
+- **Wat wil je die dag?** — vlees, vis, vegetarisch of laat Foodlo kiezen
+- **Overslaan** — bv. je eet die dag niet thuis
+
+Inventief: het aanpassen werkt voor één dag én voor een reeks. Hou je op een dag langer vast (of kies je "ook voor..."), dan kan je dezelfde keuze in één tik op meerdere dagen zetten — handig voor "doordeweeks snel, weekend rustig". Foodlo onthoudt bovendien per weekdag wat je meestal kiest (bv. altijd snel op woensdag) en vult die dag de volgende keer alvast zo in; dat staat erbij als "zoals je meestal doet" en je kan het met één tik terugzetten naar je standaard.
+
+Wat je per dag instelt, telt meteen mee in het voorstel: wijzig je een dag, dan wordt alleen die dag opnieuw voorgesteld, de rest blijft staan. De weekdoelen (bv. 2x vis) worden herberekend over de dagen die nog vrij zijn.
+
 ## Technisch
 
 - **Opslag**: uitbreiding van de bestaande `profiles.weekmenu` jsonb en `WeekmenuInstelling` in `src/lib/voorkeuren.tsx` met `vlees`, `vis`, `vega`, `maxMinuten`, `vermijd`, `bron`. Geen nieuwe tabel, geen migratie nodig.
