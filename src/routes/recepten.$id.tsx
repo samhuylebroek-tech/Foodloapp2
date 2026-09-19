@@ -547,6 +547,7 @@ function ReceptPage() {
             <div className="space-y-5">
               {recipe.description ? <p className="text-lg leading-relaxed">{t(recipe.description)}</p> : null}
               <div className="flex flex-wrap gap-x-5 gap-y-2 text-base text-muted-foreground"><span>{t(recipe.category)}</span><span>{t(recipe.difficulty)}</span></div>
+              {isOwner ? <SnelAanpassen recipe={recipe} onKlaar={() => qc.invalidateQueries({ queryKey: ["recipe", recipe.id] })} /> : null}
               <SterrenKiezer waarde={mijnScore} onKies={zetScore} label={t("Jouw score")} />
               <Button variant="secondary" onClick={() => setPlanOpen(!planOpen)} className="w-full"><CalendarPlus />{t("Inplannen")}</Button>
               {planOpen ? <PlanKiezer momenten={momenten} onKies={planOp} /> : null}
