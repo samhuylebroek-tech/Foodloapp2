@@ -443,7 +443,16 @@ function PlannerPage() {
           >
             <ChevronRight className="size-6" />
           </Button>
+          <Button
+            variant="ghost"
+            onClick={() => setInstellingenOpen(true)}
+            aria-label="Instellingen weekmenu"
+            className="size-14"
+          >
+            <Settings className="size-6" />
+          </Button>
         </div>
+
 
         <Button
           onClick={() =>
