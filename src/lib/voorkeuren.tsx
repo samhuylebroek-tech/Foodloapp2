@@ -109,6 +109,7 @@ export function VoorkeurenProvider({ children }: { children: ReactNode }) {
   const [taal, setTaal] = useState("nl");
   const [thema, setThema] = useState<ThemaId>("sage");
   const [momenten, setMomenten] = useState<string[]>([...ALLE_MOMENTEN]);
+  const [weekmenu, setWeekmenu] = useState<WeekmenuInstelling>(WEEKMENU_STANDAARD);
   const [cache, setCache] = useState<Record<string, string>>({});
 
   const wachtrij = useRef<Set<string>>(new Set());
