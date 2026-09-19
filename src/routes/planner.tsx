@@ -1843,6 +1843,25 @@ function ReceptFoto({ url }: { url: string | null }) {
   );
 }
 
+function VoorstelFoto({ url }: { url: string | null }) {
+  const [mislukt, setMislukt] = useState(false);
+  if (url && !mislukt) {
+    return (
+      <img
+        src={url}
+        alt=""
+        onError={() => setMislukt(true)}
+        className="aspect-[16/9] w-full object-cover"
+      />
+    );
+  }
+  return (
+    <div className="grid aspect-[16/7] place-items-center bg-secondary">
+      <CookingPot className="size-12 text-primary" />
+    </div>
+  );
+}
+
 const TIJD_KEUZES = [
   { id: 20, label: "Snel (max 20 min)" },
   { id: 45, label: "Gewoon (max 45 min)" },
@@ -2020,7 +2039,7 @@ function WeekmenuVoorstel({
           recept: k.recept,
           idee: null,
           bezet: staatAl,
-          aan: !staatAl && !regel?.over && !!k.recept,
+          aan: false,
         };
       });
 
@@ -2040,14 +2059,19 @@ function WeekmenuVoorstel({
         nieuw = nieuw.map((r) => {
           if (r.recept || r.bezet || regelVoor(r.datum).over) return r;
           const idee = ideeen[i++] ?? null;
-          return idee ? { ...r, idee, aan: true } : r;
+          return idee ? { ...r, idee, aan: false } : r;
         });
         getoondeIdeeen.current = [
           ...getoondeIdeeen.current,
           ...ideeen.map((idee) => idee.title),
         ];
       }
-      setRijen(nieuw);
+      const nogTePlannen = nieuw.filter((rij) => !rij.bezet && !regelVoor(rij.datum).over);
+      if (!nogTePlannen.length) {
+        toast("De gekozen dagen zijn al ingepland of overgeslagen");
+        return;
+      }
+      setRijen(nogTePlannen);
       setActieveStap(0);
       setKeuzeOpen(false);
       setStap("voorstel");
@@ -2330,11 +2354,7 @@ function WeekmenuVoorstel({
             </div>
 
             <div className="mt-5 overflow-hidden rounded-2xl border border-border bg-card">
-              {actieveRij.recept?.image_url ? (
-                <img src={actieveRij.recept.image_url} alt="" className="aspect-[16/9] w-full object-cover" />
-              ) : (
-                <div className="grid aspect-[16/7] place-items-center bg-secondary"><CookingPot className="size-12 text-primary" /></div>
-              )}
+              <VoorstelFoto url={actieveRij.recept?.image_url ?? null} />
               <div className="p-5">
                 <p className="text-sm font-semibold uppercase text-primary">{actieveRij.idee ? "Nieuw idee" : "Voorstel van Foodlo"}</p>
                 <h4 className="mt-1 font-display text-2xl leading-tight">
