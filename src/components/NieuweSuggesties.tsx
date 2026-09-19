@@ -53,13 +53,35 @@ export function NieuweSuggesties({
     },
   });
 
-  async function bewaarSuggestie(s: InternetSuggestie) {
+  // Eerst bekijken: we halen het recept op en tonen het in een venster.
+  const [bekijk, setBekijk] = useState<InternetSuggestie | null>(null);
+  const [bekijkBezig, setBekijkBezig] = useState(false);
+  const [bekijkFout, setBekijkFout] = useState(false);
+  const [recept, setRecept] = useState<ImportedRecipe | null>(null);
+
+  async function openVoorbeeld(s: InternetSuggestie) {
+    setBekijk(s);
+    setRecept(null);
+    setBekijkFout(false);
+    setBekijkBezig(true);
+    try {
+      const ai = await importRecipeFromText({
+        data: {
+          text: `Geef een volledig recept voor: ${s.title}. ${s.keuken ? `Keuken: ${s.keuken}.` : ""} ${s.waarom}`,
+        },
+      });
+      setRecept(ai);
+    } catch {
+      setBekijkFout(true);
+    } finally {
+      setBekijkBezig(false);
+    }
+  }
+
+  async function bewaarSuggestie(s: InternetSuggestie, ai: ImportedRecipe) {
     if (!user) return;
     setBezig(s.title);
     try {
-      const ai = await importRecipeFromText({
-        data: { text: `Geef een volledig recept voor: ${s.title}. ${s.keuken ? `Keuken: ${s.keuken}.` : ""} ${s.waarom}` },
-      });
       const { data, error } = await supabase
         .from("recipes")
         .insert({
@@ -89,6 +111,7 @@ export function NieuweSuggesties({
         );
       }
       toast.success(t("Toegevoegd aan je gerechten"));
+      setBekijk(null);
       navigate({ to: "/recepten/$id", params: { id: data.id } });
     } catch {
       toast.error(t("Bewaren lukte niet. Probeer opnieuw."));
