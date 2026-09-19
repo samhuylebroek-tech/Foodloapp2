@@ -62,6 +62,7 @@ function GerechtenPage() {
   const [dieet, setDieet] = useState<string | null>(null);
   const [maxTijd, setMaxTijd] = useState(0);
   const [alleenFavorieten, setAlleenFavorieten] = useState(false);
+  const [eigenaar, setEigenaar] = useState<"alles" | "mij" | "vrienden">("alles");
   const [minSterren, setMinSterren] = useState(0);
   const [teVerwijderen, setTeVerwijderen] = useState<Recipe | null>(null);
   const [bezig, setBezig] = useState(false);
@@ -107,6 +108,24 @@ function GerechtenPage() {
       const { data, error } = await supabase.from("recipe_ingredients").select("recipe_id, name");
       if (error) throw error;
       return data as { recipe_id: string; name: string }[];
+    },
+  });
+
+  const vreemdeIds = useMemo(
+    () => [...new Set(recipes.filter((r) => r.user_id !== user?.id).map((r) => r.user_id))],
+    [recipes, user?.id],
+  );
+
+  const { data: eigenaren = {} } = useQuery({
+    queryKey: ["recept-eigenaren", vreemdeIds.join(",")],
+    enabled: vreemdeIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", vreemdeIds);
+      if (error) throw error;
+      return Object.fromEntries(data.map((p) => [p.id, p.display_name])) as Record<string, string>;
     },
   });
 
