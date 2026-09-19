@@ -705,6 +705,17 @@ function PlannerPage() {
         />
       )}
 
+      {voorstelOpen && (
+        <WeekmenuVoorstel
+          week={zichtbareDagen}
+          momenten={momenten}
+          instelling={weekmenu}
+          zetInstelling={zetWeekmenu}
+          bezet={new Set(plan.map((p) => `${p.plan_date}|${p.meal_type}`))}
+          onSluit={() => setVoorstelOpen(false)}
+          onZet={zetVoorstel}
+        />
+      )}
 
       {kiezen && (
         <ReceptKiezer
