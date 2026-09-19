@@ -155,10 +155,70 @@ export function NieuweSuggesties({
       ) : (
         <ul className="-mx-4 mt-3 flex snap-x gap-3 overflow-x-auto px-4 pb-2" aria-busy={ideeenBezig}>
           {ideeen.map((s) => (
-            <IdeeKaart key={s.title} s={s} t={t} bezig={bezig} onBewaar={() => void bewaarSuggestie(s)} />
+            <IdeeKaart key={s.title} s={s} t={t} onBekijk={() => void openVoorbeeld(s)} />
           ))}
         </ul>
       )}
+
+      <Dialog open={bekijk !== null} onOpenChange={(o) => !o && setBekijk(null)}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-left text-xl">{t(bekijk?.title ?? "")}</DialogTitle>
+          </DialogHeader>
+          {bekijkBezig ? (
+            <p className="text-base text-muted-foreground">{t("Recept wordt uitgeschreven…")}</p>
+          ) : bekijkFout || !recept ? (
+            <div>
+              <p className="text-base text-muted-foreground">
+                {t("Dit recept uitschrijven lukte niet. Probeer het opnieuw.")}
+              </p>
+              <Button
+                onClick={() => bekijk && void openVoorbeeld(bekijk)}
+                className="mt-4 h-14 w-full text-base"
+              >
+                <RefreshCw aria-hidden />
+                {t("Opnieuw proberen")}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recept.description ? (
+                <p className="text-base text-muted-foreground">{t(recept.description)}</p>
+              ) : null}
+              <p className="text-sm text-muted-foreground">
+                {recept.servings || 4} {t("personen")} ·{" "}
+                {(recept.prep_minutes ?? 0) + (recept.cook_minutes ?? 0)} min
+              </p>
+              <div>
+                <h3 className="text-lg">{t("Ingrediënten")}</h3>
+                <ul className="mt-2 space-y-1 text-base">
+                  {(recept.ingredients ?? []).map((i, n) => (
+                    <li key={n}>
+                      {[i.quantity ?? "", i.unit ?? "", i.name].join(" ").replace(/\s+/g, " ").trim()}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-lg">{t("Bereiding")}</h3>
+                <ol className="mt-2 list-decimal space-y-2 pl-5 text-base">
+                  {(recept.instructions ?? []).map((s, n) => (
+                    <li key={n}>{t(s)}</li>
+                  ))}
+                </ol>
+              </div>
+              <Button
+                onClick={() => bekijk && void bewaarSuggestie(bekijk, recept)}
+                disabled={bezig !== null}
+                className="h-14 w-full text-base"
+              >
+                <Plus aria-hidden />
+                {bezig ? t("Bezig…") : t("Bewaar bij mijn recepten")}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
