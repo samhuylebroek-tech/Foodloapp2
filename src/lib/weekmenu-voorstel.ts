@@ -108,6 +108,7 @@ export function kiesUitEigen(opts: {
   vermijd: string;
   recentPerRecept?: Record<string, string>; // recipe_id -> laatste plan_date
   vast?: Record<string, string>; // datum|moment -> recipe_id dat al gekozen is
+  uitgesloten?: Record<string, string[]>; // datum|moment -> eerder getoonde recepten
 }): { datum: string; moment: string; recept: Recipe | null }[] {
   const vermijdLijst = vermijdWoorden(opts.vermijd);
   const bruikbaar = opts.recepten.filter((r) => {
@@ -148,7 +149,11 @@ export function kiesUitEigen(opts: {
       gewenst = open.length ? (open.sort((a, b) => nogNodig[b] - nogNodig[a])[0] ?? null) : null;
     }
     const kandidaten = bruikbaar
-      .filter((r) => !gebruikt.has(r.id))
+      .filter(
+        (r) =>
+          !gebruikt.has(r.id) &&
+          !(opts.uitgesloten?.[sleutel] ?? []).includes(r.id),
+      )
       .map((r) => ({
         r,
         score: scoreVoor(
