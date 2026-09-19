@@ -14,6 +14,7 @@ import {
   Sparkles,
   ListPlus,
   Type,
+  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
