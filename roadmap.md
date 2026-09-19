@@ -133,3 +133,4 @@
 - [x] Recept uit weekmenu halen: vraag om ingrediënten mee te verwijderen
 - [x] Na weekmenu bevestigen: gekozen gerechten in één keer op de boodschappenlijst
 - [x] Bij één recept snel labels en details aanpassen
+- [x] Recepten filteren: Van mij / Van vrienden + eigenaarsnaam op kaartjes (gerechten.tsx)

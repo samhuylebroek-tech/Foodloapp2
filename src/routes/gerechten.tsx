@@ -62,6 +62,7 @@ function GerechtenPage() {
   const [dieet, setDieet] = useState<string | null>(null);
   const [maxTijd, setMaxTijd] = useState(0);
   const [alleenFavorieten, setAlleenFavorieten] = useState(false);
+  const [eigenaar, setEigenaar] = useState<"alles" | "mij" | "vrienden">("alles");
   const [minSterren, setMinSterren] = useState(0);
   const [teVerwijderen, setTeVerwijderen] = useState<Recipe | null>(null);
   const [bezig, setBezig] = useState(false);
@@ -110,6 +111,24 @@ function GerechtenPage() {
     },
   });
 
+  const vreemdeIds = useMemo(
+    () => [...new Set(recipes.filter((r) => r.user_id !== user?.id).map((r) => r.user_id))],
+    [recipes, user?.id],
+  );
+
+  const { data: eigenaren = {} } = useQuery({
+    queryKey: ["recept-eigenaren", vreemdeIds.join(",")],
+    enabled: vreemdeIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", vreemdeIds);
+      if (error) throw error;
+      return Object.fromEntries(data.map((p) => [p.id, p.display_name])) as Record<string, string>;
+    },
+  });
+
   const dieetPerRecept = useMemo(() => {
     const namen = new Map<string, string[]>();
     for (const rij of alleIngredienten) {
@@ -150,6 +169,8 @@ function GerechtenPage() {
   const zichtbaar = useMemo(() => {
     const woorden = zoekWoorden(zoek);
     const gefilterd = recipes.filter((r) => {
+      if (eigenaar === "mij" && r.user_id !== user?.id) return false;
+      if (eigenaar === "vrienden" && r.user_id === user?.id) return false;
       if (categorie && r.category !== categorie) return false;
       if (moeilijkheid && r.difficulty !== moeilijkheid) return false;
       if (dieet && dieetPerRecept.get(r.id) !== dieet) return false;
@@ -181,6 +202,8 @@ function GerechtenPage() {
   }, [
     recipes,
     zoek,
+    eigenaar,
+    user?.id,
     categorie,
     moeilijkheid,
     dieet,
@@ -264,6 +287,30 @@ function GerechtenPage() {
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex shrink-0 rounded-full bg-secondary p-1" role="group" aria-label={t("Van wie")}>
+            {(
+              [
+                ["alles", "Alles"],
+                ["mij", "Van mij"],
+                ["vrienden", "Van vrienden"],
+              ] as const
+            ).map(([waarde, label]) => (
+              <button
+                key={waarde}
+                type="button"
+                onClick={() => setEigenaar(waarde)}
+                aria-pressed={eigenaar === waarde}
+                className={cn(
+                  "min-h-10 rounded-full px-4 text-sm font-semibold transition-colors",
+                  eigenaar === waarde
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground",
+                )}
+              >
+                {t(label)}
+              </button>
+            ))}
+          </div>
           <Button
             variant={alleenFavorieten ? "default" : "secondary"}
             onClick={() => setAlleenFavorieten(!alleenFavorieten)}
@@ -373,6 +420,11 @@ function GerechtenPage() {
                           />
                         )}
                       </p>
+                      {r.user_id !== user?.id && eigenaren[r.user_id] ? (
+                        <p className="mt-1 text-xs font-medium text-muted-foreground">
+                          {t("van")} {eigenaren[r.user_id]}
+                        </p>
+                      ) : null}
                       <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
                         {tijdLabel(r.prep_minutes, r.cook_minutes) ? (
                           <span className="inline-flex items-center gap-1">
