@@ -26,6 +26,7 @@ import {
   gerechtVoorstellen,
   receptVanNaam,
   zoekReceptenOpWeb,
+  haalAfbeelding,
   type GerechtVoorstel,
   type WebResultaat,
   type ImportedRecipe,
@@ -178,6 +179,10 @@ export function RecipeForm({
   const [vensterOpen, setVensterOpen] = useState(false);
   const [vbBezig, setVbBezig] = useState(false);
   const [vbFout, setVbFout] = useState<string | null>(null);
+  // Foto van het gevonden recept: je kan ze weigeren met het kruisje.
+  const [vbFotoWeg, setVbFotoWeg] = useState(false);
+  // Recepten die we al op de achtergrond ophaalden, per weblink.
+  const vooruitCache = useRef<Map<string, Promise<ImportedRecipe>>>(new Map());
 
   /** Sluit het venster en maakt alles leeg. */
   function sluitVenster() {
@@ -189,6 +194,7 @@ export function RecipeForm({
 
   /** Toont het gevonden recept in een venster om na te kijken. */
   function toonVoorbeeld(data: ImportedRecipe) {
+    setVbFotoWeg(false);
     setVensterOpen(true);
     setVbBezig(false);
     setVbFout(null);
@@ -234,6 +240,7 @@ export function RecipeForm({
     const bijgewerkt = voorbeeldRecept();
     if (!bijgewerkt) return;
     vulIn(bijgewerkt);
+    if (vbFotoWeg) setPhotoPath(null);
     if (bijgewerkt.source_url) setSourceUrl(bijgewerkt.source_url);
     sluitVenster();
     toast.success("Het recept staat in het formulier. Sla het op als het klopt.");
@@ -244,6 +251,7 @@ export function RecipeForm({
     const r = voorbeeldRecept();
     if (!r) return;
     vulIn(r);
+    if (vbFotoWeg) setPhotoPath(null);
     if (r.source_url) setSourceUrl(r.source_url);
     sluitVenster();
     await handleSave({
@@ -265,6 +273,7 @@ export function RecipeForm({
         .map((i) => ingredientToLine({ name: i.name, quantity: i.quantity, unit: i.unit ?? "" }))
         .join("\n"),
       sourceUrl: r.source_url ?? null,
+      imageUrl: vbFotoWeg ? null : (r.image_url ?? null),
     });
   }
   const bestaande = useQuery({
@@ -421,6 +430,21 @@ export function RecipeForm({
     }
   }
 
+  /**
+   * Terwijl je de zoekresultaten leest, halen we de eerste recepten al op de
+   * achtergrond op. Klik je er dan op, dan staat het er meteen.
+   */
+  function begintAlvast(url: string) {
+    if (vooruitCache.current.has(url)) return;
+    vooruitCache.current.set(
+      url,
+      importRecipeFromUrl({ data: { url } }).catch(() => {
+        vooruitCache.current.delete(url);
+        throw new Error("niet gelukt");
+      }),
+    );
+  }
+
   /** Zoekt echte receptpagina's op het web. Kost geen credits. */
   async function handleZoek() {
     const term = zoekTerm.trim();
@@ -434,6 +458,8 @@ export function RecipeForm({
       const gekozenTaal = (["nl", "en", "fr", "de"] as const).find((c) => c === taal) ?? "nl";
       const lijst = await zoekReceptenOpWeb({ data: { term, taal: gekozenTaal } });
       setWebResultaten(lijst);
+      // Alvast de eerste drie klaarzetten, zodat doorklikken niet meer wacht.
+      lijst.slice(0, 3).forEach((r) => begintAlvast(r.url));
       if (!lijst.length) {
         toast.message("Niets gevonden op het web. Probeer 'Nieuwe ideeën'.");
       }
@@ -453,7 +479,8 @@ export function RecipeForm({
     setVbBezig(true);
     setVensterOpen(true);
     try {
-      const data = await importRecipeFromUrl({ data: { url: r.url } });
+      begintAlvast(r.url);
+      const data = await vooruitCache.current.get(r.url)!;
       if (data.fout) {
         setVbBezig(false);
         setVbFout(data.fout);
@@ -462,6 +489,7 @@ export function RecipeForm({
       toonVoorbeeld({ ...data, source_url: data.source_url ?? r.url });
       naAiActie();
     } catch (err) {
+      vooruitCache.current.delete(r.url);
       setVbBezig(false);
       setVbFout("We konden dit recept niet ophalen van de website.");
       meldFout(err, "We konden dit recept niet ophalen");
@@ -631,6 +659,8 @@ export function RecipeForm({
     stappen: string[];
     ingredienten: string;
     sourceUrl: string | null;
+    /** Foto van het gevonden recept (weblink of opslagpad), los van de schermstate. */
+    imageUrl?: string | null;
   };
 
   async function handleSave(over?: DirecteOpslag) {
@@ -642,13 +672,26 @@ export function RecipeForm({
     }
     setSaving(true);
     try {
-      let bewaardeFoto = photoPath;
+      // Bij direct bewaren vanuit het voorbeeldvenster staat de foto nog niet in de
+      // schermstate; die wordt dan meegegeven.
+      let bewaardeFoto = over !== undefined ? (over.imageUrl ?? photoPath) : photoPath;
       if (!bewaardeFoto && voorstelFoto && !fotoGeweigerd) {
         try {
           bewaardeFoto = await uploadDataUrl(voorstelFoto, user.id);
           setPhotoPath(bewaardeFoto);
         } catch {
           bewaardeFoto = null;
+        }
+      }
+      // Een foto van een website kan verdwijnen of geblokkeerd worden: we bewaren
+      // een eigen kopie. Lukt dat niet, dan houden we gewoon de weblink.
+      if (bewaardeFoto && bewaardeFoto.startsWith("http")) {
+        try {
+          const { dataUrl } = await haalAfbeelding({ data: { url: bewaardeFoto } });
+          bewaardeFoto = await uploadDataUrl(dataUrl, user.id);
+          setPhotoPath(bewaardeFoto);
+        } catch {
+          /* de weblink blijft staan */
         }
       }
       const ingredientenBron = over ? over.ingredienten : ingredientTekst;
@@ -1450,6 +1493,26 @@ export function RecipeForm({
             </div>
           )}
           <div className={voorbeeld && !vbBezig ? "space-y-4" : "hidden"}>
+            {voorbeeld?.image_url && !vbFotoWeg ? (
+              <div className="relative">
+                <RecipePhoto
+                  path={voorbeeld.image_url}
+                  alt={vbTitel || voorbeeld.title}
+                  className="h-44 w-full rounded-2xl"
+                />
+                <button
+                  type="button"
+                  onClick={() => setVbFotoWeg(true)}
+                  aria-label="Foto niet gebruiken"
+                  className="absolute right-2 top-2 flex size-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow"
+                >
+                  <X className="size-5" aria-hidden />
+                </button>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Deze foto wordt mee bewaard. Niet goed? Klik op het kruisje.
+                </p>
+              </div>
+            ) : null}
             <div>
               <Label htmlFor="vb-titel" className="text-base">
                 Naam
