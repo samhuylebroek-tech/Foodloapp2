@@ -202,6 +202,8 @@ function GerechtenPage() {
   }, [
     recipes,
     zoek,
+    eigenaar,
+    user?.id,
     categorie,
     moeilijkheid,
     dieet,
