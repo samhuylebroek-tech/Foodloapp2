@@ -99,7 +99,9 @@ function PlannerPage() {
     void meet("weekmenu.bekeken");
   }, []);
   const { user } = useAuth();
-  const { momenten } = useVoorkeuren();
+  const { momenten: algemeneMomenten, weekmenu, zetWeekmenu } = useVoorkeuren();
+  // Dagdelen: eigen keuze voor het weekmenu, anders je algemene momenten.
+  const momenten = weekmenu.momenten.length ? weekmenu.momenten : algemeneMomenten;
   const qc = useQueryClient();
   const [weekStart, setWeekStart] = useState(() => maandagVan(new Date()));
   const [kiezen, setKiezen] = useState<{ datum: string; moment: string; vraagDag?: boolean } | null>(
@@ -108,6 +110,7 @@ function PlannerPage() {
   const [lijstId, setLijstId] = useState<string>("");
   const [vraagLijst, setVraagLijst] = useState<{ recipeId: string; titel: string } | null>(null);
   const [weergave, setWeergave] = useState<"mij" | "gezin">("mij");
+  const [instellingenOpen, setInstellingenOpen] = useState(false);
 
   const week = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
