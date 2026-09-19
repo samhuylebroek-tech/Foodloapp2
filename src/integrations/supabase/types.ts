@@ -1262,6 +1262,7 @@ export type Database = {
           onboarding_klaar: boolean
           taal: string
           thema: string
+          weekmenu: Json
           welkom_mail_op: string | null
         }
         Insert: {
@@ -1275,6 +1276,7 @@ export type Database = {
           onboarding_klaar?: boolean
           taal?: string
           thema?: string
+          weekmenu?: Json
           welkom_mail_op?: string | null
         }
         Update: {
@@ -1288,6 +1290,7 @@ export type Database = {
           onboarding_klaar?: boolean
           taal?: string
           thema?: string
+          weekmenu?: Json
           welkom_mail_op?: string | null
         }
         Relationships: []
