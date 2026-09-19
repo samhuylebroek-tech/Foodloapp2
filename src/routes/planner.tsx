@@ -1069,7 +1069,7 @@ function ReceptKiezer({
           <div className="flex items-start justify-between gap-3">
             <h2 className="font-display text-xl">Klopt dit recept?</h2>
             <Button
-              onClick={() => onNieuw(zoek.trim(), voorstel, datum, moment)}
+              onClick={() => onNieuw(voorstelNaam || voorstel.title, voorstel, datum, moment)}
               aria-label="Bevestigen"
               className="size-12 rounded-full"
             >
@@ -1121,7 +1121,7 @@ function ReceptKiezer({
               Terug
             </Button>
             <Button
-              onClick={() => onNieuw(zoek.trim(), voorstel, datum, moment)}
+              onClick={() => onNieuw(voorstelNaam || voorstel.title, voorstel, datum, moment)}
               className="mt-0 h-14 flex-[2] text-base"
             >
               <Check className="size-5" /> Bevestigen
@@ -1236,6 +1236,79 @@ function ReceptKiezer({
           className="mt-3 h-14 text-base"
         />
 
+        {!term && (
+          <div className="mt-3 rounded-2xl border border-border bg-secondary/60 p-3">
+            <p className="text-base font-semibold">Geen inspiratie?</p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                disabled={ideeenBezig || aiBezig}
+                onClick={() => void laadIdeeen()}
+                className="h-14 text-base"
+              >
+                {ideeenBezig ? (
+                  <Loader2 className="size-5 animate-spin" />
+                ) : (
+                  <Lightbulb className="size-5" />
+                )}
+                {ideeenBezig ? "AI denkt…" : "AI-ideeën"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setWebOpen((v) => !v)}
+                aria-expanded={webOpen}
+                className="h-14 text-base"
+              >
+                <Globe className="size-5" /> Van het web
+              </Button>
+            </div>
+
+            {webOpen && (
+              <div className="mt-2 flex gap-2">
+                <Input
+                  value={webTerm}
+                  onChange={(e) => setWebTerm(e.target.value)}
+                  placeholder="Naam van een gerecht"
+                  aria-label="Zoek een gerecht op het web"
+                  className="h-14 text-base"
+                />
+                <Button
+                  disabled={webBezig || webTerm.trim().length < 3}
+                  onClick={() => void zoekWeb(webTerm)}
+                  className="h-14 shrink-0 text-base"
+                >
+                  {webBezig ? <Loader2 className="size-5 animate-spin" /> : "Zoek"}
+                </Button>
+              </div>
+            )}
+
+            {ideeen && ideeen.length > 0 && (
+              <ul className="mt-2 space-y-2">
+                {ideeen.map((idee) => (
+                  <li key={idee.title}>
+                    <button
+                      type="button"
+                      disabled={aiBezig}
+                      onClick={() => void maakReceptVanIdee(idee.title)}
+                      className="w-full rounded-xl border border-border bg-card p-3 text-left disabled:opacity-60"
+                    >
+                      <span className="block text-base font-semibold">{idee.title}</span>
+                      <span className="block text-sm text-muted-foreground">
+                        {[idee.waarom, `±${idee.minuten} min`].filter(Boolean).join(" · ")}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {aiBezig && (
+              <p className="mt-2 text-sm text-muted-foreground">
+                AI maakt het recept klaar…
+              </p>
+            )}
+          </div>
+        )}
+
         {term && !bestaatAl && (
           <div className="mt-3 rounded-2xl border border-primary/40 bg-secondary p-4">
             <p className="text-base">
@@ -1260,6 +1333,19 @@ function ReceptKiezer({
                 <Sparkles className="size-5" />
               )}
               {aiBezig ? "AI maakt het recept…" : "Met AI invullen"}
+            </Button>
+            <Button
+              variant="outline"
+              disabled={webBezig}
+              onClick={() => void zoekWeb(term)}
+              className="mt-2 h-14 w-full text-base"
+            >
+              {webBezig ? (
+                <Loader2 className="size-5 animate-spin" />
+              ) : (
+                <Globe className="size-5" />
+              )}
+              {webBezig ? "Aan het zoeken…" : "Zoek echte recepten op het web"}
             </Button>
           </div>
         )}
