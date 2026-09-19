@@ -68,10 +68,11 @@ async function askAI(messages: unknown[], kind = "chat", meter?: AiMeter, model 
       meter.tokens_in += json.usage?.prompt_tokens ?? 0;
       meter.tokens_out += json.usage?.completion_tokens ?? 0;
     }
-    await logAi(kind, true, Date.now() - start, undefined, model);
+    // De meting mag het antwoord niet vertragen: ze loopt op de achtergrond.
+    void logAi(kind, true, Date.now() - start, undefined, model);
     return json.choices?.[0]?.message?.content ?? "";
   } catch (e) {
-    await logAi(kind, false, Date.now() - start, e instanceof Error ? e.message : String(e), model);
+    void logAi(kind, false, Date.now() - start, e instanceof Error ? e.message : String(e), model);
     throw e;
   }
 }
@@ -1137,4 +1138,32 @@ Niet herhalen: ${data.bekend.slice(0, 60).join(", ") || "(niets)"}`,
       },
     );
     return resultaat;
+  });
+
+/**
+ * Haalt een gevonden receptfoto op als data-URL, zodat de app ze in de eigen
+ * opslag kan bewaren. Externe links verdwijnen of worden geblokkeerd; een
+ * eigen kopie blijft werken.
+ */
+export const haalAfbeelding = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ url: z.string().min(8) }).parse(data))
+  .handler(async ({ data }) => {
+    const url = veiligeUrl(data.url);
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; Foodlo/1.0)", Accept: "image/*" },
+      redirect: "follow",
+    });
+    if (!res.ok) throw new Error("De foto kon niet worden opgehaald.");
+    const type = (res.headers.get("content-type") ?? "").split(";")[0]!.trim().toLowerCase();
+    if (!/^image\/(jpeg|jpg|png|webp|avif|gif)$/.test(type)) {
+      throw new Error("Dit is geen gewone afbeelding.");
+    }
+    const buf = new Uint8Array(await res.arrayBuffer());
+    if (!buf.byteLength || buf.byteLength > 8_000_000) throw new Error("De foto is te groot.");
+    let binair = "";
+    for (let i = 0; i < buf.length; i += 8192) {
+      binair += String.fromCharCode(...buf.subarray(i, i + 8192));
+    }
+    return { dataUrl: `data:${type};base64,${btoa(binair)}` };
   });

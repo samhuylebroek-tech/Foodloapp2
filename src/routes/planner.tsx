@@ -55,6 +55,7 @@ import {
 import { kiesUitEigen, type DagRegel, type Soortkeuze } from "@/lib/weekmenu-voorstel";
 import { zorgVoorLijst, maakLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
 import { tijdLabel } from "@/lib/tijd";
+import { useSignedUrl } from "@/lib/photos";
 
 export const Route = createFileRoute("/planner")({
   head: () => ({
@@ -803,6 +804,9 @@ function PlannerPage() {
           instelling={weekmenu}
           zetInstelling={zetWeekmenu}
           bezet={new Set(plan.map((p) => `${p.plan_date}|${p.meal_type}`))}
+          alGepland={
+            new Set(plan.map((p) => p.recipe_id).filter((id): id is string => !!id))
+          }
           onSluit={() => setVoorstelOpen(false)}
           onZet={zetVoorstel}
         />
@@ -1823,12 +1827,16 @@ function WeekmenuInstellingen({
 
 /** Kleine foto bij een ingepland gerecht. */
 function ReceptFoto({ url }: { url: string | null }) {
-  if (url) {
+  const [mislukt, setMislukt] = useState(false);
+  const echteUrl = useSignedUrl(url);
+  useEffect(() => setMislukt(false), [echteUrl]);
+  if (echteUrl && !mislukt) {
     return (
       <img
-        src={url}
+        src={echteUrl}
         alt=""
         loading="lazy"
+        onError={() => setMislukt(true)}
         className="size-14 shrink-0 rounded-full object-cover ring-1 ring-border"
       />
     );
@@ -1845,10 +1853,12 @@ function ReceptFoto({ url }: { url: string | null }) {
 
 function VoorstelFoto({ url }: { url: string | null }) {
   const [mislukt, setMislukt] = useState(false);
-  if (url && !mislukt) {
+  const echteUrl = useSignedUrl(url);
+  useEffect(() => setMislukt(false), [echteUrl]);
+  if (echteUrl && !mislukt) {
     return (
       <img
-        src={url}
+        src={echteUrl}
         alt=""
         onError={() => setMislukt(true)}
         className="aspect-[16/9] w-full object-cover"
@@ -1896,6 +1906,7 @@ function WeekmenuVoorstel({
   instelling,
   zetInstelling,
   bezet,
+  alGepland,
   onSluit,
   onZet,
 }: {
@@ -1904,6 +1915,8 @@ function WeekmenuVoorstel({
   instelling: WeekmenuInstelling;
   zetInstelling: (deel: Partial<WeekmenuInstelling>) => void;
   bezet: Set<string>;
+  /** Gerechten die deze week al ingepland staan; die stellen we niet opnieuw voor. */
+  alGepland: Set<string>;
   onSluit: () => void;
   onZet: (rijen: Rij[]) => Promise<void>;
 }) {
@@ -1922,7 +1935,7 @@ function WeekmenuVoorstel({
   const getoondeRecepten = useRef<Record<string, string[]>>({});
   const getoondeIdeeen = useRef<string[]>([]);
 
-  const { data: recepten = [] } = useQuery({
+  const { data: alleRecepten = [] } = useQuery({
     queryKey: ["voorstel-recepten"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -1935,6 +1948,9 @@ function WeekmenuVoorstel({
       return data as unknown as Recipe[];
     },
   });
+
+  // Wat al in deze week staat, stellen we niet nog eens voor.
+  const recepten = alleRecepten.filter((r) => !alGepland.has(r.id));
 
   const { data: ingredienten = {} } = useQuery({
     queryKey: ["voorstel-ingredienten"],
