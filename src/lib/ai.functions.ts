@@ -992,9 +992,14 @@ export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
     const paginas = await Promise.all(
       bronnen.map(async (bron) => {
         try {
-          const res = await fetch(bron, { headers: kop, signal: AbortSignal.timeout(6000) });
-          return res.ok ? await res.text() : "";
-        } catch {
+          const res = await fetch(bron, { headers: kop, signal: AbortSignal.timeout(8000) });
+          if (!res.ok) {
+            console.log("[zoek] bron niet ok", bron, res.status);
+            return "";
+          }
+          return await res.text();
+        } catch (e) {
+          console.log("[zoek] bron mislukt", bron, String(e).slice(0, 120));
           return "";
         }
       }),
