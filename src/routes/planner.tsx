@@ -28,8 +28,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { type Recipe } from "@/lib/types";
-import { importRecipeFromText } from "@/lib/ai.functions";
-import { useVoorkeuren, ALLE_MOMENTEN, type WeekmenuInstelling } from "@/lib/voorkeuren";
+import { importRecipeFromText, receptVanNaam, weekmenuIdeeen, type WeekmenuIdee } from "@/lib/ai.functions";
+import {
+  useVoorkeuren,
+  ALLE_MOMENTEN,
+  type WeekmenuInstelling,
+  type DagVoorkeur,
+} from "@/lib/voorkeuren";
+import { kiesUitEigen, type DagRegel, type Soortkeuze } from "@/lib/weekmenu-voorstel";
 import { zorgVoorLijst, maakLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
 import { tijdLabel } from "@/lib/tijd";
 
