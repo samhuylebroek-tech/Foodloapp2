@@ -495,19 +495,28 @@ function PlannerPage() {
           </AccordionItem>
         </Accordion>
 
-        {week.map((dag) => {
+        <div
+          className={
+            weekmenu.weergave === "kaarten"
+              ? "-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2"
+              : "space-y-4"
+          }
+        >
+        {zichtbareDagen.map((dag) => {
           const items = plan.filter((p) => p.plan_date === dag);
           const openMomenten = momenten.filter((m) => !items.some((p) => p.meal_type === m));
           const volledig = momenten.length > 0 && openMomenten.length === 0;
+          const kaart = weekmenu.weergave === "kaarten" ? "w-[85%] shrink-0 snap-start " : "";
           return (
             <section
               key={dag}
               className={
-                volledig
+                kaart +
+                (volledig
                   ? "rounded-2xl border border-primary/40 bg-secondary p-4"
                   : dag === vandaag
                     ? "rounded-2xl border-2 border-primary bg-card p-4"
-                    : "rounded-2xl border border-border bg-card p-4"
+                    : "rounded-2xl border border-border bg-card p-4")
               }
             >
               <h2 className="text-lg capitalize">
