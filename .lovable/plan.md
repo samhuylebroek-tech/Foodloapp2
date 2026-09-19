@@ -47,6 +47,10 @@ De vraag wordt begrijpelijker gemaakt in plaats van moeilijker:
 - Eronder: "Weet je het niet zeker? Laat het zo staan — je kan de hoeveelheden later altijd omrekenen."
 - Bij een gevonden of geïmporteerd recept wordt het aantal overgenomen van de bron; ontbreekt dat, dan schatten we het uit de hoeveelheden (bv. 500 g pasta ≈ 4 personen) en tonen we "geschat" bij het getal.
 
+## 10. Minder herhaling bij de kookstappen
+
+Bij een stap komen enkel nog de ingrediënten die je op dát moment echt nodig hebt, en gebruikt een stap niets, dan staat er ook niets. Nu worden er te veel ingrediënten aan een stap gehangen omdat de herkenning te los is, wat lang scrollen geeft. De herkenning wordt strenger: alleen een echte woordtreffer telt, en per stap tonen we maximaal de vier belangrijkste. Zelf ingrediënten bij een stap zetten blijft mogelijk.
+
 ## Technisch
 
 - **Weekmenu-instellingen**: migratie voegt `profiles.weekmenu jsonb` toe (weergave, dagdelen, dagen, startdag) met bestaande defaults; uitgelezen en bewaard via `src/lib/voorkeuren.tsx` (zelfde patroon als `taal`/`thema`/`momenten`). `src/routes/planner.tsx` krijgt een tandwiel-dialoog en drie weergaven; de bestaande plan-/gezinslogica blijft ongewijzigd.
@@ -57,4 +61,5 @@ De vraag wordt begrijpelijker gemaakt in plaats van moeilijker:
 - **Optellen**: `voegToeAanLijst` in `src/lib/boodschappen.ts` krijgt een sterkere sleutel (genormaliseerde naam met enkelvoud/meervoud, eenheden omgerekend naar basis g/ml) zodat dubbels samensmelten; bestaande items worden bijgeteld zoals nu.
 - **Vinkje + bevestiging**: in `src/routes/recepten.$id.tsx` een query op `shopping_items` met `recipe_id = r.id`; bij hergebruik een `AlertDialog` voor de bevestiging.
 - **Porties**: label- en hulptekstwijziging in `RecipeForm.tsx`, plus schatfunctie in `src/lib/porties.ts` die alleen gebruikt wordt als de bron geen `servings` geeft.
+- **Stap-ingrediënten**: in `src/lib/stap-ingredienten.ts` vervalt de losse suffix-match in `komtVoor` (alleen exacte stam-treffer, minimale woordlengte 4), en `koppelStappen` beperkt zich tot max 4 automatische treffers per stap; niet-gematchte ingrediënten blijven gewoon in de ingrediëntenlijst staan. `StapIngredienten.tsx` toont al niets bij een lege stap, dus daar volstaat dit.
 - Geen tweede systeem: alle wijzigingen bouwen voort op bestaande tabellen, importpipeline en credits.
