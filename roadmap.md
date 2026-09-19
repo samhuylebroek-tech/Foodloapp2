@@ -122,4 +122,4 @@
 - [ ] AI-zoeken en meer info merkbaar sneller maken
 - [ ] Controlecentrum: e-mail van de persoon duidelijk tonen
 - [ ] Controlecentrum: laatste aanmelding per persoon in het overzicht
-- [ ] Foto's tonen niet goed in het weekmenu
+- [x] Fotoʼs tonen niet goed in het weekmenu
