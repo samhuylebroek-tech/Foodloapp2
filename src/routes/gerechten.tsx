@@ -287,6 +287,30 @@ function GerechtenPage() {
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex shrink-0 rounded-full bg-secondary p-1" role="group" aria-label={t("Van wie")}>
+            {(
+              [
+                ["alles", "Alles"],
+                ["mij", "Van mij"],
+                ["vrienden", "Van vrienden"],
+              ] as const
+            ).map(([waarde, label]) => (
+              <button
+                key={waarde}
+                type="button"
+                onClick={() => setEigenaar(waarde)}
+                aria-pressed={eigenaar === waarde}
+                className={cn(
+                  "min-h-10 rounded-full px-4 text-sm font-semibold transition-colors",
+                  eigenaar === waarde
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground",
+                )}
+              >
+                {t(label)}
+              </button>
+            ))}
+          </div>
           <Button
             variant={alleenFavorieten ? "default" : "secondary"}
             onClick={() => setAlleenFavorieten(!alleenFavorieten)}
