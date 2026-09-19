@@ -1,7 +1,7 @@
-# Weekmenu duidelijker navigeren en voorstellen betrouwbaar vernieuwen
+# Weekmenu verbeteren en recepten makkelijker aan boodschappen toevoegen
 
 ## Doel
-Het weekmenu wordt sneller te bedienen over meerdere weken, voorstellen werken zichtbaar en gevarieerd, verstreken dagen tellen niet meer mee en de instellingen krijgen een duidelijke indeling.
+Het weekmenu wordt sneller te bedienen over meerdere weken, voorstellen werken zichtbaar en gevarieerd, verstreken dagen tellen niet meer mee en de instellingen krijgen een duidelijke indeling. Vanuit elk recept worden de ingrediënten bovendien meteen en begrijpelijk aan een boodschappenlijst toegevoegd.
 
 ## Aanpassingen
 
@@ -40,8 +40,18 @@ Het weekmenu wordt sneller te bedienen over meerdere weken, voorstellen werken z
 - Zet alle instellingen die bepalen wat Foodlo voorstelt uitsluitend in **Voorstellen door Foodlo**.
 - Gebruik duidelijke samenvattingen op gesloten onderdelen, zodat de gekozen waarden zichtbaar blijven zonder alles open te zetten.
 
+### 6. Recept direct aan boodschappen toevoegen
+- Zet een grote, duidelijke actie **Voeg toe aan boodschappenlijst** bij de belangrijkste acties bovenaan het recept; de gebruiker hoeft niet eerst het tabblad Ingrediënten te openen.
+- Laat bij meerdere boodschappenlijsten eerst kiezen op welke lijst de ingrediënten moeten komen. Bij één lijst wordt die meteen voorgeselecteerd.
+- Toon vóór het toevoegen voor hoeveel personen de hoeveelheden worden berekend en laat dat daar eenvoudig aanpassen.
+- Gebruik dezelfde bestaande optelling en categorisering, zodat gelijke ingrediënten netjes worden samengevoegd en niet als rommelige dubbels verschijnen.
+- Behoud de waarschuwing wanneer dit recept al op de gekozen lijst staat, maar vermeld nu ook duidelijk om welke lijst het gaat.
+- Toon na succes een korte bevestiging met een directe actie **Bekijk boodschappenlijst**.
+- Laat de bestaande knop bij Ingrediënten staan als tweede logische ingang; beide ingangen gebruiken exact dezelfde werking.
+
 ## Technische details
 - Behoud het bestaande weekmenu en de bestaande accountvoorkeuren; er komt geen tweede planningssysteem of nieuwe opslagstructuur.
+- Hergebruik ook de bestaande boodschappenlijsten en bestaande samenvoeglogica; er komt geen tweede manier van opslaan.
 - Voeg een sessiegebonden uitsluitingsgeschiedenis toe aan het voorstelvenster voor volledige voorstellen en afzonderlijke dagen.
 - Pas de deterministische selectie aan met een gecontroleerde variatie tussen gelijkwaardige kandidaten, zonder dieet-, tijd- of bronkeuzes te negeren.
 - Gebruik de bestaande datum- en kalenderonderdelen en voorkom dat een gekozen zondag/maandag-start verkeerde grenzen oplevert.
@@ -52,3 +62,4 @@ Het weekmenu wordt sneller te bedienen over meerdere weken, voorstellen werken z
 - Test meerdere keren **Opnieuw voorstellen** en meerdere wissels op dezelfde vrijdag; nieuwe alternatieven moeten verschijnen en de laadstatus moet zichtbaar zijn.
 - Controleer eigen recepten en externe ideeën afzonderlijk, inclusief het geval waarin geen alternatief bestaat.
 - Controleer dat instellingen onder de juiste categorie staan en na heropenen bewaard blijven.
+- Test het toevoegen vanuit een recept met één en meerdere boodschappenlijsten, aangepaste porties en een recept dat al op de gekozen lijst staat.
