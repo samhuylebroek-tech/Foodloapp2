@@ -93,6 +93,7 @@ async function bewaarOpAccount(velden: {
   taal?: string;
   thema?: string;
   momenten?: string[];
+  weekmenu?: WeekmenuInstelling;
 }) {
   try {
     const { data } = await supabase.auth.getSession();
