@@ -152,6 +152,10 @@ function PlannerPage() {
   );
   const [lijstId, setLijstId] = useState<string>("");
   const [vraagLijst, setVraagLijst] = useState<{ recipeId: string; titel: string } | null>(null);
+  const [opruimVraag, setOpruimVraag] = useState<{ titel: string; items: { id: string; naam: string }[] } | null>(null);
+  const [naVoorstel, setNaVoorstel] = useState<{ recipeId: string; titel: string }[] | null>(null);
+  const [naGekozen, setNaGekozen] = useState<Set<string>>(new Set());
+
   const [weergave, setWeergave] = useState<"mij" | "gezin">("mij");
   const [instellingenOpen, setInstellingenOpen] = useState(false);
   const [voorstelOpen, setVoorstelOpen] = useState(false);
