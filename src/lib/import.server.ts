@@ -356,6 +356,8 @@ export async function leesReceptKop(url: string): Promise<ReceptKop | null> {
         "Accept-Language": "nl,en;q=0.8",
       },
       redirect: "follow",
+      // Een trage website mag het zoeken niet ophouden.
+      signal: AbortSignal.timeout(6000),
     });
     if (!res.ok) return null;
     html = await res.text();

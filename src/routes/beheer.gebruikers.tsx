@@ -130,6 +130,8 @@ function Gebruikers() {
             <thead className="text-left text-xs uppercase text-slate-400">
               <tr>
                 <th className="py-2">Gebruiker</th>
+                <th>E-mail</th>
+                <th>Laatste aanmelding</th>
                 <th>Laatst actief</th>
                 <th>Handelingen</th>
                 <th>Sessies</th>
@@ -147,6 +149,10 @@ function Gebruikers() {
                     <Link to="/beheer/gebruiker/$id" params={{ id: r.id }} className="text-emerald-300 hover:underline">
                       {r.naam}
                     </Link>
+                  </td>
+                  <td className="text-slate-300">{r.email ?? "—"}</td>
+                  <td className="text-slate-400">
+                    {r.laatsteAanmelding ? new Date(r.laatsteAanmelding).toLocaleString("nl-BE") : "—"}
                   </td>
                   <td className="text-slate-400">{r.laatsteActiviteit ?? "—"}</td>
                   <td>{r.handelingen}</td>
@@ -172,7 +178,7 @@ function Gebruikers() {
                 setZoek(e.target.value);
                 setPagina(0);
               }}
-              placeholder="Zoek op naam"
+              placeholder="Zoek op naam of e-mail"
               className="border-white/10 bg-slate-950 text-slate-100"
             />
           </div>
