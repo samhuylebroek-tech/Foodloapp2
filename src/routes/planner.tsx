@@ -829,7 +829,7 @@ function PlannerPage() {
                       )}
                       <Button
                         variant="ghost"
-                        onClick={() => verwijder(p.id)}
+                        onClick={() => verwijder(p.id, p.recipe_id, p.recipes?.title ?? "Dit gerecht")}
                         aria-label="Uit weekmenu halen"
                         className="size-12"
                       >
