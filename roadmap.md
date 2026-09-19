@@ -115,9 +115,9 @@
 - [x] Mobiel en desktop gecontroleerd
 
 ## Actief — foto's en weekmenuvoorstellen
-- [ ] Foto van gevonden recept mee bewaren bij direct opslaan
-- [ ] Externe foto naar eigen opslag kopiëren
-- [ ] Foto tonen in voorbeeldvenster
+- [x] Foto van gevonden recept mee bewaren bij direct opslaan
+- [x] Externe foto naar eigen opslag kopiëren
+- [x] Foto tonen in voorbeeldvenster
 - [x] Weekmenuvoorstel nooit een gerecht dat al in het weekmenu staat
 - [x] AI-zoeken en meer info merkbaar sneller maken
 - [x] Controlecentrum: e-mail van de persoon duidelijk tonen
