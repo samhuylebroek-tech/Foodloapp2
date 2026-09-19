@@ -887,10 +887,21 @@ function echteUrl(href: string): string | null {
   }
 }
 
-function scoreVan(host: string): number {
-  if (ZOEK_VOORKEUR.some((h) => host === h || host.endsWith(`.${h}`))) return 3;
-  if (host.endsWith(".be")) return 2;
-  if (host.endsWith(".nl")) return 1;
+type ZoekTaal = "nl" | "en" | "fr" | "de";
+
+/** Per taal: het woord waarmee we zoeken, de taalkop en de domeinen die voorgaan. */
+const TAAL_ZOEK: Record<ZoekTaal, { woord: string; kop: string; domeinen: string[] }> = {
+  nl: { woord: "recept", kop: "nl-BE,nl;q=0.9,en;q=0.5", domeinen: [".be", ".nl"] },
+  fr: { woord: "recette", kop: "fr-BE,fr;q=0.9,en;q=0.5", domeinen: [".fr", ".be"] },
+  de: { woord: "rezept", kop: "de-DE,de;q=0.9,en;q=0.5", domeinen: [".de", ".at"] },
+  en: { woord: "recipe", kop: "en-GB,en;q=0.9", domeinen: [".uk", ".com"] },
+};
+
+function scoreVan(host: string, taal: ZoekTaal): number {
+  const { domeinen } = TAAL_ZOEK[taal];
+  if (taal === "nl" && ZOEK_VOORKEUR.some((h) => host === h || host.endsWith(`.${h}`))) return 3;
+  if (domeinen[0] && host.endsWith(domeinen[0])) return 2;
+  if (domeinen[1] && host.endsWith(domeinen[1])) return 1;
   return 0;
 }
 
@@ -901,10 +912,18 @@ function scoreVan(host: string): number {
  */
 export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({ term: z.string().min(3).max(120) }).parse(data))
+  .inputValidator((data) =>
+    z
+      .object({
+        term: z.string().min(3).max(120),
+        taal: z.enum(["nl", "en", "fr", "de"]).optional(),
+      })
+      .parse(data),
+  )
   .handler(async ({ data }): Promise<WebResultaat[]> => {
     const term = data.term.trim();
-    const sleutel = `web|${term.toLowerCase()}`;
+    const taal: ZoekTaal = data.taal ?? "nl";
+    const sleutel = `web|${taal}|${term.toLowerCase()}`;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // 1. eerst de cache: hetzelfde zoekwoord binnen 24 u hoeft niet opnieuw
@@ -929,9 +948,9 @@ export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
     const kop = {
       "User-Agent":
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
-      "Accept-Language": "nl-BE,nl;q=0.9,en;q=0.6",
+      "Accept-Language": TAAL_ZOEK[taal].kop,
     };
-    const vraag = encodeURIComponent(`${term} recept`);
+    const vraag = encodeURIComponent(`${term} ${TAAL_ZOEK[taal].woord}`);
     const bronnen = [
       `https://search.brave.com/search?q=${vraag}`,
       `https://html.duckduckgo.com/html/?q=${vraag}`,
@@ -994,7 +1013,7 @@ export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
         gezien.add(host);
         const rest = kern.slice(eersteZin.length).trim();
         const fragment = (rest.length > 10 ? rest : tekst).slice(0, 180);
-        rijen.push({ titel, url: net, site: host, fragment, score: scoreVan(host) });
+        rijen.push({ titel, url: net, site: host, fragment, score: scoreVan(host, taal) });
         if (rijen.length >= 12) break;
       }
     }

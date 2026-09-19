@@ -31,6 +31,8 @@ import {
   type ImportedRecipe,
 } from "@/lib/ai.functions";
 import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/types";
+import { useVoorkeuren } from "@/lib/voorkeuren";
+import { schatPersonen } from "@/lib/porties";
 import { parseIngredientText, ingredientToLine } from "@/lib/ingredienten";
 import { kiesSoort, raadSoort } from "@/lib/soort";
 import { Voedingswaarden } from "@/components/Voedingswaarden";
@@ -75,6 +77,7 @@ export function RecipeForm({
   gedeeld?: { title?: string | undefined; text?: string | undefined; url?: string | undefined };
 }) {
   const { user } = useAuth();
+  const { taal } = useVoorkeuren();
   const navigate = useNavigate();
 
   const gedeeldeTekst = [gedeeld?.title, gedeeld?.text].filter(Boolean).join("\n\n");
@@ -110,6 +113,8 @@ export function RecipeForm({
     .filter(Boolean);
   const formIngredienten = parseIngredientText(ingredientTekst);
   const stapKoppeling = koppelStappen(stappen, formIngredienten, stapKeuze);
+  // Ruwe schatting van het aantal personen op basis van de hoeveelheden.
+  const schatting = schatPersonen(formIngredienten);
 
   /** Zet een ingrediënt aan of uit bij een stap; vanaf dan telt de eigen keuze. */
   function wisselStapIngredient(stapIndex: number, naam: string) {
@@ -416,7 +421,8 @@ export function RecipeForm({
     setWebBezig(true);
     setVoorstellen(null);
     try {
-      const lijst = await zoekReceptenOpWeb({ data: { term } });
+      const gekozenTaal = (["nl", "en", "fr", "de"] as const).find((c) => c === taal) ?? "nl";
+      const lijst = await zoekReceptenOpWeb({ data: { term, taal: gekozenTaal } });
       setWebResultaten(lijst);
       if (!lijst.length) {
         toast.message("Niets gevonden op het web. Probeer 'Nieuwe ideeën'.");
@@ -1090,7 +1096,24 @@ export function RecipeForm({
             </Button>
             <span className="shrink-0 text-base text-muted-foreground">personen</span>
           </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Weet je het niet zeker? Laat het gerust staan — je kan de hoeveelheden later altijd
+            omrekenen.
+            {schatting && schatting !== (Number(servings) || 0) ? (
+              <>
+                {" "}
+                <button
+                  type="button"
+                  onClick={() => setServings(String(schatting))}
+                  className="underline underline-offset-4"
+                >
+                  Lijkt op {schatting} personen — overnemen
+                </button>
+              </>
+            ) : null}
+          </p>
         </div>
+
 
 
         <div>

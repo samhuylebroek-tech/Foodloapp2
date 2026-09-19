@@ -19,6 +19,7 @@ import {
   CalendarPlus,
   MoreHorizontal,
   Share2,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -156,6 +157,22 @@ function ReceptPage() {
     },
   });
 
+  // Staan de ingrediënten van dit recept al op een boodschappenlijst?
+  const { data: staatOpLijst = false } = useQuery({
+    queryKey: ["op-lijst", id, user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("shopping_items")
+        .select("id")
+        .eq("recipe_id", id)
+        .limit(1);
+      return (data?.length ?? 0) > 0;
+    },
+  });
+  const [vraagNogmaals, setVraagNogmaals] = useState(false);
+
+
   async function zetScore(n: number) {
     if (!user) return;
     const { error } = await supabase
@@ -199,8 +216,12 @@ function ReceptPage() {
     qc.invalidateQueries({ queryKey: ["favorites"] });
   }
 
-  async function naarBoodschappen() {
+  async function naarBoodschappen(bevestigd = false) {
     if (!user) return;
+    if (staatOpLijst && !bevestigd) {
+      setVraagNogmaals(true);
+      return;
+    }
     const rows = ingredients.map((i) => ({
       name: i.name,
       quantity: i.quantity === null ? null : Math.round(i.quantity * factor * 100) / 100,
@@ -213,8 +234,11 @@ function ReceptPage() {
       await voegToeAanLijst(user.id, listId, rows);
       toast.success("Ingrediënten op je boodschappenlijst gezet");
       qc.invalidateQueries({ queryKey: ["shopping"] });
+      qc.invalidateQueries({ queryKey: ["op-lijst", recipe.id] });
     } catch {
       toast.error("Toevoegen lukte niet");
+    } finally {
+      setVraagNogmaals(false);
     }
   }
 
@@ -539,7 +563,13 @@ function ReceptPage() {
             )}
           </ul>
 
-          <Button onClick={naarBoodschappen} className="mt-4 h-16 w-full text-lg">
+          {staatOpLijst ? (
+            <p className="mt-4 flex items-center gap-2 rounded-2xl bg-secondary px-4 py-3 text-base text-secondary-foreground">
+              <Check className="size-5 text-primary" aria-hidden />
+              {t("Dit recept staat al op je boodschappenlijst")}
+            </p>
+          ) : null}
+          <Button onClick={() => void naarBoodschappen()} className="mt-4 h-16 w-full text-lg">
             <ShoppingCart className="size-5" /> {t("Naar boodschappenlijst")}
           </Button>
         </section>
@@ -577,6 +607,24 @@ function ReceptPage() {
         </Tabs>
 
       </div>
+      {vraagNogmaals ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
+          <div className="w-full max-w-md rounded-t-3xl bg-card p-5 sm:rounded-3xl">
+            <h2 className="font-display text-xl">{t("Staat al op je lijst")}</h2>
+            <p className="mt-2 text-base text-muted-foreground">
+              {t("Dit recept staat al op je boodschappenlijst. Wil je de ingrediënten nog eens toevoegen?")}
+            </p>
+            <div className="mt-4 flex gap-2">
+              <Button variant="ghost" onClick={() => setVraagNogmaals(false)} className="h-14 flex-1 text-base">
+                {t("Annuleren")}
+              </Button>
+              <Button onClick={() => void naarBoodschappen(true)} className="h-14 flex-1 text-base">
+                {t("Toch toevoegen")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </AppShell>
   );
 }
