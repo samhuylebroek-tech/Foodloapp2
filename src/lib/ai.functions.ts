@@ -993,13 +993,8 @@ export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
       bronnen.map(async (bron) => {
         try {
           const res = await fetch(bron, { headers: kop, signal: AbortSignal.timeout(8000) });
-          if (!res.ok) {
-            console.log("[zoek] bron niet ok", bron, res.status);
-            return "";
-          }
-          return await res.text();
-        } catch (e) {
-          console.log("[zoek] bron mislukt", bron, String(e).slice(0, 120));
+          return res.ok ? await res.text() : "";
+        } catch {
           return "";
         }
       }),
@@ -1056,7 +1051,6 @@ export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
         if (rijen.length >= 12) break;
       }
     }
-    console.log("[zoek]", term, "paginas", paginas.map((p) => p.length), "rijen", rijen.length);
     if (rijen.length === 0) return [];
 
 
@@ -1095,7 +1089,6 @@ export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
       gekeurd = [...eerste, ...extra];
     }
 
-    console.log("[zoek] gekeurd", gekeurd.length, "van", kandidaten.length);
     const resultaat: WebResultaat[] = gekeurd.slice(0, 5);
     if (resultaat.length === 0) return [];
 
