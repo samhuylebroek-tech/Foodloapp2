@@ -17,6 +17,8 @@ import {
   Settings,
   CookingPot,
   RefreshCw,
+  Lightbulb,
+  Globe,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,7 +30,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { type Recipe } from "@/lib/types";
-import { importRecipeFromText, receptVanNaam, weekmenuIdeeen, type WeekmenuIdee } from "@/lib/ai.functions";
+import {
+  importRecipeFromText,
+  importRecipeFromUrl,
+  receptVanNaam,
+  weekmenuIdeeen,
+  zoekReceptenOpWeb,
+  type WeekmenuIdee,
+  type WebResultaat,
+} from "@/lib/ai.functions";
 import {
   useVoorkeuren,
   ALLE_MOMENTEN,
@@ -101,6 +111,8 @@ type Basis = {
   tags: string[];
   instructions: string[];
   ingredienten: { name: string; quantity: number | null; unit: string }[];
+  image_url?: string | null;
+  source_url?: string | null;
 };
 
 function PlannerPage() {
@@ -331,6 +343,8 @@ function PlannerPage() {
           difficulty: basis.difficulty,
           tags: basis.tags,
           instructions: basis.instructions,
+          image_url: basis.image_url ?? null,
+          source_url: basis.source_url ?? null,
         })
         .select("id")
         .single();
@@ -721,6 +735,7 @@ function PlannerPage() {
         <ReceptKiezer
           week={zichtbareDagen}
           momenten={momenten}
+          instelling={weekmenu}
           start={kiezen}
           onSluit={() => setKiezen(null)}
           onKies={plan_toevoegen}
@@ -792,6 +807,7 @@ function GerechtKaart({ recept, onKies }: { recept: Recipe; onKies: () => void }
 function ReceptKiezer({
   week,
   momenten,
+  instelling,
   start,
   onSluit,
   onKies,
@@ -799,21 +815,155 @@ function ReceptKiezer({
 }: {
   week: string[];
   momenten: string[];
+  instelling: WeekmenuInstelling;
   start: { datum: string; moment: string; vraagDag?: boolean };
   onSluit: () => void;
   onKies: (id: string, datum: string, moment: string, titel: string) => void;
   onNieuw: (naam: string, basis: Basis | null, datum: string, moment: string) => void;
 }) {
   const { user } = useAuth();
+  const { taal } = useVoorkeuren();
   const [zoek, setZoek] = useState("");
   const [datum, setDatum] = useState(start.datum);
   const [moment, setMoment] = useState(start.moment);
   const [dagKiezen, setDagKiezen] = useState(!!start.vraagDag);
   const [aiBezig, setAiBezig] = useState(false);
   const [voorstel, setVoorstel] = useState<Basis | null>(null);
+  const [voorstelNaam, setVoorstelNaam] = useState("");
+  const [ideeen, setIdeeen] = useState<WeekmenuIdee[] | null>(null);
+  const [ideeenBezig, setIdeeenBezig] = useState(false);
+  const [webOpen, setWebOpen] = useState(false);
+  const [webTerm, setWebTerm] = useState("");
+  const [webBezig, setWebBezig] = useState(false);
+  const [webResultaten, setWebResultaten] = useState<WebResultaat[] | null>(null);
+
+  /** Zet een AI- of webrecept klaar in het bevestigscherm. */
+  function toonVoorstel(
+    naam: string,
+    r: {
+      title: string;
+      description?: string | null;
+      servings?: number;
+      prep_minutes?: number;
+      cook_minutes?: number;
+      category?: string;
+      difficulty?: string;
+      tags?: string[];
+      instructions?: string[];
+      image_url?: string | null;
+      source_url?: string | null;
+      ingredients?: { name: string; quantity: number | null; unit: string }[];
+    },
+  ) {
+    setVoorstelNaam(r.title || naam);
+    setVoorstel({
+      title: r.title || naam,
+      description: r.description ?? "",
+      servings: r.servings ?? 4,
+      prep_minutes: r.prep_minutes ?? 0,
+      cook_minutes: r.cook_minutes ?? 0,
+      category: r.category ?? "hoofdgerecht",
+      difficulty: r.difficulty ?? "makkelijk",
+      tags: r.tags ?? [],
+      instructions: r.instructions ?? [],
+      image_url: r.image_url ?? null,
+      source_url: r.source_url ?? null,
+      ingredienten: (r.ingredients ?? []).map((i) => ({
+        name: i.name,
+        quantity: i.quantity,
+        unit: i.unit ?? "",
+      })),
+    });
+  }
+
+  /** Drie passende AI-ideeën voor deze dag, met je weekvoorkeuren. */
+  async function laadIdeeen() {
+    setIdeeenBezig(true);
+    try {
+      const dagIdx = (new Date(`${datum}T12:00:00`).getDay() + 6) % 7;
+      const dagVoorkeur = instelling.perDag[String(dagIdx)];
+      const wensen = [
+        instelling.vlees ? `vlees: ${instelling.vlees}` : "",
+        instelling.vis ? `vis: ${instelling.vis}` : "",
+        instelling.vega ? `vega: ${instelling.vega}` : "",
+        dagVoorkeur?.soort ? `deze dag liefst ${dagVoorkeur.soort}` : "",
+      ]
+        .filter(Boolean)
+        .join(", ");
+      const res = await weekmenuIdeeen({
+        data: {
+          aantal: 3,
+          wensen,
+          vermijd: instelling.vermijd,
+          maxMinuten: dagVoorkeur?.maxMinuten ?? instelling.maxMinuten,
+          bekend: recipes.map((r) => r.title).slice(0, 60),
+        },
+      });
+      setIdeeen(res);
+      if (!res.length) toast.error("De AI vond nu geen ideeën. Probeer later opnieuw.");
+    } catch {
+      toast.error("Ideeën ophalen lukte niet");
+    } finally {
+      setIdeeenBezig(false);
+    }
+  }
+
+  /** Maakt van een gekozen idee meteen een volledig recept om te bevestigen. */
+  async function maakReceptVanIdee(titel: string) {
+    setAiBezig(true);
+    try {
+      const r = await receptVanNaam({
+        data: { titel, hint: instelling.vermijd ? `Vermijd: ${instelling.vermijd}` : "" },
+      });
+      toonVoorstel(titel, r);
+    } catch {
+      toast.error("De AI kon geen recept maken. Probeer opnieuw.");
+    } finally {
+      setAiBezig(false);
+    }
+  }
+
+  /** Zoekt echte receptpagina's op het web (gratis). */
+  async function zoekWeb(zoekterm: string) {
+    const opgekuist = zoekterm.trim();
+    if (opgekuist.length < 3) return;
+    setWebBezig(true);
+    try {
+      const taalkeuze = (["nl", "en", "fr", "de"].includes(taal) ? taal : "nl") as
+        | "nl"
+        | "en"
+        | "fr"
+        | "de";
+      const res = await zoekReceptenOpWeb({ data: { term: opgekuist, taal: taalkeuze } });
+      setWebResultaten(res);
+      if (!res.length) toast.error("Geen receptpagina's gevonden. Probeer een andere naam.");
+    } catch {
+      toast.error("Zoeken op het web lukte niet");
+    } finally {
+      setWebBezig(false);
+    }
+  }
+
+  /** Leest het gekozen webrecept in en toont het ter bevestiging. */
+  async function kiesWeb(r: WebResultaat) {
+    setWebBezig(true);
+    try {
+      const imp = await importRecipeFromUrl({ data: { url: r.url } });
+      if (!imp.title || imp.fout) {
+        toast.error(imp.fout || "Op die pagina staat geen leesbaar recept");
+        return;
+      }
+      toonVoorstel(imp.title, imp);
+    } catch {
+      toast.error("Recept inlezen lukte niet");
+    } finally {
+      setWebBezig(false);
+    }
+  }
 
   async function maakVoorstel(naam: string) {
     setAiBezig(true);
+    setVoorstelNaam(naam);
     try {
       const ai = await importRecipeFromText({
         data: { text: `Maak een volledig recept voor: ${naam}` },
@@ -919,7 +1069,7 @@ function ReceptKiezer({
           <div className="flex items-start justify-between gap-3">
             <h2 className="font-display text-xl">Klopt dit recept?</h2>
             <Button
-              onClick={() => onNieuw(zoek.trim(), voorstel, datum, moment)}
+              onClick={() => onNieuw(voorstelNaam || voorstel.title, voorstel, datum, moment)}
               aria-label="Bevestigen"
               className="size-12 rounded-full"
             >
@@ -971,7 +1121,7 @@ function ReceptKiezer({
               Terug
             </Button>
             <Button
-              onClick={() => onNieuw(zoek.trim(), voorstel, datum, moment)}
+              onClick={() => onNieuw(voorstelNaam || voorstel.title, voorstel, datum, moment)}
               className="mt-0 h-14 flex-[2] text-base"
             >
               <Check className="size-5" /> Bevestigen
@@ -1086,6 +1236,79 @@ function ReceptKiezer({
           className="mt-3 h-14 text-base"
         />
 
+        {!term && (
+          <div className="mt-3 rounded-2xl border border-border bg-secondary/60 p-3">
+            <p className="text-base font-semibold">Geen inspiratie?</p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                disabled={ideeenBezig || aiBezig}
+                onClick={() => void laadIdeeen()}
+                className="h-14 text-base"
+              >
+                {ideeenBezig ? (
+                  <Loader2 className="size-5 animate-spin" />
+                ) : (
+                  <Lightbulb className="size-5" />
+                )}
+                {ideeenBezig ? "AI denkt…" : "AI-ideeën"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setWebOpen((v) => !v)}
+                aria-expanded={webOpen}
+                className="h-14 text-base"
+              >
+                <Globe className="size-5" /> Van het web
+              </Button>
+            </div>
+
+            {webOpen && (
+              <div className="mt-2 flex gap-2">
+                <Input
+                  value={webTerm}
+                  onChange={(e) => setWebTerm(e.target.value)}
+                  placeholder="Naam van een gerecht"
+                  aria-label="Zoek een gerecht op het web"
+                  className="h-14 text-base"
+                />
+                <Button
+                  disabled={webBezig || webTerm.trim().length < 3}
+                  onClick={() => void zoekWeb(webTerm)}
+                  className="h-14 shrink-0 text-base"
+                >
+                  {webBezig ? <Loader2 className="size-5 animate-spin" /> : "Zoek"}
+                </Button>
+              </div>
+            )}
+
+            {ideeen && ideeen.length > 0 && (
+              <ul className="mt-2 space-y-2">
+                {ideeen.map((idee) => (
+                  <li key={idee.title}>
+                    <button
+                      type="button"
+                      disabled={aiBezig}
+                      onClick={() => void maakReceptVanIdee(idee.title)}
+                      className="w-full rounded-xl border border-border bg-card p-3 text-left disabled:opacity-60"
+                    >
+                      <span className="block text-base font-semibold">{idee.title}</span>
+                      <span className="block text-sm text-muted-foreground">
+                        {[idee.waarom, `±${idee.minuten} min`].filter(Boolean).join(" · ")}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {aiBezig && (
+              <p className="mt-2 text-sm text-muted-foreground">
+                AI maakt het recept klaar…
+              </p>
+            )}
+          </div>
+        )}
+
         {term && !bestaatAl && (
           <div className="mt-3 rounded-2xl border border-primary/40 bg-secondary p-4">
             <p className="text-base">
@@ -1111,10 +1334,63 @@ function ReceptKiezer({
               )}
               {aiBezig ? "AI maakt het recept…" : "Met AI invullen"}
             </Button>
+            <Button
+              variant="outline"
+              disabled={webBezig}
+              onClick={() => void zoekWeb(term)}
+              className="mt-2 h-14 w-full text-base"
+            >
+              {webBezig ? (
+                <Loader2 className="size-5 animate-spin" />
+              ) : (
+                <Globe className="size-5" />
+              )}
+              {webBezig ? "Aan het zoeken…" : "Zoek echte recepten op het web"}
+            </Button>
           </div>
         )}
 
         <div className="mt-3 flex-1 space-y-5 overflow-y-auto pb-2">
+          {webResultaten && webResultaten.length > 0 && (
+            <section>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <h3 className="text-base font-semibold text-muted-foreground">
+                  Recepten van het web
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setWebResultaten(null)}
+                  className="min-h-11 text-sm text-muted-foreground underline underline-offset-4"
+                >
+                  Verberg
+                </button>
+              </div>
+              <ul className="space-y-2">
+                {webResultaten.map((r) => (
+                  <li key={r.url}>
+                    <button
+                      type="button"
+                      disabled={webBezig}
+                      onClick={() => void kiesWeb(r)}
+                      className="w-full rounded-xl border border-border bg-secondary p-3 text-left disabled:opacity-60"
+                    >
+                      <span className="block text-base font-semibold">{r.titel}</span>
+                      <span className="block text-sm text-muted-foreground">
+                        {[r.site, r.minuten ? `±${r.minuten} min` : ""]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {webBezig && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Het recept wordt ingelezen…
+                </p>
+              )}
+            </section>
+          )}
           {term ? (
             treffers.length === 0 ? (
               <p className="py-6 text-center text-lg text-muted-foreground">

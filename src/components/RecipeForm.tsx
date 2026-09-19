@@ -71,13 +71,16 @@ export function RecipeForm({
   recipe,
   ingredients,
   gedeeld,
+  vraagInplannen = false,
 }: {
   recipe?: Recipe;
   ingredients?: Ingredient[];
   gedeeld?: { title?: string | undefined; text?: string | undefined; url?: string | undefined };
+  /** Vraagt na het bewaren van een nieuw recept of je het meteen inplant. */
+  vraagInplannen?: boolean;
 }) {
   const { user } = useAuth();
-  const { taal } = useVoorkeuren();
+  const { taal, momenten } = useVoorkeuren();
   const navigate = useNavigate();
 
   const gedeeldeTekst = [gedeeld?.title, gedeeld?.text].filter(Boolean).join("\n\n");
@@ -105,6 +108,13 @@ export function RecipeForm({
   const [stappenTekst, setStappenTekst] = useState((recipe?.instructions ?? []).join("\n"));
   const [stapKeuze, setStapKeuze] = useState<StapKoppeling>(recipe?.step_ingredients ?? {});
   const [meerDetails, setMeerDetails] = useState(false);
+
+  // Na het bewaren van een nieuw recept: meteen inplannen?
+  const [netOpgeslagen, setNetOpgeslagen] = useState<{ id: string; titel: string } | null>(null);
+  const [planDatum, setPlanDatum] = useState(() => new Date().toISOString().slice(0, 10));
+  const [planMoment, setPlanMoment] = useState("");
+  const [planBezig, setPlanBezig] = useState(false);
+  const actiefMoment = planMoment || momenten[0] || "maaltijd";
 
   // Stappen en ingrediënten zoals ze nu in het formulier staan
   const stappen = stappenTekst
@@ -708,7 +718,11 @@ export function RecipeForm({
       }
 
       toast.success("Recept opgeslagen");
-      navigate({ to: "/recepten/$id", params: { id: recipeId! } });
+      if (vraagInplannen && !recipe?.id) {
+        setNetOpgeslagen({ id: recipeId!, titel: title.trim() || "Je nieuwe recept" });
+      } else {
+        navigate({ to: "/recepten/$id", params: { id: recipeId! } });
+      }
     } catch (err) {
       const melding = err instanceof Error ? err.message : "";
       if (melding.includes("RECEPT_LIMIET")) {
@@ -720,6 +734,38 @@ export function RecipeForm({
     } finally {
       setSaving(false);
     }
+  }
+
+  /** Zet het net bewaarde recept meteen in het weekmenu. */
+  async function planNu() {
+    if (!user || !netOpgeslagen) return;
+    setPlanBezig(true);
+    const { error } = await supabase.from("meal_plan").insert({
+      user_id: user.id,
+      recipe_id: netOpgeslagen.id,
+      plan_date: planDatum,
+      meal_type: actiefMoment,
+      group_id: null,
+    });
+    setPlanBezig(false);
+    if (error) {
+      toast.error("Inplannen lukte niet");
+      return;
+    }
+    toast.success(
+      `${netOpgeslagen.titel} staat op ${new Date(`${planDatum}T12:00:00`).toLocaleDateString(
+        "nl-BE",
+        { weekday: "long", day: "numeric", month: "long" },
+      )}`,
+    );
+    navigate({ to: "/planner" });
+  }
+
+  /** Verlaat het inplannen-scherm zonder in te plannen. */
+  function sluitInplannen() {
+    const id = netOpgeslagen?.id;
+    setNetOpgeslagen(null);
+    if (id) navigate({ to: "/recepten/$id", params: { id } });
   }
 
   const manieren: { id: Manier; label: string; icon: typeof Link2 }[] = [
@@ -1468,6 +1514,60 @@ export function RecipeForm({
                 Annuleren
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!netOpgeslagen}
+        onOpenChange={(open) => {
+          if (!open) sluitInplannen();
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Meteen inplannen?</DialogTitle>
+            <DialogDescription>
+              Zet “{netOpgeslagen?.titel}” meteen in je weekmenu.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <input
+              type="date"
+              value={planDatum}
+              onChange={(e) => {
+                if (e.target.value) setPlanDatum(e.target.value);
+              }}
+              aria-label="Kies een datum"
+              className="h-14 w-full rounded-xl border border-input bg-background px-3 text-base"
+            />
+            {momenten.length > 1 && (
+              <div className="flex gap-2" role="group" aria-label="Kies een dagdeel">
+                {momenten.map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setPlanMoment(m)}
+                    aria-pressed={actiefMoment === m}
+                    className={
+                      actiefMoment === m
+                        ? "min-h-12 flex-1 rounded-xl bg-primary px-3 text-base font-semibold capitalize text-primary-foreground"
+                        : "min-h-12 flex-1 rounded-xl border border-border bg-secondary px-3 text-base font-semibold capitalize"
+                    }
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2 sm:justify-between">
+            <Button variant="outline" onClick={sluitInplannen} className="h-14 text-base">
+              Nu niet
+            </Button>
+            <Button disabled={planBezig} onClick={() => void planNu()} className="h-14 text-base">
+              {planBezig ? "Bezig…" : "Plan in het weekmenu"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

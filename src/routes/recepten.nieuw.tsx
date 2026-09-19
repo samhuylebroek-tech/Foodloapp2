@@ -69,7 +69,7 @@ function NieuwPage() {
               en controleer daarna het resultaat.
             </p>
           )}
-          <RecipeForm gedeeld={gedeeld} />
+          <RecipeForm gedeeld={gedeeld} vraagInplannen />
         </>
       )}
     </AppShell>
