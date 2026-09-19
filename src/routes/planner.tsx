@@ -120,6 +120,7 @@ function PlannerPage() {
   const [vraagLijst, setVraagLijst] = useState<{ recipeId: string; titel: string } | null>(null);
   const [weergave, setWeergave] = useState<"mij" | "gezin">("mij");
   const [instellingenOpen, setInstellingenOpen] = useState(false);
+  const [voorstelOpen, setVoorstelOpen] = useState(false);
 
   // De week begint op maandag of (als je dat kiest) op zondag.
   const week = Array.from({ length: 7 }, (_, i) => {
