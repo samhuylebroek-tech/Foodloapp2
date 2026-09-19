@@ -282,9 +282,9 @@ function PlannerPage() {
             .single();
           if (error) throw error;
           recipeId = data.id;
-          if (basis.ingredienten?.length) {
+          if (basis.ingredients?.length) {
             await supabase.from("recipe_ingredients").insert(
-              basis.ingredienten.map((i, index) => ({
+              basis.ingredients.map((i, index) => ({
                 recipe_id: recipeId!,
                 name: i.name,
                 quantity: i.quantity,
