@@ -1269,6 +1269,76 @@ function WeekmenuInstellingen({
 
         <div className="mt-4 space-y-6">
           <div>
+            <h3 className="text-base font-semibold">Waar houdt Foodlo rekening mee?</h3>
+            <p className="text-base text-muted-foreground">Hoeveel keer per week?</p>
+            <div className="mt-2 space-y-2">
+              {([
+                { id: "vlees", label: "Vlees" },
+                { id: "vis", label: "Vis" },
+                { id: "vega", label: "Vegetarisch" },
+              ] as const).map((o) => (
+                <div key={o.id} className="flex items-center justify-between gap-3">
+                  <span className="text-base font-semibold">{o.label}</span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      aria-label={`${o.label} minder`}
+                      onClick={() => onZet({ [o.id]: Math.max(0, instelling[o.id] - 1) })}
+                      className="size-12 text-lg"
+                    >
+                      –
+                    </Button>
+                    <span className="w-8 text-center text-lg font-semibold">{instelling[o.id]}</span>
+                    <Button
+                      variant="secondary"
+                      aria-label={`${o.label} meer`}
+                      onClick={() => onZet({ [o.id]: Math.min(7, instelling[o.id] + 1) })}
+                      className="size-12 text-lg"
+                    >
+                      +
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <p className="mt-4 text-base text-muted-foreground">Hoelang mag koken duren?</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {[
+                { id: 20, label: "Max 20 min" },
+                { id: 45, label: "Max 45 min" },
+                { id: 90, label: "Rustig koken" },
+                { id: 0, label: "Maakt niet uit" },
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  aria-pressed={instelling.maxMinuten === t.id}
+                  onClick={() => onZet({ maxMinuten: t.id })}
+                  className={
+                    instelling.maxMinuten === t.id
+                      ? "min-h-12 rounded-xl bg-primary px-3 text-base font-semibold text-primary-foreground"
+                      : "min-h-12 rounded-xl border border-border px-3 text-base font-semibold"
+                  }
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            <label className="mt-4 block text-base text-muted-foreground" htmlFor="vermijd">
+              Wat eet je liever niet?
+            </label>
+            <Input
+              id="vermijd"
+              value={instelling.vermijd}
+              onChange={(e) => onZet({ vermijd: e.target.value })}
+              placeholder="bv. paddenstoelen, bloemkool"
+              className="mt-1 h-14 text-base"
+            />
+          </div>
+
+          <div>
             <h3 className="text-base font-semibold">Hoe wil je het zien?</h3>
             <div className="mt-2 grid grid-cols-2 gap-2">
               {([
