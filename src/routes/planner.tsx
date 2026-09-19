@@ -1605,9 +1605,10 @@ function WeekmenuInstellingen({
           </Button>
         </div>
 
-        <div className="mt-4 space-y-6">
-          <div>
-            <h3 className="text-base font-semibold">Waar houdt Foodlo rekening mee?</h3>
+        <Accordion type="single" collapsible defaultValue="foodlo" className="mt-4">
+          <AccordionItem value="foodlo">
+            <AccordionTrigger className="min-h-16 text-left text-lg">Voorstellen door Foodlo</AccordionTrigger>
+            <AccordionContent className="pb-5">
             <p className="text-base text-muted-foreground">Hoeveel keer per week?</p>
             <div className="mt-2 space-y-2">
               {([
@@ -1674,10 +1675,29 @@ function WeekmenuInstellingen({
               placeholder="bv. paddenstoelen, bloemkool"
               className="mt-1 h-14 text-base"
             />
-          </div>
+            <p className="mt-4 text-base text-muted-foreground">Waaruit mag Foodlo kiezen?</p>
+            <div className="mt-2 grid gap-2">
+              {([
+                { id: "eigen", label: "Alleen mijn recepten" },
+                { id: "ook-extern", label: "Ook nieuwe ideeën" },
+              ] as const).map((optie) => (
+                <Button
+                  key={optie.id}
+                  type="button"
+                  variant={instelling.bron === optie.id ? "default" : "secondary"}
+                  onClick={() => onZet({ bron: optie.id })}
+                  className="h-14 justify-start text-base"
+                >
+                  {optie.label}
+                </Button>
+              ))}
+            </div>
+            </AccordionContent>
+          </AccordionItem>
 
-          <div>
-            <h3 className="text-base font-semibold">Hoe wil je het zien?</h3>
+          <AccordionItem value="weergave">
+            <AccordionTrigger className="min-h-16 text-left text-lg">Weergave</AccordionTrigger>
+            <AccordionContent className="pb-5">
             <div className="mt-2 grid grid-cols-2 gap-2">
               {([
                 { id: "lijst", label: "Onder elkaar" },
@@ -1698,8 +1718,12 @@ function WeekmenuInstellingen({
                 </button>
               ))}
             </div>
-          </div>
+            </AccordionContent>
+          </AccordionItem>
 
+          <AccordionItem value="dagen">
+            <AccordionTrigger className="min-h-16 text-left text-lg">Dagen en momenten</AccordionTrigger>
+            <AccordionContent className="space-y-5 pb-5">
           <div>
             <h3 className="text-base font-semibold">De week begint op</h3>
             <div className="mt-2 grid grid-cols-2 gap-2">
@@ -1765,7 +1789,9 @@ function WeekmenuInstellingen({
               ))}
             </div>
           </div>
-        </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         <Button onClick={onSluit} className="mt-6 h-14 w-full text-base">
           Klaar
