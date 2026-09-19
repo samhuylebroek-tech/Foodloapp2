@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { meet } from "@/lib/meten";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -19,6 +19,7 @@ import {
   RefreshCw,
   Lightbulb,
   Globe,
+  CalendarDays,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +29,8 @@ import { Avatar } from "@/components/Avatar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { type Recipe } from "@/lib/types";
 import {
@@ -100,6 +103,20 @@ function kortLabel(datum: string) {
   return d.toLocaleDateString("nl-BE", { weekday: "short", day: "numeric" });
 }
 
+function weekLabel(start: Date, kort = false) {
+  const einde = new Date(start);
+  einde.setDate(einde.getDate() + 6);
+  const zelfdeMaand = start.getMonth() === einde.getMonth() && start.getFullYear() === einde.getFullYear();
+  const beginTekst = zelfdeMaand
+    ? String(start.getDate())
+    : start.toLocaleDateString("nl-BE", { day: "numeric", month: kort ? "short" : "long" });
+  const eindeTekst = einde.toLocaleDateString("nl-BE", {
+    day: "numeric",
+    month: kort ? "short" : "long",
+  });
+  return `${beginTekst} – ${eindeTekst}`;
+}
+
 type Basis = {
   title: string;
   description: string;
@@ -133,6 +150,7 @@ function PlannerPage() {
   const [weergave, setWeergave] = useState<"mij" | "gezin">("mij");
   const [instellingenOpen, setInstellingenOpen] = useState(false);
   const [voorstelOpen, setVoorstelOpen] = useState(false);
+  const [kalenderOpen, setKalenderOpen] = useState(false);
 
   // De week begint op maandag of (als je dat kiest) op zondag.
   const week = Array.from({ length: 7 }, (_, i) => {
@@ -145,6 +163,14 @@ function PlannerPage() {
   const zichtbareDagen = week.filter((dag) =>
     weekmenu.dagen.includes((new Date(`${dag}T12:00:00`).getDay() + 6) % 7),
   );
+  const voorstelDagen = zichtbareDagen.filter((dag) => dag >= vandaag);
+  const huidigeWeek = maandagVan(new Date());
+  const weekVerschil = Math.round((weekStart.getTime() - huidigeWeek.getTime()) / 604800000);
+  const snelleWeken = [0, 1, 2].map((stap) => {
+    const start = new Date(huidigeWeek);
+    start.setDate(start.getDate() + stap * 7);
+    return start;
+  });
 
   const { data: gezin } = useQuery({
     queryKey: ["planner-gezin", user?.id],
@@ -508,17 +534,26 @@ function PlannerPage() {
           >
             <ChevronLeft className="size-6" />
           </Button>
-          <p className="flex-1 text-center text-lg font-semibold">
-            {new Date(`${week[0]}T12:00:00`).toLocaleDateString("nl-BE", {
-              day: "numeric",
-              month: "long",
-            })}{" "}
-            –{" "}
-            {new Date(`${week[6]}T12:00:00`).toLocaleDateString("nl-BE", {
-              day: "numeric",
-              month: "long",
-            })}
-          </p>
+          <Popover open={kalenderOpen} onOpenChange={setKalenderOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" className="h-14 min-w-0 flex-1 gap-2 px-2 text-base font-semibold">
+                <CalendarDays className="size-5 shrink-0" />
+                <span className="truncate">{weekLabel(new Date(`${week[0]}T12:00:00`))}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="center">
+              <Calendar
+                mode="single"
+                selected={weekStart}
+                onSelect={(datum) => {
+                  if (!datum) return;
+                  setWeekStart(maandagVan(datum));
+                  setKalenderOpen(false);
+                }}
+                className="pointer-events-auto p-3"
+              />
+            </PopoverContent>
+          </Popover>
           <Button
             variant="secondary"
             onClick={() => verschuif(1)}
@@ -537,26 +572,61 @@ function PlannerPage() {
           </Button>
         </div>
 
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Snel een week kiezen">
+          {snelleWeken.map((start, index) => {
+            const actief = datumTekst(start) === datumTekst(weekStart);
+            return (
+              <Button
+                key={datumTekst(start)}
+                variant={actief ? "default" : "secondary"}
+                onClick={() => setWeekStart(start)}
+                className="h-12 min-w-0 px-3 text-sm"
+              >
+                <span>{index === 0 ? "Deze week" : index === 1 ? "Volgende week" : "+2 weken"}</span>
+              </Button>
+            );
+          })}
+          <Button variant="secondary" onClick={() => verschuif(1)} className="h-12 min-w-0 px-2 text-sm">
+            Verder
+          </Button>
+        </div>
+        {weekVerschil !== 0 ? (
+          <Button variant="ghost" onClick={() => setWeekStart(huidigeWeek)} className="h-12 w-full text-base">
+            Terug naar deze week
+          </Button>
+        ) : null}
+
 
         <Button
-          onClick={() =>
+          onClick={() => {
+            const startDag = voorstelDagen.includes(vandaag) ? vandaag : voorstelDagen[0];
+            if (!startDag) {
+              toast("Kies een huidige of volgende week om een gerecht in te plannen.");
+              return;
+            }
             setKiezen({
-              datum: vandaag >= week[0]! && vandaag <= week[6]! ? vandaag : week[0]!,
+              datum: startDag,
               moment: momenten[momenten.length - 1] ?? "avondeten",
               vraagDag: true,
-            })
-          }
+            });
+          }}
           className="h-16 w-full text-lg"
         >
-          <Plus className="size-6" /> Gerecht inplannen deze week
+          <Plus className="size-6" /> Gerecht inplannen
         </Button>
 
         <Button
           variant="secondary"
-          onClick={() => setVoorstelOpen(true)}
+          onClick={() => {
+            if (!voorstelDagen.length) {
+              toast("Er zijn in deze week geen komende dagen meer. Kies een volgende week.");
+              return;
+            }
+            setVoorstelOpen(true);
+          }}
           className="h-16 w-full text-lg"
         >
-          <Sparkles className="size-6" /> Laat Foodlo een weekmenu voorstellen
+          <Sparkles className="size-6" /> Maak een weekmenu
         </Button>
 
 
@@ -688,7 +758,7 @@ function PlannerPage() {
               )}
 
               <div className="mt-3 flex flex-wrap gap-2">
-                {openMomenten.map((m) => (
+                {dag >= vandaag && openMomenten.map((m) => (
                   <button
                     key={m}
                     type="button"
@@ -703,6 +773,9 @@ function PlannerPage() {
                     Helemaal gepland
                   </p>
                 )}
+                {dag < vandaag && !volledig ? (
+                  <p className="text-base text-muted-foreground">Deze dag is voorbij</p>
+                ) : null}
               </div>
             </section>
           );
@@ -721,7 +794,7 @@ function PlannerPage() {
 
       {voorstelOpen && (
         <WeekmenuVoorstel
-          week={zichtbareDagen}
+          week={voorstelDagen}
           momenten={momenten}
           instelling={weekmenu}
           zetInstelling={zetWeekmenu}
@@ -733,7 +806,7 @@ function PlannerPage() {
 
       {kiezen && (
         <ReceptKiezer
-          week={zichtbareDagen}
+          week={voorstelDagen}
           momenten={momenten}
           instelling={weekmenu}
           start={kiezen}
@@ -1543,9 +1616,10 @@ function WeekmenuInstellingen({
           </Button>
         </div>
 
-        <div className="mt-4 space-y-6">
-          <div>
-            <h3 className="text-base font-semibold">Waar houdt Foodlo rekening mee?</h3>
+        <Accordion type="single" collapsible defaultValue="foodlo" className="mt-4">
+          <AccordionItem value="foodlo">
+            <AccordionTrigger className="min-h-16 text-left text-lg">Voorstellen door Foodlo</AccordionTrigger>
+            <AccordionContent className="pb-5">
             <p className="text-base text-muted-foreground">Hoeveel keer per week?</p>
             <div className="mt-2 space-y-2">
               {([
@@ -1612,10 +1686,34 @@ function WeekmenuInstellingen({
               placeholder="bv. paddenstoelen, bloemkool"
               className="mt-1 h-14 text-base"
             />
-          </div>
+            <p className="mt-4 text-base text-muted-foreground">Waaruit mag Foodlo kiezen?</p>
+            <div className="mt-2 grid gap-2">
+              {([
+                { id: "eigen", label: "Alleen mijn recepten" },
+                { id: "ook-extern", label: "Ook nieuwe ideeën" },
+              ] as const).map((optie) => (
+                <Button
+                  key={optie.id}
+                  type="button"
+                  variant={instelling.bron === optie.id ? "default" : "secondary"}
+                  onClick={() => onZet({ bron: optie.id })}
+                  className="h-14 justify-start text-base"
+                >
+                  {optie.label}
+                </Button>
+              ))}
+            </div>
+            {Object.keys(instelling.perDag).length ? (
+              <p className="mt-4 rounded-xl bg-secondary px-4 py-3 text-base text-muted-foreground">
+                Je vaste voorkeuren per weekdag worden hier automatisch meegeteld. Je kunt ze bij elk voorstel aanpassen.
+              </p>
+            ) : null}
+            </AccordionContent>
+          </AccordionItem>
 
-          <div>
-            <h3 className="text-base font-semibold">Hoe wil je het zien?</h3>
+          <AccordionItem value="weergave">
+            <AccordionTrigger className="min-h-16 text-left text-lg">Weergave</AccordionTrigger>
+            <AccordionContent className="pb-5">
             <div className="mt-2 grid grid-cols-2 gap-2">
               {([
                 { id: "lijst", label: "Onder elkaar" },
@@ -1636,8 +1734,12 @@ function WeekmenuInstellingen({
                 </button>
               ))}
             </div>
-          </div>
+            </AccordionContent>
+          </AccordionItem>
 
+          <AccordionItem value="dagen">
+            <AccordionTrigger className="min-h-16 text-left text-lg">Dagen en momenten</AccordionTrigger>
+            <AccordionContent className="space-y-5 pb-5">
           <div>
             <h3 className="text-base font-semibold">De week begint op</h3>
             <div className="mt-2 grid grid-cols-2 gap-2">
@@ -1703,7 +1805,9 @@ function WeekmenuInstellingen({
               ))}
             </div>
           </div>
-        </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         <Button onClick={onSluit} className="mt-6 h-14 w-full text-base">
           Klaar
@@ -1790,6 +1894,8 @@ function WeekmenuVoorstel({
   const [openDag, setOpenDag] = useState<string | null>(null);
   const [rijen, setRijen] = useState<Rij[]>([]);
   const [bezigMet, setBezigMet] = useState("");
+  const getoondeRecepten = useRef<Record<string, string[]>>({});
+  const getoondeIdeeen = useRef<string[]>([]);
 
   const { data: recepten = [] } = useQuery({
     queryKey: ["voorstel-recepten"],
@@ -1866,8 +1972,40 @@ function WeekmenuVoorstel({
         doelen: { vlees: instelling.vlees, vis: instelling.vis, vega: instelling.vega },
         vermijd: instelling.vermijd,
         recentPerRecept: recent,
+        uitgesloten: getoondeRecepten.current,
       });
-      let nieuw: Rij[] = keuzes.map((k) => {
+      const eersteKeuzes = new Map(keuzes.map((keuze) => [`${keuze.datum}|${keuze.moment}`, keuze]));
+      for (const regel of lijst) {
+        const sleutel = `${regel.datum}|${regel.moment}`;
+        const keuze = eersteKeuzes.get(sleutel);
+        if (keuze?.recept || !(getoondeRecepten.current[sleutel]?.length)) continue;
+        const [herstart] = kiesUitEigen({
+          recepten,
+          ingredienten,
+          regels: [regel],
+          doelen: { vlees: 0, vis: 0, vega: 0 },
+          vermijd: instelling.vermijd,
+          recentPerRecept: recent,
+        });
+        if (herstart) eersteKeuzes.set(sleutel, herstart);
+        getoondeRecepten.current[sleutel] = [];
+      }
+      const afgerondeKeuzes = lijst.map(
+        (regel) => eersteKeuzes.get(`${regel.datum}|${regel.moment}`) ?? {
+          datum: regel.datum,
+          moment: regel.moment,
+          recept: null,
+        },
+      );
+      for (const keuze of afgerondeKeuzes) {
+        if (!keuze.recept) continue;
+        const sleutel = `${keuze.datum}|${keuze.moment}`;
+        getoondeRecepten.current[sleutel] = [
+          ...(getoondeRecepten.current[sleutel] ?? []),
+          keuze.recept.id,
+        ];
+      }
+      let nieuw: Rij[] = afgerondeKeuzes.map((k) => {
         const staatAl = bezet.has(`${k.datum}|${k.moment}`);
         const regel = lijst.find((r) => r.datum === k.datum && r.moment === k.moment);
         return {
@@ -1889,7 +2027,7 @@ function WeekmenuVoorstel({
             wensen: `${instelling.vlees}x vlees, ${instelling.vis}x vis, ${instelling.vega}x vegetarisch`,
             vermijd: instelling.vermijd,
             maxMinuten: instelling.maxMinuten,
-            bekend: recepten.slice(0, 60).map((r) => r.title),
+            bekend: [...recepten.slice(0, 60).map((r) => r.title), ...getoondeIdeeen.current],
           },
         });
         let i = 0;
@@ -1898,6 +2036,10 @@ function WeekmenuVoorstel({
           const idee = ideeen[i++] ?? null;
           return idee ? { ...r, idee, aan: true } : r;
         });
+        getoondeIdeeen.current = [
+          ...getoondeIdeeen.current,
+          ...ideeen.map((idee) => idee.title),
+        ];
       }
       setRijen(nieuw);
       setStap("voorstel");
@@ -1914,6 +2056,13 @@ function WeekmenuVoorstel({
       .map((r) => r.recept?.id)
       .filter((x): x is string => !!x);
     const huidig = rijen.find((r) => r.datum === datum && r.moment === moment)?.recept?.id;
+    const sleutel = `${datum}|${moment}`;
+    if (huidig) {
+      getoondeRecepten.current[sleutel] = [
+        ...(getoondeRecepten.current[sleutel] ?? []),
+        huidig,
+      ];
+    }
     const over = recepten.filter((r) => r.id !== huidig && !gebruikt.includes(r.id));
     const [keuze] = kiesUitEigen({
       recepten: over,
@@ -1922,9 +2071,29 @@ function WeekmenuVoorstel({
       doelen: { vlees: 0, vis: 0, vega: 0 },
       vermijd: instelling.vermijd,
       recentPerRecept: recent,
+      uitgesloten: getoondeRecepten.current,
     });
     if (!keuze?.recept) {
-      toast("Geen ander passend gerecht gevonden");
+      getoondeRecepten.current[sleutel] = [];
+      const [herstart] = kiesUitEigen({
+        recepten: over,
+        ingredienten,
+        regels: [{ ...regelVoor(datum), moment }],
+        doelen: { vlees: 0, vis: 0, vega: 0 },
+        vermijd: instelling.vermijd,
+        recentPerRecept: recent,
+      });
+      if (!herstart?.recept) {
+        toast("Geen ander passend gerecht gevonden");
+        return;
+      }
+      setRijen((v) =>
+        v.map((r) =>
+          r.datum === datum && r.moment === moment
+            ? { ...r, recept: herstart.recept, idee: null, aan: true }
+            : r,
+        ),
+      );
       return;
     }
     setRijen((v) =>
@@ -1960,7 +2129,7 @@ function WeekmenuVoorstel({
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
       <div className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-card p-5 sm:rounded-3xl">
         <div className="flex items-start justify-between gap-3">
-          <h2 className="font-display text-xl">Weekmenu laten voorstellen</h2>
+          <h2 className="font-display text-xl">Voorstel van Foodlo</h2>
           <Button variant="ghost" onClick={onSluit} aria-label="Sluiten" className="size-12">
             <X className="size-5" />
           </Button>
@@ -2210,8 +2379,14 @@ function WeekmenuVoorstel({
             </ul>
 
             <div className="flex gap-2">
-              <Button variant="secondary" onClick={maakVoorstel} className="h-14 flex-1 text-base">
-                <RefreshCw className="size-5" /> Opnieuw
+              <Button
+                variant="secondary"
+                onClick={maakVoorstel}
+                disabled={!!bezigMet}
+                className="h-14 flex-1 text-base"
+              >
+                {bezigMet ? <Loader2 className="size-5 animate-spin" /> : <RefreshCw className="size-5" />}
+                Opnieuw voorstellen
               </Button>
               <Button
                 disabled={!aantalAan || !!bezigMet}

@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { zorgVoorLijst, voegToeAanLijst } from "@/lib/boodschappen";
+import { zorgVoorLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
 import { useAuth } from "@/hooks/useAuth";
 import { SterrenKiezer } from "@/components/Sterren";
 import { AppShell } from "@/components/AppShell";
@@ -90,6 +90,8 @@ function ReceptPage() {
   const [planOpen, setPlanOpen] = useState(false);
   const [aanvullen, setAanvullen] = useState(false);
   const [fotoBezig, setFotoBezig] = useState(false);
+  const [boodschappenOpen, setBoodschappenOpen] = useState(false);
+  const [gekozenLijst, setGekozenLijst] = useState("");
 
   async function vervangFoto(bestand: File) {
     if (!user) return;
@@ -157,19 +159,39 @@ function ReceptPage() {
     },
   });
 
-  // Staan de ingrediënten van dit recept al op een boodschappenlijst?
-  const { data: staatOpLijst = false } = useQuery({
+  const { data: boodschappenLijsten = [] } = useQuery({
+    queryKey: ["shopping-lists", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      if (!user) return [];
+      await zorgVoorLijst(user.id);
+      const { data, error } = await supabase
+        .from("shopping_lists")
+        .select("id, name, created_at, group_id")
+        .order("created_at");
+      if (error) throw error;
+      return data as ShoppingList[];
+    },
+  });
+
+  useEffect(() => {
+    if (!gekozenLijst && boodschappenLijsten[0]) setGekozenLijst(boodschappenLijsten[0].id);
+  }, [boodschappenLijsten, gekozenLijst]);
+
+  // Op welke boodschappenlijsten staan de ingrediënten van dit recept al?
+  const { data: lijstenMetRecept = [] } = useQuery({
     queryKey: ["op-lijst", id, user?.id],
     enabled: !!user,
     queryFn: async () => {
       const { data } = await supabase
         .from("shopping_items")
-        .select("id")
+        .select("list_id")
         .eq("recipe_id", id)
         .limit(1);
-      return (data?.length ?? 0) > 0;
+      return [...new Set((data ?? []).map((rij) => rij.list_id as string))];
     },
   });
+  const staatOpLijst = gekozenLijst ? lijstenMetRecept.includes(gekozenLijst) : false;
   const [vraagNogmaals, setVraagNogmaals] = useState(false);
 
 
@@ -230,11 +252,15 @@ function ReceptPage() {
     }));
     if (!rows.length) return;
     try {
-      const listId = await zorgVoorLijst(user.id);
+      const listId = gekozenLijst || (await zorgVoorLijst(user.id));
       await voegToeAanLijst(user.id, listId, rows);
-      toast.success("Ingrediënten op je boodschappenlijst gezet");
+      const lijstNaam = boodschappenLijsten.find((lijst) => lijst.id === listId)?.name;
+      toast.success(`Ingrediënten toegevoegd${lijstNaam ? ` aan ${lijstNaam}` : ""}`, {
+        action: { label: "Bekijk lijst", onClick: () => navigate({ to: "/boodschappen" }) },
+      });
       qc.invalidateQueries({ queryKey: ["shopping"] });
       qc.invalidateQueries({ queryKey: ["op-lijst", recipe.id] });
+      setBoodschappenOpen(false);
     } catch {
       toast.error("Toevoegen lukte niet");
     } finally {
@@ -480,6 +506,15 @@ function ReceptPage() {
 
         {recipe.instructions.length > 0 ? <Button onClick={() => { setStap(0); void meet("kookmodus.gestart", undefined, { id }); setKookstand(true); }} className="h-14 w-full"><ChefHat />{t("Start koken")}</Button> : null}
 
+        <Button
+          variant="secondary"
+          onClick={() => setBoodschappenOpen(true)}
+          disabled={!ingredients.length}
+          className="h-16 w-full text-lg"
+        >
+          <ShoppingCart className="size-5" /> {t("Voeg toe aan boodschappenlijst")}
+        </Button>
+
         {isOwner && (ingredients.length === 0 || recipe.instructions.length === 0) && (
           <div className="rounded-2xl border border-primary/40 bg-secondary p-4">
             <p className="text-base">
@@ -563,14 +598,14 @@ function ReceptPage() {
             )}
           </ul>
 
-          {staatOpLijst ? (
+          {lijstenMetRecept.length ? (
             <p className="mt-4 flex items-center gap-2 rounded-2xl bg-secondary px-4 py-3 text-base text-secondary-foreground">
               <Check className="size-5 text-primary" aria-hidden />
-              {t("Dit recept staat al op je boodschappenlijst")}
+              {t("Dit recept staat al op een boodschappenlijst")}
             </p>
           ) : null}
-          <Button onClick={() => void naarBoodschappen()} className="mt-4 h-16 w-full text-lg">
-            <ShoppingCart className="size-5" /> {t("Naar boodschappenlijst")}
+          <Button onClick={() => setBoodschappenOpen(true)} className="mt-4 h-16 w-full text-lg">
+            <ShoppingCart className="size-5" /> {t("Voeg toe aan boodschappenlijst")}
           </Button>
         </section>
 
@@ -622,6 +657,40 @@ function ReceptPage() {
                 {t("Toch toevoegen")}
               </Button>
             </div>
+          </div>
+        </div>
+      ) : null}
+      {boodschappenOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
+          <div className="w-full max-w-md rounded-t-3xl bg-card p-5 sm:rounded-3xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="font-display text-xl">Naar boodschappenlijst</h2>
+                <p className="mt-1 text-base text-muted-foreground">Hoeveelheden voor {aantal} personen</p>
+              </div>
+              <Button variant="ghost" onClick={() => setBoodschappenOpen(false)} aria-label="Sluiten" className="size-12"><X /></Button>
+            </div>
+            <div className="mt-4 flex items-center justify-between rounded-2xl bg-secondary p-2">
+              <Button variant="secondary" onClick={() => setPersonen(Math.max(1, aantal - 1))} aria-label="Minder personen" className="size-12"><Minus /></Button>
+              <span className="text-lg font-semibold">{aantal} personen</span>
+              <Button variant="secondary" onClick={() => setPersonen(aantal + 1)} aria-label="Meer personen" className="size-12"><Plus /></Button>
+            </div>
+            {boodschappenLijsten.length > 1 ? (
+              <label className="mt-4 block text-base font-semibold">
+                Kies een lijst
+                <select value={gekozenLijst} onChange={(e) => setGekozenLijst(e.target.value)} className="mt-2 h-14 w-full rounded-xl border border-input bg-background px-3 text-base">
+                  {boodschappenLijsten.map((lijst) => <option key={lijst.id} value={lijst.id}>{lijst.name}</option>)}
+                </select>
+              </label>
+            ) : null}
+            {staatOpLijst ? (
+              <p className="mt-4 rounded-xl bg-secondary px-4 py-3 text-base">
+                Dit recept staat al op {boodschappenLijsten.find((lijst) => lijst.id === gekozenLijst)?.name ?? "deze lijst"}.
+              </p>
+            ) : null}
+            <Button onClick={() => void naarBoodschappen()} className="mt-4 h-16 w-full text-lg">
+              <ShoppingCart /> {staatOpLijst ? "Nog eens toevoegen" : "Toevoegen"}
+            </Button>
           </div>
         </div>
       ) : null}

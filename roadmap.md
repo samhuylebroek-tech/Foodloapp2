@@ -91,3 +91,11 @@
 
 ## Open
 - [x] Controlecentrum-link weer zichtbaar onderaan instellingen
+
+## Actief — weekmenu en boodschappen verbeteren
+- [x] Weeknavigatie met weekbalk en kalender
+- [x] Verstreken dagen uitsluiten
+- [x] Voorstellen zichtbaar en gevarieerd vernieuwen
+- [x] Weekmenu-instellingen in uitklapbare categorieën
+- [x] Recept direct en duidelijk aan gekozen boodschappenlijst toevoegen
+- [x] Mobiel en desktop gecontroleerd
