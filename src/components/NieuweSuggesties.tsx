@@ -9,10 +9,17 @@ import { Button } from "@/components/ui/button";
 import type { Recipe } from "@/lib/types";
 import { useT } from "@/lib/voorkeuren";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   ontdekSuggesties,
   importRecipeFromText,
   gerechtFoto,
   type InternetSuggestie,
+  type ImportedRecipe,
 } from "@/lib/ai.functions";
 
 /**
