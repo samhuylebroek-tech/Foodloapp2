@@ -169,6 +169,8 @@ function GerechtenPage() {
   const zichtbaar = useMemo(() => {
     const woorden = zoekWoorden(zoek);
     const gefilterd = recipes.filter((r) => {
+      if (eigenaar === "mij" && r.user_id !== user?.id) return false;
+      if (eigenaar === "vrienden" && r.user_id === user?.id) return false;
       if (categorie && r.category !== categorie) return false;
       if (moeilijkheid && r.difficulty !== moeilijkheid) return false;
       if (dieet && dieetPerRecept.get(r.id) !== dieet) return false;
