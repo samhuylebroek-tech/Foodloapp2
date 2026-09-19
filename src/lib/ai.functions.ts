@@ -1067,3 +1067,74 @@ export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
 
     return resultaat;
   });
+
+// ---------------- weekmenu laten voorstellen ----------------
+
+export type WeekmenuIdee = {
+  title: string;
+  soort: "vlees" | "vis" | "vega";
+  minuten: number;
+  waarom: string;
+};
+
+/** Nieuwe ideeën voor een weekmenu, buiten je eigen recepten. */
+export const weekmenuIdeeen = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        aantal: z.number().int().min(1).max(7),
+        wensen: z.string().max(300).default(""),
+        vermijd: z.string().max(300).default(""),
+        maxMinuten: z.number().int().min(0).max(240).default(0),
+        bekend: z.array(z.string()).max(100).default([]),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }): Promise<WeekmenuIdee[]> => {
+    const maand = new Date().toLocaleDateString("nl-BE", { month: "long" });
+    const { resultaat } = await metCredits(
+      {
+        userId: context.userId,
+        feature: "suggesties",
+        cacheSleutel: `weekmenu|${maand}|${data.aantal}|${data.wensen}|${data.vermijd}|${data.maxMinuten}`,
+        model: ZOEK_MODEL,
+      },
+      async (meter) => {
+        const raw = await askAI(
+          [
+            {
+              role: "system",
+              content:
+                'Je stelt een gevarieerd weekmenu samen met alledaagse gerechten die mensen thuis koken. Antwoord uitsluitend met een JSON-array: [{"title":"","soort":"vlees|vis|vega","minuten":30,"waarom":""}]. "title" is een concrete gerechtnaam in het Nederlands, "waarom" is één korte zin.',
+            },
+            {
+              role: "user",
+              content: `Maand: ${maand}. Geef ${data.aantal} verschillende gerechten.
+${data.wensen ? `Verdeling deze week: ${data.wensen}.` : ""}
+${data.maxMinuten ? `Elk gerecht is klaar in maximaal ${data.maxMinuten} minuten.` : ""}
+${data.vermijd ? `Vermijd: ${data.vermijd}.` : ""}
+Niet herhalen: ${data.bekend.slice(0, 60).join(", ") || "(niets)"}`,
+            },
+          ],
+          "weekmenu_ideeen",
+          meter,
+          ZOEK_MODEL,
+        );
+        const list = parseJson<Partial<WeekmenuIdee>[]>(raw, []);
+        if (!Array.isArray(list)) return [];
+        return list
+          .filter((s) => typeof s?.title === "string" && s.title.trim())
+          .slice(0, data.aantal)
+          .map((s) => ({
+            title: String(s.title).trim(),
+            soort: (["vlees", "vis", "vega"] as const).includes(s.soort as "vlees")
+              ? (s.soort as "vlees" | "vis" | "vega")
+              : "vega",
+            minuten: Number(s.minuten) || 30,
+            waarom: String(s.waarom ?? "").trim(),
+          }));
+      },
+    );
+    return resultaat;
+  });

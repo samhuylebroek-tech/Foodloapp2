@@ -36,12 +36,26 @@ export type ThemaId = (typeof THEMAS)[number]["id"];
 export const ALLE_MOMENTEN = ["ontbijt", "middageten", "avondeten"] as const;
 export const EEN_BLOK = ["maaltijd"] as const;
 
+/** Wat je op één dag anders wil dan je standaard. */
+export type DagVoorkeur = {
+  maxMinuten?: number | null; // null/0 = maakt niet uit
+  soort?: "vlees" | "vis" | "vega" | null; // null = Foodlo kiest
+  over?: boolean; // die dag overslaan
+};
+
 /** Hoe je je weekmenu wil zien en welke dagen/dagdelen meetellen. */
 export type WeekmenuInstelling = {
   weergave: "lijst" | "kaarten";
   dagen: number[]; // 0 = maandag … 6 = zondag
   startdag: 0 | 6; // week begint op maandag of zondag
   momenten: string[]; // leeg = de algemene momenten gebruiken
+  vlees: number; // hoeveel keer per week
+  vis: number;
+  vega: number;
+  maxMinuten: number; // 0 = maakt niet uit
+  vermijd: string; // wat je liever niet eet
+  bron: "eigen" | "ook-extern";
+  perDag: Record<string, DagVoorkeur>; // "0".."6" = weekdaggewoontes
 };
 
 export const WEEKMENU_STANDAARD: WeekmenuInstelling = {
@@ -49,6 +63,13 @@ export const WEEKMENU_STANDAARD: WeekmenuInstelling = {
   dagen: [0, 1, 2, 3, 4, 5, 6],
   startdag: 0,
   momenten: [],
+  vlees: 3,
+  vis: 1,
+  vega: 2,
+  maxMinuten: 0,
+  vermijd: "",
+  bron: "eigen",
+  perDag: {},
 };
 
 type Ctx = {
