@@ -36,6 +36,21 @@ export type ThemaId = (typeof THEMAS)[number]["id"];
 export const ALLE_MOMENTEN = ["ontbijt", "middageten", "avondeten"] as const;
 export const EEN_BLOK = ["maaltijd"] as const;
 
+/** Hoe je je weekmenu wil zien en welke dagen/dagdelen meetellen. */
+export type WeekmenuInstelling = {
+  weergave: "lijst" | "kaarten";
+  dagen: number[]; // 0 = maandag … 6 = zondag
+  startdag: 0 | 6; // week begint op maandag of zondag
+  momenten: string[]; // leeg = de algemene momenten gebruiken
+};
+
+export const WEEKMENU_STANDAARD: WeekmenuInstelling = {
+  weergave: "lijst",
+  dagen: [0, 1, 2, 3, 4, 5, 6],
+  startdag: 0,
+  momenten: [],
+};
+
 type Ctx = {
   taal: string;
   zetTaal: (t: string) => void;
@@ -43,6 +58,8 @@ type Ctx = {
   zetThema: (t: ThemaId) => void;
   momenten: string[];
   zetMomenten: (m: string[]) => void;
+  weekmenu: WeekmenuInstelling;
+  zetWeekmenu: (w: Partial<WeekmenuInstelling>) => void;
   t: (tekst: string) => string;
 };
 
@@ -53,6 +70,8 @@ const VoorkeurenCtx = createContext<Ctx>({
   zetThema: () => {},
   momenten: [...ALLE_MOMENTEN],
   zetMomenten: () => {},
+  weekmenu: WEEKMENU_STANDAARD,
+  zetWeekmenu: () => {},
   t: (tekst) => tekst,
 });
 
