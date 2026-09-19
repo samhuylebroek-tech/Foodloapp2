@@ -1051,6 +1051,7 @@ export const zoekReceptenOpWeb = createServerFn({ method: "POST" })
         if (rijen.length >= 12) break;
       }
     }
+    console.log("[zoek]", term, "paginas", paginas.map((p) => p.length), "rijen", rijen.length);
     if (rijen.length === 0) return [];
 
 
