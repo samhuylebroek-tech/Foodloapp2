@@ -902,6 +902,78 @@ function PlannerPage() {
         />
       )}
 
+      {opruimVraag && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-0 sm:items-center sm:p-4">
+          <div className="w-full max-w-md rounded-t-3xl bg-card p-5 sm:rounded-3xl">
+            <h2 className="font-display text-xl">Ook de ingrediënten weghalen?</h2>
+            <p className="mt-2 text-base text-muted-foreground">
+              {opruimVraag.titel} staat niet meer in je weekmenu. Deze boodschappen staan er nog wel op:
+            </p>
+            <ul className="mt-3 max-h-48 space-y-1 overflow-y-auto text-base">
+              {opruimVraag.items.map((i) => (
+                <li key={i.id} className="rounded-lg bg-secondary px-3 py-2">{i.naam}</li>
+              ))}
+            </ul>
+            <div className="mt-4 flex gap-2">
+              <Button variant="ghost" onClick={() => setOpruimVraag(null)} className="h-14 flex-1 text-base">
+                Laat staan
+              </Button>
+              <Button onClick={() => void opruimenBevestigen()} className="h-14 flex-1 text-base">
+                <Trash2 className="size-5" /> Weghalen
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {naVoorstel && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-0 sm:items-center sm:p-4">
+          <div className="w-full max-w-md rounded-t-3xl bg-card p-5 sm:rounded-3xl">
+            <h2 className="font-display text-xl">Alles op je boodschappenlijst?</h2>
+            <p className="mt-2 text-base text-muted-foreground">
+              Kies voor welke gerechten we de ingrediënten toevoegen.
+            </p>
+            <ul className="mt-3 max-h-64 space-y-1 overflow-y-auto">
+              {naVoorstel.map((r) => (
+                <li key={r.recipeId}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setNaGekozen((oud) => {
+                        const set = new Set(oud);
+                        if (set.has(r.recipeId)) set.delete(r.recipeId);
+                        else set.add(r.recipeId);
+                        return set;
+                      })
+                    }
+                    className="flex min-h-14 w-full items-center gap-3 rounded-xl bg-secondary px-3 text-left text-base"
+                  >
+                    <span
+                      className={
+                        naGekozen.has(r.recipeId)
+                          ? "flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground"
+                          : "flex size-7 items-center justify-center rounded-md border-2 border-border"
+                      }
+                    >
+                      {naGekozen.has(r.recipeId) ? <Check className="size-5" /> : null}
+                    </span>
+                    <span className="min-w-0 flex-1">{r.titel}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-4 flex gap-2">
+              <Button variant="ghost" onClick={() => setNaVoorstel(null)} className="h-14 flex-1 text-base">
+                Niet nu
+              </Button>
+              <Button onClick={() => void zetAllesOpLijst()} className="h-14 flex-1 text-base">
+                <ShoppingCart className="size-5" /> Toevoegen
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {vraagLijst && user && (
         <LijstVraag
           titel={vraagLijst.titel}
