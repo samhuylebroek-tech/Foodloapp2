@@ -5,6 +5,8 @@ Het weekmenu wordt sneller te bedienen over meerdere weken, voorstellen werken z
 
 ## Aanpassingen
 
+De uitvoering wordt bijgehouden in de projectroadmap totdat alle controles geslaagd zijn.
+
 ### 1. Makkelijk tussen weken bewegen
 - Maak de huidige weekperiode duidelijker en volledig aanklikbaar.
 - Voeg herkenbare knoppen **Vorige week**, **Deze week** en **Volgende week** toe; op kleine schermen blijven de pijlen compact met duidelijke labels voor toegankelijkheid.
