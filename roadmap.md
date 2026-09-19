@@ -20,9 +20,9 @@
 - [ ] Eigen domeinnaam kopen en koppelen (naam: Foodlo) — wacht tot de rest klaar is
 
 ## Actief — volledige A-Z kwaliteitsronde
-- [ ] Boodschappenlijst compacter en overzichtelijker maken
-- [ ] Alles of alle afgevinkte boodschappen in één keer kunnen verwijderen
-- [ ] Bestaande boodschappen snel en duidelijk kunnen aanpassen
+- [x] Boodschappenlijst compacter en overzichtelijker maken
+- [x] Alles of alle afgevinkte boodschappen in één keer kunnen verwijderen
+- [x] Bestaande boodschappen snel en duidelijk kunnen aanpassen
 - [ ] Kernflows, samenwerking, beheer, PWA en toegankelijkheid volledig testen
 - [ ] Veiligheid, prestaties en AI-kosten controleren en noodzakelijke problemen herstellen
 - [ ] Tijdelijke testgegevens opruimen en een eindcontrole uitvoeren
