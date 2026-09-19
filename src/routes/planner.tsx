@@ -27,7 +27,7 @@ import { Input } from "@/components/ui/input";
 
 import { type Recipe } from "@/lib/types";
 import { importRecipeFromText } from "@/lib/ai.functions";
-import { useVoorkeuren } from "@/lib/voorkeuren";
+import { useVoorkeuren, ALLE_MOMENTEN, type WeekmenuInstelling } from "@/lib/voorkeuren";
 import { zorgVoorLijst, maakLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
 import { tijdLabel } from "@/lib/tijd";
 
