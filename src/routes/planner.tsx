@@ -626,7 +626,7 @@ function PlannerPage() {
 
       {kiezen && (
         <ReceptKiezer
-          week={week}
+          week={zichtbareDagen}
           momenten={momenten}
           start={kiezen}
           onSluit={() => setKiezen(null)}
