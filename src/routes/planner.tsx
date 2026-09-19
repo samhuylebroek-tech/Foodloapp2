@@ -1852,6 +1852,8 @@ function WeekmenuVoorstel({
   const [openDag, setOpenDag] = useState<string | null>(null);
   const [rijen, setRijen] = useState<Rij[]>([]);
   const [bezigMet, setBezigMet] = useState("");
+  const getoondeRecepten = useRef<Record<string, string[]>>({});
+  const getoondeIdeeen = useRef<string[]>([]);
 
   const { data: recepten = [] } = useQuery({
     queryKey: ["voorstel-recepten"],
@@ -1928,7 +1930,16 @@ function WeekmenuVoorstel({
         doelen: { vlees: instelling.vlees, vis: instelling.vis, vega: instelling.vega },
         vermijd: instelling.vermijd,
         recentPerRecept: recent,
+        uitgesloten: getoondeRecepten.current,
       });
+      for (const keuze of keuzes) {
+        if (!keuze.recept) continue;
+        const sleutel = `${keuze.datum}|${keuze.moment}`;
+        getoondeRecepten.current[sleutel] = [
+          ...(getoondeRecepten.current[sleutel] ?? []),
+          keuze.recept.id,
+        ];
+      }
       let nieuw: Rij[] = keuzes.map((k) => {
         const staatAl = bezet.has(`${k.datum}|${k.moment}`);
         const regel = lijst.find((r) => r.datum === k.datum && r.moment === k.moment);
@@ -1951,7 +1962,7 @@ function WeekmenuVoorstel({
             wensen: `${instelling.vlees}x vlees, ${instelling.vis}x vis, ${instelling.vega}x vegetarisch`,
             vermijd: instelling.vermijd,
             maxMinuten: instelling.maxMinuten,
-            bekend: recepten.slice(0, 60).map((r) => r.title),
+            bekend: [...recepten.slice(0, 60).map((r) => r.title), ...getoondeIdeeen.current],
           },
         });
         let i = 0;
@@ -1960,6 +1971,10 @@ function WeekmenuVoorstel({
           const idee = ideeen[i++] ?? null;
           return idee ? { ...r, idee, aan: true } : r;
         });
+        getoondeIdeeen.current = [
+          ...getoondeIdeeen.current,
+          ...ideeen.map((idee) => idee.title),
+        ];
       }
       setRijen(nieuw);
       setStap("voorstel");
@@ -1976,6 +1991,13 @@ function WeekmenuVoorstel({
       .map((r) => r.recept?.id)
       .filter((x): x is string => !!x);
     const huidig = rijen.find((r) => r.datum === datum && r.moment === moment)?.recept?.id;
+    const sleutel = `${datum}|${moment}`;
+    if (huidig) {
+      getoondeRecepten.current[sleutel] = [
+        ...(getoondeRecepten.current[sleutel] ?? []),
+        huidig,
+      ];
+    }
     const over = recepten.filter((r) => r.id !== huidig && !gebruikt.includes(r.id));
     const [keuze] = kiesUitEigen({
       recepten: over,
@@ -1984,6 +2006,7 @@ function WeekmenuVoorstel({
       doelen: { vlees: 0, vis: 0, vega: 0 },
       vermijd: instelling.vermijd,
       recentPerRecept: recent,
+      uitgesloten: getoondeRecepten.current,
     });
     if (!keuze?.recept) {
       toast("Geen ander passend gerecht gevonden");
@@ -2022,7 +2045,7 @@ function WeekmenuVoorstel({
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
       <div className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-card p-5 sm:rounded-3xl">
         <div className="flex items-start justify-between gap-3">
-          <h2 className="font-display text-xl">Weekmenu laten voorstellen</h2>
+          <h2 className="font-display text-xl">Voorstel van Foodlo</h2>
           <Button variant="ghost" onClick={onSluit} aria-label="Sluiten" className="size-12">
             <X className="size-5" />
           </Button>
@@ -2272,8 +2295,14 @@ function WeekmenuVoorstel({
             </ul>
 
             <div className="flex gap-2">
-              <Button variant="secondary" onClick={maakVoorstel} className="h-14 flex-1 text-base">
-                <RefreshCw className="size-5" /> Opnieuw
+              <Button
+                variant="secondary"
+                onClick={maakVoorstel}
+                disabled={!!bezigMet}
+                className="h-14 flex-1 text-base"
+              >
+                {bezigMet ? <Loader2 className="size-5 animate-spin" /> : <RefreshCw className="size-5" />}
+                Opnieuw voorstellen
               </Button>
               <Button
                 disabled={!aantalAan || !!bezigMet}
