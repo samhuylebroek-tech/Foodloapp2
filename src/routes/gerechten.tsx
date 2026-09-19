@@ -420,6 +420,11 @@ function GerechtenPage() {
                           />
                         )}
                       </p>
+                      {r.user_id !== user?.id && eigenaren[r.user_id] ? (
+                        <p className="mt-1 text-xs font-medium text-muted-foreground">
+                          {t("van")} {eigenaren[r.user_id]}
+                        </p>
+                      ) : null}
                       <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
                         {tijdLabel(r.prep_minutes, r.cook_minutes) ? (
                           <span className="inline-flex items-center gap-1">
