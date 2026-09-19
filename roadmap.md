@@ -92,6 +92,12 @@
 ## Open
 - [x] Controlecentrum-link weer zichtbaar onderaan instellingen
 
+## Actief — weekmenuvoorstel per dag
+- [x] Voorstel als rustige dagkaart met één dag tegelijk
+- [x] Kooktijd en type direct per dag aanpasbaar
+- [x] Alternatief kiezen uit Foodlo, eigen gerecht of nieuw idee
+- [x] Accepteren, overslaan en navigeren per dag getest
+
 ## Actief — weekmenu en boodschappen verbeteren
 - [x] Weeknavigatie met weekbalk en kalender
 - [x] Verstreken dagen uitsluiten
