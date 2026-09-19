@@ -103,6 +103,20 @@ function kortLabel(datum: string) {
   return d.toLocaleDateString("nl-BE", { weekday: "short", day: "numeric" });
 }
 
+function weekLabel(start: Date, kort = false) {
+  const einde = new Date(start);
+  einde.setDate(einde.getDate() + 6);
+  const beginTekst = start.toLocaleDateString("nl-BE", {
+    day: "numeric",
+    month: kort ? "short" : "long",
+  });
+  const eindeTekst = einde.toLocaleDateString("nl-BE", {
+    day: "numeric",
+    month: kort ? "short" : "long",
+  });
+  return `${beginTekst} – ${eindeTekst}`;
+}
+
 type Basis = {
   title: string;
   description: string;
@@ -136,6 +150,7 @@ function PlannerPage() {
   const [weergave, setWeergave] = useState<"mij" | "gezin">("mij");
   const [instellingenOpen, setInstellingenOpen] = useState(false);
   const [voorstelOpen, setVoorstelOpen] = useState(false);
+  const [kalenderOpen, setKalenderOpen] = useState(false);
 
   // De week begint op maandag of (als je dat kiest) op zondag.
   const week = Array.from({ length: 7 }, (_, i) => {
@@ -148,6 +163,14 @@ function PlannerPage() {
   const zichtbareDagen = week.filter((dag) =>
     weekmenu.dagen.includes((new Date(`${dag}T12:00:00`).getDay() + 6) % 7),
   );
+  const voorstelDagen = zichtbareDagen.filter((dag) => dag >= vandaag);
+  const huidigeWeek = maandagVan(new Date());
+  const weekVerschil = Math.round((weekStart.getTime() - huidigeWeek.getTime()) / 604800000);
+  const snelleWeken = [0, 1, 2].map((stap) => {
+    const start = new Date(huidigeWeek);
+    start.setDate(start.getDate() + stap * 7);
+    return start;
+  });
 
   const { data: gezin } = useQuery({
     queryKey: ["planner-gezin", user?.id],
@@ -511,17 +534,26 @@ function PlannerPage() {
           >
             <ChevronLeft className="size-6" />
           </Button>
-          <p className="flex-1 text-center text-lg font-semibold">
-            {new Date(`${week[0]}T12:00:00`).toLocaleDateString("nl-BE", {
-              day: "numeric",
-              month: "long",
-            })}{" "}
-            –{" "}
-            {new Date(`${week[6]}T12:00:00`).toLocaleDateString("nl-BE", {
-              day: "numeric",
-              month: "long",
-            })}
-          </p>
+          <Popover open={kalenderOpen} onOpenChange={setKalenderOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" className="h-14 min-w-0 flex-1 gap-2 px-2 text-base font-semibold">
+                <CalendarDays className="size-5 shrink-0" />
+                <span className="truncate">{weekLabel(weekStart)}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="center">
+              <Calendar
+                mode="single"
+                selected={weekStart}
+                onSelect={(datum) => {
+                  if (!datum) return;
+                  setWeekStart(maandagVan(datum));
+                  setKalenderOpen(false);
+                }}
+                className="pointer-events-auto p-3"
+              />
+            </PopoverContent>
+          </Popover>
           <Button
             variant="secondary"
             onClick={() => verschuif(1)}
@@ -540,6 +572,30 @@ function PlannerPage() {
           </Button>
         </div>
 
+        <div className="grid grid-cols-4 gap-2" aria-label="Snel een week kiezen">
+          {snelleWeken.map((start, index) => {
+            const actief = datumTekst(start) === datumTekst(weekStart);
+            return (
+              <Button
+                key={datumTekst(start)}
+                variant={actief ? "default" : "secondary"}
+                onClick={() => setWeekStart(start)}
+                className="h-12 min-w-0 px-2 text-sm"
+              >
+                <span className="truncate">{index === 0 ? "Deze week" : index === 1 ? "Volgende" : "+2 weken"}</span>
+              </Button>
+            );
+          })}
+          <Button variant="secondary" onClick={() => verschuif(1)} className="h-12 min-w-0 px-2 text-sm">
+            Verder
+          </Button>
+        </div>
+        {weekVerschil !== 0 ? (
+          <Button variant="ghost" onClick={() => setWeekStart(huidigeWeek)} className="h-12 w-full text-base">
+            Terug naar deze week
+          </Button>
+        ) : null}
+
 
         <Button
           onClick={() =>
@@ -551,7 +607,7 @@ function PlannerPage() {
           }
           className="h-16 w-full text-lg"
         >
-          <Plus className="size-6" /> Gerecht inplannen deze week
+          <Plus className="size-6" /> Gerecht inplannen
         </Button>
 
         <Button
@@ -559,7 +615,7 @@ function PlannerPage() {
           onClick={() => setVoorstelOpen(true)}
           className="h-16 w-full text-lg"
         >
-          <Sparkles className="size-6" /> Laat Foodlo een weekmenu voorstellen
+          <Sparkles className="size-6" /> Maak een weekmenu
         </Button>
 
 
@@ -691,7 +747,7 @@ function PlannerPage() {
               )}
 
               <div className="mt-3 flex flex-wrap gap-2">
-                {openMomenten.map((m) => (
+                {dag >= vandaag && openMomenten.map((m) => (
                   <button
                     key={m}
                     type="button"
@@ -706,6 +762,9 @@ function PlannerPage() {
                     Helemaal gepland
                   </p>
                 )}
+                {dag < vandaag && !volledig ? (
+                  <p className="text-base text-muted-foreground">Deze dag is voorbij</p>
+                ) : null}
               </div>
             </section>
           );
@@ -724,7 +783,7 @@ function PlannerPage() {
 
       {voorstelOpen && (
         <WeekmenuVoorstel
-          week={zichtbareDagen}
+          week={voorstelDagen}
           momenten={momenten}
           instelling={weekmenu}
           zetInstelling={zetWeekmenu}
