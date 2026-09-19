@@ -112,6 +112,8 @@ export function RecipeForm({
     .filter(Boolean);
   const formIngredienten = parseIngredientText(ingredientTekst);
   const stapKoppeling = koppelStappen(stappen, formIngredienten, stapKeuze);
+  // Ruwe schatting van het aantal personen op basis van de hoeveelheden.
+  const schatting = schatPersonen(formIngredienten);
 
   /** Zet een ingrediënt aan of uit bij een stap; vanaf dan telt de eigen keuze. */
   function wisselStapIngredient(stapIndex: number, naam: string) {
