@@ -55,28 +55,44 @@ export function stam(woord: string): string {
   return w;
 }
 
-function kernwoorden(naam: string): string[] {
-  const alle = normaliseer(naam).split(" ").filter(Boolean);
-  const kern = alle.filter((w) => w.length >= 2 && !STOPWOORDEN.has(w)).map(stam);
-  return kern.length ? kern : alle.map(stam);
+/**
+ * Vergelijkbare basisvorm: meervoud weg, dubbele medeklinker weg en lange
+ * klinkers ingekort, zodat "tomaat"/"tomaten" en "ui"/"uien" samenvallen.
+ */
+export function basis(woord: string): string {
+  let w = stam(woord);
+  if (w.length > 2 && /(?:en|s)$/.test(woord) && w === woord) {
+    w = woord.replace(/(?:en|s)$/, "");
+  }
+  w = w.replace(/aa/g, "a").replace(/ee/g, "e").replace(/oo/g, "o").replace(/uu/g, "u");
+  if (w.length > 2 && /([bdfgklmnprst])\1$/.test(w)) w = w.slice(0, -1);
+  return w;
 }
 
-type StapTekst = { woorden: Set<string>; ruw: string };
+function kernwoorden(naam: string): string[] {
+  const alle = normaliseer(naam).split(" ").filter(Boolean);
+  const kern = alle.filter((w) => w.length >= 2 && !STOPWOORDEN.has(w)).map(basis);
+  return kern.length ? kern : alle.map(basis);
+}
+
+type StapTekst = { basissen: Set<string>; lange: string[] };
 
 function ontleedStap(stap: string): StapTekst {
-  const ruw = normaliseer(stap);
-  const woorden = new Set<string>();
-  for (const w of ruw.split(" ").filter(Boolean)) {
-    woorden.add(w);
-    woorden.add(stam(w));
+  const basissen = new Set<string>();
+  const lange: string[] = [];
+  for (const w of normaliseer(stap).split(" ").filter(Boolean)) {
+    basissen.add(w);
+    basissen.add(stam(w));
+    basissen.add(basis(w));
+    if (w.length >= 6) lange.push(basis(w));
   }
-  return { woorden, ruw };
+  return { basissen, lange };
 }
 
 /**
  * Komt het ingrediënt voor in deze stap?
- * - korte namen ("ei", "ui"): enkel een exacte woordtreffer, anders krijg je
- *   valse treffers in woorden als "uit" of "eierdopje";
+ * - korte namen ("ei", "ui"): enkel een woordtreffer, anders krijg je valse
+ *   treffers in woorden als "uit";
  * - langere namen: ook in samenstellingen ("uienringen", "tomatensaus").
  */
 function komtVoor(naam: string, stapTekst: StapTekst): boolean {
@@ -84,8 +100,8 @@ function komtVoor(naam: string, stapTekst: StapTekst): boolean {
   if (!kern.length) return false;
   return kern.some((k) => {
     if (!k) return false;
-    if (stapTekst.woorden.has(k)) return true;
-    if (k.length >= 4 && stapTekst.ruw.includes(k)) return true;
+    if (stapTekst.basissen.has(k)) return true;
+    if (k.length >= 4 && stapTekst.lange.some((w) => w.includes(k))) return true;
     return false;
   });
 }
