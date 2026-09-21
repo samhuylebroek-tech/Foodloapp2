@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { RecipeForm } from "@/components/RecipeForm";
 import { ReceptGeschiedenis } from "@/components/ReceptGeschiedenis";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import type { Ingredient, Recipe } from "@/lib/types";
 
 export const Route = createFileRoute("/recepten/$id_/bewerken")({
