@@ -128,7 +128,7 @@
 - [x] Eigen recepten, inspiratie en nieuw toevoegen duidelijk scheiden
 - [x] Unieke receptresultaten met filters, zoeken en fouttoestand
 - [x] AI, web, tekstplanning, receptcontrole en boodschappenwerking behouden
-- [ ] Mobiele, tablet- en desktop-eindcontrole van de volledige toevoegstroom
+- [x] Mobiele, tablet- en desktop-eindcontrole van de volledige toevoegstroom
 
 ## Actief — weekmenu en boodschappen verbeteren
 - [x] Weeknavigatie met weekbalk en kalender

@@ -936,10 +936,11 @@ function GerechtKaart({ recept, onKies }: { recept: Recipe; onKies: () => void }
     .filter(Boolean)
     .join(" · ");
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
       onClick={onKies}
-      className="flex min-h-20 w-full items-center gap-3 rounded-2xl border border-border bg-card p-2 text-left active:bg-secondary"
+      className="h-auto min-h-20 w-full items-center justify-start gap-3 whitespace-normal rounded-xl bg-card p-2 text-left active:bg-secondary"
     >
       {recept.image_url && !fout ? (
         <img
@@ -958,11 +959,11 @@ function GerechtKaart({ recept, onKies }: { recept: Recipe; onKies: () => void }
         </span>
       )}
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-lg font-semibold">{recept.title}</span>
-        {info && <span className="block truncate text-base text-muted-foreground">{info}</span>}
+        <span className="line-clamp-2 block text-base font-semibold leading-snug">{recept.title}</span>
+        {info && <span className="mt-0.5 block text-sm font-normal text-muted-foreground">{info}</span>}
       </span>
       <Plus className="size-5 shrink-0 text-primary" aria-hidden />
-    </button>
+    </Button>
   );
 }
 
