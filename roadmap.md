@@ -116,6 +116,13 @@
 - [x] Alternatief kiezen uit Foodlo, eigen gerecht of nieuw idee
 - [x] Accepteren, overslaan en navigeren per dag getest
 
+## Actief — compact mobiel Weekmenu
+- [x] Compacte weekkeuze en persoonlijke/gezinsplanning
+- [x] Planning als verticale daglijn met foto, maaltijdtype en kooktijd
+- [x] Toevoegen, Foodlo kiezen en boodschappen als rustige actierij
+- [x] Maaltijdacties gebundeld in één contextmenu
+- [x] Mobiele en desktop-eindcontrole van het vernieuwde Weekmenu
+
 ## Actief — weekmenu en boodschappen verbeteren
 - [x] Weeknavigatie met weekbalk en kalender
 - [x] Verstreken dagen uitsluiten
