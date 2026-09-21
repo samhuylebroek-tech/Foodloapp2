@@ -132,7 +132,7 @@ export function RecipeForm({
     setStapKeuze((vorig) => {
       const huidig =
         vorig[String(stapIndex)] ??
-        (stapKoppeling[stapIndex] ?? []).map((idx) => formIngredienten[idx]!.name);
+        (stapKoppeling[stapIndex] ?? []).map((tr) => formIngredienten[tr.idx]!.name);
       const staatAan = huidig.some((n) => normaliseer(n) === normaliseer(naam));
       const nieuw = staatAan
         ? huidig.filter((n) => normaliseer(n) !== normaliseer(naam))
@@ -1267,7 +1267,7 @@ export function RecipeForm({
             <div className="mt-3 space-y-3">
               {stappen.map((s, i) => {
                 const aan = new Set(
-                  (stapKoppeling[i] ?? []).map((idx) => normaliseer(formIngredienten[idx]!.name)),
+                  (stapKoppeling[i] ?? []).map((tr) => normaliseer(formIngredienten[tr.idx]!.name)),
                 );
                 return (
                   <div key={i} className="rounded-2xl border border-border bg-card p-3">
