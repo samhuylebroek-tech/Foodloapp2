@@ -148,9 +148,20 @@ export function AppShell({
           >
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3">
               <div className="flex min-w-0 items-center gap-3">
-                <Link to="/" aria-label="Foodlo Start" className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary lg:hidden">
-                  <img src={logo} alt="" width={26} height={26} className="size-6" />
-                </Link>
+                {toonTerug ? (
+                  <button
+                    type="button"
+                    onClick={gaTerug}
+                    aria-label={t("Terug")}
+                    className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary lg:hidden"
+                  >
+                    <ArrowLeft className="size-6" aria-hidden />
+                  </button>
+                ) : (
+                  <Link to="/" aria-label="Foodlo Start" className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary lg:hidden">
+                    <img src={logo} alt="" width={26} height={26} className="size-6" />
+                  </Link>
+                )}
               <h1 className="min-w-0 flex-1 truncate font-display text-2xl font-semibold leading-tight">
                 {title}
               </h1>
