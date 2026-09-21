@@ -1274,7 +1274,53 @@ export function RecipeForm({
             placeholder={"Verwarm de oven op 180 graden.\nMeng de bloem met de eieren."}
             className="mt-2 text-base"
           />
+          {stappen.length > 0 && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => void kuisTekstOp()}
+              disabled={taalBezig}
+              className="mt-2 h-12"
+            >
+              {taalBezig ? <Loader2 className="size-5 animate-spin" /> : <Sparkles className="size-5" />}
+              Tekst opschonen
+            </Button>
+          )}
         </div>
+
+        <Dialog open={taalVoorstel !== null} onOpenChange={(o) => !o && setTaalVoorstel(null)}>
+          <DialogContent className="max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Voorstel voor je tekst</DialogTitle>
+              <DialogDescription>
+                Alleen de taal is verbeterd. Hoeveelheden, tijden en volgorde blijven gelijk.
+              </DialogDescription>
+            </DialogHeader>
+            <ol className="space-y-2 text-base">
+              {(taalVoorstel ?? []).map((s, i) => (
+                <li key={i} className="rounded-2xl border border-border bg-card p-3">
+                  <span className="mr-2 font-semibold text-primary">{i + 1}</span>
+                  {s}
+                </li>
+              ))}
+            </ol>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setTaalVoorstel(null)} className="h-14">
+                Annuleren
+              </Button>
+              <Button
+                onClick={() => {
+                  if (taalVoorstel) setStappenTekst(taalVoorstel.join("\n"));
+                  setTaalVoorstel(null);
+                  toast.success("Tekst bijgewerkt");
+                }}
+                className="h-14"
+              >
+                Bewaren
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {stappen.length > 0 && formIngredienten.length > 0 && (
           <div>
