@@ -1208,3 +1208,39 @@ export const haalAfbeelding = createServerFn({ method: "POST" })
     }
     return { dataUrl: `data:${type};base64,${btoa(binair)}` };
   });
+
+/**
+ * Verbetert enkel spelling en grammatica van de bereidingsstappen.
+ * Hoeveelheden, tijden, volgorde en aantal stappen blijven gelijk.
+ */
+export const verbeterStappen = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z.object({ stappen: z.array(z.string().min(1)).min(1).max(40) }).parse(data),
+  )
+  .handler(async ({ data, context }): Promise<string[]> => {
+    const bron = data.stappen.join("\n");
+    const { resultaat } = await metCredits(
+      { userId: context.userId, feature: "import_tekst", cacheSleutel: `taal|${bron}`, model: MODEL },
+      async (meter) => {
+        const raw = await askAI(
+          [
+            {
+              role: "system",
+              content:
+                'Je verbetert uitsluitend de spelling, grammatica en interpunctie van Nederlandse kookstappen. Verander niets aan de inhoud: geen hoeveelheden, tijden, temperaturen, ingrediënten, volgorde of aantal stappen wijzigen, niets toevoegen of weglaten. Antwoord uitsluitend met JSON: {"stappen": ["...", "..."]} met exact evenveel stappen als je krijgt.',
+            },
+            { role: "user", content: bron },
+          ],
+          "import_tekst",
+          meter,
+        );
+        const uit = parseJson<{ stappen?: unknown }>(raw, {});
+        const lijst = Array.isArray(uit.stappen)
+          ? uit.stappen.filter((s): s is string => typeof s === "string" && s.trim().length > 0)
+          : [];
+        return lijst.length === data.stappen.length ? lijst : data.stappen;
+      },
+    );
+    return resultaat;
+  });
