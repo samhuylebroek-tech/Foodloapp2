@@ -32,4 +32,6 @@ Bij ingevoerde en geïmporteerde recepten staan er soms taalfouten of rommelige 
 - `src/lib/stap-ingredienten.ts`: `komtVoor` wordt een score-vrije match op stam met substring-treffer in samengestelde woorden; minimumlengte-gate en `MAX_PER_STAP` vervallen voor echte woordtreffers. `koppelStappen` geeft per stap alle treffers terug plus een vlag `herhaling` voor stappen na de eerste vermelding; handmatige koppelingen blijven voorrang houden.
 - `src/components/StapIngredienten.tsx`: toont het label "(rest)" bij een herhaling; verder ongewijzigde styling.
 - `src/routes/recepten.$id.tsx`: in de kookstand een uitklap met de volledige ingrediëntenlijst onder de stapchips; in het `klaarVragen`-scherm een extra knop die `setKlaarVragen(false)` doet en `stap` op de laatste index zet (kookstand blijft open).
+- Nieuw `src/lib/tekst-opkuis.ts`: `netteStap(tekst)` (mojibake-herstel, spatie- en leestekennormalisatie, beginhoofdletter, sluitpunt); toegepast bij weergave in `recepten.$id.tsx` (lijst én kookstand), niet destructief in de database.
+- Spelling-/grammaticaknop in `src/components/RecipeForm.tsx` via een nieuwe serverfunctie in `src/lib/ai.functions.ts` (bestaande `metCredits` + `MODEL`, strikte prompt "alleen taal corrigeren"); resultaat in een voorbeeldvenster met "Bewaren" of "Annuleren".
 - Geen database- of schemawijziging.
