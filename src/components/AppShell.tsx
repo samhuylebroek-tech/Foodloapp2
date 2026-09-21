@@ -170,7 +170,7 @@ export function AppShell({
             </div>
           </header>
 
-          <main className="mx-auto w-full max-w-3xl px-4 py-6 pb-32 sm:px-6 lg:max-w-4xl lg:py-8 lg:pb-16">
+          <main className="mx-auto w-full max-w-3xl overflow-x-hidden px-4 py-6 pb-32 sm:px-6 lg:max-w-4xl lg:py-8 lg:pb-16">
             <Aankondigingen />
             {children}
             <MeldingVraag actief={pathname === "/"} />
