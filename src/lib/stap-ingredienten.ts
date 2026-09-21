@@ -2,8 +2,12 @@
  * Koppelt ingrediënten aan kookstappen.
  *
  * Volledig lokaal: de naam van een ingrediënt wordt gezocht in de tekst van de
- * stappen (ongevoelig voor hoofdletters, accenten en meervoud). Handmatige
- * keuzes van de gebruiker gaan altijd voor op de automatische herkenning.
+ * stappen (ongevoelig voor hoofdletters, accenten, meervoud en samenstellingen).
+ * Handmatige keuzes van de gebruiker gaan altijd voor op de automatische herkenning.
+ *
+ * Belangrijk: als een ingrediënt in de staptekst genoemd wordt, moet het er ook
+ * bij staan. Er is dus geen maximum per stap en geen minimumlengte meer, en een
+ * ingrediënt mag bij meerdere stappen verschijnen (de tweede keer als "rest").
  */
 
 export type StapIngredient = {
@@ -11,6 +15,9 @@ export type StapIngredient = {
   quantity: number | null;
   unit: string;
 };
+
+/** Eén treffer bij een stap. `herhaling` = het ingrediënt kwam eerder al voor. */
+export type Treffer = { idx: number; herhaling: boolean };
 
 /** Handmatige koppeling: stapindex (als tekst) -> lijst ingrediëntnamen. */
 export type StapKoppeling = Record<string, string[]>;
@@ -48,77 +55,91 @@ export function stam(woord: string): string {
   return w;
 }
 
+/**
+ * Vergelijkbare basisvorm: meervoud weg, dubbele medeklinker weg en lange
+ * klinkers ingekort, zodat "tomaat"/"tomaten" en "ui"/"uien" samenvallen.
+ */
+export function basis(woord: string): string {
+  let w = stam(woord);
+  if (w.length > 2 && /(?:en|s)$/.test(woord) && w === woord) {
+    w = woord.replace(/(?:en|s)$/, "");
+  }
+  w = w.replace(/aa/g, "a").replace(/ee/g, "e").replace(/oo/g, "o").replace(/uu/g, "u");
+  if (w.length > 2 && /([bdfgklmnprst])\1$/.test(w)) w = w.slice(0, -1);
+  return w;
+}
+
 function kernwoorden(naam: string): string[] {
-  const woorden = normaliseer(naam)
-    .split(" ")
-    .filter((w) => w.length >= 3 && !STOPWOORDEN.has(w))
-    .map(stam);
-  return woorden.length ? woorden : normaliseer(naam).split(" ").filter(Boolean).map(stam);
+  const alle = normaliseer(naam).split(" ").filter(Boolean);
+  const kern = alle.filter((w) => w.length >= 2 && !STOPWOORDEN.has(w)).map(basis);
+  return kern.length ? kern : alle.map(basis);
 }
 
-function stapWoorden(stap: string): Set<string> {
-  return new Set(
-    normaliseer(stap)
-      .split(" ")
-      .filter(Boolean)
-      .map(stam),
-  );
+type StapTekst = { basissen: Set<string>; lange: string[] };
+
+function ontleedStap(stap: string): StapTekst {
+  const basissen = new Set<string>();
+  const lange: string[] = [];
+  for (const w of normaliseer(stap).split(" ").filter(Boolean)) {
+    basissen.add(w);
+    basissen.add(stam(w));
+    basissen.add(basis(w));
+    if (w.length >= 6) lange.push(basis(w));
+  }
+  return { basissen, lange };
 }
-
-function komtVoor(naam: string, woorden: Set<string>): boolean {
-  const kern = kernwoorden(naam);
-  if (!kern.length) return false;
-  // Enkel een echte woordtreffer telt: zo hangt niet half de ingrediëntenlijst
-  // aan één stap en blijft het kort en bruikbaar tijdens het koken.
-  return kern.some((k) => k.length >= 4 && woorden.has(k));
-}
-
-/** Meer dan dit per stap wordt onoverzichtelijk om te lezen tijdens het koken. */
-const MAX_PER_STAP = 4;
-
 
 /**
- * Geeft per stap de indexen van de ingrediënten die erbij horen.
- * Een ingrediënt verschijnt maar bij één stap: de eerste waarin het voorkomt.
+ * Komt het ingrediënt voor in deze stap?
+ * - korte namen ("ei", "ui"): enkel een woordtreffer, anders krijg je valse
+ *   treffers in woorden als "uit";
+ * - langere namen: ook in samenstellingen ("uienringen", "tomatensaus").
+ */
+function komtVoor(naam: string, stapTekst: StapTekst): boolean {
+  const kern = kernwoorden(naam);
+  if (!kern.length) return false;
+  return kern.some((k) => {
+    if (!k) return false;
+    if (stapTekst.basissen.has(k)) return true;
+    if (k.length >= 4 && stapTekst.lange.some((w) => w.includes(k))) return true;
+    return false;
+  });
+}
+
+/**
+ * Geeft per stap de treffers: elke stap die een ingrediënt noemt, toont het ook.
+ * De tweede en volgende vermelding krijgt `herhaling: true`.
  */
 export function koppelStappen(
   stappen: string[],
   ingredienten: StapIngredient[],
   handmatig?: StapKoppeling | null,
-): number[][] {
-  const resultaat: number[][] = stappen.map(() => []);
-  const woordenPerStap = stappen.map(stapWoorden);
-  const gebruikt = new Set<number>();
+): Treffer[][] {
+  const resultaat: Treffer[][] = stappen.map(() => []);
+  const tekstPerStap = stappen.map(ontleedStap);
+  const alGezien = new Set<number>();
 
-  // 1. handmatige keuzes
+  const handmatigeStappen = new Set(Object.keys(handmatig ?? {}));
+
   stappen.forEach((_, i) => {
     const keuze = handmatig?.[String(i)];
-    if (!keuze) return;
-    const namen = new Set(keuze.map((n) => normaliseer(n)));
-    ingredienten.forEach((ing, idx) => {
-      if (namen.has(normaliseer(ing.name))) {
-        resultaat[i]!.push(idx);
-        gebruikt.add(idx);
-      }
-    });
-  });
-
-  const handmatigeStappen = new Set(
-    Object.keys(handmatig ?? {}).filter((k) => (handmatig?.[k]?.length ?? 0) >= 0),
-  );
-
-  // 2. automatische herkenning voor de rest, met een rem per stap
-  ingredienten.forEach((ing, idx) => {
-    if (gebruikt.has(idx)) return;
-    for (let i = 0; i < stappen.length; i++) {
-      if (handmatigeStappen.has(String(i))) continue; // stap staat onder eigen beheer
-      if (resultaat[i]!.length >= MAX_PER_STAP) continue;
-      if (komtVoor(ing.name, woordenPerStap[i]!)) {
-        resultaat[i]!.push(idx);
-        gebruikt.add(idx);
-        return;
-      }
+    if (keuze) {
+      // handmatige keuze bepaalt volledig wat er bij deze stap hoort
+      const namen = new Set(keuze.map((n) => normaliseer(n)));
+      ingredienten.forEach((ing, idx) => {
+        if (!namen.has(normaliseer(ing.name))) return;
+        resultaat[i]!.push({ idx, herhaling: alGezien.has(idx) });
+        alGezien.add(idx);
+      });
+      return;
     }
+    if (handmatigeStappen.has(String(i))) return;
+
+    ingredienten.forEach((ing, idx) => {
+      if (!komtVoor(ing.name, tekstPerStap[i]!)) return;
+      resultaat[i]!.push({ idx, herhaling: alGezien.has(idx) });
+      alGezien.add(idx);
+    });
   });
 
   return resultaat;

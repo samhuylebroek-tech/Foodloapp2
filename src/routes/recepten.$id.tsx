@@ -39,7 +39,8 @@ import { Copy } from "lucide-react";
 import { tijdLabel } from "@/lib/tijd";
 import { Voedingswaarden } from "@/components/Voedingswaarden";
 import { StapIngredienten } from "@/components/StapIngredienten";
-import { koppelStappen } from "@/lib/stap-ingredienten";
+import { koppelStappen, toonHoeveelheid } from "@/lib/stap-ingredienten";
+import { netteStap } from "@/lib/tekst-opkuis";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PageSkeleton } from "@/components/PageSkeleton";
@@ -226,7 +227,8 @@ function ReceptPage() {
     ingredients,
     (recipe as Recipe).step_ingredients ?? null,
   );
-  const stapIngredienten = (i: number) => (stapKoppeling[i] ?? []).map((idx) => ingredients[idx]!);
+  const stapIngredienten = (i: number) =>
+    (stapKoppeling[i] ?? []).map((tr) => ({ ...ingredients[tr.idx]!, herhaling: tr.herhaling }));
 
   async function toggleFavorite() {
     if (!user) return;
@@ -400,12 +402,22 @@ function ReceptPage() {
             />
           </div>
           <Button
+            variant="secondary"
+            onClick={() => {
+              setKlaarVragen(false);
+              setStap(Math.max(0, recipe.instructions.length - 1));
+            }}
+            className="mt-6 h-16 w-full text-lg"
+          >
+            {t("Terug naar de stappen")}
+          </Button>
+          <Button
             variant="ghost"
             onClick={() => {
               setKlaarVragen(false);
               setKookstand(false);
             }}
-            className="mt-6 h-16 w-full text-lg"
+            className="mt-3 h-16 w-full text-lg"
           >
             {t("Later")}
           </Button>
@@ -429,8 +441,23 @@ function ReceptPage() {
             </Button>
           </div>
           <h2 className="mt-6 font-display text-3xl">{recipe.title}</h2>
-          <p className="mt-6 text-2xl leading-relaxed">{stappen[stap]}</p>
+          <p className="mt-6 text-2xl leading-relaxed">{netteStap(t(stappen[stap] ?? ""))}</p>
           <StapIngredienten ingredienten={stapIngredienten(stap)} factor={factor} groot />
+          <details className="mt-6 rounded-2xl border border-border bg-card p-4">
+            <summary className="cursor-pointer text-lg font-semibold">
+              {t("Alle ingrediënten bekijken")}
+            </summary>
+            <ul className="mt-3 space-y-2 text-lg">
+              {ingredients.map((ing) => (
+                <li key={ing.id} className="flex justify-between gap-3">
+                  <span>{t(ing.name)}</span>
+                  <span className="shrink-0 text-muted-foreground">
+                    {toonHoeveelheid(ing, factor)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </details>
           <div className="mt-10 flex gap-3">
             <Button
               variant="secondary"
@@ -622,7 +649,7 @@ function ReceptPage() {
               <li key={i} className="flex gap-3 rounded-2xl border border-border bg-card p-4">
                 <span className="font-display text-xl text-primary">{i + 1}</span>
                 <div className="min-w-0">
-                  <p className="text-lg leading-relaxed">{t(s)}</p>
+                  <p className="text-lg leading-relaxed">{netteStap(t(s))}</p>
                   <StapIngredienten ingredienten={stapIngredienten(i)} factor={factor} />
                 </div>
               </li>

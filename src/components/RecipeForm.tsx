@@ -27,6 +27,7 @@ import {
   receptVanNaam,
   zoekReceptenOpWeb,
   haalAfbeelding,
+  verbeterStappen,
   type GerechtVoorstel,
   type WebResultaat,
   type ImportedRecipe,
@@ -38,6 +39,7 @@ import { parseIngredientText, ingredientToLine } from "@/lib/ingredienten";
 import { kiesSoort, raadSoort } from "@/lib/soort";
 import { Voedingswaarden } from "@/components/Voedingswaarden";
 import { koppelStappen, normaliseer, type StapKoppeling } from "@/lib/stap-ingredienten";
+import { netteStap } from "@/lib/tekst-opkuis";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { creditOverzicht } from "@/lib/credits.functions";
@@ -109,6 +111,10 @@ export function RecipeForm({
   const [stappenTekst, setStappenTekst] = useState((recipe?.instructions ?? []).join("\n"));
   const [stapKeuze, setStapKeuze] = useState<StapKoppeling>(recipe?.step_ingredients ?? {});
   const [meerDetails, setMeerDetails] = useState(false);
+  // Spelling en grammatica van de stappen laten nakijken
+  const [taalBezig, setTaalBezig] = useState(false);
+  const [taalVoorstel, setTaalVoorstel] = useState<string[] | null>(null);
+  const verbeterStappenFn = useServerFn(verbeterStappen);
 
   // Na het bewaren van een nieuw recept: meteen inplannen?
   const [netOpgeslagen, setNetOpgeslagen] = useState<{ id: string; titel: string } | null>(null);
@@ -132,7 +138,7 @@ export function RecipeForm({
     setStapKeuze((vorig) => {
       const huidig =
         vorig[String(stapIndex)] ??
-        (stapKoppeling[stapIndex] ?? []).map((idx) => formIngredienten[idx]!.name);
+        (stapKoppeling[stapIndex] ?? []).map((tr) => formIngredienten[tr.idx]!.name);
       const staatAan = huidig.some((n) => normaliseer(n) === normaliseer(naam));
       const nieuw = staatAan
         ? huidig.filter((n) => normaliseer(n) !== normaliseer(naam))
@@ -141,7 +147,19 @@ export function RecipeForm({
     });
   }
 
-
+  /** Laat Foodlo de spelling en grammatica van de stappen nakijken. */
+  async function kuisTekstOp() {
+    if (!stappen.length) return;
+    setTaalBezig(true);
+    try {
+      const verbeterd = await verbeterStappenFn({ data: { stappen } });
+      setTaalVoorstel(verbeterd.map((s) => netteStap(s)));
+    } catch {
+      toast.error("Opschonen lukte niet");
+    } finally {
+      setTaalBezig(false);
+    }
+  }
 
   const [importUrl, setImportUrl] = useState(gedeeldeLink);
   const [vrijeTekst, setVrijeTekst] = useState(gedeeldeTekst);
@@ -1256,7 +1274,53 @@ export function RecipeForm({
             placeholder={"Verwarm de oven op 180 graden.\nMeng de bloem met de eieren."}
             className="mt-2 text-base"
           />
+          {stappen.length > 0 && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => void kuisTekstOp()}
+              disabled={taalBezig}
+              className="mt-2 h-12"
+            >
+              {taalBezig ? <Loader2 className="size-5 animate-spin" /> : <Sparkles className="size-5" />}
+              Tekst opschonen
+            </Button>
+          )}
         </div>
+
+        <Dialog open={taalVoorstel !== null} onOpenChange={(o) => !o && setTaalVoorstel(null)}>
+          <DialogContent className="max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Voorstel voor je tekst</DialogTitle>
+              <DialogDescription>
+                Alleen de taal is verbeterd. Hoeveelheden, tijden en volgorde blijven gelijk.
+              </DialogDescription>
+            </DialogHeader>
+            <ol className="space-y-2 text-base">
+              {(taalVoorstel ?? []).map((s, i) => (
+                <li key={i} className="rounded-2xl border border-border bg-card p-3">
+                  <span className="mr-2 font-semibold text-primary">{i + 1}</span>
+                  {s}
+                </li>
+              ))}
+            </ol>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setTaalVoorstel(null)} className="h-14">
+                Annuleren
+              </Button>
+              <Button
+                onClick={() => {
+                  if (taalVoorstel) setStappenTekst(taalVoorstel.join("\n"));
+                  setTaalVoorstel(null);
+                  toast.success("Tekst bijgewerkt");
+                }}
+                className="h-14"
+              >
+                Bewaren
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {stappen.length > 0 && formIngredienten.length > 0 && (
           <div>
@@ -1267,7 +1331,7 @@ export function RecipeForm({
             <div className="mt-3 space-y-3">
               {stappen.map((s, i) => {
                 const aan = new Set(
-                  (stapKoppeling[i] ?? []).map((idx) => normaliseer(formIngredienten[idx]!.name)),
+                  (stapKoppeling[i] ?? []).map((tr) => normaliseer(formIngredienten[tr.idx]!.name)),
                 );
                 return (
                   <div key={i} className="rounded-2xl border border-border bg-card p-3">
