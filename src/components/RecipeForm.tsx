@@ -39,6 +39,7 @@ import { parseIngredientText, ingredientToLine } from "@/lib/ingredienten";
 import { kiesSoort, raadSoort } from "@/lib/soort";
 import { Voedingswaarden } from "@/components/Voedingswaarden";
 import { koppelStappen, normaliseer, type StapKoppeling } from "@/lib/stap-ingredienten";
+import { netteStap } from "@/lib/tekst-opkuis";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { creditOverzicht } from "@/lib/credits.functions";
@@ -146,7 +147,19 @@ export function RecipeForm({
     });
   }
 
-
+  /** Laat Foodlo de spelling en grammatica van de stappen nakijken. */
+  async function kuisTekstOp() {
+    if (!stappen.length) return;
+    setTaalBezig(true);
+    try {
+      const verbeterd = await verbeterStappenFn({ data: { stappen } });
+      setTaalVoorstel(verbeterd.map((s) => netteStap(s)));
+    } catch {
+      toast.error("Opschonen lukte niet");
+    } finally {
+      setTaalBezig(false);
+    }
+  }
 
   const [importUrl, setImportUrl] = useState(gedeeldeLink);
   const [vrijeTekst, setVrijeTekst] = useState(gedeeldeTekst);
