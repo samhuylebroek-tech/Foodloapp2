@@ -24,6 +24,8 @@ import {
   Utensils,
   BookOpen,
   WandSparkles,
+  MoreVertical,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +37,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 import { type Recipe } from "@/lib/types";
 import {
@@ -160,6 +175,7 @@ function PlannerPage() {
   const [instellingenOpen, setInstellingenOpen] = useState(false);
   const [voorstelOpen, setVoorstelOpen] = useState(false);
   const [kalenderOpen, setKalenderOpen] = useState(false);
+  const [boodschappenOpen, setBoodschappenOpen] = useState(false);
 
   // De week begint op maandag of (als je dat kiest) op zondag.
   const week = Array.from({ length: 7 }, (_, i) => {
@@ -175,7 +191,7 @@ function PlannerPage() {
   const voorstelDagen = zichtbareDagen.filter((dag) => dag >= vandaag);
   const huidigeWeek = maandagVan(new Date());
   const weekVerschil = Math.round((weekStart.getTime() - huidigeWeek.getTime()) / 604800000);
-  const snelleWeken = [0, 1, 2].map((stap) => {
+  const snelleWeken = [0, 1, 2, 3].map((stap) => {
     const start = new Date(huidigeWeek);
     start.setDate(start.getDate() + stap * 7);
     return start;
