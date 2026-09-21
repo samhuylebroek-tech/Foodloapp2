@@ -95,8 +95,8 @@
 - [x] Toestanden, microcopy, toegankelijkheid en mobiele eindcontrole
 
 ## Volledige mobiele UX/UI-herwerking (actief)
-- [ ] Mobiele app-schil met vijf vaste tabs, veilige schermranden en logische terugnavigatie
-- [ ] Rustige Home en duidelijke Meer-pagina zonder blokkerende installatievraag
+- [x] Mobiele app-schil met vijf vaste tabs, veilige schermranden en logische terugnavigatie
+- [x] Rustige Home en duidelijke Meer-pagina zonder blokkerende installatievraag
 - [ ] Recepten zoeken, filters, toevoegen/importeren en receptdetail vereenvoudigen
 - [ ] Weekmenu, boodschappen, voorraad en klantenkaarten stroomlijnen
 - [ ] Samen koken, meldingen, instellingen en onboarding groeperen
