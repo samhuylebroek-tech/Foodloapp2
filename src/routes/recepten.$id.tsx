@@ -440,8 +440,23 @@ function ReceptPage() {
             </Button>
           </div>
           <h2 className="mt-6 font-display text-3xl">{recipe.title}</h2>
-          <p className="mt-6 text-2xl leading-relaxed">{stappen[stap]}</p>
+          <p className="mt-6 text-2xl leading-relaxed">{netteStap(t(stappen[stap] ?? ""))}</p>
           <StapIngredienten ingredienten={stapIngredienten(stap)} factor={factor} groot />
+          <details className="mt-6 rounded-2xl border border-border bg-card p-4">
+            <summary className="cursor-pointer text-lg font-semibold">
+              {t("Alle ingrediënten bekijken")}
+            </summary>
+            <ul className="mt-3 space-y-2 text-lg">
+              {ingredients.map((ing) => (
+                <li key={ing.id} className="flex justify-between gap-3">
+                  <span>{t(ing.name)}</span>
+                  <span className="shrink-0 text-muted-foreground">
+                    {toonHoeveelheid(ing, factor)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </details>
           <div className="mt-10 flex gap-3">
             <Button
               variant="secondary"
