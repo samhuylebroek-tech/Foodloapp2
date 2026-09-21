@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { RecipeForm } from "@/components/RecipeForm";
 import { ReceptGeschiedenis } from "@/components/ReceptGeschiedenis";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import type { Ingredient, Recipe } from "@/lib/types";
 
 export const Route = createFileRoute("/recepten/$id_/bewerken")({
@@ -21,7 +22,7 @@ export const Route = createFileRoute("/recepten/$id_/bewerken")({
 function BewerkenPage() {
   const { id } = Route.useParams();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["recipe-edit", id],
     queryFn: async () => {
       const [recipeRes, ingRes] = await Promise.all([
@@ -43,8 +44,20 @@ function BewerkenPage() {
 
   return (
     <AppShell title="Recept aanpassen">
-      {isLoading || !data ? (
-        <p className="py-10 text-center text-lg text-muted-foreground">Laden…</p>
+      {isError ? (
+        <div className="rounded-3xl border border-border bg-card p-6 text-center">
+          <p className="text-lg font-semibold">Dit recept kon niet laden</p>
+          <p className="mt-2 text-muted-foreground">Controleer je verbinding en probeer het opnieuw.</p>
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className="mt-4 inline-flex min-h-14 items-center justify-center rounded-2xl bg-primary px-6 text-base font-semibold text-primary-foreground"
+          >
+            Opnieuw proberen
+          </button>
+        </div>
+      ) : isLoading || !data ? (
+        <PageSkeleton />
       ) : (
         <>
           <RecipeForm recipe={data.recipe} ingredients={data.ingredients} />

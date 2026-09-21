@@ -1,6 +1,7 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import {
+  ArrowLeft,
   BookOpen,
   CalendarDays,
   ShoppingCart,
@@ -25,13 +26,10 @@ const NAV = [
   { to: "/meer", label: "Meer", icon: MoreHorizontal },
 ] as const;
 
-const TABS = [
-  { to: "/", label: "Start", icon: Home },
-  { to: "/gerechten", label: "Recepten", icon: BookOpen },
-  { to: "/planner", label: "Weekmenu", icon: CalendarDays },
-  { to: "/boodschappen", label: "Lijst", icon: ShoppingCart },
-  { to: "/meer", label: "Meer", icon: MoreHorizontal },
-] as const;
+const TABS = NAV;
+
+/** Hoofdbestemmingen krijgen geen terugknop; alle andere schermen wel. */
+const HOOFDPADEN = new Set<string>(NAV.map((n) => n.to));
 
 
 
@@ -50,7 +48,14 @@ export function AppShell({
   const t = useT();
 
   const navigate = useNavigate();
+  const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const toonTerug = !HOOFDPADEN.has(pathname);
+
+  function gaTerug() {
+    if (typeof window !== "undefined" && window.history.length > 1) router.history.back();
+    else navigate({ to: "/" });
+  }
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/aanmelden" });
@@ -143,9 +148,20 @@ export function AppShell({
           >
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3">
               <div className="flex min-w-0 items-center gap-3">
-                <Link to="/" aria-label="Foodlo Start" className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary lg:hidden">
-                  <img src={logo} alt="" width={26} height={26} className="size-6" />
-                </Link>
+                {toonTerug ? (
+                  <button
+                    type="button"
+                    onClick={gaTerug}
+                    aria-label={t("Terug")}
+                    className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary lg:hidden"
+                  >
+                    <ArrowLeft className="size-6" aria-hidden />
+                  </button>
+                ) : (
+                  <Link to="/" aria-label="Foodlo Start" className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary lg:hidden">
+                    <img src={logo} alt="" width={26} height={26} className="size-6" />
+                  </Link>
+                )}
               <h1 className="min-w-0 flex-1 truncate font-display text-2xl font-semibold leading-tight">
                 {title}
               </h1>

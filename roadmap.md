@@ -97,9 +97,10 @@
 ## Volledige mobiele UX/UI-herwerking (actief)
 - [x] Mobiele app-schil met vijf vaste tabs, veilige schermranden en logische terugnavigatie
 - [x] Rustige Home en duidelijke Meer-pagina zonder blokkerende installatievraag
-- [ ] Recepten zoeken, filters, toevoegen/importeren en receptdetail vereenvoudigen
-- [ ] Weekmenu, boodschappen, voorraad en klantenkaarten stroomlijnen
-- [ ] Samen koken, meldingen, instellingen en onboarding groeperen
+- [x] Recepten zoeken, filters, toevoegen/importeren en receptdetail vereenvoudigen
+- [x] Weekmenu, boodschappen, voorraad en klantenkaarten stroomlijnen
+- [x] Samen koken, meldingen, instellingen en onboarding groeperen via Meer
+- [x] Terugknop op elk onderliggend scherm + duidelijke fout- en laadweergave
 - [ ] Toegankelijkheid, snelheid, alle routes en belangrijke tikacties eindtesten
 
 ## Suggesties + planner-datum (lopend)
