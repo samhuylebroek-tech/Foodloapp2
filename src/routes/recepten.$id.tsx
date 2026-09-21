@@ -226,7 +226,8 @@ function ReceptPage() {
     ingredients,
     (recipe as Recipe).step_ingredients ?? null,
   );
-  const stapIngredienten = (i: number) => (stapKoppeling[i] ?? []).map((idx) => ingredients[idx]!);
+  const stapIngredienten = (i: number) =>
+    (stapKoppeling[i] ?? []).map((tr) => ({ ...ingredients[tr.idx]!, herhaling: tr.herhaling }));
 
   async function toggleFavorite() {
     if (!user) return;
