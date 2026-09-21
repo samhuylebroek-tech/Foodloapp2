@@ -18,6 +18,7 @@
 
 ## Bezig
 - [ ] Eigen domeinnaam kopen en koppelen (naam: Foodlo) — wacht tot de rest klaar is
+- [ ] Volledige mobiele UX/UI-herwerking volgens het goedgekeurde plan van 21 september 2026
 
 ## Actief — volledige A-Z kwaliteitsronde
 - [x] Boodschappenlijst compacter en overzichtelijker maken
@@ -84,7 +85,7 @@
 - [x] Live verversing van leden, weekmenu en boodschappen (realtime)
 - [x] Weekmenu: schakel "Mijn weekmenu / Weekmenu gezin", wie iets inplande zichtbaar
 
-## Volledig UX-herontwerp (klaar)
+## Eerdere UX-herwerking (klaar)
 - [x] Gedeeld Foodlo-designsysteem en rustige navigatie
 - [x] Contextuele Home en visueel receptenoverzicht
 - [x] Receptdetail met tabs en vereenvoudigde kookstand
@@ -92,6 +93,14 @@
 - [x] Wallet en vrienden/gezin vereenvoudigen
 - [x] Meldingen, instellingen en onboarding stroomlijnen
 - [x] Toestanden, microcopy, toegankelijkheid en mobiele eindcontrole
+
+## Volledige mobiele UX/UI-herwerking (actief)
+- [x] Mobiele app-schil met vijf vaste tabs, veilige schermranden en logische terugnavigatie
+- [x] Rustige Home en duidelijke Meer-pagina zonder blokkerende installatievraag
+- [ ] Recepten zoeken, filters, toevoegen/importeren en receptdetail vereenvoudigen
+- [ ] Weekmenu, boodschappen, voorraad en klantenkaarten stroomlijnen
+- [ ] Samen koken, meldingen, instellingen en onboarding groeperen
+- [ ] Toegankelijkheid, snelheid, alle routes en belangrijke tikacties eindtesten
 
 ## Suggesties + planner-datum (lopend)
 - [x] Suggestieblok herbruikbaar met "Zoek opnieuw"; ook op receptenpagina

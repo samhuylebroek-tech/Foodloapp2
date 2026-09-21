@@ -21,6 +21,7 @@ import { Route as GezinRouteImport } from './routes/gezin'
 import { Route as InfoRouteImport } from './routes/info'
 import { Route as InstallerenRouteImport } from './routes/installeren'
 import { Route as InstellingenRouteImport } from './routes/instellingen'
+import { Route as MeerRouteImport } from './routes/meer'
 import { Route as MeldingenRouteImport } from './routes/meldingen'
 import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as RondleidingRouteImport } from './routes/rondleiding'
@@ -135,6 +136,11 @@ const InstallerenRoute = InstallerenRouteImport.update({
 const InstellingenRoute = InstellingenRouteImport.update({
   id: '/instellingen',
   path: '/instellingen',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeerRoute = MeerRouteImport.update({
+  id: '/meer',
+  path: '/meer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MeldingenRoute = MeldingenRouteImport.update({
@@ -427,6 +433,7 @@ export interface FileRoutesByFullPath {
   '/info': typeof InfoRoute
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
+  '/meer': typeof MeerRoute
   '/meldingen': typeof MeldingenRoute
   '/planner': typeof PlannerRoute
   '/rondleiding': typeof RondleidingRoute
@@ -495,6 +502,7 @@ export interface FileRoutesByTo {
   '/info': typeof InfoRoute
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
+  '/meer': typeof MeerRoute
   '/meldingen': typeof MeldingenRoute
   '/planner': typeof PlannerRoute
   '/rondleiding': typeof RondleidingRoute
@@ -564,6 +572,7 @@ export interface FileRoutesById {
   '/info': typeof InfoRoute
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
+  '/meer': typeof MeerRoute
   '/meldingen': typeof MeldingenRoute
   '/planner': typeof PlannerRoute
   '/rondleiding': typeof RondleidingRoute
@@ -635,6 +644,7 @@ export interface FileRouteTypes {
     | '/info'
     | '/installeren'
     | '/instellingen'
+    | '/meer'
     | '/meldingen'
     | '/planner'
     | '/rondleiding'
@@ -703,6 +713,7 @@ export interface FileRouteTypes {
     | '/info'
     | '/installeren'
     | '/instellingen'
+    | '/meer'
     | '/meldingen'
     | '/planner'
     | '/rondleiding'
@@ -771,6 +782,7 @@ export interface FileRouteTypes {
     | '/info'
     | '/installeren'
     | '/instellingen'
+    | '/meer'
     | '/meldingen'
     | '/planner'
     | '/rondleiding'
@@ -841,6 +853,7 @@ export interface RootRouteChildren {
   InfoRoute: typeof InfoRoute
   InstallerenRoute: typeof InstallerenRoute
   InstellingenRoute: typeof InstellingenRoute
+  MeerRoute: typeof MeerRoute
   MeldingenRoute: typeof MeldingenRoute
   PlannerRoute: typeof PlannerRoute
   RondleidingRoute: typeof RondleidingRoute
@@ -942,6 +955,13 @@ declare module '@tanstack/react-router' {
       path: '/instellingen'
       fullPath: '/instellingen'
       preLoaderRoute: typeof InstellingenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/meer': {
+      id: '/meer'
+      path: '/meer'
+      fullPath: '/meer'
+      preLoaderRoute: typeof MeerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/meldingen': {
@@ -1444,6 +1464,7 @@ const rootRouteChildren: RootRouteChildren = {
   InfoRoute: InfoRoute,
   InstallerenRoute: InstallerenRoute,
   InstellingenRoute: InstellingenRoute,
+  MeerRoute: MeerRoute,
   MeldingenRoute: MeldingenRoute,
   PlannerRoute: PlannerRoute,
   RondleidingRoute: RondleidingRoute,
