@@ -1,8 +1,10 @@
 import { useT } from "@/lib/voorkeuren";
 import { toonHoeveelheid, type StapIngredient } from "@/lib/stap-ingredienten";
 
+export type StapIngredientRegel = StapIngredient & { herhaling?: boolean };
+
 type Props = {
-  ingredienten: StapIngredient[];
+  ingredienten: StapIngredientRegel[];
   factor: number;
   groot?: boolean;
 };
@@ -28,8 +30,15 @@ export function StapIngredienten({ ingredienten, factor, groot }: Props) {
                 : "inline-flex min-h-11 items-center gap-2 rounded-xl bg-secondary px-3 py-1.5 text-base"
             }
           >
-            {hoeveelheid && <span className="font-semibold text-primary">{hoeveelheid}</span>}
+            {!i.herhaling && hoeveelheid && (
+              <span className="font-semibold text-primary">{hoeveelheid}</span>
+            )}
             <span>{t(i.name)}</span>
+            {i.herhaling && (
+              <span className={groot ? "text-lg text-muted-foreground" : "text-sm text-muted-foreground"}>
+                ({t("rest")})
+              </span>
+            )}
           </li>
         );
       })}
