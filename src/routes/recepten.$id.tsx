@@ -649,7 +649,7 @@ function ReceptPage() {
               <li key={i} className="flex gap-3 rounded-2xl border border-border bg-card p-4">
                 <span className="font-display text-xl text-primary">{i + 1}</span>
                 <div className="min-w-0">
-                  <p className="text-lg leading-relaxed">{t(s)}</p>
+                  <p className="text-lg leading-relaxed">{netteStap(t(s))}</p>
                   <StapIngredienten ingredienten={stapIngredienten(i)} factor={factor} />
                 </div>
               </li>
