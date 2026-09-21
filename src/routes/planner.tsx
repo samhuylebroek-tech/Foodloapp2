@@ -585,302 +585,212 @@ function PlannerPage() {
 
   return (
     <AppShell title="Weekmenu">
-      <div className="space-y-4">
-        {gezin && (
-          <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2" role="tablist" aria-label="Wiens weekmenu?">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={weergave === "mij"}
-                onClick={() => setWeergave("mij")}
-                className={
-                  weergave === "mij"
-                    ? "min-h-14 rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground"
-                    : "min-h-14 rounded-xl border border-border bg-card px-4 text-base font-semibold"
-                }
-              >
-                Mijn weekmenu
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={weergave === "gezin"}
-                onClick={() => setWeergave("gezin")}
-                className={
-                  weergave === "gezin"
-                    ? "min-h-14 rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground"
-                    : "min-h-14 rounded-xl border border-border bg-card px-4 text-base font-semibold"
-                }
-              >
-                Weekmenu gezin
-              </button>
-            </div>
-            {weergave === "gezin" && (
-              <p className="text-center text-base text-muted-foreground">
-                Weekmenu van {gezin.naam} — iedereen vult mee aan.
-              </p>
+      <div className="space-y-5">
+        <section aria-label="Week kiezen" className="space-y-3">
+          <div className="flex items-center gap-2">
+            {gezin ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="secondary" className="h-14 min-w-0 flex-1 justify-between px-4">
+                    <span className="flex min-w-0 items-center gap-2">
+                      {weergave === "gezin" ? <Users className="size-5 shrink-0" /> : <CalendarDays className="size-5 shrink-0" />}
+                      <span className="truncate">{weergave === "gezin" ? gezin.naam : "Mijn planning"}</span>
+                    </span>
+                    <ChevronRight className="size-4 rotate-90" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-64 p-2">
+                  <DropdownMenuItem onSelect={() => setWeergave("mij")} className="min-h-12 rounded-lg text-base">
+                    <CalendarDays className="size-5" /> Mijn planning
+                    {weergave === "mij" ? <Check className="ml-auto size-5" /> : null}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setWeergave("gezin")} className="min-h-12 rounded-lg text-base">
+                    <Users className="size-5" /> {gezin.naam}
+                    {weergave === "gezin" ? <Check className="ml-auto size-5" /> : null}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="flex h-14 min-w-0 flex-1 items-center gap-2 rounded-xl bg-secondary px-4 font-semibold">
+                <CalendarDays className="size-5 text-primary" /> Mijn planning
+              </div>
             )}
-          </div>
-        )}
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            onClick={() => verschuif(-1)}
-            aria-label="Vorige week"
-            className="size-14"
-          >
-            <ChevronLeft className="size-6" />
-          </Button>
-          <Popover open={kalenderOpen} onOpenChange={setKalenderOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" className="h-14 min-w-0 flex-1 gap-2 px-2 text-base font-semibold">
-                <CalendarDays className="size-5 shrink-0" />
-                <span className="truncate">{weekLabel(new Date(`${week[0]}T12:00:00`))}</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="center">
-              <Calendar
-                mode="single"
-                selected={weekStart}
-                onSelect={(datum) => {
-                  if (!datum) return;
-                  setWeekStart(maandagVan(datum));
-                  setKalenderOpen(false);
-                }}
-                className="pointer-events-auto p-3"
-              />
-            </PopoverContent>
-          </Popover>
-          <Button
-            variant="secondary"
-            onClick={() => verschuif(1)}
-            aria-label="Volgende week"
-            className="size-14"
-          >
-            <ChevronRight className="size-6" />
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => setInstellingenOpen(true)}
-            aria-label="Instellingen weekmenu"
-            className="size-14"
-          >
-            <Settings className="size-6" />
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Snel een week kiezen">
-          {snelleWeken.map((start, index) => {
-            const actief = datumTekst(start) === datumTekst(weekStart);
-            return (
-              <Button
-                key={datumTekst(start)}
-                variant={actief ? "default" : "secondary"}
-                onClick={() => setWeekStart(start)}
-                className="h-12 min-w-0 px-3 text-sm"
-              >
-                <span>{index === 0 ? "Deze week" : index === 1 ? "Volgende week" : "+2 weken"}</span>
-              </Button>
-            );
-          })}
-          <Button variant="secondary" onClick={() => verschuif(1)} className="h-12 min-w-0 px-2 text-sm">
-            Verder
-          </Button>
-        </div>
-        {weekVerschil !== 0 ? (
-          <Button variant="ghost" onClick={() => setWeekStart(huidigeWeek)} className="h-12 w-full text-base">
-            Terug naar deze week
-          </Button>
-        ) : null}
-
-
-        <Button
-          onClick={() => {
-            const startDag = voorstelDagen.includes(vandaag) ? vandaag : voorstelDagen[0];
-            if (!startDag) {
-              toast("Kies een huidige of volgende week om een gerecht in te plannen.");
-              return;
-            }
-            setKiezen({
-              datum: startDag,
-              moment: momenten[momenten.length - 1] ?? "avondeten",
-              vraagDag: true,
-            });
-          }}
-          className="h-16 w-full text-lg"
-        >
-          <Plus className="size-6" /> Gerecht inplannen
-        </Button>
-
-        <Button
-          variant="secondary"
-          onClick={() => {
-            if (!voorstelDagen.length) {
-              toast("Er zijn in deze week geen komende dagen meer. Kies een volgende week.");
-              return;
-            }
-            setVoorstelOpen(true);
-          }}
-          className="h-16 w-full text-lg"
-        >
-          <Sparkles className="size-6" /> Maak een weekmenu
-        </Button>
-
-
-        <Accordion type="single" collapsible className="rounded-2xl bg-card px-4 ring-1 ring-border/60">
-          <AccordionItem value="boodschappen" className="border-0">
-            <AccordionTrigger className="min-h-14 text-base no-underline hover:no-underline"><span className="flex items-center gap-2"><ShoppingCart className="size-5 text-primary" />Boodschappen voor deze week</span></AccordionTrigger>
-            <AccordionContent className="space-y-2">
-          {lijsten.length > 1 && (
-            <select
-              value={
-                lijstId ||
-                (weergave === "gezin" && gezinsLijst ? gezinsLijst.id : lijsten[0]!.id)
-              }
-              onChange={(e) => setLijstId(e.target.value)}
-              aria-label="Naar welk lijstje?"
-              className="h-14 w-full rounded-xl border border-input bg-card px-3 text-base"
+            <Button
+              variant="secondary"
+              onClick={() => setInstellingenOpen(true)}
+              aria-label="Instellingen weekmenu"
+              className="size-14 shrink-0"
             >
-              {lijsten.map((l) => (
-                <option key={l.id} value={l.id}>
-                  Naar lijstje: {l.name}
-                </option>
-              ))}
-            </select>
-          )}
-          <Button variant="secondary" onClick={alleBoodschappen} className="h-16 w-full text-lg">
-            <ShoppingCart className="size-5" /> Hele week op de lijst zetten
-          </Button>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+              <Settings className="size-5" />
+            </Button>
+          </div>
 
-        <div
-          className={
-            weekmenu.weergave === "kaarten"
-              ? "-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2"
-              : "space-y-4"
-          }
-        >
+          <div className="flex items-center gap-1">
+          <Button
+              variant="ghost"
+              onClick={() => verschuif(-1)}
+              aria-label="Vorige week"
+              className="size-12 shrink-0"
+            >
+              <ChevronLeft className="size-5" />
+            </Button>
+            <Popover open={kalenderOpen} onOpenChange={setKalenderOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" className="h-12 min-w-0 flex-1 px-2 font-display text-lg">
+                  <span className="truncate">{weekVerschil === 0 ? "Deze week" : weekLabel(new Date(`${week[0]}T12:00:00`), true)}</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="center">
+                <Calendar
+                  mode="single"
+                  selected={weekStart}
+                  onSelect={(datum) => {
+                    if (!datum) return;
+                    setWeekStart(maandagVan(datum));
+                    setKalenderOpen(false);
+                  }}
+                  className="pointer-events-auto p-3"
+                />
+              </PopoverContent>
+            </Popover>
+            <Button
+              variant="ghost"
+              onClick={() => verschuif(1)}
+              aria-label="Volgende week"
+              className="size-12 shrink-0"
+            >
+              <ChevronRight className="size-5" />
+            </Button>
+          </div>
+
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" aria-label="Snel een week kiezen">
+            {snelleWeken.map((start, index) => {
+              const actief = datumTekst(start) === datumTekst(weekStart);
+              const labels = ["Nu", "Volgende", "+2", "+3"];
+              return (
+                <Button
+                  key={datumTekst(start)}
+                  variant={actief ? "default" : "outline"}
+                  onClick={() => setWeekStart(start)}
+                  className="h-12 shrink-0 rounded-full px-5 text-sm"
+                  aria-pressed={actief}
+                >
+                  {labels[index]}
+                </Button>
+              );
+            })}
+            {weekVerschil < 0 || weekVerschil > 3 ? (
+              <Button variant="default" className="h-12 shrink-0 rounded-full px-5 text-sm">
+                {weekLabel(weekStart, true)}
+              </Button>
+            ) : null}
+          </div>
+          {weekVerschil !== 0 ? (
+            <Button variant="ghost" onClick={() => setWeekStart(huidigeWeek)} className="h-11 px-2 text-sm">
+              Terug naar deze week
+            </Button>
+          ) : null}
+        </section>
+
+        <section aria-label="Acties" className="grid grid-cols-3 gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              const startDag = voorstelDagen.includes(vandaag) ? vandaag : voorstelDagen[0];
+              if (!startDag) {
+                toast("Kies een huidige of volgende week om een maaltijd toe te voegen.");
+                return;
+              }
+              setKiezen({ datum: startDag, moment: momenten[momenten.length - 1] ?? "avondeten", vraagDag: true });
+            }}
+            className="h-16 min-w-0 flex-col gap-1 px-1 text-xs sm:flex-row sm:text-base"
+          >
+            <Plus className="size-5" /> Toevoegen
+          </Button>
+          <Button
+            onClick={() => {
+              if (!voorstelDagen.length) {
+                toast("Er zijn in deze week geen komende dagen meer. Kies een volgende week.");
+                return;
+              }
+              setVoorstelOpen(true);
+            }}
+            className="h-16 min-w-0 flex-col gap-1 px-1 text-xs sm:flex-row sm:text-base"
+          >
+            <Sparkles className="size-5" /> Foodlo kiest
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setBoodschappenOpen(true)}
+            className="h-16 min-w-0 flex-col gap-1 px-1 text-xs sm:flex-row sm:text-base"
+          >
+            <ShoppingCart className="size-5" /> Naar lijst
+          </Button>
+        </section>
+
+        <div className={weekmenu.weergave === "kaarten" ? "-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2" : "space-y-1"}>
         {zichtbareDagen.map((dag) => {
           const items = plan.filter((p) => p.plan_date === dag);
           const openMomenten = momenten.filter((m) => !items.some((p) => p.meal_type === m));
           const volledig = momenten.length > 0 && openMomenten.length === 0;
-          const kaart = weekmenu.weergave === "kaarten" ? "w-[85%] shrink-0 snap-start " : "";
+          const datum = new Date(`${dag}T12:00:00`);
+          const kaart = weekmenu.weergave === "kaarten" ? "w-[88%] shrink-0 snap-start rounded-xl border border-border bg-card p-4 " : "grid grid-cols-[3.5rem_minmax(0,1fr)] gap-3 py-3 ";
           return (
-            <section
-              key={dag}
-              className={
-                kaart +
-                (volledig
-                  ? "rounded-2xl border border-primary/40 bg-secondary p-4"
-                  : dag === vandaag
-                    ? "rounded-2xl border-2 border-primary bg-card p-4"
-                    : "rounded-2xl border border-border bg-card p-4")
-              }
-            >
-              <h2 className="text-lg capitalize">
-                {labelVoor(dag)}
-                {dag === vandaag ? " · vandaag" : ""}
-                {volledig && (
-                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-primary-foreground/20 px-2 py-0.5 align-middle text-xs font-bold normal-case">
-                    <Check className="size-3.5" aria-hidden /> klaar
-                  </span>
-                )}
-              </h2>
+            <section key={dag} className={kaart} aria-labelledby={`dag-${dag}`}>
+              <div className={weekmenu.weergave === "kaarten" ? "mb-3 flex items-center gap-3" : "relative flex flex-col items-center"}>
+                <div className={dag === vandaag ? "flex size-14 flex-col items-center justify-center rounded-xl bg-accent text-accent-foreground" : "flex size-14 flex-col items-center justify-center rounded-xl bg-secondary text-foreground"}>
+                  <span className="text-xs font-bold uppercase">{datum.toLocaleDateString("nl-BE", { weekday: "short" }).replace(".", "")}</span>
+                  <span className="font-display text-xl font-semibold leading-none">{datum.getDate()}</span>
+                </div>
+                {weekmenu.weergave !== "kaarten" ? <span aria-hidden className="absolute top-16 bottom-[-1.25rem] w-px border-l border-dashed border-border last:hidden" /> : null}
+              </div>
 
-              {items.length > 0 && (
-                <ul className="mt-2 space-y-2">
+              <div className="min-w-0">
+                <div className="mb-2 flex min-h-6 items-center gap-2">
+                  <h2 id={`dag-${dag}`} className="font-display text-lg capitalize">{datum.toLocaleDateString("nl-BE", { weekday: "long" })}</h2>
+                  {dag === vandaag ? <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">Vandaag</span> : null}
+                  {volledig ? <Check className="ml-auto size-4 text-primary" aria-label="Volledig gepland" /> : null}
+                </div>
+
+                {items.length > 0 ? (
+                  <ul className="space-y-2">
                   {items.map((p) => (
-                    <li key={p.id} className="flex items-center gap-3">
-                      {weergave === "gezin" && p.user_id !== user?.id && (
-                        <span
-                          title={`Ingepland door ${plannerNamen[p.user_id] ?? "een gezinslid"}`}
-                        >
-                          <Avatar
-                            naam={plannerNamen[p.user_id] ?? "?"}
-                            sleutel={p.user_id}
-                            className="size-9 text-xs"
-                          />
-                        </span>
-                      )}
-                      {p.recipe_id ? (
-                        <Link
-                          to="/recepten/$id"
-                          params={{ id: p.recipe_id }}
-                          className="flex flex-1 items-center gap-3 text-lg underline-offset-4 hover:underline"
-                        >
-                          <ReceptFoto url={p.recipes?.image_url ?? null} />
-                          <span>
-                            {p.meal_type && p.meal_type !== "maaltijd" ? (
-                              <span className="text-base capitalize text-muted-foreground">{p.meal_type}: </span>
-                            ) : null}
-                            {p.recipes?.title ?? "Recept"}
-                          </span>
-                        </Link>
-                      ) : (
-                        <span className="flex-1 text-lg">
-                          {p.meal_type && p.meal_type !== "maaltijd" ? (
-                            <span className="text-base capitalize text-muted-foreground">{p.meal_type}: </span>
-                          ) : null}
-                          {p.custom_title}
-                        </span>
-                      )}
-                      {p.recipe_id && (
-                        <Button
-                          variant="ghost"
-                          onClick={() =>
-                            setVraagLijst({
-                              recipeId: p.recipe_id!,
-                              titel: p.recipes?.title ?? "Recept",
-                            })
-                          }
-                          aria-label="Op boodschappenlijst zetten"
-                          className="size-12"
-                        >
-                          <ShoppingCart className="size-5" />
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        onClick={() => verwijder(p.id, p.recipe_id, p.recipes?.title ?? "Dit gerecht")}
-                        aria-label="Uit weekmenu halen"
-                        className="size-12"
-                      >
-                        <Trash2 className="size-5" />
-                      </Button>
+                    <li key={p.id} className="flex min-h-20 items-center gap-2 rounded-xl border border-border bg-card p-2 shadow-sm">
+                      {p.recipe_id ? <Link to="/recepten/$id" params={{ id: p.recipe_id }} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ReceptFoto url={p.recipes?.image_url ?? null} /><span className="min-w-0"><span className="block text-xs font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-base font-semibold leading-tight">{p.recipes?.title ?? "Recept"}</span>{p.recipes ? <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground"><Clock3 className="size-3.5" /> {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) || "Tijd niet ingevuld"}</span> : null}</span></Link> : <div className="flex min-w-0 flex-1 items-center gap-3"><ReceptFoto url={null} /><span className="min-w-0"><span className="block text-xs font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-base font-semibold leading-tight">{p.custom_title}</span></span></div>}
+                      {weergave === "gezin" && p.user_id !== user?.id ? <Avatar naam={plannerNamen[p.user_id] ?? "?"} sleutel={p.user_id} className="size-8 shrink-0 text-xs" /> : null}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" aria-label={`Acties voor ${p.recipes?.title ?? p.custom_title ?? "maaltijd"}`} className="size-12 shrink-0"><MoreVertical className="size-5" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-60 p-2">
+                          {p.recipe_id ? <DropdownMenuItem onSelect={() => setVraagLijst({ recipeId: p.recipe_id as string, titel: p.recipes?.title ?? "Recept" })} className="min-h-12 rounded-lg text-base"><ShoppingCart className="size-5" /> Op boodschappenlijst</DropdownMenuItem> : null}
+                          <DropdownMenuItem onSelect={() => void verwijder(p.id, p.recipe_id, p.recipes?.title ?? "Dit gerecht")} className="min-h-12 rounded-lg text-base text-destructive focus:text-destructive"><Trash2 className="size-5" /> Uit planning halen</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </li>
                   ))}
-                </ul>
-              )}
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                {dag >= vandaag && openMomenten.map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setKiezen({ datum: dag, moment: m })}
-                    className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-border bg-secondary px-4 text-base font-semibold"
-                  >
-                    <Plus className="size-4" aria-hidden /> {m}
-                  </button>
-                ))}
-                {volledig && (
-                  <p className="text-base font-semibold text-primary">
-                    Helemaal gepland
-                  </p>
-                )}
-                {dag < vandaag && !volledig ? (
-                  <p className="text-base text-muted-foreground">Deze dag is voorbij</p>
+                  </ul>
                 ) : null}
+
+                <div className="mt-2 space-y-2">
+                  {dag >= vandaag ? openMomenten.map((m) => <Button key={m} variant="ghost" onClick={() => setKiezen({ datum: dag, moment: m })} className="h-14 w-full justify-start border border-dashed border-border bg-background px-3 text-sm text-muted-foreground"><Plus className="size-4" /> <span className="capitalize">{m}</span> toevoegen</Button>) : !volledig ? <p className="py-2 text-sm text-muted-foreground">Deze dag is voorbij</p> : null}
+                </div>
               </div>
             </section>
           );
         })}
         </div>
       </div>
+
+      <Sheet open={boodschappenOpen} onOpenChange={setBoodschappenOpen}>
+        <SheetContent side="bottom" className="space-y-5">
+          <SheetHeader>
+            <SheetTitle>Boodschappen voor deze week</SheetTitle>
+            <SheetDescription>Zet de ingrediënten van alle geplande recepten in één keer op een lijst.</SheetDescription>
+          </SheetHeader>
+          {lijsten.length > 1 ? <select value={lijstId || (weergave === "gezin" && gezinsLijst ? gezinsLijst.id : lijsten[0]?.id ?? "")} onChange={(e) => setLijstId(e.target.value)} aria-label="Naar welk lijstje?" className="h-14 w-full rounded-xl border border-input bg-card px-3 text-base">{lijsten.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select> : null}
+          <Button onClick={() => { void alleBoodschappen(); setBoodschappenOpen(false); }} disabled={!plan.length} className="h-14 w-full text-base"><ShoppingCart className="size-5" /> Hele week op de lijst</Button>
+          <Button variant="outline" asChild className="h-14 w-full text-base"><Link to="/boodschappen">Open boodschappen</Link></Button>
+        </SheetContent>
+      </Sheet>
 
       {instellingenOpen && (
         <WeekmenuInstellingen
