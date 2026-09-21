@@ -123,6 +123,13 @@
 - [x] Maaltijdacties gebundeld in één contextmenu
 - [x] Mobiele en desktop-eindcontrole van het vernieuwde Weekmenu
 
+## Actief — maaltijd toevoegen vanuit Weekmenu
+- [x] Datum en maaltijdmoment als compacte eerste stap
+- [x] Eigen recepten, inspiratie en nieuw toevoegen duidelijk scheiden
+- [x] Unieke receptresultaten met filters, zoeken en fouttoestand
+- [x] AI, web, tekstplanning, receptcontrole en boodschappenwerking behouden
+- [x] Mobiele, tablet- en desktop-eindcontrole van de volledige toevoegstroom
+
 ## Actief — weekmenu en boodschappen verbeteren
 - [x] Weeknavigatie met weekbalk en kalender
 - [x] Verstreken dagen uitsluiten
