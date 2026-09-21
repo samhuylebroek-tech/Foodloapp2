@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { CookingPot } from "lucide-react";
 import { useSignedUrl } from "@/lib/photos";
 import { cn } from "@/lib/utils";
@@ -12,8 +13,12 @@ export function RecipePhoto({
   className?: string;
 }) {
   const url = useSignedUrl(path);
+  // Externe foto's (bv. van sociale media) kunnen vervallen of geweigerd worden;
+  // dan tonen we dezelfde rustige placeholder in plaats van een gebroken beeld.
+  const [mislukt, setMislukt] = useState(false);
+  useEffect(() => setMislukt(false), [url]);
 
-  if (!url) {
+  if (!url || mislukt) {
     return (
       <div
         className={cn(
@@ -27,5 +32,13 @@ export function RecipePhoto({
     );
   }
 
-  return <img src={url} alt={alt} loading="lazy" className={cn("object-cover", className)} />;
+  return (
+    <img
+      src={url}
+      alt={alt}
+      loading="lazy"
+      onError={() => setMislukt(true)}
+      className={cn("object-cover", className)}
+    />
+  );
 }
