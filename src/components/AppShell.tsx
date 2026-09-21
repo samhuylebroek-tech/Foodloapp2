@@ -25,13 +25,10 @@ const NAV = [
   { to: "/meer", label: "Meer", icon: MoreHorizontal },
 ] as const;
 
-const TABS = [
-  { to: "/", label: "Start", icon: Home },
-  { to: "/gerechten", label: "Recepten", icon: BookOpen },
-  { to: "/planner", label: "Weekmenu", icon: CalendarDays },
-  { to: "/boodschappen", label: "Lijst", icon: ShoppingCart },
-  { to: "/meer", label: "Meer", icon: MoreHorizontal },
-] as const;
+const TABS = NAV;
+
+/** Hoofdbestemmingen krijgen geen terugknop; alle andere schermen wel. */
+const HOOFDPADEN = new Set<string>(NAV.map((n) => n.to));
 
 
 
