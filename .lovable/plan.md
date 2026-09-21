@@ -20,6 +20,13 @@ Wat er verandert:
 
 Het scherm "Smakelijk gegeten? / hoeveel sterren" heeft nu enkel "Later". Daar komt een knop **"Terug naar de stappen"** bij, die je terugzet op de laatste stap; vanaf daar werkt "Vorige" gewoon weer. De scoreknoppen en "Later" blijven zoals ze zijn.
 
+## 3. Schrijffouten in de bereidingstekst
+
+Bij ingevoerde en geïmporteerde recepten staan er soms taalfouten of rommelige tekst in de stappen. Twee dingen:
+
+- **Automatisch netjes zetten** bij het tonen: hoofdletter aan het begin van elke stap, punt op het einde, dubbele spaties en losse leestekens weg, gekke tekens uit de import ("Ã©" → "é") hersteld. Dit gebeurt in de app zelf, zonder kosten.
+- **"Tekst opschonen"-knop** bij "Recept aanpassen": daarmee laat je Foodlo de spelling en grammatica van de stappen verbeteren. Je ziet eerst het voorstel naast de huidige tekst en kiest zelf of je het bewaart. De inhoud (hoeveelheden, tijden, volgorde) blijft ongewijzigd.
+
 ## Technisch
 
 - `src/lib/stap-ingredienten.ts`: `komtVoor` wordt een score-vrije match op stam met substring-treffer in samengestelde woorden; minimumlengte-gate en `MAX_PER_STAP` vervallen voor echte woordtreffers. `koppelStappen` geeft per stap alle treffers terug plus een vlag `herhaling` voor stappen na de eerste vermelding; handmatige koppelingen blijven voorrang houden.
