@@ -27,6 +27,7 @@ import {
   receptVanNaam,
   zoekReceptenOpWeb,
   haalAfbeelding,
+  verbeterStappen,
   type GerechtVoorstel,
   type WebResultaat,
   type ImportedRecipe,
@@ -109,6 +110,10 @@ export function RecipeForm({
   const [stappenTekst, setStappenTekst] = useState((recipe?.instructions ?? []).join("\n"));
   const [stapKeuze, setStapKeuze] = useState<StapKoppeling>(recipe?.step_ingredients ?? {});
   const [meerDetails, setMeerDetails] = useState(false);
+  // Spelling en grammatica van de stappen laten nakijken
+  const [taalBezig, setTaalBezig] = useState(false);
+  const [taalVoorstel, setTaalVoorstel] = useState<string[] | null>(null);
+  const verbeterStappenFn = useServerFn(verbeterStappen);
 
   // Na het bewaren van een nieuw recept: meteen inplannen?
   const [netOpgeslagen, setNetOpgeslagen] = useState<{ id: string; titel: string } | null>(null);
