@@ -1,6 +1,7 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import {
+  ArrowLeft,
   BookOpen,
   CalendarDays,
   ShoppingCart,
