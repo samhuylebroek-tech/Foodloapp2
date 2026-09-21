@@ -1212,15 +1212,15 @@ function ReceptKiezer({
       .filter(([, d]) => d >= week[0]! && d <= week[6]!)
       .map(([id]) => id),
   );
-  const favorietenLijst = recipes.filter((r) => favorieten.includes(r.id)).slice(0, 6);
+  const favorietenLijst = recipes.filter((r) => favorieten.includes(r.id));
   const voorgesteld = recipes
     .filter((r) => !dezeWeek.has(r.id))
     .sort((a, b) => (laatst[a.id] ?? "").localeCompare(laatst[b.id] ?? ""))
-    .slice(0, 4);
+    .slice(0, 6);
   const recent = recipes
     .filter((r) => laatst[r.id])
     .sort((a, b) => (laatst[b.id] ?? "").localeCompare(laatst[a.id] ?? ""))
-    .slice(0, 4);
+    .slice(0, 12);
   const alles = [...recipes].sort((a, b) => a.title.localeCompare(b.title, "nl"));
 
   const filterOpties = [
@@ -1390,12 +1390,12 @@ function ReceptKiezer({
         <div className="border-b border-border px-4 py-3">
           <div className="grid grid-cols-3 rounded-lg bg-secondary p-1" role="tablist" aria-label="Kies hoe je een maaltijd toevoegt">
             {([
-              ["recepten", "Recepten", BookMarked],
-              ["inspiratie", "Inspiratie", Lightbulb],
-              ["nieuw", "Nieuw", Plus],
-            ] as const).map(([id, label, Icon]) => (
-              <Button key={id} role="tab" aria-selected={bron === id} variant={bron === id ? "default" : "ghost"} onClick={() => setBron(id)} className="h-12 min-w-0 gap-1 px-2 text-sm">
-                <Icon className="size-4" /> <span className="truncate">{label}</span>
+              ["recepten", "Recepten"],
+              ["inspiratie", "Inspiratie"],
+              ["nieuw", "Nieuw"],
+            ] as const).map(([id, label]) => (
+              <Button key={id} role="tab" aria-selected={bron === id} variant={bron === id ? "default" : "ghost"} onClick={() => setBron(id)} className="h-12 min-w-0 px-2 text-sm">
+                <span className="truncate">{label}</span>
               </Button>
             ))}
           </div>
@@ -1407,7 +1407,7 @@ function ReceptKiezer({
               <div className="flex gap-2">
                 <div className="relative min-w-0 flex-1">
                   <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
-                  <Input value={zoek} onChange={(e) => setZoek(e.target.value)} placeholder="Zoek een recept" aria-label="Zoek een recept" className="h-14 pl-12 text-base" />
+                  <Input value={zoek} onChange={(e) => setZoek(e.target.value)} placeholder="Zoek recepten" aria-label="Zoek een recept" className="h-14 w-full pl-12 text-base" />
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -1417,7 +1417,7 @@ function ReceptKiezer({
                       <ChevronDown className="size-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-64 rounded-xl p-2">
+                  <DropdownMenuContent align="end" sideOffset={8} className="w-64 rounded-xl bg-card p-2 shadow-xl">
                     {filterOpties.map(({ id, label, uitleg, icon: Icon }) => (
                       <DropdownMenuItem
                         key={id}
