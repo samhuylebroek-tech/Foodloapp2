@@ -10,6 +10,15 @@ De gekozen richting ligt vast:
 - **Compositie:** rustige dagelijkse focus, duidelijke foodfoto’s, weinig gelijktijdige keuzes en één dominante actie.
 - **Toegankelijkheid:** minimaal 56px voor belangrijke tikdoelen, duidelijke labels, zichtbaar toetsenbordfocus en ondersteuning voor grotere tekst.
 
+### Mobiele appwerking is een harde eis
+- Het ontwerp vult het volledige telefoonscherm en gebruikt veilige ruimte rond camera-eiland, statusbalk en onderste veegbalk; het wordt geen verkleinde website of telefoonmock-up.
+- De vijf vaste tabs blijven met één hand bereikbaar. Schermkoppen, terugknoppen, sheets en hoofdacties gedragen zich overal voorspelbaar als in een mobiele app.
+- De fysieke/softwarematige terugactie sluit eerst een sheet of venster, gaat daarna terug binnen een taak (zoals een kookstap) en pas daarna naar het vorige scherm.
+- Toetsenborden bedekken geen invoervelden of bevestigingsknoppen; formulieren scrollen automatisch naar fouten en behouden ingevoerde gegevens.
+- Belangrijke context blijft bewaard bij teruggaan: actieve zoekopdracht, filters, gekozen week, boodschappenlijst, recepttab en kookstap.
+- Swipe en andere gebaren zijn alleen aanvullend; elke actie blijft zichtbaar en bruikbaar met een gewone tik.
+- PWA-installatie, offline recepten/kaarten, delen vanuit andere apps, hervatten na achtergrondgebruik en veilige schermranden worden expliciet op iPhone en Android getest.
+
 ## Bevestigde auditbevindingen
 - De huidige mobiele onderbalk toont vier bestemmingen, terwijl tien functies in een apart menu concurreren; gezin, meldingen en credits zijn daardoor moeilijk vindbaar.
 - `Boodschappen` en `Lijst`, en `gerecht` en `recept`, worden voor dezelfde zaken door elkaar gebruikt.
