@@ -48,7 +48,14 @@ export function AppShell({
   const t = useT();
 
   const navigate = useNavigate();
+  const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const toonTerug = !HOOFDPADEN.has(pathname);
+
+  function gaTerug() {
+    if (typeof window !== "undefined" && window.history.length > 1) router.history.back();
+    else navigate({ to: "/" });
+  }
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/aanmelden" });
