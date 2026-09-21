@@ -401,12 +401,22 @@ function ReceptPage() {
             />
           </div>
           <Button
+            variant="secondary"
+            onClick={() => {
+              setKlaarVragen(false);
+              setStap(Math.max(0, recipe.instructions.length - 1));
+            }}
+            className="mt-6 h-16 w-full text-lg"
+          >
+            {t("Terug naar de stappen")}
+          </Button>
+          <Button
             variant="ghost"
             onClick={() => {
               setKlaarVragen(false);
               setKookstand(false);
             }}
-            className="mt-6 h-16 w-full text-lg"
+            className="mt-3 h-16 w-full text-lg"
           >
             {t("Later")}
           </Button>
