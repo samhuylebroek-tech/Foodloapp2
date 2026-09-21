@@ -29,6 +29,8 @@ import {
   Search,
   Heart,
   BookMarked,
+  SlidersHorizontal,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -1205,7 +1207,6 @@ function ReceptKiezer({
   });
 
   const term = zoek.trim();
-  const treffers = recipes.filter((r) => r.title.toLowerCase().includes(term.toLowerCase()));
   const dezeWeek = new Set(
     Object.entries(laatst)
       .filter(([, d]) => d >= week[0]! && d <= week[6]!)
@@ -1222,15 +1223,23 @@ function ReceptKiezer({
     .slice(0, 4);
   const alles = [...recipes].sort((a, b) => a.title.localeCompare(b.title, "nl"));
 
+  const filterOpties = [
+    { id: "voor-jou", label: "Aanraders", uitleg: "Past bij deze week", icon: Sparkles },
+    { id: "favorieten", label: "Favorieten", uitleg: "Door jou bewaard", icon: Heart },
+    { id: "recent", label: "Recent gebruikt", uitleg: "Onlangs ingepland", icon: Clock3 },
+    { id: "alles", label: "Alle recepten", uitleg: "Alfabetisch", icon: BookOpen },
+  ] as const;
+  const actiefFilter = filterOpties.find((optie) => optie.id === receptFilter) ?? filterOpties[0];
+  const receptenVoorFilter = receptFilter === "favorieten"
+    ? favorietenLijst
+    : receptFilter === "recent"
+      ? recent
+      : receptFilter === "alles"
+        ? alles
+        : voorgesteld;
   const gefilterdeRecepten = term
-    ? treffers
-    : receptFilter === "favorieten"
-      ? favorietenLijst
-      : receptFilter === "recent"
-        ? recent
-        : receptFilter === "alles"
-          ? alles
-          : voorgesteld;
+    ? receptenVoorFilter.filter((r) => r.title.toLowerCase().includes(term.toLowerCase()))
+    : receptenVoorFilter;
 
   if (voorstel) {
     return (
@@ -1372,21 +1381,21 @@ function ReceptKiezer({
         <SheetHeader className="border-b border-border px-4 pb-3 pt-4 text-left">
           <SheetTitle>Kies een maaltijd</SheetTitle>
           <SheetDescription asChild>
-            <Button variant="ghost" onClick={() => setDagKiezen(true)} className="h-auto w-fit justify-start p-0 text-base font-semibold capitalize text-primary">
-              {labelVoor(datum)}{moment && moment !== "maaltijd" ? ` · ${moment}` : ""} <span className="font-normal underline underline-offset-4">Wijzigen</span>
+            <Button variant="ghost" onClick={() => setDagKiezen(true)} className="h-auto min-h-0 w-fit justify-start p-0 text-sm font-semibold capitalize text-primary">
+              {labelVoor(datum)}{moment && moment !== "maaltijd" ? ` · ${moment}` : ""} <span className="font-normal underline underline-offset-4">Wijzig</span>
             </Button>
           </SheetDescription>
         </SheetHeader>
 
-        <div className="px-4 pt-3">
-          <div className="grid grid-cols-3 rounded-xl bg-secondary p-1" role="tablist" aria-label="Waar komt de maaltijd vandaan?">
+        <div className="border-b border-border px-4 py-3">
+          <div className="grid grid-cols-3 rounded-lg bg-secondary p-1" role="tablist" aria-label="Kies hoe je een maaltijd toevoegt">
             {([
-              ["recepten", "Mijn recepten", BookMarked],
+              ["recepten", "Recepten", BookMarked],
               ["inspiratie", "Inspiratie", Lightbulb],
               ["nieuw", "Nieuw", Plus],
             ] as const).map(([id, label, Icon]) => (
-              <Button key={id} role="tab" aria-selected={bron === id} variant={bron === id ? "default" : "ghost"} onClick={() => setBron(id)} className="h-14 min-w-0 flex-col gap-0 px-1 text-xs">
-                <Icon className="size-4" /> {label}
+              <Button key={id} role="tab" aria-selected={bron === id} variant={bron === id ? "default" : "ghost"} onClick={() => setBron(id)} className="h-12 min-w-0 gap-1 px-2 text-sm">
+                <Icon className="size-4" /> <span className="truncate">{label}</span>
               </Button>
             ))}
           </div>
@@ -1394,25 +1403,42 @@ function ReceptKiezer({
 
         {bron === "recepten" ? (
           <>
-            <div className="px-4 pt-3">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
-                <Input value={zoek} onChange={(e) => setZoek(e.target.value)} placeholder="Zoek in je recepten" aria-label="Zoek in je recepten" className="h-14 pl-12 text-base" />
-              </div>
-              {!term ? (
-                <div className="mt-3 flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Filter recepten">
-                  {([
-                    ["voor-jou", "Voor jou", Sparkles],
-                    ["favorieten", "Favorieten", Heart],
-                    ["recent", "Recent", Clock3],
-                    ["alles", "Alles", BookOpen],
-                  ] as const).map(([id, label, Icon]) => (
-                    <Button key={id} variant={receptFilter === id ? "default" : "outline"} onClick={() => setReceptFilter(id)} className="h-12 shrink-0 px-3 text-sm">
-                      <Icon className="size-4" /> {label}
-                    </Button>
-                  ))}
+            <div className="px-4 pt-4">
+              <div className="flex gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
+                  <Input value={zoek} onChange={(e) => setZoek(e.target.value)} placeholder="Zoek een recept" aria-label="Zoek een recept" className="h-14 pl-12 text-base" />
                 </div>
-              ) : null}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="h-14 shrink-0 px-3" aria-label={`Filter recepten: ${actiefFilter.label}`}>
+                      <SlidersHorizontal className="size-5" />
+                      <span className="hidden min-[360px]:inline">Filter</span>
+                      <ChevronDown className="size-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64 rounded-xl p-2">
+                    {filterOpties.map(({ id, label, uitleg, icon: Icon }) => (
+                      <DropdownMenuItem
+                        key={id}
+                        onSelect={() => setReceptFilter(id)}
+                        className="min-h-14 rounded-lg px-3 text-base"
+                      >
+                        <Icon className="size-5 text-primary" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block font-semibold">{label}</span>
+                          <span className="block text-sm text-muted-foreground">{uitleg}</span>
+                        </span>
+                        {receptFilter === id ? <Check className="size-5 text-primary" aria-hidden /> : null}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold">{actiefFilter.label}</p>
+                <p className="text-sm text-muted-foreground">{gefilterdeRecepten.length} {gefilterdeRecepten.length === 1 ? "recept" : "recepten"}</p>
+              </div>
             </div>
 
             <div className="mt-3 flex-1 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
@@ -1421,7 +1447,7 @@ function ReceptKiezer({
               ) : receptenFout ? (
                 <div className="py-8 text-center"><p className="text-base text-muted-foreground">Je recepten konden niet laden.</p><Button variant="outline" onClick={() => void herlaadRecepten()} className="mt-3"><RefreshCw className="size-5" /> Opnieuw proberen</Button></div>
               ) : gefilterdeRecepten.length === 0 ? (
-                <div className="py-8 text-center"><p className="text-base text-muted-foreground">{term ? "Geen recept gevonden." : "Hier staan nog geen recepten."}</p>{term ? <Button variant="outline" onClick={() => { setBron("nieuw"); }} className="mt-3"><Plus className="size-5" /> Voeg “{term}” toe</Button> : null}</div>
+                <div className="py-8 text-center"><p className="text-base text-muted-foreground">{term ? `Geen resultaat binnen ${actiefFilter.label.toLowerCase()}.` : `Nog niets bij ${actiefFilter.label.toLowerCase()}.`}</p>{term ? <div className="mt-3 flex flex-col items-center gap-2"><Button variant="outline" onClick={() => setReceptFilter("alles")}><BookOpen className="size-5" /> Zoek in alle recepten</Button><Button variant="ghost" onClick={() => { setBron("nieuw"); }}><Plus className="size-5" /> Voeg “{term}” toe</Button></div> : <Button variant="outline" onClick={() => setReceptFilter("alles")} className="mt-3"><BookOpen className="size-5" /> Toon alle recepten</Button>}</div>
               ) : (
                 <ul className="space-y-2">
                   {gefilterdeRecepten.map((r) => <li key={r.id}><GerechtKaart recept={r} onKies={() => onKies(r.id, datum, moment, r.title)} /></li>)}
