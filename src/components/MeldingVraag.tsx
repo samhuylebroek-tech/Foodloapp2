@@ -104,21 +104,20 @@ export function MeldingVraag({ actief = true }: { actief?: boolean }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/50 p-3 sm:items-center">
+    <div className="fixed inset-x-3 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-40 flex justify-center lg:bottom-5">
       <div
-        role="dialog"
-        aria-modal="true"
+        role="region"
         aria-label={t("Wil je een seintje krijgen?")}
-        className="w-full max-w-md rounded-3xl border border-border bg-card p-5 shadow-2xl"
+        className="w-full max-w-md rounded-2xl border border-border bg-card p-4 shadow-xl"
       >
         <div className="flex items-start gap-3">
           <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
             <Bell className="size-6" aria-hidden />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-xl font-bold">{t("Wil je een seintje krijgen?")}</p>
-            <p className="mt-1 text-base text-muted-foreground">
-              {t("Een korte herinnering voor je maaltijd, je weekmenu of je boodschappen. Nooit meer dan nodig.")}
+            <p className="text-lg font-bold">{t("Een seintje op het juiste moment?")}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t("Bijvoorbeeld wanneer het tijd is om te koken.")}
             </p>
           </div>
           <button
@@ -131,12 +130,12 @@ export function MeldingVraag({ actief = true }: { actief?: boolean }) {
           </button>
         </div>
 
-        <div className="mt-5 space-y-2">
+        <div className="mt-4 grid grid-cols-2 gap-2">
           <button
             type="button"
             disabled={bezig}
             onClick={() => void aanzetten()}
-            className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 text-lg font-semibold text-primary-foreground"
+            className="flex min-h-14 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-base font-semibold text-primary-foreground"
           >
             <Bell className="size-5" aria-hidden /> {t("Ja, zet aan")}
           </button>
@@ -144,14 +143,14 @@ export function MeldingVraag({ actief = true }: { actief?: boolean }) {
             type="button"
             disabled={bezig}
             onClick={() => void uitzetten()}
-            className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-border px-5 text-base font-semibold"
+            className="flex min-h-14 items-center justify-center gap-2 rounded-xl border border-border px-3 text-base font-semibold"
           >
             <BellOff className="size-5" aria-hidden /> {t("Nee, houd ze uit")}
           </button>
           <button
             type="button"
             onClick={nietMeerTonen}
-            className="min-h-12 w-full rounded-2xl px-5 text-base font-semibold text-muted-foreground underline"
+            className="col-span-2 min-h-12 w-full rounded-xl px-3 text-sm font-semibold text-muted-foreground underline"
           >
             {t("Toon me dit niet meer")}
           </button>

@@ -14,6 +14,7 @@ import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.png";
 import { Aankondigingen } from "@/components/Aankondigingen";
+import { MeldingVraag, telAanmelding } from "@/components/MeldingVraag";
 import { meet } from "@/lib/meten";
 
 const NAV = [
@@ -77,6 +78,10 @@ export function AppShell({
   useEffect(() => {
     if (session) meet("pagina", pathname);
   }, [pathname, session]);
+
+  useEffect(() => {
+    if (session) telAanmelding();
+  }, [session]);
 
   if (loading || !session) {
     return (
@@ -152,6 +157,7 @@ export function AppShell({
           <main className="mx-auto w-full max-w-3xl px-4 py-6 pb-32 sm:px-6 lg:max-w-4xl lg:py-8 lg:pb-16">
             <Aankondigingen />
             {children}
+            <MeldingVraag actief={pathname === "/"} />
           </main>
         </div>
       </div>
