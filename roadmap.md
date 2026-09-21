@@ -121,7 +121,7 @@
 - [x] Planning als verticale daglijn met foto, maaltijdtype en kooktijd
 - [x] Toevoegen, Foodlo kiezen en boodschappen als rustige actierij
 - [x] Maaltijdacties gebundeld in één contextmenu
-- [ ] Mobiele en desktop-eindcontrole van het vernieuwde Weekmenu
+- [x] Mobiele en desktop-eindcontrole van het vernieuwde Weekmenu
 
 ## Actief — weekmenu en boodschappen verbeteren
 - [x] Weeknavigatie met weekbalk en kalender

@@ -85,6 +85,8 @@ export const Route = createFileRoute("/planner")({
         property: "og:description",
         content: "Zie in één oogopslag wat er deze week op tafel komt.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: PlannerPage,
@@ -1347,7 +1349,7 @@ function ReceptKiezer({
       <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
         <div className="w-full max-w-lg rounded-t-3xl bg-card p-4 sm:rounded-3xl">
           <div className="flex items-start justify-between gap-3">
-            <h2 className="font-display text-xl">Wanneer eten we iets?</h2>
+            <h2 className="font-display text-xl">Wanneer wil je iets plannen?</h2>
             <Button variant="ghost" onClick={onSluit} aria-label="Sluiten" className="size-12">
               <X className="size-6" />
             </Button>
@@ -1358,7 +1360,7 @@ function ReceptKiezer({
           {dagKeuze}
 
           <Button onClick={() => setDagKiezen(false)} className="mt-4 h-14 w-full text-base">
-            Verder · kies een gerecht
+            Kies een maaltijd
           </Button>
         </div>
       </div>
@@ -2319,7 +2321,7 @@ function WeekmenuVoorstel({
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
       <div className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-card p-5 sm:rounded-3xl">
         <div className="flex items-start justify-between gap-3">
-          <h2 className="font-display text-xl">Voorstel van Foodlo</h2>
+          <h2 className="font-display text-xl">Foodlo kiest met jou</h2>
           <Button variant="ghost" onClick={onSluit} aria-label="Sluiten" className="size-12">
             <X className="size-5" />
           </Button>
@@ -2396,7 +2398,7 @@ function WeekmenuVoorstel({
                         : "flex min-h-14 w-full items-center justify-between rounded-xl border border-border px-4 text-base font-semibold"
                     }
                   >
-                    <span>{o.label}</span>
+                  <span>{o.id === "eigen" ? "Uit mijn recepten" : "Ook nieuwe ideeën"}</span>
                     <span className="text-sm font-normal opacity-80">{o.extra}</span>
                   </button>
                 ))}
@@ -2414,7 +2416,7 @@ function WeekmenuVoorstel({
                 </>
               ) : (
                 <>
-                  <Sparkles className="size-5" /> Maak een voorstel
+                  <Sparkles className="size-5" /> Laat Foodlo kiezen
                 </>
               )}
             </Button>
