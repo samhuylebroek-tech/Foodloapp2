@@ -13,7 +13,7 @@ import {
   Menu,
   Package,
   Smartphone,
-
+  MoreHorizontal,
   X,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -23,7 +23,7 @@ import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.png";
 import { Aankondigingen } from "@/components/Aankondigingen";
-import { InstallatieTip, installatieTipAf } from "@/components/InstallatieTip";
+import { installatieTipAf } from "@/components/InstallatieTip";
 import { MeldingVraag, telAanmelding } from "@/components/MeldingVraag";
 import { meet } from "@/lib/meten";
 
@@ -45,6 +45,7 @@ const TABS = [
   { to: "/gerechten", label: "Recepten", icon: BookOpen },
   { to: "/planner", label: "Weekmenu", icon: CalendarDays },
   { to: "/boodschappen", label: "Lijst", icon: ShoppingCart },
+  { to: "/meer", label: "Meer", icon: MoreHorizontal },
 ] as const;
 
 
@@ -169,11 +170,11 @@ export function AppShell({
                 type="button"
                 onClick={() => setMenuOpen(true)}
                 aria-label="Menu openen"
-                className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-border bg-card transition-transform active:scale-95 lg:hidden"
+                className="flex size-14 shrink-0 items-center justify-center rounded-xl border border-border bg-card transition-transform active:scale-95 lg:hidden"
               >
                 <Menu className="size-6" aria-hidden />
               </button>
-              <h1 className="min-w-0 flex-1 truncate font-display text-[1.6rem] font-semibold leading-tight">
+              <h1 className="min-w-0 flex-1 truncate font-display text-2xl font-semibold leading-tight">
                 {title}
               </h1>
               {action}
@@ -183,8 +184,6 @@ export function AppShell({
           <main className="mx-auto w-full max-w-3xl px-4 py-6 pb-32 sm:px-6 lg:max-w-4xl lg:py-8 lg:pb-16">
             <Aankondigingen />
             {children}
-            {/* Enkel op het startscherm, en de installatiepopup krijgt voorrang. */}
-            <InstallatieTip actief={pathname === "/"} />
             <MeldingVraag actief={pathname === "/" && !installTip} />
           </main>
         </div>
@@ -196,7 +195,7 @@ export function AppShell({
         className="fixed inset-x-0 bottom-0 z-30 border-t border-border/60 bg-card/95 backdrop-blur-xl lg:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <ul className="mx-auto flex max-w-lg items-stretch justify-between px-2">
+        <ul className="mx-auto grid max-w-lg grid-cols-5 items-stretch px-1">
           {TABS.map((item) => {
             const active =
               item.to === "/"
@@ -204,18 +203,18 @@ export function AppShell({
                 : pathname === item.to || pathname.startsWith(`${item.to}/`);
             const Icon = item.icon;
             return (
-              <li key={item.to} className="flex-1">
+              <li key={item.to} className="min-w-0">
                 <Link
                   to={item.to}
                   data-tour={`tab-${item.to}`}
                   className={cn(
-                    "flex min-h-16 flex-col items-center justify-center gap-1 px-1 py-2 text-xs font-semibold transition-colors",
+                    "flex min-h-18 flex-col items-center justify-center gap-1 px-0.5 py-2 text-[0.7rem] font-semibold transition-colors",
                     active ? "text-primary" : "text-muted-foreground",
                   )}
                 >
                   <span
                     className={cn(
-                      "flex size-9 items-center justify-center rounded-lg transition-colors",
+                      "flex size-9 items-center justify-center rounded-xl transition-colors",
                       active ? "bg-primary/12 text-primary" : "text-muted-foreground",
                     )}
                   >

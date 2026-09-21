@@ -193,8 +193,8 @@
 }
 
 @theme inline {
-  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
 }
 
 
@@ -210,14 +210,15 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: "Figtree", ui-sans-serif, system-ui, sans-serif;
+    font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
     -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
   }
 
   h1,
   h2,
   h3 {
-    font-family: "Outfit", ui-sans-serif, system-ui, sans-serif;
+    font-family: "Sora", ui-sans-serif, system-ui, sans-serif;
     font-weight: 600;
     letter-spacing: 0;
   }

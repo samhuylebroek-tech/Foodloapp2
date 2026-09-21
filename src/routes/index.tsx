@@ -8,7 +8,6 @@ import { AppShell } from "@/components/AppShell";
 import { EmptyState } from "@/components/EmptyState";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { RecipePhoto } from "@/components/RecipePhoto";
-import { NieuweSuggesties } from "@/components/NieuweSuggesties";
 import type { Recipe } from "@/lib/types";
 import { useT } from "@/lib/voorkeuren";
 import { tijdLabel } from "@/lib/tijd";
@@ -122,7 +121,7 @@ function StartPage() {
           <PageSkeleton rows={2} />
         ) : maaltijden.length > 0 ? (
           <div className="space-y-4">
-            {maaltijden.map((maaltijd) =>
+            {maaltijden.slice(0, 1).map((maaltijd) =>
               maaltijd.recipes ? (
                 <Link
                   key={maaltijd.id}
@@ -143,7 +142,7 @@ function StartPage() {
                       {[tijdLabel(maaltijd.recipes.prep_minutes, maaltijd.recipes.cook_minutes), `${maaltijd.recipes.servings} ${t("personen")}`].filter(Boolean).join(" · ")}
                     </p>
                     <span className="mt-5 flex min-h-14 items-center justify-center rounded-xl bg-primary px-5 text-base font-semibold text-primary-foreground">
-                      {t("Bekijk recept")}
+                      {t("Start koken")}
                     </span>
                   </div>
                 </Link>
@@ -202,8 +201,6 @@ function StartPage() {
             </Link>
           </div>
         </section>
-
-        <NieuweSuggesties recipes={recipes} favorites={favorites} />
 
         {recent.length > 0 ? (
           <section aria-labelledby="favorieten-titel">
