@@ -994,7 +994,6 @@ function ReceptKiezer({
   const [voorstelNaam, setVoorstelNaam] = useState("");
   const [ideeen, setIdeeen] = useState<WeekmenuIdee[] | null>(null);
   const [ideeenBezig, setIdeeenBezig] = useState(false);
-  const [webOpen, setWebOpen] = useState(false);
   const [webTerm, setWebTerm] = useState("");
   const [webBezig, setWebBezig] = useState(false);
   const [webResultaten, setWebResultaten] = useState<WebResultaat[] | null>(null);
@@ -1206,8 +1205,6 @@ function ReceptKiezer({
 
   const term = zoek.trim();
   const treffers = recipes.filter((r) => r.title.toLowerCase().includes(term.toLowerCase()));
-  const bestaatAl = recipes.some((r) => r.title.toLowerCase() === term.toLowerCase());
-
   const dezeWeek = new Set(
     Object.entries(laatst)
       .filter(([, d]) => d >= week[0]! && d <= week[6]!)
