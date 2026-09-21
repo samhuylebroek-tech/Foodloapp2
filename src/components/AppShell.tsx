@@ -1,20 +1,11 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import {
   BookOpen,
   CalendarDays,
   ShoppingCart,
-  CreditCard,
-  PlusCircle,
-  Users,
-  MessageSquareHeart,
-  Settings,
   Home,
-  Menu,
-  Package,
-  Smartphone,
   MoreHorizontal,
-  X,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,21 +14,14 @@ import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.png";
 import { Aankondigingen } from "@/components/Aankondigingen";
-import { installatieTipAf } from "@/components/InstallatieTip";
-import { MeldingVraag, telAanmelding } from "@/components/MeldingVraag";
 import { meet } from "@/lib/meten";
 
 const NAV = [
   { to: "/", label: "Start", icon: Home },
   { to: "/gerechten", label: "Recepten", icon: BookOpen },
   { to: "/planner", label: "Weekmenu", icon: CalendarDays },
-  { to: "/boodschappen", label: "Boodschappen", icon: ShoppingCart },
-  { to: "/voorraad", label: "Voorraadkast", icon: Package },
-  { to: "/kaarten", label: "Klantenkaarten", icon: CreditCard },
-  { to: "/vrienden", label: "Vrienden", icon: Users },
-  { to: "/instellingen", label: "Instellingen", icon: Settings },
-  { to: "/feedback", label: "Feedback", icon: MessageSquareHeart },
-  { to: "/installeren", label: "Op je telefoon zetten", icon: Smartphone },
+  { to: "/boodschappen", label: "Lijst", icon: ShoppingCart },
+  { to: "/meer", label: "Meer", icon: MoreHorizontal },
 ] as const;
 
 const TABS = [
@@ -66,7 +50,6 @@ export function AppShell({
 
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/aanmelden" });
@@ -92,20 +75,8 @@ export function AppShell({
   }, [profiel, navigate]);
 
   useEffect(() => {
-    setMenuOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
     if (session) meet("pagina", pathname);
   }, [pathname, session]);
-
-  // Eén keer per aanmelding tellen; bepaalt welke popup aan bod komt.
-  const [installTip, setInstallTip] = useState(false);
-  useEffect(() => {
-    if (!session) return;
-    telAanmelding();
-    setInstallTip(!installatieTipAf());
-  }, [session]);
 
   if (loading || !session) {
     return (
@@ -165,18 +136,15 @@ export function AppShell({
             className="sticky top-0 z-20 border-b border-border/60 bg-background/90 backdrop-blur-xl"
             style={{ paddingTop: "env(safe-area-inset-top)" }}
           >
-            <div className="flex items-center gap-3 px-4 py-3">
-              <button
-                type="button"
-                onClick={() => setMenuOpen(true)}
-                aria-label="Menu openen"
-                className="flex size-14 shrink-0 items-center justify-center rounded-xl border border-border bg-card transition-transform active:scale-95 lg:hidden"
-              >
-                <Menu className="size-6" aria-hidden />
-              </button>
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <Link to="/" aria-label="Foodlo Start" className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary lg:hidden">
+                  <img src={logo} alt="" width={26} height={26} className="size-6" />
+                </Link>
               <h1 className="min-w-0 flex-1 truncate font-display text-2xl font-semibold leading-tight">
                 {title}
               </h1>
+              </div>
               {action}
             </div>
           </header>
@@ -184,7 +152,6 @@ export function AppShell({
           <main className="mx-auto w-full max-w-3xl px-4 py-6 pb-32 sm:px-6 lg:max-w-4xl lg:py-8 lg:pb-16">
             <Aankondigingen />
             {children}
-            <MeldingVraag actief={pathname === "/" && !installTip} />
           </main>
         </div>
       </div>
@@ -227,31 +194,6 @@ export function AppShell({
           })}
         </ul>
       </nav>
-
-      {menuOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <button
-            type="button"
-            aria-label="Menu sluiten"
-            className="absolute inset-0 bg-foreground/40"
-            onClick={() => setMenuOpen(false)}
-          />
-          <div className="absolute inset-y-0 left-0 w-[86%] max-w-xs overflow-y-auto bg-card px-4 py-6 shadow-xl">
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => setMenuOpen(false)}
-                aria-label="Menu sluiten"
-                className="flex size-12 items-center justify-center rounded-2xl border border-border"
-              >
-                <X className="size-6" aria-hidden />
-              </button>
-            </div>
-            {menu}
-            {sidebar ? <div className="mt-8 border-t border-border pt-6">{sidebar}</div> : null}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
