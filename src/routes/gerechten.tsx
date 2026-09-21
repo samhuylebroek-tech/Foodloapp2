@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Heart, Search, Clock, RotateCcw, Plus, Trash2, X, SlidersHorizontal, Sparkles } from "lucide-react";
+import { Heart, Search, Clock, RotateCcw, Plus, Trash2, X, SlidersHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
@@ -24,7 +24,6 @@ import { cn } from "@/lib/utils";
 import { tijdLabel } from "@/lib/tijd";
 import { EmptyState } from "@/components/EmptyState";
 import { PageSkeleton } from "@/components/PageSkeleton";
-import { NieuweSuggesties } from "@/components/NieuweSuggesties";
 import { zoekScore, zoekWoorden } from "@/lib/zoeken";
 
 export const Route = createFileRoute("/gerechten")({
@@ -41,6 +40,8 @@ export const Route = createFileRoute("/gerechten")({
         property: "og:description",
         content: "Recepten verzamelen, plannen en koken. Groot, duidelijk en voor iedereen.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: GerechtenPage,
@@ -67,7 +68,6 @@ function GerechtenPage() {
   const [teVerwijderen, setTeVerwijderen] = useState<Recipe | null>(null);
   const [bezig, setBezig] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [ideeenOpen, setIdeeenOpen] = useState(false);
 
   const { data: recipes = [], isLoading } = useQuery({
     queryKey: ["recipes"],
@@ -256,19 +256,9 @@ function GerechtenPage() {
     <AppShell
       title={t("Recepten")}
       action={
-        <div className="flex items-center gap-2">
-          <Button
-            size="icon"
-            variant="secondary"
-            aria-label={t("Zoek nieuwe ideeën")}
-            onClick={() => setIdeeenOpen(true)}
-          >
-            <Sparkles />
-          </Button>
-          <Button asChild size="icon" aria-label={t("Recept toevoegen")}>
-            <Link to="/recepten/nieuw"><Plus /></Link>
-          </Button>
-        </div>
+        <Button asChild aria-label={t("Recept toevoegen")} className="shrink-0 px-4">
+          <Link to="/recepten/nieuw"><Plus /> <span className="hidden sm:inline">{t("Toevoegen")}</span></Link>
+        </Button>
       }
     >
       <div className="space-y-4">
@@ -286,8 +276,8 @@ function GerechtenPage() {
           />
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          <div className="flex shrink-0 rounded-full bg-secondary p-1" role="group" aria-label={t("Van wie")}>
+        <div className="space-y-2">
+          <div className="grid grid-cols-3 rounded-xl bg-secondary p-1" role="group" aria-label={t("Van wie")}>
             {(
               [
                 ["alles", "Alles"],
@@ -301,7 +291,7 @@ function GerechtenPage() {
                 onClick={() => setEigenaar(waarde)}
                 aria-pressed={eigenaar === waarde}
                 className={cn(
-                  "min-h-10 rounded-full px-4 text-sm font-semibold transition-colors",
+                  "min-h-12 rounded-lg px-2 text-sm font-semibold transition-colors",
                   eigenaar === waarde
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground",
@@ -311,16 +301,19 @@ function GerechtenPage() {
               </button>
             ))}
           </div>
-          <Button
-            variant={alleenFavorieten ? "default" : "secondary"}
-            onClick={() => setAlleenFavorieten(!alleenFavorieten)}
-            aria-pressed={alleenFavorieten}
-          >
-            <Heart className={cn(alleenFavorieten && "fill-current")} /> {t("Favorieten")}
-          </Button>
-          <Button variant={filtersOpen ? "default" : "outline"} onClick={() => setFiltersOpen(!filtersOpen)} aria-expanded={filtersOpen}>
-            <SlidersHorizontal /> {t("Filters")}{actieveFilters ? ` (${actieveFilters})` : ""}
-          </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant={alleenFavorieten ? "default" : "secondary"}
+              onClick={() => setAlleenFavorieten(!alleenFavorieten)}
+              aria-pressed={alleenFavorieten}
+            >
+              <Heart className={cn(alleenFavorieten && "fill-current")} /> {t("Favorieten")}
+            </Button>
+            <Button variant={filtersOpen ? "default" : "outline"} onClick={() => setFiltersOpen(!filtersOpen)} aria-expanded={filtersOpen}>
+              <SlidersHorizontal /> {t("Filters")}{actieveFilters ? ` (${actieveFilters})` : ""}
+            </Button>
+          </div>
         </div>
 
         {filtersOpen ? <div className="rounded-2xl bg-card p-3 shadow-sm ring-1 ring-border/60">
@@ -388,7 +381,7 @@ function GerechtenPage() {
         </div> : null}
 
         <p className="text-sm text-muted-foreground">
-          {zichtbaar.length} {t(zichtbaar.length === 1 ? "gerecht" : "gerechten")}
+          {zichtbaar.length} {t(zichtbaar.length === 1 ? "recept" : "recepten")}
         </p>
 
         {isLoading ? (
@@ -442,27 +435,6 @@ function GerechtenPage() {
           </ul>
         )}
       </div>
-
-      {ideeenOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center" role="dialog" aria-modal="true" aria-label={t("Zoek nieuwe ideeën")}>
-          <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-background shadow-xl sm:rounded-3xl">
-            <div className="flex items-center justify-between gap-3 px-5 pt-5">
-              <h2 className="font-display text-xl">{t("Zoek nieuwe ideeën")}</h2>
-              <Button
-                variant="ghost"
-                onClick={() => setIdeeenOpen(false)}
-                aria-label={t("Sluiten")}
-                className="size-12"
-              >
-                <X className="size-6" />
-              </Button>
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6">
-              <NieuweSuggesties recipes={recipes} favorites={favorites} />
-            </div>
-          </div>
-        </div>
-      )}
 
       {teVerwijderen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
