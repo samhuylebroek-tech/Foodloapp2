@@ -31,6 +31,7 @@ import {
   BookMarked,
   SlidersHorizontal,
   ChevronDown,
+  UtensilsCrossed,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,6 +47,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -56,7 +59,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 
-import { type Recipe } from "@/lib/types";
+import { CATEGORIES, type Recipe } from "@/lib/types";
 import {
   importRecipeFromText,
   importRecipeFromUrl,
@@ -1001,7 +1004,8 @@ function ReceptKiezer({
   const [webBezig, setWebBezig] = useState(false);
   const [webResultaten, setWebResultaten] = useState<WebResultaat[] | null>(null);
   const [bron, setBron] = useState<"recepten" | "inspiratie" | "nieuw">("recepten");
-  const [receptFilter, setReceptFilter] = useState<"voor-jou" | "favorieten" | "recent" | "alles">("voor-jou");
+  const [receptFilter, setReceptFilter] = useState<"voor-jou" | "favorieten" | "recent" | "alles">("alles");
+  const [soortFilter, setSoortFilter] = useState<string | null>(null);
 
   /** Zet een AI- of webrecept klaar in het bevestigscherm. */
   function toonVoorstel(
@@ -1224,10 +1228,10 @@ function ReceptKiezer({
   const alles = [...recipes].sort((a, b) => a.title.localeCompare(b.title, "nl"));
 
   const filterOpties = [
+    { id: "alles", label: "Alle recepten", uitleg: "Alfabetisch", icon: BookOpen },
     { id: "voor-jou", label: "Aanraders", uitleg: "Past bij deze week", icon: Sparkles },
     { id: "favorieten", label: "Favorieten", uitleg: "Door jou bewaard", icon: Heart },
     { id: "recent", label: "Recent gebruikt", uitleg: "Onlangs ingepland", icon: Clock3 },
-    { id: "alles", label: "Alle recepten", uitleg: "Alfabetisch", icon: BookOpen },
   ] as const;
   const actiefFilter = filterOpties.find((optie) => optie.id === receptFilter) ?? filterOpties[0];
   const receptenVoorFilter = receptFilter === "favorieten"
@@ -1237,9 +1241,13 @@ function ReceptKiezer({
       : receptFilter === "alles"
         ? alles
         : voorgesteld;
-  const gefilterdeRecepten = term
-    ? receptenVoorFilter.filter((r) => r.title.toLowerCase().includes(term.toLowerCase()))
+  const receptenMetSoort = soortFilter
+    ? receptenVoorFilter.filter((r) => (r.category ?? "hoofdgerecht") === soortFilter)
     : receptenVoorFilter;
+  const gefilterdeRecepten = term
+    ? receptenMetSoort.filter((r) => r.title.toLowerCase().includes(term.toLowerCase()))
+    : receptenMetSoort;
+  const actieveSoortLabel = soortFilter ? soortFilter.charAt(0).toUpperCase() + soortFilter.slice(1) : null;
 
   if (voorstel) {
     return (
@@ -1418,6 +1426,7 @@ function ReceptKiezer({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" sideOffset={8} className="w-64 rounded-xl bg-card p-2 shadow-xl">
+                    <DropdownMenuLabel className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Welke recepten</DropdownMenuLabel>
                     {filterOpties.map(({ id, label, uitleg, icon: Icon }) => (
                       <DropdownMenuItem
                         key={id}
@@ -1432,11 +1441,25 @@ function ReceptKiezer({
                         {receptFilter === id ? <Check className="size-5 text-primary" aria-hidden /> : null}
                       </DropdownMenuItem>
                     ))}
+                    <DropdownMenuSeparator className="my-2" />
+                    <DropdownMenuLabel className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Type gerecht</DropdownMenuLabel>
+                    <DropdownMenuItem onSelect={() => setSoortFilter(null)} className="min-h-12 rounded-lg px-3 text-base">
+                      <UtensilsCrossed className="size-5 text-primary" />
+                      <span className="min-w-0 flex-1 font-semibold">Alle types</span>
+                      {soortFilter === null ? <Check className="size-5 text-primary" aria-hidden /> : null}
+                    </DropdownMenuItem>
+                    {CATEGORIES.map((soort) => (
+                      <DropdownMenuItem key={soort} onSelect={() => setSoortFilter(soort)} className="min-h-12 rounded-lg px-3 text-base">
+                        <span className="size-5" aria-hidden />
+                        <span className="min-w-0 flex-1 capitalize">{soort}</span>
+                        {soortFilter === soort ? <Check className="size-5 text-primary" aria-hidden /> : null}
+                      </DropdownMenuItem>
+                    ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
               <div className="mt-3 flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold">{actiefFilter.label}</p>
+                <p className="text-sm font-semibold">{actiefFilter.label}{actieveSoortLabel ? ` · ${actieveSoortLabel}` : ""}</p>
                 <p className="text-sm text-muted-foreground">{gefilterdeRecepten.length} {gefilterdeRecepten.length === 1 ? "recept" : "recepten"}</p>
               </div>
             </div>
@@ -1447,7 +1470,7 @@ function ReceptKiezer({
               ) : receptenFout ? (
                 <div className="py-8 text-center"><p className="text-base text-muted-foreground">Je recepten konden niet laden.</p><Button variant="outline" onClick={() => void herlaadRecepten()} className="mt-3"><RefreshCw className="size-5" /> Opnieuw proberen</Button></div>
               ) : gefilterdeRecepten.length === 0 ? (
-                <div className="py-8 text-center"><p className="text-base text-muted-foreground">{term ? `Geen resultaat binnen ${actiefFilter.label.toLowerCase()}.` : `Nog niets bij ${actiefFilter.label.toLowerCase()}.`}</p>{term ? <div className="mt-3 flex flex-col items-center gap-2"><Button variant="outline" onClick={() => setReceptFilter("alles")}><BookOpen className="size-5" /> Zoek in alle recepten</Button><Button variant="ghost" onClick={() => { setBron("nieuw"); }}><Plus className="size-5" /> Voeg “{term}” toe</Button></div> : <Button variant="outline" onClick={() => setReceptFilter("alles")} className="mt-3"><BookOpen className="size-5" /> Toon alle recepten</Button>}</div>
+                <div className="py-8 text-center"><p className="text-base text-muted-foreground">{term ? `Geen resultaat binnen ${actiefFilter.label.toLowerCase()}${actieveSoortLabel ? ` · ${actieveSoortLabel.toLowerCase()}` : ""}.` : `Nog niets bij ${actiefFilter.label.toLowerCase()}${actieveSoortLabel ? ` · ${actieveSoortLabel.toLowerCase()}` : ""}.`}</p>{term ? <div className="mt-3 flex flex-col items-center gap-2"><Button variant="outline" onClick={() => { setReceptFilter("alles"); setSoortFilter(null); }}><BookOpen className="size-5" /> Zoek in alle recepten</Button><Button variant="ghost" onClick={() => { setBron("nieuw"); }}><Plus className="size-5" /> Voeg “{term}” toe</Button></div> : <Button variant="outline" onClick={() => { setReceptFilter("alles"); setSoortFilter(null); }} className="mt-3"><BookOpen className="size-5" /> Toon alle recepten</Button>}</div>
               ) : (
                 <ul className="space-y-2">
                   {gefilterdeRecepten.map((r) => <li key={r.id}><GerechtKaart recept={r} onKies={() => onKies(r.id, datum, moment, r.title)} /></li>)}
