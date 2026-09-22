@@ -62,39 +62,51 @@ export function toonBelgischeMaat(quantity: number | null, unit: string | null |
   return `${String(maat.quantity).replace(".", ",")} ${maat.unit}`.trim();
 }
 
-function leesAantal(geheel: string, teller?: string, noemer?: string): number | null {
-  const basis = geheel ? Number(geheel.replace(",", ".")) : 0;
-  const breuk = teller && noemer ? Number(teller) / Number(noemer) : 0;
-  const waarde = basis + breuk;
+function leesAantal(tekst: string): number | null {
+  const waarde = tekst.split(/\s+/).reduce((som, deel) => {
+    if (deel.includes("/")) {
+      const [teller, noemer] = deel.split("/").map(Number);
+      return som + (noemer ? (teller ?? 0) / noemer : 0);
+    }
+    return som + Number(deel.replace(",", "."));
+  }, 0);
   return Number.isFinite(waarde) ? waarde : null;
 }
 
 /** Zet een regel als "500 g bloem" om in losse velden. */
 export function parseIngredientLine(line: string): ParsedIngredient | null {
-  const clean = line.replace(/^[-•*]\s*/, "").trim();
+  const clean = line
+    .replace(/^[-•*]\s*/, "")
+    .replace(/½/g, " 1/2 ")
+    .replace(/¼/g, " 1/4 ")
+    .replace(/¾/g, " 3/4 ")
+    .replace(/⅓/g, " 1/3 ")
+    .replace(/⅔/g, " 2/3 ")
+    .replace(/⅛/g, " 1/8 ")
+    .replace(/⅜/g, " 3/8 ")
+    .replace(/⅝/g, " 5/8 ")
+    .replace(/⅞/g, " 7/8 ")
+    .replace(/\s+/g, " ")
+    .trim();
   if (!clean) return null;
 
-  const match = clean.match(/^(\d+(?:[.,]\d+)?)?(?:\s+(\d+)\s*\/\s*(\d+)|\s*\/\s*(\d+))?\s*([a-zA-ZéÉ()]+(?:\s+[a-zA-Z]+)?)?\s*(.*)$/);
+  const match = clean.match(/^((?:\d+(?:[.,]\d+)?)(?:\s+\d+\s*\/\s*\d+)?|\d+\s*\/\s*\d+)\s*(.*)$/);
   if (!match) return { name: clean, quantity: null, unit: "" };
 
-  const quantity = leesAantal(match[1] ?? "", match[2] ?? match[4], match[3] ?? (match[4] ? match[1] : undefined));
-  const maybeUnit = eenheidSleutel(match[5] ?? "");
-  const rest = (match[6] ?? "").trim();
-  let alias = UNIT_ALIAS[maybeUnit];
-  let naam = rest;
-  if (!alias && maybeUnit.includes(" ")) {
-    const [eerste, ...overig] = maybeUnit.split(" ");
-    alias = UNIT_ALIAS[eerste ?? ""];
-    naam = [...overig, rest].filter(Boolean).join(" ");
-  }
+  const quantity = leesAantal(match[1] ?? "");
+  const rest = (match[2] ?? "").trim();
+  const restSleutel = eenheidSleutel(rest);
+  const maybeUnit = Object.keys(UNIT_ALIAS)
+    .sort((a, b) => b.length - a.length)
+    .find((unit) => restSleutel === unit || restSleutel.startsWith(`${unit} `));
 
-  if (alias && naam) {
-    const maat = belgischeMaat(quantity, maybeUnit.includes(" ") && !UNIT_ALIAS[maybeUnit] ? maybeUnit.split(" ")[0] : maybeUnit);
+  if (maybeUnit) {
+    const naam = rest.slice(maybeUnit.length).trim();
+    const maat = belgischeMaat(quantity, maybeUnit);
     return { name: naam, quantity: maat.quantity, unit: maat.unit };
   }
-  const losseNaam = [match[5], rest].filter(Boolean).join(" ").trim();
-  if (!losseNaam) return { name: clean, quantity: null, unit: "" };
-  return { name: losseNaam, quantity, unit: "" };
+  if (!rest) return { name: clean, quantity: null, unit: "" };
+  return { name: rest, quantity, unit: "" };
 }
 
 export function parseIngredientText(text: string): ParsedIngredient[] {
