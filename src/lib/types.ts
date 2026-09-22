@@ -44,4 +44,4 @@ export const DIFFICULTIES = ["makkelijk", "gemiddeld", "moeilijk"] as const;
 
 export const MEAL_TYPES = ["ontbijt", "middageten", "avondeten"] as const;
 
-export const UNITS = ["", "g", "kg", "ml", "l", "el", "tl", "stuk(s)", "teen(tjes)", "snuf"];
+export const UNITS = ["", "mg", "g", "kg", "ml", "cl", "dl", "l", "el", "tl", "stuk(s)", "teen(tjes)", "snuf", "blik", "pak", "bos", "snee"];

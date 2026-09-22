@@ -8,6 +8,7 @@ import { Avatar } from "@/components/Avatar";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import type { Recipe } from "@/lib/types";
 import { tijdLabel } from "@/lib/tijd";
+import { toonBelgischeMaat } from "@/lib/ingredienten";
 
 export const Route = createFileRoute("/vrienden/$id")({
   head: () => ({
@@ -349,7 +350,7 @@ function VriendPage() {
                       </span>
                     </span>
                     <span className="text-base text-muted-foreground">
-                      {[b.quantity, b.unit].filter(Boolean).join(" ")}
+                      {toonBelgischeMaat(b.quantity, b.unit)}
                     </span>
                   </li>
                 ))}

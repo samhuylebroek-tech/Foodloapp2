@@ -1,3 +1,5 @@
+import { toonBelgischeMaat } from "@/lib/ingredienten";
+
 /**
  * Koppelt ingrediënten aan kookstappen.
  *
@@ -148,6 +150,5 @@ export function koppelStappen(
 /** Toont een hoeveelheid netjes, geschaald naar het aantal personen. */
 export function toonHoeveelheid(ing: StapIngredient, factor: number): string {
   if (ing.quantity === null) return "";
-  const waarde = Math.round(ing.quantity * factor * 100) / 100;
-  return `${waarde} ${ing.unit}`.trim();
+  return toonBelgischeMaat(ing.quantity * factor, ing.unit);
 }
