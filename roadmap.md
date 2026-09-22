@@ -135,7 +135,7 @@
 - [x] Engelse en Amerikaanse maten centraal omzetten naar Belgische maten
 - [x] Nieuwe invoer en receptimports normaliseren zonder bestaande gegevens te verwijderen
 - [x] Recepten, kookstand, planner, boodschappen, voorraad en gedeelde lijsten gelijk weergeven
-- [ ] Mobiele eindcontrole van invoer, recept en boodschappenlijst
+- [x] Mobiele eindcontrole van invoer, recept en boodschappenlijst
 
 ## Actief — weekmenu en boodschappen verbeteren
 - [x] Weeknavigatie met weekbalk en kalender

@@ -90,7 +90,7 @@ export function parseIngredientLine(line: string): ParsedIngredient | null {
     .trim();
   if (!clean) return null;
 
-  const match = clean.match(/^((?:\d+(?:[.,]\d+)?)(?:\s+\d+\s*\/\s*\d+)?|\d+\s*\/\s*\d+)\s*(.*)$/);
+  const match = clean.match(/^((?:\d+(?:[.,]\d+)?\s+)?\d+\s*\/\s*\d+|\d+(?:[.,]\d+)?)\s*(.*)$/);
   if (!match) return { name: clean, quantity: null, unit: "" };
 
   const quantity = leesAantal(match[1] ?? "");
