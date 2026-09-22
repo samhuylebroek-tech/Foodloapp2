@@ -1227,10 +1227,10 @@ function ReceptKiezer({
   const alles = [...recipes].sort((a, b) => a.title.localeCompare(b.title, "nl"));
 
   const filterOpties = [
+    { id: "alles", label: "Alle recepten", uitleg: "Alfabetisch", icon: BookOpen },
     { id: "voor-jou", label: "Aanraders", uitleg: "Past bij deze week", icon: Sparkles },
     { id: "favorieten", label: "Favorieten", uitleg: "Door jou bewaard", icon: Heart },
     { id: "recent", label: "Recent gebruikt", uitleg: "Onlangs ingepland", icon: Clock3 },
-    { id: "alles", label: "Alle recepten", uitleg: "Alfabetisch", icon: BookOpen },
   ] as const;
   const actiefFilter = filterOpties.find((optie) => optie.id === receptFilter) ?? filterOpties[0];
   const receptenVoorFilter = receptFilter === "favorieten"
@@ -1240,9 +1240,13 @@ function ReceptKiezer({
       : receptFilter === "alles"
         ? alles
         : voorgesteld;
-  const gefilterdeRecepten = term
-    ? receptenVoorFilter.filter((r) => r.title.toLowerCase().includes(term.toLowerCase()))
+  const receptenMetSoort = soortFilter
+    ? receptenVoorFilter.filter((r) => (r.category ?? "hoofdgerecht") === soortFilter)
     : receptenVoorFilter;
+  const gefilterdeRecepten = term
+    ? receptenMetSoort.filter((r) => r.title.toLowerCase().includes(term.toLowerCase()))
+    : receptenMetSoort;
+  const actieveSoortLabel = soortFilter ? soortFilter.charAt(0).toUpperCase() + soortFilter.slice(1) : null;
 
   if (voorstel) {
     return (
