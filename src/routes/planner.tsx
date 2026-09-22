@@ -36,6 +36,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { ingredientToLine } from "@/lib/ingredienten";
 import { AppShell } from "@/components/AppShell";
 import { Avatar } from "@/components/Avatar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -305,7 +306,7 @@ function PlannerPage() {
         titel: titel ?? "Dit gerecht",
         items: data.map((r) => ({
           id: r.id as string,
-          naam: [r.quantity ?? "", r.unit ?? "", r.name].join(" ").replace(/\s+/g, " ").trim(),
+          naam: ingredientToLine({ name: r.name, quantity: r.quantity, unit: r.unit ?? "" }),
         })),
       });
     }
@@ -1279,7 +1280,7 @@ function ReceptKiezer({
                 <ul className="mt-1 list-inside list-disc text-base">
                   {voorstel.ingredienten.map((i, idx) => (
                     <li key={idx}>
-                      {[i.quantity ?? "", i.unit, i.name].join(" ").replace(/\s+/g, " ").trim()}
+                      {ingredientToLine(i)}
                     </li>
                   ))}
                 </ul>

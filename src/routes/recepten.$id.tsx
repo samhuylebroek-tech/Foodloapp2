@@ -41,6 +41,7 @@ import { Voedingswaarden } from "@/components/Voedingswaarden";
 import { StapIngredienten } from "@/components/StapIngredienten";
 import { koppelStappen, toonHoeveelheid } from "@/lib/stap-ingredienten";
 import { netteStap } from "@/lib/tekst-opkuis";
+import { toonBelgischeMaat } from "@/lib/ingredienten";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PageSkeleton } from "@/components/PageSkeleton";
@@ -618,7 +619,7 @@ function ReceptPage() {
                 <span className="shrink-0 font-semibold">
                   {i.quantity === null
                     ? ""
-                    : `${Math.round(i.quantity * factor * 100) / 100} ${i.unit}`.trim()}
+                    : toonBelgischeMaat(i.quantity * factor, i.unit)}
                 </span>
               </li>
             ))}

@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import type { Recipe } from "@/lib/types";
 import { useT } from "@/lib/voorkeuren";
+import { ingredientToLine } from "@/lib/ingredienten";
 import {
   Dialog,
   DialogContent,
@@ -201,7 +202,7 @@ export function NieuweSuggesties({
                 <ul className="mt-2 space-y-1 text-base">
                   {(recept.ingredients ?? []).map((i, n) => (
                     <li key={n}>
-                      {[i.quantity ?? "", i.unit ?? "", i.name].join(" ").replace(/\s+/g, " ").trim()}
+                      {ingredientToLine({ ...i, unit: i.unit ?? "" })}
                     </li>
                   ))}
                 </ul>

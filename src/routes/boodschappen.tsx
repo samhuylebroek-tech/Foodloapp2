@@ -29,7 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { zorgVoorLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
-import { parseIngredientLine } from "@/lib/ingredienten";
+import { belgischeMaat, parseIngredientLine, toonBelgischeMaat } from "@/lib/ingredienten";
 import { appOrigin } from "@/lib/app-url";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -71,11 +71,11 @@ type Item = {
 };
 
 function itemTekst(item: Item) {
-  return [item.quantity ?? "", item.unit, item.name].join(" ").replace(/\s+/g, " ").trim();
+  return [toonBelgischeMaat(item.quantity, item.unit), item.name].filter(Boolean).join(" ").trim();
 }
 
 function maatTekst(item: Item) {
-  return [item.quantity ?? "", item.unit].join(" ").replace(/\s+/g, " ").trim();
+  return toonBelgischeMaat(item.quantity, item.unit);
 }
 
 function BoodschappenPage() {
@@ -355,9 +355,10 @@ function BoodschappenPage() {
       toast.error("Vul een geldig aantal in");
       return;
     }
+    const maat = belgischeMaat(hoeveelheid, bewerkEenheid);
     const { error } = await supabase
       .from("shopping_items")
-      .update({ name: bewerkNaam.trim(), quantity: hoeveelheid, unit: bewerkEenheid.trim() })
+      .update({ name: bewerkNaam.trim(), quantity: maat.quantity, unit: maat.unit })
       .eq("id", bewerkItem.id);
     if (error) {
       toast.error("Aanpassen lukte niet");

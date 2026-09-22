@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useT } from "@/lib/voorkeuren";
 import { meet } from "@/lib/meten";
-import { parseIngredientLine } from "@/lib/ingredienten";
+import { parseIngredientLine, toonBelgischeMaat } from "@/lib/ingredienten";
 import { EmptyState } from "@/components/EmptyState";
 import { PageSkeleton } from "@/components/PageSkeleton";
 
@@ -125,7 +125,7 @@ function VoorraadPage() {
               className="flex min-h-16 items-center gap-3 rounded-2xl border border-border bg-card px-4"
             >
               <span className="min-w-0 flex-1 truncate text-lg font-semibold">
-                {item.hoeveelheid ? `${item.hoeveelheid} ${item.eenheid} ` : ""}
+                {item.hoeveelheid ? `${toonBelgischeMaat(item.hoeveelheid, item.eenheid)} ` : ""}
                 {item.naam}
               </span>
               <button

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { belgischeMaat, parseIngredientLine } from "@/lib/ingredienten";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { metCredits, type AiMeter } from "@/lib/credits.server";
 import {
@@ -150,7 +151,10 @@ function vulAan(parsed: Partial<ImportedRecipe>, extra: Partial<ImportedRecipe> 
     category: parsed.category ?? "hoofdgerecht",
     difficulty: parsed.difficulty ?? "makkelijk",
     tags: parsed.tags ?? [],
-    ingredients: parsed.ingredients ?? [],
+    ingredients: (parsed.ingredients ?? []).map((ingredient) => {
+      const maat = belgischeMaat(ingredient.quantity, ingredient.unit);
+      return { ...ingredient, quantity: maat.quantity, unit: maat.unit };
+    }),
     instructions: parsed.instructions ?? [],
     ...extra,
   };
@@ -160,7 +164,7 @@ const STAP_REGELS =
   "De bereiding is het belangrijkste: geef volledige, duidelijke stappen in gewone taal, elke stap één handeling, met tijden en temperaturen waar dat kan. Minstens 4 stappen.";
 
 const JSON_FORMAAT =
-  'Formaat: {"title":string,"description":string,"servings":number,"prep_minutes":number,"cook_minutes":number,"category":string,"difficulty":"makkelijk"|"gemiddeld"|"moeilijk","tags":string[],"ingredients":[{"name":string,"quantity":number|null,"unit":string}],"instructions":string[]}';
+  'Gebruik uitsluitend gangbare Belgische maateenheden: mg, g, kg, ml, cl, dl, l, el, tl, stuk(s), teen(tjes), snuf, blik, pak, bos of snee. Reken cups, ounces, pounds, tablespoons en teaspoons om. Formaat: {"title":string,"description":string,"servings":number,"prep_minutes":number,"cook_minutes":number,"category":string,"difficulty":"makkelijk"|"gemiddeld"|"moeilijk","tags":string[],"ingredients":[{"name":string,"quantity":number|null,"unit":string}],"instructions":string[]}';
 
 function vindAfbeelding(html: string, paginaUrl: string): string | null {
   const patronen = [
@@ -275,19 +279,7 @@ function stappenVan(v: unknown): string[] {
 }
 
 function splitsIngredient(regel: string): { name: string; quantity: number | null; unit: string } {
-  const m = regel
-    .trim()
-    .match(/^(\d+(?:[.,]\d+)?(?:\s*\/\s*\d+)?)\s*([a-zA-Zµ%.]*)\s+(.*)$/);
-  if (!m) return { name: regel.trim(), quantity: null, unit: "" };
-  const aantal = Number((m[1] ?? "").replace(",", "."));
-  const eenheid = (m[2] ?? "").toLowerCase();
-  const rest = m[3] ?? "";
-  const gekendeEenheden = /^(g|gr|gram|kg|ml|cl|dl|l|el|tl|kop|kopjes?|stuk|stuks|snuf|teen|tenen|blik|pak)$/;
-  if (!Number.isFinite(aantal)) return { name: regel.trim(), quantity: null, unit: "" };
-  if (eenheid && !gekendeEenheden.test(eenheid)) {
-    return { name: `${eenheid} ${rest}`.trim(), quantity: aantal, unit: "" };
-  }
-  return { name: rest.trim(), quantity: aantal, unit: eenheid };
+  return parseIngredientLine(regel) ?? { name: regel.trim(), quantity: null, unit: "" };
 }
 
 /** Stap 1: volledig recept uit Schema.org/JSON-LD halen. Kost 0 credits. */
