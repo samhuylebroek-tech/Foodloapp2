@@ -46,6 +46,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -56,7 +58,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 
-import { type Recipe } from "@/lib/types";
+import { CATEGORIES, type Recipe } from "@/lib/types";
 import {
   importRecipeFromText,
   importRecipeFromUrl,
@@ -1001,7 +1003,8 @@ function ReceptKiezer({
   const [webBezig, setWebBezig] = useState(false);
   const [webResultaten, setWebResultaten] = useState<WebResultaat[] | null>(null);
   const [bron, setBron] = useState<"recepten" | "inspiratie" | "nieuw">("recepten");
-  const [receptFilter, setReceptFilter] = useState<"voor-jou" | "favorieten" | "recent" | "alles">("voor-jou");
+  const [receptFilter, setReceptFilter] = useState<"voor-jou" | "favorieten" | "recent" | "alles">("alles");
+  const [soortFilter, setSoortFilter] = useState<string | null>(null);
 
   /** Zet een AI- of webrecept klaar in het bevestigscherm. */
   function toonVoorstel(
