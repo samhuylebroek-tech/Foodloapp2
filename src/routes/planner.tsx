@@ -306,7 +306,7 @@ function PlannerPage() {
         titel: titel ?? "Dit gerecht",
         items: data.map((r) => ({
           id: r.id as string,
-          naam: [r.quantity ?? "", r.unit ?? "", r.name].join(" ").replace(/\s+/g, " ").trim(),
+          naam: ingredientToLine({ name: r.name, quantity: r.quantity, unit: r.unit ?? "" }),
         })),
       });
     }
