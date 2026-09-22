@@ -1425,6 +1425,7 @@ function ReceptKiezer({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" sideOffset={8} className="w-64 rounded-xl bg-card p-2 shadow-xl">
+                    <DropdownMenuLabel className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Welke recepten</DropdownMenuLabel>
                     {filterOpties.map(({ id, label, uitleg, icon: Icon }) => (
                       <DropdownMenuItem
                         key={id}
@@ -1439,11 +1440,25 @@ function ReceptKiezer({
                         {receptFilter === id ? <Check className="size-5 text-primary" aria-hidden /> : null}
                       </DropdownMenuItem>
                     ))}
+                    <DropdownMenuSeparator className="my-2" />
+                    <DropdownMenuLabel className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Type gerecht</DropdownMenuLabel>
+                    <DropdownMenuItem onSelect={() => setSoortFilter(null)} className="min-h-12 rounded-lg px-3 text-base">
+                      <UtensilsCrossed className="size-5 text-primary" />
+                      <span className="min-w-0 flex-1 font-semibold">Alle types</span>
+                      {soortFilter === null ? <Check className="size-5 text-primary" aria-hidden /> : null}
+                    </DropdownMenuItem>
+                    {CATEGORIES.map((soort) => (
+                      <DropdownMenuItem key={soort} onSelect={() => setSoortFilter(soort)} className="min-h-12 rounded-lg px-3 text-base">
+                        <span className="size-5" aria-hidden />
+                        <span className="min-w-0 flex-1 capitalize">{soort}</span>
+                        {soortFilter === soort ? <Check className="size-5 text-primary" aria-hidden /> : null}
+                      </DropdownMenuItem>
+                    ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
               <div className="mt-3 flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold">{actiefFilter.label}</p>
+                <p className="text-sm font-semibold">{actiefFilter.label}{actieveSoortLabel ? ` · ${actieveSoortLabel}` : ""}</p>
                 <p className="text-sm text-muted-foreground">{gefilterdeRecepten.length} {gefilterdeRecepten.length === 1 ? "recept" : "recepten"}</p>
               </div>
             </div>
