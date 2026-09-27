@@ -556,7 +556,7 @@ function ReceptPage() {
           </p>
         </div>
 
-        {recipe.instructions.length > 0 ? <Button onClick={() => { setStap(-1); void meet("kookmodus.gestart", undefined, { id }); setKookstand(true); }} className="h-14 w-full"><ChefHat />{t("Start koken")}</Button> : null}
+        {recipe.instructions.length > 0 ? <Button onClick={() => { setStap(-1); void meet("kookmodus.gestart", undefined, { id }); setKookstand(true); }} className="h-16 w-full text-lg"><ChefHat className="size-6" />{t("Start koken")}</Button> : null}
 
         <Button
           variant="secondary"
