@@ -8,13 +8,14 @@ import { normaliseerTekst } from "@/lib/zoeken";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   haalInspiratieLijst,
   filterInspiratie,
   inspiratieCategorieen,
-  verrasMij,
   LEGE_FILTERS, EETSTIJLEN,
   type InspiratieFilters,
+  type InspiratieRecept,
 } from "@/lib/inspiratie";
 import { useSignedUrl } from "@/lib/photos";
 
@@ -106,9 +107,19 @@ function InspiratiePage() {
     (filters.maxTijd !== null ? 1 : 0) +
     (filters.eetstijl ? 1 : 0);
 
-  function verras() {
-    const keuze = verrasMij(resultaten);
-    if (keuze) navigate({ to: "/inspiratie/$id", params: { id: keuze.id } });
+  // Verras mij: toont steeds een nieuw, onbekend gerecht in een venster.
+  // Al getoonde suggesties komen niet meteen terug; je blijft gewoon op dit scherm.
+  const [verrassing, setVerrassing] = useState<InspiratieRecept | null>(null);
+  const [getoond, setGetoond] = useState<string[]>([]);
+
+  function kiesVerrassing() {
+    if (!resultaten.length) return;
+    const vers = resultaten.filter((r) => !getoond.includes(r.id));
+    const pool = vers.length ? vers : resultaten;
+    const keuze = pool[Math.floor(Math.random() * pool.length)];
+    if (!keuze) return;
+    setVerrassing(keuze);
+    setGetoond((g) => (vers.length ? [...g, keuze.id] : [keuze.id]));
   }
 
   return (
@@ -159,7 +170,7 @@ function InspiratiePage() {
           >
             ≤ 30 min
           </Button>
-          <Button variant="outline" onClick={verras} disabled={!resultaten.length} className="h-12 shrink-0 rounded-xl px-5 text-base">
+          <Button variant="outline" onClick={kiesVerrassing} disabled={!resultaten.length} className="h-12 shrink-0 rounded-xl px-5 text-base">
             <Shuffle className="size-4" /> Verras mij
           </Button>
         </div>
@@ -212,6 +223,47 @@ function InspiratiePage() {
           </ul>
         )}
       </div>
+
+      <Dialog open={!!verrassing} onOpenChange={(open) => !open && setVerrassing(null)}>
+        <DialogContent className="max-w-sm p-0 overflow-hidden">
+          {verrassing ? (
+            <div>
+              <ReceptFoto pad={verrassing.image_url} titel={verrassing.title} />
+              <div className="space-y-4 p-5">
+                <DialogHeader className="text-left">
+                  <DialogTitle className="text-xl leading-snug">{verrassing.title}</DialogTitle>
+                </DialogHeader>
+                <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-base text-muted-foreground">
+                  {verrassing.category ? <span className="capitalize">{verrassing.category}</span> : null}
+                  {tijdLabel(verrassing) ? (
+                    <span className="flex items-center gap-1 whitespace-nowrap">
+                      <Clock3 className="size-4" /> {tijdLabel(verrassing)}
+                    </span>
+                  ) : null}
+                </p>
+                <div className="grid gap-2">
+                  <Button
+                    className="h-14 text-base"
+                    onClick={() => {
+                      const id = verrassing.id;
+                      setVerrassing(null);
+                      navigate({ to: "/inspiratie/$id", params: { id } });
+                    }}
+                  >
+                    Bekijk dit gerecht
+                  </Button>
+                  <Button variant="outline" className="h-14 text-base" onClick={kiesVerrassing}>
+                    <Shuffle className="size-4" /> Nog een suggestie
+                  </Button>
+                  <Button variant="ghost" className="h-12 text-base" onClick={() => setVerrassing(null)}>
+                    Sluiten
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
 
       <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
         <SheetContent side="bottom" className="flex max-h-[85dvh] flex-col gap-0 p-0">
