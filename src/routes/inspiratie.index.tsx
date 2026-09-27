@@ -8,13 +8,14 @@ import { normaliseerTekst } from "@/lib/zoeken";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   haalInspiratieLijst,
   filterInspiratie,
   inspiratieCategorieen,
-  verrasMij,
   LEGE_FILTERS, EETSTIJLEN,
   type InspiratieFilters,
+  type InspiratieRecept,
 } from "@/lib/inspiratie";
 import { useSignedUrl } from "@/lib/photos";
 
