@@ -92,6 +92,7 @@ type Item = {
   checked: boolean;
   recipe_id?: string | null;
   recept?: string | null;
+  note?: string | null;
 };
 
 function itemTekst(item: Item) {
@@ -211,7 +212,7 @@ function BoodschappenPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shopping_items")
-        .select("id, name, quantity, unit, checked, recipe_id, recipes(title)")
+        .select("id, name, quantity, unit, checked, recipe_id, note, recipes(title)")
         .eq("list_id", actief!)
         .order("checked")
         .order("name");
@@ -223,6 +224,7 @@ function BoodschappenPage() {
         unit: r.unit,
         checked: r.checked,
         recipe_id: r.recipe_id,
+        note: r.note,
         recept: (r.recipes as { title?: string } | null)?.title ?? null,
       })) as Item[];
     },
@@ -493,7 +495,7 @@ function BoodschappenPage() {
     await voegTekstToe(tekst);
   }
 
-  async function voegMeerdereToe(lijst: { name: string; quantity: number | null; unit: string }[], melding: string) {
+  async function voegMeerdereToe(lijst: { name: string; quantity: number | null; unit: string; note?: string | null }[], melding: string) {
     if (!user || !actief || !lijst.length) return;
     const draaiOm = snapshotToevoegen(lijst.map((l) => l.name));
     try {
@@ -579,7 +581,7 @@ function BoodschappenPage() {
     const lijstId = actief;
     onthoud(`${item.name} staat terug op je lijst`, async () => {
       await supabase.from("shopping_items").insert({
-        user_id: user.id, list_id: lijstId, name: item.name, quantity: item.quantity, unit: item.unit, checked: item.checked, recipe_id: item.recipe_id ?? null,
+        user_id: user.id, list_id: lijstId, name: item.name, quantity: item.quantity, unit: item.unit, checked: item.checked, recipe_id: item.recipe_id ?? null, note: item.note ?? null,
       });
     });
     toast.success(`${item.name} verwijderd`, {
@@ -594,6 +596,7 @@ function BoodschappenPage() {
               quantity: item.quantity,
               unit: item.unit,
               checked: item.checked,
+              note: item.note ?? null,
             });
             refresh();
           })();
@@ -652,6 +655,7 @@ function BoodschappenPage() {
     setBewerkNaam(item.name);
     setBewerkAantal(item.quantity == null ? "" : String(item.quantity));
     setBewerkEenheid(item.unit);
+    setBewerkNota(item.note ?? "");
     setBewerkCategorie(categorieVan(item.name, correcties));
   }
 
@@ -666,7 +670,7 @@ function BoodschappenPage() {
     const vorig = bewerkItem;
     const { error } = await supabase
       .from("shopping_items")
-      .update({ name: bewerkNaam.trim(), quantity: maat.quantity, unit: maat.unit })
+      .update({ name: bewerkNaam.trim(), quantity: maat.quantity, unit: maat.unit, note: bewerkNota.trim() ? bewerkNota.trim().slice(0, 100) : null })
       .eq("id", bewerkItem.id);
     if (error) {
       toast.error("Het lukte niet om op te slaan. Probeer het opnieuw.");
@@ -677,7 +681,7 @@ function BoodschappenPage() {
     }
     setBewerkItem(null);
     onthoud(`${vorig.name} teruggezet zoals het was`, async () => {
-      await supabase.from("shopping_items").update({ name: vorig.name, quantity: vorig.quantity, unit: vorig.unit }).eq("id", vorig.id);
+      await supabase.from("shopping_items").update({ name: vorig.name, quantity: vorig.quantity, unit: vorig.unit, note: vorig.note ?? null }).eq("id", vorig.id);
     });
     refresh();
     toast.success("Opgeslagen");
