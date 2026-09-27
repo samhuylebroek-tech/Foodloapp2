@@ -220,3 +220,10 @@
 - [x] Gegenereerde foto privé bewaren en overal bij hetzelfde gerecht tonen
 - [x] AI-kosten via één beeldcredit, caching en stille foutafhandeling controleren
 - [ ] De 18 bestaande gerechten zonder foto aanvullen — toestemming gegeven; geblokkeerd doordat het slimme-functiesaldo op is
+
+## Foto's aanvullen (voorrang)
+- [ ] 18 gerechten zonder foto aanvullen (wacht: slimme credits, saldo 1, nodig 36)
+- [ ] Foto's die een receptpapier tonen vervangen (wacht: akkoord gebruiker)
+
+## Herontwerp (brief UX/UI)
+- [ ] Plan opnieuw voorleggen na foto's
