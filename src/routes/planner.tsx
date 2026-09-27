@@ -691,6 +691,47 @@ function PlannerPage() {
     );
   }
 
+  /** Alle ingrediënten van één dag (standaard vandaag) in één keer op de lijst. */
+  async function boodschappenVoorDag(dag: string) {
+    if (!user) return;
+    const dagPlan = plan.filter((p) => p.plan_date === dag);
+    const ids = dagPlan.map((p) => p.recipe_id).filter((x): x is string => !!x);
+    const zonderRecept = dagPlan
+      .filter((p) => !p.recipe_id && !p.soort)
+      .map((p) => p.custom_title)
+      .filter(Boolean);
+    if (zonderRecept.length) {
+      toast.message(
+        `${zonderRecept.slice(0, 2).join(", ")}${zonderRecept.length > 2 ? " …" : ""} ${zonderRecept.length === 1 ? "heeft" : "hebben"} nog geen recept — die tellen niet mee voor de lijst.`,
+      );
+    }
+    if (!ids.length) {
+      toast.error("Geen ingrediënten gevonden voor deze dag");
+      return;
+    }
+    const standaardLijst =
+      weergave === "gezin" && gezinsLijst ? gezinsLijst.id : lijstId || lijsten[0]?.id;
+    const listId = standaardLijst || (await zorgVoorLijst(user.id));
+    const { data, error } = await supabase
+      .from("recipe_ingredients")
+      .select("name, quantity, unit, recipe_id")
+      .in("recipe_id", ids);
+    if (error || !data?.length) {
+      toast.error("Geen ingrediënten gevonden voor deze dag");
+      return;
+    }
+    await ingredienNaarLijst(
+      data.map((i) => ({
+        name: i.name as string,
+        quantity: i.quantity as number | null,
+        unit: (i.unit as string) ?? "",
+        recipe_id: i.recipe_id as string,
+      })),
+      listId,
+      dag === vandaag ? "vandaag" : labelVoor(dag),
+    );
+  }
+
   function verschuif(weken: number) {
     const d = new Date(weekStart);
     d.setDate(d.getDate() + weken * 7);
