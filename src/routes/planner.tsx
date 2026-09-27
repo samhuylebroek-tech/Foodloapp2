@@ -196,6 +196,8 @@ function PlannerPage() {
     rows: NieuwItem[];
     dubbels: Dubbel[];
     gekozen: Set<number>;
+    /** Waar komen de boodschappen vandaan? Voor de titel van het overzicht. */
+    bron: string;
   } | null>(null);
 
   const [weergave, setWeergave] = useState<"mij" | "gezin">("mij");
@@ -454,12 +456,13 @@ function PlannerPage() {
    * rustige controle: de gebruiker kiest zelf wat nog eens toegevoegd wordt.
    * Er wordt nooit stil samengevoegd.
    */
-  async function ingredienNaarLijst(rows: NieuwItem[], listId: string) {
+  async function ingredienNaarLijst(rows: NieuwItem[], listId: string, bron = "deze gerechten") {
     if (!user) return;
     try {
       const dubbels = await vindDubbels(listId, rows);
       if (dubbels.length) {
-        setDubbelVraag({ listId, rows, dubbels, gekozen: new Set() });
+        // Staat álles er al? Dan geen stille dubbel, maar een duidelijke melding.
+        setDubbelVraag({ listId, rows, dubbels, gekozen: new Set(), bron });
         return;
       }
       await voegToeAlsNieuw(user.id, listId, rows);
@@ -476,6 +479,10 @@ function PlannerPage() {
     const dubbelIdx = new Set(dubbels.map((d) => d.index));
     const toeTeVoegen = rows.filter((_, i) => !dubbelIdx.has(i) || gekozen.has(i));
     setDubbelVraag(null);
+    if (!toeTeVoegen.length) {
+      toast.message("Niets toegevoegd — alles stond al op je lijst.");
+      return;
+    }
     try {
       await voegToeAlsNieuw(user.id, listId, toeTeVoegen);
       const overgeslagen = dubbels.length - gekozen.size;
@@ -681,6 +688,48 @@ function PlannerPage() {
         recipe_id: i.recipe_id as string,
       })),
       listId,
+      "deze week",
+    );
+  }
+
+  /** Alle ingrediënten van één dag (standaard vandaag) in één keer op de lijst. */
+  async function boodschappenVoorDag(dag: string) {
+    if (!user) return;
+    const dagPlan = plan.filter((p) => p.plan_date === dag);
+    const ids = dagPlan.map((p) => p.recipe_id).filter((x): x is string => !!x);
+    const zonderRecept = dagPlan
+      .filter((p) => !p.recipe_id && !p.soort)
+      .map((p) => p.custom_title)
+      .filter(Boolean);
+    if (zonderRecept.length) {
+      toast.message(
+        `${zonderRecept.slice(0, 2).join(", ")}${zonderRecept.length > 2 ? " …" : ""} ${zonderRecept.length === 1 ? "heeft" : "hebben"} nog geen recept — die tellen niet mee voor de lijst.`,
+      );
+    }
+    if (!ids.length) {
+      toast.error("Geen ingrediënten gevonden voor deze dag");
+      return;
+    }
+    const standaardLijst =
+      weergave === "gezin" && gezinsLijst ? gezinsLijst.id : lijstId || lijsten[0]?.id;
+    const listId = standaardLijst || (await zorgVoorLijst(user.id));
+    const { data, error } = await supabase
+      .from("recipe_ingredients")
+      .select("name, quantity, unit, recipe_id")
+      .in("recipe_id", ids);
+    if (error || !data?.length) {
+      toast.error("Geen ingrediënten gevonden voor deze dag");
+      return;
+    }
+    await ingredienNaarLijst(
+      data.map((i) => ({
+        name: i.name as string,
+        quantity: i.quantity as number | null,
+        unit: (i.unit as string) ?? "",
+        recipe_id: i.recipe_id as string,
+      })),
+      listId,
+      dag === vandaag ? "vandaag" : labelVoor(dag),
     );
   }
 
@@ -835,6 +884,54 @@ function PlannerPage() {
           </Button>
         </section>
 
+        {week.includes(vandaag) ? (
+          <section
+            aria-label="Vandaag"
+            className="rounded-xl border border-primary/30 bg-accent/40 p-4"
+          >
+            {(() => {
+              const vandaagItems = plan.filter((p) => p.plan_date === vandaag);
+              const metRecept = vandaagItems.filter((p) => p.recipe_id).length;
+              const datum = new Date(`${vandaag}T12:00:00`);
+              return (
+                <>
+                  <p className="text-xs font-bold uppercase tracking-wide text-primary">Vandaag</p>
+                  <h2 className="font-display text-xl capitalize">
+                    {datum.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" })}
+                  </h2>
+                  {vandaagItems.length ? (
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {vandaagItems.length} {vandaagItems.length === 1 ? "gerecht" : "gerechten"} vandaag
+                      {metRecept ? ` · ${metRecept} met recept` : ""}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-sm text-muted-foreground">Nog niets gepland voor vandaag.</p>
+                  )}
+                  <div className="mt-3 grid gap-2">
+                    {metRecept ? (
+                      <Button
+                        onClick={() => void boodschappenVoorDag(vandaag)}
+                        className="h-14 w-full text-base"
+                      >
+                        <ShoppingCart className="size-5" /> Boodschappen voor vandaag
+                      </Button>
+                    ) : null}
+                    {!vandaagItems.length && momenten.length ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => setKiezen({ datum: vandaag, moment: momenten[momenten.length - 1] ?? "avondeten" })}
+                        className="h-14 w-full text-base"
+                      >
+                        <Plus className="size-5" /> Gerecht toevoegen voor vandaag
+                      </Button>
+                    ) : null}
+                  </div>
+                </>
+              );
+            })()}
+          </section>
+        ) : null}
+
         <div className={weekmenu.weergave === "kaarten" ? "-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2" : "space-y-1"}>
         {zichtbareDagen.map((dag) => {
           const items = plan.filter((p) => p.plan_date === dag);
@@ -899,54 +996,121 @@ function PlannerPage() {
             <SheetDescription>Zet de ingrediënten van alle geplande recepten in één keer op een lijst.</SheetDescription>
           </SheetHeader>
           {lijsten.length > 1 ? <select value={lijstId || (weergave === "gezin" && gezinsLijst ? gezinsLijst.id : lijsten[0]?.id ?? "")} onChange={(e) => setLijstId(e.target.value)} aria-label="Naar welk lijstje?" className="h-14 w-full rounded-xl border border-input bg-card px-3 text-base">{lijsten.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select> : null}
-          <Button onClick={() => { void alleBoodschappen(); setBoodschappenOpen(false); }} disabled={!plan.length} className="h-14 w-full text-base"><ShoppingCart className="size-5" /> Hele week op de lijst</Button>
+          {week.includes(vandaag) && plan.some((p) => p.plan_date === vandaag && p.recipe_id) ? (
+            <Button onClick={() => { void boodschappenVoorDag(vandaag); setBoodschappenOpen(false); }} className="h-14 w-full text-base"><ShoppingCart className="size-5" /> Boodschappen voor vandaag</Button>
+          ) : null}
+          <Button variant={week.includes(vandaag) && plan.some((p) => p.plan_date === vandaag && p.recipe_id) ? "outline" : "default"} onClick={() => { void alleBoodschappen(); setBoodschappenOpen(false); }} disabled={!plan.length} className="h-14 w-full text-base"><ShoppingCart className="size-5" /> Hele week op de lijst</Button>
           <Button variant="outline" asChild className="h-14 w-full text-base"><Link to="/boodschappen">Open boodschappen</Link></Button>
         </SheetContent>
       </Sheet>
 
-      {/* Eén rustige controle als ingrediënten al op de lijst staan. */}
+      {/* Eén rustig overzicht vóór er iets op de lijst komt: wat staat er al,
+          wat is nieuw, en de gebruiker beslist zelf. */}
       <Sheet open={!!dubbelVraag} onOpenChange={(open) => { if (!open) setDubbelVraag(null); }}>
         <SheetContent side="bottom" className="flex max-h-[85dvh] flex-col gap-0 p-0">
-          <SheetHeader className="border-b border-border px-4 pb-3 pt-4 text-left">
-            <SheetTitle>Dit staat al op je lijst</SheetTitle>
-            <SheetDescription>
-              Kies per ingrediënt of je het nog eens toevoegt. De rest komt er gewoon bij.
-            </SheetDescription>
-          </SheetHeader>
-          <ul className="flex-1 space-y-2 overflow-y-auto px-4 py-4">
-            {dubbelVraag?.dubbels.map((d) => {
-              const aan = dubbelVraag.gekozen.has(d.index);
-              return (
-                <li key={d.index}>
-                  <button
-                    type="button"
-                    aria-pressed={aan}
-                    onClick={() =>
-                      setDubbelVraag((v) => {
-                        if (!v) return v;
-                        const gekozen = new Set(v.gekozen);
-                        if (gekozen.has(d.index)) gekozen.delete(d.index);
-                        else gekozen.add(d.index);
-                        return { ...v, gekozen };
-                      })
-                    }
-                    className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-border bg-card p-3 text-left"
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-base font-semibold">{d.name}</span>
-                      <span className="block text-sm text-muted-foreground">Staat al op je lijst: {d.bestaand}</span>
-                    </span>
-                    <span className={aan ? "shrink-0 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground" : "shrink-0 rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground"}>
-                      {aan ? "Nog eens toevoegen" : "Niet toevoegen"}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          <div className="grid gap-2 border-t border-border p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-            <Button className="h-14 text-base" onClick={dubbelBevestigen}>Klaar</Button>
-          </div>
+          {dubbelVraag ? (() => {
+            const dubbelIdx = new Set(dubbelVraag.dubbels.map((d) => d.index));
+            const nieuweItems = dubbelVraag.rows.filter((_, i) => !dubbelIdx.has(i));
+            const allesAlOpLijst = nieuweItems.length === 0;
+            return (
+              <>
+                <SheetHeader className="border-b border-border px-4 pb-3 pt-4 text-left">
+                  <SheetTitle>
+                    {allesAlOpLijst
+                      ? `De boodschappen van ${dubbelVraag.bron} staan al op je lijst`
+                      : `Boodschappen voor ${dubbelVraag.bron}`}
+                  </SheetTitle>
+                  <SheetDescription>
+                    {allesAlOpLijst
+                      ? "Er wordt niets dubbel gezet. Wil je iets toch nog eens toevoegen, vink het hieronder aan."
+                      : `Je hebt ${dubbelVraag.rows.length} ${dubbelVraag.rows.length === 1 ? "ingrediënt" : "ingrediënten"} nodig. ${dubbelVraag.dubbels.length} ${dubbelVraag.dubbels.length === 1 ? "staat" : "staan"} al op je lijst.`}
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+                  <div>
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Al op je lijst</p>
+                    <ul className="space-y-2">
+                      {dubbelVraag.dubbels.map((d) => {
+                        const aan = dubbelVraag.gekozen.has(d.index);
+                        return (
+                          <li key={d.index}>
+                            <button
+                              type="button"
+                              aria-pressed={aan}
+                              onClick={() =>
+                                setDubbelVraag((v) => {
+                                  if (!v) return v;
+                                  const gekozen = new Set(v.gekozen);
+                                  if (gekozen.has(d.index)) gekozen.delete(d.index);
+                                  else gekozen.add(d.index);
+                                  return { ...v, gekozen };
+                                })
+                              }
+                              className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-border bg-card p-3 text-left"
+                            >
+                              <span className="min-w-0 flex-1">
+                                <span className="block text-base font-semibold">{d.name}</span>
+                                <span className="block text-sm text-muted-foreground">Staat al op je lijst: {d.bestaand}</span>
+                              </span>
+                              <span className={aan ? "shrink-0 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground" : "shrink-0 rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground"}>
+                                {aan ? "Nog eens toevoegen" : "Niet toevoegen"}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                  {nieuweItems.length ? (
+                    <div>
+                      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Nieuw — komt er automatisch bij</p>
+                      <ul className="space-y-1">
+                        {nieuweItems.map((item, i) => (
+                          <li key={i} className="flex min-h-10 items-center gap-2 rounded-lg px-3 text-base">
+                            <Check className="size-4 shrink-0 text-primary" />
+                            <span>{item.name}{item.quantity != null ? ` — ${item.quantity} ${item.unit ?? ""}`.trim() : ""}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
+                <div className="grid gap-2 border-t border-border p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+                  {allesAlOpLijst ? (
+                    <>
+                      <Button variant="outline" asChild className="h-14 text-base">
+                        <Link to="/boodschappen">Bekijk mijn lijst</Link>
+                      </Button>
+                      {dubbelVraag.gekozen.size ? (
+                        <Button className="h-14 text-base" onClick={dubbelBevestigen}>
+                          Gekozen ingrediënten toch toevoegen
+                        </Button>
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      <Button className="h-14 text-base" onClick={dubbelBevestigen}>
+                        {dubbelVraag.gekozen.size ? "Gekozen + nieuwe toevoegen" : "Alleen nieuwe toevoegen"}
+                      </Button>
+                      {!dubbelVraag.gekozen.size ? (
+                        <Button
+                          variant="outline"
+                          className="h-14 text-base"
+                          onClick={() =>
+                            setDubbelVraag((v) =>
+                              v ? { ...v, gekozen: new Set(v.dubbels.map((d) => d.index)) } : v,
+                            )
+                          }
+                        >
+                          Alles toevoegen (ook wat er al staat)
+                        </Button>
+                      ) : null}
+                    </>
+                  )}
+                </div>
+              </>
+            );
+          })() : null}
         </SheetContent>
       </Sheet>
 

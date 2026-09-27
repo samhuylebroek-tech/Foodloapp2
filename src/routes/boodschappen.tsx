@@ -36,6 +36,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { zorgVoorLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
+import { zelfdeProduct } from "@/lib/product-herkenning";
 import { belgischeMaat, parseIngredientLine, toonBelgischeMaat } from "@/lib/ingredienten";
 import { appOrigin } from "@/lib/app-url";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -395,7 +396,9 @@ function BoodschappenPage() {
       toast.info("Je bent offline — we bewaren het straks");
       return;
     }
-    const bestaand = items.find((i) => normaliseerTekst(i.name) === normaliseerTekst(geparsed.name));
+    // Zelfde product herkennen, ook met synoniemen: "knoflook" = "look".
+    // Varianten ("rode ui" vs "ui") blijven bewust apart.
+    const bestaand = items.find((i) => zelfdeProduct(i.name, geparsed.name));
     const start = new Date(Date.now() - 2000).toISOString();
     try {
       await voegToeAanLijst(user.id, actief, [geparsed]);
