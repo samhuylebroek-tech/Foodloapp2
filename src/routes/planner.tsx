@@ -205,6 +205,8 @@ function PlannerPage() {
   const [voorstelOpen, setVoorstelOpen] = useState(false);
   const [kalenderOpen, setKalenderOpen] = useState(false);
   const [boodschappenOpen, setBoodschappenOpen] = useState(false);
+  const [dagKeuze, setDagKeuze] = useState<string | null>(null);
+  const [heleWeek, setHeleWeek] = useState(false);
 
   // De week begint op maandag of (als je dat kiest) op zondag.
   const week = Array.from({ length: 7 }, (_, i) => {
@@ -223,6 +225,7 @@ function PlannerPage() {
   // In de huidige week beginnen we bij vandaag; verleden dagen zie je alleen
   // als je bewust naar een vorige week bladert.
   const getoondeDagen = weekVerschil === 0 ? zichtbareDagen.filter((dag) => dag >= vandaag) : zichtbareDagen;
+  const gekozenDag = dagKeuze && week.includes(dagKeuze) ? dagKeuze : week.includes(vandaag) ? vandaag : (zichtbareDagen[0] ?? week[0] ?? vandaag);
   const snelleWeken = [0, 1, 2, 3].map((stap) => {
     const start = new Date(huidigeWeek);
     start.setDate(start.getDate() + stap * 7);
@@ -746,158 +749,15 @@ function PlannerPage() {
     setWeekStart(d);
   }
 
-  return (
-    <AppShell title="Weekmenu">
-      <div className="space-y-5">
-        <section aria-label="Week kiezen" className="space-y-3">
-          <div className="flex items-center gap-2">
-            {gezin ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="secondary" className="h-14 min-w-0 flex-1 justify-between px-4">
-                    <span className="flex min-w-0 items-center gap-2">
-                      {weergave === "gezin" ? <Users className="size-5 shrink-0" /> : <CalendarDays className="size-5 shrink-0" />}
-                      <span className="truncate">{weergave === "gezin" ? gezin.naam : "Mijn planning"}</span>
-                    </span>
-                    <ChevronRight className="size-4 rotate-90" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-64 p-2">
-                  <DropdownMenuItem onSelect={() => setWeergave("mij")} className="min-h-12 rounded-lg text-base">
-                    <CalendarDays className="size-5" /> Mijn planning
-                    {weergave === "mij" ? <Check className="ml-auto size-5" /> : null}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => setWeergave("gezin")} className="min-h-12 rounded-lg text-base">
-                    <Users className="size-5" /> {gezin.naam}
-                    {weergave === "gezin" ? <Check className="ml-auto size-5" /> : null}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <div className="flex h-14 min-w-0 flex-1 items-center gap-2 rounded-xl bg-secondary px-4 font-semibold">
-                <CalendarDays className="size-5 text-primary" /> Mijn planning
-              </div>
-            )}
-            <Button
-              variant="secondary"
-              onClick={() => setInstellingenOpen(true)}
-              aria-label="Instellingen weekmenu"
-              className="size-14 shrink-0"
-            >
-              <Settings className="size-5" />
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-1">
-          <Button
-              variant="ghost"
-              onClick={() => verschuif(-1)}
-              aria-label="Vorige week"
-              className="size-12 shrink-0"
-            >
-              <ChevronLeft className="size-5" />
-            </Button>
-            <Popover open={kalenderOpen} onOpenChange={setKalenderOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" className="h-12 min-w-0 flex-1 px-2 font-display text-lg">
-                  <span className="truncate">{weekVerschil === 0 ? "Deze week" : weekLabel(new Date(`${week[0]}T12:00:00`), true)}</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="center">
-                <Calendar
-                  mode="single"
-                  selected={weekStart}
-                  onSelect={(datum) => {
-                    if (!datum) return;
-                    setWeekStart(maandagVan(datum));
-                    setKalenderOpen(false);
-                  }}
-                  className="pointer-events-auto p-3"
-                />
-              </PopoverContent>
-            </Popover>
-            <Button
-              variant="ghost"
-              onClick={() => verschuif(1)}
-              aria-label="Volgende week"
-              className="size-12 shrink-0"
-            >
-              <ChevronRight className="size-5" />
-            </Button>
-          </div>
-
-          {weekVerschil !== 0 ? (
-            <Button variant="ghost" onClick={() => setWeekStart(huidigeWeek)} className="h-11 px-2 text-sm">
-              Terug naar deze week
-            </Button>
-          ) : null}
-        </section>
-
-        <section aria-label="Acties" className="grid grid-cols-3 gap-2">
-          <Button
-            onClick={() => {
-              const startDag = voorstelDagen.includes(vandaag) ? vandaag : voorstelDagen[0];
-              if (!startDag) {
-                toast("Kies een huidige of volgende week om een maaltijd toe te voegen.");
-                return;
-              }
-              setKiezen({ datum: startDag, moment: momenten[momenten.length - 1] ?? "avondeten", vraagDag: true });
-            }}
-            className="h-16 min-w-0 flex-col gap-1 px-1 text-sm sm:flex-row sm:text-base"
-          >
-            <Plus className="size-5" /> Toevoegen
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              if (!voorstelDagen.length) {
-                toast("Er zijn in deze week geen komende dagen meer. Kies een volgende week.");
-                return;
-              }
-              setVoorstelOpen(true);
-            }}
-            className="h-16 min-w-0 flex-col gap-1 px-1 text-sm sm:flex-row sm:text-base"
-          >
-            <Sparkles className="size-5" /> Laat kiezen
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setBoodschappenOpen(true)}
-            className="h-16 min-w-0 flex-col gap-1 px-1 text-sm sm:flex-row sm:text-base"
-          >
-            <ShoppingCart className="size-5" /> Boodschappen
-          </Button>
-        </section>
-
-        <div className={weekmenu.weergave === "kaarten" ? "-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2" : "space-y-1"}>
-        {getoondeDagen.map((dag) => {
-          const items = plan.filter((p) => p.plan_date === dag);
-          const openMomenten = momenten.filter((m) => !items.some((p) => p.meal_type === m));
-          const volledig = momenten.length > 0 && openMomenten.length === 0;
-          const datum = new Date(`${dag}T12:00:00`);
-          const kaart = weekmenu.weergave === "kaarten" ? "w-[88%] shrink-0 snap-start rounded-xl border border-border bg-card p-4 " : "grid grid-cols-[3.5rem_minmax(0,1fr)] gap-3 py-3 ";
-          return (
-            <section key={dag} className={kaart} aria-labelledby={`dag-${dag}`}>
-              <div className={weekmenu.weergave === "kaarten" ? "mb-3 flex items-center gap-3" : "relative flex flex-col items-center"}>
-                <div className={dag === vandaag ? "flex size-14 flex-col items-center justify-center rounded-xl bg-accent text-accent-foreground" : "flex size-14 flex-col items-center justify-center rounded-xl bg-secondary text-foreground"}>
-                  <span className="text-xs font-bold uppercase">{datum.toLocaleDateString("nl-BE", { weekday: "short" }).replace(".", "")}</span>
-                  <span className="font-display text-xl font-semibold leading-none">{datum.getDate()}</span>
-                </div>
-                {weekmenu.weergave !== "kaarten" ? <span aria-hidden className="absolute top-16 bottom-[-1.25rem] w-px border-l border-dashed border-border last:hidden" /> : null}
-              </div>
-
-              <div className="min-w-0">
-                <div className="mb-2 flex min-h-6 items-center gap-2">
-                  <h2 id={`dag-${dag}`} className="font-display text-lg capitalize">{datum.toLocaleDateString("nl-BE", { weekday: "long" })}</h2>
-                  {dag === vandaag ? <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">Vandaag</span> : null}
-                  {volledig ? <Check className="ml-auto size-4 text-primary" aria-label="Volledig gepland" /> : null}
-                </div>
-
-                {items.length > 0 ? (
-                  <ul className="space-y-2">
-                  {items.map((p) => (
-                    <li key={p.id} className="flex min-h-20 items-center gap-2 rounded-xl border border-border bg-card p-2 shadow-sm">
-                      {p.recipe_id ? <Link to="/recepten/$id" params={{ id: p.recipe_id }} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ReceptFoto url={p.recipes?.image_url ?? null} /><span className="min-w-0"><span className="block text-xs font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-base font-semibold leading-tight">{p.recipes?.title ?? "Recept"}</span>{p.recipes ? <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground"><Clock3 className="size-3.5" /> {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) || "Tijd niet ingevuld"}</span> : null}</span></Link> : <div className="flex min-w-0 flex-1 items-center gap-3"><ReceptFoto url={null} /><span className="min-w-0"><span className="block text-xs font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-base font-semibold leading-tight">{p.custom_title}</span>{!p.soort ? <button type="button" onClick={() => setKoppelRij(p)} className="mt-0.5 block text-left text-xs font-semibold text-primary underline underline-offset-2">Nog geen recept · koppelen</button> : null}</span></div>}
+  function toonDag(dag: string, groot: boolean) {
+    const items = plan.filter((p) => p.plan_date === dag);
+    const datum = new Date(`${dag}T12:00:00`);
+    const voorbij = dag < vandaag;
+    const alleMomenten = [...new Set([...momenten, ...items.map((p) => p.meal_type)])];
+    const titel = datum.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" });
+    const kaart = (p: PlanRow) => (
+                    <li key={p.id} className="flex min-h-24 items-center gap-2 rounded-2xl border border-border bg-card p-3">
+                      {p.recipe_id ? <Link to="/recepten/$id" params={{ id: p.recipe_id }} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ReceptFoto url={p.recipes?.image_url ?? null} /><span className="min-w-0"><span className="block text-xs font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.recipes?.title ?? "Recept"}</span>{p.recipes ? <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground"><Clock3 className="size-3.5" /> {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) || "Tijd niet ingevuld"}</span> : null}</span></Link> : <div className="flex min-w-0 flex-1 items-center gap-3"><ReceptFoto url={null} /><span className="min-w-0"><span className="block text-xs font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.custom_title}</span>{!p.soort ? <button type="button" onClick={() => setKoppelRij(p)} className="mt-0.5 block text-left text-xs font-semibold text-primary underline underline-offset-2">Nog geen recept · koppelen</button> : null}</span></div>}
                       {weergave === "gezin" && p.user_id !== user?.id ? <Avatar naam={plannerNamen[p.user_id] ?? "?"} sleutel={p.user_id} className="size-8 shrink-0 text-xs" /> : null}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" aria-label={`Acties voor ${p.recipes?.title ?? p.custom_title ?? "maaltijd"}`} className="size-12 shrink-0"><MoreVertical className="size-5" /></Button></DropdownMenuTrigger>
@@ -912,23 +772,186 @@ function PlannerPage() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </li>
-                  ))}
-                  </ul>
-                ) : null}
-
-                <div className="mt-2 space-y-2">
-                  {dag >= vandaag ? openMomenten.map((m) => <Button key={m} variant="ghost" onClick={() => setKiezen({ datum: dag, moment: m })} className="h-14 w-full justify-start border border-dashed border-border bg-background px-3 text-sm text-muted-foreground"><Plus className="size-4" /> <span className="capitalize">{m}</span> toevoegen</Button>) : !volledig ? <p className="py-2 text-sm text-muted-foreground">Deze dag is voorbij</p> : null}
-                </div>
-              </div>
-            </section>
+    );
+    return (
+      <div className="space-y-4">
+        <div>
+          {groot ? (
+            <p className="text-base font-semibold text-muted-foreground">
+              {dag === vandaag ? "Vandaag" : voorbij ? "Voorbij" : dag === datumTekst(new Date(Date.now() + 86400000)) ? "Morgen" : "Gepland"}
+            </p>
+          ) : null}
+          <h2 id={`dag-${dag}`} className={groot ? "text-paginatitel first-letter:uppercase" : "text-sectietitel first-letter:uppercase"}>
+            {titel}
+            {!groot && dag === vandaag ? <span className="ml-2 align-middle text-base font-semibold text-honing-foreground"> · vandaag</span> : null}
+          </h2>
+        </div>
+        {alleMomenten.map((m) => {
+          const bij = items.filter((p) => p.meal_type === m);
+          // Eén algemeen moment en al iets gepland: geen leeg vak erbij.
+          if (!bij.length && items.length && momenten.length === 1) return null;
+          return (
+            <div key={m} className="space-y-2">
+              <h3 className="text-base font-semibold text-foreground first-letter:uppercase">{m}</h3>
+              {bij.length ? (
+                <ul className="space-y-2">{bij.map(kaart)}</ul>
+              ) : voorbij ? (
+                <p className="text-base text-muted-foreground">Niets gepland</p>
+              ) : (
+                <Button variant="ghost" onClick={() => setKiezen({ datum: dag, moment: m })} className="h-16 w-full justify-start gap-3 rounded-xl border-2 border-dashed border-border bg-card px-4 text-base text-muted-foreground">
+                  <Plus className="size-5" /> Gerecht toevoegen
+                </Button>
+              )}
+            </div>
           );
         })}
-        </div>
-        {weekVerschil === 0 && getoondeDagen.length <= 3 ? (
-          <Button variant="outline" onClick={() => verschuif(1)} className="h-14 w-full justify-between px-4 text-base">
-            Volgende week plannen <ChevronRight className="size-5" aria-hidden />
+      </div>
+    );
+  }
+
+  return (
+    <AppShell title="Weekmenu">
+      <div className="space-y-6">
+        {/* Kopregel: welke planning en opties */}
+        <div className="flex items-center gap-2">
+          {gezin ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-12 min-w-0 flex-1 justify-start gap-2 px-2 text-base font-semibold">
+                  {weergave === "gezin" ? <Users className="size-5 shrink-0" /> : <CalendarDays className="size-5 shrink-0" />}
+                  <span className="truncate">{weergave === "gezin" ? gezin.naam : "Mijn planning"}</span>
+                  <ChevronRight className="size-4 shrink-0 rotate-90" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-64 p-2">
+                <DropdownMenuItem onSelect={() => setWeergave("mij")} className="min-h-12 rounded-lg text-base">
+                  <CalendarDays className="size-5" /> Mijn planning
+                  {weergave === "mij" ? <Check className="ml-auto size-5" /> : null}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setWeergave("gezin")} className="min-h-12 rounded-lg text-base">
+                  <Users className="size-5" /> {gezin.naam}
+                  {weergave === "gezin" ? <Check className="ml-auto size-5" /> : null}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : <div className="flex-1" />}
+          <Button variant="ghost" onClick={() => setInstellingenOpen(true)} className="h-12 shrink-0 gap-2 px-3 text-base">
+            <Settings className="size-5" /> Opties
           </Button>
-        ) : null}
+        </div>
+
+        {/* Week kiezen */}
+        <section aria-label="Week kiezen" className="rounded-2xl border border-border bg-card p-3">
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" onClick={() => verschuif(-1)} aria-label="Vorige week" className="size-12 shrink-0">
+              <ChevronLeft className="size-6" />
+            </Button>
+            <Popover open={kalenderOpen} onOpenChange={setKalenderOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" className="h-12 min-w-0 flex-1 px-2 font-display text-lg font-semibold">
+                  <span className="truncate">{weekVerschil === 0 ? "Deze week" : weekVerschil === 1 ? "Volgende week" : weekLabel(new Date(`${week[0]}T12:00:00`), true)}</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="center">
+                <Calendar
+                  mode="single"
+                  selected={weekStart}
+                  onSelect={(datum) => {
+                    if (!datum) return;
+                    setWeekStart(maandagVan(datum));
+                    setDagKeuze(datumTekst(datum));
+                    setKalenderOpen(false);
+                  }}
+                  className="pointer-events-auto p-3"
+                />
+              </PopoverContent>
+            </Popover>
+            <Button variant="ghost" onClick={() => verschuif(1)} aria-label="Volgende week" className="size-12 shrink-0">
+              <ChevronRight className="size-6" />
+            </Button>
+          </div>
+          <div className="mt-2 grid grid-cols-7 gap-1" role="tablist" aria-label="Dag kiezen">
+            {week.map((dag) => {
+              const d = new Date(`${dag}T12:00:00`);
+              const actief = !heleWeek && dag === gekozenDag;
+              const isVandaag = dag === vandaag;
+              const aantal = plan.filter((p) => p.plan_date === dag).length;
+              const verborgen = !zichtbareDagen.includes(dag);
+              return (
+                <button
+                  key={dag}
+                  type="button"
+                  role="tab"
+                  aria-selected={actief}
+                  aria-label={`${d.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" })}${isVandaag ? ", vandaag" : ""}${aantal ? `, ${aantal} gepland` : ""}`}
+                  onClick={() => { setDagKeuze(dag); setHeleWeek(false); }}
+                  className={[
+                    "flex min-h-16 flex-col items-center justify-center rounded-xl border-2 transition-colors",
+                    actief ? "border-primary bg-primary text-primary-foreground" : isVandaag ? "border-honing bg-honing-zacht text-foreground" : "border-transparent text-foreground hover:bg-muted",
+                    verborgen && !actief ? "opacity-40" : "",
+                  ].join(" ")}
+                >
+                  <span className="text-sm font-semibold capitalize">{d.toLocaleDateString("nl-BE", { weekday: "short" }).replace(".", "").slice(0, 2)}</span>
+                  <span className="font-display text-lg font-semibold leading-tight">{d.getDate()}</span>
+                  <span aria-hidden className={`mt-0.5 size-1.5 rounded-full ${aantal ? (actief ? "bg-primary-foreground" : "bg-primary") : "bg-transparent"}`} />
+                </button>
+              );
+            })}
+          </div>
+          {weekVerschil !== 0 ? (
+            <Button variant="ghost" onClick={() => { setWeekStart(huidigeWeek); setDagKeuze(vandaag); setHeleWeek(false); }} className="mt-1 h-12 w-full text-base text-primary">
+              Terug naar vandaag
+            </Button>
+          ) : null}
+        </section>
+
+        {heleWeek ? (
+          <section aria-label="Hele week" className="space-y-6">
+            <h2 className="text-sectietitel">De hele week</h2>
+            {zichtbareDagen.map((dag) => <div key={dag}>{toonDag(dag, false)}</div>)}
+          </section>
+        ) : (
+          <section aria-label="Gekozen dag">{toonDag(gekozenDag, true)}</section>
+        )}
+
+        {/* Acties: één hoofdknop, twee rustige knoppen */}
+        <section aria-label="Acties" className="space-y-3">
+          <Button onClick={() => setBoodschappenOpen(true)} className="h-16 w-full gap-3 text-lg">
+            <ShoppingCart className="size-6" /> Boodschappen voor deze week
+          </Button>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                const startDag = gekozenDag >= vandaag ? gekozenDag : voorstelDagen[0];
+                if (!startDag) {
+                  toast("Deze week is voorbij. Ga naar volgende week om iets te plannen.");
+                  return;
+                }
+                setKiezen({ datum: startDag, moment: momenten[momenten.length - 1] ?? "avondeten", vraagDag: true });
+              }}
+              className="h-16 gap-2 text-base"
+            >
+              <Plus className="size-5" /> Gerecht toevoegen
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (!voorstelDagen.length) {
+                  toast("Er zijn in deze week geen komende dagen meer. Ga naar volgende week.");
+                  return;
+                }
+                setVoorstelOpen(true);
+              }}
+              className="h-16 gap-2 text-base"
+            >
+              <Sparkles className="size-5" /> Laat Foodlo kiezen
+            </Button>
+          </div>
+          <Button variant="ghost" onClick={() => setHeleWeek((w) => !w)} className="h-14 w-full text-base text-primary">
+            {heleWeek ? "Terug naar één dag" : "Hele week bekijken"}
+          </Button>
+        </section>
       </div>
 
       <Sheet open={boodschappenOpen} onOpenChange={setBoodschappenOpen}>
