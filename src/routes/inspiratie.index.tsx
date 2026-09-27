@@ -169,7 +169,7 @@ function InspiratiePage() {
           >
             ≤ 30 min
           </Button>
-          <Button variant="outline" onClick={verras} disabled={!resultaten.length} className="h-12 shrink-0 rounded-xl px-5 text-base">
+          <Button variant="outline" onClick={kiesVerrassing} disabled={!resultaten.length} className="h-12 shrink-0 rounded-xl px-5 text-base">
             <Shuffle className="size-4" /> Verras mij
           </Button>
         </div>
