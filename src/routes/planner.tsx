@@ -924,6 +924,11 @@ function PlannerPage() {
           );
         })}
         </div>
+        {weekVerschil === 0 && getoondeDagen.length <= 3 ? (
+          <Button variant="outline" onClick={() => verschuif(1)} className="h-14 w-full justify-between px-4 text-base">
+            Volgende week plannen <ChevronRight className="size-5" aria-hidden />
+          </Button>
+        ) : null}
       </div>
 
       <Sheet open={boodschappenOpen} onOpenChange={setBoodschappenOpen}>
