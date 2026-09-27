@@ -918,7 +918,7 @@ function RechtenVenster({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center sm:p-6">
-      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-[2rem] bg-card p-5 sm:rounded-[2rem]">
+      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-card p-5 sm:rounded-2xl">
         <h2 className="font-display text-xl">{titel}</h2>
         <p className="mt-1 text-base leading-relaxed text-muted-foreground">{uitleg}</p>
 

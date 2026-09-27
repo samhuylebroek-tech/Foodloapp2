@@ -104,7 +104,7 @@ function AanmeldenPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
       <div className="w-full max-w-md">
-        <div className="rounded-[2.5rem] border border-border bg-card p-8 shadow-2xl shadow-muted/50 sm:p-10">
+        <div className="rounded-2xl border border-border bg-card p-8 shadow-2xl shadow-muted/50 sm:p-10">
           {/* Logo & Header */}
           <div className="mb-8 text-center">
             <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-secondary">

@@ -105,7 +105,7 @@ function InstallerenPage() {
       </header>
 
       <main className="mx-auto mt-6 max-w-md space-y-6">
-        <section className="rounded-[2rem] border border-border bg-card p-6 text-center shadow-sm">
+        <section className="rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
           <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <Smartphone className="size-8" />
           </div>
@@ -175,7 +175,7 @@ function InstallerenPage() {
         </section>
 
         <section className="space-y-4">
-          <div className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
             <h3 className="text-lg font-bold">{t("Op een iPhone of iPad")}</h3>
             <ol className="mt-3 list-decimal space-y-2 pl-5 text-base text-muted-foreground">
               <li>{t("Open deze pagina in Safari.")}</li>
@@ -184,7 +184,7 @@ function InstallerenPage() {
             </ol>
           </div>
 
-          <div className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
             <h3 className="text-lg font-bold">{t("Op een Android-telefoon")}</h3>
             <ol className="mt-3 list-decimal space-y-2 pl-5 text-base text-muted-foreground">
               <li>{t("Open deze pagina in Chrome.")}</li>
