@@ -98,7 +98,7 @@ function MeldingenPagina() {
   return (
     <AppShell title={t("Meldingen")}>
       <div className="space-y-6">
-        <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+        <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <h2 className="text-xl font-bold tracking-tight">{t("Meldingen op dit toestel")}</h2>
           <p className="mt-2 text-base text-muted-foreground">
             {aan

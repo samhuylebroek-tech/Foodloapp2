@@ -76,7 +76,7 @@ export function ReceptGeschiedenis({ recipeId }: { recipeId: string }) {
   };
 
   return (
-    <section className="mt-8 rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+    <section className="mt-8 rounded-2xl border border-border bg-card p-5 shadow-sm">
       <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
         <History className="size-5" aria-hidden /> Eerdere versies
       </h2>

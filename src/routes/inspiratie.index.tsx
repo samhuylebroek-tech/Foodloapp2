@@ -113,7 +113,7 @@ function InspiratiePage() {
           <Button
             variant={actieveFilters ? "default" : "outline"}
             onClick={() => setFilterOpen(true)}
-            className="h-12 shrink-0 rounded-full px-5 text-sm"
+            className="h-12 shrink-0 rounded-xl px-5 text-sm"
           >
             <SlidersHorizontal className="size-4" />
             Filters{actieveFilters ? ` (${actieveFilters})` : ""}
@@ -122,7 +122,7 @@ function InspiratiePage() {
             variant="outline"
             onClick={() => setFilters((f) => ({ ...f, maxTijd: f.maxTijd === 30 ? null : 30 }))}
             aria-pressed={filters.maxTijd === 30}
-            className="h-12 shrink-0 rounded-full px-5 text-sm"
+            className="h-12 shrink-0 rounded-xl px-5 text-sm"
           >
             ≤ 30 min
           </Button>
@@ -130,7 +130,7 @@ function InspiratiePage() {
             variant="outline"
             onClick={() => setFilters((f) => ({ ...f, alleenVegatarisch: !f.alleenVegatarisch, alleenVegan: false }))}
             aria-pressed={filters.alleenVegatarisch}
-            className="h-12 shrink-0 rounded-full px-5 text-sm"
+            className="h-12 shrink-0 rounded-xl px-5 text-sm"
           >
             Vegetarisch
           </Button>
@@ -138,11 +138,11 @@ function InspiratiePage() {
             variant="outline"
             onClick={() => setFilters((f) => ({ ...f, alleenVegan: !f.alleenVegan, alleenVegatarisch: false }))}
             aria-pressed={filters.alleenVegan}
-            className="h-12 shrink-0 rounded-full px-5 text-sm"
+            className="h-12 shrink-0 rounded-xl px-5 text-sm"
           >
             Vegan
           </Button>
-          <Button variant="outline" onClick={verras} disabled={!resultaten.length} className="h-12 shrink-0 rounded-full px-5 text-sm">
+          <Button variant="outline" onClick={verras} disabled={!resultaten.length} className="h-12 shrink-0 rounded-xl px-5 text-sm">
             <Shuffle className="size-4" /> Verras mij
           </Button>
         </div>
@@ -211,7 +211,7 @@ function InspiratiePage() {
                     variant={filters.categorie === c ? "default" : "outline"}
                     onClick={() => setFilters((f) => ({ ...f, categorie: f.categorie === c ? "" : c }))}
                     aria-pressed={filters.categorie === c}
-                    className="h-12 rounded-full px-4 text-sm capitalize"
+                    className="h-12 rounded-xl px-4 text-sm capitalize"
                   >
                     {c}
                   </Button>
@@ -227,7 +227,7 @@ function InspiratiePage() {
                     variant={filters.maxTijd === min ? "default" : "outline"}
                     onClick={() => setFilters((f) => ({ ...f, maxTijd: f.maxTijd === min ? null : min }))}
                     aria-pressed={filters.maxTijd === min}
-                    className="h-12 rounded-full px-4 text-sm"
+                    className="h-12 rounded-xl px-4 text-sm"
                   >
                     ≤ {min} min
                   </Button>
@@ -241,7 +241,7 @@ function InspiratiePage() {
                   variant={filters.alleenVegatarisch ? "default" : "outline"}
                   onClick={() => setFilters((f) => ({ ...f, alleenVegatarisch: !f.alleenVegatarisch, alleenVegan: false }))}
                   aria-pressed={filters.alleenVegatarisch}
-                  className="h-12 rounded-full px-4 text-sm"
+                  className="h-12 rounded-xl px-4 text-sm"
                 >
                   Vegetarisch
                 </Button>
@@ -249,7 +249,7 @@ function InspiratiePage() {
                   variant={filters.alleenVegan ? "default" : "outline"}
                   onClick={() => setFilters((f) => ({ ...f, alleenVegan: !f.alleenVegan, alleenVegatarisch: false }))}
                   aria-pressed={filters.alleenVegan}
-                  className="h-12 rounded-full px-4 text-sm"
+                  className="h-12 rounded-xl px-4 text-sm"
                 >
                   Vegan
                 </Button>

@@ -60,7 +60,7 @@ function CreditsPagina() {
         <p className="text-base text-muted-foreground">{t("Laden…")}</p>
       ) : (
         <div className="space-y-6">
-          <section className="rounded-[2rem] border border-border bg-card p-6 text-center shadow-sm">
+          <section className="rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
             <Sparkles className="mx-auto size-8 text-primary" aria-hidden />
             <p className="mt-2 text-5xl font-bold tracking-tight">{saldo}</p>
             <p className="mt-1 text-base text-muted-foreground">{t("credits")}</p>
@@ -75,7 +75,7 @@ function CreditsPagina() {
             ) : null}
           </section>
 
-          <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+          <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
             <h2 className="text-xl font-bold tracking-tight">{t("Waarvoor dienen credits?")}</h2>
             <p className="mt-2 text-base text-muted-foreground">
               {t("Enkel slimme functies gebruiken credits. Zoeken, koken, plannen en boodschappen zijn altijd gratis.")}
@@ -100,7 +100,7 @@ function CreditsPagina() {
             </p>
           </section>
 
-          <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+          <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
             <h2 className="text-xl font-bold tracking-tight">{t("Meer credits")}</h2>
             {data.kopenActief ? (
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -123,7 +123,7 @@ function CreditsPagina() {
             <ExtraVragen t={t} />
           </section>
 
-          <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+          <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
             <h2 className="text-xl font-bold tracking-tight">{t("Recent")}</h2>
             <ul className="mt-3 divide-y divide-border">
               {data.boekingen.map((b) => (
