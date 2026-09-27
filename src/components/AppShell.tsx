@@ -163,7 +163,7 @@ export function AppShell({
               {action ? <div className="shrink-0">{action}</div> : null}
             </div>
             <div className="mx-auto w-full max-w-3xl px-4 pb-3 sm:px-6 lg:max-w-4xl">
-              <h1 className="truncate text-paginatitel">{title}</h1>
+              <h1 className="line-clamp-2 break-words text-paginatitel">{title}</h1>
             </div>
             <div className="h-px bg-border" aria-hidden />
           </header>
@@ -193,7 +193,7 @@ export function AppShell({
                   data-tour={`tab-${item.to}`}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex min-h-18 flex-col items-center justify-center gap-1 px-0.5 pb-2 pt-1 text-[0.78rem] font-semibold transition-colors",
+                    "flex min-h-18 flex-col items-center justify-center gap-1 px-0.5 pb-2 pt-1 text-[0.68rem] font-semibold tracking-tight transition-colors",
                     active ? "text-foreground" : "text-muted-foreground",
                   )}
                 >
@@ -205,7 +205,7 @@ export function AppShell({
                   >
                     <Icon className="size-6" strokeWidth={active ? 2.4 : 2} aria-hidden />
                   </span>
-                  <span className="max-w-full truncate">{t(item.label)}</span>
+                  <span className="max-w-full whitespace-nowrap">{t(item.label)}</span>
                 </Link>
               </li>
             );
