@@ -778,7 +778,7 @@ function PlannerPage() {
         <div>
           {groot ? (
             <p className="text-base font-semibold text-muted-foreground">
-              {dag === vandaag ? "Vandaag" : voorbij ? "Voorbij" : datum.getTime() - Date.now() < 2 * 86400000 && dag > vandaag ? "Morgen" : "Gepland"}
+              {dag === vandaag ? "Vandaag" : voorbij ? "Voorbij" : dag === datumTekst(new Date(Date.now() + 86400000)) ? "Morgen" : "Gepland"}
             </p>
           ) : null}
           <h2 id={`dag-${dag}`} className={groot ? "text-paginatitel capitalize" : "text-sectietitel capitalize"}>
