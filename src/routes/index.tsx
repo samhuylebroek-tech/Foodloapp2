@@ -116,8 +116,12 @@ function StartPage() {
     <AppShell title={`${t(groet(new Date().getHours()))}${naam ? `, ${naam}` : ""}`}>
       <div className="space-y-10">
         <section aria-labelledby="vandaag-titel">
-          <p className="text-label text-muted-foreground">{datum}</p>
-          <h2 id="vandaag-titel" className="mt-1 text-sectietitel">{t("Vandaag op het menu")}</h2>
+          <p className="inline-flex items-center gap-2 rounded-full bg-[var(--honing-zacht)] px-4 py-1.5 text-base font-semibold capitalize text-[var(--honing-foreground)]">
+            <CalendarDays className="size-5" aria-hidden />
+            {datum}
+          </p>
+          <h2 id="vandaag-titel" className="mt-3 text-sectietitel">{t("Vandaag op het menu")}</h2>
+          <p className="mt-1 text-base text-muted-foreground">{t("Dit staat er vandaag voor je klaar.")}</p>
 
           <div className="mt-4">
             {isLoading ? (
@@ -133,7 +137,7 @@ function StartPage() {
                   >
                     <RecipePhoto path={eerste.recipes.image_url} alt={eerste.recipes.title} className="aspect-[16/10] w-full rounded-none" />
                     <div className="p-5">
-                      <p className="text-base font-semibold capitalize text-muted-foreground">
+                      <p className="text-base font-semibold capitalize text-[var(--honing-foreground)]">
                         {t(eerste.meal_type || "Vandaag")}
                         {eerste.group_id ? ` · ${t("met het gezin")}` : ""}
                       </p>
@@ -194,6 +198,7 @@ function StartPage() {
 
         <section aria-labelledby="snel-titel">
           <h2 id="snel-titel" className="text-sectietitel">{t("Verder met")}</h2>
+          <p className="mt-1 text-base text-muted-foreground">{t("Ga meteen verder waar je gebleven was.")}</p>
           <ul className="mt-3 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
             <SnelRij to="/boodschappen" icon={ShoppingCart} titel={t("Boodschappen")} uitleg={openItems ? `${openItems} ${t(openItems === 1 ? "ding nog te kopen" : "dingen nog te kopen")}` : t("Je lijst is leeg")} />
             <SnelRij to="/planner" icon={CalendarDays} titel={t("Weekmenu")} uitleg={t("Bekijk of plan je week")} />

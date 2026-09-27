@@ -50,7 +50,7 @@ export function Klantenkaarten() {
             >
               <CreditCard className="size-5 text-primary" aria-hidden />
               {k.winkel_naam}
-              <span className="text-sm font-normal text-muted-foreground">Toon kaart</span>
+              <span className="text-base font-normal text-muted-foreground">Toon kaart</span>
             </Link>
           </li>
         ))}

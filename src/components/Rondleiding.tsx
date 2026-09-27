@@ -140,7 +140,7 @@ export function Rondleiding() {
         className="pointer-events-auto absolute inset-x-0 bottom-0 mx-auto w-full max-w-lg rounded-t-3xl bg-card p-5 shadow-2xl"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.25rem)" }}
       >
-        <p className="text-sm text-muted-foreground">
+        <p className="text-base text-muted-foreground">
           {t("Stap")} {i + 1} {t("van")} {STAPPEN.length}
         </p>
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">

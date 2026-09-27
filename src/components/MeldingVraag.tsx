@@ -116,7 +116,7 @@ export function MeldingVraag({ actief = true }: { actief?: boolean }) {
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-lg font-bold">{t("Een seintje op het juiste moment?")}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 text-base text-muted-foreground">
               {t("Bijvoorbeeld wanneer het tijd is om te koken.")}
             </p>
           </div>
@@ -150,7 +150,7 @@ export function MeldingVraag({ actief = true }: { actief?: boolean }) {
           <button
             type="button"
             onClick={nietMeerTonen}
-            className="col-span-2 min-h-12 w-full rounded-xl px-3 text-sm font-semibold text-muted-foreground underline"
+            className="col-span-2 min-h-12 w-full rounded-xl px-3 text-base font-semibold text-muted-foreground underline"
           >
             {t("Toon me dit niet meer")}
           </button>

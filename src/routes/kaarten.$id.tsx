@@ -129,7 +129,7 @@ function KaartPagina() {
             <label className="flex items-center justify-between rounded-2xl border border-border p-3">
               <span className="text-base">
                 Delen met mijn gezin
-                <span className="block text-sm text-muted-foreground">Uit = alleen jij ziet deze kaart.</span>
+                <span className="block text-base text-muted-foreground">Uit = alleen jij ziet deze kaart.</span>
               </span>
               <Switch checked={kaart.gedeeld} onCheckedChange={(v) => wijzig({ gedeeld: v })} />
             </label>

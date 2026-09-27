@@ -113,7 +113,7 @@ function InspiratieDetailPage() {
           {recept.description ? (
             <p className="mt-2 text-muted-foreground">{recept.description}</p>
           ) : null}
-          <div className="mt-3 flex flex-wrap gap-2 text-sm">
+          <div className="mt-3 flex flex-wrap gap-2 text-base">
             {totaalTijd > 0 ? (
               <span className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5">
                 <Clock3 className="size-4" /> {totaalTijd} min
@@ -157,7 +157,7 @@ function InspiratieDetailPage() {
               className="flex min-h-12 w-full items-center justify-between text-left"
             >
               <h2 className="font-display text-lg">Bereiding</h2>
-              <span className="text-sm font-semibold text-primary">
+              <span className="text-base font-semibold text-primary">
                 {bereidingOpen ? "Verberg" : `Toon ${recept.instructions.length} stappen`}
               </span>
             </button>
@@ -165,7 +165,7 @@ function InspiratieDetailPage() {
               <ol className="mt-2 space-y-3">
                 {recept.instructions.map((stap, idx) => (
                   <li key={idx} className="flex gap-3 text-base">
-                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-bold text-accent-foreground">
+                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-base font-bold text-accent-foreground">
                       {idx + 1}
                     </span>
                     <span className="pt-0.5">{stap}</span>

@@ -407,14 +407,14 @@ function GezinPage() {
                             <div className="min-w-0">
                               <p className="truncate text-base font-semibold">{g.display_name}</p>
                               {g.handle ? (
-                                <p className="truncate text-sm text-muted-foreground">
+                                <p className="truncate text-base text-muted-foreground">
                                   @{g.handle}
                                 </p>
                               ) : null}
                             </div>
                           </div>
                           {lid ? (
-                            <span className="shrink-0 rounded-full bg-card px-3 py-2 text-sm font-semibold text-muted-foreground">
+                            <span className="shrink-0 rounded-full bg-card px-3 py-2 text-base font-semibold text-muted-foreground">
                               {lid.status === "actief" ? "Hoort erbij" : "Uitgenodigd"}
                             </span>
                           ) : (
@@ -487,7 +487,7 @@ function GezinPage() {
                     <p className="min-w-0 flex-1 text-lg font-semibold">
                       {l.user_id === user?.id ? "Jij" : (namen[l.user_id] ?? "Gezinslid")}{" "}
                       {l.rol === "eigenaar" && (
-                        <span className="mt-0.5 block text-sm font-normal text-muted-foreground">
+                        <span className="mt-0.5 block text-base font-normal text-muted-foreground">
                           heeft het gezin gestart
                         </span>
                       )}

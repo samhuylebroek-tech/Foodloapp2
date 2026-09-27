@@ -860,7 +860,7 @@ function BoodschappenPage() {
             </div>
           ) : null}
           {actieveLijst?.group_id ? (
-            <p className="mt-2 text-sm text-muted-foreground">Iedereen in je gezin kan aanvullen en afvinken.</p>
+            <p className="mt-2 text-base text-muted-foreground">Iedereen in je gezin kan aanvullen en afvinken.</p>
           ) : null}
           {openAantal > 0 ? (
             <Button onClick={() => setWinkel(true)} className="mt-4 h-16 w-full text-lg">
@@ -907,7 +907,7 @@ function BoodschappenPage() {
         {vaakLosOpen.length > 0 && (
           <section aria-label="Vaak gekocht" className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
             <h2 className="flex items-center gap-2 text-lg font-semibold"><Star className="size-5 text-primary" /> Vaak gekocht</h2>
-            <p className="text-sm text-muted-foreground">Wat je vaak los meeneemt. Tik om toe te voegen.</p>
+            <p className="text-base text-muted-foreground">Wat je vaak los meeneemt. Tik om toe te voegen.</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {(vaakAlles ? vaakLosOpen : vaakLosOpen.slice(0, 8)).map((e) => (
                 <Button
@@ -936,7 +936,7 @@ function BoodschappenPage() {
                 <li key={g.recipe_id} className="flex min-h-16 items-center gap-3">
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-lg">{g.titel}</span>
-                    <span className="block text-sm capitalize text-muted-foreground">{datumLabel(g.dag)}</span>
+                    <span className="block text-base capitalize text-muted-foreground">{datumLabel(g.dag)}</span>
                   </span>
                   <Button variant="outline" className="h-12 shrink-0" onClick={() => void zetGerechtOpLijst(g.recipe_id, g.titel)}>
                     <Plus /> Zet op lijst
@@ -1000,7 +1000,7 @@ function BoodschappenPage() {
                     >
                       {open ? <ChevronDown className="size-5 text-muted-foreground" /> : <ChevronRight className="size-5 text-muted-foreground" />}
                       <span className="text-base font-semibold">{CATEGORIE_LABEL[id]}</span>
-                      <span className="rounded-full bg-secondary px-2 py-0.5 text-sm font-semibold text-secondary-foreground">
+                      <span className="rounded-full bg-secondary px-2.5 py-1 text-base font-semibold text-secondary-foreground">
                         {lijst.length}
                       </span>
                     </button>
@@ -1038,7 +1038,7 @@ function BoodschappenPage() {
             {klaar.length > 0 ? (
               <Accordion type="single" collapsible defaultValue="klaar" className="rounded-2xl bg-secondary/50 px-3 ring-1 ring-border/60">
                 <AccordionItem value="klaar" className="border-0">
-                  <AccordionTrigger className="min-h-12 px-1 text-sm font-semibold text-muted-foreground no-underline hover:no-underline">
+                  <AccordionTrigger className="min-h-12 px-1 text-base font-semibold text-muted-foreground no-underline hover:no-underline">
                     <span className="flex items-center gap-2"><ShoppingCart className="size-5" /> In je kar ({klaar.length})</span>
                   </AccordionTrigger>
                   <AccordionContent className="space-y-1 pb-2">
@@ -1193,12 +1193,12 @@ function BoodschappenPage() {
             <Button className="h-14 w-full justify-start text-base" onClick={() => void maakDeelLink()}>
               <Link2 /> Deel met een link
             </Button>
-            <p className="px-1 text-sm text-muted-foreground">
+            <p className="px-1 text-base text-muted-foreground">
               Wie de link opent, maakt eerst een gratis Foodlo-account. Daarna kan die mee aanvullen en afvinken.
             </p>
             {deelLink ? (
               <div className="rounded-xl bg-secondary p-3">
-                <p className="break-all text-sm">{deelLink}</p>
+                <p className="break-all text-base">{deelLink}</p>
                 <Button
                   variant="ghost"
                   className="mt-1 h-11"
@@ -1210,7 +1210,7 @@ function BoodschappenPage() {
             ) : null}
             {meekijkers.length > 0 ? (
               <div className="space-y-1 pt-2">
-                <p className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                <p className="flex items-center gap-2 text-base font-semibold text-muted-foreground">
                   <Users className="size-4" /> Kijkt mee
                 </p>
                 {meekijkers.map((m) => (
@@ -1247,21 +1247,21 @@ function BoodschappenPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <label className="block text-sm font-semibold">Naam
+            <label className="block text-base font-semibold">Naam
               <Input autoFocus value={bewerkNaam} onChange={(event) => setBewerkNaam(event.target.value)} className="mt-1 h-14 text-base" />
             </label>
             <div className="grid grid-cols-2 gap-3">
-              <label className="block text-sm font-semibold">Hoeveel
+              <label className="block text-base font-semibold">Hoeveel
                 <Input inputMode="decimal" placeholder="bv. 2" value={bewerkAantal} onChange={(event) => setBewerkAantal(event.target.value)} className="mt-1 h-14 text-base" />
               </label>
-              <label className="block text-sm font-semibold">Eenheid
+              <label className="block text-base font-semibold">Eenheid
                 <Input placeholder="bv. kg, stuk(s)" value={bewerkEenheid} onChange={(event) => setBewerkEenheid(event.target.value)} className="mt-1 h-14 text-base" />
               </label>
             </div>
-            <label className="block text-sm font-semibold">Nota
+            <label className="block text-base font-semibold">Nota
               <Input placeholder="bv. de biologische" value={bewerkNota} maxLength={100} onChange={(event) => setBewerkNota(event.target.value)} className="mt-1 h-14 text-base" />
             </label>
-            <label className="block text-sm font-semibold">Afdeling
+            <label className="block text-base font-semibold">Afdeling
               <select
                 value={bewerkCategorie}
                 onChange={(e) => setBewerkCategorie(e.target.value as CategorieId)}
@@ -1341,7 +1341,7 @@ function GeheugenRij({ naam, sub, vast, onVast, onPlus }: { naam: string; sub: s
     <li className="flex min-h-16 items-center gap-2">
       <span className="min-w-0 flex-1">
         <span className="block truncate text-lg">{naam}</span>
-        {sub ? <span className="block text-sm text-muted-foreground">{sub}</span> : null}
+        {sub ? <span className="block text-base text-muted-foreground">{sub}</span> : null}
       </span>
       <Button variant="ghost" size="icon" className="size-12 shrink-0" aria-pressed={vast} aria-label={vast ? `${naam} is een vaste boodschap` : `Maak ${naam} een vaste boodschap`} onClick={onVast}>
         <Star className={vast ? "size-6 fill-current text-primary" : "size-6 text-muted-foreground"} />
@@ -1394,7 +1394,7 @@ function Winkelmodus({
         </Button>
         <div className="min-w-0 flex-1">
           <p className="truncate text-lg font-semibold">{huidig ? CATEGORIE_LABEL[huidig.id] : "Klaar"}</p>
-          <p className="text-sm text-muted-foreground">Nog {openAantal} te halen</p>
+          <p className="text-base text-muted-foreground">Nog {openAantal} te halen</p>
         </div>
       </div>
 
@@ -1427,7 +1427,7 @@ function Winkelmodus({
               <Button className="h-16 w-full max-w-sm text-lg" onClick={onOpruimen}>Lijst leegmaken</Button>
             ) : null}
             <Button variant="outline" className="h-14 w-full max-w-sm text-lg" onClick={onSluit}>Nog iets vergeten</Button>
-            <p className="text-sm text-muted-foreground">Wat je kocht, vind je later terug bij “Eerder gekocht”.</p>
+            <p className="text-base text-muted-foreground">Wat je kocht, vind je later terug bij “Eerder gekocht”.</p>
           </div>
         )}
       </div>
@@ -1437,7 +1437,7 @@ function Winkelmodus({
           <Button variant="outline" className="h-14 flex-1 text-base" disabled={stap === 0} onClick={() => setStap((s) => Math.max(0, s - 1))}>
             Vorige afdeling
           </Button>
-          <span className="text-sm text-muted-foreground">{Math.min(stap + 1, groepen.length)}/{groepen.length}</span>
+          <span className="text-base text-muted-foreground">{Math.min(stap + 1, groepen.length)}/{groepen.length}</span>
           <Button className="h-14 flex-1 text-base" disabled={stap >= groepen.length - 1} onClick={() => setStap((s) => s + 1)}>
             Volgende afdeling
           </Button>
@@ -1505,8 +1505,8 @@ function ItemRij({
           <span className={item.checked ? "block truncate text-lg text-muted-foreground line-through" : "block truncate text-lg"}>
             {item.name}
           </span>
-          {item.note ? <span className="block truncate text-sm text-muted-foreground">{item.note}</span> : null}
-          {item.recept ? <span className="block truncate text-sm text-muted-foreground">voor {item.recept}</span> : null}
+          {item.note ? <span className="block truncate text-base text-muted-foreground">{item.note}</span> : null}
+          {item.recept ? <span className="block truncate text-base text-muted-foreground">voor {item.recept}</span> : null}
         </span>
         {maatTekst(item) ? <span className="shrink-0 text-base text-muted-foreground">{maatTekst(item)}</span> : null}
         {item.checked ? <span className="sr-only">gekocht</span> : null}

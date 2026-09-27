@@ -35,7 +35,7 @@ export function StapIngredienten({ ingredienten, factor, groot }: Props) {
             )}
             <span>{t(i.name)}</span>
             {i.herhaling && (
-              <span className={groot ? "text-lg text-muted-foreground" : "text-sm text-muted-foreground"}>
+              <span className={groot ? "text-lg text-muted-foreground" : "text-base text-muted-foreground"}>
                 ({t("rest")})
               </span>
             )}

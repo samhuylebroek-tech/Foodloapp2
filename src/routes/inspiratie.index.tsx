@@ -92,6 +92,17 @@ function InspiratiePage() {
   return (
     <AppShell title="Ideeën om te koken">
       <div className="space-y-4">
+        <nav aria-label="Recepten of ideeën" className="grid grid-cols-2 gap-1 rounded-2xl bg-muted p-1">
+          <Link
+            to="/gerechten"
+            className="flex min-h-12 items-center justify-center rounded-xl text-base font-semibold text-muted-foreground hover:text-foreground"
+          >
+            Mijn recepten
+          </Link>
+          <span aria-current="page" className="flex min-h-12 items-center justify-center rounded-xl bg-card text-base font-semibold shadow-sm">
+            Ideeën om te koken
+          </span>
+        </nav>
         <div>
           <p className="text-muted-foreground">
             Ontdek recepten die Foodlo al kent en voeg ze met één tik toe aan je eigen recepten.
@@ -113,7 +124,7 @@ function InspiratiePage() {
           <Button
             variant={actieveFilters ? "default" : "outline"}
             onClick={() => setFilterOpen(true)}
-            className="h-12 shrink-0 rounded-xl px-5 text-sm"
+            className="h-12 shrink-0 rounded-xl px-5 text-base"
           >
             <SlidersHorizontal className="size-4" />
             Filters{actieveFilters ? ` (${actieveFilters})` : ""}
@@ -122,7 +133,7 @@ function InspiratiePage() {
             variant="outline"
             onClick={() => setFilters((f) => ({ ...f, maxTijd: f.maxTijd === 30 ? null : 30 }))}
             aria-pressed={filters.maxTijd === 30}
-            className="h-12 shrink-0 rounded-xl px-5 text-sm"
+            className="h-12 shrink-0 rounded-xl px-5 text-base"
           >
             ≤ 30 min
           </Button>
@@ -130,7 +141,7 @@ function InspiratiePage() {
             variant="outline"
             onClick={() => setFilters((f) => ({ ...f, alleenVegatarisch: !f.alleenVegatarisch, alleenVegan: false }))}
             aria-pressed={filters.alleenVegatarisch}
-            className="h-12 shrink-0 rounded-xl px-5 text-sm"
+            className="h-12 shrink-0 rounded-xl px-5 text-base"
           >
             Vegetarisch
           </Button>
@@ -138,11 +149,11 @@ function InspiratiePage() {
             variant="outline"
             onClick={() => setFilters((f) => ({ ...f, alleenVegan: !f.alleenVegan, alleenVegatarisch: false }))}
             aria-pressed={filters.alleenVegan}
-            className="h-12 shrink-0 rounded-xl px-5 text-sm"
+            className="h-12 shrink-0 rounded-xl px-5 text-base"
           >
             Vegan
           </Button>
-          <Button variant="outline" onClick={verras} disabled={!resultaten.length} className="h-12 shrink-0 rounded-xl px-5 text-sm">
+          <Button variant="outline" onClick={verras} disabled={!resultaten.length} className="h-12 shrink-0 rounded-xl px-5 text-base">
             <Shuffle className="size-4" /> Verras mij
           </Button>
         </div>
@@ -180,7 +191,7 @@ function InspiratiePage() {
                   <ReceptFoto pad={r.image_url} titel={r.title} />
                   <div className="space-y-1 p-3">
                     <p className="line-clamp-2 text-base font-semibold leading-tight">{r.title}</p>
-                    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base text-muted-foreground">
                       {r.category ? <span className="capitalize">{r.category}</span> : null}
                       {tijdLabel(r) ? (
                         <span className="flex items-center gap-1 whitespace-nowrap">
@@ -203,7 +214,7 @@ function InspiratiePage() {
           </SheetHeader>
           <div className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
             <div>
-              <p className="mb-2 text-sm font-semibold">Soort gerecht</p>
+              <p className="mb-2 text-base font-semibold">Soort gerecht</p>
               <div className="flex flex-wrap gap-2">
                 {categorieen.map((c) => (
                   <Button
@@ -211,7 +222,7 @@ function InspiratiePage() {
                     variant={filters.categorie === c ? "default" : "outline"}
                     onClick={() => setFilters((f) => ({ ...f, categorie: f.categorie === c ? "" : c }))}
                     aria-pressed={filters.categorie === c}
-                    className="h-12 rounded-xl px-4 text-sm capitalize"
+                    className="h-12 rounded-xl px-4 text-base capitalize"
                   >
                     {c}
                   </Button>
@@ -219,7 +230,7 @@ function InspiratiePage() {
               </div>
             </div>
             <div>
-              <p className="mb-2 text-sm font-semibold">Bereidingstijd</p>
+              <p className="mb-2 text-base font-semibold">Bereidingstijd</p>
               <div className="flex flex-wrap gap-2">
                 {[15, 30, 45, 60].map((min) => (
                   <Button
@@ -227,7 +238,7 @@ function InspiratiePage() {
                     variant={filters.maxTijd === min ? "default" : "outline"}
                     onClick={() => setFilters((f) => ({ ...f, maxTijd: f.maxTijd === min ? null : min }))}
                     aria-pressed={filters.maxTijd === min}
-                    className="h-12 rounded-xl px-4 text-sm"
+                    className="h-12 rounded-xl px-4 text-base"
                   >
                     ≤ {min} min
                   </Button>
@@ -235,13 +246,13 @@ function InspiratiePage() {
               </div>
             </div>
             <div>
-              <p className="mb-2 text-sm font-semibold">Eetstijl</p>
+              <p className="mb-2 text-base font-semibold">Eetstijl</p>
               <div className="flex flex-wrap gap-2">
                 <Button
                   variant={filters.alleenVegatarisch ? "default" : "outline"}
                   onClick={() => setFilters((f) => ({ ...f, alleenVegatarisch: !f.alleenVegatarisch, alleenVegan: false }))}
                   aria-pressed={filters.alleenVegatarisch}
-                  className="h-12 rounded-xl px-4 text-sm"
+                  className="h-12 rounded-xl px-4 text-base"
                 >
                   Vegetarisch
                 </Button>
@@ -249,7 +260,7 @@ function InspiratiePage() {
                   variant={filters.alleenVegan ? "default" : "outline"}
                   onClick={() => setFilters((f) => ({ ...f, alleenVegan: !f.alleenVegan, alleenVegatarisch: false }))}
                   aria-pressed={filters.alleenVegan}
-                  className="h-12 rounded-xl px-4 text-sm"
+                  className="h-12 rounded-xl px-4 text-base"
                 >
                   Vegan
                 </Button>

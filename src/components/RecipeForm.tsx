@@ -938,7 +938,7 @@ export function RecipeForm({
           </div>
 
           {laagSaldo && (
-            <p className="mt-3 text-sm text-muted-foreground">
+            <p className="mt-3 text-base text-muted-foreground">
               Nog {credits.data?.saldo ?? 0} credits over.{" "}
               <RouterLink to="/credits" className="font-semibold underline">
                 Bekijk je credits
@@ -1014,7 +1014,7 @@ export function RecipeForm({
                             <span className="block break-words text-base font-semibold">
                               {r.titel}
                             </span>
-                            <span className="mt-0.5 block text-sm text-primary">{r.site}</span>
+                            <span className="mt-0.5 block text-base text-primary">{r.site}</span>
                             {r.fragment ? (
                               <span className="mt-0.5 block text-base text-muted-foreground">
                                 {r.fragment}
@@ -1025,7 +1025,7 @@ export function RecipeForm({
                       </li>
                     ))}
                   </ul>
-                  <p className="mt-2 text-sm text-muted-foreground">
+                  <p className="mt-2 text-base text-muted-foreground">
                     We halen het recept van de gekozen pagina op, met bronvermelding.
                   </p>
                 </div>
@@ -1089,7 +1089,7 @@ export function RecipeForm({
                                 {v.omschrijving}
                               </span>
                             ) : null}
-                            <span className="mt-0.5 block text-sm text-muted-foreground">
+                            <span className="mt-0.5 block text-base text-muted-foreground">
                               ± {v.minuten} min
                             </span>
                           </span>
@@ -1097,7 +1097,7 @@ export function RecipeForm({
                       </li>
                     ))}
                   </ul>
-                  <p className="mt-2 text-sm text-muted-foreground">
+                  <p className="mt-2 text-base text-muted-foreground">
                     Een idee kiezen schrijft het volledige recept uit met AI.
                   </p>
                 </div>
@@ -1275,7 +1275,7 @@ export function RecipeForm({
             </Button>
             <span className="shrink-0 text-base text-muted-foreground">personen</span>
           </div>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2 text-base text-muted-foreground">
             Weet je het niet zeker? Laat het gerust staan — je kan de hoeveelheden later altijd
             omrekenen.
             {schatting && schatting !== (Number(servings) || 0) ? (
@@ -1399,7 +1399,7 @@ export function RecipeForm({
         {stappen.length > 0 && formIngredienten.length > 0 && (
           <div>
             <Label className="text-base">Wat gebruik je bij elke stap?</Label>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 text-base text-muted-foreground">
               We raden het zelf al aan. Tik een ingrediënt aan of uit om het bij te sturen.
             </p>
             <div className="mt-3 space-y-3">
@@ -1473,7 +1473,7 @@ export function RecipeForm({
                 onBestand={(f) => void handlePhoto(f)}
               />
               {!photoPath && voorstelFoto && (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-base text-muted-foreground">
                   Voorgestelde foto. Niet goed? Klik op het kruisje.
                 </p>
               )}
@@ -1600,7 +1600,7 @@ export function RecipeForm({
       )}
 
       <div className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-20 -mx-1 rounded-2xl border border-border bg-card/95 p-2 shadow-lg backdrop-blur md:bottom-4">
-        <ul className="flex flex-wrap justify-center gap-x-3 gap-y-1 px-2 pb-1 text-xs text-muted-foreground" aria-label="Wat is al ingevuld">
+        <ul className="flex flex-wrap justify-center gap-x-3 gap-y-1 px-2 pb-1 text-base text-muted-foreground" aria-label="Wat is al ingevuld">
           {([
             ["Naam", !!title.trim()],
             ["Foto", !!photoPath],
@@ -1611,7 +1611,7 @@ export function RecipeForm({
           ))}
         </ul>
         {!recipe && autoStatus ? (
-          <p className="px-2 pb-1 text-center text-xs text-muted-foreground" aria-live="polite">
+          <p className="px-2 pb-1 text-center text-base text-muted-foreground" aria-live="polite">
             {autoStatus === "bezig" ? "Bezig met bewaren…" : "Automatisch bewaard als concept"}
           </p>
         ) : null}
@@ -1663,7 +1663,7 @@ export function RecipeForm({
                 >
                   <X className="size-5" aria-hidden />
                 </button>
-                <p className="mt-2 text-sm text-muted-foreground">
+                <p className="mt-2 text-base text-muted-foreground">
                   Deze foto wordt mee bewaard. Niet goed? Klik op het kruisje.
                 </p>
               </div>
@@ -1708,7 +1708,7 @@ export function RecipeForm({
               <SoortKeuze waarde={vbSoort} onKies={setVbSoort} />
             </div>
             {voorbeeld?.source_url ? (
-              <p className="break-words text-sm text-muted-foreground">
+              <p className="break-words text-base text-muted-foreground">
                 Bron: {voorbeeld.source_url}
               </p>
             ) : null}

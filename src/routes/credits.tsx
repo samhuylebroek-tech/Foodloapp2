@@ -95,7 +95,7 @@ function CreditsPagina() {
                   </li>
                 ))}
             </ul>
-            <p className="mt-3 text-sm text-muted-foreground">
+            <p className="mt-3 text-base text-muted-foreground">
               {t("Hetzelfde recept of dezelfde link opnieuw invoeren kost niets: we onthouden het resultaat.")}
             </p>
           </section>

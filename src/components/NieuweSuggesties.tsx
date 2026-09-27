@@ -195,7 +195,7 @@ export function NieuweSuggesties({
               {recept.description ? (
                 <p className="text-base text-muted-foreground">{t(recept.description)}</p>
               ) : null}
-              <p className="text-sm text-muted-foreground">
+              <p className="text-base text-muted-foreground">
                 {recept.servings || 4} {t("personen")} ·{" "}
                 {(recept.prep_minutes ?? 0) + (recept.cook_minutes ?? 0)} min
               </p>
@@ -265,7 +265,7 @@ function IdeeKaart({
           )}
           <div className="p-4">
             <p className="text-lg font-semibold leading-tight">{t(s.title)}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 text-base text-muted-foreground">
               {s.keuken ? `${t(s.keuken)} · ` : ""}
               {s.minuten} min
             </p>

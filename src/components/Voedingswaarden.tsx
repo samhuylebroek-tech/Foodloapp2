@@ -189,7 +189,7 @@ export function Voedingswaarden({ ingredienten, porties }: Props) {
             </p>
           )}
 
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+          <p className="mt-3 text-base leading-relaxed text-muted-foreground">
             {t(
               "Deze waarden zijn schattingen op basis van de ingrediënten en kunnen verschillen per merk, product en bereiding. Ze zijn enkel informatief en geen medisch of voedingsadvies. % RI = percentage van de dagelijkse referentie-inname voor een gemiddelde volwassene (2000 kcal).",
             )}
