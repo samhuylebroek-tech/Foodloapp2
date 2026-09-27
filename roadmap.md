@@ -194,7 +194,7 @@
 
 ## Actief — Weekmenu → boodschappen + Inspiratie (plan 27 sep, goedgekeurd)
 - [x] Centrale productherkenning: synoniemen (look=knoflook=garlic, ajuin=ui), veilig samenvoegen, varianten apart
-- [x] Vandaag-blok in weekmenu: samenvatting + "Boodschappen voor vandaag" (plakkend op mobiel)
+- [x] Vandaag alleen subtiel markeren; boodschappen standaard voor de hele zichtbare week
 - [x] Review-sheet: AL OP JE LIJST / NIEUW, per-item keuze, "Alleen nieuwe" / "Alles toevoegen", idempotentie
 - [x] Boodschappen: merge-hint bij handmatig toevoegen + herkomst in itemdetail
 - [ ] Tabellen canonical_items/item_synonyms + Control Center-beheer en monitoring
