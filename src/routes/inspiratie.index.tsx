@@ -223,6 +223,47 @@ function InspiratiePage() {
         )}
       </div>
 
+      <Dialog open={!!verrassing} onOpenChange={(open) => !open && setVerrassing(null)}>
+        <DialogContent className="max-w-sm p-0 overflow-hidden">
+          {verrassing ? (
+            <div>
+              <ReceptFoto pad={verrassing.image_url} titel={verrassing.title} />
+              <div className="space-y-4 p-5">
+                <DialogHeader className="text-left">
+                  <DialogTitle className="text-xl leading-snug">{verrassing.title}</DialogTitle>
+                </DialogHeader>
+                <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-base text-muted-foreground">
+                  {verrassing.category ? <span className="capitalize">{verrassing.category}</span> : null}
+                  {tijdLabel(verrassing) ? (
+                    <span className="flex items-center gap-1 whitespace-nowrap">
+                      <Clock3 className="size-4" /> {tijdLabel(verrassing)}
+                    </span>
+                  ) : null}
+                </p>
+                <div className="grid gap-2">
+                  <Button
+                    className="h-14 text-base"
+                    onClick={() => {
+                      const id = verrassing.id;
+                      setVerrassing(null);
+                      navigate({ to: "/inspiratie/$id", params: { id } });
+                    }}
+                  >
+                    Bekijk dit gerecht
+                  </Button>
+                  <Button variant="outline" className="h-14 text-base" onClick={kiesVerrassing}>
+                    <Shuffle className="size-4" /> Nog een suggestie
+                  </Button>
+                  <Button variant="ghost" className="h-12 text-base" onClick={() => setVerrassing(null)}>
+                    Sluiten
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
       <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
         <SheetContent side="bottom" className="flex max-h-[85dvh] flex-col gap-0 p-0">
           <SheetHeader className="border-b border-border px-4 pb-3 pt-4 text-left">
