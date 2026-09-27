@@ -64,7 +64,6 @@ import {
   zetInWachtrij,
   type Vast,
 } from "@/lib/boodschappen-geheugen";
-import { DEMO_ITEMS, DEMO_LIJST, demoBericht, isDemo } from "@/lib/demo";
 
 export const Route = createFileRoute("/boodschappen")({
   head: () => ({
@@ -112,7 +111,6 @@ function BoodschappenPage() {
     void meet("boodschappen.bekeken");
   }, []);
   const { user } = useAuth();
-  const demo = isDemo();
   const qc = useQueryClient();
   const [nieuw, setNieuw] = useState("");
   const [actief, setActief] = useState<string | null>(null);
@@ -130,9 +128,9 @@ function BoodschappenPage() {
   const [deelOpen, setDeelOpen] = useState(false);
   const [deelLink, setDeelLink] = useState<string | null>(null);
 
-  const { data: lijstenDb = [] } = useQuery({
+  const { data: lijsten = [] } = useQuery({
     queryKey: ["shopping-lists", user?.id],
-    enabled: !!user && !demo,
+    enabled: !!user,
     queryFn: async () => {
       if (!user) return [];
       await zorgVoorLijst(user.id);
@@ -144,7 +142,6 @@ function BoodschappenPage() {
       return data as ShoppingList[];
     },
   });
-  const lijsten = demo ? [DEMO_LIJST as ShoppingList] : lijstenDb;
 
   // De gezamenlijke gezinslijst ververst mee als een gezinslid iets aanpast.
   useEffect(() => {
@@ -166,9 +163,9 @@ function BoodschappenPage() {
       setActief(lijsten[0]!.id);
   }, [lijsten, actief]);
 
-  const { data: itemsDb = [] } = useQuery({
+  const { data: items = [] } = useQuery({
     queryKey: ["shopping", actief],
-    enabled: !!actief && !demo,
+    enabled: !!actief,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shopping_items")
@@ -188,9 +185,6 @@ function BoodschappenPage() {
       })) as Item[];
     },
   });
-  const items = demo
-    ? DEMO_ITEMS.map((i) => ({ ...i, recept: i.recipe_id === "demo-1" ? "Spaghetti bolognaise" : null })) as Item[]
-    : itemsDb;
 
   const [geheugenOpen, setGeheugenOpen] = useState(false);
   const [meerOpen, setMeerOpen] = useState(false);
@@ -393,7 +387,6 @@ function BoodschappenPage() {
   const isVast = (naam: string) => vaste.some((v) => normaliseerTekst(v.name) === normaliseerTekst(naam));
 
   async function voegTekstToe(tekst: string) {
-    if (demo) { demoBericht(); return; }
     if (!user || !actief || !tekst.trim()) return;
     const geparsed = parseIngredientLine(tekst);
     if (!geparsed) return;
@@ -460,7 +453,6 @@ function BoodschappenPage() {
   }
 
   async function zetGerechtOpLijst(recipeId: string, titel: string) {
-    if (demo) { demoBericht(); return; }
     if (!user || !actief) return;
     const { data } = await supabase
       .from("recipe_ingredients")
@@ -493,7 +485,6 @@ function BoodschappenPage() {
   }
 
   async function vink(item: Item) {
-    if (demo) { demoBericht(); return; }
     const nieuwWaarde = !item.checked;
     if (!online) {
       zetInWachtrij({ soort: "vink", id: item.id, checked: nieuwWaarde });
@@ -544,7 +535,6 @@ function BoodschappenPage() {
   }
 
   async function vinkCategorieAf(lijst: Item[]) {
-    if (demo) { demoBericht(); return; }
     const open = lijst.filter((i) => !i.checked);
     if (!open.length) return;
     await supabase
@@ -593,7 +583,6 @@ function BoodschappenPage() {
   }
 
   async function bewaarItem() {
-    if (demo) { demoBericht(); return; }
     if (!bewerkItem || !bewerkNaam.trim()) return;
     const hoeveelheid = bewerkAantal.trim() ? Number(bewerkAantal.replace(",", ".")) : null;
     if (hoeveelheid !== null && (!Number.isFinite(hoeveelheid) || hoeveelheid < 0)) {
@@ -619,7 +608,6 @@ function BoodschappenPage() {
 
   // Alles wat al in de voorraadkast staat in één tik afvinken.
   async function vinkVoorraadAf() {
-    if (demo) { demoBericht(); return; }
     if (!user || !actief) return;
     const { data } = await supabase.from("pantry_items").select("naam").eq("user_id", user.id);
     const thuis = (data ?? []).map((r) => r.naam.trim().toLowerCase()).filter(Boolean);
@@ -647,7 +635,6 @@ function BoodschappenPage() {
   }
 
   async function wisAfgevinkt() {
-    if (demo) { demoBericht(); return; }
     if (!actief || !user || !actieveLijst) return;
     await bewaarGekocht(user.id, actieveLijst, klaar).catch(() => {});
     const { error } = await supabase.from("shopping_items").delete().eq("checked", true).eq("list_id", actief);
@@ -662,7 +649,6 @@ function BoodschappenPage() {
   }
 
   async function wisAlles() {
-    if (demo) { demoBericht(); return; }
     if (!actief || !user || !actieveLijst) return;
     await bewaarGekocht(user.id, actieveLijst, klaar).catch(() => {});
     const { error } = await supabase.from("shopping_items").delete().eq("list_id", actief);
