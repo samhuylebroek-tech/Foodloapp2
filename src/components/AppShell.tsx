@@ -187,7 +187,7 @@ export function AppShell({
             const active = isActief(item.to);
             const Icon = item.icon;
             return (
-              <li key={item.to} className={item.to === "/boodschappen" ? "min-w-0 flex-[1.35]" : "min-w-0 flex-1"}>
+              <li key={item.to} className={item.to === "/boodschappen" ? "min-w-0 flex-[1.45]" : item.to === "/meer" ? "min-w-0 flex-[0.8]" : "min-w-0 flex-1"}>
                 <Link
                   to={item.to}
                   data-tour={`tab-${item.to}`}
