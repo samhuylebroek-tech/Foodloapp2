@@ -19,6 +19,13 @@ import {
   MessageSquare,
   X,
   Users,
+  Star,
+  History,
+  Sparkles,
+  CalendarDays,
+  WifiOff,
+  Settings2,
+  Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +39,7 @@ import { zorgVoorLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodsch
 import { belgischeMaat, parseIngredientLine, toonBelgischeMaat } from "@/lib/ingredienten";
 import { appOrigin } from "@/lib/app-url";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -45,6 +53,17 @@ import {
   type CategorieId,
 } from "@/lib/categorie";
 import { normaliseerTekst } from "@/lib/zoeken";
+import {
+  bewaarGekocht,
+  leegWachtrij,
+  leesGeschiedenis,
+  leesWachtrij,
+  maakSuggesties,
+  perBeurt,
+  vaakGekocht,
+  zetInWachtrij,
+  type Vast,
+} from "@/lib/boodschappen-geheugen";
 
 export const Route = createFileRoute("/boodschappen")({
   head: () => ({
