@@ -1610,6 +1610,42 @@ export type Database = {
         }
         Relationships: []
       }
+      shopping_history: {
+        Row: {
+          gekocht_op: string
+          group_id: string | null
+          id: string
+          list_id: string | null
+          name: string
+          quantity: number | null
+          recipe_id: string | null
+          unit: string
+          user_id: string
+        }
+        Insert: {
+          gekocht_op?: string
+          group_id?: string | null
+          id?: string
+          list_id?: string | null
+          name: string
+          quantity?: number | null
+          recipe_id?: string | null
+          unit?: string
+          user_id: string
+        }
+        Update: {
+          gekocht_op?: string
+          group_id?: string | null
+          id?: string
+          list_id?: string | null
+          name?: string
+          quantity?: number | null
+          recipe_id?: string | null
+          unit?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       shopping_items: {
         Row: {
           checked: boolean
@@ -1695,6 +1731,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      shopping_staples: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          quantity: number | null
+          unit: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          quantity?: number | null
+          unit?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          quantity?: number | null
+          unit?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       site_content: {
         Row: {

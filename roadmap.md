@@ -165,3 +165,13 @@
 - [x] Na weekmenu bevestigen: gekozen gerechten in één keer op de boodschappenlijst
 - [x] Bij één recept snel labels en details aanpassen
 - [x] Recepten filteren: Van mij / Van vrienden + eigenaarsnaam op kaartjes (gerechten.tsx)
+
+## Actief — Boodschappen zonder uitleg (20 én 80 jaar)
+- [x] Rustige start: aantal te kopen, "Ik ga boodschappen doen", groot toevoegveld
+- [x] Voorstellen uit eigen geschiedenis + "Uit je weekmenu"
+- [x] Eerder gekocht: vaste boodschappen, vaak gekocht, vorige boodschappen
+- [x] Grote regels, zichtbare knoppen, ongedaan maken, klaar-scherm, offline wachtrij
+- [ ] Eindcontrole met twee gebruikers (gedeelde lijst) en grote tekst
+
+## Gepland — Recept toevoegen/bewerken/importeren + gerecht plannen herwerken
+- [ ] Brief (HERWERK_DE_VOLLEDIGE_UX_UI_EN_FUNCTIONALITEIT) uitwerken tot een plan ter goedkeuring

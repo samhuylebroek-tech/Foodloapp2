@@ -288,6 +288,13 @@
       "when": 1790089129989,
       "tag": "0040_restrict_reference_table_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1790506194388,
+      "tag": "0041_shopping_history_en_vaste_boodschappen",
+      "breakpoints": true
     }
   ]
 }
