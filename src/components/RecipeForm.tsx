@@ -903,7 +903,7 @@ export function RecipeForm({
 
   const manieren: { id: Manier; label: string; icon: typeof Link2 }[] = [
     { id: "zelf", label: "Zelf invoeren", icon: Pencil },
-    { id: "link", label: "Website of social", icon: Link2 },
+    { id: "link", label: "Van een link", icon: Link2 },
     { id: "foto", label: "Foto of scan", icon: Camera },
     { id: "zoek", label: "Zoeken of AI", icon: Search },
   ];
@@ -926,8 +926,8 @@ export function RecipeForm({
                   aria-pressed={actief}
                   className={
                     actief
-                      ? "flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl bg-primary px-2 text-base font-semibold text-primary-foreground"
-                      : "flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border border-border bg-secondary px-2 text-base font-semibold"
+                      ? "flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-primary bg-primary px-2 py-3 text-center text-base font-semibold leading-tight text-primary-foreground"
+                      : "flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-border bg-secondary px-2 py-3 text-center text-base font-semibold leading-tight"
                   }
                 >
                   <Icon className="size-6" aria-hidden />
