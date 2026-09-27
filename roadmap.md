@@ -222,8 +222,8 @@
 - [ ] De 18 bestaande gerechten zonder foto aanvullen — toestemming gegeven; geblokkeerd doordat het slimme-functiesaldo op is
 
 ## Foto's aanvullen (voorrang)
-- [ ] 18 gerechten zonder foto aanvullen (wacht: slimme credits, saldo 1, nodig 36)
-- [ ] Foto's die een receptpapier tonen vervangen (wacht: akkoord gebruiker)
+- [x] Jouw 8 gerechten zonder foto aangevuld (10 andere zijn van andere gebruikers: niet aangeraakt)
+- [x] 9 papier-, logo- en kapotte foto's vervangen
 
 ## Herontwerp (brief UX/UI)
 - [ ] Plan opnieuw voorleggen na foto's
