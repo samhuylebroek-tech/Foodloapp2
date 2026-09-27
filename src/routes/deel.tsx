@@ -41,7 +41,7 @@ function DeelPage() {
               "Laat ze deze QR-code scannen met hun telefoon. Ze kunnen meteen verder in de browser, zonder app store."
             )}
           </p>
-          <p className="mx-auto mt-3 inline-block rounded-full bg-emerald-50 px-4 py-1.5 text-sm font-semibold text-emerald-700">
+          <p className="mx-auto mt-3 inline-block rounded-full bg-emerald-50 px-4 py-1.5 text-base font-semibold text-emerald-700">
             {t("Geen App Store of Play Store nodig")}
           </p>
           <div className="mt-6">

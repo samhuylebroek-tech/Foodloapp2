@@ -608,7 +608,7 @@ function VriendenPage() {
               <Search className="size-5" /> Zoeken
             </Button>
           </div>
-          {zoek.length === 1 && <p className="text-sm text-muted-foreground">Typ minstens 2 tekens.</p>}
+          {zoek.length === 1 && <p className="text-base text-muted-foreground">Typ minstens 2 tekens.</p>}
           {gezocht.trim().length >= 2 &&
             (zoekt ? (
               <p className="text-base text-muted-foreground">Even zoeken…</p>
@@ -632,7 +632,7 @@ function VriendenPage() {
                         <div className="min-w-0">
                           <p className="truncate text-base font-semibold">{g.display_name}</p>
                           {g.handle ? (
-                            <p className="truncate text-sm text-muted-foreground">@{g.handle}</p>
+                            <p className="truncate text-base text-muted-foreground">@{g.handle}</p>
                           ) : null}
                         </div>
                       </div>
@@ -647,7 +647,7 @@ function VriendenPage() {
                           <UserPlus className="size-5" /> Uitnodigen
                         </Button>
                       ) : (
-                        <span className="shrink-0 rounded-full bg-card px-3 py-2 text-sm font-semibold text-muted-foreground">
+                        <span className="shrink-0 rounded-full bg-card px-3 py-2 text-base font-semibold text-muted-foreground">
                           {status === "gezin"
                             ? "Gezinslid"
                             : status === "vriend"
@@ -684,7 +684,7 @@ function VriendenPage() {
                 placeholder="Bijvoorbeeld: Marie"
                 className="mt-2 h-14 text-base"
               />
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-1 text-base text-muted-foreground">
                 Zo zie je later meteen naar wie je deze uitnodiging stuurde.
               </p>
             </div>
@@ -829,8 +829,8 @@ function PersoonKaart({
             <span
               className={
                 persoon.gezin
-                  ? "ml-2 inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary"
-                  : "ml-2 inline-flex items-center rounded-full bg-secondary px-3 py-1 text-sm font-semibold text-muted-foreground"
+                  ? "ml-2 inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-base font-semibold text-primary"
+                  : "ml-2 inline-flex items-center rounded-full bg-secondary px-3 py-1 text-base font-semibold text-muted-foreground"
               }
             >
               {persoon.gezin ? "Gezin" : "Vriend"}
@@ -998,7 +998,7 @@ function UitnodigingKaart({
           <p className="break-words text-lg font-semibold leading-snug">
             {naam ?? share.invited_email ?? "Uitnodiging zonder naam"}
           </p>
-          <span className="mt-1 inline-flex items-center rounded-full bg-secondary px-3 py-1 text-sm font-semibold text-muted-foreground">
+          <span className="mt-1 inline-flex items-center rounded-full bg-secondary px-3 py-1 text-base font-semibold text-muted-foreground">
             Link verstuurd
           </span>
         </div>
@@ -1037,7 +1037,7 @@ function UitnodigingKaart({
             ) : (
               <div className="mx-auto size-52 animate-pulse rounded-xl bg-card" />
             )}
-            <p className="break-all rounded-xl bg-card p-3 text-sm leading-relaxed text-muted-foreground">
+            <p className="break-all rounded-xl bg-card p-3 text-base leading-relaxed text-muted-foreground">
               {link}
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">

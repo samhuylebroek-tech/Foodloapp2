@@ -175,7 +175,7 @@ function AanmeldenPage() {
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-border" />
             </div>
-            <span className="relative bg-card px-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="relative bg-card px-4 text-base font-semibold uppercase tracking-wider text-muted-foreground">
               Of met e-mail
             </span>
           </div>
