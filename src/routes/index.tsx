@@ -83,7 +83,10 @@ function StartPage() {
     queryKey: ["home-shopping", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { count } = await supabase.from("shopping_items").select("id", { count: "exact", head: true }).eq("checked", false);
+      // Tel dezelfde lijst die Boodschappen standaard opent, zodat de aantallen overeenkomen.
+      const { data: eerste } = await supabase.from("shopping_lists").select("id").order("created_at").limit(1).maybeSingle();
+      if (!eerste) return 0;
+      const { count } = await supabase.from("shopping_items").select("id", { count: "exact", head: true }).eq("checked", false).eq("list_id", eerste.id);
       return count ?? 0;
     },
   });
