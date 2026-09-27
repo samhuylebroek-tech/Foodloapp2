@@ -180,3 +180,10 @@
 - [x] Automatisch bewaren als concept + "Je was bezig met" in Recepten
 - [x] Vaste Klaar-knop met voortgang, strengere stapkoppeling
 - [ ] Verdere opsplitsing recept-bouwer in losse onderdelen en eigen importcontrolescherm
+
+## Gepland — Weekmenu → boodschappen flow herwerken (brief 27 sep)
+- [ ] Weekmenu opent altijd op vandaag
+- [ ] Geen automatisch samenvoegen bij opnieuw toevoegen vanuit weekmenu
+- [ ] Eén slimme review bij overlappende ingrediënten (geen popup per ingrediënt)
+- [ ] Gebruiker beslist: nog eens toevoegen / niet toevoegen
+- [ ] Volledige brief: /mnt/user-uploads/Ja._Dit_is_een_belangrijke_nuance_niet_pasted.md (1660 regels)
