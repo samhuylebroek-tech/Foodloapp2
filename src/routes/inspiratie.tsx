@@ -177,18 +177,7 @@ function InspiratiePage() {
                   params={{ id: r.id }}
                   className="block overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:shadow-md"
                 >
-                  {r.image_url ? (
-                    <img
-                      src={r.image_url}
-                      alt=""
-                      loading="lazy"
-                      className="aspect-[4/3] w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex aspect-[4/3] w-full items-center justify-center bg-secondary text-3xl" aria-hidden>
-                      🍽️
-                    </div>
-                  )}
+                  <ReceptFoto url={r.image_url} titel={r.title} />
                   <div className="space-y-1 p-3">
                     <p className="line-clamp-2 text-base font-semibold leading-tight">{r.title}</p>
                     <p className="flex items-center gap-2 text-xs text-muted-foreground">
