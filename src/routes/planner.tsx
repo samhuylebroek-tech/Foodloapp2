@@ -498,22 +498,15 @@ function PlannerPage() {
       setNaVoorstel(null);
       return;
     }
-    try {
-      await voegToeAanLijst(
-        user.id,
-        listId,
-        data.map((i) => ({
-          name: i.name as string,
-          quantity: i.quantity as number | null,
-          unit: (i.unit as string) ?? "",
-          recipe_id: i.recipe_id as string,
-        })),
-      );
-      toast.success("Alles staat op je boodschappenlijst");
-      qc.invalidateQueries({ queryKey: ["shopping"] });
-    } catch {
-      toast.error("Toevoegen lukte niet");
-    }
+    await ingredienNaarLijst(
+      data.map((i) => ({
+        name: i.name as string,
+        quantity: i.quantity as number | null,
+        unit: (i.unit as string) ?? "",
+        recipe_id: i.recipe_id as string,
+      })),
+      listId,
+    );
     setNaVoorstel(null);
   }
 
@@ -597,22 +590,15 @@ function PlannerPage() {
       toast.error("Dit gerecht heeft nog geen ingrediënten");
       return;
     }
-    try {
-      await voegToeAanLijst(
-        user.id,
-        listId,
-        data.map((i) => ({
-          name: i.name as string,
-          quantity: i.quantity as number | null,
-          unit: (i.unit as string) ?? "",
-          recipe_id: recipeId,
-        })),
-      );
-      toast.success("Op je boodschappenlijst gezet");
-      qc.invalidateQueries({ queryKey: ["shopping"] });
-    } catch {
-      toast.error("Toevoegen lukte niet");
-    }
+    await ingredienNaarLijst(
+      data.map((i) => ({
+        name: i.name as string,
+        quantity: i.quantity as number | null,
+        unit: (i.unit as string) ?? "",
+        recipe_id: recipeId,
+      })),
+      listId,
+    );
   }
 
   /** Verplaatst of dupliceert een geplande maaltijd naar een andere dag/moment. */
@@ -675,22 +661,15 @@ function PlannerPage() {
       toast.error("Geen ingrediënten gevonden");
       return;
     }
-    try {
-      await voegToeAanLijst(
-        user.id,
-        listId,
-        data.map((i) => ({
-          name: i.name as string,
-          quantity: i.quantity as number | null,
-          unit: (i.unit as string) ?? "",
-          recipe_id: i.recipe_id as string,
-        })),
-      );
-      toast.success("Alles staat op je boodschappenlijst");
-      qc.invalidateQueries({ queryKey: ["shopping"] });
-    } catch {
-      toast.error("Toevoegen lukte niet");
-    }
+    await ingredienNaarLijst(
+      data.map((i) => ({
+        name: i.name as string,
+        quantity: i.quantity as number | null,
+        unit: (i.unit as string) ?? "",
+        recipe_id: i.recipe_id as string,
+      })),
+      listId,
+    );
   }
 
   function verschuif(weken: number) {
