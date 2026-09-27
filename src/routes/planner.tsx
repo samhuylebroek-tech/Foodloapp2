@@ -843,7 +843,7 @@ function PlannerPage() {
               }
               setKiezen({ datum: startDag, moment: momenten[momenten.length - 1] ?? "avondeten", vraagDag: true });
             }}
-            className="h-16 min-w-0 flex-col gap-1 px-1 text-xs sm:flex-row sm:text-base"
+            className="h-16 min-w-0 flex-col gap-1 px-1 text-sm sm:flex-row sm:text-base"
           >
             <Plus className="size-5" /> Toevoegen
           </Button>
@@ -856,14 +856,14 @@ function PlannerPage() {
               }
               setVoorstelOpen(true);
             }}
-            className="h-16 min-w-0 flex-col gap-1 px-1 text-xs sm:flex-row sm:text-base"
+            className="h-16 min-w-0 flex-col gap-1 px-1 text-sm sm:flex-row sm:text-base"
           >
             <Sparkles className="size-5" /> Laat kiezen
           </Button>
           <Button
             variant="outline"
             onClick={() => setBoodschappenOpen(true)}
-            className="h-16 min-w-0 flex-col gap-1 px-1 text-xs sm:flex-row sm:text-base"
+            className="h-16 min-w-0 flex-col gap-1 px-1 text-sm sm:flex-row sm:text-base"
           >
             <ShoppingCart className="size-5" /> Boodschappen
           </Button>
