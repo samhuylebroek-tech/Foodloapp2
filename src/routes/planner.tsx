@@ -1085,6 +1085,7 @@ function ReceptKiezer({
   onNieuw: (naam: string, basis: Basis | null, datum: string, moment: string, extra?: NieuwExtra) => void;
 }) {
   const { user } = useAuth();
+  const demo = isDemo();
   const { taal } = useVoorkeuren();
   const [zoek, setZoek] = useState("");
   const [datum, setDatum] = useState(start.datum);
