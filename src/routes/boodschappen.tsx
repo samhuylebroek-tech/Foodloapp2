@@ -45,6 +45,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmptyState } from "@/components/EmptyState";
+import { WinkelIdeeen } from "@/components/WinkelIdeeen";
 import {
   CATEGORIE_LABEL,
   CATEGORIE_VOLGORDE,
@@ -62,6 +63,7 @@ import {
   maakSuggesties,
   perBeurt,
   vaakGekocht,
+  vaakLosGekocht,
   zetInWachtrij,
   type Vast,
 } from "@/lib/boodschappen-geheugen";
@@ -128,6 +130,45 @@ function BoodschappenPage() {
   const [winkel, setWinkel] = useState(false);
   const [deelOpen, setDeelOpen] = useState(false);
   const [deelLink, setDeelLink] = useState<string | null>(null);
+  const [winkelIdeeen, setWinkelIdeeen] = useState(false);
+  const [vaakAlles, setVaakAlles] = useState(false);
+  // Wanneer werd iets afgevinkt (deze sessie) — het laatst afgevinkte staat bovenaan "In je kar".
+  const [afvinkTijd, setAfvinkTijd] = useState<Record<string, number>>({});
+  // Terugknop: de laatste acties, elk met een manier om ze om te keren.
+  const terugStapel = useRef<{ label: string; draaiOm: () => Promise<void> }[]>([]);
+  const [terugAantal, setTerugAantal] = useState(0);
+  function onthoud(label: string, draaiOm: () => Promise<void>) {
+    terugStapel.current = [...terugStapel.current, { label, draaiOm }].slice(-20);
+    setTerugAantal(terugStapel.current.length);
+  }
+  async function zetTerug() {
+    const stap = terugStapel.current.pop();
+    setTerugAantal(terugStapel.current.length);
+    if (!stap) return;
+    try {
+      await stap.draaiOm();
+      toast.success(stap.label);
+      void meet("boodschappen.terug");
+    } catch {
+      toast.error("Terugzetten lukte niet.");
+    }
+    qc.invalidateQueries({ queryKey: ["shopping"] });
+  }
+  /** Momentopname vóór een toevoeging, zodat we exact kunnen terugkeren. */
+  function snapshotToevoegen(namen: string[]) {
+    const lijstId = actief;
+    const start = new Date(Date.now() - 2000).toISOString();
+    const voor = items.filter((i) => namen.some((n) => zelfdeProduct(i.name, n)));
+    return async () => {
+      if (!lijstId) return;
+      await supabase.from("shopping_items").delete().eq("list_id", lijstId).gte("created_at", start);
+      await Promise.all(
+        voor.map((b) =>
+          supabase.from("shopping_items").update({ quantity: b.quantity, unit: b.unit, checked: b.checked }).eq("id", b.id),
+        ),
+      );
+    };
+  }
 
   const { data: lijsten = [] } = useQuery({
     queryKey: ["shopping-lists", user?.id],
@@ -322,7 +363,9 @@ function BoodschappenPage() {
   const actieveLijst = lijsten.find((l) => l.id === actief);
   const actieveNaam = actieveLijst?.name ?? "";
   const openAantal = items.filter((item) => !item.checked).length;
-  const klaar = items.filter((item) => item.checked);
+  const klaar = items
+    .filter((item) => item.checked)
+    .sort((a, b) => (afvinkTijd[b.id] ?? 0) - (afvinkTijd[a.id] ?? 0));
   const totaal = items.length;
   const procent = totaal ? Math.round((klaar.length / totaal) * 100) : 0;
 
@@ -370,6 +413,11 @@ function BoodschappenPage() {
   const opLijstNamen = items.filter((i) => !i.checked).map((i) => i.name);
   const suggesties = useMemo(() => maakSuggesties(geschiedenis, opLijstNamen), [geschiedenis, items]); // eslint-disable-line react-hooks/exhaustive-deps
   const vaak = useMemo(() => vaakGekocht(geschiedenis).slice(0, 12), [geschiedenis]);
+  const vaakLos = useMemo(() => vaakLosGekocht(geschiedenis), [geschiedenis]);
+  const vaakLosOpen = useMemo(
+    () => vaakLos.filter((e) => !opLijstNamen.some((n) => zelfdeProduct(n, e.name))),
+    [vaakLos, items], // eslint-disable-line react-hooks/exhaustive-deps
+  );
   const beurten = useMemo(() => perBeurt(geschiedenis).slice(0, 10), [geschiedenis]);
   const weekOpen = useMemo(() => {
     const opLijst = new Set(items.map((i) => i.recipe_id).filter(Boolean));
@@ -400,6 +448,7 @@ function BoodschappenPage() {
     // Varianten ("rode ui" vs "ui") blijven bewust apart.
     const bestaand = items.find((i) => zelfdeProduct(i.name, geparsed.name));
     const start = new Date(Date.now() - 2000).toISOString();
+    const draaiOm = snapshotToevoegen([geparsed.name]);
     try {
       await voegToeAanLijst(user.id, actief, [geparsed]);
     } catch {
@@ -408,6 +457,7 @@ function BoodschappenPage() {
     }
     refresh();
     void meet("boodschappen.toegevoegd");
+    onthoud(`${geparsed.name} is weer van je lijst`, draaiOm);
     const lijstId = actief;
     toast.success(
       bestaand ? `${bestaand.name} stond al op je lijst — samengeteld` : `${geparsed.name} staat op je lijst`,
@@ -445,6 +495,7 @@ function BoodschappenPage() {
 
   async function voegMeerdereToe(lijst: { name: string; quantity: number | null; unit: string }[], melding: string) {
     if (!user || !actief || !lijst.length) return;
+    const draaiOm = snapshotToevoegen(lijst.map((l) => l.name));
     try {
       await voegToeAanLijst(user.id, actief, lijst);
     } catch {
@@ -452,7 +503,8 @@ function BoodschappenPage() {
       return;
     }
     refresh();
-    toast.success(melding);
+    onthoud(lijst.length === 1 ? `${lijst[0]!.name} is weer van je lijst` : "Toevoeging teruggedraaid", draaiOm);
+    if (melding) toast.success(melding);
   }
 
   async function zetGerechtOpLijst(recipeId: string, titel: string) {
@@ -498,6 +550,13 @@ function BoodschappenPage() {
     }
     await supabase.from("shopping_items").update({ checked: nieuwWaarde }).eq("id", item.id);
     void meet("boodschappen.afgevinkt");
+    if (nieuwWaarde) setAfvinkTijd((t) => ({ ...t, [item.id]: Date.now() }));
+    onthoud(
+      nieuwWaarde ? `${item.name} staat weer op je lijst` : `${item.name} zit weer in je kar`,
+      async () => {
+        await supabase.from("shopping_items").update({ checked: !nieuwWaarde }).eq("id", item.id);
+      },
+    );
     refresh();
     if (nieuwWaarde) {
       toast.success(`${item.name} gekocht`, {
@@ -517,6 +576,12 @@ function BoodschappenPage() {
     if (!user || !actief) return;
     await supabase.from("shopping_items").delete().eq("id", item.id);
     refresh();
+    const lijstId = actief;
+    onthoud(`${item.name} staat terug op je lijst`, async () => {
+      await supabase.from("shopping_items").insert({
+        user_id: user.id, list_id: lijstId, name: item.name, quantity: item.quantity, unit: item.unit, checked: item.checked, recipe_id: item.recipe_id ?? null,
+      });
+    });
     toast.success(`${item.name} verwijderd`, {
       action: {
         label: "Ongedaan maken",
@@ -547,6 +612,11 @@ function BoodschappenPage() {
         "id",
         open.map((i) => i.id),
       );
+    const nu = Date.now();
+    setAfvinkTijd((t) => ({ ...t, ...Object.fromEntries(open.map((i) => [i.id, nu])) }));
+    onthoud(`${open.length} terug op je lijst`, async () => {
+      await supabase.from("shopping_items").update({ checked: false }).in("id", open.map((i) => i.id));
+    });
     refresh();
   }
 
@@ -593,6 +663,7 @@ function BoodschappenPage() {
       return;
     }
     const maat = belgischeMaat(hoeveelheid, bewerkEenheid);
+    const vorig = bewerkItem;
     const { error } = await supabase
       .from("shopping_items")
       .update({ name: bewerkNaam.trim(), quantity: maat.quantity, unit: maat.unit })
@@ -605,6 +676,9 @@ function BoodschappenPage() {
       zetCategorie(bewerkNaam.trim(), bewerkCategorie);
     }
     setBewerkItem(null);
+    onthoud(`${vorig.name} teruggezet zoals het was`, async () => {
+      await supabase.from("shopping_items").update({ name: vorig.name, quantity: vorig.quantity, unit: vorig.unit }).eq("id", vorig.id);
+    });
     refresh();
     toast.success("Opgeslagen");
   }
@@ -737,6 +811,18 @@ function BoodschappenPage() {
           </p>
         )}
 
+        <div className="sticky top-2 z-30 flex justify-end">
+          <Button
+            variant="outline"
+            onClick={() => void zetTerug()}
+            disabled={terugAantal === 0}
+            className="h-12 rounded-full bg-card px-4 text-base shadow-sm"
+            aria-label="Laatste actie terugzetten"
+          >
+            <Undo2 className="size-5" /> Terug
+          </Button>
+        </div>
+
         {/* 1. Wat moet ik kopen? */}
         <section aria-label="Overzicht" className="rounded-3xl bg-card p-5 ring-1 ring-border/60">
           {lijsten.length > 1 ? (
@@ -796,6 +882,11 @@ function BoodschappenPage() {
               <Plus className="size-6" /> Voeg toe
             </Button>
           </div>
+          <Button variant="secondary" className="h-14 w-full justify-start gap-3 text-base" onClick={() => setWinkelIdeeen(true)}>
+            <ShoppingCart className="size-5" />
+            <span className="flex-1 text-left">Door de winkel — ideeën per afdeling</span>
+            <ChevronRight className="size-5" />
+          </Button>
           {typSuggesties.length > 0 ? (
             <div className="flex flex-wrap gap-2" aria-label="Eerder gekocht">
               {typSuggesties.map((s) => (
@@ -807,23 +898,28 @@ function BoodschappenPage() {
           ) : null}
         </section>
 
-        {/* 3. Voorstellen — alleen als er echt iets is */}
-        {suggesties.length > 0 && (
-          <section aria-label="Misschien heb je dit weer nodig" className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
-            <h2 className="flex items-center gap-2 text-lg font-semibold"><Sparkles className="size-5 text-primary" /> Misschien heb je dit weer nodig</h2>
-            <ul className="mt-2 divide-y divide-border/70">
-              {suggesties.map((s) => (
-                <li key={s.name} className="flex min-h-16 items-center gap-3">
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-lg">{s.name}</span>
-                    <span className="block text-sm text-muted-foreground">{s.reden}</span>
-                  </span>
-                  <Button variant="outline" className="h-12 shrink-0" onClick={() => void voegMeerdereToe([{ name: s.name, quantity: s.quantity, unit: s.unit }], `${s.name} staat op je lijst`)}>
-                    <Plus /> Toevoegen
-                  </Button>
-                </li>
+        {/* 3. Vaak gekocht — alleen echte losse aankopen, nooit verzonnen */}
+        {vaakLosOpen.length > 0 && (
+          <section aria-label="Vaak gekocht" className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
+            <h2 className="flex items-center gap-2 text-lg font-semibold"><Star className="size-5 text-primary" /> Vaak gekocht</h2>
+            <p className="text-sm text-muted-foreground">Wat je vaak los meeneemt. Tik om toe te voegen.</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(vaakAlles ? vaakLosOpen : vaakLosOpen.slice(0, 8)).map((e) => (
+                <Button
+                  key={e.name}
+                  variant="outline"
+                  className="h-12 rounded-full text-base"
+                  onClick={() => { void meet("boodschappen.vaak_gekocht"); void voegMeerdereToe([{ name: e.name, quantity: e.quantity, unit: e.unit }], `${e.name} staat op je lijst`); }}
+                >
+                  <Plus className="size-4" /> {e.name}
+                </Button>
               ))}
-            </ul>
+            </div>
+            {vaakLosOpen.length > 8 ? (
+              <Button variant="ghost" className="mt-2 h-11 text-base" onClick={() => setVaakAlles((v) => !v)}>
+                {vaakAlles ? "Minder tonen" : `Alles tonen (${vaakLosOpen.length})`}
+              </Button>
+            ) : null}
           </section>
         )}
 
@@ -935,10 +1031,10 @@ function BoodschappenPage() {
               );
             })}
             {klaar.length > 0 ? (
-              <Accordion type="single" collapsible className="border-t border-border">
+              <Accordion type="single" collapsible defaultValue="klaar" className="rounded-2xl bg-secondary/50 px-3 ring-1 ring-border/60">
                 <AccordionItem value="klaar" className="border-0">
                   <AccordionTrigger className="min-h-12 px-1 text-sm font-semibold text-muted-foreground no-underline hover:no-underline">
-                    Afgevinkt ({klaar.length})
+                    <span className="flex items-center gap-2"><ShoppingCart className="size-5" /> In je kar ({klaar.length})</span>
                   </AccordionTrigger>
                   <AccordionContent className="space-y-1 pb-2">
                     {klaar.map((item) => (
@@ -971,6 +1067,17 @@ function BoodschappenPage() {
           </AccordionItem>
         </Accordion>
       </div>
+
+      <WinkelIdeeen
+        open={winkelIdeeen}
+        onOpenChange={setWinkelIdeeen}
+        opLijst={opLijstNamen}
+        vaakNamen={vaakLos.map((e) => e.name)}
+        onVoegToe={async (naam) => {
+          void meet("boodschappen.winkel_idee");
+          await voegMeerdereToe([{ name: naam, quantity: null, unit: "" }], "");
+        }}
+      />
 
       <Sheet open={meerOpen} onOpenChange={setMeerOpen}>
         <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto rounded-t-2xl">
