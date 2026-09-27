@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { CATEGORIES, DIFFICULTIES, type Recipe } from "@/lib/types";
 import { DIETEN, bepaalDieet } from "@/lib/dieet";
+import { DEMO_FAVORIETEN, DEMO_INGREDIENTEN, DEMO_RECEPTEN, demoBericht, isDemo } from "@/lib/demo";
 import { Sterren } from "@/components/Sterren";
 import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
@@ -57,6 +58,7 @@ function GerechtenPage() {
   const { user } = useAuth();
   const t = useT();
   const qc = useQueryClient();
+  const demo = isDemo();
   const [zoek, setZoek] = useState("");
   const [categorie, setCategorie] = useState<string | null>(null);
   const [moeilijkheid, setMoeilijkheid] = useState<string | null>(null);
@@ -69,8 +71,9 @@ function GerechtenPage() {
   const [bezig, setBezig] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const { data: recipes = [], isLoading } = useQuery({
+  const { data: recipesDb = [], isLoading } = useQuery({
     queryKey: ["recipes"],
+    enabled: !demo,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("recipes")
@@ -82,10 +85,11 @@ function GerechtenPage() {
       return data as Recipe[];
     },
   });
+  const recipes = demo ? DEMO_RECEPTEN : recipesDb;
 
   const { data: concepten = [] } = useQuery({
     queryKey: ["concepten", user?.id],
-    enabled: !!user,
+    enabled: !!user && !demo,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("recipes")
@@ -100,19 +104,20 @@ function GerechtenPage() {
     },
   });
 
-  const { data: favorites = [] } = useQuery({
+  const { data: favoritesDb = [] } = useQuery({
     queryKey: ["favorites", user?.id],
-    enabled: !!user,
+    enabled: !!user && !demo,
     queryFn: async () => {
       const { data, error } = await supabase.from("favorites").select("recipe_id");
       if (error) throw error;
       return data.map((f) => f.recipe_id as string);
     },
   });
+  const favorites = demo ? DEMO_FAVORIETEN : favoritesDb;
 
   const { data: scores = {} } = useQuery({
     queryKey: ["ratings", user?.id],
-    enabled: !!user,
+    enabled: !!user && !demo,
     queryFn: async () => {
       const { data, error } = await supabase.from("recipe_ratings").select("recipe_id, stars");
       if (error) throw error;
@@ -120,14 +125,18 @@ function GerechtenPage() {
     },
   });
 
-  const { data: alleIngredienten = [] } = useQuery({
+  const { data: alleIngredientenDb = [] } = useQuery({
     queryKey: ["alle-ingredienten"],
+    enabled: !demo,
     queryFn: async () => {
       const { data, error } = await supabase.from("recipe_ingredients").select("recipe_id, name");
       if (error) throw error;
       return data as { recipe_id: string; name: string }[];
     },
   });
+  const alleIngredienten = demo
+    ? Object.values(DEMO_INGREDIENTEN).flat().map((i) => ({ recipe_id: i.recipe_id, name: i.name }))
+    : alleIngredientenDb;
 
   const vreemdeIds = useMemo(
     () => [...new Set(recipes.filter((r) => r.user_id !== user?.id).map((r) => r.user_id))],
@@ -253,6 +262,11 @@ function GerechtenPage() {
   }
 
   async function verwijder(r: Recipe) {
+    if (demo) {
+      demoBericht();
+      setTeVerwijderen(null);
+      return;
+    }
     setBezig(true);
     const { error } = await supabase
       .from("recipes")

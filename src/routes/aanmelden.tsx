@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
+import { Eye, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import logo from "@/assets/logo.png";
 import { appOrigin } from "@/lib/app-url";
+import { startDemo } from "@/lib/demo";
 
 export const Route = createFileRoute("/aanmelden")({
   head: () => ({
@@ -277,6 +278,21 @@ function AanmeldenPage() {
               </>
             )}
           </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              startDemo();
+              navigate({ to: "/" });
+            }}
+            className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-secondary text-base font-semibold text-secondary-foreground transition-colors hover:bg-secondary/80"
+          >
+            <Eye className="size-5" aria-hidden />
+            Verken zonder account
+          </button>
+          <p className="mt-2 text-center text-sm text-muted-foreground">
+            Kijk rustig rond met voorbeeldrecepten. Er wordt niets bewaard.
+          </p>
         </div>
       </div>
     </div>

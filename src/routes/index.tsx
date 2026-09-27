@@ -11,6 +11,7 @@ import { RecipePhoto } from "@/components/RecipePhoto";
 import type { Recipe } from "@/lib/types";
 import { useT } from "@/lib/voorkeuren";
 import { tijdLabel } from "@/lib/tijd";
+import { DEMO_FAVORIETEN, DEMO_RECEPTEN, DEMO_ITEMS, demoPlan, isDemo } from "@/lib/demo";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -40,6 +41,7 @@ function vandaag() {
 function StartPage() {
   const { user } = useAuth();
   const t = useT();
+  const demo = isDemo();
 
   const { data: profiel } = useQuery({
     queryKey: ["home-profiel", user?.id],
@@ -50,28 +52,31 @@ function StartPage() {
     },
   });
 
-  const { data: recipes = [], isLoading } = useQuery({
+  const { data: recipesDb = [], isLoading } = useQuery({
     queryKey: ["recipes"],
+    enabled: !demo,
     queryFn: async () => {
       const { data, error } = await supabase.from("recipes").select("*").is("deleted_at", null).order("created_at", { ascending: false });
       if (error) throw error;
       return data as Recipe[];
     },
   });
+  const recipes = demo ? DEMO_RECEPTEN : recipesDb;
 
-  const { data: favorites = [] } = useQuery({
+  const { data: favoritesDb = [] } = useQuery({
     queryKey: ["favorites", user?.id],
-    enabled: !!user,
+    enabled: !!user && !demo,
     queryFn: async () => {
       const { data, error } = await supabase.from("favorites").select("recipe_id");
       if (error) throw error;
       return data.map((item) => item.recipe_id as string);
     },
   });
+  const favorites = demo ? DEMO_FAVORIETEN : favoritesDb;
 
-  const { data: dagmenu = [] } = useQuery({
+  const { data: dagmenuDb = [] } = useQuery({
     queryKey: ["home-dagmenu", user?.id, vandaag()],
-    enabled: !!user,
+    enabled: !!user && !demo,
     queryFn: async () => {
       const { data } = await supabase
         .from("meal_plan")
@@ -81,15 +86,17 @@ function StartPage() {
       return (data ?? []) as { id: string; custom_title: string | null; meal_type: string; recipe_id: string | null; group_id: string | null; recipes: Recipe | null }[];
     },
   });
+  const dagmenu = demo ? demoPlan().filter((p) => p.plan_date === vandaag()) : dagmenuDb;
 
-  const { data: openItems = 0 } = useQuery({
+  const { data: openItemsDb = 0 } = useQuery({
     queryKey: ["home-shopping", user?.id],
-    enabled: !!user,
+    enabled: !!user && !demo,
     queryFn: async () => {
       const { count } = await supabase.from("shopping_items").select("id", { count: "exact", head: true }).eq("checked", false);
       return count ?? 0;
     },
   });
+  const openItems = demo ? DEMO_ITEMS.filter((i) => !i.checked).length : openItemsDb;
 
   const recent = useMemo(() => {
     const favoriet = recipes.filter((recipe) => favorites.includes(recipe.id));

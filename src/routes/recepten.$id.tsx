@@ -45,6 +45,7 @@ import { toonBelgischeMaat } from "@/lib/ingredienten";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PageSkeleton } from "@/components/PageSkeleton";
+import { DEMO_INGREDIENTEN, DEMO_RECEPTEN, demoBericht, isDemo } from "@/lib/demo";
 
 
 export const Route = createFileRoute("/recepten/$id")({
@@ -82,6 +83,7 @@ function bronNaam(url: string) {
 function ReceptPage() {
   const { id } = Route.useParams();
   const { user } = useAuth();
+  const demo = isDemo();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const t = useT();
@@ -97,7 +99,7 @@ function ReceptPage() {
   const [gekozenLijst, setGekozenLijst] = useState("");
 
   async function vervangFoto(bestand: File) {
-    if (!user) return;
+    if (!user) { if (demo) demoBericht(); return; }
     if (!isAfbeelding(bestand)) {
       toast.error(t("Kies een foto (jpg of png)"));
       return;
@@ -126,6 +128,11 @@ function ReceptPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["recipe", id],
     queryFn: async () => {
+      if (demo) {
+        const recipe = DEMO_RECEPTEN.find((r) => r.id === id);
+        if (!recipe) throw new Error("Niet gevonden");
+        return { recipe, ingredients: DEMO_INGREDIENTEN[id] ?? [] };
+      }
       const [recipeRes, ingRes] = await Promise.all([
         supabase.from("recipes").select("*").eq("id", id).single(),
         supabase
@@ -199,7 +206,7 @@ function ReceptPage() {
 
 
   async function zetScore(n: number) {
-    if (!user) return;
+    if (!user) { if (demo) demoBericht(); return; }
     const { error } = await supabase
       .from("recipe_ratings")
       .upsert({ user_id: user.id, recipe_id: id, stars: n }, { onConflict: "user_id,recipe_id" });
@@ -232,7 +239,7 @@ function ReceptPage() {
     (stapKoppeling[i] ?? []).map((tr) => ({ ...ingredients[tr.idx]!, herhaling: tr.herhaling }));
 
   async function toggleFavorite() {
-    if (!user) return;
+    if (!user) { if (demo) demoBericht(); return; }
     if (isFavorite) {
       await supabase.from("favorites").delete().eq("recipe_id", id).eq("user_id", user.id);
     } else {
@@ -243,7 +250,7 @@ function ReceptPage() {
   }
 
   async function naarBoodschappen(bevestigd = false) {
-    if (!user) return;
+    if (!user) { if (demo) demoBericht(); return; }
     if (staatOpLijst && !bevestigd) {
       setVraagNogmaals(true);
       return;
@@ -274,7 +281,7 @@ function ReceptPage() {
 
 
   async function planOp(datum: string, moment: string) {
-    if (!user) return;
+    if (!user) { if (demo) demoBericht(); return; }
     const { error } = await supabase
       .from("meal_plan")
       .insert({ user_id: user.id, recipe_id: recipe.id, plan_date: datum, meal_type: moment });
@@ -286,7 +293,7 @@ function ReceptPage() {
   }
 
   async function kopieerNaarMij() {
-    if (!user) return;
+    if (!user) { if (demo) demoBericht(); return; }
     const { data, error } = await supabase
       .from("recipes")
       .insert({
