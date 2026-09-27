@@ -960,7 +960,7 @@ function PlannerPage() {
                 <div>
                   <p className="mb-2 text-sm font-semibold text-muted-foreground">Of kies één dag</p>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {zichtbareDagen
+                    {getoondeDagen
                       .filter((dag) => plan.some((p) => p.plan_date === dag && p.recipe_id))
                       .map((dag) => {
                         const aantal = plan.filter((p) => p.plan_date === dag && p.recipe_id).length;
