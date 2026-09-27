@@ -692,7 +692,7 @@ function PlannerPage() {
     );
   }
 
-  /** Alle ingrediënten van één dag (standaard vandaag) in één keer op de lijst. */
+  /** Alle ingrediënten van één gekozen dag in één keer op de lijst. */
   async function boodschappenVoorDag(dag: string) {
     if (!user) return;
     const dagPlan = plan.filter((p) => p.plan_date === dag);
@@ -729,7 +729,7 @@ function PlannerPage() {
         recipe_id: i.recipe_id as string,
       })),
       listId,
-      dag === vandaag ? "vandaag" : labelVoor(dag),
+      labelVoor(dag),
     );
   }
 
@@ -880,57 +880,9 @@ function PlannerPage() {
             onClick={() => setBoodschappenOpen(true)}
             className="h-16 min-w-0 flex-col gap-1 px-1 text-xs sm:flex-row sm:text-base"
           >
-            <ShoppingCart className="size-5" /> Naar lijst
+            <ShoppingCart className="size-5" /> Boodschappen
           </Button>
         </section>
-
-        {week.includes(vandaag) ? (
-          <section
-            aria-label="Vandaag"
-            className="rounded-xl border border-primary/30 bg-accent/40 p-4"
-          >
-            {(() => {
-              const vandaagItems = plan.filter((p) => p.plan_date === vandaag);
-              const metRecept = vandaagItems.filter((p) => p.recipe_id).length;
-              const datum = new Date(`${vandaag}T12:00:00`);
-              return (
-                <>
-                  <p className="text-xs font-bold uppercase tracking-wide text-primary">Vandaag</p>
-                  <h2 className="font-display text-xl capitalize">
-                    {datum.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" })}
-                  </h2>
-                  {vandaagItems.length ? (
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {vandaagItems.length} {vandaagItems.length === 1 ? "gerecht" : "gerechten"} vandaag
-                      {metRecept ? ` · ${metRecept} met recept` : ""}
-                    </p>
-                  ) : (
-                    <p className="mt-1 text-sm text-muted-foreground">Nog niets gepland voor vandaag.</p>
-                  )}
-                  <div className="mt-3 grid gap-2">
-                    {metRecept ? (
-                      <Button
-                        onClick={() => void boodschappenVoorDag(vandaag)}
-                        className="h-14 w-full text-base"
-                      >
-                        <ShoppingCart className="size-5" /> Boodschappen voor vandaag
-                      </Button>
-                    ) : null}
-                    {!vandaagItems.length && momenten.length ? (
-                      <Button
-                        variant="outline"
-                        onClick={() => setKiezen({ datum: vandaag, moment: momenten[momenten.length - 1] ?? "avondeten" })}
-                        className="h-14 w-full text-base"
-                      >
-                        <Plus className="size-5" /> Gerecht toevoegen voor vandaag
-                      </Button>
-                    ) : null}
-                  </div>
-                </>
-              );
-            })()}
-          </section>
-        ) : null}
 
         <div className={weekmenu.weergave === "kaarten" ? "-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2" : "space-y-1"}>
         {zichtbareDagen.map((dag) => {
@@ -990,17 +942,47 @@ function PlannerPage() {
       </div>
 
       <Sheet open={boodschappenOpen} onOpenChange={setBoodschappenOpen}>
-        <SheetContent side="bottom" className="space-y-5">
+        <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Boodschappen voor deze week</SheetTitle>
-            <SheetDescription>Zet de ingrediënten van alle geplande recepten in één keer op een lijst.</SheetDescription>
+            <SheetDescription>Kies de hele week, of alleen een dag waarop je iets gepland hebt.</SheetDescription>
           </SheetHeader>
-          {lijsten.length > 1 ? <select value={lijstId || (weergave === "gezin" && gezinsLijst ? gezinsLijst.id : lijsten[0]?.id ?? "")} onChange={(e) => setLijstId(e.target.value)} aria-label="Naar welk lijstje?" className="h-14 w-full rounded-xl border border-input bg-card px-3 text-base">{lijsten.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select> : null}
-          {week.includes(vandaag) && plan.some((p) => p.plan_date === vandaag && p.recipe_id) ? (
-            <Button onClick={() => { void boodschappenVoorDag(vandaag); setBoodschappenOpen(false); }} className="h-14 w-full text-base"><ShoppingCart className="size-5" /> Boodschappen voor vandaag</Button>
-          ) : null}
-          <Button variant={week.includes(vandaag) && plan.some((p) => p.plan_date === vandaag && p.recipe_id) ? "outline" : "default"} onClick={() => { void alleBoodschappen(); setBoodschappenOpen(false); }} disabled={!plan.length} className="h-14 w-full text-base"><ShoppingCart className="size-5" /> Hele week op de lijst</Button>
-          <Button variant="outline" asChild className="h-14 w-full text-base"><Link to="/boodschappen">Open boodschappen</Link></Button>
+          <div className="mt-5 space-y-4">
+            {lijsten.length > 1 ? <select value={lijstId || (weergave === "gezin" && gezinsLijst ? gezinsLijst.id : lijsten[0]?.id ?? "")} onChange={(e) => setLijstId(e.target.value)} aria-label="Naar welk lijstje?" className="h-14 w-full rounded-xl border border-input bg-card px-3 text-base">{lijsten.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select> : null}
+            {plan.some((p) => p.recipe_id) ? (
+              <>
+                <Button onClick={() => { void alleBoodschappen(); setBoodschappenOpen(false); }} className="h-16 w-full text-base">
+                  <ShoppingCart className="size-5" /> Hele week op de lijst
+                </Button>
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-muted-foreground">Of kies één dag</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {zichtbareDagen
+                      .filter((dag) => plan.some((p) => p.plan_date === dag && p.recipe_id))
+                      .map((dag) => {
+                        const aantal = plan.filter((p) => p.plan_date === dag && p.recipe_id).length;
+                        return (
+                          <Button
+                            key={dag}
+                            variant="outline"
+                            onClick={() => { void boodschappenVoorDag(dag); setBoodschappenOpen(false); }}
+                            className="h-14 w-full justify-between px-4 text-base capitalize"
+                          >
+                            <span>{labelVoor(dag)}</span>
+                            <span className="text-sm font-normal text-muted-foreground">{aantal} {aantal === 1 ? "gerecht" : "gerechten"}</span>
+                          </Button>
+                        );
+                      })}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p role="status" className="rounded-xl bg-secondary p-4 text-base text-secondary-foreground">
+                In deze week staan nog geen gerechten met een recept. Plan eerst een recept om de ingrediënten toe te voegen.
+              </p>
+            )}
+            <Button variant="outline" asChild className="h-14 w-full text-base"><Link to="/boodschappen">Open mijn boodschappenlijst</Link></Button>
+          </div>
         </SheetContent>
       </Sheet>
 
