@@ -42,6 +42,27 @@ function tijdLabel(r: { prep_minutes: number; cook_minutes: number }): string {
   return totaal > 0 ? `${totaal} min` : "";
 }
 
+/** Foto met nette terugval als de afbeelding ontbreekt of niet laadt. */
+function ReceptFoto({ url, titel }: { url: string | null; titel: string }) {
+  const [kapot, setKapot] = useState(false);
+  if (!url || kapot) {
+    return (
+      <div className="flex aspect-[4/3] w-full items-center justify-center bg-secondary text-3xl" aria-hidden>
+        🍽️
+      </div>
+    );
+  }
+  return (
+    <img
+      src={url}
+      alt={titel}
+      loading="lazy"
+      onError={() => setKapot(true)}
+      className="aspect-[4/3] w-full object-cover"
+    />
+  );
+}
+
 function InspiratiePage() {
   const navigate = useNavigate();
   const [filters, setFilters] = useState<InspiratieFilters>(LEGE_FILTERS);
