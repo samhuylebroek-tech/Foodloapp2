@@ -35,6 +35,7 @@ function InspiratieDetailPage() {
   const [bezig, setBezig] = useState(false);
   const [toegevoegd, setToegevoegd] = useState<{ recipeId: string; bestondAl: boolean } | null>(null);
   const [bereidingOpen, setBereidingOpen] = useState(false);
+  const [fotoKapot, setFotoKapot] = useState(false);
 
   const { data: recept, isLoading } = useQuery({
     queryKey: ["inspiratie", id],
@@ -101,8 +102,13 @@ function InspiratieDetailPage() {
           </Link>
         </Button>
 
-        {recept.image_url ? (
-          <img src={recept.image_url} alt="" className="aspect-[16/9] w-full rounded-xl object-cover" />
+        {recept.image_url && !fotoKapot ? (
+          <img
+            src={recept.image_url}
+            alt=""
+            onError={() => setFotoKapot(true)}
+            className="aspect-[16/9] w-full rounded-xl object-cover"
+          />
         ) : null}
 
         <div>
