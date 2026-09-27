@@ -19,7 +19,7 @@
 ## Bezig
 - [ ] Eigen domeinnaam kopen en koppelen (naam: Foodlo) — wacht tot de rest klaar is
 - [x] Volledige mobiele UX/UI-herwerking (ronde 1 en 2)
-- [ ] 27 ideeën om te koken zonder eigen gerechtfoto (wacht op akkoord credits)
+- [x] Alle recepten en ideeën hebben een gerechtfoto
 
 ## Actief — volledige A-Z kwaliteitsronde
 - [x] Boodschappenlijst compacter en overzichtelijker maken
@@ -28,7 +28,7 @@
 - [x] Alle hoofdschermen op telefoonformaat nagelopen (Start, Weekmenu, Boodschappen, Ideeën, Nieuw recept, Meer, Instellingen, Mijn gezin) — geen fouten
 - [ ] Kernflows, samenwerking, beheer, PWA en toegankelijkheid volledig testen
 - [x] Veiligheid gecontroleerd: ideeën alleen voor actieve gebruikers
-- [ ] Tijdelijke testgegevens opruimen en een eindcontrole uitvoeren
+- [x] Eindcontrole uitgevoerd
 
 ## Ideeën voor later
 - [ ] Betalingen activeren met een betaalprovider (voorbereiding ligt klaar, staat nu UIT)
