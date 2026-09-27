@@ -227,3 +227,6 @@
 
 ## Herontwerp (brief UX/UI)
 - [ ] Plan opnieuw voorleggen na foto's
+
+- [x] Herontwerp ronde 1: kleuren, één lettertype, bovenbalk met "Terug", menu met volledige labels, nieuwe Start, Meer, weekmenu met één hoofdknop, "Ongedaan maken"
+- [ ] Herontwerp ronde 2: recept toevoegen, inspiratie, kookstand, kaarten, gezin, instellingen, welkom
