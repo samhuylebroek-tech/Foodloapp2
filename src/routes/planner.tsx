@@ -981,9 +981,6 @@ function PlannerPage() {
               <Sparkles className="size-5" /> Laat Foodlo kiezen
             </Button>
           </div>
-          <Button variant="ghost" onClick={() => setHeleWeek((w) => !w)} className="h-14 w-full text-base text-primary">
-            {heleWeek ? "Terug naar één dag" : "Hele week bekijken"}
-          </Button>
         </section>
       </div>
 
