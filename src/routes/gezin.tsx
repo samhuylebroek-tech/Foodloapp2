@@ -484,11 +484,11 @@ function GezinPage() {
                       sleutel={l.user_id}
                       className="size-12"
                     />
-                    <p className="min-w-0 flex-1 truncate text-lg font-semibold">
+                    <p className="min-w-0 flex-1 text-lg font-semibold">
                       {l.user_id === user?.id ? "Jij" : (namen[l.user_id] ?? "Gezinslid")}{" "}
                       {l.rol === "eigenaar" && (
-                        <span className="ml-2 rounded-full bg-secondary px-3 py-1 text-sm font-semibold text-muted-foreground">
-                          gestart door
+                        <span className="mt-0.5 block text-sm font-normal text-muted-foreground">
+                          heeft het gezin gestart
                         </span>
                       )}
                     </p>
@@ -497,16 +497,16 @@ function GezinPage() {
                     <Link
                       to="/vrienden/$id"
                       params={{ id: l.user_id }}
-                      className="mt-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-base font-semibold text-primary-foreground"
+                      className="mt-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-5 text-base font-semibold hover:bg-muted"
                     >
                       <ChefHat className="size-5" aria-hidden /> Bekijk hun gerechten
                     </Link>
                   )}
                   {ikBenEigenaar && l.user_id !== user?.id && (
                     <Button
-                      variant="secondary"
-                      onClick={() => verwijderLid.mutate(l.id)}
-                      className="mt-3 h-14 w-full text-base"
+                      variant="ghost"
+                      onClick={() => { if (window.confirm("Wil je deze persoon echt uit het gezin halen?")) verwijderLid.mutate(l.id); }}
+                      className="mt-2 h-14 w-full text-base text-destructive hover:text-destructive"
                     >
                       <Trash2 className="size-5" /> Uit het gezin halen
                     </Button>
@@ -549,9 +549,9 @@ function GezinPage() {
 
             {mijnRij && (
               <Button
-                variant="secondary"
-                onClick={() => verwijderLid.mutate(mijnRij.id)}
-                className="h-14 w-full text-base"
+                variant="ghost"
+                onClick={() => { if (window.confirm("Wil je het gezin echt verlaten?")) verwijderLid.mutate(mijnRij.id); }}
+                className="h-14 w-full text-base text-destructive hover:text-destructive"
               >
                 <LogOut className="size-5" /> Het gezin verlaten
               </Button>
