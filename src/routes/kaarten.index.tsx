@@ -243,7 +243,7 @@ function ToevoegVenster({
 
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-foreground/40 p-0 sm:items-center sm:p-6">
-      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-[2rem] bg-card p-5 sm:rounded-[2rem]">
+      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-[2rem] bg-card p-5 sm:rounded-2xl">
         <h2 className="text-xl font-bold">Kaart toevoegen</h2>
 
         <div className="mt-4 space-y-3">

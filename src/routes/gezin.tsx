@@ -311,7 +311,7 @@ function GezinPage() {
           </section>
         ) : (
           <>
-            <section className="space-y-3 rounded-3xl border border-border bg-card p-5">
+            <section className="space-y-3 rounded-2xl border border-border bg-card p-5">
               <h2 className="font-display text-xl">{data.groep.naam}</h2>
               {ikBenEigenaar && (
                 <Input
