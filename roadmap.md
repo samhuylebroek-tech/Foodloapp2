@@ -181,15 +181,13 @@
 - [x] Vaste Klaar-knop met voortgang, strengere stapkoppeling
 - [ ] Verdere opsplitsing recept-bouwer in losse onderdelen en eigen importcontrolescherm
 
-## Gepland — Weekmenu → boodschappen flow herwerken (brief 27 sep)
-- [ ] Weekmenu opent altijd op vandaag
-- [ ] Geen automatisch samenvoegen bij opnieuw toevoegen vanuit weekmenu
-- [ ] Eén slimme review bij overlappende ingrediënten (geen popup per ingrediënt)
-- [ ] Gebruiker beslist: nog eens toevoegen / niet toevoegen
+## Klaar — Weekmenu → boodschappen flow herwerken (brief 27 sep)
+- [x] Weekmenu opent altijd op vandaag (scrollt eenmalig naar de dag van vandaag)
+- [x] Geen automatisch samenvoegen bij opnieuw toevoegen vanuit weekmenu
+- [x] Eén slimme review bij overlappende ingrediënten (geen popup per ingrediënt)
+- [x] Gebruiker beslist per ingrediënt: nog eens toevoegen / niet toevoegen
+- [x] Getest op 390x844: eerste toevoeging direct, tweede keer controlevenster, geen fouten
 - [ ] Volledige brief: /mnt/user-uploads/Ja._Dit_is_een_belangrijke_nuance_niet_pasted.md (1660 regels)
 
-## Klaar — Demo-modus (27 sep)
-- [x] "Verken zonder account" op de aanmeldpagina
-- [x] Voorbeeldrecepten, weekmenu (incl. vandaag), boodschappenlijst en favorieten
-- [x] Demo-balk met Account maken / Stop; schrijfacties tonen vriendelijke melding
-- [x] Getest op 390x844 en 1280x1800, kookstand inbegrepen, geen fouten
+## Klaar — Demo-modus verwijderd (27 sep)
+- [x] Demo-modus volledig verwijderd (src/lib/demo.ts weg, alle schermen weer alleen echte gegevens)
