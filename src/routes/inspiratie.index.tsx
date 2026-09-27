@@ -180,10 +180,10 @@ function InspiratiePage() {
                   <ReceptFoto pad={r.image_url} titel={r.title} />
                   <div className="space-y-1 p-3">
                     <p className="line-clamp-2 text-base font-semibold leading-tight">{r.title}</p>
-                    <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
                       {r.category ? <span className="capitalize">{r.category}</span> : null}
                       {tijdLabel(r) ? (
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1 whitespace-nowrap">
                           <Clock3 className="size-3" /> {tijdLabel(r)}
                         </span>
                       ) : null}
