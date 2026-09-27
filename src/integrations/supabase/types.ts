@@ -884,6 +884,103 @@ export type Database = {
         }
         Relationships: []
       }
+      inspiration_ingredients: {
+        Row: {
+          id: string
+          inspiration_id: string
+          name: string
+          position: number
+          quantity: number | null
+          unit: string
+        }
+        Insert: {
+          id?: string
+          inspiration_id: string
+          name: string
+          position?: number
+          quantity?: number | null
+          unit?: string
+        }
+        Update: {
+          id?: string
+          inspiration_id?: string
+          name?: string
+          position?: number
+          quantity?: number | null
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspiration_ingredients_inspiration_id_fkey"
+            columns: ["inspiration_id"]
+            isOneToOne: false
+            referencedRelation: "inspiration_recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspiration_recipes: {
+        Row: {
+          bron_recipe_id: string | null
+          category: string
+          cook_minutes: number
+          created_at: string
+          description: string
+          difficulty: string
+          fingerprint: string
+          id: string
+          image_url: string | null
+          instructions: string[]
+          prep_minutes: number
+          servings: number
+          step_ingredients: Json | null
+          tags: string[]
+          title: string
+        }
+        Insert: {
+          bron_recipe_id?: string | null
+          category?: string
+          cook_minutes?: number
+          created_at?: string
+          description?: string
+          difficulty?: string
+          fingerprint: string
+          id?: string
+          image_url?: string | null
+          instructions?: string[]
+          prep_minutes?: number
+          servings?: number
+          step_ingredients?: Json | null
+          tags?: string[]
+          title: string
+        }
+        Update: {
+          bron_recipe_id?: string | null
+          category?: string
+          cook_minutes?: number
+          created_at?: string
+          description?: string
+          difficulty?: string
+          fingerprint?: string
+          id?: string
+          image_url?: string | null
+          instructions?: string[]
+          prep_minutes?: number
+          servings?: number
+          step_ingredients?: Json | null
+          tags?: string[]
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspiration_recipes_bron_recipe_id_fkey"
+            columns: ["bron_recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_cards: {
         Row: {
           created_at: string
