@@ -862,6 +862,7 @@ function BoodschappenPage() {
             {kiesModus && (
               <div className="sticky top-2 z-20 flex flex-wrap items-center gap-2 rounded-2xl bg-primary p-3 text-primary-foreground">
                 <p className="flex-1 text-base font-semibold">{gekozen.size} gekozen</p>
+                <Button variant="secondary" className="h-11" onClick={() => { setKiesModus(false); setGekozen(new Set()); }}>Stoppen</Button>
                 {lijsten.filter((l) => l.id !== actief).length > 0 && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -1126,18 +1127,43 @@ function BoodschappenPage() {
         <DialogContent className="rounded-2xl sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Boodschap aanpassen</DialogTitle>
-            <DialogDescription>Pas de naam, hoeveelheid of eenheid aan.</DialogDescription>
+            <DialogDescription>
+              {bewerkItem?.recept ? `Voor het gerecht “${bewerkItem.recept}”.` : "Pas aan wat je wilt en tik op Opslaan."}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <Input autoFocus aria-label="Naam" value={bewerkNaam} onChange={(event) => setBewerkNaam(event.target.value)} className="h-14 text-base" />
+            <label className="block text-sm font-semibold">Naam
+              <Input autoFocus value={bewerkNaam} onChange={(event) => setBewerkNaam(event.target.value)} className="mt-1 h-14 text-base" />
+            </label>
             <div className="grid grid-cols-2 gap-3">
-              <Input inputMode="decimal" aria-label="Hoeveelheid" placeholder="Hoeveelheid" value={bewerkAantal} onChange={(event) => setBewerkAantal(event.target.value)} className="h-14 text-base" />
-              <Input aria-label="Eenheid" placeholder="Eenheid" value={bewerkEenheid} onChange={(event) => setBewerkEenheid(event.target.value)} className="h-14 text-base" />
+              <label className="block text-sm font-semibold">Hoeveel
+                <Input inputMode="decimal" placeholder="bv. 2" value={bewerkAantal} onChange={(event) => setBewerkAantal(event.target.value)} className="mt-1 h-14 text-base" />
+              </label>
+              <label className="block text-sm font-semibold">Eenheid
+                <Input placeholder="bv. kg, stuk(s)" value={bewerkEenheid} onChange={(event) => setBewerkEenheid(event.target.value)} className="mt-1 h-14 text-base" />
+              </label>
             </div>
+            <label className="block text-sm font-semibold">Afdeling
+              <select
+                value={bewerkCategorie}
+                onChange={(e) => setBewerkCategorie(e.target.value as CategorieId)}
+                className="mt-1 h-14 w-full rounded-xl border border-input bg-background px-3 text-base"
+              >
+                {CATEGORIE_VOLGORDE.map((c) => <option key={c} value={c}>{CATEGORIE_LABEL[c]}</option>)}
+              </select>
+            </label>
+            {bewerkItem ? (
+              <Button variant="outline" className="h-14 w-full justify-start text-base" onClick={() => void wisselVast(bewerkItem)}>
+                <Star className={isVast(bewerkItem.name) ? "fill-current text-primary" : ""} />
+                {isVast(bewerkItem.name) ? "Vaste boodschap (tik om te stoppen)" : "Maak er een vaste boodschap van"}
+              </Button>
+            ) : null}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setBewerkItem(null)}>Annuleren</Button>
-            <Button onClick={() => void bewaarItem()}>Bewaren</Button>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" className="text-destructive" onClick={() => { const i = bewerkItem; setBewerkItem(null); if (i) void verwijder(i); }}>
+              <Trash2 /> Verwijderen
+            </Button>
+            <Button onClick={() => void bewaarItem()}>Opslaan</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1192,16 +1218,37 @@ function BoodschappenPage() {
 }
 
 /** Schermvullende weergave om in de winkel af te vinken, afdeling per afdeling. */
+function GeheugenRij({ naam, sub, vast, onVast, onPlus }: { naam: string; sub: string; vast: boolean; onVast: () => void; onPlus: () => void }) {
+  return (
+    <li className="flex min-h-16 items-center gap-2">
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-lg">{naam}</span>
+        {sub ? <span className="block text-sm text-muted-foreground">{sub}</span> : null}
+      </span>
+      <Button variant="ghost" size="icon" className="size-12 shrink-0" aria-pressed={vast} aria-label={vast ? `${naam} is een vaste boodschap` : `Maak ${naam} een vaste boodschap`} onClick={onVast}>
+        <Star className={vast ? "size-6 fill-current text-primary" : "size-6 text-muted-foreground"} />
+      </Button>
+      <Button variant="outline" className="h-12 shrink-0" onClick={onPlus} aria-label={`${naam} op je lijst zetten`}>
+        <Plus /> Lijst
+      </Button>
+    </li>
+  );
+}
+
 function Winkelmodus({
   groepen,
   openAantal,
+  aantalGekocht,
   onVink,
   onSluit,
+  onOpruimen,
 }: {
   groepen: { id: CategorieId; lijst: Item[] }[];
   openAantal: number;
+  aantalGekocht: number;
   onVink: (item: Item) => void;
   onSluit: () => void;
+  onOpruimen: () => void;
 }) {
   const [stap, setStap] = useState(0);
 
@@ -1255,10 +1302,14 @@ function Winkelmodus({
             ))}
           </ul>
         ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-            <CheckCheck className="size-12 text-primary" />
-            <p className="text-2xl font-semibold">Alles gehaald</p>
-            <Button className="h-14 px-6 text-lg" onClick={onSluit}>Klaar</Button>
+          <div className="flex h-full flex-col items-center justify-center gap-4 px-4 text-center">
+            <CheckCheck className="size-14 text-primary" />
+            <p className="font-display text-3xl font-semibold">Klaar! Alles gekocht</p>
+            {aantalGekocht > 0 ? (
+              <Button className="h-16 w-full max-w-sm text-lg" onClick={onOpruimen}>Lijst leegmaken</Button>
+            ) : null}
+            <Button variant="outline" className="h-14 w-full max-w-sm text-lg" onClick={onSluit}>Nog iets vergeten</Button>
+            <p className="text-sm text-muted-foreground">Wat je kocht, vind je later terug bij “Eerder gekocht”.</p>
           </div>
         )}
       </div>
