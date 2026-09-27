@@ -128,6 +128,11 @@ function ReceptPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["recipe", id],
     queryFn: async () => {
+      if (demo) {
+        const recipe = DEMO_RECEPTEN.find((r) => r.id === id);
+        if (!recipe) throw new Error("Niet gevonden");
+        return { recipe, ingredients: DEMO_INGREDIENTEN[id] ?? [] };
+      }
       const [recipeRes, ingRes] = await Promise.all([
         supabase.from("recipes").select("*").eq("id", id).single(),
         supabase
