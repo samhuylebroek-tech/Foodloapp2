@@ -182,18 +182,18 @@ export function AppShell({
         className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card lg:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <ul className="mx-auto grid max-w-lg grid-cols-5 items-stretch px-1 pt-1">
+        <ul className="mx-auto flex max-w-lg items-stretch px-0.5 pt-1">
           {TABS.map((item) => {
             const active = isActief(item.to);
             const Icon = item.icon;
             return (
-              <li key={item.to} className="min-w-0">
+              <li key={item.to} className={item.to === "/boodschappen" ? "min-w-0 flex-[1.45]" : item.to === "/meer" ? "min-w-0 flex-[0.8]" : "min-w-0 flex-1"}>
                 <Link
                   to={item.to}
                   data-tour={`tab-${item.to}`}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex min-h-18 flex-col items-center justify-center gap-1 px-0.5 pb-2 pt-1 text-[0.68rem] font-semibold tracking-tight transition-colors",
+                    "flex min-h-18 flex-col items-center justify-center gap-1 px-0 pb-2 pt-1 text-[0.84rem] font-semibold tracking-tight transition-colors",
                     active ? "text-foreground" : "text-muted-foreground",
                   )}
                 >
