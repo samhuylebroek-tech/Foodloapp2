@@ -83,6 +83,7 @@ function bronNaam(url: string) {
 function ReceptPage() {
   const { id } = Route.useParams();
   const { user } = useAuth();
+  const demo = isDemo();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const t = useT();
