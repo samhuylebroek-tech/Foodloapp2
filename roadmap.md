@@ -25,6 +25,7 @@
 - [x] Boodschappenlijst compacter en overzichtelijker maken
 - [x] Alles of alle afgevinkte boodschappen in één keer kunnen verwijderen
 - [x] Bestaande boodschappen snel en duidelijk kunnen aanpassen
+- [x] Alle hoofdschermen op telefoonformaat nagelopen (Start, Weekmenu, Boodschappen, Ideeën, Nieuw recept, Meer, Instellingen, Mijn gezin) — geen fouten
 - [ ] Kernflows, samenwerking, beheer, PWA en toegankelijkheid volledig testen
 - [ ] Veiligheid, prestaties en AI-kosten controleren en noodzakelijke problemen herstellen
 - [ ] Tijdelijke testgegevens opruimen en een eindcontrole uitvoeren
