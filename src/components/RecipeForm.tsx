@@ -1329,10 +1329,12 @@ export function RecipeForm({
           />
         </div>
 
-        <Voedingswaarden
-          ingredienten={parseIngredientText(ingredientTekst)}
-          porties={Number(servings) || 1}
-        />
+        {ingredientTekst.trim() && (
+          <Voedingswaarden
+            ingredienten={parseIngredientText(ingredientTekst)}
+            porties={Number(servings) || 1}
+          />
+        )}
 
         <div>
           <Label htmlFor="stappen" className="text-base">
