@@ -273,17 +273,9 @@ function PlannerPage() {
     },
   });
 
-  // Het weekmenu opent op vandaag: scroll de dag van vandaag in beeld zodra
-  // de dagen gerenderd zijn (eenmalig).
-  const naarVandaagGescrold = useRef(false);
-  useEffect(() => {
-    if (naarVandaagGescrold.current) return;
-    const el = document.getElementById(`dag-${datumTekst(new Date())}`);
-    if (el) {
-      naarVandaagGescrold.current = true;
-      el.scrollIntoView({ block: "start" });
-    }
-  });
+  // Het weekmenu opent op vandaag: de dag van vandaag is al gekozen en
+  // gemarkeerd in de weekbalk, dus we scrollen niet automatisch naar beneden —
+  // anders verdwijnt de weekwisseling uit beeld.
 
   // Het gezinsweekmenu ververst mee als een ander gezinslid iets aanpast.
   useEffect(() => {
