@@ -17,8 +17,6 @@ import logo from "@/assets/logo.png";
 import { Aankondigingen } from "@/components/Aankondigingen";
 import { MeldingVraag, telAanmelding } from "@/components/MeldingVraag";
 import { meet } from "@/lib/meten";
-import { isDemo, stopDemo } from "@/lib/demo";
-import { Button } from "@/components/ui/button";
 
 const NAV = [
   { to: "/", label: "Start", icon: Home },
@@ -48,7 +46,6 @@ export function AppShell({
 }) {
   const { session, loading } = useAuth();
   const t = useT();
-  const demo = isDemo();
 
   const navigate = useNavigate();
   const router = useRouter();
@@ -61,8 +58,8 @@ export function AppShell({
   }
 
   useEffect(() => {
-    if (!loading && !session && !demo) navigate({ to: "/aanmelden" });
-  }, [loading, session, demo, navigate]);
+    if (!loading && !session) navigate({ to: "/aanmelden" });
+  }, [loading, session, navigate]);
 
   // Nieuwe gebruikers eerst door de instelstappen loodsen.
   const { data: profiel } = useQuery({
@@ -91,7 +88,7 @@ export function AppShell({
     if (session) telAanmelding();
   }, [session]);
 
-  if (loading || (!session && !demo)) {
+  if (loading || !session) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <p className="text-lg text-muted-foreground">{t("Even geduld…")}</p>
@@ -174,19 +171,6 @@ export function AppShell({
           </header>
 
           <main className="mx-auto w-full max-w-3xl overflow-x-hidden px-4 py-6 pb-32 sm:px-6 lg:max-w-4xl lg:py-8 lg:pb-16">
-            {demo && !session ? (
-              <div className="mb-6 flex items-center gap-2 rounded-2xl bg-accent px-4 py-2.5 ring-1 ring-border/60" role="status">
-                <p className="min-w-0 flex-1 text-sm font-semibold text-accent-foreground">
-                  {t("Je bekijkt een voorbeeld")}
-                </p>
-                <Button size="sm" className="shrink-0" onClick={() => { stopDemo(); navigate({ to: "/aanmelden" }); }}>
-                  {t("Account maken")}
-                </Button>
-                <Button size="sm" variant="ghost" className="shrink-0" onClick={() => { stopDemo(); navigate({ to: "/aanmelden" }); }}>
-                  {t("Stop")}
-                </Button>
-              </div>
-            ) : null}
             <Aankondigingen />
             {children}
             <MeldingVraag actief={pathname === "/"} />
