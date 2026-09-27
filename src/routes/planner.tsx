@@ -781,7 +781,7 @@ function PlannerPage() {
               {dag === vandaag ? "Vandaag" : voorbij ? "Voorbij" : dag === datumTekst(new Date(Date.now() + 86400000)) ? "Morgen" : "Gepland"}
             </p>
           ) : null}
-          <h2 id={`dag-${dag}`} className={groot ? "text-paginatitel capitalize" : "text-sectietitel capitalize"}>
+          <h2 id={`dag-${dag}`} className={groot ? "text-paginatitel first-letter:uppercase" : "text-sectietitel first-letter:uppercase"}>
             {titel}
             {!groot && dag === vandaag ? <span className="ml-2 align-middle text-base font-semibold text-honing-foreground"> · vandaag</span> : null}
           </h2>
@@ -790,7 +790,7 @@ function PlannerPage() {
           const bij = items.filter((p) => p.meal_type === m);
           return (
             <div key={m} className="space-y-2">
-              <h3 className="text-base font-semibold capitalize text-foreground">{m}</h3>
+              <h3 className="text-base font-semibold text-foreground first-letter:uppercase">{m}</h3>
               {bij.length ? (
                 <ul className="space-y-2">{bij.map(kaart)}</ul>
               ) : voorbij ? (
@@ -918,7 +918,7 @@ function PlannerPage() {
           <Button onClick={() => setBoodschappenOpen(true)} className="h-16 w-full gap-3 text-lg">
             <ShoppingCart className="size-6" /> Boodschappen voor deze week
           </Button>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Button
               variant="outline"
               onClick={() => {
