@@ -65,7 +65,7 @@ function Welkom() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background px-5 pb-10 pt-[max(1.5rem,env(safe-area-inset-top))]">
+    <div className="flex min-h-screen flex-col bg-background px-5 pt-[max(1.5rem,env(safe-area-inset-top))]">
       <div className="mx-auto w-full max-w-xl">
         <div className="flex items-center gap-3">
           <div className="flex size-12 items-center justify-center rounded-xl bg-secondary">
@@ -99,10 +99,11 @@ function Welkom() {
                 aria-pressed={taal === l.code}
                 className={
                   taal === l.code
-                    ? "min-h-16 rounded-2xl bg-primary px-3 text-base font-semibold text-primary-foreground shadow-md shadow-primary/15"
-                    : "min-h-16 rounded-2xl border border-border bg-card px-3 text-base font-semibold hover:bg-muted"
+                    ? "flex min-h-16 items-center justify-center gap-2 rounded-2xl border-2 border-primary bg-secondary px-3 text-base font-semibold text-foreground"
+                    : "flex min-h-16 items-center justify-center gap-2 rounded-2xl border-2 border-transparent bg-card px-3 text-base font-semibold ring-1 ring-border hover:bg-muted"
                 }
               >
+                {taal === l.code && <Check className="size-5 text-primary" aria-hidden />}
                 {l.label}
               </button>
             ))}
@@ -120,10 +121,11 @@ function Welkom() {
                 aria-pressed={thema === k.id}
                 className={
                   thema === k.id
-                    ? "min-h-16 rounded-2xl bg-primary px-3 text-base font-semibold text-primary-foreground shadow-md shadow-primary/15"
-                    : "min-h-16 rounded-2xl border border-border bg-card px-3 text-base font-semibold hover:bg-muted"
+                    ? "flex min-h-16 items-center justify-center gap-2 rounded-2xl border-2 border-primary bg-secondary px-3 text-base font-semibold text-foreground"
+                    : "flex min-h-16 items-center justify-center gap-2 rounded-2xl border-2 border-transparent bg-card px-3 text-base font-semibold ring-1 ring-border hover:bg-muted"
                 }
               >
+                {thema === k.id && <Check className="size-5 text-primary" aria-hidden />}
                 {t(k.label)}
               </button>
             ))}
@@ -139,11 +141,12 @@ function Welkom() {
               aria-pressed={!eenBlok}
               className={
                 !eenBlok
-                  ? "min-h-16 w-full rounded-2xl bg-primary px-4 text-left text-base font-semibold text-primary-foreground"
-                  : "min-h-16 w-full rounded-2xl border border-border bg-card px-4 text-left text-base font-semibold hover:bg-muted"
+                  ? "flex min-h-16 w-full items-center justify-between gap-2 rounded-2xl border-2 border-primary bg-secondary px-4 text-left text-base font-semibold"
+                  : "flex min-h-16 w-full items-center justify-between gap-2 rounded-2xl border-2 border-transparent bg-card px-4 text-left text-base font-semibold ring-1 ring-border hover:bg-muted"
               }
             >
               {t("Ontbijt, middageten en avondeten")}
+              {!eenBlok && <Check className="size-5 shrink-0 text-primary" aria-hidden />}
             </button>
             <button
               type="button"
@@ -151,19 +154,22 @@ function Welkom() {
               aria-pressed={eenBlok}
               className={
                 eenBlok
-                  ? "min-h-16 w-full rounded-2xl bg-primary px-4 text-left text-base font-semibold text-primary-foreground"
-                  : "min-h-16 w-full rounded-2xl border border-border bg-card px-4 text-left text-base font-semibold hover:bg-muted"
+                  ? "flex min-h-16 w-full items-center justify-between gap-2 rounded-2xl border-2 border-primary bg-secondary px-4 text-left text-base font-semibold"
+                  : "flex min-h-16 w-full items-center justify-between gap-2 rounded-2xl border-2 border-transparent bg-card px-4 text-left text-base font-semibold ring-1 ring-border hover:bg-muted"
               }
             >
               {t("Eén maaltijd per dag")}
+              {eenBlok && <Check className="size-5 shrink-0 text-primary" aria-hidden />}
             </button>
           </div>
         </section>
 
-        <Button onClick={() => void klaar()} disabled={bezig} className="mt-8 h-16 w-full text-lg">
+        <div className="sticky bottom-0 -mx-5 mt-8 bg-background/95 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+        <Button onClick={() => void klaar()} disabled={bezig} className="h-16 w-full text-lg">
           {bezig ? <Loader2 className="size-5 animate-spin" /> : <Check className="size-5" />}
           {t("Klaar")}
         </Button>
+        </div>
       </div>
     </div>
   );
