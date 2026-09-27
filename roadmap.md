@@ -173,5 +173,10 @@
 - [x] Grote regels, zichtbare knoppen, ongedaan maken, klaar-scherm, offline wachtrij
 - [ ] Eindcontrole met twee gebruikers (gedeelde lijst) en grote tekst
 
-## Gepland — Recept toevoegen/bewerken/importeren + gerecht plannen herwerken
-- [ ] Brief (HERWERK_DE_VOLLEDIGE_UX_UI_EN_FUNCTIONALITEIT) uitwerken tot een plan ter goedkeuring
+## Actief — Recept toevoegen/bewerken/importeren + gerecht plannen
+- [x] Plan goedgekeurd
+- [x] Gerecht plannen zonder recept, restjes/uit eten/later, koppelen, verplaatsen, dupliceren, herhalen
+- [x] Recept maken of importeren vanuit een gepland gerecht (automatisch koppelen)
+- [x] Automatisch bewaren als concept + "Je was bezig met" in Recepten
+- [x] Vaste Klaar-knop met voortgang, strengere stapkoppeling
+- [ ] Verdere opsplitsing recept-bouwer in losse onderdelen en eigen importcontrolescherm
