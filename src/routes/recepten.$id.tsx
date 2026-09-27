@@ -79,6 +79,16 @@ function bronNaam(url: string) {
 }
 
 
+function PersonenKiezer({ aantal, onZet }: { aantal: number; onZet: (n: number) => void }) {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-2xl bg-secondary p-1">
+      <Button variant="secondary" onClick={() => onZet(Math.max(1, aantal - 1))} aria-label="Minder personen" className="size-14 shrink-0 bg-card"><Minus className="size-5" /></Button>
+      <span className="flex-1 text-center text-lg font-semibold">Koken voor {aantal} {aantal === 1 ? "persoon" : "personen"}</span>
+      <Button variant="secondary" onClick={() => onZet(aantal + 1)} aria-label="Meer personen" className="size-14 shrink-0 bg-card"><Plus className="size-5" /></Button>
+    </div>
+  );
+}
+
 function ReceptPage() {
   const { id } = Route.useParams();
   const { user } = useAuth();
@@ -95,6 +105,23 @@ function ReceptPage() {
   const [fotoBezig, setFotoBezig] = useState(false);
   const [boodschappenOpen, setBoodschappenOpen] = useState(false);
   const [gekozenLijst, setGekozenLijst] = useState("");
+
+  // Kookstand: scherm van gsm/tablet blijft aan.
+  useEffect(() => {
+    if (!kookstand || typeof navigator === "undefined" || !("wakeLock" in navigator)) return;
+    let lock: { release: () => Promise<void> } | null = null;
+    let actief = true;
+    const vraag = async () => {
+      try {
+        const l = await (navigator as unknown as { wakeLock: { request: (t: string) => Promise<{ release: () => Promise<void> }> } }).wakeLock.request("screen");
+        if (actief) lock = l; else void l.release();
+      } catch { /* niet ondersteund of geweigerd */ }
+    };
+    void vraag();
+    const zichtbaar = () => { if (document.visibilityState === "visible") void vraag(); };
+    document.addEventListener("visibilitychange", zichtbaar);
+    return () => { actief = false; document.removeEventListener("visibilitychange", zichtbaar); void lock?.release(); };
+  }, [kookstand]);
 
   async function vervangFoto(bestand: File) {
     if (!user) return;
@@ -448,6 +475,7 @@ function ReceptPage() {
               <p className="mt-3 text-lg text-muted-foreground">
                 {t("Neem eerst alles wat je nodig hebt. Daarna koken we stap voor stap.")}
               </p>
+              <div className="mt-4"><PersonenKiezer aantal={aantal} onZet={setPersonen} /></div>
               <ul className="mt-6 space-y-2 rounded-2xl border border-border bg-card p-4 text-lg">
                 {ingredients.map((ing) => (
                   <li key={ing.id} className="flex min-h-12 items-center justify-between gap-3 border-b border-border py-2 last:border-0">
@@ -555,6 +583,9 @@ function ReceptPage() {
             <span>{aantal} {t("personen")}</span>
           </p>
         </div>
+
+        <PersonenKiezer aantal={aantal} onZet={setPersonen} />
+        {aantal !== recipe.servings ? <p className="-mt-2 text-base text-muted-foreground">{t("Hoeveelheden aangepast. Het originele recept is voor")} {recipe.servings} {t("personen")}.</p> : null}
 
         {recipe.instructions.length > 0 ? <Button onClick={() => { setStap(-1); void meet("kookmodus.gestart", undefined, { id }); setKookstand(true); }} className="h-16 w-full text-lg"><ChefHat className="size-6" />{t("Start koken")}</Button> : null}
 
@@ -913,7 +944,7 @@ function SnelAanpassen({ recipe, onKlaar }: { recipe: Recipe; onKlaar: () => voi
 
       <div className="grid grid-cols-3 gap-2">
         <label className="text-base">
-          Personen
+          Origineel recept voor (pers.)
           <Input
             type="number"
             min={1}

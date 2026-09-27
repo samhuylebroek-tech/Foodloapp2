@@ -209,6 +209,7 @@ export function RecipeForm({
   const [vbFout, setVbFout] = useState<string | null>(null);
   // Foto van het gevonden recept: je kan ze weigeren met het kruisje.
   const [vbFotoWeg, setVbFotoWeg] = useState(false);
+  const [controleOpen, setControleOpen] = useState(false);
   // Recepten die we al op de achtergrond ophaalden, per weblink.
   const vooruitCache = useRef<Map<string, Promise<ImportedRecipe>>>(new Map());
 
@@ -1615,11 +1616,66 @@ export function RecipeForm({
             {autoStatus === "bezig" ? "Bezig met bewaren…" : "Automatisch bewaard als concept"}
           </p>
         ) : null}
-        <Button onClick={() => void handleSave()} disabled={saving} className="h-14 w-full text-lg">
+        <Button
+          onClick={() => {
+            if (!title.trim()) { toast.error("Geef het gerecht een naam"); return; }
+            setControleOpen(true);
+          }}
+          disabled={saving}
+          className="h-14 w-full text-lg"
+        >
           {saving ? <Loader2 className="size-5 animate-spin" /> : null}
           {koppelMaaltijd ? "Klaar en koppelen" : "Klaar"}
         </Button>
       </div>
+
+      <Dialog open={controleOpen} onOpenChange={setControleOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-left text-xl">Klopt alles?</DialogTitle>
+            <DialogDescription className="text-left text-base">
+              Kijk je recept nog even na. Pas gerust iets aan en bewaar daarna.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5">
+            <label className="block text-base font-medium">
+              Naam
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 h-14 text-base" />
+            </label>
+            <div>
+              <p className="text-base font-medium">Categorie</p>
+              <SoortKeuze waarde={category} onKies={(c) => { setCategory(c); setSoortHandmatig(true); }} />
+            </div>
+            <div>
+              <p className="text-base font-medium">Moeilijkheid</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {DIFFICULTIES.map((d) => (
+                  <button key={d} type="button" aria-pressed={difficulty === d} onClick={() => setDifficulty(d)}
+                    className={difficulty === d ? "min-h-12 rounded-xl bg-primary px-4 text-base font-medium text-primary-foreground" : "min-h-12 rounded-xl border border-input bg-card px-4 text-base"}>
+                    {d}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <label className="text-base">Personen<Input type="number" min={1} value={servings} onChange={(e) => setServings(e.target.value)} className="mt-1 h-14 text-base" /></label>
+              <label className="text-base">Voorbereiden (min)<Input type="number" min={0} value={prep} onChange={(e) => setPrep(e.target.value)} className="mt-1 h-14 text-base" /></label>
+              <label className="text-base">Koken (min)<Input type="number" min={0} value={cook} onChange={(e) => setCook(e.target.value)} className="mt-1 h-14 text-base" /></label>
+            </div>
+            <ul className="space-y-1 rounded-2xl bg-secondary p-4 text-base">
+              <li>{photoPath ? "✓ Foto" : "○ Nog geen foto (we maken er zelf één)"}</li>
+              <li>{formIngredienten.length ? `✓ ${formIngredienten.length} ingrediënten` : "○ Nog geen ingrediënten"}</li>
+              <li>{stappen.length ? `✓ ${stappen.length} stappen` : "○ Nog geen stappen"}</li>
+            </ul>
+            <div className="grid gap-2">
+              <Button onClick={() => { setControleOpen(false); void handleSave(); }} disabled={saving} className="h-14 w-full text-lg">
+                {koppelMaaltijd ? "Bewaren en koppelen" : "Bewaren"}
+              </Button>
+              <Button variant="secondary" onClick={() => setControleOpen(false)} className="h-14 w-full text-lg">Nog iets aanpassen</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={vensterOpen} onOpenChange={(open) => !open && sluitVenster()}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
