@@ -208,3 +208,14 @@
 - [x] Hele zichtbare week is de standaard boodschappenkeuze
 - [x] Alleen geplande dagen met recepten als optionele dagkeuze tonen
 - [x] Bestaande controle op nieuwe en reeds aanwezige ingrediënten behouden
+
+## Actief — Recept ingrediënten en kookstand herstellen (27 sep)
+- [ ] Receptgegevens, ingrediënten en stapkoppeling op de detailpagina controleren
+- [ ] Kookstand herstellen zonder bestaande recepten of hoeveelheden te wijzigen
+- [ ] Mobiel testen met een bestaand recept en meerdere kookstappen
+
+## Actief — Automatische foto voor elk gerecht (27 sep)
+- [ ] Bestaande en zelfgekozen foto's altijd behouden
+- [ ] Automatisch een passende foto maken wanneer een opgeslagen gerecht geen bruikbare foto heeft
+- [ ] Gegenereerde foto privé bewaren en overal bij hetzelfde gerecht tonen
+- [ ] AI-kosten, foutafhandeling en mobiele weergave controleren
