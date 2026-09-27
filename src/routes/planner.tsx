@@ -753,7 +753,7 @@ function PlannerPage() {
     const items = plan.filter((p) => p.plan_date === dag);
     const datum = new Date(`${dag}T12:00:00`);
     const voorbij = dag < vandaag;
-    const extra = items.filter((p) => !momenten.includes(p.meal_type));
+    const alleMomenten = [...new Set([...momenten, ...items.map((p) => p.meal_type)])];
     const titel = datum.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" });
     const kaart = (p: PlanRow) => (
                     <li key={p.id} className="flex min-h-24 items-center gap-2 rounded-2xl border border-border bg-card p-3">
@@ -786,8 +786,10 @@ function PlannerPage() {
             {!groot && dag === vandaag ? <span className="ml-2 align-middle text-base font-semibold text-honing-foreground"> · vandaag</span> : null}
           </h2>
         </div>
-        {momenten.map((m) => {
+        {alleMomenten.map((m) => {
           const bij = items.filter((p) => p.meal_type === m);
+          // Eén algemeen moment en al iets gepland: geen leeg vak erbij.
+          if (!bij.length && items.length && momenten.length === 1) return null;
           return (
             <div key={m} className="space-y-2">
               <h3 className="text-base font-semibold text-foreground first-letter:uppercase">{m}</h3>
@@ -803,7 +805,6 @@ function PlannerPage() {
             </div>
           );
         })}
-        {extra.length ? <ul className="space-y-2">{extra.map(kaart)}</ul> : null}
       </div>
     );
   }
