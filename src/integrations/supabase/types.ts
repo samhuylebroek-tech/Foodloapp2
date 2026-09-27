@@ -2109,6 +2109,7 @@ export type Database = {
         Returns: boolean
       }
       in_groep: { Args: { _group: string; _user: string }; Returns: boolean }
+      is_actieve_gebruiker: { Args: { _user: string }; Returns: boolean }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       join_group: { Args: { _token: string }; Returns: string }
       nodig_gezinslid: {
