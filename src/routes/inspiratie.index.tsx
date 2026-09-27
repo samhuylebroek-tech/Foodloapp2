@@ -3,6 +3,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Search, SlidersHorizontal, Shuffle, Clock3, X } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { supabase } from "@/integrations/supabase/client";
+import { normaliseerTekst } from "@/lib/zoeken";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -69,11 +71,31 @@ function InspiratiePage() {
   const [filters, setFilters] = useState<InspiratieFilters>(LEGE_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
 
-  const { data: recepten = [], isLoading, isError } = useQuery({
+  const { data: alleRecepten = [], isLoading, isError } = useQuery({
     queryKey: ["inspiratie"],
     queryFn: haalInspiratieLijst,
     staleTime: 5 * 60 * 1000,
   });
+
+  // Titels van de eigen recepten: ideeën die je al hebt, verbergen we.
+  const { data: eigenTitels = [] } = useQuery({
+    queryKey: ["eigen-recept-titels"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("recipes")
+        .select("title")
+        .is("deleted_at", null);
+      if (error) throw error;
+      return (data ?? []).map((r) => normaliseerTekst(r.title as string));
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const recepten = useMemo(() => {
+    if (!eigenTitels.length) return alleRecepten;
+    const eigen = new Set(eigenTitels);
+    return alleRecepten.filter((r) => !eigen.has(normaliseerTekst(r.title)));
+  }, [alleRecepten, eigenTitels]);
 
   const categorieen = useMemo(() => inspiratieCategorieen(recepten), [recepten]);
   const resultaten = useMemo(() => filterInspiratie(recepten, filters), [recepten, filters]);
