@@ -279,6 +279,14 @@ function PlannerPage() {
     },
   });
 
+  // Het weekmenu opent op vandaag: scroll de dag van vandaag in beeld.
+  useEffect(() => {
+    const el = document.getElementById(`dag-${datumTekst(new Date())}`);
+    el?.scrollIntoView({ block: "start", behavior: "instant" as ScrollBehavior });
+    // Eén keer bij het openen van de pagina.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Het gezinsweekmenu ververst mee als een ander gezinslid iets aanpast.
   useEffect(() => {
     if (!user) return;
@@ -889,6 +897,52 @@ function PlannerPage() {
           {lijsten.length > 1 ? <select value={lijstId || (weergave === "gezin" && gezinsLijst ? gezinsLijst.id : lijsten[0]?.id ?? "")} onChange={(e) => setLijstId(e.target.value)} aria-label="Naar welk lijstje?" className="h-14 w-full rounded-xl border border-input bg-card px-3 text-base">{lijsten.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select> : null}
           <Button onClick={() => { void alleBoodschappen(); setBoodschappenOpen(false); }} disabled={!plan.length} className="h-14 w-full text-base"><ShoppingCart className="size-5" /> Hele week op de lijst</Button>
           <Button variant="outline" asChild className="h-14 w-full text-base"><Link to="/boodschappen">Open boodschappen</Link></Button>
+        </SheetContent>
+      </Sheet>
+
+      {/* Eén rustige controle als ingrediënten al op de lijst staan. */}
+      <Sheet open={!!dubbelVraag} onOpenChange={(open) => { if (!open) setDubbelVraag(null); }}>
+        <SheetContent side="bottom" className="flex max-h-[85dvh] flex-col gap-0 p-0">
+          <SheetHeader className="border-b border-border px-4 pb-3 pt-4 text-left">
+            <SheetTitle>Dit staat al op je lijst</SheetTitle>
+            <SheetDescription>
+              Kies per ingrediënt of je het nog eens toevoegt. De rest komt er gewoon bij.
+            </SheetDescription>
+          </SheetHeader>
+          <ul className="flex-1 space-y-2 overflow-y-auto px-4 py-4">
+            {dubbelVraag?.dubbels.map((d) => {
+              const aan = dubbelVraag.gekozen.has(d.index);
+              return (
+                <li key={d.index}>
+                  <button
+                    type="button"
+                    aria-pressed={aan}
+                    onClick={() =>
+                      setDubbelVraag((v) => {
+                        if (!v) return v;
+                        const gekozen = new Set(v.gekozen);
+                        if (gekozen.has(d.index)) gekozen.delete(d.index);
+                        else gekozen.add(d.index);
+                        return { ...v, gekozen };
+                      })
+                    }
+                    className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-border bg-card p-3 text-left"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-base font-semibold">{d.name}</span>
+                      <span className="block text-sm text-muted-foreground">Staat al op je lijst: {d.bestaand}</span>
+                    </span>
+                    <span className={aan ? "shrink-0 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground" : "shrink-0 rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground"}>
+                      {aan ? "Nog eens toevoegen" : "Niet toevoegen"}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="grid gap-2 border-t border-border p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+            <Button className="h-14 text-base" onClick={dubbelBevestigen}>Klaar</Button>
+          </div>
         </SheetContent>
       </Sheet>
 
