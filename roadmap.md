@@ -232,3 +232,12 @@
 
 - [x] Herontwerp ronde 1: kleuren, één lettertype, bovenbalk met "Terug", menu met volledige labels, nieuwe Start, Meer, weekmenu met één hoofdknop, "Ongedaan maken"
 - [x] Herontwerp ronde 2: recept toevoegen, inspiratie, kookstand, kaarten, gezin, instellingen, welkom
+
+## Radicaal herontwerp (plan 27 sep)
+- [x] Fase 1 basis: nieuwe kleuren (papier/kruidengroen/honing), Outfit + Figtree
+- [x] Fase 2 Weekmenu: opent op vandaag, weekstrook, dagweergave, één hoofdknop
+- [ ] Fase 3 Start
+- [ ] Fase 4 Recepten + Ideeën (tabs)
+- [ ] Fase 5 Recept toevoegen + receptdetail
+- [ ] Fase 6 Boodschappen + kookstand
+- [ ] Fase 7 Meer, kaarten, gezin, instellingen, welkom, lege schermen
