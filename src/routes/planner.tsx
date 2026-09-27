@@ -279,13 +279,17 @@ function PlannerPage() {
     },
   });
 
-  // Het weekmenu opent op vandaag: scroll de dag van vandaag in beeld.
+  // Het weekmenu opent op vandaag: scroll de dag van vandaag in beeld zodra
+  // de dagen gerenderd zijn (eenmalig).
+  const naarVandaagGescrold = useRef(false);
   useEffect(() => {
+    if (naarVandaagGescrold.current) return;
     const el = document.getElementById(`dag-${datumTekst(new Date())}`);
-    el?.scrollIntoView({ block: "start", behavior: "instant" as ScrollBehavior });
-    // Eén keer bij het openen van de pagina.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (el) {
+      naarVandaagGescrold.current = true;
+      el.scrollIntoView({ block: "start" });
+    }
+  });
 
   // Het gezinsweekmenu ververst mee als een ander gezinslid iets aanpast.
   useEffect(() => {
