@@ -196,6 +196,8 @@ function PlannerPage() {
     rows: NieuwItem[];
     dubbels: Dubbel[];
     gekozen: Set<number>;
+    /** Waar komen de boodschappen vandaan? Voor de titel van het overzicht. */
+    bron: string;
   } | null>(null);
 
   const [weergave, setWeergave] = useState<"mij" | "gezin">("mij");
@@ -454,12 +456,13 @@ function PlannerPage() {
    * rustige controle: de gebruiker kiest zelf wat nog eens toegevoegd wordt.
    * Er wordt nooit stil samengevoegd.
    */
-  async function ingredienNaarLijst(rows: NieuwItem[], listId: string) {
+  async function ingredienNaarLijst(rows: NieuwItem[], listId: string, bron = "deze gerechten") {
     if (!user) return;
     try {
       const dubbels = await vindDubbels(listId, rows);
       if (dubbels.length) {
-        setDubbelVraag({ listId, rows, dubbels, gekozen: new Set() });
+        // Staat álles er al? Dan geen stille dubbel, maar een duidelijke melding.
+        setDubbelVraag({ listId, rows, dubbels, gekozen: new Set(), bron });
         return;
       }
       await voegToeAlsNieuw(user.id, listId, rows);
@@ -476,6 +479,10 @@ function PlannerPage() {
     const dubbelIdx = new Set(dubbels.map((d) => d.index));
     const toeTeVoegen = rows.filter((_, i) => !dubbelIdx.has(i) || gekozen.has(i));
     setDubbelVraag(null);
+    if (!toeTeVoegen.length) {
+      toast.message("Niets toegevoegd — alles stond al op je lijst.");
+      return;
+    }
     try {
       await voegToeAlsNieuw(user.id, listId, toeTeVoegen);
       const overgeslagen = dubbels.length - gekozen.size;
