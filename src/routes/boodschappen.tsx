@@ -1368,46 +1368,35 @@ function ItemRij({
     <div
       onTouchStart={raakStart}
       onTouchEnd={raakEinde}
-      className="flex min-h-12 items-center gap-2 border-b border-border/70 px-2 py-1.5 last:border-b-0"
+      className="flex min-h-16 items-center gap-1 border-b border-border/70 px-1 last:border-b-0"
     >
-      {kiesModus ? (
-        <Checkbox checked={gekozen} onCheckedChange={onKies} className="size-6" aria-label={`${item.name} kiezen`} />
-      ) : (
-        <Checkbox checked={item.checked} onCheckedChange={onVink} className="size-6" aria-label={item.name} />
-      )}
+      <label className="flex size-14 shrink-0 cursor-pointer items-center justify-center">
+        {kiesModus ? (
+          <Checkbox checked={gekozen} onCheckedChange={onKies} className="size-7" aria-label={`${item.name} kiezen`} />
+        ) : (
+          <Checkbox checked={item.checked} onCheckedChange={onVink} className="size-7" aria-label={item.checked ? `${item.name} — gekocht, tik om terug te zetten` : `${item.name} als gekocht aanvinken`} />
+        )}
+      </label>
       <button
         type="button"
         onClick={kiesModus ? onKies : onBewerk}
-        className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        aria-label={kiesModus ? `${item.name} kiezen` : `${item.name} aanpassen`}
+        className="flex min-h-14 min-w-0 flex-1 items-center gap-2 text-left"
       >
-        <span className={item.checked ? "min-w-0 flex-1 truncate text-base text-muted-foreground line-through" : "min-w-0 flex-1 truncate text-base"}>
-          {item.name}
+        <span className="min-w-0 flex-1">
+          <span className={item.checked ? "block truncate text-lg text-muted-foreground line-through" : "block truncate text-lg"}>
+            {item.name}
+          </span>
+          {item.recept ? <span className="block truncate text-sm text-muted-foreground">voor {item.recept}</span> : null}
         </span>
-        {maatTekst(item) ? <span className="shrink-0 text-sm text-muted-foreground">{maatTekst(item)}</span> : null}
+        {maatTekst(item) ? <span className="shrink-0 text-base text-muted-foreground">{maatTekst(item)}</span> : null}
+        {item.checked ? <span className="sr-only">gekocht</span> : null}
       </button>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="size-10 shrink-0" aria-label={`Opties voor ${item.name}`}>
-            <MoreHorizontal className="size-5" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-56 rounded-xl p-2">
-          <DropdownMenuItem onSelect={onBewerk} className="min-h-11 text-base">
-            <Pencil /> Aanpassen
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          {CATEGORIE_VOLGORDE.map((c) => (
-            <DropdownMenuItem key={c} onSelect={() => onCategorie(c)} className="min-h-11 text-base">
-              Zet bij {CATEGORIE_LABEL[c]}
-            </DropdownMenuItem>
-          ))}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={onVerwijder} className="min-h-11 text-base text-destructive">
-            <Trash2 />
-            Verwijderen
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {!kiesModus ? (
+        <Button variant="ghost" size="icon" className="size-12 shrink-0" aria-label={`${item.name} aanpassen`} onClick={onBewerk}>
+          <Pencil className="size-5" />
+        </Button>
+      ) : null}
     </div>
   );
 }
