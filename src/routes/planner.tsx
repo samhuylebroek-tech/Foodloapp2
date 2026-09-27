@@ -688,6 +688,7 @@ function PlannerPage() {
         recipe_id: i.recipe_id as string,
       })),
       listId,
+      "deze week",
     );
   }
 
