@@ -124,6 +124,7 @@ function BoodschappenPage() {
   const [bewerkNaam, setBewerkNaam] = useState("");
   const [bewerkAantal, setBewerkAantal] = useState("");
   const [bewerkEenheid, setBewerkEenheid] = useState("");
+  const [bewerkNota, setBewerkNota] = useState("");
   const [wisVraag, setWisVraag] = useState<"afgevinkt" | "alles" | null>(null);
   const [dicht, setDicht] = useState<Record<string, boolean>>({});
   const [kiesModus, setKiesModus] = useState(false);
@@ -888,7 +889,7 @@ function BoodschappenPage() {
           </div>
           <Button variant="secondary" className="h-14 w-full justify-start gap-3 text-base" onClick={() => setWinkelIdeeen(true)}>
             <ShoppingCart className="size-5" />
-            <span className="flex-1 text-left">Door de winkel — ideeën per afdeling</span>
+            <span className="flex-1 text-left">Winkelideeën — ideeën per afdeling</span>
             <ChevronRight className="size-5" />
           </Button>
           {typSuggesties.length > 0 ? (
@@ -1077,9 +1078,9 @@ function BoodschappenPage() {
         onOpenChange={setWinkelIdeeen}
         opLijst={opLijstNamen}
         vaakNamen={vaakLos.map((e) => e.name)}
-        onVoegToe={async (naam) => {
+        onVoegToe={async (keuze) => {
           void meet("boodschappen.winkel_idee");
-          await voegMeerdereToe([{ name: naam, quantity: null, unit: "" }], "");
+          await voegMeerdereToe([keuze], "");
         }}
       />
 
@@ -1257,6 +1258,9 @@ function BoodschappenPage() {
                 <Input placeholder="bv. kg, stuk(s)" value={bewerkEenheid} onChange={(event) => setBewerkEenheid(event.target.value)} className="mt-1 h-14 text-base" />
               </label>
             </div>
+            <label className="block text-sm font-semibold">Nota
+              <Input placeholder="bv. de biologische" value={bewerkNota} maxLength={100} onChange={(event) => setBewerkNota(event.target.value)} className="mt-1 h-14 text-base" />
+            </label>
             <label className="block text-sm font-semibold">Afdeling
               <select
                 value={bewerkCategorie}
@@ -1501,6 +1505,7 @@ function ItemRij({
           <span className={item.checked ? "block truncate text-lg text-muted-foreground line-through" : "block truncate text-lg"}>
             {item.name}
           </span>
+          {item.note ? <span className="block truncate text-sm text-muted-foreground">{item.note}</span> : null}
           {item.recept ? <span className="block truncate text-sm text-muted-foreground">voor {item.recept}</span> : null}
         </span>
         {maatTekst(item) ? <span className="shrink-0 text-base text-muted-foreground">{maatTekst(item)}</span> : null}
