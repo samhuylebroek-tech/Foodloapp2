@@ -53,3 +53,29 @@ export function SterrenKiezer({
     </div>
   );
 }
+
+/** Compacte sterrenrij onder een receptkaart: één tik = score, nog eens op dezelfde ster = wissen. */
+export function SterrenSnel({ waarde, onKies }: { waarde: number; onKies: (n: number) => void }) {
+  return (
+    <div className="flex items-center justify-between" role="group" aria-label={`Jouw score: ${waarde} van 5`}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          onClick={() => onKies(waarde === n ? 0 : n)}
+          aria-label={`Geef ${n} ${n === 1 ? "ster" : "sterren"}`}
+          aria-pressed={n <= waarde}
+          className="flex h-11 min-w-0 flex-1 items-center justify-center rounded-lg active:scale-90 transition-transform hover:bg-secondary"
+        >
+          <Star
+            aria-hidden
+            className={cn(
+              "size-6",
+              n <= waarde ? "fill-[var(--honing)] text-[var(--honing)]" : "text-muted-foreground/60",
+            )}
+          />
+        </button>
+      ))}
+    </div>
+  );
+}

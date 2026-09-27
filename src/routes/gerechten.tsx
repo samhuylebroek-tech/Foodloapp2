@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { CATEGORIES, DIFFICULTIES, type Recipe } from "@/lib/types";
 import { DIETEN, bepaalDieet } from "@/lib/dieet";
-import { Sterren } from "@/components/Sterren";
+import { Sterren, SterrenSnel } from "@/components/Sterren";
 import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
 import { tijdLabel } from "@/lib/tijd";
@@ -112,11 +112,33 @@ function GerechtenPage() {
     queryKey: ["ratings", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase.from("recipe_ratings").select("recipe_id, stars");
+      const { data, error } = await supabase
+        .from("recipe_ratings")
+        .select("recipe_id, stars")
+        .eq("user_id", user!.id);
       if (error) throw error;
       return Object.fromEntries(data.map((r) => [r.recipe_id, r.stars])) as Record<string, number>;
     },
   });
+
+  async function bewaarScore(recipeId: string, n: number) {
+    if (!user) return;
+    const sleutel = ["ratings", user.id];
+    const vorige = qc.getQueryData<Record<string, number>>(sleutel) ?? {};
+    qc.setQueryData(sleutel, { ...vorige, [recipeId]: n });
+    const { error } =
+      n === 0
+        ? await supabase.from("recipe_ratings").delete().eq("recipe_id", recipeId).eq("user_id", user.id)
+        : await supabase
+            .from("recipe_ratings")
+            .upsert({ user_id: user.id, recipe_id: recipeId, stars: n }, { onConflict: "user_id,recipe_id" });
+    if (error) {
+      qc.setQueryData(sleutel, vorige);
+      toast.error(t("Score bewaren lukte niet"));
+      return;
+    }
+    qc.invalidateQueries({ queryKey: ["rating", recipeId] });
+  }
 
   const { data: alleIngredienten = [] } = useQuery({
     queryKey: ["alle-ingredienten"],
@@ -437,17 +459,18 @@ function GerechtenPage() {
             {zichtbaar.map((r) => (
               <li key={r.id}>
                 <SwipeRij onVerwijder={() => setTeVerwijderen(r)}>
+                  <div className="group overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border/50 transition-shadow hover:shadow-md">
                   <Link
                     to="/recepten/$id"
                     params={{ id: r.id }}
-                    className="group block overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border/50 transition-shadow hover:shadow-md"
+                    className="block"
                   >
                     <RecipePhoto
                       path={r.image_url}
                       alt={r.title}
                       className="aspect-square w-full rounded-none transition-transform duration-300 group-hover:scale-[1.02]"
                     />
-                    <div className="p-3">
+                    <div className="p-3 pb-1">
                       <p className="flex items-start gap-2 font-display text-base font-semibold leading-snug">
                         <span className="min-w-0 flex-1">{t(r.title)}</span>
                         {favorites.includes(r.id) && (
@@ -473,6 +496,10 @@ function GerechtenPage() {
                       </p>
                     </div>
                   </Link>
+                  <div className="px-1.5 pb-2">
+                    <SterrenSnel waarde={scores[r.id] ?? 0} onKies={(n) => bewaarScore(r.id, n)} />
+                  </div>
+                  </div>
                 </SwipeRij>
               </li>
             ))}
