@@ -14,6 +14,9 @@ import {
   Sparkles,
   ListPlus,
   Type,
+  Copy,
+  Repeat,
+  Pencil,
   Settings,
   CookingPot,
   RefreshCw,
@@ -79,6 +82,7 @@ import {
 import { kiesUitEigen, type DagRegel, type Soortkeuze } from "@/lib/weekmenu-voorstel";
 import { zorgVoorLijst, maakLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
 import { tijdLabel } from "@/lib/tijd";
+import { normaliseerTekst } from "@/lib/zoeken";
 import { useSignedUrl } from "@/lib/photos";
 
 export const Route = createFileRoute("/planner")({
