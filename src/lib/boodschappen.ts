@@ -75,6 +75,76 @@ function telOp(a: number | null, b: number | null | undefined): number | null {
   return (a ?? 0) + (b ?? 0);
 }
 
+export type Dubbel = { index: number; name: string; bestaand: string };
+
+/**
+ * Welke van deze nieuwe items staan al (nog te kopen) op de lijst?
+ * Geeft per nieuw item de bestaande lijstregel terug, zodat de gebruiker
+ * zelf kan kiezen: nog eens toevoegen of niet.
+ */
+export async function vindDubbels(listId: string, items: NieuwItem[]): Promise<Dubbel[]> {
+  const { data: bestaand } = await supabase
+    .from("shopping_items")
+    .select("name, quantity, unit")
+    .eq("list_id", listId)
+    .eq("checked", false);
+  const sleutels = new Map<string, string>();
+  for (const rij of bestaand ?? []) {
+    const k = sleutel(rij.name as string, rij.unit as string);
+    if (!sleutels.has(k)) {
+      const q = rij.quantity as number | null;
+      sleutels.set(k, `${rij.name}${q !== null ? ` (${q} ${(rij.unit as string) ?? ""})` : ""}`);
+    }
+  }
+  const dubbels: Dubbel[] = [];
+  items.forEach((item, index) => {
+    const hit = sleutels.get(sleutel(item.name.trim(), item.unit ?? ""));
+    if (hit) dubbels.push({ index, name: item.name.trim(), bestaand: hit });
+  });
+  return dubbels;
+}
+
+/**
+ * Zet items op een lijstje als nieuwe regels, zonder stil samen te voegen
+ * met wat er al staat. Dubbels binnen dezelfde toevoeging worden wel
+ * samengeteld.
+ */
+export async function voegToeAlsNieuw(
+  userId: string,
+  listId: string,
+  items: NieuwItem[],
+): Promise<void> {
+  if (!items.length) return;
+  const nieuwe = new Map<string, { name: string; quantity: number | null; unit: string; recipe_id: string | null }>();
+  for (const item of items) {
+    const naam = item.name.trim();
+    if (!naam) continue;
+    const k = sleutel(naam, item.unit ?? "");
+    const al = nieuwe.get(k);
+    if (al) {
+      al.quantity = telOp(al.quantity, naarBasis(item.quantity ?? null, item.unit));
+      continue;
+    }
+    nieuwe.set(k, {
+      name: naam,
+      quantity: naarBasis(item.quantity ?? null, item.unit),
+      unit: basisEenheid(item.unit),
+      recipe_id: item.recipe_id ?? null,
+    });
+  }
+  const { error } = await supabase.from("shopping_items").insert(
+    [...nieuwe.values()].map((r) => ({
+      user_id: userId,
+      list_id: listId,
+      name: r.name,
+      quantity: r.quantity,
+      unit: r.unit,
+      recipe_id: r.recipe_id,
+    })),
+  );
+  if (error) throw error;
+}
+
 /**
  * Zet items op een lijstje en telt dezelfde ingrediënten bij elkaar op,
  * zodat elk product maar één keer op de lijst staat.

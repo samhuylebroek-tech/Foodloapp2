@@ -80,8 +80,7 @@ import {
   type DagVoorkeur,
 } from "@/lib/voorkeuren";
 import { kiesUitEigen, type DagRegel, type Soortkeuze } from "@/lib/weekmenu-voorstel";
-import { zorgVoorLijst, maakLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
-import { DEMO_FAVORIETEN, DEMO_RECEPTEN, demoBericht, demoPlan, isDemo } from "@/lib/demo";
+import { zorgVoorLijst, maakLijst, vindDubbels, voegToeAlsNieuw, type Dubbel, type NieuwItem, type ShoppingList } from "@/lib/boodschappen";
 import { tijdLabel } from "@/lib/tijd";
 import { normaliseerTekst } from "@/lib/zoeken";
 import { useSignedUrl } from "@/lib/photos";
@@ -176,7 +175,6 @@ function PlannerPage() {
     void meet("weekmenu.bekeken");
   }, []);
   const { user } = useAuth();
-  const demo = isDemo();
   const { momenten: algemeneMomenten, weekmenu, zetWeekmenu } = useVoorkeuren();
   // Dagdelen: eigen keuze voor het weekmenu, anders je algemene momenten.
   const momenten = weekmenu.momenten.length ? weekmenu.momenten : algemeneMomenten;
@@ -193,6 +191,12 @@ function PlannerPage() {
   const [opruimVraag, setOpruimVraag] = useState<{ titel: string; items: { id: string; naam: string }[] } | null>(null);
   const [naVoorstel, setNaVoorstel] = useState<{ recipeId: string; titel: string }[] | null>(null);
   const [naGekozen, setNaGekozen] = useState<Set<string>>(new Set());
+  const [dubbelVraag, setDubbelVraag] = useState<{
+    listId: string;
+    rows: NieuwItem[];
+    dubbels: Dubbel[];
+    gekozen: Set<number>;
+  } | null>(null);
 
   const [weergave, setWeergave] = useState<"mij" | "gezin">("mij");
   const [instellingenOpen, setInstellingenOpen] = useState(false);
@@ -258,9 +262,9 @@ function PlannerPage() {
 
   const gezinsLijst = lijsten.find((l) => l.group_id && l.group_id === gezin?.id);
 
-  const { data: planDb = [] } = useQuery({
+  const { data: plan = [] } = useQuery({
     queryKey: ["meal-plan", weergave, weergave === "gezin" ? gezin?.id : user?.id, week[0]],
-    enabled: !demo && !!user && (weergave === "mij" || !!gezin),
+    enabled: !!user && (weergave === "mij" || !!gezin),
     queryFn: async () => {
       let q = supabase
         .from("meal_plan")
@@ -274,7 +278,18 @@ function PlannerPage() {
       return data as unknown as PlanRow[];
     },
   });
-  const plan = demo ? (demoPlan() as unknown as PlanRow[]) : planDb;
+
+  // Het weekmenu opent op vandaag: scroll de dag van vandaag in beeld zodra
+  // de dagen gerenderd zijn (eenmalig).
+  const naarVandaagGescrold = useRef(false);
+  useEffect(() => {
+    if (naarVandaagGescrold.current) return;
+    const el = document.getElementById(`dag-${datumTekst(new Date())}`);
+    if (el) {
+      naarVandaagGescrold.current = true;
+      el.scrollIntoView({ block: "start" });
+    }
+  });
 
   // Het gezinsweekmenu ververst mee als een ander gezinslid iets aanpast.
   useEffect(() => {
@@ -305,7 +320,6 @@ function PlannerPage() {
   });
 
   async function verwijder(id: string, recipeId?: string | null, titel?: string) {
-    if (demo) { demoBericht(); return; }
     await supabase.from("meal_plan").delete().eq("id", id);
     qc.invalidateQueries({ queryKey: ["meal-plan"] });
     if (!recipeId) return;
@@ -327,7 +341,6 @@ function PlannerPage() {
   }
 
   async function opruimenBevestigen() {
-    if (demo) { demoBericht(); return; }
     if (!opruimVraag) return;
     await supabase
       .from("shopping_items")
@@ -340,7 +353,6 @@ function PlannerPage() {
 
 
   async function plan_toevoegen(recipeId: string, datum: string, moment: string, titel: string) {
-    if (demo) { demoBericht(); return; }
     if (!user) return;
     const { data, error } = await supabase
       .from("meal_plan")
@@ -437,9 +449,49 @@ function PlannerPage() {
     }
   }
 
+  /**
+   * Ingrediënten naar de boodschappenlijst. Staat iets er al, dan eerst één
+   * rustige controle: de gebruiker kiest zelf wat nog eens toegevoegd wordt.
+   * Er wordt nooit stil samengevoegd.
+   */
+  async function ingredienNaarLijst(rows: NieuwItem[], listId: string) {
+    if (!user) return;
+    try {
+      const dubbels = await vindDubbels(listId, rows);
+      if (dubbels.length) {
+        setDubbelVraag({ listId, rows, dubbels, gekozen: new Set() });
+        return;
+      }
+      await voegToeAlsNieuw(user.id, listId, rows);
+      toast.success("Op je boodschappenlijst gezet");
+      qc.invalidateQueries({ queryKey: ["shopping"] });
+    } catch {
+      toast.error("Toevoegen lukte niet");
+    }
+  }
+
+  async function dubbelBevestigen() {
+    if (!user || !dubbelVraag) return;
+    const { listId, rows, dubbels, gekozen } = dubbelVraag;
+    const dubbelIdx = new Set(dubbels.map((d) => d.index));
+    const toeTeVoegen = rows.filter((_, i) => !dubbelIdx.has(i) || gekozen.has(i));
+    setDubbelVraag(null);
+    try {
+      await voegToeAlsNieuw(user.id, listId, toeTeVoegen);
+      const overgeslagen = dubbels.length - gekozen.size;
+      toast.success(
+        overgeslagen > 0
+          ? `Toegevoegd — ${overgeslagen} ${overgeslagen === 1 ? "ingrediënt" : "ingrediënten"} overgeslagen`
+          : "Alles staat op je boodschappenlijst",
+      );
+      qc.invalidateQueries({ queryKey: ["shopping"] });
+    } catch {
+      toast.error("Toevoegen lukte niet");
+    }
+  }
+
   /** Alle aangevinkte gerechten in één keer op de boodschappenlijst zetten. */
   async function zetAllesOpLijst() {
-    if (demo) { demoBericht(); return; }
     if (!user || !naVoorstel) return;
     const ids = naVoorstel.filter((r) => naGekozen.has(r.recipeId)).map((r) => r.recipeId);
     if (!ids.length) {
@@ -458,28 +510,20 @@ function PlannerPage() {
       setNaVoorstel(null);
       return;
     }
-    try {
-      await voegToeAanLijst(
-        user.id,
-        listId,
-        data.map((i) => ({
-          name: i.name as string,
-          quantity: i.quantity as number | null,
-          unit: (i.unit as string) ?? "",
-          recipe_id: i.recipe_id as string,
-        })),
-      );
-      toast.success("Alles staat op je boodschappenlijst");
-      qc.invalidateQueries({ queryKey: ["shopping"] });
-    } catch {
-      toast.error("Toevoegen lukte niet");
-    }
+    await ingredienNaarLijst(
+      data.map((i) => ({
+        name: i.name as string,
+        quantity: i.quantity as number | null,
+        unit: (i.unit as string) ?? "",
+        recipe_id: i.recipe_id as string,
+      })),
+      listId,
+    );
     setNaVoorstel(null);
   }
 
 
   async function nieuw_gerecht(naam: string, basis: Basis | null, datum: string, moment: string, extra?: NieuwExtra) {
-    if (demo) { demoBericht(); return; }
     if (!user) return;
     let recipeId: string | null = null;
 
@@ -549,7 +593,6 @@ function PlannerPage() {
   }
 
   async function zetOpLijst(recipeId: string, listId: string) {
-    if (demo) { demoBericht(); return; }
     if (!user) return;
     const { data, error } = await supabase
       .from("recipe_ingredients")
@@ -559,27 +602,19 @@ function PlannerPage() {
       toast.error("Dit gerecht heeft nog geen ingrediënten");
       return;
     }
-    try {
-      await voegToeAanLijst(
-        user.id,
-        listId,
-        data.map((i) => ({
-          name: i.name as string,
-          quantity: i.quantity as number | null,
-          unit: (i.unit as string) ?? "",
-          recipe_id: recipeId,
-        })),
-      );
-      toast.success("Op je boodschappenlijst gezet");
-      qc.invalidateQueries({ queryKey: ["shopping"] });
-    } catch {
-      toast.error("Toevoegen lukte niet");
-    }
+    await ingredienNaarLijst(
+      data.map((i) => ({
+        name: i.name as string,
+        quantity: i.quantity as number | null,
+        unit: (i.unit as string) ?? "",
+        recipe_id: recipeId,
+      })),
+      listId,
+    );
   }
 
   /** Verplaatst of dupliceert een geplande maaltijd naar een andere dag/moment. */
   async function verplaatsNaar(rij: PlanRow, datum: string, moment: string, kopie: boolean) {
-    if (demo) { demoBericht(); return; }
     if (!user) return;
     const { error } = kopie
       ? await supabase.from("meal_plan").insert({
@@ -601,7 +636,6 @@ function PlannerPage() {
   }
 
   async function koppelRecept(rij: PlanRow, recept: Recipe) {
-    if (demo) { demoBericht(); return; }
     const { error } = await supabase
       .from("meal_plan")
       .update({ recipe_id: recept.id, custom_title: null })
@@ -616,7 +650,6 @@ function PlannerPage() {
   }
 
   async function alleBoodschappen() {
-    if (demo) { demoBericht(); return; }
     if (!user || plan.length === 0) return;
     const ids = plan.map((p) => p.recipe_id).filter((x): x is string => !!x);
     const zonderRecept = plan.filter((p) => !p.recipe_id && !p.soort).map((p) => p.custom_title).filter(Boolean);
@@ -640,22 +673,15 @@ function PlannerPage() {
       toast.error("Geen ingrediënten gevonden");
       return;
     }
-    try {
-      await voegToeAanLijst(
-        user.id,
-        listId,
-        data.map((i) => ({
-          name: i.name as string,
-          quantity: i.quantity as number | null,
-          unit: (i.unit as string) ?? "",
-          recipe_id: i.recipe_id as string,
-        })),
-      );
-      toast.success("Alles staat op je boodschappenlijst");
-      qc.invalidateQueries({ queryKey: ["shopping"] });
-    } catch {
-      toast.error("Toevoegen lukte niet");
-    }
+    await ingredienNaarLijst(
+      data.map((i) => ({
+        name: i.name as string,
+        quantity: i.quantity as number | null,
+        unit: (i.unit as string) ?? "",
+        recipe_id: i.recipe_id as string,
+      })),
+      listId,
+    );
   }
 
   function verschuif(weken: number) {
@@ -878,6 +904,52 @@ function PlannerPage() {
         </SheetContent>
       </Sheet>
 
+      {/* Eén rustige controle als ingrediënten al op de lijst staan. */}
+      <Sheet open={!!dubbelVraag} onOpenChange={(open) => { if (!open) setDubbelVraag(null); }}>
+        <SheetContent side="bottom" className="flex max-h-[85dvh] flex-col gap-0 p-0">
+          <SheetHeader className="border-b border-border px-4 pb-3 pt-4 text-left">
+            <SheetTitle>Dit staat al op je lijst</SheetTitle>
+            <SheetDescription>
+              Kies per ingrediënt of je het nog eens toevoegt. De rest komt er gewoon bij.
+            </SheetDescription>
+          </SheetHeader>
+          <ul className="flex-1 space-y-2 overflow-y-auto px-4 py-4">
+            {dubbelVraag?.dubbels.map((d) => {
+              const aan = dubbelVraag.gekozen.has(d.index);
+              return (
+                <li key={d.index}>
+                  <button
+                    type="button"
+                    aria-pressed={aan}
+                    onClick={() =>
+                      setDubbelVraag((v) => {
+                        if (!v) return v;
+                        const gekozen = new Set(v.gekozen);
+                        if (gekozen.has(d.index)) gekozen.delete(d.index);
+                        else gekozen.add(d.index);
+                        return { ...v, gekozen };
+                      })
+                    }
+                    className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-border bg-card p-3 text-left"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-base font-semibold">{d.name}</span>
+                      <span className="block text-sm text-muted-foreground">Staat al op je lijst: {d.bestaand}</span>
+                    </span>
+                    <span className={aan ? "shrink-0 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground" : "shrink-0 rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground"}>
+                      {aan ? "Nog eens toevoegen" : "Niet toevoegen"}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="grid gap-2 border-t border-border p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+            <Button className="h-14 text-base" onClick={dubbelBevestigen}>Klaar</Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {instellingenOpen && (
         <WeekmenuInstellingen
           instelling={weekmenu}
@@ -1085,7 +1157,6 @@ function ReceptKiezer({
   onNieuw: (naam: string, basis: Basis | null, datum: string, moment: string, extra?: NieuwExtra) => void;
 }) {
   const { user } = useAuth();
-  const demo = isDemo();
   const { taal } = useVoorkeuren();
   const [zoek, setZoek] = useState("");
   const [datum, setDatum] = useState(start.datum);
@@ -1264,7 +1335,6 @@ function ReceptKiezer({
     refetch: herlaadRecepten,
   } = useQuery({
     queryKey: ["recipes"],
-    enabled: !demo,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("recipes")
@@ -1276,18 +1346,16 @@ function ReceptKiezer({
       return data as Recipe[];
     },
   });
-  if (demo) recipes = DEMO_RECEPTEN;
 
-  const { data: favorietenDb = [] } = useQuery({
+  const { data: favorieten = [] } = useQuery({
     queryKey: ["favorites", user?.id],
-    enabled: !!user && !demo,
+    enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase.from("favorites").select("recipe_id");
       if (error) throw error;
       return data.map((f) => f.recipe_id as string);
     },
   });
-  const favorieten = demo ? DEMO_FAVORIETEN : favorietenDb;
 
   // Wanneer stond een gerecht voor het laatst (of eerstkomend) in de planning?
   const { data: laatst = {} } = useQuery({
