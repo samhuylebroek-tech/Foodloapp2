@@ -19,6 +19,7 @@ import { Route as FeedbackRouteImport } from './routes/feedback'
 import { Route as GerechtenRouteImport } from './routes/gerechten'
 import { Route as GezinRouteImport } from './routes/gezin'
 import { Route as InfoRouteImport } from './routes/info'
+import { Route as InspiratieRouteImport } from './routes/inspiratie'
 import { Route as InstallerenRouteImport } from './routes/installeren'
 import { Route as InstellingenRouteImport } from './routes/instellingen'
 import { Route as MeerRouteImport } from './routes/meer'
@@ -126,6 +127,11 @@ const GezinRoute = GezinRouteImport.update({
 const InfoRoute = InfoRouteImport.update({
   id: '/info',
   path: '/info',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InspiratieRoute = InspiratieRouteImport.update({
+  id: '/inspiratie',
+  path: '/inspiratie',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InstallerenRoute = InstallerenRouteImport.update({
@@ -431,6 +437,7 @@ export interface FileRoutesByFullPath {
   '/gerechten': typeof GerechtenRoute
   '/gezin': typeof GezinRoute
   '/info': typeof InfoRoute
+  '/inspiratie': typeof InspiratieRoute
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
   '/meer': typeof MeerRoute
@@ -500,6 +507,7 @@ export interface FileRoutesByTo {
   '/gerechten': typeof GerechtenRoute
   '/gezin': typeof GezinRoute
   '/info': typeof InfoRoute
+  '/inspiratie': typeof InspiratieRoute
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
   '/meer': typeof MeerRoute
@@ -570,6 +578,7 @@ export interface FileRoutesById {
   '/gerechten': typeof GerechtenRoute
   '/gezin': typeof GezinRoute
   '/info': typeof InfoRoute
+  '/inspiratie': typeof InspiratieRoute
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
   '/meer': typeof MeerRoute
@@ -642,6 +651,7 @@ export interface FileRouteTypes {
     | '/gerechten'
     | '/gezin'
     | '/info'
+    | '/inspiratie'
     | '/installeren'
     | '/instellingen'
     | '/meer'
@@ -711,6 +721,7 @@ export interface FileRouteTypes {
     | '/gerechten'
     | '/gezin'
     | '/info'
+    | '/inspiratie'
     | '/installeren'
     | '/instellingen'
     | '/meer'
@@ -780,6 +791,7 @@ export interface FileRouteTypes {
     | '/gerechten'
     | '/gezin'
     | '/info'
+    | '/inspiratie'
     | '/installeren'
     | '/instellingen'
     | '/meer'
@@ -851,6 +863,7 @@ export interface RootRouteChildren {
   GerechtenRoute: typeof GerechtenRoute
   GezinRoute: typeof GezinRoute
   InfoRoute: typeof InfoRoute
+  InspiratieRoute: typeof InspiratieRoute
   InstallerenRoute: typeof InstallerenRoute
   InstellingenRoute: typeof InstellingenRoute
   MeerRoute: typeof MeerRoute
@@ -941,6 +954,13 @@ declare module '@tanstack/react-router' {
       path: '/info'
       fullPath: '/info'
       preLoaderRoute: typeof InfoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inspiratie': {
+      id: '/inspiratie'
+      path: '/inspiratie'
+      fullPath: '/inspiratie'
+      preLoaderRoute: typeof InspiratieRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/installeren': {
@@ -1462,6 +1482,7 @@ const rootRouteChildren: RootRouteChildren = {
   GerechtenRoute: GerechtenRoute,
   GezinRoute: GezinRoute,
   InfoRoute: InfoRoute,
+  InspiratieRoute: InspiratieRoute,
   InstallerenRoute: InstallerenRoute,
   InstellingenRoute: InstellingenRoute,
   MeerRoute: MeerRoute,
