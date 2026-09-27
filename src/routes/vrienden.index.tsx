@@ -466,12 +466,12 @@ function VriendenPage() {
         <div className="flex items-center justify-between gap-4">
           <p className="text-base text-muted-foreground">Samen plannen, delen en koken.</p>
           <Button
-            size="icon"
+            className="shrink-0 px-4"
             onClick={() => setNieuwOpen((v) => !v)}
             aria-label={nieuwOpen ? "Uitnodiging sluiten" : "Iemand toevoegen"}
             aria-expanded={nieuwOpen}
           >
-            {nieuwOpen ? <X aria-hidden /> : <Plus aria-hidden />}
+            {nieuwOpen ? <><X aria-hidden /> Sluiten</> : <><Plus aria-hidden /> Toevoegen</>}
           </Button>
         </div>
 
