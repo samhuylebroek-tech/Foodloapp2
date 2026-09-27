@@ -12,6 +12,7 @@ import {
 } from "@/lib/inspiratie";
 import { toonBelgischeMaat } from "@/lib/ingredienten";
 import { useAuth } from "@/hooks/useAuth";
+import { useSignedUrl } from "@/lib/photos";
 
 export const Route = createFileRoute("/inspiratie/$id")({
   head: () => ({
@@ -36,6 +37,7 @@ function InspiratieDetailPage() {
   const [toegevoegd, setToegevoegd] = useState<{ recipeId: string; bestondAl: boolean } | null>(null);
   const [bereidingOpen, setBereidingOpen] = useState(false);
   const [fotoKapot, setFotoKapot] = useState(false);
+  const fotoUrl = useSignedUrl(recept?.image_url ?? null);
 
   const { data: recept, isLoading } = useQuery({
     queryKey: ["inspiratie", id],

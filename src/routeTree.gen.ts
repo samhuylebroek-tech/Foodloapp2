@@ -51,6 +51,7 @@ import { Route as BeheerSysteemRouteImport } from './routes/beheer.systeem'
 import { Route as BeheerTeamRouteImport } from './routes/beheer.team'
 import { Route as BeheerTekstenRouteImport } from './routes/beheer.teksten'
 import { Route as BeheerUiRouteImport } from './routes/beheer.ui'
+import { Route as InspiratieIndexRouteImport } from './routes/inspiratie.index'
 import { Route as InspiratieIdRouteImport } from './routes/inspiratie.$id'
 import { Route as KaartenIndexRouteImport } from './routes/kaarten.index'
 import { Route as KaartenIdRouteImport } from './routes/kaarten.$id'
@@ -290,6 +291,11 @@ const BeheerUiRoute = BeheerUiRouteImport.update({
   path: '/ui',
   getParentRoute: () => BeheerRoute,
 } as any)
+const InspiratieIndexRoute = InspiratieIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => InspiratieRoute,
+} as any)
 const InspiratieIdRoute = InspiratieIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -480,6 +486,7 @@ export interface FileRoutesByFullPath {
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/vrienden/$id': typeof VriendenIdRoute
   '/beheer/': typeof BeheerIndexRoute
+  '/inspiratie/': typeof InspiratieIndexRoute
   '/kaarten/': typeof KaartenIndexRoute
   '/vrienden/': typeof VriendenIndexRoute
   '/beheer/gebruiker/$id': typeof BeheerGebruikerIdRoute
@@ -514,7 +521,6 @@ export interface FileRoutesByTo {
   '/gerechten': typeof GerechtenRoute
   '/gezin': typeof GezinRoute
   '/info': typeof InfoRoute
-  '/inspiratie': typeof InspiratieRouteWithChildren
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
   '/meer': typeof MeerRoute
@@ -550,6 +556,7 @@ export interface FileRoutesByTo {
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/vrienden/$id': typeof VriendenIdRoute
   '/beheer': typeof BeheerIndexRoute
+  '/inspiratie': typeof InspiratieIndexRoute
   '/kaarten': typeof KaartenIndexRoute
   '/vrienden': typeof VriendenIndexRoute
   '/beheer/gebruiker/$id': typeof BeheerGebruikerIdRoute
@@ -623,6 +630,7 @@ export interface FileRoutesById {
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/vrienden/$id': typeof VriendenIdRoute
   '/beheer/': typeof BeheerIndexRoute
+  '/inspiratie/': typeof InspiratieIndexRoute
   '/kaarten/': typeof KaartenIndexRoute
   '/vrienden/': typeof VriendenIndexRoute
   '/beheer/gebruiker/$id': typeof BeheerGebruikerIdRoute
@@ -697,6 +705,7 @@ export interface FileRouteTypes {
     | '/recepten/nieuw'
     | '/vrienden/$id'
     | '/beheer/'
+    | '/inspiratie/'
     | '/kaarten/'
     | '/vrienden/'
     | '/beheer/gebruiker/$id'
@@ -731,7 +740,6 @@ export interface FileRouteTypes {
     | '/gerechten'
     | '/gezin'
     | '/info'
-    | '/inspiratie'
     | '/installeren'
     | '/instellingen'
     | '/meer'
@@ -767,6 +775,7 @@ export interface FileRouteTypes {
     | '/recepten/nieuw'
     | '/vrienden/$id'
     | '/beheer'
+    | '/inspiratie'
     | '/kaarten'
     | '/vrienden'
     | '/beheer/gebruiker/$id'
@@ -839,6 +848,7 @@ export interface FileRouteTypes {
     | '/recepten/nieuw'
     | '/vrienden/$id'
     | '/beheer/'
+    | '/inspiratie/'
     | '/kaarten/'
     | '/vrienden/'
     | '/beheer/gebruiker/$id'
@@ -1192,6 +1202,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerUiRouteImport
       parentRoute: typeof BeheerRoute
     }
+    '/inspiratie/': {
+      id: '/inspiratie/'
+      path: '/'
+      fullPath: '/inspiratie/'
+      preLoaderRoute: typeof InspiratieIndexRouteImport
+      parentRoute: typeof InspiratieRoute
+    }
     '/inspiratie/$id': {
       id: '/inspiratie/$id'
       path: '/$id'
@@ -1492,10 +1509,12 @@ const BeheerRouteWithChildren =
 
 interface InspiratieRouteChildren {
   InspiratieIdRoute: typeof InspiratieIdRoute
+  InspiratieIndexRoute: typeof InspiratieIndexRoute
 }
 
 const InspiratieRouteChildren: InspiratieRouteChildren = {
   InspiratieIdRoute: InspiratieIdRoute,
+  InspiratieIndexRoute: InspiratieIndexRoute,
 }
 
 const InspiratieRouteWithChildren = InspiratieRoute._addFileChildren(
