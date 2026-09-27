@@ -883,6 +883,54 @@ function PlannerPage() {
           </Button>
         </section>
 
+        {week.includes(vandaag) ? (
+          <section
+            aria-label="Vandaag"
+            className="rounded-xl border border-primary/30 bg-accent/40 p-4"
+          >
+            {(() => {
+              const vandaagItems = plan.filter((p) => p.plan_date === vandaag);
+              const metRecept = vandaagItems.filter((p) => p.recipe_id).length;
+              const datum = new Date(`${vandaag}T12:00:00`);
+              return (
+                <>
+                  <p className="text-xs font-bold uppercase tracking-wide text-primary">Vandaag</p>
+                  <h2 className="font-display text-xl capitalize">
+                    {datum.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" })}
+                  </h2>
+                  {vandaagItems.length ? (
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {vandaagItems.length} {vandaagItems.length === 1 ? "gerecht" : "gerechten"} vandaag
+                      {metRecept ? ` · ${metRecept} met recept` : ""}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-sm text-muted-foreground">Nog niets gepland voor vandaag.</p>
+                  )}
+                  <div className="mt-3 grid gap-2">
+                    {metRecept ? (
+                      <Button
+                        onClick={() => void boodschappenVoorDag(vandaag)}
+                        className="h-14 w-full text-base"
+                      >
+                        <ShoppingCart className="size-5" /> Boodschappen voor vandaag
+                      </Button>
+                    ) : null}
+                    {!vandaagItems.length && momenten.length ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => setKiezen({ datum: vandaag, moment: momenten[momenten.length - 1] ?? "avondeten" })}
+                        className="h-14 w-full text-base"
+                      >
+                        <Plus className="size-5" /> Gerecht toevoegen voor vandaag
+                      </Button>
+                    ) : null}
+                  </div>
+                </>
+              );
+            })()}
+          </section>
+        ) : null}
+
         <div className={weekmenu.weergave === "kaarten" ? "-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2" : "space-y-1"}>
         {zichtbareDagen.map((dag) => {
           const items = plan.filter((p) => p.plan_date === dag);
