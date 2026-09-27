@@ -483,7 +483,7 @@ function ReceptPage() {
               ))}
             </ul>
           </details> : null}
-          <div className="mt-10 flex gap-3">
+          <div className="sticky bottom-0 -mx-6 mt-10 flex gap-3 bg-background/95 px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
             <Button
               variant="secondary"
               disabled={voorbereiding}
