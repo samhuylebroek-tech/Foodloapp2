@@ -961,25 +961,106 @@ function BoodschappenPage() {
         )}
 
         <Accordion type="single" collapsible className="rounded-2xl bg-card px-4 ring-1 ring-border/60">
-          <AccordionItem value="handig" className="border-0">
-            <AccordionTrigger className="min-h-14 text-base no-underline hover:no-underline">Meer voor deze lijst</AccordionTrigger>
-            <AccordionContent className="space-y-2">
-              <Button variant="outline" onClick={vinkVoorraadAf} className="w-full justify-start"><Package />Vink af wat ik al in huis heb</Button>
-              <Button variant="outline" onClick={() => setDeelOpen(true)} className="w-full justify-start"><Share2 />Lijst delen</Button>
-              {klaar.length > 0 ? <Button variant="ghost" onClick={() => setWisVraag("afgevinkt")} className="w-full justify-start"><Trash2 />Afgevinkte wissen</Button> : null}
-              {items.length > 0 ? <Button variant="ghost" onClick={() => setWisVraag("alles")} className="w-full justify-start text-destructive"><Trash2 />Hele lijst leegmaken</Button> : null}
-              <div className="pt-2"><Klantenkaarten /></div>
-            </AccordionContent>
+          <AccordionItem value="kaarten" className="border-0">
+            <AccordionTrigger className="min-h-14 text-base no-underline hover:no-underline">Klantenkaarten</AccordionTrigger>
+            <AccordionContent><Klantenkaarten /></AccordionContent>
           </AccordionItem>
         </Accordion>
       </div>
+
+      <Sheet open={meerOpen} onOpenChange={setMeerOpen}>
+        <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto rounded-t-2xl">
+          <SheetHeader>
+            <SheetTitle>Meer opties</SheetTitle>
+            <SheetDescription>Alles voor “{actieveNaam}”.</SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 space-y-2 pb-4">
+            <Button variant="outline" className="h-14 w-full justify-start text-base" onClick={() => { setMeerOpen(false); setDeelOpen(true); }}><Share2 /> Lijst delen</Button>
+            <Button variant="outline" className="h-14 w-full justify-start text-base" onClick={() => { setMeerOpen(false); void vinkVoorraadAf(); }}><Package /> Vink af wat ik al in huis heb</Button>
+            {items.length > 0 ? <Button variant="outline" className="h-14 w-full justify-start text-base" onClick={() => { setMeerOpen(false); setKiesModus(true); setGekozen(new Set()); }}><CheckCheck /> Meerdere tegelijk kiezen</Button> : null}
+            <Button variant="outline" className="h-14 w-full justify-start text-base" onClick={() => { setMeerOpen(false); setLijstNaam(""); setNaamVenster("nieuw"); }}><ListPlus /> Nieuw lijstje maken</Button>
+            {actieveLijst && !actieveLijst.group_id ? <Button variant="outline" className="h-14 w-full justify-start text-base" onClick={() => { setMeerOpen(false); setLijstNaam(actieveNaam); setNaamVenster("hernoem"); }}><Pencil /> Naam van de lijst wijzigen</Button> : null}
+            {klaar.length > 0 ? <Button variant="outline" className="h-14 w-full justify-start text-base" onClick={() => { setMeerOpen(false); setWisVraag("afgevinkt"); }}><Trash2 /> Gekochte opruimen ({klaar.length})</Button> : null}
+            {items.length > 0 ? <Button variant="outline" className="h-14 w-full justify-start text-base text-destructive" onClick={() => { setMeerOpen(false); setWisVraag("alles"); }}><Trash2 /> Hele lijst leegmaken</Button> : null}
+            {lijsten.length > 1 && !actieveLijst?.group_id ? <Button variant="outline" className="h-14 w-full justify-start text-base text-destructive" onClick={() => { setMeerOpen(false); setVraagVerwijder(true); }}><Trash2 /> Dit lijstje verwijderen</Button> : null}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={geheugenOpen} onOpenChange={setGeheugenOpen}>
+        <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto rounded-t-2xl">
+          <SheetHeader>
+            <SheetTitle>Eerder gekocht</SheetTitle>
+            <SheetDescription>Tik op + om iets opnieuw op je lijst te zetten.</SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 space-y-6 pb-4">
+            <section aria-label="Vaste boodschappen">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="flex items-center gap-2 text-lg font-semibold"><Star className="size-5 text-accent-foreground" /> Vaste boodschappen</h3>
+                {vaste.length > 0 ? (
+                  <Button className="h-12" onClick={() => void voegMeerdereToe(vaste, "Je vaste boodschappen staan op je lijst")}>Alles toevoegen</Button>
+                ) : null}
+              </div>
+              {vaste.length === 0 ? (
+                <p className="mt-1 text-base text-muted-foreground">Tik op het sterretje bij een product om het een vaste boodschap te maken.</p>
+              ) : (
+                <ul className="mt-2 divide-y divide-border/70">
+                  {vaste.map((v) => (
+                    <GeheugenRij key={v.id} naam={v.name} sub={toonBelgischeMaat(v.quantity, v.unit)} vast onVast={() => void wisselVast(v)} onPlus={() => void voegMeerdereToe([v], `${v.name} staat op je lijst`)} />
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <section aria-label="Wat koop ik vaak">
+              <h3 className="text-lg font-semibold">Wat koop je vaak?</h3>
+              {vaak.length === 0 ? (
+                <p className="mt-1 text-base text-muted-foreground">Dit vult zich vanzelf: wat je afvinkt en opruimt, onthoudt Foodlo hier.</p>
+              ) : (
+                <ul className="mt-2 divide-y divide-border/70">
+                  {vaak.map((e) => (
+                    <GeheugenRij key={e.name} naam={e.name} sub={`${e.keer} keer gekocht`} vast={isVast(e.name)} onVast={() => void wisselVast(e)} onPlus={() => void voegMeerdereToe([e], `${e.name} staat op je lijst`)} />
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            {beurten.length > 0 ? (
+              <section aria-label="Vorige boodschappen">
+                <h3 className="text-lg font-semibold">Vorige boodschappen</h3>
+                <Accordion type="single" collapsible>
+                  {beurten.map((b) => (
+                    <AccordionItem key={b.dag} value={b.dag}>
+                      <AccordionTrigger className="min-h-14 text-base capitalize no-underline hover:no-underline">
+                        {datumLabel(b.dag)} · {b.lijst.length} {b.lijst.length === 1 ? "product" : "producten"}
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <Button variant="outline" className="mb-2 h-12 w-full" onClick={() => void voegMeerdereToe(b.lijst, "Alles staat weer op je lijst")}>
+                          <Plus /> Alles opnieuw op de lijst
+                        </Button>
+                        <ul className="divide-y divide-border/70">
+                          {b.lijst.map((r) => (
+                            <GeheugenRij key={r.id} naam={r.name} sub={toonBelgischeMaat(r.quantity, r.unit)} vast={isVast(r.name)} onVast={() => void wisselVast(r)} onPlus={() => void voegMeerdereToe([r], `${r.name} staat op je lijst`)} />
+                          ))}
+                        </ul>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </section>
+            ) : null}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {winkel && (
         <Winkelmodus
           groepen={groepen}
           openAantal={openAantal}
+          aantalGekocht={klaar.length}
           onVink={(item) => void vink(item)}
           onSluit={() => setWinkel(false)}
+          onOpruimen={() => { setWinkel(false); void wisAfgevinkt(); }}
         />
       )}
 
