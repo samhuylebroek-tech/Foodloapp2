@@ -735,8 +735,8 @@ function PlannerPage() {
     const titel = datum.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" });
     const kaart = (p: PlanRow) => (
                     <li key={p.id} className="flex min-h-24 items-center gap-2 rounded-2xl border border-border bg-card p-3">
-                      {p.recipe_id ? <Link to="/recepten/$id" params={{ id: p.recipe_id }} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ReceptFoto url={p.recipes?.image_url ?? null} /><span className="min-w-0"><span className="block text-xs font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.recipes?.title ?? "Recept"}</span>{p.recipes ? <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground"><Clock3 className="size-3.5" /> {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) || "Tijd niet ingevuld"}</span> : null}</span></Link> : <div className="flex min-w-0 flex-1 items-center gap-3"><ReceptFoto url={null} /><span className="min-w-0"><span className="block text-xs font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.custom_title}</span>{!p.soort ? <button type="button" onClick={() => setKoppelRij(p)} className="mt-0.5 block text-left text-xs font-semibold text-primary underline underline-offset-2">Nog geen recept · koppelen</button> : null}</span></div>}
-                      {weergave === "gezin" && p.user_id !== user?.id ? <Avatar naam={plannerNamen[p.user_id] ?? "?"} sleutel={p.user_id} className="size-8 shrink-0 text-xs" /> : null}
+                      {p.recipe_id ? <Link to="/recepten/$id" params={{ id: p.recipe_id }} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ReceptFoto url={p.recipes?.image_url ?? null} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.recipes?.title ?? "Recept"}</span>{p.recipes ? <span className="mt-0.5 flex items-center gap-1 text-base text-muted-foreground"><Clock3 className="size-3.5" /> {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) || "Tijd niet ingevuld"}</span> : null}</span></Link> : <div className="flex min-w-0 flex-1 items-center gap-3"><ReceptFoto url={null} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.custom_title}</span>{!p.soort ? <button type="button" onClick={() => setKoppelRij(p)} className="mt-0.5 block text-left text-base font-semibold text-primary underline underline-offset-2">Nog geen recept · koppelen</button> : null}</span></div>}
+                      {weergave === "gezin" && p.user_id !== user?.id ? <Avatar naam={plannerNamen[p.user_id] ?? "?"} sleutel={p.user_id} className="size-8 shrink-0 text-base" /> : null}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" aria-label={`Acties voor ${p.recipes?.title ?? p.custom_title ?? "maaltijd"}`} className="size-12 shrink-0"><MoreVertical className="size-5" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-60 p-2">
@@ -839,7 +839,7 @@ function PlannerPage() {
                   <span className="font-display text-xl font-semibold leading-tight">
                     {weekVerschil === 0 ? "Deze week" : weekVerschil === 1 ? "Volgende week" : weekVerschil === -1 ? "Vorige week" : "Week"}
                   </span>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-base text-muted-foreground">
                     {new Date(`${week[0]}T12:00:00`).toLocaleDateString("nl-BE", { day: "numeric", month: "short" })}
                     {" – "}
                     {new Date(`${week[6]}T12:00:00`).toLocaleDateString("nl-BE", { day: "numeric", month: "short" })}
@@ -873,7 +873,7 @@ function PlannerPage() {
             <button
               type="button"
               onClick={() => { setWeekStart(huidigeWeek); setDagKeuze(vandaag); setHeleWeek(false); }}
-              className="mx-auto mt-2 flex h-10 items-center rounded-full bg-secondary px-4 text-sm font-semibold text-secondary-foreground"
+              className="mx-auto mt-2 flex h-10 items-center rounded-full bg-secondary px-4 text-base font-semibold text-secondary-foreground"
             >
               Terug naar vandaag
             </button>
@@ -924,7 +924,7 @@ function PlannerPage() {
                     verborgen && !actief ? "opacity-40" : "",
                   ].join(" ")}
                 >
-                  <span className="text-xs font-semibold uppercase tracking-wide">
+                  <span className="text-base font-semibold uppercase tracking-wide">
                     {d.toLocaleDateString("nl-BE", { weekday: "short" }).replace(".", "")}
                   </span>
                   <span className="font-display text-xl font-semibold leading-none">{d.getDate()}</span>
@@ -998,7 +998,7 @@ function PlannerPage() {
                   <ShoppingCart className="size-5" /> Hele week op de lijst
                 </Button>
                 <div>
-                  <p className="mb-2 text-sm font-semibold text-muted-foreground">Of kies één dag</p>
+                  <p className="mb-2 text-base font-semibold text-muted-foreground">Of kies één dag</p>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {getoondeDagen
                       .filter((dag) => plan.some((p) => p.plan_date === dag && p.recipe_id))
@@ -1012,7 +1012,7 @@ function PlannerPage() {
                             className="h-14 w-full justify-between px-4 text-base capitalize"
                           >
                             <span>{labelVoor(dag)}</span>
-                            <span className="text-sm font-normal text-muted-foreground">{aantal} {aantal === 1 ? "gerecht" : "gerechten"}</span>
+                            <span className="text-base font-normal text-muted-foreground">{aantal} {aantal === 1 ? "gerecht" : "gerechten"}</span>
                           </Button>
                         );
                       })}
@@ -1053,7 +1053,7 @@ function PlannerPage() {
                 </SheetHeader>
                 <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
                   <div>
-                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Al op je lijst</p>
+                    <p className="mb-2 text-base font-bold uppercase tracking-wide text-muted-foreground">Al op je lijst</p>
                     <ul className="space-y-2">
                       {dubbelVraag.dubbels.map((d) => {
                         const aan = dubbelVraag.gekozen.has(d.index);
@@ -1075,9 +1075,9 @@ function PlannerPage() {
                             >
                               <span className="min-w-0 flex-1">
                                 <span className="block text-base font-semibold">{d.name}</span>
-                                <span className="block text-sm text-muted-foreground">Staat al op je lijst: {d.bestaand}</span>
+                                <span className="block text-base text-muted-foreground">Staat al op je lijst: {d.bestaand}</span>
                               </span>
-                              <span className={aan ? "shrink-0 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground" : "shrink-0 rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground"}>
+                              <span className={aan ? "shrink-0 rounded-full bg-primary px-3 py-1 text-base font-semibold text-primary-foreground" : "shrink-0 rounded-full bg-secondary px-3 py-1 text-base font-semibold text-secondary-foreground"}>
                                 {aan ? "Nog eens toevoegen" : "Niet toevoegen"}
                               </span>
                             </button>
@@ -1088,7 +1088,7 @@ function PlannerPage() {
                   </div>
                   {nieuweItems.length ? (
                     <div>
-                      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Nieuw — komt er automatisch bij</p>
+                      <p className="mb-2 text-base font-bold uppercase tracking-wide text-muted-foreground">Nieuw — komt er automatisch bij</p>
                       <ul className="space-y-1">
                         {nieuweItems.map((item, i) => (
                           <li key={i} className="flex min-h-10 items-center gap-2 rounded-lg px-3 text-base">
@@ -1321,7 +1321,7 @@ function GerechtKaart({ recept, onKies }: { recept: Recipe; onKies: () => void }
       )}
       <span className="min-w-0 flex-1">
         <span className="line-clamp-2 block text-base font-semibold leading-snug">{recept.title}</span>
-        {info && <span className="mt-0.5 block text-sm font-normal text-muted-foreground">{info}</span>}
+        {info && <span className="mt-0.5 block text-base font-normal text-muted-foreground">{info}</span>}
       </span>
       <Plus className="size-5 shrink-0 text-primary" aria-hidden />
     </Button>
@@ -1682,7 +1682,7 @@ function ReceptKiezer({
             variant={d === datum ? "default" : "outline"}
             className="h-14 min-w-20 shrink-0 flex-col gap-0 px-3 capitalize"
           >
-            <span className="text-xs font-medium">{new Date(`${d}T12:00:00`).toLocaleDateString("nl-BE", { weekday: "short" })}</span>
+            <span className="text-base font-medium">{new Date(`${d}T12:00:00`).toLocaleDateString("nl-BE", { weekday: "short" })}</span>
             <span className="text-base font-semibold">{new Date(`${d}T12:00:00`).getDate()}</span>
           </Button>
         ))}
@@ -1712,7 +1712,7 @@ function ReceptKiezer({
               onClick={() => setMoment(m)}
               aria-pressed={m === moment}
               variant={m === moment ? "default" : "outline"}
-              className="h-14 px-2 text-sm capitalize"
+              className="h-14 px-2 text-base capitalize"
             >
               {m}
             </Button>
@@ -1746,7 +1746,7 @@ function ReceptKiezer({
         <SheetHeader className="border-b border-border px-4 pb-3 pt-4 text-left">
           <SheetTitle>Kies een maaltijd</SheetTitle>
           <SheetDescription asChild>
-            <Button variant="ghost" onClick={() => setDagKiezen(true)} className="h-auto min-h-0 w-fit justify-start p-0 text-sm font-semibold capitalize text-primary">
+            <Button variant="ghost" onClick={() => setDagKiezen(true)} className="h-auto min-h-0 w-fit justify-start p-0 text-base font-semibold capitalize text-primary">
               {labelVoor(datum)}{moment && moment !== "maaltijd" ? ` · ${moment}` : ""} <span className="font-normal underline underline-offset-4">Wijzig</span>
             </Button>
           </SheetDescription>
@@ -1759,7 +1759,7 @@ function ReceptKiezer({
               ["inspiratie", "Inspiratie"],
               ["nieuw", "Nieuw"],
             ] as const).map(([id, label]) => (
-              <Button key={id} role="tab" aria-selected={bron === id} variant={bron === id ? "default" : "ghost"} onClick={() => setBron(id)} className="h-12 min-w-0 px-2 text-sm">
+              <Button key={id} role="tab" aria-selected={bron === id} variant={bron === id ? "default" : "ghost"} onClick={() => setBron(id)} className="h-12 min-w-0 px-2 text-base">
                 <span className="truncate">{label}</span>
               </Button>
             ))}
@@ -1783,7 +1783,7 @@ function ReceptKiezer({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" sideOffset={8} className="w-64 rounded-xl bg-card p-2 shadow-xl">
-                    <DropdownMenuLabel className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Welke recepten</DropdownMenuLabel>
+                    <DropdownMenuLabel className="px-3 py-1 text-base font-semibold uppercase tracking-wide text-muted-foreground">Welke recepten</DropdownMenuLabel>
                     {filterOpties.map(({ id, label, uitleg, icon: Icon }) => (
                       <DropdownMenuItem
                         key={id}
@@ -1793,13 +1793,13 @@ function ReceptKiezer({
                         <Icon className="size-5 text-primary" />
                         <span className="min-w-0 flex-1">
                           <span className="block font-semibold">{label}</span>
-                          <span className="block text-sm text-muted-foreground">{uitleg}</span>
+                          <span className="block text-base text-muted-foreground">{uitleg}</span>
                         </span>
                         {receptFilter === id ? <Check className="size-5 text-primary" aria-hidden /> : null}
                       </DropdownMenuItem>
                     ))}
                     <DropdownMenuSeparator className="my-2" />
-                    <DropdownMenuLabel className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Type gerecht</DropdownMenuLabel>
+                    <DropdownMenuLabel className="px-3 py-1 text-base font-semibold uppercase tracking-wide text-muted-foreground">Type gerecht</DropdownMenuLabel>
                     <DropdownMenuItem onSelect={() => setSoortFilter(null)} className="min-h-12 rounded-lg px-3 text-base">
                       <UtensilsCrossed className="size-5 text-primary" />
                       <span className="min-w-0 flex-1 font-semibold">Alle types</span>
@@ -1816,8 +1816,8 @@ function ReceptKiezer({
                 </DropdownMenu>
               </div>
               <div className="mt-3 flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold">{actiefFilter.label}{actieveSoortLabel ? ` · ${actieveSoortLabel}` : ""}</p>
-                <p className="text-sm text-muted-foreground">{gefilterdeRecepten.length} {gefilterdeRecepten.length === 1 ? "recept" : "recepten"}</p>
+                <p className="text-base font-semibold">{actiefFilter.label}{actieveSoortLabel ? ` · ${actieveSoortLabel}` : ""}</p>
+                <p className="text-base text-muted-foreground">{gefilterdeRecepten.length} {gefilterdeRecepten.length === 1 ? "recept" : "recepten"}</p>
               </div>
             </div>
 
@@ -1840,10 +1840,10 @@ function ReceptKiezer({
                     <Button variant="outline" onClick={() => onNieuw(term, null, datum, moment, { maakRecept: true })} className="h-auto min-h-14 w-full justify-start whitespace-normal text-left text-base"><Plus className="size-5" /> Inplannen en recept maken of importeren</Button>
                   </>
                 ) : null}
-                <p className="px-1 pt-1 text-sm font-semibold text-muted-foreground">Snel kiezen</p>
+                <p className="px-1 pt-1 text-base font-semibold text-muted-foreground">Snel kiezen</p>
                 <div className="grid grid-cols-3 gap-2">
                   {([["Restjes", "restjes"], ["Uit eten", "uit_eten"], ["Later bepalen", "later"]] as const).map(([label, soort]) => (
-                    <Button key={soort} variant="secondary" onClick={() => onNieuw(label, null, datum, moment, { soort })} className="h-14 min-w-0 whitespace-normal px-2 text-sm leading-tight">{label}</Button>
+                    <Button key={soort} variant="secondary" onClick={() => onNieuw(label, null, datum, moment, { soort })} className="h-14 min-w-0 whitespace-normal px-2 text-base leading-tight">{label}</Button>
                   ))}
                 </div>
                 <Button variant="ghost" onClick={() => setBron("inspiratie")} className="h-14 w-full justify-start text-base"><Lightbulb className="size-5" /> Inspiratie nodig?</Button>
@@ -1853,7 +1853,7 @@ function ReceptKiezer({
         ) : bron === "inspiratie" ? (
           <div className="flex-1 space-y-3 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4">
             <div className="rounded-xl border border-border p-4">
-              <div className="flex items-start gap-3"><Sparkles className="mt-1 size-5 text-primary" /><div><p className="font-semibold">Laat Foodlo voorstellen</p><p className="text-sm text-muted-foreground">Past bij je voorkeuren en kooktijd · kost credits</p></div></div>
+              <div className="flex items-start gap-3"><Sparkles className="mt-1 size-5 text-primary" /><div><p className="font-semibold">Laat Foodlo voorstellen</p><p className="text-base text-muted-foreground">Past bij je voorkeuren en kooktijd · kost credits</p></div></div>
               <Button
                 disabled={ideeenBezig || aiBezig}
                 onClick={() => void laadIdeeen()}
@@ -1864,21 +1864,21 @@ function ReceptKiezer({
               </Button>
               {ideeen && ideeen.length > 0 ? <ul className="mt-3 space-y-2">
                 {ideeen.map((idee) => (
-                  <li key={idee.title}><Button variant="outline" disabled={aiBezig} onClick={() => void maakReceptVanIdee(idee.title)} className="h-auto min-h-16 w-full justify-start whitespace-normal py-3 text-left"><span><span className="block font-semibold">{idee.title}</span><span className="block text-sm font-normal text-muted-foreground">{[idee.waarom, `±${idee.minuten} min`].filter(Boolean).join(" · ")}</span></span></Button></li>
+                  <li key={idee.title}><Button variant="outline" disabled={aiBezig} onClick={() => void maakReceptVanIdee(idee.title)} className="h-auto min-h-16 w-full justify-start whitespace-normal py-3 text-left"><span><span className="block font-semibold">{idee.title}</span><span className="block text-base font-normal text-muted-foreground">{[idee.waarom, `±${idee.minuten} min`].filter(Boolean).join(" · ")}</span></span></Button></li>
                 ))}
               </ul> : null}
             </div>
 
             <div className="rounded-xl border border-border p-4">
-              <div className="flex items-start gap-3"><Globe className="mt-1 size-5 text-primary" /><div><p className="font-semibold">Zoek op het web</p><p className="text-sm text-muted-foreground">Vind een bestaand recept van een echte website · gratis</p></div></div>
+              <div className="flex items-start gap-3"><Globe className="mt-1 size-5 text-primary" /><div><p className="font-semibold">Zoek op het web</p><p className="text-base text-muted-foreground">Vind een bestaand recept van een echte website · gratis</p></div></div>
               <div className="mt-3 flex gap-2"><Input value={webTerm} onChange={(e) => setWebTerm(e.target.value)} placeholder="Bijv. pasta Jeroen Meus" aria-label="Zoek een gerecht op het web" className="h-14 text-base" /><Button disabled={webBezig || webTerm.trim().length < 3} onClick={() => void zoekWeb(webTerm)} className="h-14 shrink-0 px-4">{webBezig ? <Loader2 className="size-5 animate-spin" /> : <Search className="size-5" />}<span className="sr-only">Zoek</span></Button></div>
-              {webResultaten && webResultaten.length > 0 ? <ul className="mt-3 space-y-2">{webResultaten.map((r) => <li key={r.url}><Button variant="outline" disabled={webBezig} onClick={() => void kiesWeb(r)} className="h-auto min-h-16 w-full justify-start whitespace-normal py-3 text-left"><span><span className="block font-semibold">{r.titel}</span><span className="block text-sm font-normal text-muted-foreground">{[r.site, r.minuten ? `±${r.minuten} min` : ""].filter(Boolean).join(" · ")}</span></span></Button></li>)}</ul> : null}
+              {webResultaten && webResultaten.length > 0 ? <ul className="mt-3 space-y-2">{webResultaten.map((r) => <li key={r.url}><Button variant="outline" disabled={webBezig} onClick={() => void kiesWeb(r)} className="h-auto min-h-16 w-full justify-start whitespace-normal py-3 text-left"><span><span className="block font-semibold">{r.titel}</span><span className="block text-base font-normal text-muted-foreground">{[r.site, r.minuten ? `±${r.minuten} min` : ""].filter(Boolean).join(" · ")}</span></span></Button></li>)}</ul> : null}
             </div>
           </div>
         ) : (
           <div className="flex-1 space-y-4 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4">
             <div><label htmlFor="nieuwe-maaltijd" className="text-base font-semibold">Hoe heet de maaltijd?</label><Input id="nieuwe-maaltijd" value={zoek} onChange={(e) => setZoek(e.target.value)} placeholder="Bijv. soep met brood" className="mt-2 h-14 text-base" /></div>
-            {term ? <div className="space-y-2"><Button variant="outline" onClick={() => onNieuw(term, null, datum, moment)} className="h-14 w-full justify-start text-base"><Type className="size-5" /> Alleen als naam inplannen</Button><Button variant="outline" onClick={() => onNieuw(term, null, datum, moment, { maakRecept: true })} className="h-14 w-full justify-start text-base"><Pencil className="size-5" /> Zelf een recept maken of importeren</Button><Button disabled={aiBezig} onClick={() => void maakVoorstel(term)} className="h-14 w-full justify-start text-base">{aiBezig ? <Loader2 className="size-5 animate-spin" /> : <Sparkles className="size-5" />} {aiBezig ? "Foodlo maakt het recept…" : "Maak er een volledig recept van"}</Button><p className="px-1 text-sm text-muted-foreground">Een volledig recept maken kost credits. Je controleert het eerst.</p></div> : <p className="rounded-xl bg-secondary p-4 text-base text-muted-foreground">Typ een naam. Daarna kies je of alleen de naam genoeg is, of Foodlo een volledig recept maakt.</p>}
+            {term ? <div className="space-y-2"><Button variant="outline" onClick={() => onNieuw(term, null, datum, moment)} className="h-14 w-full justify-start text-base"><Type className="size-5" /> Alleen als naam inplannen</Button><Button variant="outline" onClick={() => onNieuw(term, null, datum, moment, { maakRecept: true })} className="h-14 w-full justify-start text-base"><Pencil className="size-5" /> Zelf een recept maken of importeren</Button><Button disabled={aiBezig} onClick={() => void maakVoorstel(term)} className="h-14 w-full justify-start text-base">{aiBezig ? <Loader2 className="size-5 animate-spin" /> : <Sparkles className="size-5" />} {aiBezig ? "Foodlo maakt het recept…" : "Maak er een volledig recept van"}</Button><p className="px-1 text-base text-muted-foreground">Een volledig recept maken kost credits. Je controleert het eerst.</p></div> : <p className="rounded-xl bg-secondary p-4 text-base text-muted-foreground">Typ een naam. Daarna kies je of alleen de naam genoeg is, of Foodlo een volledig recept maakt.</p>}
           </div>
         )}
       </SheetContent>
@@ -2692,7 +2692,7 @@ function WeekmenuVoorstel({
                     }
                   >
                   <span>{o.id === "eigen" ? "Uit mijn recepten" : "Ook nieuwe ideeën"}</span>
-                    <span className="text-sm font-normal opacity-80">{o.extra}</span>
+                    <span className="text-base font-normal opacity-80">{o.extra}</span>
                   </button>
                 ))}
               </div>
@@ -2717,7 +2717,7 @@ function WeekmenuVoorstel({
         ) : actieveRij && actieveRegel ? (
           <div className="mt-3">
             <div className="flex items-center justify-between gap-4">
-              <p className="text-sm font-semibold text-muted-foreground">Dag {actieveStap + 1} van {rijen.length}</p>
+              <p className="text-base font-semibold text-muted-foreground">Dag {actieveStap + 1} van {rijen.length}</p>
               <div className="flex items-center gap-1.5" aria-label="Voortgang">
                 {rijen.map((rij, index) => (
                   <span key={`${rij.datum}|${rij.moment}`} className={index === actieveStap ? "h-2 w-8 rounded-full bg-primary" : rij.aan ? "size-2 rounded-full bg-primary/50" : "size-2 rounded-full bg-border"} />
@@ -2743,7 +2743,7 @@ function WeekmenuVoorstel({
             <div className="mt-5 overflow-hidden rounded-2xl border border-border bg-card">
               <VoorstelFoto url={actieveRij.recept?.image_url ?? null} />
               <div className="p-5">
-                <p className="text-sm font-semibold uppercase text-primary">{actieveRij.idee ? "Nieuw idee" : "Voorstel van Foodlo"}</p>
+                <p className="text-base font-semibold uppercase text-primary">{actieveRij.idee ? "Nieuw idee" : "Voorstel van Foodlo"}</p>
                 <h4 className="mt-1 font-display text-2xl leading-tight">
                   {actieveRij.bezet ? "Er staat al iets ingepland" : actieveRegel.over ? "Deze dag is overgeslagen" : (actieveNaam ?? "Geen passend gerecht gevonden")}
                 </h4>
@@ -2754,18 +2754,18 @@ function WeekmenuVoorstel({
             {!actieveRij.bezet ? (
               <div className="mt-5 space-y-4">
                 <div>
-                  <p className="mb-2 flex items-center gap-2 text-sm font-semibold"><Clock3 className="size-4 text-primary" /> Kooktijd</p>
+                  <p className="mb-2 flex items-center gap-2 text-base font-semibold"><Clock3 className="size-4 text-primary" /> Kooktijd</p>
                   <div className="grid grid-cols-2 gap-2">
                     {TIJD_KEUZES.map((tijd) => (
-                      <Button key={tijd.id} type="button" variant={actieveRegel.maxMinuten === tijd.id ? "default" : "outline"} aria-pressed={actieveRegel.maxMinuten === tijd.id} onClick={() => zetRegel(actieveRij.datum, { maxMinuten: tijd.id })} className="h-12 whitespace-normal px-2 text-sm">{tijd.label}</Button>
+                      <Button key={tijd.id} type="button" variant={actieveRegel.maxMinuten === tijd.id ? "default" : "outline"} aria-pressed={actieveRegel.maxMinuten === tijd.id} onClick={() => zetRegel(actieveRij.datum, { maxMinuten: tijd.id })} className="h-12 whitespace-normal px-2 text-base">{tijd.label}</Button>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <p className="mb-2 flex items-center gap-2 text-sm font-semibold"><Utensils className="size-4 text-primary" /> Type gerecht</p>
+                  <p className="mb-2 flex items-center gap-2 text-base font-semibold"><Utensils className="size-4 text-primary" /> Type gerecht</p>
                   <div className="grid grid-cols-2 gap-2">
                     {SOORT_KEUZES.map((soort) => (
-                      <Button key={soort.label} type="button" variant={actieveRegel.soort === soort.id ? "default" : "outline"} aria-pressed={actieveRegel.soort === soort.id} onClick={() => zetRegel(actieveRij.datum, { soort: soort.id })} className="h-12 text-sm">{soort.label}</Button>
+                      <Button key={soort.label} type="button" variant={actieveRegel.soort === soort.id ? "default" : "outline"} aria-pressed={actieveRegel.soort === soort.id} onClick={() => zetRegel(actieveRij.datum, { soort: soort.id })} className="h-12 text-base">{soort.label}</Button>
                     ))}
                   </div>
                 </div>
@@ -2783,7 +2783,7 @@ function WeekmenuVoorstel({
                       </div>
                     </div>
                     <Button variant="outline" onClick={() => void kiesNieuwIdee(actieveRij)} disabled={!!bezigMet} className="h-14 w-full justify-start text-base">
-                      {bezigMet ? <Loader2 className="size-5 animate-spin" /> : <WandSparkles className="size-5 text-primary" />} Nieuw idee van Foodlo <span className="ml-auto text-sm font-normal text-muted-foreground">kost credits</span>
+                      {bezigMet ? <Loader2 className="size-5 animate-spin" /> : <WandSparkles className="size-5 text-primary" />} Nieuw idee van Foodlo <span className="ml-auto text-base font-normal text-muted-foreground">kost credits</span>
                     </Button>
                   </div>
                 ) : null}
@@ -2839,7 +2839,7 @@ function VerplaatsSheet({
         <div>
           <label htmlFor="verplaats-datum" className="text-base font-semibold">Dag</label>
           <Input id="verplaats-datum" type="date" value={datum} onChange={(e) => setDatum(e.target.value)} className="mt-2 h-14 text-base" />
-          <p className="mt-1 text-sm capitalize text-muted-foreground">{datum ? labelVoor(datum) : ""}</p>
+          <p className="mt-1 text-base capitalize text-muted-foreground">{datum ? labelVoor(datum) : ""}</p>
         </div>
         {opties.length > 1 ? (
           <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Moment">

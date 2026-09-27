@@ -50,7 +50,7 @@ export function Aankondigingen() {
           <Megaphone className="mt-0.5 size-5 shrink-0 text-primary" />
           <div className="min-w-0 flex-1">
             <p className="font-medium">{b.title}</p>
-            {b.body ? <p className="text-sm text-muted-foreground">{b.body}</p> : null}
+            {b.body ? <p className="text-base text-muted-foreground">{b.body}</p> : null}
           </div>
           <button onClick={() => sluit(b.id)} aria-label="Bericht sluiten" className="p-1 text-muted-foreground">
             <X className="size-5" />
