@@ -77,8 +77,9 @@ export type Dubbel = { index: number; name: string; bestaand: string };
 
 /**
  * Welke van deze nieuwe items staan al (nog te kopen) op de lijst?
- * Geeft per nieuw item de bestaande lijstregel terug, zodat de gebruiker
- * zelf kan kiezen: nog eens toevoegen of niet.
+ * Vergelijkt op productniveau (ongeacht eenheid): "1 bussel look" herkent
+ * "2 teentjes look" als hetzelfde product. Geeft per nieuw item de bestaande
+ * lijstregel terug, zodat de gebruiker zelf kiest: nog eens toevoegen of niet.
  */
 export async function vindDubbels(listId: string, items: NieuwItem[]): Promise<Dubbel[]> {
   const { data: bestaand } = await supabase
@@ -86,20 +87,45 @@ export async function vindDubbels(listId: string, items: NieuwItem[]): Promise<D
     .select("name, quantity, unit")
     .eq("list_id", listId)
     .eq("checked", false);
-  const sleutels = new Map<string, string>();
+  const perProduct = new Map<string, string>();
   for (const rij of bestaand ?? []) {
-    const k = sleutel(rij.name as string, rij.unit as string);
-    if (!sleutels.has(k)) {
-      const q = rij.quantity as number | null;
-      sleutels.set(k, `${rij.name}${q !== null ? ` (${q} ${(rij.unit as string) ?? ""})` : ""}`);
-    }
+    const product = naamSleutel(rij.name as string);
+    if (!product) continue;
+    const q = rij.quantity as number | null;
+    const label = `${rij.name}${q !== null ? ` (${q} ${(rij.unit as string) ?? ""})` : ""}`;
+    const al = perProduct.get(product);
+    perProduct.set(product, al ? `${al}, ${label}` : label);
   }
   const dubbels: Dubbel[] = [];
   items.forEach((item, index) => {
-    const hit = sleutels.get(sleutel(item.name.trim(), item.unit ?? ""));
+    const hit = perProduct.get(naamSleutel(item.name.trim()));
     if (hit) dubbels.push({ index, name: item.name.trim(), bestaand: hit });
   });
   return dubbels;
+}
+
+export type ReviewVerdeling = {
+  /** Items die al (als zelfde product) op de lijst staan. */
+  alOpLijst: { item: NieuwItem; bestaand: string }[];
+  /** Items die nog niet op de lijst staan. */
+  nieuw: NieuwItem[];
+};
+
+/**
+ * Verdeelt nieuwe items in "al op je lijst" en "nieuw", zodat de review-sheet
+ * in één rustig overzicht kan tonen wat er gaat gebeuren.
+ */
+export async function verdeelVoorReview(listId: string, items: NieuwItem[]): Promise<ReviewVerdeling> {
+  const dubbels = await vindDubbels(listId, items);
+  const dubbelIndex = new Map(dubbels.map((d) => [d.index, d.bestaand]));
+  const alOpLijst: ReviewVerdeling["alOpLijst"] = [];
+  const nieuw: NieuwItem[] = [];
+  items.forEach((item, index) => {
+    const bestaand = dubbelIndex.get(index);
+    if (bestaand) alOpLijst.push({ item, bestaand });
+    else nieuw.push(item);
+  });
+  return { alOpLijst, nieuw };
 }
 
 /**
