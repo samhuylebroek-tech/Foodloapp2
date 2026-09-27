@@ -139,20 +139,6 @@ function kortLabel(datum: string) {
   return d.toLocaleDateString("nl-BE", { weekday: "short", day: "numeric" });
 }
 
-function weekLabel(start: Date, kort = false) {
-  const einde = new Date(start);
-  einde.setDate(einde.getDate() + 6);
-  const zelfdeMaand = start.getMonth() === einde.getMonth() && start.getFullYear() === einde.getFullYear();
-  const beginTekst = zelfdeMaand
-    ? String(start.getDate())
-    : start.toLocaleDateString("nl-BE", { day: "numeric", month: kort ? "short" : "long" });
-  const eindeTekst = einde.toLocaleDateString("nl-BE", {
-    day: "numeric",
-    month: kort ? "short" : "long",
-  });
-  return `${beginTekst} – ${eindeTekst}`;
-}
-
 type NieuwExtra = { soort?: string; maakRecept?: boolean };
 
 type Basis = {
@@ -287,17 +273,9 @@ function PlannerPage() {
     },
   });
 
-  // Het weekmenu opent op vandaag: scroll de dag van vandaag in beeld zodra
-  // de dagen gerenderd zijn (eenmalig).
-  const naarVandaagGescrold = useRef(false);
-  useEffect(() => {
-    if (naarVandaagGescrold.current) return;
-    const el = document.getElementById(`dag-${datumTekst(new Date())}`);
-    if (el) {
-      naarVandaagGescrold.current = true;
-      el.scrollIntoView({ block: "start" });
-    }
-  });
+  // Het weekmenu opent op vandaag: de dag van vandaag is al gekozen en
+  // gemarkeerd in de weekbalk, dus we scrollen niet automatisch naar beneden —
+  // anders verdwijnt de weekwisseling uit beeld.
 
   // Het gezinsweekmenu ververst mee als een ander gezinslid iets aanpast.
   useEffect(() => {
@@ -840,17 +818,33 @@ function PlannerPage() {
           </Button>
         </div>
 
-        {/* Week kiezen */}
-        <section aria-label="Week kiezen" className="rounded-2xl border border-border bg-card p-3">
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" onClick={() => verschuif(-1)} aria-label="Vorige week" className="size-12 shrink-0">
-              <ChevronLeft className="size-6" />
+        {/* Week kiezen: duidelijke titel met datums, grote pijlen, rustige dagkeuze */}
+        <section aria-label="Week kiezen" className="rounded-2xl border border-border bg-card p-4">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => verschuif(-1)}
+              aria-label="Vorige week"
+              className="size-14 shrink-0 rounded-full"
+            >
+              <ChevronLeft className="size-7" />
             </Button>
             <Popover open={kalenderOpen} onOpenChange={setKalenderOpen}>
               <PopoverTrigger asChild>
-                <Button variant="ghost" className="h-12 min-w-0 flex-1 px-2 font-display text-lg font-semibold">
-                  <span className="truncate">{weekVerschil === 0 ? "Deze week" : weekVerschil === 1 ? "Volgende week" : weekLabel(new Date(`${week[0]}T12:00:00`), true)}</span>
-                </Button>
+                <button
+                  type="button"
+                  className="flex h-14 min-w-0 flex-1 flex-col items-center justify-center rounded-xl px-2 text-center transition-colors hover:bg-muted"
+                  aria-label="Kies een week in de kalender"
+                >
+                  <span className="font-display text-xl font-semibold leading-tight">
+                    {weekVerschil === 0 ? "Deze week" : weekVerschil === 1 ? "Volgende week" : weekVerschil === -1 ? "Vorige week" : "Week"}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {new Date(`${week[0]}T12:00:00`).toLocaleDateString("nl-BE", { day: "numeric", month: "short" })}
+                    {" – "}
+                    {new Date(`${week[6]}T12:00:00`).toLocaleDateString("nl-BE", { day: "numeric", month: "short" })}
+                  </span>
+                </button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="center">
                 <Calendar
@@ -866,11 +860,25 @@ function PlannerPage() {
                 />
               </PopoverContent>
             </Popover>
-            <Button variant="ghost" onClick={() => verschuif(1)} aria-label="Volgende week" className="size-12 shrink-0">
-              <ChevronRight className="size-6" />
+            <Button
+              variant="outline"
+              onClick={() => verschuif(1)}
+              aria-label="Volgende week"
+              className="size-14 shrink-0 rounded-full"
+            >
+              <ChevronRight className="size-7" />
             </Button>
           </div>
-          <div className="mt-2 grid grid-cols-7 gap-1" role="tablist" aria-label="Dag kiezen">
+          {weekVerschil !== 0 ? (
+            <button
+              type="button"
+              onClick={() => { setWeekStart(huidigeWeek); setDagKeuze(vandaag); setHeleWeek(false); }}
+              className="mx-auto mt-2 flex h-10 items-center rounded-full bg-secondary px-4 text-sm font-semibold text-secondary-foreground"
+            >
+              Terug naar vandaag
+            </button>
+          ) : null}
+          <div className="mt-3 grid grid-cols-7 gap-1.5" role="tablist" aria-label="Dag kiezen">
             {week.map((dag) => {
               const d = new Date(`${dag}T12:00:00`);
               const actief = !heleWeek && dag === gekozenDag;
@@ -886,23 +894,27 @@ function PlannerPage() {
                   aria-label={`${d.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" })}${isVandaag ? ", vandaag" : ""}${aantal ? `, ${aantal} gepland` : ""}`}
                   onClick={() => { setDagKeuze(dag); setHeleWeek(false); }}
                   className={[
-                    "flex min-h-16 flex-col items-center justify-center rounded-xl border-2 transition-colors",
-                    actief ? "border-primary bg-primary text-primary-foreground" : isVandaag ? "border-honing bg-honing-zacht text-foreground" : "border-transparent text-foreground hover:bg-muted",
+                    "flex min-h-[4.5rem] flex-col items-center justify-center gap-0.5 rounded-xl border-2 transition-colors",
+                    actief
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : isVandaag
+                        ? "border-primary/50 bg-primary/10 text-foreground"
+                        : "border-transparent text-foreground hover:bg-muted",
                     verborgen && !actief ? "opacity-40" : "",
                   ].join(" ")}
                 >
-                  <span className="text-sm font-semibold capitalize">{d.toLocaleDateString("nl-BE", { weekday: "short" }).replace(".", "").slice(0, 2)}</span>
-                  <span className="font-display text-lg font-semibold leading-tight">{d.getDate()}</span>
-                  <span aria-hidden className={`mt-0.5 size-1.5 rounded-full ${aantal ? (actief ? "bg-primary-foreground" : "bg-primary") : "bg-transparent"}`} />
+                  <span className="text-xs font-semibold uppercase tracking-wide">
+                    {d.toLocaleDateString("nl-BE", { weekday: "short" }).replace(".", "")}
+                  </span>
+                  <span className="font-display text-xl font-semibold leading-none">{d.getDate()}</span>
+                  <span
+                    aria-hidden
+                    className={`mt-0.5 size-1.5 rounded-full ${aantal ? (actief ? "bg-primary-foreground" : "bg-primary") : "bg-transparent"}`}
+                  />
                 </button>
               );
             })}
           </div>
-          {weekVerschil !== 0 ? (
-            <Button variant="ghost" onClick={() => { setWeekStart(huidigeWeek); setDagKeuze(vandaag); setHeleWeek(false); }} className="mt-1 h-12 w-full text-base text-primary">
-              Terug naar vandaag
-            </Button>
-          ) : null}
         </section>
 
         {heleWeek ? (
