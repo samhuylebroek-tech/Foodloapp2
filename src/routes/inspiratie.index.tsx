@@ -90,11 +90,10 @@ function InspiratiePage() {
   }
 
   return (
-    <AppShell title="Inspiratie">
+    <AppShell title="Ideeën om te koken">
       <div className="space-y-4">
         <div>
-          <h1 className="font-display text-2xl">Zin in iets lekkers?</h1>
-          <p className="mt-1 text-muted-foreground">
+          <p className="text-muted-foreground">
             Ontdek recepten die Foodlo al kent en voeg ze met één tik toe aan je eigen recepten.
           </p>
         </div>
@@ -181,10 +180,10 @@ function InspiratiePage() {
                   <ReceptFoto pad={r.image_url} titel={r.title} />
                   <div className="space-y-1 p-3">
                     <p className="line-clamp-2 text-base font-semibold leading-tight">{r.title}</p>
-                    <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
                       {r.category ? <span className="capitalize">{r.category}</span> : null}
                       {tijdLabel(r) ? (
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1 whitespace-nowrap">
                           <Clock3 className="size-3" /> {tijdLabel(r)}
                         </span>
                       ) : null}
