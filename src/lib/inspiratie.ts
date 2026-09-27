@@ -177,6 +177,7 @@ export async function voegToeAanMijnRecepten(
     .from("recipes")
     .insert({
       user_id: userId,
+      inspiration_id: inspiratieId,
       title: titel,
       description: recept.description,
       image_url: recept.image_url,
