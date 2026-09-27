@@ -219,4 +219,4 @@
 - [x] Automatisch een passende foto maken wanneer een nieuw of opnieuw opgeslagen gerecht geen foto heeft
 - [x] Gegenereerde foto privé bewaren en overal bij hetzelfde gerecht tonen
 - [x] AI-kosten via één beeldcredit, caching en stille foutafhandeling controleren
-- [ ] De 18 bestaande gerechten zonder foto alleen na expliciete toestemming in één keer aanvullen (18 beeldcredits)
+- [ ] De 18 bestaande gerechten zonder foto aanvullen — toestemming gegeven; geblokkeerd doordat het slimme-functiesaldo op is
