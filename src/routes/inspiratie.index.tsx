@@ -117,6 +117,7 @@ function InspiratiePage() {
     const vers = resultaten.filter((r) => !getoond.includes(r.id));
     const pool = vers.length ? vers : resultaten;
     const keuze = pool[Math.floor(Math.random() * pool.length)];
+    if (!keuze) return;
     setVerrassing(keuze);
     setGetoond((g) => (vers.length ? [...g, keuze.id] : [keuze.id]));
   }
