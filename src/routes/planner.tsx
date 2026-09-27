@@ -225,7 +225,7 @@ function PlannerPage() {
   // In de huidige week beginnen we bij vandaag; verleden dagen zie je alleen
   // als je bewust naar een vorige week bladert.
   const getoondeDagen = weekVerschil === 0 ? zichtbareDagen.filter((dag) => dag >= vandaag) : zichtbareDagen;
-  const gekozenDag = dagKeuze && week.includes(dagKeuze) ? dagKeuze : week.includes(vandaag) ? vandaag : (zichtbareDagen[0] ?? week[0]);
+  const gekozenDag = dagKeuze && week.includes(dagKeuze) ? dagKeuze : week.includes(vandaag) ? vandaag : (zichtbareDagen[0] ?? week[0] ?? vandaag);
   const snelleWeken = [0, 1, 2, 3].map((stap) => {
     const start = new Date(huidigeWeek);
     start.setDate(start.getDate() + stap * 7);
