@@ -215,7 +215,8 @@
 - [x] Mobiel testen met Pastaschelpen en alle veertien kookstappen
 
 ## Actief — Automatische foto voor elk gerecht (27 sep)
-- [ ] Bestaande en zelfgekozen foto's altijd behouden
-- [ ] Automatisch een passende foto maken wanneer een opgeslagen gerecht geen bruikbare foto heeft
-- [ ] Gegenereerde foto privé bewaren en overal bij hetzelfde gerecht tonen
-- [ ] AI-kosten, foutafhandeling en mobiele weergave controleren
+- [x] Bestaande en zelfgekozen foto's altijd behouden
+- [x] Automatisch een passende foto maken wanneer een nieuw of opnieuw opgeslagen gerecht geen foto heeft
+- [x] Gegenereerde foto privé bewaren en overal bij hetzelfde gerecht tonen
+- [x] AI-kosten via één beeldcredit, caching en stille foutafhandeling controleren
+- [ ] De 18 bestaande gerechten zonder foto alleen na expliciete toestemming in één keer aanvullen (18 beeldcredits)
