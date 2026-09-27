@@ -87,6 +87,8 @@ type Item = {
   quantity: number | null;
   unit: string;
   checked: boolean;
+  recipe_id?: string | null;
+  recept?: string | null;
 };
 
 function itemTekst(item: Item) {
@@ -95,6 +97,13 @@ function itemTekst(item: Item) {
 
 function maatTekst(item: Item) {
   return toonBelgischeMaat(item.quantity, item.unit);
+}
+
+function datumLabel(dag: string) {
+  const d = new Date(`${dag}T12:00:00`);
+  const vandaag = new Date().toISOString().slice(0, 10);
+  if (dag === vandaag) return "Vandaag";
+  return d.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" });
 }
 
 function BoodschappenPage() {
@@ -160,14 +169,96 @@ function BoodschappenPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shopping_items")
-        .select("id, name, quantity, unit, checked")
+        .select("id, name, quantity, unit, checked, recipe_id, recipes(title)")
         .eq("list_id", actief!)
         .order("checked")
         .order("name");
       if (error) throw error;
-      return data as Item[];
+      return (data ?? []).map((r) => ({
+        id: r.id,
+        name: r.name,
+        quantity: r.quantity,
+        unit: r.unit,
+        checked: r.checked,
+        recipe_id: r.recipe_id,
+        recept: (r.recipes as { title?: string } | null)?.title ?? null,
+      })) as Item[];
     },
   });
+
+  const [geheugenOpen, setGeheugenOpen] = useState(false);
+  const [meerOpen, setMeerOpen] = useState(false);
+  const [bewerkCategorie, setBewerkCategorie] = useState<CategorieId | "">("");
+  const [online, setOnline] = useState(true);
+
+  const { data: geschiedenis = [] } = useQuery({
+    queryKey: ["shopping-history", user?.id],
+    enabled: !!user,
+    queryFn: () => leesGeschiedenis(user!.id),
+  });
+
+  const { data: vaste = [] } = useQuery({
+    queryKey: ["shopping-staples", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("shopping_staples").select("id, name, quantity, unit").order("name");
+      if (error) throw error;
+      return (data ?? []) as Vast[];
+    },
+  });
+
+  // Geplande gerechten van de komende 7 dagen.
+  const { data: weekGerechten = [] } = useQuery({
+    queryKey: ["shopping-weekmenu", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const van = new Date().toISOString().slice(0, 10);
+      const tot = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+      const { data } = await supabase
+        .from("meal_plan")
+        .select("recipe_id, plan_date, recipes(title)")
+        .not("recipe_id", "is", null)
+        .gte("plan_date", van)
+        .lte("plan_date", tot)
+        .order("plan_date");
+      const gezien = new Set<string>();
+      return (data ?? [])
+        .filter((r) => r.recipe_id && !gezien.has(r.recipe_id) && gezien.add(r.recipe_id))
+        .map((r) => ({
+          recipe_id: r.recipe_id as string,
+          dag: r.plan_date as string,
+          titel: (r.recipes as { title?: string } | null)?.title ?? "Gerecht",
+        }));
+    },
+  });
+
+  // Offline: werk verder, en bewaar alles zodra er weer verbinding is.
+  useEffect(() => {
+    const zet = () => setOnline(navigator.onLine);
+    zet();
+    async function verwerk() {
+      const acties = leesWachtrij();
+      if (!acties.length) return;
+      leegWachtrij();
+      for (const a of acties) {
+        if (a.soort === "vink") await supabase.from("shopping_items").update({ checked: a.checked }).eq("id", a.id);
+        else {
+          const p = parseIngredientLine(a.tekst);
+          if (p) await voegToeAanLijst(a.userId, a.listId, [p]).catch(() => {});
+        }
+      }
+      qc.invalidateQueries({ queryKey: ["shopping"] });
+      toast.success("Je wijzigingen zijn bewaard");
+    }
+    const aan = () => { zet(); void verwerk(); };
+    window.addEventListener("online", aan);
+    window.addEventListener("offline", zet);
+    if (navigator.onLine) void verwerk();
+    return () => {
+      window.removeEventListener("online", aan);
+      window.removeEventListener("offline", zet);
+    };
+  }, [qc]);
 
   // Wat al in je voorraadkast staat, hoort ook bij "heb je waarschijnlijk al".
   const { data: voorraad = [] } = useQuery({
@@ -275,24 +366,147 @@ function BoodschappenPage() {
     toast.success("Lijstje verwijderd");
   }
 
-  async function voegToe() {
-    if (!user || !nieuw.trim() || !actief) return;
-    const geparsed = parseIngredientLine(nieuw);
+  const opLijstNamen = items.filter((i) => !i.checked).map((i) => i.name);
+  const suggesties = useMemo(() => maakSuggesties(geschiedenis, opLijstNamen), [geschiedenis, items]); // eslint-disable-line react-hooks/exhaustive-deps
+  const vaak = useMemo(() => vaakGekocht(geschiedenis).slice(0, 12), [geschiedenis]);
+  const beurten = useMemo(() => perBeurt(geschiedenis).slice(0, 10), [geschiedenis]);
+  const weekOpen = useMemo(() => {
+    const opLijst = new Set(items.map((i) => i.recipe_id).filter(Boolean));
+    return weekGerechten.filter((g) => !opLijst.has(g.recipe_id)).slice(0, 3);
+  }, [weekGerechten, items]);
+  const typSuggesties = useMemo(() => {
+    const t = normaliseerTekst(nieuw);
+    if (t.length < 2) return [];
+    const op = new Set(opLijstNamen.map(normaliseerTekst));
+    return vaakGekocht(geschiedenis)
+      .map((e) => e.name)
+      .concat(vaste.map((v) => v.name))
+      .filter((n, i, a) => a.indexOf(n) === i && normaliseerTekst(n).startsWith(t) && !op.has(normaliseerTekst(n)))
+      .slice(0, 4);
+  }, [nieuw, geschiedenis, vaste, items]); // eslint-disable-line react-hooks/exhaustive-deps
+  const isVast = (naam: string) => vaste.some((v) => normaliseerTekst(v.name) === normaliseerTekst(naam));
+
+  async function voegTekstToe(tekst: string) {
+    if (!user || !actief || !tekst.trim()) return;
+    const geparsed = parseIngredientLine(tekst);
     if (!geparsed) return;
+    if (!online) {
+      zetInWachtrij({ soort: "toevoegen", userId: user.id, listId: actief, tekst });
+      toast.info("Je bent offline — we bewaren het straks");
+      return;
+    }
+    const bestaand = items.find((i) => normaliseerTekst(i.name) === normaliseerTekst(geparsed.name));
+    const start = new Date(Date.now() - 2000).toISOString();
     try {
       await voegToeAanLijst(user.id, actief, [geparsed]);
     } catch {
-      toast.error("Toevoegen lukte niet");
+      toast.error("Het lukte niet om dit toe te voegen. Probeer het opnieuw.");
       return;
     }
-    setNieuw("");
     refresh();
+    void meet("boodschappen.toegevoegd");
+    const lijstId = actief;
+    toast.success(
+      bestaand ? `${bestaand.name} stond al op je lijst — samengeteld` : `${geparsed.name} staat op je lijst`,
+      {
+        action: {
+          label: "Ongedaan maken",
+          onClick: () => {
+            void (async () => {
+              if (bestaand) {
+                await supabase
+                  .from("shopping_items")
+                  .update({ quantity: bestaand.quantity, unit: bestaand.unit, checked: bestaand.checked })
+                  .eq("id", bestaand.id);
+              } else {
+                await supabase
+                  .from("shopping_items")
+                  .delete()
+                  .eq("list_id", lijstId)
+                  .ilike("name", geparsed.name.trim())
+                  .gte("created_at", start);
+              }
+              refresh();
+            })();
+          },
+        },
+      },
+    );
+  }
+
+  async function voegToe() {
+    const tekst = nieuw;
+    setNieuw("");
+    await voegTekstToe(tekst);
+  }
+
+  async function voegMeerdereToe(lijst: { name: string; quantity: number | null; unit: string }[], melding: string) {
+    if (!user || !actief || !lijst.length) return;
+    try {
+      await voegToeAanLijst(user.id, actief, lijst);
+    } catch {
+      toast.error("Het lukte niet om dit toe te voegen. Probeer het opnieuw.");
+      return;
+    }
+    refresh();
+    toast.success(melding);
+  }
+
+  async function zetGerechtOpLijst(recipeId: string, titel: string) {
+    if (!user || !actief) return;
+    const { data } = await supabase
+      .from("recipe_ingredients")
+      .select("name, quantity, unit")
+      .eq("recipe_id", recipeId)
+      .order("position");
+    const lijst = (data ?? []).map((i) => ({ ...i, recipe_id: recipeId }));
+    if (!lijst.length) {
+      toast.info("Dit gerecht heeft nog geen ingrediënten.");
+      return;
+    }
+    await voegToeAanLijst(user.id, actief, lijst);
+    refresh();
+    toast.success(`Ingrediënten van ${titel} staan op je lijst`);
+  }
+
+  async function wisselVast(item: { name: string; quantity: number | null; unit: string }) {
+    if (!user) return;
+    const al = vaste.find((v) => normaliseerTekst(v.name) === normaliseerTekst(item.name));
+    if (al) {
+      await supabase.from("shopping_staples").delete().eq("id", al.id);
+      toast.success(`${item.name} is geen vaste boodschap meer`);
+    } else {
+      await supabase
+        .from("shopping_staples")
+        .insert({ user_id: user.id, name: item.name, quantity: item.quantity, unit: item.unit ?? "" });
+      toast.success(`${item.name} is nu een vaste boodschap`);
+    }
+    qc.invalidateQueries({ queryKey: ["shopping-staples"] });
   }
 
   async function vink(item: Item) {
-    await supabase.from("shopping_items").update({ checked: !item.checked }).eq("id", item.id);
+    const nieuwWaarde = !item.checked;
+    if (!online) {
+      zetInWachtrij({ soort: "vink", id: item.id, checked: nieuwWaarde });
+      qc.setQueryData<Item[]>(["shopping", actief], (oud) =>
+        (oud ?? []).map((i) => (i.id === item.id ? { ...i, checked: nieuwWaarde } : i)),
+      );
+      return;
+    }
+    await supabase.from("shopping_items").update({ checked: nieuwWaarde }).eq("id", item.id);
     void meet("boodschappen.afgevinkt");
     refresh();
+    if (nieuwWaarde) {
+      toast.success(`${item.name} gekocht`, {
+        duration: 3000,
+        action: {
+          label: "Ongedaan maken",
+          onClick: () => {
+            void supabase.from("shopping_items").update({ checked: false }).eq("id", item.id).then(refresh);
+          },
+        },
+      });
+    }
   }
 
   /** Verwijderen met "Ongedaan maken": we zetten hetzelfde item dan gewoon terug. */
@@ -365,6 +579,7 @@ function BoodschappenPage() {
     setBewerkNaam(item.name);
     setBewerkAantal(item.quantity == null ? "" : String(item.quantity));
     setBewerkEenheid(item.unit);
+    setBewerkCategorie(categorieVan(item.name, correcties));
   }
 
   async function bewaarItem() {
@@ -380,12 +595,15 @@ function BoodschappenPage() {
       .update({ name: bewerkNaam.trim(), quantity: maat.quantity, unit: maat.unit })
       .eq("id", bewerkItem.id);
     if (error) {
-      toast.error("Aanpassen lukte niet");
+      toast.error("Het lukte niet om op te slaan. Probeer het opnieuw.");
       return;
+    }
+    if (bewerkCategorie && bewerkCategorie !== categorieVan(bewerkNaam.trim(), correcties)) {
+      zetCategorie(bewerkNaam.trim(), bewerkCategorie);
     }
     setBewerkItem(null);
     refresh();
-    toast.success("Boodschap aangepast");
+    toast.success("Opgeslagen");
   }
 
   // Alles wat al in de voorraadkast staat in één tik afvinken.
@@ -417,26 +635,30 @@ function BoodschappenPage() {
   }
 
   async function wisAfgevinkt() {
-    if (!actief) return;
+    if (!actief || !user || !actieveLijst) return;
+    await bewaarGekocht(user.id, actieveLijst, klaar).catch(() => {});
     const { error } = await supabase.from("shopping_items").delete().eq("checked", true).eq("list_id", actief);
     if (error) {
-      toast.error("Opruimen lukte niet");
+      toast.error("Opruimen lukte niet. Probeer het opnieuw.");
       return;
     }
     setWisVraag(null);
     refresh();
-    toast.success("Afgevinkte boodschappen verwijderd");
+    qc.invalidateQueries({ queryKey: ["shopping-history"] });
+    toast.success("Gekochte boodschappen opgeruimd — je vindt ze terug bij Vorige boodschappen");
   }
 
   async function wisAlles() {
-    if (!actief) return;
+    if (!actief || !user || !actieveLijst) return;
+    await bewaarGekocht(user.id, actieveLijst, klaar).catch(() => {});
     const { error } = await supabase.from("shopping_items").delete().eq("list_id", actief);
     if (error) {
-      toast.error("Lijst leegmaken lukte niet");
+      toast.error("Lijst leegmaken lukte niet. Probeer het opnieuw.");
       return;
     }
     setWisVraag(null);
     refresh();
+    qc.invalidateQueries({ queryKey: ["shopping-history"] });
     toast.success("Boodschappenlijst leeggemaakt");
   }
 
