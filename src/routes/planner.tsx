@@ -220,6 +220,9 @@ function PlannerPage() {
   const voorstelDagen = zichtbareDagen.filter((dag) => dag >= vandaag);
   const huidigeWeek = maandagVan(new Date());
   const weekVerschil = Math.round((weekStart.getTime() - huidigeWeek.getTime()) / 604800000);
+  // In de huidige week beginnen we bij vandaag; verleden dagen zie je alleen
+  // als je bewust naar een vorige week bladert.
+  const getoondeDagen = weekVerschil === 0 ? zichtbareDagen.filter((dag) => dag >= vandaag) : zichtbareDagen;
   const snelleWeken = [0, 1, 2, 3].map((stap) => {
     const start = new Date(huidigeWeek);
     start.setDate(start.getDate() + stap * 7);
