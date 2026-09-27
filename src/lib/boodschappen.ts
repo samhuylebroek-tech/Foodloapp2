@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { normaliseerTekst } from "@/lib/zoeken";
-import { stam } from "@/lib/stap-ingredienten";
+import { canoniekeNaam, canoniekeTitel } from "@/lib/product-herkenning";
 
 export type ShoppingList = { id: string; name: string; created_at: string; group_id?: string | null };
 
@@ -41,14 +40,13 @@ export async function maakLijst(userId: string, naam: string): Promise<string> {
   return data.id;
 }
 
-/** Enkelvoud/meervoud en schrijfvarianten samenbrengen: "Uien" = "ui". */
+/**
+ * Enkelvoud/meervoud, schrijfvarianten én synoniemen samenbrengen via de
+ * centrale productherkenning: "Uien" = "ui" = "ajuin", "look" = "knoflook".
+ * Varianten met betekenis ("rode ui", "amandelmelk") blijven apart.
+ */
 function naamSleutel(name: string): string {
-  return normaliseerTekst(name)
-    .split(" ")
-    .map((w) => stam(w))
-    .filter(Boolean)
-    .sort()
-    .join(" ");
+  return canoniekeNaam(name);
 }
 
 /** g/kg en ml/l naar één basiseenheid, zodat hoeveelheden optelbaar zijn. */
