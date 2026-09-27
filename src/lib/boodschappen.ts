@@ -8,6 +8,7 @@ export type NieuwItem = {
   quantity?: number | null;
   unit?: string | null;
   recipe_id?: string | null;
+  note?: string | null;
 };
 
 /** Geeft het eerste lijstje van de gebruiker terug, of maakt er één aan. */
@@ -139,7 +140,7 @@ export async function voegToeAlsNieuw(
   items: NieuwItem[],
 ): Promise<void> {
   if (!items.length) return;
-  const nieuwe = new Map<string, { name: string; quantity: number | null; unit: string; recipe_id: string | null }>();
+  const nieuwe = new Map<string, { name: string; quantity: number | null; unit: string; recipe_id: string | null; note: string | null }>();
   for (const item of items) {
     const naam = item.name.trim();
     if (!naam) continue;
@@ -154,6 +155,7 @@ export async function voegToeAlsNieuw(
       quantity: naarBasis(item.quantity ?? null, item.unit),
       unit: basisEenheid(item.unit),
       recipe_id: item.recipe_id ?? null,
+      note: item.note?.trim() ? item.note.trim().slice(0, 100) : null,
     });
   }
   const { error } = await supabase.from("shopping_items").insert(
@@ -164,6 +166,7 @@ export async function voegToeAlsNieuw(
       quantity: r.quantity,
       unit: r.unit,
       recipe_id: r.recipe_id,
+      note: r.note,
     })),
   );
   if (error) throw error;
@@ -194,7 +197,7 @@ export async function voegToeAanLijst(
     });
   }
 
-  const nieuwe = new Map<string, { name: string; quantity: number | null; unit: string; recipe_id: string | null }>();
+  const nieuwe = new Map<string, { name: string; quantity: number | null; unit: string; recipe_id: string | null; note: string | null }>();
   const aangeraakt = new Set<string>();
 
   for (const item of items) {
@@ -220,6 +223,7 @@ export async function voegToeAanLijst(
       quantity: aantal,
       unit,
       recipe_id: item.recipe_id ?? null,
+      note: item.note?.trim() ? item.note.trim().slice(0, 100) : null,
     });
   }
 
@@ -230,6 +234,7 @@ export async function voegToeAanLijst(
     quantity: r.quantity,
     unit: r.unit,
     recipe_id: r.recipe_id,
+    note: r.note,
   }));
   if (teInvoegen.length) {
     const { error } = await supabase.from("shopping_items").insert(teInvoegen);
