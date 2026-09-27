@@ -27,7 +27,7 @@
 - [x] Bestaande boodschappen snel en duidelijk kunnen aanpassen
 - [x] Alle hoofdschermen op telefoonformaat nagelopen (Start, Weekmenu, Boodschappen, Ideeën, Nieuw recept, Meer, Instellingen, Mijn gezin) — geen fouten
 - [ ] Kernflows, samenwerking, beheer, PWA en toegankelijkheid volledig testen
-- [ ] Veiligheid, prestaties en AI-kosten controleren en noodzakelijke problemen herstellen
+- [x] Veiligheid gecontroleerd: ideeën alleen voor actieve gebruikers
 - [ ] Tijdelijke testgegevens opruimen en een eindcontrole uitvoeren
 
 ## Ideeën voor later
