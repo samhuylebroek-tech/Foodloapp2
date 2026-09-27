@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import type { Recipe } from "@/lib/types";
 import { useT } from "@/lib/voorkeuren";
 import { ingredientToLine } from "@/lib/ingredienten";
+import { zorgVoorReceptFoto } from "@/lib/photos";
 import {
   Dialog,
   DialogContent,
@@ -118,6 +119,7 @@ export function NieuweSuggesties({
           })),
         );
       }
+      await zorgVoorReceptFoto(data.id, ai.title || s.title, user.id).catch(() => null);
       toast.success(t("Toegevoegd aan je gerechten"));
       setBekijk(null);
       navigate({ to: "/recepten/$id", params: { id: data.id } });

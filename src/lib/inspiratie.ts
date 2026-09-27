@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { normaliseerTekst, zoekScore } from "@/lib/zoeken";
+import { zorgVoorReceptFoto } from "@/lib/photos";
 
 /**
  * Inspiratiebibliotheek: de centrale recepten die Foodlo al kent.
@@ -172,6 +173,9 @@ export async function voegToeAanMijnRecepten(userId: string, inspiratieId: strin
         position: i.position,
       })),
     );
+  }
+  if (!recept.image_url) {
+    await zorgVoorReceptFoto(nieuw.id, recept.title, userId).catch(() => null);
   }
   return { soort: "toegevoegd", recipeId: nieuw.id as string };
 }

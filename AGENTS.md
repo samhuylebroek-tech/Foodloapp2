@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Generate and privately store a photo only after a recipe exists and still has no image, so existing user-selected photos are never overwritten.

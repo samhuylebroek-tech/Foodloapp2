@@ -716,31 +716,53 @@ export const gerechtFoto = createServerFn({ method: "POST" })
           userId: context.userId,
           feature: "foto_maken",
           cacheSleutel: data.titel,
-          model: "google/gemini-3.1-flash-lite-image",
+          model: "openai/gpt-image-2.5-sunburst",
+          promptVersie: 2,
         },
         async (meter) => {
           meter.beelden += 1;
-          const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              model: "google/gemini-3.1-flash-lite-image",
-              contents: [
-                {
-                  role: "user",
-                  parts: [
-                    {
-                      text: `Een smakelijke, realistische foodfoto van het gerecht "${data.titel}", mooi opgediend op een bord, natuurlijk daglicht, bovenaanzicht, warme keukensfeer. Geen tekst of letters in beeld.`,
-                    },
-                  ],
-                },
-              ],
-              generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
-            }),
-          });
-          if (!res.ok) throw new Error(`foto ${res.status}`);
-          const json = (await res.json()) as { data?: { b64_json?: string }[] };
-          const b64 = json.data?.[0]?.b64_json;
+          const prompt = `Realistische foodfotografie van het klaargemaakte gerecht "${data.titel}". Toon uitsluitend het echte gerecht, herkenbaar en smakelijk opgediend op een bord, natuurlijk daglicht, rustige hedendaagse tafel, bovenaanzicht onder een lichte hoek. Geen receptpagina, kookboek, ingrediëntenverpakking, mensen, tekst, letters, logo of watermerk.`;
+          const aanvraag = async (stream: boolean) =>
+            fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                model: "openai/gpt-image-2.5-sunburst",
+                prompt,
+                size: "1024x1024",
+                quality: "low",
+                ...(stream ? { stream: true, partial_images: 1 } : {}),
+              }),
+            });
+          const res = await aanvraag(true);
+          if (!res.ok || !res.body) throw new Error(`foto ${res.status}`);
+          const lezer = res.body.pipeThrough(new TextDecoderStream()).getReader();
+          let buffer = "";
+          let b64: string | undefined;
+          let gebeurtenissen = 0;
+          while (true) {
+            const { done, value } = await lezer.read();
+            if (done) break;
+            buffer += value;
+            const blokken = buffer.split("\n\n");
+            buffer = blokken.pop() ?? "";
+            for (const blok of blokken) {
+              const regel = blok.split("\n").find((r) => r.startsWith("data:"));
+              if (!regel) continue;
+              const inhoud = regel.slice(5).trim();
+              if (!inhoud || inhoud === "[DONE]") continue;
+              const event = JSON.parse(inhoud) as { type?: string; b64_json?: string; error?: { message?: string } };
+              gebeurtenissen += 1;
+              if (event.type === "error") throw new Error(event.error?.message ?? "De foto kon niet gemaakt worden.");
+              if (event.type === "image_generation.completed" && event.b64_json) b64 = event.b64_json;
+            }
+          }
+          if (!gebeurtenissen) {
+            const opnieuw = await aanvraag(false);
+            if (!opnieuw.ok) throw new Error(`foto ${opnieuw.status}`);
+            const json = (await opnieuw.json()) as { data?: { b64_json?: string }[] };
+            b64 = json.data?.[0]?.b64_json;
+          }
           if (!b64) throw new Error("geen foto");
           const mime = b64.startsWith("/9j/") ? "image/jpeg" : "image/png";
           return `data:${mime};base64,${b64}`;

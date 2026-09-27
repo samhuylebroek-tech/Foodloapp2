@@ -429,22 +429,46 @@ function ReceptPage() {
 
   if (kookstand) {
     const stappen = recipe.instructions;
+    const voorbereiding = stap < 0;
     const laatste = stap >= stappen.length - 1;
     return (
       <div className="min-h-screen bg-background p-5">
         <div className="mx-auto max-w-2xl">
           <div className="flex items-center justify-between">
             <p className="text-lg font-semibold text-muted-foreground">
-              Stap {stap + 1} van {stappen.length}
+              {voorbereiding ? t("Alles klaarzetten") : <>Stap {stap + 1} van {stappen.length}</>}
             </p>
             <Button variant="ghost" onClick={() => setKookstand(false)} className="h-14">
               <X className="size-6" /> Sluiten
             </Button>
           </div>
           <h2 className="mt-6 font-display text-3xl">{recipe.title}</h2>
-          <p className="mt-6 text-2xl leading-relaxed">{netteStap(t(stappen[stap] ?? ""))}</p>
-          <StapIngredienten ingredienten={stapIngredienten(stap)} factor={factor} groot />
-          <details className="mt-6 rounded-2xl border border-border bg-card p-4">
+          {voorbereiding ? (
+            <>
+              <p className="mt-3 text-lg text-muted-foreground">
+                {t("Neem eerst alles wat je nodig hebt. Daarna koken we stap voor stap.")}
+              </p>
+              <ul className="mt-6 space-y-2 rounded-2xl border border-border bg-card p-4 text-lg">
+                {ingredients.map((ing) => (
+                  <li key={ing.id} className="flex min-h-12 items-center justify-between gap-3 border-b border-border py-2 last:border-0">
+                    <span>{t(ing.name)}</span>
+                    <span className="shrink-0 font-semibold text-primary">{toonHoeveelheid(ing, factor)}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <>
+              <p className="mt-6 text-2xl leading-relaxed">{netteStap(t(stappen[stap] ?? ""))}</p>
+              <StapIngredienten ingredienten={stapIngredienten(stap)} factor={factor} groot />
+              {stapIngredienten(stap).length === 0 ? (
+                <p className="mt-5 rounded-2xl bg-secondary px-4 py-3 text-lg text-muted-foreground">
+                  {t("Voor deze stap heb je niets nieuws nodig.")}
+                </p>
+              ) : null}
+            </>
+          )}
+          {!voorbereiding ? <details className="mt-6 rounded-2xl border border-border bg-card p-4">
             <summary className="cursor-pointer text-lg font-semibold">
               {t("Alle ingrediënten bekijken")}
             </summary>
@@ -458,21 +482,21 @@ function ReceptPage() {
                 </li>
               ))}
             </ul>
-          </details>
+          </details> : null}
           <div className="mt-10 flex gap-3">
             <Button
               variant="secondary"
-              disabled={stap === 0}
+              disabled={voorbereiding}
               onClick={() => setStap(stap - 1)}
               className="h-20 flex-1 text-lg"
             >
               Vorige
             </Button>
             <Button
-              onClick={() => (laatste ? setKlaarVragen(true) : setStap(stap + 1))}
+              onClick={() => (laatste && !voorbereiding ? setKlaarVragen(true) : setStap(stap + 1))}
               className="h-20 flex-1 text-lg"
             >
-              {laatste ? t("Klaar met koken") : "Volgende"}
+              {voorbereiding ? t("Begin met koken") : laatste ? t("Klaar met koken") : "Volgende"}
             </Button>
           </div>
         </div>
@@ -533,7 +557,7 @@ function ReceptPage() {
           </p>
         </div>
 
-        {recipe.instructions.length > 0 ? <Button onClick={() => { setStap(0); void meet("kookmodus.gestart", undefined, { id }); setKookstand(true); }} className="h-14 w-full"><ChefHat />{t("Start koken")}</Button> : null}
+        {recipe.instructions.length > 0 ? <Button onClick={() => { setStap(-1); void meet("kookmodus.gestart", undefined, { id }); setKookstand(true); }} className="h-14 w-full"><ChefHat />{t("Start koken")}</Button> : null}
 
         <Button
           variant="secondary"
@@ -659,7 +683,7 @@ function ReceptPage() {
 
           {recipe.instructions.length > 0 ? (
             <Button
-              onClick={() => { setStap(0); void meet("kookmodus.gestart", undefined, { id }); setKookstand(true); }}
+              onClick={() => { setStap(-1); void meet("kookmodus.gestart", undefined, { id }); setKookstand(true); }}
               className="mt-4 h-16 w-full text-lg"
             >
               <ChefHat className="size-5" /> {t("Start koken")}
