@@ -81,7 +81,6 @@ import {
 } from "@/lib/voorkeuren";
 import { kiesUitEigen, type DagRegel, type Soortkeuze } from "@/lib/weekmenu-voorstel";
 import { zorgVoorLijst, maakLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
-import { DEMO_FAVORIETEN, DEMO_RECEPTEN, demoBericht, demoPlan, isDemo } from "@/lib/demo";
 import { tijdLabel } from "@/lib/tijd";
 import { normaliseerTekst } from "@/lib/zoeken";
 import { useSignedUrl } from "@/lib/photos";
@@ -176,7 +175,6 @@ function PlannerPage() {
     void meet("weekmenu.bekeken");
   }, []);
   const { user } = useAuth();
-  const demo = isDemo();
   const { momenten: algemeneMomenten, weekmenu, zetWeekmenu } = useVoorkeuren();
   // Dagdelen: eigen keuze voor het weekmenu, anders je algemene momenten.
   const momenten = weekmenu.momenten.length ? weekmenu.momenten : algemeneMomenten;
@@ -258,9 +256,9 @@ function PlannerPage() {
 
   const gezinsLijst = lijsten.find((l) => l.group_id && l.group_id === gezin?.id);
 
-  const { data: planDb = [] } = useQuery({
+  const { data: plan = [] } = useQuery({
     queryKey: ["meal-plan", weergave, weergave === "gezin" ? gezin?.id : user?.id, week[0]],
-    enabled: !demo && !!user && (weergave === "mij" || !!gezin),
+    enabled: !!user && (weergave === "mij" || !!gezin),
     queryFn: async () => {
       let q = supabase
         .from("meal_plan")
@@ -274,7 +272,6 @@ function PlannerPage() {
       return data as unknown as PlanRow[];
     },
   });
-  const plan = demo ? (demoPlan() as unknown as PlanRow[]) : planDb;
 
   // Het gezinsweekmenu ververst mee als een ander gezinslid iets aanpast.
   useEffect(() => {
@@ -305,7 +302,6 @@ function PlannerPage() {
   });
 
   async function verwijder(id: string, recipeId?: string | null, titel?: string) {
-    if (demo) { demoBericht(); return; }
     await supabase.from("meal_plan").delete().eq("id", id);
     qc.invalidateQueries({ queryKey: ["meal-plan"] });
     if (!recipeId) return;
@@ -327,7 +323,6 @@ function PlannerPage() {
   }
 
   async function opruimenBevestigen() {
-    if (demo) { demoBericht(); return; }
     if (!opruimVraag) return;
     await supabase
       .from("shopping_items")
@@ -340,7 +335,6 @@ function PlannerPage() {
 
 
   async function plan_toevoegen(recipeId: string, datum: string, moment: string, titel: string) {
-    if (demo) { demoBericht(); return; }
     if (!user) return;
     const { data, error } = await supabase
       .from("meal_plan")
@@ -439,7 +433,6 @@ function PlannerPage() {
 
   /** Alle aangevinkte gerechten in één keer op de boodschappenlijst zetten. */
   async function zetAllesOpLijst() {
-    if (demo) { demoBericht(); return; }
     if (!user || !naVoorstel) return;
     const ids = naVoorstel.filter((r) => naGekozen.has(r.recipeId)).map((r) => r.recipeId);
     if (!ids.length) {
@@ -479,7 +472,6 @@ function PlannerPage() {
 
 
   async function nieuw_gerecht(naam: string, basis: Basis | null, datum: string, moment: string, extra?: NieuwExtra) {
-    if (demo) { demoBericht(); return; }
     if (!user) return;
     let recipeId: string | null = null;
 
@@ -549,7 +541,6 @@ function PlannerPage() {
   }
 
   async function zetOpLijst(recipeId: string, listId: string) {
-    if (demo) { demoBericht(); return; }
     if (!user) return;
     const { data, error } = await supabase
       .from("recipe_ingredients")
@@ -579,7 +570,6 @@ function PlannerPage() {
 
   /** Verplaatst of dupliceert een geplande maaltijd naar een andere dag/moment. */
   async function verplaatsNaar(rij: PlanRow, datum: string, moment: string, kopie: boolean) {
-    if (demo) { demoBericht(); return; }
     if (!user) return;
     const { error } = kopie
       ? await supabase.from("meal_plan").insert({
@@ -601,7 +591,6 @@ function PlannerPage() {
   }
 
   async function koppelRecept(rij: PlanRow, recept: Recipe) {
-    if (demo) { demoBericht(); return; }
     const { error } = await supabase
       .from("meal_plan")
       .update({ recipe_id: recept.id, custom_title: null })
@@ -616,7 +605,6 @@ function PlannerPage() {
   }
 
   async function alleBoodschappen() {
-    if (demo) { demoBericht(); return; }
     if (!user || plan.length === 0) return;
     const ids = plan.map((p) => p.recipe_id).filter((x): x is string => !!x);
     const zonderRecept = plan.filter((p) => !p.recipe_id && !p.soort).map((p) => p.custom_title).filter(Boolean);
@@ -1085,7 +1073,6 @@ function ReceptKiezer({
   onNieuw: (naam: string, basis: Basis | null, datum: string, moment: string, extra?: NieuwExtra) => void;
 }) {
   const { user } = useAuth();
-  const demo = isDemo();
   const { taal } = useVoorkeuren();
   const [zoek, setZoek] = useState("");
   const [datum, setDatum] = useState(start.datum);
@@ -1264,7 +1251,6 @@ function ReceptKiezer({
     refetch: herlaadRecepten,
   } = useQuery({
     queryKey: ["recipes"],
-    enabled: !demo,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("recipes")
@@ -1276,18 +1262,16 @@ function ReceptKiezer({
       return data as Recipe[];
     },
   });
-  if (demo) recipes = DEMO_RECEPTEN;
 
-  const { data: favorietenDb = [] } = useQuery({
+  const { data: favorieten = [] } = useQuery({
     queryKey: ["favorites", user?.id],
-    enabled: !!user && !demo,
+    enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase.from("favorites").select("recipe_id");
       if (error) throw error;
       return data.map((f) => f.recipe_id as string);
     },
   });
-  const favorieten = demo ? DEMO_FAVORIETEN : favorietenDb;
 
   // Wanneer stond een gerecht voor het laatst (of eerstkomend) in de planning?
   const { data: laatst = {} } = useQuery({
