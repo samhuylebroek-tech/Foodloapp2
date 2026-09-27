@@ -727,111 +727,137 @@ function BoodschappenPage() {
 
   return (
     <AppShell title="Boodschappen">
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Je lijstjes">
-          {lijsten.map((l) => (
-            <button
-              key={l.id}
-              type="button"
-              role="tab"
-              aria-selected={l.id === actief}
-              onClick={() => setActief(l.id)}
-              className={
-                l.id === actief
-                  ? "min-h-12 rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground"
-                  : "min-h-12 rounded-xl border border-border bg-card px-4 text-base font-semibold"
-              }
-            >
-              {l.name}
-              {l.group_id ? (
-                <span
-                  className={
-                    l.id === actief
-                      ? "ml-2 rounded-full bg-primary-foreground/20 px-2 py-0.5 text-xs font-bold"
-                      : "ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary"
-                  }
-                >
-                  gezin
-                </span>
-              ) : null}
-            </button>
-          ))}
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild><Button variant="outline" size="icon" aria-label="Lijsten beheren"><MoreHorizontal /></Button></DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-56 rounded-xl p-2">
-              <DropdownMenuItem onSelect={() => { setLijstNaam(""); setNaamVenster("nieuw"); }} className="min-h-12 text-base"><ListPlus />Nieuw lijstje</DropdownMenuItem>
-              {actieveLijst && !actieveLijst.group_id ? <DropdownMenuItem onSelect={() => { setLijstNaam(actieveNaam); setNaamVenster("hernoem"); }} className="min-h-12 text-base"><Pencil />Naam wijzigen</DropdownMenuItem> : null}
-              <DropdownMenuItem onSelect={() => setDeelOpen(true)} className="min-h-12 text-base"><Share2 />Lijst delen</DropdownMenuItem>
-              {lijsten.length > 1 && !actieveLijst?.group_id ? <><DropdownMenuSeparator /><DropdownMenuItem onSelect={() => setVraagVerwijder(true)} className="min-h-12 text-base text-destructive"><Trash2 />Lijst verwijderen</DropdownMenuItem></> : null}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        {actieveLijst?.group_id && (
-          <p className="rounded-xl bg-secondary px-4 py-3 text-sm text-secondary-foreground">
-            Gezinslijst · iedereen kan aanvullen en afvinken
+      <div className="space-y-5">
+        {!online && (
+          <p role="status" className="flex items-center gap-2 rounded-xl bg-secondary px-4 py-3 text-base text-secondary-foreground">
+            <WifiOff className="size-5 shrink-0" /> Je bent offline — we bewaren alles straks.
           </p>
         )}
 
-        <div className="flex gap-2">
-          <Input
-            value={nieuw}
-            onChange={(e) => setNieuw(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && voegToe()}
-            placeholder="Zelf iets toevoegen"
-            className="h-14 text-base"
-          />
-          <Button onClick={voegToe} className="h-14 px-6" aria-label="Toevoegen">
-            <Plus className="size-6" />
+        {/* 1. Wat moet ik kopen? */}
+        <section aria-label="Overzicht" className="rounded-3xl bg-card p-5 ring-1 ring-border/60">
+          {lijsten.length > 1 ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button type="button" className="flex min-h-12 items-center gap-1 text-base font-semibold text-muted-foreground">
+                  {actieveNaam}{actieveLijst?.group_id ? " · gezin" : ""} <ChevronDown className="size-5" />
+                  <span className="sr-only">— andere lijst kiezen</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="min-w-56 rounded-xl p-2">
+                {lijsten.map((l) => (
+                  <DropdownMenuItem key={l.id} onSelect={() => setActief(l.id)} className="min-h-12 text-base">
+                    {l.id === actief ? <Check /> : <span className="size-4" />} {l.name}{l.group_id ? " · gezin" : ""}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <p className="text-base font-semibold text-muted-foreground">{actieveNaam}{actieveLijst?.group_id ? " · gezin" : ""}</p>
+          )}
+          <p className="mt-1 font-display text-3xl font-semibold leading-tight">
+            {openAantal === 0
+              ? items.length ? "Alles gekocht!" : "Je lijst is leeg"
+              : `${openAantal} ${openAantal === 1 ? "ding" : "dingen"} nog te kopen`}
+          </p>
+          {totaal > 0 ? (
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary" aria-hidden>
+              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${procent}%` }} />
+            </div>
+          ) : null}
+          {actieveLijst?.group_id ? (
+            <p className="mt-2 text-sm text-muted-foreground">Iedereen in je gezin kan aanvullen en afvinken.</p>
+          ) : null}
+          {openAantal > 0 ? (
+            <Button onClick={() => setWinkel(true)} className="mt-4 h-16 w-full text-lg">
+              <ShoppingCart className="size-6" /> Ik ga boodschappen doen
+            </Button>
+          ) : null}
+        </section>
+
+        {/* 2. Snel toevoegen */}
+        <section aria-label="Iets toevoegen" className="space-y-2">
+          <label htmlFor="toevoegen" className="px-1 text-lg font-semibold">Iets toevoegen</label>
+          <div className="flex gap-2">
+            <Input
+              id="toevoegen"
+              value={nieuw}
+              onChange={(e) => setNieuw(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && void voegToe()}
+              placeholder="Bv. melk, 6 eieren of wasmiddel"
+              className="h-16 text-lg"
+              autoComplete="off"
+              enterKeyHint="done"
+            />
+            <Button onClick={() => void voegToe()} className="h-16 px-5 text-base">
+              <Plus className="size-6" /> Voeg toe
+            </Button>
+          </div>
+          {typSuggesties.length > 0 ? (
+            <div className="flex flex-wrap gap-2" aria-label="Eerder gekocht">
+              {typSuggesties.map((s) => (
+                <Button key={s} variant="outline" className="h-12 rounded-full text-base" onClick={() => { setNieuw(""); void voegTekstToe(s); }}>
+                  <Plus className="size-4" /> {s}
+                </Button>
+              ))}
+            </div>
+          ) : null}
+        </section>
+
+        {/* 3. Voorstellen — alleen als er echt iets is */}
+        {suggesties.length > 0 && (
+          <section aria-label="Misschien heb je dit weer nodig" className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
+            <h2 className="flex items-center gap-2 text-lg font-semibold"><Sparkles className="size-5 text-primary" /> Misschien heb je dit weer nodig</h2>
+            <ul className="mt-2 divide-y divide-border/70">
+              {suggesties.map((s) => (
+                <li key={s.name} className="flex min-h-16 items-center gap-3">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-lg">{s.name}</span>
+                    <span className="block text-sm text-muted-foreground">{s.reden}</span>
+                  </span>
+                  <Button variant="outline" className="h-12 shrink-0" onClick={() => void voegMeerdereToe([{ name: s.name, quantity: s.quantity, unit: s.unit }], `${s.name} staat op je lijst`)}>
+                    <Plus /> Toevoegen
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {weekOpen.length > 0 && (
+          <section aria-label="Uit je weekmenu" className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
+            <h2 className="flex items-center gap-2 text-lg font-semibold"><CalendarDays className="size-5 text-primary" /> Uit je weekmenu</h2>
+            <ul className="mt-2 divide-y divide-border/70">
+              {weekOpen.map((g) => (
+                <li key={g.recipe_id} className="flex min-h-16 items-center gap-3">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-lg">{g.titel}</span>
+                    <span className="block text-sm capitalize text-muted-foreground">{datumLabel(g.dag)}</span>
+                  </span>
+                  <Button variant="outline" className="h-12 shrink-0" onClick={() => void zetGerechtOpLijst(g.recipe_id, g.titel)}>
+                    <Plus /> Zet op lijst
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" className="h-14 text-base" onClick={() => setGeheugenOpen(true)}>
+            <History className="size-5" /> Eerder gekocht
+          </Button>
+          <Button variant="outline" className="h-14 text-base" onClick={() => setMeerOpen(true)}>
+            <Settings2 className="size-5" /> Meer opties
           </Button>
         </div>
 
         {items.length === 0 ? (
-          <EmptyState title="Je lijst is leeg" description="Voeg hierboven toe wat je nog nodig hebt." />
+          <EmptyState title="Nog niets op je lijst" description="Typ hierboven wat je nodig hebt, of kies iets dat je eerder kocht." />
         ) : (
           <div className="space-y-3">
-            <div className="rounded-2xl bg-card p-3 ring-1 ring-border/60">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-base font-semibold">
-                  {openAantal === 0 ? "Alles afgevinkt" : `Nog ${openAantal} te halen`}
-                </p>
-                <p className="text-sm text-muted-foreground">{klaar.length} van {totaal} klaar</p>
-              </div>
-              <div className="mt-2 h-2 overflow-hidden rounded-full bg-secondary">
-                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${procent}%` }} />
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button onClick={() => setWinkel(true)} className="h-12 flex-1 text-base">
-                  <ShoppingCart className="size-5" /> Ik sta in de winkel
-                </Button>
-                <Button
-                  variant={kiesModus ? "default" : "outline"}
-                  onClick={() => { setKiesModus((v) => !v); setGekozen(new Set()); }}
-                  className="h-12 text-base"
-                >
-                  {kiesModus ? "Klaar met kiezen" : "Selecteren"}
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" className="size-12" aria-label="Boodschappen opruimen">
-                      <Trash2 className="size-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="min-w-56 rounded-xl p-2">
-                    {klaar.length > 0 ? (
-                      <DropdownMenuItem onSelect={() => setWisVraag("afgevinkt")} className="min-h-11 text-base">
-                        <Trash2 /> Afgevinkte verwijderen ({klaar.length})
-                      </DropdownMenuItem>
-                    ) : null}
-                    <DropdownMenuItem onSelect={() => setWisVraag("alles")} className="min-h-11 text-base text-destructive">
-                      <Trash2 /> Hele lijst leegmaken
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
+            <h2 className="px-1 text-lg font-semibold">Je lijst</h2>
+
 
             {kiesModus && (
               <div className="sticky top-2 z-20 flex flex-wrap items-center gap-2 rounded-2xl bg-primary p-3 text-primary-foreground">
