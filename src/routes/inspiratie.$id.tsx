@@ -37,7 +37,6 @@ function InspiratieDetailPage() {
   const [toegevoegd, setToegevoegd] = useState<{ recipeId: string; bestondAl: boolean } | null>(null);
   const [bereidingOpen, setBereidingOpen] = useState(false);
   const [fotoKapot, setFotoKapot] = useState(false);
-  const fotoUrl = useSignedUrl(recept?.image_url ?? null);
 
   const { data: recept, isLoading } = useQuery({
     queryKey: ["inspiratie", id],
@@ -48,6 +47,7 @@ function InspiratieDetailPage() {
     queryFn: () => haalInspiratieIngredienten(id),
     enabled: !!recept,
   });
+  const fotoUrl = useSignedUrl(recept?.image_url ?? null);
 
   async function voegToe() {
     if (!user || !recept || bezig) return;
