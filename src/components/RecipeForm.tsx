@@ -75,12 +75,15 @@ export function RecipeForm({
   ingredients,
   gedeeld,
   vraagInplannen = false,
+  koppelMaaltijd,
 }: {
   recipe?: Recipe;
   ingredients?: Ingredient[];
   gedeeld?: { title?: string | undefined; text?: string | undefined; url?: string | undefined };
   /** Vraagt na het bewaren van een nieuw recept of je het meteen inplant. */
   vraagInplannen?: boolean;
+  /** Geplande maaltijd (zonder recept) die na bewaren aan dit recept gekoppeld wordt. */
+  koppelMaaltijd?: string | undefined;
 }) {
   const { user } = useAuth();
   const { taal, momenten } = useVoorkeuren();
@@ -175,6 +178,10 @@ export function RecipeForm({
   const [screenshotBezig, setScreenshotBezig] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Automatisch bewaren als concept, zodat je nooit werk verliest.
+  const [conceptId, setConceptId] = useState<string | null>(null);
+  const [autoStatus, setAutoStatus] = useState<"" | "bezig" | "ok">("");
+  const conceptBezig = useRef(false);
   const [voorstelFoto, setVoorstelFoto] = useState<string | null>(null);
   const [fotoBezig, setFotoBezig] = useState(false);
   const [fotoGeweigerd, setFotoGeweigerd] = useState(false);
@@ -664,6 +671,51 @@ export function RecipeForm({
 
 
 
+  useEffect(() => {
+    if (recipe || !user || saving || !title.trim()) return;
+    const t = setTimeout(async () => {
+      if (conceptBezig.current) return;
+      conceptBezig.current = true;
+      setAutoStatus("bezig");
+      try {
+        const velden = {
+          title: title.trim(),
+          description: description.trim(),
+          instructions: stappen,
+          image_url: photoPath && !photoPath.startsWith("http") && !photoPath.startsWith("data:") ? photoPath : null,
+          source_url: sourceUrl.trim() || null,
+          category,
+          is_concept: true,
+        };
+        let id = conceptId;
+        if (id) {
+          await supabase.from("recipes").update(velden).eq("id", id);
+        } else {
+          const { data, error } = await supabase
+            .from("recipes")
+            .insert({ ...velden, user_id: user.id })
+            .select("id")
+            .single();
+          if (error) throw error;
+          id = data.id;
+          setConceptId(id);
+        }
+        await supabase.from("recipe_ingredients").delete().eq("recipe_id", id!);
+        const rijen = parseIngredientText(ingredientTekst).map((r, index) => ({
+          recipe_id: id!, name: r.name, quantity: r.quantity, unit: r.unit, position: index,
+        }));
+        if (rijen.length) await supabase.from("recipe_ingredients").insert(rijen);
+        setAutoStatus("ok");
+      } catch {
+        setAutoStatus("");
+      } finally {
+        conceptBezig.current = false;
+      }
+    }, 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, description, stappenTekst, ingredientTekst, photoPath, sourceUrl, category]);
+
   /** Gegevens die het venster meteen kan opslaan, zonder op de formulierstate te wachten. */
   type DirecteOpslag = {
     title: string;
@@ -732,11 +784,16 @@ export function RecipeForm({
         instructions: over ? over.stappen : stappen,
         step_ingredients: !over && Object.keys(stapKeuze).length ? stapKeuze : null,
         source_url: over ? over.sourceUrl : sourceUrl.trim() || null,
+        is_concept: false,
       };
 
 
-      let recipeId = recipe?.id;
-      if (recipeId) {
+      let recipeId = recipe?.id ?? conceptId ?? undefined;
+      if (recipeId && !recipe?.id) {
+        const { error } = await supabase.from("recipes").update(payload).eq("id", recipeId);
+        if (error) throw error;
+        await supabase.from("recipe_ingredients").delete().eq("recipe_id", recipeId);
+      } else if (recipeId) {
         // Vorige versie bewaren zodat je ze later kan terugzetten.
         try {
           const [oud, oudeIngredienten] = await Promise.all([
@@ -779,7 +836,14 @@ export function RecipeForm({
       }
 
       toast.success("Recept opgeslagen");
-      if (vraagInplannen && !recipe?.id) {
+      if (koppelMaaltijd) {
+        await supabase
+          .from("meal_plan")
+          .update({ recipe_id: recipeId!, custom_title: null })
+          .eq("id", koppelMaaltijd);
+        toast.success("Gekoppeld aan je weekmenu");
+        navigate({ to: "/planner" });
+      } else if (vraagInplannen && !recipe?.id) {
         setNetOpgeslagen({ id: recipeId!, titel: title.trim() || "Je nieuwe recept" });
       } else {
         navigate({ to: "/recepten/$id", params: { id: recipeId! } });
@@ -1525,10 +1589,17 @@ export function RecipeForm({
         </p>
       )}
 
-      <Button onClick={() => void handleSave()} disabled={saving} className="h-16 w-full text-lg">
-        {saving ? <Loader2 className="size-5 animate-spin" /> : null}
-        Recept opslaan
-      </Button>
+      <div className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-20 -mx-1 rounded-2xl border border-border bg-card/95 p-2 shadow-lg backdrop-blur md:bottom-4">
+        {!recipe && autoStatus ? (
+          <p className="px-2 pb-1 text-center text-xs text-muted-foreground" aria-live="polite">
+            {autoStatus === "bezig" ? "Bezig met bewaren…" : "Automatisch bewaard als concept"}
+          </p>
+        ) : null}
+        <Button onClick={() => void handleSave()} disabled={saving} className="h-14 w-full text-lg">
+          {saving ? <Loader2 className="size-5 animate-spin" /> : null}
+          {koppelMaaltijd ? "Klaar en koppelen" : "Klaar"}
+        </Button>
+      </div>
 
       <Dialog open={vensterOpen} onOpenChange={(open) => !open && sluitVenster()}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">

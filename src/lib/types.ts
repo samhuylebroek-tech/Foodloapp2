@@ -15,6 +15,7 @@ export type Recipe = {
   instructions: string[];
   step_ingredients?: StapKoppeling | null;
   source_url: string | null;
+  is_concept?: boolean;
   created_at: string;
   updated_at: string;
 };

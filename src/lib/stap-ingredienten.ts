@@ -103,7 +103,7 @@ function komtVoor(naam: string, stapTekst: StapTekst): boolean {
   return kern.some((k) => {
     if (!k) return false;
     if (stapTekst.basissen.has(k)) return true;
-    if (k.length >= 4 && stapTekst.lange.some((w) => w.includes(k))) return true;
+    if (k.length >= 5 && stapTekst.lange.some((w) => w.startsWith(k) || w.endsWith(k))) return true;
     return false;
   });
 }

@@ -4,13 +4,14 @@ import { RecipeForm } from "@/components/RecipeForm";
 import { useAuth } from "@/hooks/useAuth";
 import { useLimiet } from "@/lib/limiet";
 
-type NieuwSearch = { title?: string | undefined; text?: string | undefined; url?: string | undefined };
+type NieuwSearch = { title?: string | undefined; text?: string | undefined; url?: string | undefined; koppel?: string | undefined };
 
 export const Route = createFileRoute("/recepten/nieuw")({
   validateSearch: (search: Record<string, unknown>): NieuwSearch => ({
     title: typeof search["title"] === "string" ? search["title"] : undefined,
     text: typeof search["text"] === "string" ? search["text"] : undefined,
     url: typeof search["url"] === "string" ? search["url"] : undefined,
+    koppel: typeof search["koppel"] === "string" ? search["koppel"] : undefined,
   }),
   head: () => ({
     meta: [
