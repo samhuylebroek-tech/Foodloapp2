@@ -139,20 +139,6 @@ function kortLabel(datum: string) {
   return d.toLocaleDateString("nl-BE", { weekday: "short", day: "numeric" });
 }
 
-function weekLabel(start: Date, kort = false) {
-  const einde = new Date(start);
-  einde.setDate(einde.getDate() + 6);
-  const zelfdeMaand = start.getMonth() === einde.getMonth() && start.getFullYear() === einde.getFullYear();
-  const beginTekst = zelfdeMaand
-    ? String(start.getDate())
-    : start.toLocaleDateString("nl-BE", { day: "numeric", month: kort ? "short" : "long" });
-  const eindeTekst = einde.toLocaleDateString("nl-BE", {
-    day: "numeric",
-    month: kort ? "short" : "long",
-  });
-  return `${beginTekst} – ${eindeTekst}`;
-}
-
 type NieuwExtra = { soort?: string; maakRecept?: boolean };
 
 type Basis = {
