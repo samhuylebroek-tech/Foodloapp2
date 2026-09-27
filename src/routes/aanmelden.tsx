@@ -90,7 +90,7 @@ function AanmeldenPage() {
 
   async function handleSso(provider: "google" | "apple" | "microsoft", naam: string) {
     const result = await lovable.auth.signInWithOAuth(provider, {
-      redirect_uri: appOrigin(),
+      redirect_uri: window.location.origin,
     });
     if (result.error) {
       toast.error(`Aanmelden met ${naam} lukte niet`);
