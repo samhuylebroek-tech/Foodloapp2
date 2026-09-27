@@ -878,6 +878,27 @@ function PlannerPage() {
               Terug naar vandaag
             </button>
           ) : null}
+          {/* Keuze: één dag of de hele week met alle planning */}
+          <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1" role="tablist" aria-label="Weergave kiezen">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!heleWeek}
+              onClick={() => setHeleWeek(false)}
+              className={`flex h-12 items-center justify-center rounded-lg text-base font-semibold transition-colors ${!heleWeek ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+            >
+              Per dag
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={heleWeek}
+              onClick={() => setHeleWeek(true)}
+              className={`flex h-12 items-center justify-center rounded-lg text-base font-semibold transition-colors ${heleWeek ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+            >
+              Hele week
+            </button>
+          </div>
           <div className="mt-3 grid grid-cols-7 gap-1.5" role="tablist" aria-label="Dag kiezen">
             {week.map((dag) => {
               const d = new Date(`${dag}T12:00:00`);
