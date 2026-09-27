@@ -76,9 +76,27 @@ function GerechtenPage() {
         .from("recipes")
         .select("*")
         .is("deleted_at", null)
+        .eq("is_concept", false)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Recipe[];
+    },
+  });
+
+  const { data: concepten = [] } = useQuery({
+    queryKey: ["concepten", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("recipes")
+        .select("id, title, updated_at")
+        .eq("user_id", user!.id)
+        .eq("is_concept", true)
+        .is("deleted_at", null)
+        .order("updated_at", { ascending: false })
+        .limit(5);
+      if (error) throw error;
+      return data as { id: string; title: string; updated_at: string }[];
     },
   });
 
@@ -262,6 +280,25 @@ function GerechtenPage() {
       }
     >
       <div className="space-y-4">
+        {concepten.length > 0 ? (
+          <section aria-label="Concepten" className="rounded-xl border border-border bg-card p-3 shadow-sm">
+            <p className="px-1 text-sm font-semibold text-muted-foreground">Nog niet klaar</p>
+            <ul className="mt-2 space-y-2">
+              {concepten.map((c) => (
+                <li key={c.id}>
+                  <Link
+                    to="/recepten/$id/bewerken"
+                    params={{ id: c.id }}
+                    className="flex min-h-14 items-center justify-between gap-3 rounded-lg bg-secondary px-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <span className="min-w-0 truncate">Je was bezig met <strong>{c.title}</strong></span>
+                    <span className="shrink-0 font-semibold text-primary">Verdergaan</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
         <div className="relative">
           <Search
             className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"

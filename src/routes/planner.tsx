@@ -1174,6 +1174,7 @@ function ReceptKiezer({
         .from("recipes")
         .select("*")
         .is("deleted_at", null)
+        .eq("is_concept", false)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Recipe[];
@@ -1941,6 +1942,7 @@ function WeekmenuVoorstel({
         .from("recipes")
         .select("*")
         .is("deleted_at", null)
+        .eq("is_concept", false)
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) throw error;
