@@ -821,7 +821,7 @@ function BoodschappenPage() {
             variant="outline"
             onClick={() => void zetTerug()}
             disabled={terugAantal === 0}
-            className="h-12 rounded-full bg-card px-4 text-base shadow-sm"
+            className="h-12 rounded-xl bg-card px-4 text-base shadow-sm"
             aria-label="Laatste actie terugzetten"
           >
             <Undo2 className="size-5" /> Ongedaan maken
@@ -895,7 +895,7 @@ function BoodschappenPage() {
           {typSuggesties.length > 0 ? (
             <div className="flex flex-wrap gap-2" aria-label="Eerder gekocht">
               {typSuggesties.map((s) => (
-                <Button key={s} variant="outline" className="h-12 rounded-full text-base" onClick={() => { setNieuw(""); void voegTekstToe(s); }}>
+                <Button key={s} variant="outline" className="h-12 rounded-xl text-base" onClick={() => { setNieuw(""); void voegTekstToe(s); }}>
                   <Plus className="size-4" /> {s}
                 </Button>
               ))}
@@ -913,7 +913,7 @@ function BoodschappenPage() {
                 <Button
                   key={e.name}
                   variant="outline"
-                  className="h-12 rounded-full text-base"
+                  className="h-12 rounded-xl text-base"
                   onClick={() => { void meet("boodschappen.vaak_gekocht"); void voegMeerdereToe([{ name: e.name, quantity: e.quantity, unit: e.unit }], `${e.name} staat op je lijst`); }}
                 >
                   <Plus className="size-4" /> {e.name}

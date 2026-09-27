@@ -19,9 +19,9 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  --radius-2xl: calc(var(--radius) + 4px);
+  --radius-3xl: calc(var(--radius) + 4px);
+  --radius-4xl: calc(var(--radius) + 6px);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -59,7 +59,7 @@
 
 :root {
   /* Foodlo "rustige keuken": warm papier, inkt, één kruidengroen accent */
-  --radius: 0.875rem;
+  --radius: 0.625rem;
   --background: oklch(0.975 0.008 85);
   --foreground: oklch(0.22 0.015 150);
   --card: oklch(0.995 0.003 85);

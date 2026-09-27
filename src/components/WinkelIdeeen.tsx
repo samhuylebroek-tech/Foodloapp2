@@ -154,7 +154,7 @@ export function WinkelIdeeen({ open, onOpenChange, opLijst, vaakNamen, onVoegToe
                     disabled={al}
                     aria-label={al ? `${p} staat al op je lijst` : `${p} toevoegen`}
                     className={cn(
-                      "flex min-h-14 items-center gap-2 rounded-full px-4 text-lg ring-1 transition-all active:scale-95",
+                      "flex min-h-14 items-center gap-2 rounded-xl px-4 text-lg ring-1 transition-all active:scale-95",
                       al
                         ? "bg-primary/10 text-primary ring-primary/40"
                         : "bg-card text-foreground ring-border hover:ring-primary",
