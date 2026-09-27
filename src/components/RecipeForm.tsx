@@ -76,6 +76,7 @@ export function RecipeForm({
   gedeeld,
   vraagInplannen = false,
   koppelMaaltijd,
+  startNaam,
 }: {
   recipe?: Recipe;
   ingredients?: Ingredient[];
@@ -84,6 +85,8 @@ export function RecipeForm({
   vraagInplannen?: boolean;
   /** Geplande maaltijd (zonder recept) die na bewaren aan dit recept gekoppeld wordt. */
   koppelMaaltijd?: string | undefined;
+  /** Naam die al bekend is (bv. vanuit het weekmenu): meteen zelf invoeren. */
+  startNaam?: string | undefined;
 }) {
   const { user } = useAuth();
   const { taal, momenten } = useVoorkeuren();
@@ -93,10 +96,10 @@ export function RecipeForm({
   const gedeeldeLink =
     gedeeld?.url ?? [gedeeld?.text, gedeeld?.title].join(" ").match(/https?:\/\/\S+/)?.[0] ?? "";
 
-  const [manier, setManier] = useState<Manier>("link");
-  const [ingevuld, setIngevuld] = useState(Boolean(recipe));
+  const [manier, setManier] = useState<Manier>(startNaam ? "zelf" : "link");
+  const [ingevuld, setIngevuld] = useState(Boolean(recipe) || Boolean(startNaam));
 
-  const [title, setTitle] = useState(recipe?.title ?? "");
+  const [title, setTitle] = useState(recipe?.title ?? startNaam ?? "");
   const [description, setDescription] = useState(recipe?.description ?? "");
   const [servings, setServings] = useState(String(recipe?.servings ?? 4));
   const [prep, setPrep] = useState(String(recipe?.prep_minutes ?? 15));
@@ -894,10 +897,10 @@ export function RecipeForm({
   }
 
   const manieren: { id: Manier; label: string; icon: typeof Link2 }[] = [
-    { id: "zoek", label: "Zoeken", icon: Search },
-    { id: "link", label: "Plak link of tekst", icon: Link2 },
-    { id: "foto", label: "AI foto", icon: Camera },
-    { id: "zelf", label: "Zelf typen", icon: Pencil },
+    { id: "zelf", label: "Zelf invoeren", icon: Pencil },
+    { id: "link", label: "Website of social", icon: Link2 },
+    { id: "foto", label: "Foto of scan", icon: Camera },
+    { id: "zoek", label: "Zoeken of AI", icon: Search },
   ];
 
 
@@ -1590,6 +1593,16 @@ export function RecipeForm({
       )}
 
       <div className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-20 -mx-1 rounded-2xl border border-border bg-card/95 p-2 shadow-lg backdrop-blur md:bottom-4">
+        <ul className="flex flex-wrap justify-center gap-x-3 gap-y-1 px-2 pb-1 text-xs text-muted-foreground" aria-label="Wat is al ingevuld">
+          {([
+            ["Naam", !!title.trim()],
+            ["Foto", !!photoPath],
+            ["Ingrediënten", formIngredienten.length > 0],
+            ["Bereiding", stappen.length > 0],
+          ] as const).map(([label, ok]) => (
+            <li key={label} className={ok ? "font-semibold text-primary" : ""}>{ok ? "✓" : "○"} {label}</li>
+          ))}
+        </ul>
         {!recipe && autoStatus ? (
           <p className="px-2 pb-1 text-center text-xs text-muted-foreground" aria-live="polite">
             {autoStatus === "bezig" ? "Bezig met bewaren…" : "Automatisch bewaard als concept"}

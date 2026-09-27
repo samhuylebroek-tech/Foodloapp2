@@ -26,6 +26,8 @@ export const Route = createFileRoute("/recepten/nieuw")({
         property: "og:description",
         content: "Nieuw recept toevoegen met foto, ingrediënten en bereidingsstappen.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: NieuwPage,
@@ -33,7 +35,7 @@ export const Route = createFileRoute("/recepten/nieuw")({
 
 function NieuwPage() {
   const gedeeld = Route.useSearch();
-  const heeftGedeeld = Boolean(gedeeld.title || gedeeld.text || gedeeld.url);
+  const heeftGedeeld = !gedeeld.koppel && Boolean(gedeeld.title || gedeeld.text || gedeeld.url);
   const { user, loading: authLaden } = useAuth();
   const { data: limiet, isLoading: limietLaden } = useLimiet(user?.id);
 
@@ -70,7 +72,11 @@ function NieuwPage() {
               en controleer daarna het resultaat.
             </p>
           )}
-          <RecipeForm gedeeld={gedeeld} vraagInplannen />
+          {gedeeld.koppel ? (
+            <RecipeForm koppelMaaltijd={gedeeld.koppel} startNaam={gedeeld.title} />
+          ) : (
+            <RecipeForm gedeeld={gedeeld} vraagInplannen />
+          )}
         </>
       )}
     </AppShell>
