@@ -93,7 +93,7 @@ function KaartPagina() {
   return (
     <AppShell title={kaart.winkel_naam}>
       <div className="space-y-5">
-        <div className="rounded-[2rem] border border-border bg-white p-5 shadow-sm">
+        <div className="rounded-2xl border border-border bg-white p-5 shadow-sm">
           <Barcode waarde={kaart.nummer} formaat={kaart.formaat} hoogte={110} />
           <p className="mt-3 text-center font-mono text-lg tracking-wide text-slate-800">
             {groepeer(kaart.nummer)}
@@ -105,7 +105,7 @@ function KaartPagina() {
         </Button>
 
         {vanMij ? (
-          <div className="space-y-4 rounded-[2rem] border border-border bg-card p-5">
+          <div className="space-y-4 rounded-2xl border border-border bg-card p-5">
             <div>
               <label className="text-base font-medium" htmlFor="naam">
                 Naam van de kaart
@@ -174,10 +174,9 @@ function Kassa({ kaart, onSluiten }: { kaart: Kaart; onSluiten: () => void }) {
         <button
           type="button"
           onClick={onSluiten}
-          aria-label="Sluiten"
-          className="flex size-12 items-center justify-center rounded-2xl border border-slate-200 text-slate-700"
+          className="flex h-12 items-center gap-2 rounded-2xl border border-slate-200 px-4 text-lg font-semibold text-slate-700"
         >
-          <ArrowLeft className="size-6" aria-hidden />
+          <ArrowLeft className="size-6" aria-hidden /> Sluiten
         </button>
         <p className="text-2xl font-bold text-slate-900">{kaart.winkel_naam}</p>
       </div>

@@ -51,7 +51,7 @@ function NieuwPage() {
         </p>
       )}
       {volzet ? (
-        <div className="rounded-3xl border border-border bg-card p-6 text-center">
+        <div className="rounded-2xl border border-border bg-card p-6 text-center">
           <p className="text-lg font-semibold">Je limiet is bereikt</p>
           <p className="mt-2 text-muted-foreground">
             Je hebt al {limiet.gebruikt} van {limiet.totaal} gerechten. Koop een extra pakket om

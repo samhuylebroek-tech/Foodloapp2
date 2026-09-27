@@ -366,7 +366,7 @@ function Pakketten({ t }: { t: (s: string) => string }) {
       : 0;
 
   return (
-    <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
       <h2 className="text-xl font-bold tracking-tight">{t("Pakketten")}</h2>
       <p className="mt-2 text-base text-muted-foreground">
         {limiet.gebruikt} {t("van")} {limiet.totaal} {t("gerechten in gebruik")}
@@ -410,7 +410,7 @@ function OverFoodlo({ t }: { t: (s: string) => string }) {
   };
 
   return (
-    <section className="rounded-[2rem] border border-border bg-card p-5 shadow-sm">
+    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
       <h2 className="text-xl font-bold tracking-tight">{t("Over Foodlo")}</h2>
       <ul className="mt-3 space-y-2">
         {links.map((l) => (
