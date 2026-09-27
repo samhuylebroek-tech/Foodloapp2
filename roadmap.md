@@ -187,3 +187,9 @@
 - [ ] Eén slimme review bij overlappende ingrediënten (geen popup per ingrediënt)
 - [ ] Gebruiker beslist: nog eens toevoegen / niet toevoegen
 - [ ] Volledige brief: /mnt/user-uploads/Ja._Dit_is_een_belangrijke_nuance_niet_pasted.md (1660 regels)
+
+## Klaar — Demo-modus (27 sep)
+- [x] "Verken zonder account" op de aanmeldpagina
+- [x] Voorbeeldrecepten, weekmenu (incl. vandaag), boodschappenlijst en favorieten
+- [x] Demo-balk met Account maken / Stop; schrijfacties tonen vriendelijke melding
+- [x] Getest op 390x844 en 1280x1800, kookstand inbegrepen, geen fouten
