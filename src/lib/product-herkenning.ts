@@ -33,7 +33,7 @@ const SYNONIEMEN: Record<string, string> = {
   wortel: "wortel", wortelen: "wortel", wortels: "wortel", worteltje: "wortel", worteltjes: "wortel",
   carrot: "wortel", carrots: "wortel", carotte: "wortel", carottes: "wortel", karotte: "wortel", mohrrube: "wortel",
   // paprika
-  paprika: "paprika", paprika's: "paprika", "bell pepper": "paprika", "bell peppers": "paprika", poivron: "paprika", poivrons: "paprika",
+  paprika: "paprika", "paprika's": "paprika", "bell pepper": "paprika", "bell peppers": "paprika", poivron: "paprika", poivrons: "paprika",
   // courgette
   courgette: "courgette", courgettes: "courgette", zucchini: "courgette", zucchine: "courgette",
   // aubergine
