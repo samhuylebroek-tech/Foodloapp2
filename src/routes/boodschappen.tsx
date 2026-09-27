@@ -1193,12 +1193,12 @@ function BoodschappenPage() {
             <Button className="h-14 w-full justify-start text-base" onClick={() => void maakDeelLink()}>
               <Link2 /> Deel met een link
             </Button>
-            <p className="px-1 text-sm text-muted-foreground">
+            <p className="px-1 text-base text-muted-foreground">
               Wie de link opent, maakt eerst een gratis Foodlo-account. Daarna kan die mee aanvullen en afvinken.
             </p>
             {deelLink ? (
               <div className="rounded-xl bg-secondary p-3">
-                <p className="break-all text-sm">{deelLink}</p>
+                <p className="break-all text-base">{deelLink}</p>
                 <Button
                   variant="ghost"
                   className="mt-1 h-11"
@@ -1210,7 +1210,7 @@ function BoodschappenPage() {
             ) : null}
             {meekijkers.length > 0 ? (
               <div className="space-y-1 pt-2">
-                <p className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                <p className="flex items-center gap-2 text-base font-semibold text-muted-foreground">
                   <Users className="size-4" /> Kijkt mee
                 </p>
                 {meekijkers.map((m) => (
@@ -1341,7 +1341,7 @@ function GeheugenRij({ naam, sub, vast, onVast, onPlus }: { naam: string; sub: s
     <li className="flex min-h-16 items-center gap-2">
       <span className="min-w-0 flex-1">
         <span className="block truncate text-lg">{naam}</span>
-        {sub ? <span className="block text-sm text-muted-foreground">{sub}</span> : null}
+        {sub ? <span className="block text-base text-muted-foreground">{sub}</span> : null}
       </span>
       <Button variant="ghost" size="icon" className="size-12 shrink-0" aria-pressed={vast} aria-label={vast ? `${naam} is een vaste boodschap` : `Maak ${naam} een vaste boodschap`} onClick={onVast}>
         <Star className={vast ? "size-6 fill-current text-primary" : "size-6 text-muted-foreground"} />
@@ -1394,7 +1394,7 @@ function Winkelmodus({
         </Button>
         <div className="min-w-0 flex-1">
           <p className="truncate text-lg font-semibold">{huidig ? CATEGORIE_LABEL[huidig.id] : "Klaar"}</p>
-          <p className="text-sm text-muted-foreground">Nog {openAantal} te halen</p>
+          <p className="text-base text-muted-foreground">Nog {openAantal} te halen</p>
         </div>
       </div>
 
@@ -1427,7 +1427,7 @@ function Winkelmodus({
               <Button className="h-16 w-full max-w-sm text-lg" onClick={onOpruimen}>Lijst leegmaken</Button>
             ) : null}
             <Button variant="outline" className="h-14 w-full max-w-sm text-lg" onClick={onSluit}>Nog iets vergeten</Button>
-            <p className="text-sm text-muted-foreground">Wat je kocht, vind je later terug bij “Eerder gekocht”.</p>
+            <p className="text-base text-muted-foreground">Wat je kocht, vind je later terug bij “Eerder gekocht”.</p>
           </div>
         )}
       </div>
@@ -1437,7 +1437,7 @@ function Winkelmodus({
           <Button variant="outline" className="h-14 flex-1 text-base" disabled={stap === 0} onClick={() => setStap((s) => Math.max(0, s - 1))}>
             Vorige afdeling
           </Button>
-          <span className="text-sm text-muted-foreground">{Math.min(stap + 1, groepen.length)}/{groepen.length}</span>
+          <span className="text-base text-muted-foreground">{Math.min(stap + 1, groepen.length)}/{groepen.length}</span>
           <Button className="h-14 flex-1 text-base" disabled={stap >= groepen.length - 1} onClick={() => setStap((s) => s + 1)}>
             Volgende afdeling
           </Button>
@@ -1505,8 +1505,8 @@ function ItemRij({
           <span className={item.checked ? "block truncate text-lg text-muted-foreground line-through" : "block truncate text-lg"}>
             {item.name}
           </span>
-          {item.note ? <span className="block truncate text-sm text-muted-foreground">{item.note}</span> : null}
-          {item.recept ? <span className="block truncate text-sm text-muted-foreground">voor {item.recept}</span> : null}
+          {item.note ? <span className="block truncate text-base text-muted-foreground">{item.note}</span> : null}
+          {item.recept ? <span className="block truncate text-base text-muted-foreground">voor {item.recept}</span> : null}
         </span>
         {maatTekst(item) ? <span className="shrink-0 text-base text-muted-foreground">{maatTekst(item)}</span> : null}
         {item.checked ? <span className="sr-only">gekocht</span> : null}
