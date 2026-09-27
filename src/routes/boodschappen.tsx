@@ -1247,21 +1247,21 @@ function BoodschappenPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <label className="block text-sm font-semibold">Naam
+            <label className="block text-base font-semibold">Naam
               <Input autoFocus value={bewerkNaam} onChange={(event) => setBewerkNaam(event.target.value)} className="mt-1 h-14 text-base" />
             </label>
             <div className="grid grid-cols-2 gap-3">
-              <label className="block text-sm font-semibold">Hoeveel
+              <label className="block text-base font-semibold">Hoeveel
                 <Input inputMode="decimal" placeholder="bv. 2" value={bewerkAantal} onChange={(event) => setBewerkAantal(event.target.value)} className="mt-1 h-14 text-base" />
               </label>
-              <label className="block text-sm font-semibold">Eenheid
+              <label className="block text-base font-semibold">Eenheid
                 <Input placeholder="bv. kg, stuk(s)" value={bewerkEenheid} onChange={(event) => setBewerkEenheid(event.target.value)} className="mt-1 h-14 text-base" />
               </label>
             </div>
-            <label className="block text-sm font-semibold">Nota
+            <label className="block text-base font-semibold">Nota
               <Input placeholder="bv. de biologische" value={bewerkNota} maxLength={100} onChange={(event) => setBewerkNota(event.target.value)} className="mt-1 h-14 text-base" />
             </label>
-            <label className="block text-sm font-semibold">Afdeling
+            <label className="block text-base font-semibold">Afdeling
               <select
                 value={bewerkCategorie}
                 onChange={(e) => setBewerkCategorie(e.target.value as CategorieId)}
