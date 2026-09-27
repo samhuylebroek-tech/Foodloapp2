@@ -14,7 +14,7 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { uploadRecipePhoto, uploadDataUrl, fileToDataUrl, isAfbeelding } from "@/lib/photos";
+import { uploadRecipePhoto, uploadDataUrl, fileToDataUrl, isAfbeelding, zorgVoorReceptFoto } from "@/lib/photos";
 import { FotoKiezer } from "@/components/FotoKiezer";
 import {
   importRecipeFromUrl,
@@ -826,8 +826,9 @@ export function RecipeForm({
         recipeId = data.id;
       }
 
+      if (!recipeId) throw new Error("Het recept kon niet worden opgeslagen");
       const cleanRows = parseIngredientText(ingredientenBron).map((r, index) => ({
-        recipe_id: recipeId!,
+        recipe_id: recipeId,
         name: r.name,
         quantity: r.quantity,
         unit: r.unit,
@@ -836,6 +837,10 @@ export function RecipeForm({
       if (cleanRows.length) {
         const { error } = await supabase.from("recipe_ingredients").insert(cleanRows);
         if (error) throw error;
+      }
+      if (!bewaardeFoto) {
+        toast.message("Een passende foto wordt toegevoegd…");
+        await zorgVoorReceptFoto(recipeId, naam, user.id).catch(() => null);
       }
 
       toast.success("Recept opgeslagen");

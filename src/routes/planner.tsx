@@ -83,7 +83,7 @@ import { kiesUitEigen, type DagRegel, type Soortkeuze } from "@/lib/weekmenu-voo
 import { zorgVoorLijst, maakLijst, vindDubbels, voegToeAlsNieuw, type Dubbel, type NieuwItem, type ShoppingList } from "@/lib/boodschappen";
 import { tijdLabel } from "@/lib/tijd";
 import { normaliseerTekst } from "@/lib/zoeken";
-import { useSignedUrl } from "@/lib/photos";
+import { useSignedUrl, zorgVoorReceptFoto } from "@/lib/photos";
 
 export const Route = createFileRoute("/planner")({
   head: () => ({
@@ -429,6 +429,7 @@ function PlannerPage() {
               })),
             );
           }
+          await zorgVoorReceptFoto(data.id, basis.title || rij.idee.title, user.id).catch(() => null);
         }
         if (!recipeId) continue;
         const { error } = await supabase.from("meal_plan").insert({
@@ -572,6 +573,9 @@ function PlannerPage() {
             position: index,
           })),
         );
+      }
+      if (!basis.image_url) {
+        await zorgVoorReceptFoto(data.id, basis.title || naam, user.id).catch(() => null);
       }
     }
 
