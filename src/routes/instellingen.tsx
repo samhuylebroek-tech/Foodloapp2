@@ -114,9 +114,10 @@ function InstellingenPage() {
   return (
     <AppShell title={t("Instellingen")}>
       <div className="space-y-6">
+        <div className="divide-y divide-border overflow-hidden rounded-2xl ring-1 ring-border/60">
         <Link
           to="/credits"
-          className="flex min-h-16 items-center justify-between gap-3 rounded-[2rem] border border-border bg-card px-5 shadow-sm transition-colors hover:bg-muted"
+          className="flex min-h-16 items-center justify-between gap-3 bg-card px-5 py-3 transition-colors hover:bg-muted"
         >
           <span className="flex items-center gap-3">
             <Sparkles className="size-5 text-primary" aria-hidden />
@@ -129,7 +130,7 @@ function InstellingenPage() {
 
         <Link
           to="/meldingen"
-          className="flex min-h-16 items-center justify-between gap-3 rounded-[2rem] border border-border bg-card px-5 shadow-sm transition-colors hover:bg-muted"
+          className="flex min-h-16 items-center justify-between gap-3 bg-card px-5 py-3 transition-colors hover:bg-muted"
         >
           <span className="flex items-center gap-3">
             <Bell className="size-5 text-primary" aria-hidden />
@@ -140,7 +141,7 @@ function InstellingenPage() {
 
         <Link
           to="/installeren"
-          className="flex min-h-16 items-center justify-between gap-3 rounded-[2rem] border border-border bg-card px-5 shadow-sm transition-colors hover:bg-muted"
+          className="flex min-h-16 items-center justify-between gap-3 bg-card px-5 py-3 transition-colors hover:bg-muted"
         >
           <span className="flex items-center gap-3">
             <Smartphone className="size-5 text-primary" aria-hidden />
@@ -151,7 +152,7 @@ function InstellingenPage() {
 
         <Link
           to="/rondleiding"
-          className="flex min-h-16 items-center justify-between gap-3 rounded-[2rem] border border-border bg-card px-5 shadow-sm transition-colors hover:bg-muted"
+          className="flex min-h-16 items-center justify-between gap-3 bg-card px-5 py-3 transition-colors hover:bg-muted"
         >
           <span className="flex items-center gap-3">
             <Compass className="size-5 text-primary" aria-hidden />
@@ -159,6 +160,7 @@ function InstellingenPage() {
           </span>
           <span className="text-base text-muted-foreground">{t("Starten")}</span>
         </Link>
+        </div>
 
 
         <Accordion type="multiple" defaultValue={["profiel"]} className="overflow-hidden rounded-2xl bg-card px-5 ring-1 ring-border/60">

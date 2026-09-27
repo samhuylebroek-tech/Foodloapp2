@@ -90,11 +90,10 @@ function InspiratiePage() {
   }
 
   return (
-    <AppShell title="Inspiratie">
+    <AppShell title="Ideeën om te koken">
       <div className="space-y-4">
         <div>
-          <h1 className="font-display text-2xl">Zin in iets lekkers?</h1>
-          <p className="mt-1 text-muted-foreground">
+          <p className="text-muted-foreground">
             Ontdek recepten die Foodlo al kent en voeg ze met één tik toe aan je eigen recepten.
           </p>
         </div>

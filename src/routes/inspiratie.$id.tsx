@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Clock3, Users, Plus, Check, CalendarPlus, BookOpen } from "lucide-react";
+import { Clock3, Users, Plus, Check, CalendarPlus, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -71,7 +71,7 @@ function InspiratieDetailPage() {
 
   if (isLoading) {
     return (
-      <AppShell title="Inspiratie">
+      <AppShell title="Ideeën om te koken">
         <div className="space-y-3">
           <div className="aspect-[16/9] animate-pulse rounded-xl bg-secondary" />
           <div className="h-8 w-2/3 animate-pulse rounded bg-secondary" />
@@ -82,7 +82,7 @@ function InspiratieDetailPage() {
 
   if (!recept) {
     return (
-      <AppShell title="Inspiratie">
+      <AppShell title="Ideeën om te koken">
         <div className="rounded-xl border border-border bg-card p-6 text-center">
           <p className="text-lg font-semibold">Dit recept is niet gevonden</p>
           <Button variant="outline" asChild className="mt-4 h-14 px-6 text-base">
@@ -96,13 +96,8 @@ function InspiratieDetailPage() {
   const totaalTijd = recept.prep_minutes + recept.cook_minutes;
 
   return (
-    <AppShell title="Inspiratie">
+    <AppShell title="Ideeën om te koken">
       <div className="space-y-5 pb-24">
-        <Button variant="ghost" asChild className="h-12 px-2 text-base">
-          <Link to="/inspiratie">
-            <ArrowLeft className="size-5" /> Terug naar inspiratie
-          </Link>
-        </Button>
 
         {fotoUrl && !fotoKapot ? (
           <img
