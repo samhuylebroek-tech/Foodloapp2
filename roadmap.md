@@ -10,6 +10,7 @@
 - [x] Fase 7: Meer/kaarten/gezin/instellingen/welkom — tekstgroottes app-wide opgehoogd (beheerdersdeel uitgezonderd)
 
 ## Open
+- [ ] Toevoegen vanuit Ideeën: controlevenster vóór bewaren en direct uit Ideeën verwijderen
 - [ ] Gedeelde gezinslijst met twee mensen tegelijk testen (tweede persoon nodig)
 - [ ] Receptbouwer verder opsplitsen
 - [ ] Control Center-onderdeel Inspiratie
