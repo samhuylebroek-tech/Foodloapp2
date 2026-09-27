@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { gerechtFoto } from "@/lib/ai.functions";
 
 const BUCKET = "recipe-photos";
 
@@ -99,4 +100,27 @@ export async function uploadDataUrl(dataUrl: string, userId: string) {
   const ext = blob.type.includes("png") ? "png" : "jpg";
   const file = new File([blob], `voorstel.${ext}`, { type: blob.type || "image/jpeg" });
   return uploadRecipePhoto(file, userId);
+}
+
+/** Maakt alleen bij een ontbrekende foto een passende gerechtfoto en bewaart ze privé. */
+export async function zorgVoorReceptFoto(recipeId: string, titel: string, userId: string) {
+  const { data: recept, error: leesFout } = await supabase
+    .from("recipes")
+    .select("image_url")
+    .eq("id", recipeId)
+    .maybeSingle();
+  if (leesFout || !recept || recept.image_url) return recept?.image_url ?? null;
+
+  const dataUrl = await gerechtFoto({ data: { titel } });
+  if (!dataUrl) return null;
+  const pad = await uploadDataUrl(dataUrl, userId);
+  const wijzig = supabase.from("recipes").update({ image_url: pad }).eq("id", recipeId);
+  const { data: bewaard, error } = recept.image_url === ""
+    ? await wijzig.eq("image_url", "").select("image_url").maybeSingle()
+    : await wijzig.is("image_url", null).select("image_url").maybeSingle();
+  if (error || !bewaard?.image_url) {
+    await supabase.storage.from(BUCKET).remove([pad]);
+    return null;
+  }
+  return bewaard.image_url;
 }
