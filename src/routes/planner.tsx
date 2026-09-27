@@ -888,7 +888,7 @@ function PlannerPage() {
         </section>
 
         <div className={weekmenu.weergave === "kaarten" ? "-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2" : "space-y-1"}>
-        {zichtbareDagen.map((dag) => {
+        {getoondeDagen.map((dag) => {
           const items = plan.filter((p) => p.plan_date === dag);
           const openMomenten = momenten.filter((m) => !items.some((p) => p.meal_type === m));
           const volledig = momenten.length > 0 && openMomenten.length === 0;
