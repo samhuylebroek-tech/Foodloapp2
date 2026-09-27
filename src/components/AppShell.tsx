@@ -143,7 +143,7 @@ export function AppShell({
             className="sticky top-0 z-20 bg-background/95 backdrop-blur-md"
             style={{ paddingTop: "env(safe-area-inset-top)" }}
           >
-            <div className="mx-auto grid min-h-16 w-full max-w-3xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 sm:px-6 lg:max-w-4xl">
+            <div className="mx-auto grid min-h-16 w-full max-w-3xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 pt-2 sm:px-6 lg:max-w-4xl">
               <div className="flex min-w-0 items-center gap-2">
                 {toonTerug ? (
                   <button
