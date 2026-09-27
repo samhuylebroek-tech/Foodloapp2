@@ -102,9 +102,9 @@ function InspiratieDetailPage() {
           </Link>
         </Button>
 
-        {recept.image_url && !fotoKapot ? (
+        {fotoUrl && !fotoKapot ? (
           <img
-            src={recept.image_url}
+            src={fotoUrl}
             alt=""
             onError={() => setFotoKapot(true)}
             className="aspect-[16/9] w-full rounded-xl object-cover"
