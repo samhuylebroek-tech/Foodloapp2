@@ -769,8 +769,9 @@ export const gerechtFoto = createServerFn({ method: "POST" })
         },
       );
       return resultaat;
-    } catch {
+    } catch (error) {
       // een sfeerfoto is nooit verplicht
+      console.error("gerechtFoto mislukt", error instanceof Error ? error.message : "onbekende fout");
       return null;
     }
   });
