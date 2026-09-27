@@ -824,7 +824,7 @@ function BoodschappenPage() {
             className="h-12 rounded-full bg-card px-4 text-base shadow-sm"
             aria-label="Laatste actie terugzetten"
           >
-            <Undo2 className="size-5" /> Terug
+            <Undo2 className="size-5" /> Ongedaan maken
           </Button>
         </div>
 

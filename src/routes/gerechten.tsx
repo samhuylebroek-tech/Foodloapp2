@@ -272,7 +272,7 @@ function GerechtenPage() {
       title={t("Recepten")}
       action={
         <Button asChild aria-label={t("Recept toevoegen")} className="shrink-0 px-4">
-          <Link to="/recepten/nieuw"><Plus /> <span className="hidden sm:inline">{t("Toevoegen")}</span></Link>
+          <Link to="/recepten/nieuw"><Plus /> <span className="inline">{t("Toevoegen")}</span></Link>
         </Button>
       }
     >

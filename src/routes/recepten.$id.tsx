@@ -526,7 +526,6 @@ function ReceptPage() {
       }
     >
       <div className="space-y-5">
-        <Link to="/gerechten" className="inline-flex min-h-12 items-center gap-2 font-semibold text-muted-foreground"><ArrowLeft />{t("Recepten")}</Link>
         <div className="space-y-3">
           <div className="relative">
             <RecipePhoto

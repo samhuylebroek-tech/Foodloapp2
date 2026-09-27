@@ -826,28 +826,6 @@ function PlannerPage() {
             </Button>
           </div>
 
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" aria-label="Snel een week kiezen">
-            {snelleWeken.map((start, index) => {
-              const actief = datumTekst(start) === datumTekst(weekStart);
-              const labels = ["Nu", "Volgende", "+2", "+3"];
-              return (
-                <Button
-                  key={datumTekst(start)}
-                  variant={actief ? "default" : "outline"}
-                  onClick={() => setWeekStart(start)}
-                  className="h-12 shrink-0 rounded-full px-5 text-sm"
-                  aria-pressed={actief}
-                >
-                  {labels[index]}
-                </Button>
-              );
-            })}
-            {weekVerschil < 0 || weekVerschil > 3 ? (
-              <Button variant="default" className="h-12 shrink-0 rounded-full px-5 text-sm">
-                {weekLabel(weekStart, true)}
-              </Button>
-            ) : null}
-          </div>
           {weekVerschil !== 0 ? (
             <Button variant="ghost" onClick={() => setWeekStart(huidigeWeek)} className="h-11 px-2 text-sm">
               Terug naar deze week
@@ -857,7 +835,6 @@ function PlannerPage() {
 
         <section aria-label="Acties" className="grid grid-cols-3 gap-2">
           <Button
-            variant="outline"
             onClick={() => {
               const startDag = voorstelDagen.includes(vandaag) ? vandaag : voorstelDagen[0];
               if (!startDag) {
@@ -871,6 +848,7 @@ function PlannerPage() {
             <Plus className="size-5" /> Toevoegen
           </Button>
           <Button
+            variant="outline"
             onClick={() => {
               if (!voorstelDagen.length) {
                 toast("Er zijn in deze week geen komende dagen meer. Kies een volgende week.");
@@ -880,7 +858,7 @@ function PlannerPage() {
             }}
             className="h-16 min-w-0 flex-col gap-1 px-1 text-xs sm:flex-row sm:text-base"
           >
-            <Sparkles className="size-5" /> Foodlo kiest
+            <Sparkles className="size-5" /> Laat kiezen
           </Button>
           <Button
             variant="outline"

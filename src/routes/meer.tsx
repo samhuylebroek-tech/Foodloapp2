@@ -74,20 +74,20 @@ function MeerPage() {
       <div className="space-y-8">
         {GROEPEN.map((groep) => (
           <section key={groep.titel} aria-labelledby={`meer-${groep.titel.toLowerCase().replaceAll(" ", "-")}`}>
-            <h2 id={`meer-${groep.titel.toLowerCase().replaceAll(" ", "-")}`} className="mb-2 text-sm font-semibold text-muted-foreground">
+            <h2 id={`meer-${groep.titel.toLowerCase().replaceAll(" ", "-")}`} className="mb-2 px-1 text-label text-muted-foreground">
               {t(groep.titel)}
             </h2>
-            <div className="divide-y divide-border/70 border-y border-border/70">
+            <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
               {groep.items.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <Link key={item.to} to={item.to} className="grid min-h-18 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 py-3">
+                  <Link key={item.to} to={item.to} className="grid min-h-20 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 px-4 py-3 hover:bg-muted">
                     <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
                       <Icon className="size-6" aria-hidden />
                     </span>
                     <span className="min-w-0">
-                      <span className="block font-semibold text-foreground">{t(item.label)}</span>
-                      <span className="block truncate text-sm text-muted-foreground">{t(item.uitleg)}</span>
+                      <span className="block text-lg font-semibold text-foreground">{t(item.label)}</span>
+                      <span className="block truncate text-base text-muted-foreground">{t(item.uitleg)}</span>
                     </span>
                     <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />
                   </Link>
@@ -99,14 +99,14 @@ function MeerPage() {
 
         {profiel ? (
           <section aria-labelledby="meer-beheer">
-            <h2 id="meer-beheer" className="mb-2 text-sm font-semibold text-muted-foreground">{t("Beheer")}</h2>
-            <Link to="/beheer" className="grid min-h-18 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-y border-border/70 py-3">
+            <h2 id="meer-beheer" className="mb-2 px-1 text-label text-muted-foreground">{t("Beheer")}</h2>
+            <Link to="/beheer" className="grid min-h-18 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3">
               <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
                 <ShieldCheck className="size-6" aria-hidden />
               </span>
               <span className="min-w-0">
                 <span className="block font-semibold">Control Center</span>
-                <span className="block truncate text-sm text-muted-foreground">{t("Beheer en opvolging")}</span>
+                <span className="block truncate text-base text-muted-foreground">{t("Beheer en opvolging")}</span>
               </span>
               <ChevronRight className="size-5 text-muted-foreground" aria-hidden />
             </Link>
