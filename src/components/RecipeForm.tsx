@@ -844,6 +844,11 @@ export function RecipeForm({
         await zorgVoorReceptFoto(recipeId, naam, user.id).catch(() => null);
       }
 
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["recipes"] }),
+        qc.invalidateQueries({ queryKey: ["eigen-recept-titels"] }),
+      ]);
+
       toast.success("Recept opgeslagen");
       if (koppelMaaltijd) {
         await supabase

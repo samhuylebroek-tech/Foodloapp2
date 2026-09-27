@@ -138,12 +138,27 @@ export type ToevoegResultaat =
   | { soort: "toegevoegd"; recipeId: string }
   | { soort: "bestaatAl"; recipeId: string };
 
+export type GecontroleerdInspiratieRecept = {
+  title: string;
+  category: string;
+  difficulty: string;
+  servings: number;
+  prep_minutes: number;
+  cook_minutes: number;
+  ingredients: InspiratieIngredient[];
+  instructions: string[];
+};
+
 /**
  * Zet een inspiratie-recept in de eigen recepten van de gebruiker.
  * Kopieert de bestaande gestructureerde data — geen heranalyse, geen AI.
  * Staat het recept er al (zelfde titel), dan wordt niets gedupliceerd.
  */
-export async function voegToeAanMijnRecepten(userId: string, inspiratieId: string): Promise<ToevoegResultaat> {
+export async function voegToeAanMijnRecepten(
+  userId: string,
+  inspiratieId: string,
+  aangepast?: GecontroleerdInspiratieRecept,
+): Promise<ToevoegResultaat> {
   const recept = await haalInspiratieRecept(inspiratieId);
   if (!recept) throw new Error("Recept niet gevonden");
 
@@ -153,7 +168,8 @@ export async function voegToeAanMijnRecepten(userId: string, inspiratieId: strin
     .select("id, title")
     .eq("user_id", userId)
     .is("deleted_at", null);
-  const gezocht = normaliseerTekst(recept.title);
+  const titel = aangepast?.title.trim() || recept.title;
+  const gezocht = normaliseerTekst(titel);
   const bestaand = (eigen ?? []).find((r) => normaliseerTekst(r.title as string) === gezocht);
   if (bestaand) return { soort: "bestaatAl", recipeId: bestaand.id as string };
 
@@ -161,22 +177,23 @@ export async function voegToeAanMijnRecepten(userId: string, inspiratieId: strin
     .from("recipes")
     .insert({
       user_id: userId,
-      title: recept.title,
+      inspiration_id: inspiratieId,
+      title: titel,
       description: recept.description,
       image_url: recept.image_url,
-      servings: recept.servings,
-      prep_minutes: recept.prep_minutes,
-      cook_minutes: recept.cook_minutes,
-      difficulty: recept.difficulty,
-      category: recept.category,
+      servings: aangepast?.servings ?? recept.servings,
+      prep_minutes: aangepast?.prep_minutes ?? recept.prep_minutes,
+      cook_minutes: aangepast?.cook_minutes ?? recept.cook_minutes,
+      difficulty: aangepast?.difficulty ?? recept.difficulty,
+      category: aangepast?.category ?? recept.category,
       tags: recept.tags,
-      instructions: recept.instructions,
+      instructions: aangepast?.instructions ?? recept.instructions,
     })
     .select("id")
     .single();
   if (error) throw error;
 
-  const ingredienten = await haalInspiratieIngredienten(inspiratieId);
+  const ingredienten = aangepast?.ingredients ?? await haalInspiratieIngredienten(inspiratieId);
   if (ingredienten.length) {
     await supabase.from("recipe_ingredients").insert(
       ingredienten.map((i) => ({
@@ -189,7 +206,7 @@ export async function voegToeAanMijnRecepten(userId: string, inspiratieId: strin
     );
   }
   if (!recept.image_url) {
-    await zorgVoorReceptFoto(nieuw.id, recept.title, userId).catch(() => null);
+    await zorgVoorReceptFoto(nieuw.id, titel, userId).catch(() => null);
   }
   return { soort: "toegevoegd", recipeId: nieuw.id as string };
 }

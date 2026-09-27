@@ -77,25 +77,26 @@ function InspiratiePage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Titels van de eigen recepten: ideeën die je al hebt, verbergen we.
-  const { data: eigenTitels = [] } = useQuery({
+  // Eigen recepten: verberg het gekoppelde idee én oudere overeenkomsten op titel.
+  const { data: eigenRecepten = [] } = useQuery({
     queryKey: ["eigen-recept-titels"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("recipes")
-        .select("title")
+        .select("title, inspiration_id")
         .is("deleted_at", null);
       if (error) throw error;
-      return (data ?? []).map((r) => normaliseerTekst(r.title as string));
+      return data ?? [];
     },
     staleTime: 60 * 1000,
   });
 
   const recepten = useMemo(() => {
-    if (!eigenTitels.length) return alleRecepten;
-    const eigen = new Set(eigenTitels);
-    return alleRecepten.filter((r) => !eigen.has(normaliseerTekst(r.title)));
-  }, [alleRecepten, eigenTitels]);
+    if (!eigenRecepten.length) return alleRecepten;
+    const eigenTitels = new Set(eigenRecepten.map((r) => normaliseerTekst(r.title)));
+    const gekoppeldeIdeeen = new Set(eigenRecepten.map((r) => r.inspiration_id).filter(Boolean));
+    return alleRecepten.filter((r) => !gekoppeldeIdeeen.has(r.id) && !eigenTitels.has(normaliseerTekst(r.title)));
+  }, [alleRecepten, eigenRecepten]);
 
   const categorieen = useMemo(() => inspiratieCategorieen(recepten), [recepten]);
   const resultaten = useMemo(() => filterInspiratie(recepten, filters), [recepten, filters]);

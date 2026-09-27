@@ -5,6 +5,12 @@ import { Clock3, Users, Plus, Check, CalendarPlus, BookOpen } from "lucide-react
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { CATEGORIES, DIFFICULTIES } from "@/lib/types";
+import { ingredientToLine, parseIngredientText } from "@/lib/ingredienten";
 import {
   haalInspiratieRecept,
   haalInspiratieIngredienten,
@@ -37,6 +43,15 @@ function InspiratieDetailPage() {
   const [toegevoegd, setToegevoegd] = useState<{ recipeId: string; bestondAl: boolean } | null>(null);
   const [bereidingOpen, setBereidingOpen] = useState(false);
   const [fotoKapot, setFotoKapot] = useState(false);
+  const [controleOpen, setControleOpen] = useState(false);
+  const [titel, setTitel] = useState("");
+  const [categorie, setCategorie] = useState("");
+  const [moeilijkheid, setMoeilijkheid] = useState("");
+  const [personen, setPersonen] = useState("4");
+  const [voorbereiden, setVoorbereiden] = useState("0");
+  const [koken, setKoken] = useState("0");
+  const [ingredientTekst, setIngredientTekst] = useState("");
+  const [stappenTekst, setStappenTekst] = useState("");
 
   const { data: recept, isLoading } = useQuery({
     queryKey: ["inspiratie", id],
@@ -49,12 +64,42 @@ function InspiratieDetailPage() {
   });
   const fotoUrl = useSignedUrl(recept?.image_url ?? null);
 
+  function openControle() {
+    if (!recept) return;
+    setTitel(recept.title);
+    setCategorie(recept.category || "hoofdgerecht");
+    setMoeilijkheid(recept.difficulty || "makkelijk");
+    setPersonen(String(recept.servings || 4));
+    setVoorbereiden(String(recept.prep_minutes || 0));
+    setKoken(String(recept.cook_minutes || 0));
+    setIngredientTekst(ingredienten.map(ingredientToLine).join("\n"));
+    setStappenTekst(recept.instructions.join("\n"));
+    setControleOpen(true);
+  }
+
   async function voegToe() {
     if (!user || !recept || bezig) return;
+    if (!titel.trim()) {
+      toast.error("Geef het gerecht een naam");
+      return;
+    }
     setBezig(true);
     try {
-      const res = await voegToeAanMijnRecepten(user.id, id);
-      qc.invalidateQueries({ queryKey: ["recipes"] });
+      const res = await voegToeAanMijnRecepten(user.id, id, {
+        title: titel.trim(),
+        category: categorie,
+        difficulty: moeilijkheid,
+        servings: Math.max(1, Number(personen) || 1),
+        prep_minutes: Math.max(0, Number(voorbereiden) || 0),
+        cook_minutes: Math.max(0, Number(koken) || 0),
+        ingredients: parseIngredientText(ingredientTekst).map((item, position) => ({ ...item, position })),
+        instructions: stappenTekst.split("\n").map((stap) => stap.trim()).filter(Boolean),
+      });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["recipes"] }),
+        qc.invalidateQueries({ queryKey: ["eigen-recept-titels"] }),
+      ]);
+      setControleOpen(false);
       if (res.soort === "bestaatAl") {
         setToegevoegd({ recipeId: res.recipeId, bestondAl: true });
         toast.message("Dit recept staat al in je recepten.");
@@ -206,13 +251,63 @@ function InspiratieDetailPage() {
               </Button>
             </div>
           ) : (
-            <Button onClick={() => void voegToe()} disabled={bezig} className="h-14 w-full text-base">
+            <Button onClick={openControle} disabled={bezig} className="h-14 w-full text-base">
               <Plus className="size-5" />
-              {bezig ? "Bezig…" : "Toevoegen aan mijn recepten"}
+              Toevoegen aan mijn recepten
             </Button>
           )}
         </div>
       </div>
+
+      <Dialog open={controleOpen} onOpenChange={setControleOpen}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-left text-xl">Klopt alles?</DialogTitle>
+            <DialogDescription className="text-left text-base">
+              Pas aan wat nodig is. Het gerecht wordt pas bewaard wanneer je hieronder op Bewaren tikt.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5">
+            <label className="block text-base font-medium">
+              Naam
+              <Input value={titel} onChange={(e) => setTitel(e.target.value)} className="mt-1 h-14 text-base" />
+            </label>
+            <div>
+              <Label htmlFor="idee-categorie" className="text-base">Categorie</Label>
+              <select id="idee-categorie" value={categorie} onChange={(e) => setCategorie(e.target.value)} className="mt-1 h-14 w-full rounded-xl border border-input bg-background px-3 text-base">
+                {CATEGORIES.map((waarde) => <option key={waarde} value={waarde}>{waarde}</option>)}
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="idee-moeilijkheid" className="text-base">Moeilijkheid</Label>
+              <select id="idee-moeilijkheid" value={moeilijkheid} onChange={(e) => setMoeilijkheid(e.target.value)} className="mt-1 h-14 w-full rounded-xl border border-input bg-background px-3 text-base">
+                {DIFFICULTIES.map((waarde) => <option key={waarde} value={waarde}>{waarde}</option>)}
+              </select>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <label className="text-base">Personen<Input type="number" min={1} value={personen} onChange={(e) => setPersonen(e.target.value)} className="mt-1 h-14 text-base" /></label>
+              <label className="text-base">Voorbereiden (min)<Input type="number" min={0} value={voorbereiden} onChange={(e) => setVoorbereiden(e.target.value)} className="mt-1 h-14 text-base" /></label>
+              <label className="text-base">Koken (min)<Input type="number" min={0} value={koken} onChange={(e) => setKoken(e.target.value)} className="mt-1 h-14 text-base" /></label>
+            </div>
+            <div>
+              <Label htmlFor="idee-ingredienten" className="text-base">Ingrediënten — één per regel</Label>
+              <Textarea id="idee-ingredienten" value={ingredientTekst} onChange={(e) => setIngredientTekst(e.target.value)} rows={7} className="mt-1 text-base" />
+            </div>
+            <div>
+              <Label htmlFor="idee-stappen" className="text-base">Bereiding — één stap per regel</Label>
+              <Textarea id="idee-stappen" value={stappenTekst} onChange={(e) => setStappenTekst(e.target.value)} rows={7} className="mt-1 text-base" />
+            </div>
+            <div className="grid gap-2">
+              <Button onClick={() => void voegToe()} disabled={bezig} className="h-14 w-full text-lg">
+                {bezig ? "Bezig met bewaren…" : "Bewaren"}
+              </Button>
+              <Button variant="secondary" onClick={() => setControleOpen(false)} disabled={bezig} className="h-14 w-full text-lg">
+                Nog niet bewaren
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }

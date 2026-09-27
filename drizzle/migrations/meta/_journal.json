@@ -330,6 +330,13 @@
       "when": 1790540847419,
       "tag": "0046_inspiratie_alleen_actieve_gebruikers",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1790544866963,
+      "tag": "0047_koppel_eigen_recept_aan_inspiratie",
+      "breakpoints": true
     }
   ]
 }
