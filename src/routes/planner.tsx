@@ -80,7 +80,7 @@ import {
   type DagVoorkeur,
 } from "@/lib/voorkeuren";
 import { kiesUitEigen, type DagRegel, type Soortkeuze } from "@/lib/weekmenu-voorstel";
-import { zorgVoorLijst, maakLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
+import { zorgVoorLijst, maakLijst, vindDubbels, voegToeAlsNieuw, type Dubbel, type NieuwItem, type ShoppingList } from "@/lib/boodschappen";
 import { tijdLabel } from "@/lib/tijd";
 import { normaliseerTekst } from "@/lib/zoeken";
 import { useSignedUrl } from "@/lib/photos";
@@ -191,6 +191,12 @@ function PlannerPage() {
   const [opruimVraag, setOpruimVraag] = useState<{ titel: string; items: { id: string; naam: string }[] } | null>(null);
   const [naVoorstel, setNaVoorstel] = useState<{ recipeId: string; titel: string }[] | null>(null);
   const [naGekozen, setNaGekozen] = useState<Set<string>>(new Set());
+  const [dubbelVraag, setDubbelVraag] = useState<{
+    listId: string;
+    rows: NieuwItem[];
+    dubbels: Dubbel[];
+    gekozen: Set<number>;
+  } | null>(null);
 
   const [weergave, setWeergave] = useState<"mij" | "gezin">("mij");
   const [instellingenOpen, setInstellingenOpen] = useState(false);
@@ -428,6 +434,47 @@ function PlannerPage() {
     if (ingepland.length) {
       setNaVoorstel(ingepland);
       setNaGekozen(new Set(ingepland.map((r) => r.recipeId)));
+    }
+  }
+
+  /**
+   * Ingrediënten naar de boodschappenlijst. Staat iets er al, dan eerst één
+   * rustige controle: de gebruiker kiest zelf wat nog eens toegevoegd wordt.
+   * Er wordt nooit stil samengevoegd.
+   */
+  async function ingredienNaarLijst(rows: NieuwItem[], listId: string) {
+    if (!user) return;
+    try {
+      const dubbels = await vindDubbels(listId, rows);
+      if (dubbels.length) {
+        setDubbelVraag({ listId, rows, dubbels, gekozen: new Set() });
+        return;
+      }
+      await voegToeAlsNieuw(user.id, listId, rows);
+      toast.success("Op je boodschappenlijst gezet");
+      qc.invalidateQueries({ queryKey: ["shopping"] });
+    } catch {
+      toast.error("Toevoegen lukte niet");
+    }
+  }
+
+  async function dubbelBevestigen() {
+    if (!user || !dubbelVraag) return;
+    const { listId, rows, dubbels, gekozen } = dubbelVraag;
+    const dubbelIdx = new Set(dubbels.map((d) => d.index));
+    const toeTeVoegen = rows.filter((_, i) => !dubbelIdx.has(i) || gekozen.has(i));
+    setDubbelVraag(null);
+    try {
+      await voegToeAlsNieuw(user.id, listId, toeTeVoegen);
+      const overgeslagen = dubbels.length - gekozen.size;
+      toast.success(
+        overgeslagen > 0
+          ? `Toegevoegd — ${overgeslagen} ${overgeslagen === 1 ? "ingrediënt" : "ingrediënten"} overgeslagen`
+          : "Alles staat op je boodschappenlijst",
+      );
+      qc.invalidateQueries({ queryKey: ["shopping"] });
+    } catch {
+      toast.error("Toevoegen lukte niet");
     }
   }
 
