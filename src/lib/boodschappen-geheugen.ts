@@ -7,6 +7,7 @@ export type HistoriekRij = {
   quantity: number | null;
   unit: string;
   gekocht_op: string;
+  recipe_id?: string | null;
 };
 
 export type Vast = { id: string; name: string; quantity: number | null; unit: string };
@@ -36,7 +37,7 @@ export async function bewaarGekocht(
 export async function leesGeschiedenis(userId: string): Promise<HistoriekRij[]> {
   const { data, error } = await supabase
     .from("shopping_history")
-    .select("id, name, quantity, unit, gekocht_op")
+    .select("id, name, quantity, unit, gekocht_op, recipe_id")
     .eq("user_id", userId)
     .order("gekocht_op", { ascending: false })
     .limit(500);
@@ -69,6 +70,11 @@ export function vaakGekocht(rijen: HistoriekRij[]) {
   return [...per.values()]
     .map((e) => ({ ...e, keer: e.dagen.size }))
     .sort((a, b) => b.keer - a.keer);
+}
+
+/** Wat je vaak los koopt: niet rechtstreeks voor een gerecht, op minstens 2 winkelbeurten. */
+export function vaakLosGekocht(rijen: HistoriekRij[]) {
+  return vaakGekocht(rijen.filter((r) => !r.recipe_id)).filter((e) => e.keer >= 2);
 }
 
 /** Eenvoudige, eerlijke voorstellen: vaak gekocht en al even geleden. */
