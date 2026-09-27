@@ -107,9 +107,18 @@ function InspiratiePage() {
     (filters.maxTijd !== null ? 1 : 0) +
     (filters.eetstijl ? 1 : 0);
 
-  function verras() {
-    const keuze = verrasMij(resultaten);
-    if (keuze) navigate({ to: "/inspiratie/$id", params: { id: keuze.id } });
+  // Verras mij: toont steeds een nieuw, onbekend gerecht in een venster.
+  // Al getoonde suggesties komen niet meteen terug; je blijft gewoon op dit scherm.
+  const [verrassing, setVerrassing] = useState<InspiratieRecept | null>(null);
+  const [getoond, setGetoond] = useState<string[]>([]);
+
+  function kiesVerrassing() {
+    if (!resultaten.length) return;
+    const vers = resultaten.filter((r) => !getoond.includes(r.id));
+    const pool = vers.length ? vers : resultaten;
+    const keuze = pool[Math.floor(Math.random() * pool.length)];
+    setVerrassing(keuze);
+    setGetoond((g) => (vers.length ? [...g, keuze.id] : [keuze.id]));
   }
 
   return (
