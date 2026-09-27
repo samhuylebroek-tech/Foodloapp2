@@ -66,6 +66,16 @@ function NieuwPage() {
         </div>
       ) : (
         <>
+          <Link
+            to="/inspiratie"
+            className="mb-5 flex min-h-14 items-center justify-between gap-3 rounded-2xl border border-primary/40 bg-secondary p-4 text-base font-semibold transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span>
+              Liever eerst snuffelen?{" "}
+              <span className="text-primary">Bekijk de inspiratiebibliotheek</span>
+            </span>
+            <span aria-hidden className="text-xl">→</span>
+          </Link>
           {heeftGedeeld && (
             <p className="mb-5 rounded-2xl border border-primary/40 bg-secondary p-4 text-base">
               We hebben wat je deelde alvast overgenomen. Druk op “Recept eruit halen” of “Inlezen”

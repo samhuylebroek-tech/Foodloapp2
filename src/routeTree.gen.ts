@@ -51,6 +51,7 @@ import { Route as BeheerSysteemRouteImport } from './routes/beheer.systeem'
 import { Route as BeheerTeamRouteImport } from './routes/beheer.team'
 import { Route as BeheerTekstenRouteImport } from './routes/beheer.teksten'
 import { Route as BeheerUiRouteImport } from './routes/beheer.ui'
+import { Route as InspiratieIdRouteImport } from './routes/inspiratie.$id'
 import { Route as KaartenIndexRouteImport } from './routes/kaarten.index'
 import { Route as KaartenIdRouteImport } from './routes/kaarten.$id'
 import { Route as ReceptenIdRouteImport } from './routes/recepten.$id'
@@ -289,6 +290,11 @@ const BeheerUiRoute = BeheerUiRouteImport.update({
   path: '/ui',
   getParentRoute: () => BeheerRoute,
 } as any)
+const InspiratieIdRoute = InspiratieIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => InspiratieRoute,
+} as any)
 const KaartenIndexRoute = KaartenIndexRouteImport.update({
   id: '/kaarten/',
   path: '/kaarten/',
@@ -437,7 +443,7 @@ export interface FileRoutesByFullPath {
   '/gerechten': typeof GerechtenRoute
   '/gezin': typeof GezinRoute
   '/info': typeof InfoRoute
-  '/inspiratie': typeof InspiratieRoute
+  '/inspiratie': typeof InspiratieRouteWithChildren
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
   '/meer': typeof MeerRoute
@@ -468,6 +474,7 @@ export interface FileRoutesByFullPath {
   '/beheer/team': typeof BeheerTeamRoute
   '/beheer/teksten': typeof BeheerTekstenRoute
   '/beheer/ui': typeof BeheerUiRouteWithChildren
+  '/inspiratie/$id': typeof InspiratieIdRoute
   '/kaarten/$id': typeof KaartenIdRoute
   '/recepten/$id': typeof ReceptenIdRoute
   '/recepten/nieuw': typeof ReceptenNieuwRoute
@@ -507,7 +514,7 @@ export interface FileRoutesByTo {
   '/gerechten': typeof GerechtenRoute
   '/gezin': typeof GezinRoute
   '/info': typeof InfoRoute
-  '/inspiratie': typeof InspiratieRoute
+  '/inspiratie': typeof InspiratieRouteWithChildren
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
   '/meer': typeof MeerRoute
@@ -537,6 +544,7 @@ export interface FileRoutesByTo {
   '/beheer/systeem': typeof BeheerSysteemRoute
   '/beheer/team': typeof BeheerTeamRoute
   '/beheer/teksten': typeof BeheerTekstenRoute
+  '/inspiratie/$id': typeof InspiratieIdRoute
   '/kaarten/$id': typeof KaartenIdRoute
   '/recepten/$id': typeof ReceptenIdRoute
   '/recepten/nieuw': typeof ReceptenNieuwRoute
@@ -578,7 +586,7 @@ export interface FileRoutesById {
   '/gerechten': typeof GerechtenRoute
   '/gezin': typeof GezinRoute
   '/info': typeof InfoRoute
-  '/inspiratie': typeof InspiratieRoute
+  '/inspiratie': typeof InspiratieRouteWithChildren
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
   '/meer': typeof MeerRoute
@@ -609,6 +617,7 @@ export interface FileRoutesById {
   '/beheer/team': typeof BeheerTeamRoute
   '/beheer/teksten': typeof BeheerTekstenRoute
   '/beheer/ui': typeof BeheerUiRouteWithChildren
+  '/inspiratie/$id': typeof InspiratieIdRoute
   '/kaarten/$id': typeof KaartenIdRoute
   '/recepten/$id': typeof ReceptenIdRoute
   '/recepten/nieuw': typeof ReceptenNieuwRoute
@@ -682,6 +691,7 @@ export interface FileRouteTypes {
     | '/beheer/team'
     | '/beheer/teksten'
     | '/beheer/ui'
+    | '/inspiratie/$id'
     | '/kaarten/$id'
     | '/recepten/$id'
     | '/recepten/nieuw'
@@ -751,6 +761,7 @@ export interface FileRouteTypes {
     | '/beheer/systeem'
     | '/beheer/team'
     | '/beheer/teksten'
+    | '/inspiratie/$id'
     | '/kaarten/$id'
     | '/recepten/$id'
     | '/recepten/nieuw'
@@ -822,6 +833,7 @@ export interface FileRouteTypes {
     | '/beheer/team'
     | '/beheer/teksten'
     | '/beheer/ui'
+    | '/inspiratie/$id'
     | '/kaarten/$id'
     | '/recepten/$id'
     | '/recepten/nieuw'
@@ -863,7 +875,7 @@ export interface RootRouteChildren {
   GerechtenRoute: typeof GerechtenRoute
   GezinRoute: typeof GezinRoute
   InfoRoute: typeof InfoRoute
-  InspiratieRoute: typeof InspiratieRoute
+  InspiratieRoute: typeof InspiratieRouteWithChildren
   InstallerenRoute: typeof InstallerenRoute
   InstellingenRoute: typeof InstellingenRoute
   MeerRoute: typeof MeerRoute
@@ -1180,6 +1192,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerUiRouteImport
       parentRoute: typeof BeheerRoute
     }
+    '/inspiratie/$id': {
+      id: '/inspiratie/$id'
+      path: '/$id'
+      fullPath: '/inspiratie/$id'
+      preLoaderRoute: typeof InspiratieIdRouteImport
+      parentRoute: typeof InspiratieRoute
+    }
     '/kaarten/': {
       id: '/kaarten/'
       path: '/kaarten'
@@ -1471,6 +1490,18 @@ const BeheerRouteChildren: BeheerRouteChildren = {
 const BeheerRouteWithChildren =
   BeheerRoute._addFileChildren(BeheerRouteChildren)
 
+interface InspiratieRouteChildren {
+  InspiratieIdRoute: typeof InspiratieIdRoute
+}
+
+const InspiratieRouteChildren: InspiratieRouteChildren = {
+  InspiratieIdRoute: InspiratieIdRoute,
+}
+
+const InspiratieRouteWithChildren = InspiratieRoute._addFileChildren(
+  InspiratieRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AanmeldenRoute: AanmeldenRoute,
@@ -1482,7 +1513,7 @@ const rootRouteChildren: RootRouteChildren = {
   GerechtenRoute: GerechtenRoute,
   GezinRoute: GezinRoute,
   InfoRoute: InfoRoute,
-  InspiratieRoute: InspiratieRoute,
+  InspiratieRoute: InspiratieRouteWithChildren,
   InstallerenRoute: InstallerenRoute,
   InstellingenRoute: InstellingenRoute,
   MeerRoute: MeerRoute,
