@@ -11,7 +11,7 @@ import {
   filterInspiratie,
   inspiratieCategorieen,
   verrasMij,
-  LEGE_FILTERS,
+  LEGE_FILTERS, EETSTIJLEN,
   type InspiratieFilters,
 } from "@/lib/inspiratie";
 import { useSignedUrl } from "@/lib/photos";
@@ -81,8 +81,7 @@ function InspiratiePage() {
   const actieveFilters =
     (filters.categorie ? 1 : 0) +
     (filters.maxTijd !== null ? 1 : 0) +
-    (filters.alleenVegatarisch ? 1 : 0) +
-    (filters.alleenVegan ? 1 : 0);
+    (filters.eetstijl ? 1 : 0);
 
   function verras() {
     const keuze = verrasMij(resultaten);
@@ -136,22 +135,6 @@ function InspiratiePage() {
             className="h-12 shrink-0 rounded-xl px-5 text-base"
           >
             ≤ 30 min
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setFilters((f) => ({ ...f, alleenVegatarisch: !f.alleenVegatarisch, alleenVegan: false }))}
-            aria-pressed={filters.alleenVegatarisch}
-            className="h-12 shrink-0 rounded-xl px-5 text-base"
-          >
-            Vegetarisch
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setFilters((f) => ({ ...f, alleenVegan: !f.alleenVegan, alleenVegatarisch: false }))}
-            aria-pressed={filters.alleenVegan}
-            className="h-12 shrink-0 rounded-xl px-5 text-base"
-          >
-            Vegan
           </Button>
           <Button variant="outline" onClick={verras} disabled={!resultaten.length} className="h-12 shrink-0 rounded-xl px-5 text-base">
             <Shuffle className="size-4" /> Verras mij
@@ -248,22 +231,17 @@ function InspiratiePage() {
             <div>
               <p className="mb-2 text-base font-semibold">Eetstijl</p>
               <div className="flex flex-wrap gap-2">
-                <Button
-                  variant={filters.alleenVegatarisch ? "default" : "outline"}
-                  onClick={() => setFilters((f) => ({ ...f, alleenVegatarisch: !f.alleenVegatarisch, alleenVegan: false }))}
-                  aria-pressed={filters.alleenVegatarisch}
-                  className="h-12 rounded-xl px-4 text-base"
-                >
-                  Vegetarisch
-                </Button>
-                <Button
-                  variant={filters.alleenVegan ? "default" : "outline"}
-                  onClick={() => setFilters((f) => ({ ...f, alleenVegan: !f.alleenVegan, alleenVegatarisch: false }))}
-                  aria-pressed={filters.alleenVegan}
-                  className="h-12 rounded-xl px-4 text-base"
-                >
-                  Vegan
-                </Button>
+                {EETSTIJLEN.map((e) => (
+                  <Button
+                    key={e.waarde}
+                    variant={filters.eetstijl === e.waarde ? "default" : "outline"}
+                    onClick={() => setFilters((f) => ({ ...f, eetstijl: f.eetstijl === e.waarde ? "" : e.waarde }))}
+                    aria-pressed={filters.eetstijl === e.waarde}
+                    className="h-12 rounded-xl px-4 text-base"
+                  >
+                    {e.label}
+                  </Button>
+                ))}
               </div>
             </div>
           </div>

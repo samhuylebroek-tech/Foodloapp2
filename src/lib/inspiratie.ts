@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { normaliseerTekst, zoekScore } from "@/lib/zoeken";
 import { zorgVoorReceptFoto } from "@/lib/photos";
+import { bepaalDieet } from "@/lib/dieet";
 
 /**
  * Inspiratiebibliotheek: de centrale recepten die Foodlo al kent.
@@ -32,16 +33,26 @@ export type InspiratieFilters = {
   zoek: string;
   categorie: string; // "" = alles
   maxTijd: number | null; // minuten, null = alles
-  alleenVegatarisch: boolean;
-  alleenVegan: boolean;
+  eetstijl: Eetstijl | "";
 };
+
+export type Eetstijl = "vlees" | "vis" | "vegetarisch" | "vegan" | "licht" | "comfort";
+export const EETSTIJLEN: { waarde: Eetstijl; label: string }[] = [
+  { waarde: "vlees", label: "Met vlees" },
+  { waarde: "vis", label: "Met vis" },
+  { waarde: "vegetarisch", label: "Vegetarisch" },
+  { waarde: "vegan", label: "Vegan" },
+  { waarde: "licht", label: "Licht & fris" },
+  { waarde: "comfort", label: "Stevige kost" },
+];
+const LICHT_WOORDEN = ["salade", "sla", "bowl", "wrap", "soep", "gezond", "licht", "fris", "groenten", "kwark", "fruit", "poke"];
+const COMFORT_WOORDEN = ["stoof", "stoofvlees", "gratin", "ovenschotel", "lasagne", "puree", "stamppot", "vol-au-vent", "moussaka", "chili", "frieten", "balletjes", "curry", "hachee", "comfort"];
 
 export const LEGE_FILTERS: InspiratieFilters = {
   zoek: "",
   categorie: "",
   maxTijd: null,
-  alleenVegatarisch: false,
-  alleenVegan: false,
+  eetstijl: "",
 };
 
 const VEGA_WOORDEN = ["vlees", "kip", "vis", "gehakt", "rund", "varken", "zalm", "tonijn", "garnaal", "bacon", "spek", "worst", "ham", "kalkoen", "lam", "scampi"];
@@ -84,13 +95,16 @@ export function filterInspiratie(recepten: InspiratieRecept[], filters: Inspirat
   return recepten.filter((r) => {
     if (filters.categorie && normaliseerTekst(r.category) !== normaliseerTekst(filters.categorie)) return false;
     if (filters.maxTijd !== null && r.prep_minutes + r.cook_minutes > filters.maxTijd) return false;
-    if (filters.alleenVegatarisch || filters.alleenVegan) {
+    if (filters.eetstijl) {
       const tekst = normaliseerTekst(`${r.title} ${r.description} ${r.tags.join(" ")} ${r.category}`);
-      const verboden = filters.alleenVegan ? VEGAN_WOORDEN : VEGA_WOORDEN;
-      if (verboden.some((w) => tekst.includes(w))) return false;
-      if (filters.alleenVegatarisch && !filters.alleenVegan) {
-        // expliciet vegan is ook vegetarisch — niets extra nodig
-      }
+      const dieet = bepaalDieet(r.title, r.tags);
+      const e = filters.eetstijl;
+      if (e === "vlees" && dieet !== "vlees") return false;
+      if (e === "vis" && dieet !== "vis") return false;
+      if (e === "vegetarisch" && (dieet !== "vegetarisch" || VEGA_WOORDEN.some((w) => tekst.includes(w)))) return false;
+      if (e === "vegan" && (dieet !== "vegetarisch" || VEGAN_WOORDEN.some((w) => new RegExp(`\\b${w}\\b`).test(tekst)))) return false;
+      if (e === "licht" && !LICHT_WOORDEN.some((w) => tekst.includes(w))) return false;
+      if (e === "comfort" && !COMFORT_WOORDEN.some((w) => tekst.includes(w))) return false;
     }
     if (woorden.length) {
       const score = zoekScore(
