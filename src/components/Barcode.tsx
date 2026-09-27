@@ -62,7 +62,7 @@ export function Barcode({
 
   if (fout) {
     return (
-      <p className="rounded-xl bg-muted p-4 text-center text-sm text-muted-foreground">
+      <p className="rounded-xl bg-muted p-4 text-center text-base text-muted-foreground">
         Deze code kan niet getekend worden. Controleer het kaartnummer.
       </p>
     );

@@ -127,7 +127,7 @@ export function WinkelIdeeen({ open, onOpenChange, opLijst, vaakNamen, onVoegToe
                   aria-selected={actief}
                   onClick={() => setAfdeling(a.id)}
                   className={cn(
-                    "flex min-h-24 w-24 shrink-0 flex-col items-center justify-center gap-1.5 rounded-2xl px-2 text-center text-sm font-semibold leading-tight ring-1 transition-all",
+                    "flex min-h-24 w-24 shrink-0 flex-col items-center justify-center gap-1.5 rounded-2xl px-2 text-center text-base font-semibold leading-tight ring-1 transition-all",
                     actief
                       ? "bg-primary text-primary-foreground ring-primary shadow-md"
                       : "bg-card text-foreground ring-border/70 hover:bg-secondary",
@@ -185,7 +185,7 @@ export function WinkelIdeeen({ open, onOpenChange, opLijst, vaakNamen, onVoegToe
             </DialogHeader>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <label className="block text-sm font-semibold">Hoeveel
+                <label className="block text-base font-semibold">Hoeveel
                   <Input
                     autoFocus
                     inputMode="decimal"
@@ -195,7 +195,7 @@ export function WinkelIdeeen({ open, onOpenChange, opLijst, vaakNamen, onVoegToe
                     className="mt-1 h-14 text-base"
                   />
                 </label>
-                <label className="block text-sm font-semibold">Eenheid
+                <label className="block text-base font-semibold">Eenheid
                   <select
                     value={eenheid}
                     onChange={(e) => setEenheid(e.target.value)}
@@ -205,7 +205,7 @@ export function WinkelIdeeen({ open, onOpenChange, opLijst, vaakNamen, onVoegToe
                   </select>
                 </label>
               </div>
-              <label className="block text-sm font-semibold">Nota
+              <label className="block text-base font-semibold">Nota
                 <Input
                   placeholder="bv. de biologische"
                   value={nota}
@@ -214,7 +214,7 @@ export function WinkelIdeeen({ open, onOpenChange, opLijst, vaakNamen, onVoegToe
                   className="mt-1 h-14 text-base"
                 />
               </label>
-              <label className="block text-sm font-semibold">Afdeling
+              <label className="block text-base font-semibold">Afdeling
                 <select
                   value={categorie}
                   onChange={(e) => setCategorie(e.target.value as CategorieId)}
