@@ -220,6 +220,9 @@ function PlannerPage() {
   const voorstelDagen = zichtbareDagen.filter((dag) => dag >= vandaag);
   const huidigeWeek = maandagVan(new Date());
   const weekVerschil = Math.round((weekStart.getTime() - huidigeWeek.getTime()) / 604800000);
+  // In de huidige week beginnen we bij vandaag; verleden dagen zie je alleen
+  // als je bewust naar een vorige week bladert.
+  const getoondeDagen = weekVerschil === 0 ? zichtbareDagen.filter((dag) => dag >= vandaag) : zichtbareDagen;
   const snelleWeken = [0, 1, 2, 3].map((stap) => {
     const start = new Date(huidigeWeek);
     start.setDate(start.getDate() + stap * 7);
@@ -885,7 +888,7 @@ function PlannerPage() {
         </section>
 
         <div className={weekmenu.weergave === "kaarten" ? "-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2" : "space-y-1"}>
-        {zichtbareDagen.map((dag) => {
+        {getoondeDagen.map((dag) => {
           const items = plan.filter((p) => p.plan_date === dag);
           const openMomenten = momenten.filter((m) => !items.some((p) => p.meal_type === m));
           const volledig = momenten.length > 0 && openMomenten.length === 0;
@@ -957,7 +960,7 @@ function PlannerPage() {
                 <div>
                   <p className="mb-2 text-sm font-semibold text-muted-foreground">Of kies één dag</p>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {zichtbareDagen
+                    {getoondeDagen
                       .filter((dag) => plan.some((p) => p.plan_date === dag && p.recipe_id))
                       .map((dag) => {
                         const aantal = plan.filter((p) => p.plan_date === dag && p.recipe_id).length;
