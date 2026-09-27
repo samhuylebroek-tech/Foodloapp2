@@ -843,7 +843,7 @@ function PlannerPage() {
               }
               setKiezen({ datum: startDag, moment: momenten[momenten.length - 1] ?? "avondeten", vraagDag: true });
             }}
-            className="h-16 min-w-0 flex-col gap-1 px-1 text-xs sm:flex-row sm:text-base"
+            className="h-16 min-w-0 flex-col gap-1 px-1 text-sm sm:flex-row sm:text-base"
           >
             <Plus className="size-5" /> Toevoegen
           </Button>
@@ -856,14 +856,14 @@ function PlannerPage() {
               }
               setVoorstelOpen(true);
             }}
-            className="h-16 min-w-0 flex-col gap-1 px-1 text-xs sm:flex-row sm:text-base"
+            className="h-16 min-w-0 flex-col gap-1 px-1 text-sm sm:flex-row sm:text-base"
           >
             <Sparkles className="size-5" /> Laat kiezen
           </Button>
           <Button
             variant="outline"
             onClick={() => setBoodschappenOpen(true)}
-            className="h-16 min-w-0 flex-col gap-1 px-1 text-xs sm:flex-row sm:text-base"
+            className="h-16 min-w-0 flex-col gap-1 px-1 text-sm sm:flex-row sm:text-base"
           >
             <ShoppingCart className="size-5" /> Boodschappen
           </Button>
@@ -924,6 +924,11 @@ function PlannerPage() {
           );
         })}
         </div>
+        {weekVerschil === 0 && getoondeDagen.length <= 3 ? (
+          <Button variant="outline" onClick={() => verschuif(1)} className="h-14 w-full justify-between px-4 text-base">
+            Volgende week plannen <ChevronRight className="size-5" aria-hidden />
+          </Button>
+        ) : null}
       </div>
 
       <Sheet open={boodschappenOpen} onOpenChange={setBoodschappenOpen}>

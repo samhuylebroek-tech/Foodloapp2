@@ -16,10 +16,10 @@ export function FotoKiezer({
   className?: string;
 }) {
   const knop =
-    "inline-flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-5 text-base font-semibold transition-colors hover:bg-muted";
+    "flex min-h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-5 text-base font-semibold transition-colors hover:bg-muted";
 
   return (
-    <div className={`flex flex-wrap gap-2 ${className}`}>
+    <div className={`grid gap-2 sm:grid-cols-2 ${className}`}>
       <label className={knop}>
         {bezig ? (
           <Loader2 className="size-5 animate-spin" aria-hidden />

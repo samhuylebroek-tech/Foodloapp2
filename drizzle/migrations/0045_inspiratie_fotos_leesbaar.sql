@@ -1,0 +1,2 @@
+CREATE POLICY "recipe_photos_read_inspiratie" ON storage.objects FOR SELECT TO authenticated
+USING (bucket_id = 'recipe-photos' AND EXISTS (SELECT 1 FROM public.inspiration_recipes i WHERE i.image_url = objects.name));
