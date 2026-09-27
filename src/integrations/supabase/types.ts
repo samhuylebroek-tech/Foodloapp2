@@ -1606,6 +1606,7 @@ export type Database = {
           difficulty: string
           id: string
           image_url: string | null
+          inspiration_id: string | null
           instructions: string[]
           is_concept: boolean
           prep_minutes: number
@@ -1626,6 +1627,7 @@ export type Database = {
           difficulty?: string
           id?: string
           image_url?: string | null
+          inspiration_id?: string | null
           instructions?: string[]
           is_concept?: boolean
           prep_minutes?: number
@@ -1646,6 +1648,7 @@ export type Database = {
           difficulty?: string
           id?: string
           image_url?: string | null
+          inspiration_id?: string | null
           instructions?: string[]
           is_concept?: boolean
           prep_minutes?: number
@@ -1657,7 +1660,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "recipes_inspiration_id_fkey"
+            columns: ["inspiration_id"]
+            isOneToOne: false
+            referencedRelation: "inspiration_recipes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shares: {
         Row: {
