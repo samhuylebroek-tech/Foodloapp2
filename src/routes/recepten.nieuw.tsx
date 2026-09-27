@@ -66,16 +66,6 @@ function NieuwPage() {
         </div>
       ) : (
         <>
-          <Link
-            to="/inspiratie"
-            className="mb-5 flex min-h-14 items-center justify-between gap-3 rounded-2xl border border-primary/40 bg-secondary p-4 text-base font-semibold transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <span>
-              Nog geen idee?{" "}
-              <span className="text-primary">Bekijk ideeën om te koken</span>
-            </span>
-            <span aria-hidden className="text-xl">→</span>
-          </Link>
           {heeftGedeeld && (
             <p className="mb-5 rounded-2xl border border-primary/40 bg-secondary p-4 text-base">
               We hebben wat je deelde alvast overgenomen. Druk op “Recept eruit halen” of “Inlezen”
@@ -87,6 +77,12 @@ function NieuwPage() {
           ) : (
             <RecipeForm gedeeld={gedeeld} vraagInplannen />
           )}
+          <Link
+            to="/inspiratie"
+            className="mt-6 flex min-h-14 items-center justify-center gap-2 rounded-2xl text-base font-semibold text-primary hover:bg-muted"
+          >
+            Nog geen idee? Bekijk ideeën om te koken <span aria-hidden>→</span>
+          </Link>
         </>
       )}
     </AppShell>

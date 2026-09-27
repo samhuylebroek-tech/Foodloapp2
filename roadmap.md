@@ -18,7 +18,8 @@
 
 ## Bezig
 - [ ] Eigen domeinnaam kopen en koppelen (naam: Foodlo) — wacht tot de rest klaar is
-- [ ] Volledige mobiele UX/UI-herwerking volgens het goedgekeurde plan van 21 september 2026
+- [x] Volledige mobiele UX/UI-herwerking (ronde 1 en 2)
+- [ ] 27 ideeën om te koken zonder eigen gerechtfoto (wacht op akkoord credits)
 
 ## Actief — volledige A-Z kwaliteitsronde
 - [x] Boodschappenlijst compacter en overzichtelijker maken
@@ -229,4 +230,4 @@
 - [ ] Plan opnieuw voorleggen na foto's
 
 - [x] Herontwerp ronde 1: kleuren, één lettertype, bovenbalk met "Terug", menu met volledige labels, nieuwe Start, Meer, weekmenu met één hoofdknop, "Ongedaan maken"
-- [ ] Herontwerp ronde 2: recept toevoegen, inspiratie, kookstand, kaarten, gezin, instellingen, welkom
+- [x] Herontwerp ronde 2: recept toevoegen, inspiratie, kookstand, kaarten, gezin, instellingen, welkom
