@@ -277,9 +277,20 @@ function GerechtenPage() {
       }
     >
       <div className="space-y-4">
+        <nav aria-label={t("Recepten of ideeën")} className="grid grid-cols-2 gap-1 rounded-2xl bg-muted p-1">
+          <span aria-current="page" className="flex min-h-12 items-center justify-center rounded-xl bg-card text-base font-semibold shadow-sm">
+            {t("Mijn recepten")}
+          </span>
+          <Link
+            to="/inspiratie"
+            className="flex min-h-12 items-center justify-center rounded-xl text-base font-semibold text-muted-foreground hover:text-foreground"
+          >
+            {t("Ideeën om te koken")}
+          </Link>
+        </nav>
         {concepten.length > 0 ? (
-          <section aria-label="Concepten" className="rounded-xl border border-border bg-card p-3 shadow-sm">
-            <p className="px-1 text-sm font-semibold text-muted-foreground">Nog niet klaar</p>
+          <section aria-label="Concepten" className="rounded-2xl border border-border bg-card p-3 shadow-sm">
+            <p className="px-1 text-base font-semibold text-muted-foreground">Nog niet klaar</p>
             <ul className="mt-2 space-y-2">
               {concepten.map((c) => (
                 <li key={c.id}>
@@ -413,7 +424,7 @@ function GerechtenPage() {
           </div>
         </div> : null}
 
-        <p className="text-sm text-muted-foreground">
+        <p className="text-base text-muted-foreground">
           {zichtbaar.length} {t(zichtbaar.length === 1 ? "recept" : "recepten")}
         </p>
 
@@ -429,7 +440,7 @@ function GerechtenPage() {
                   <Link
                     to="/recepten/$id"
                     params={{ id: r.id }}
-                    className="group block overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border/50 transition-shadow hover:shadow-md"
+                    className="group block overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border/50 transition-shadow hover:shadow-md"
                   >
                     <RecipePhoto
                       path={r.image_url}
@@ -447,7 +458,7 @@ function GerechtenPage() {
                         )}
                       </p>
                       {r.user_id !== user?.id && eigenaren[r.user_id] ? (
-                        <p className="mt-1 text-xs font-medium text-muted-foreground">
+                        <p className="mt-1 text-sm font-medium text-muted-foreground">
                           {t("van")} {eigenaren[r.user_id]}
                         </p>
                       ) : null}
