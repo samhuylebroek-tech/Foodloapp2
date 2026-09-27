@@ -35,8 +35,7 @@ const GROEPEN = [
   {
     titel: "Samen",
     items: [
-      { to: "/vrienden", label: "Vrienden", uitleg: "Recepten van vrienden bekijken en delen", icon: Users },
-      { to: "/gezin", label: "Mijn gezin", uitleg: "Leden en wat jullie delen", icon: ShieldCheck },
+      { to: "/vrienden", label: "Vrienden en gezin", uitleg: "Samen koken, delen en je gezin beheren", icon: Users },
     ],
   },
   {
