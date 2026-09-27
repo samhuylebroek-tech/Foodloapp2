@@ -191,3 +191,13 @@
 
 ## Klaar — Demo-modus verwijderd (27 sep)
 - [x] Demo-modus volledig verwijderd (src/lib/demo.ts weg, alle schermen weer alleen echte gegevens)
+
+## Actief — Weekmenu → boodschappen + Inspiratie (plan 27 sep, goedgekeurd)
+- [ ] Centrale productherkenning: synoniemen (look=knoflook=garlic, ajuin=ui), veilig samenvoegen, varianten apart
+- [ ] Vandaag-blok in weekmenu: samenvatting + "Boodschappen voor vandaag" (plakkend op mobiel)
+- [ ] Review-sheet: AL OP JE LIJST / NIEUW, per-item keuze, "Alleen nieuwe" / "Alles toevoegen", idempotentie
+- [ ] Boodschappen: merge-hint bij handmatig toevoegen + herkomst in itemdetail
+- [ ] Tabellen canonical_items/item_synonyms + Control Center-beheer en monitoring
+- [ ] Inspiratiebibliotheek bij Recept toevoegen: zoeken, filters, Verras mij, detail, toevoegen zonder AI-kosten
+- [ ] inspiration_recipes-tabel met ontdubbeling + Control Center-onderdeel Inspiratie
+- [ ] Eindcontrole mobiel (390x844) + desktop (1280x1800), typecheck en build groen
