@@ -995,7 +995,10 @@ function PlannerPage() {
             <SheetDescription>Zet de ingrediënten van alle geplande recepten in één keer op een lijst.</SheetDescription>
           </SheetHeader>
           {lijsten.length > 1 ? <select value={lijstId || (weergave === "gezin" && gezinsLijst ? gezinsLijst.id : lijsten[0]?.id ?? "")} onChange={(e) => setLijstId(e.target.value)} aria-label="Naar welk lijstje?" className="h-14 w-full rounded-xl border border-input bg-card px-3 text-base">{lijsten.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select> : null}
-          <Button onClick={() => { void alleBoodschappen(); setBoodschappenOpen(false); }} disabled={!plan.length} className="h-14 w-full text-base"><ShoppingCart className="size-5" /> Hele week op de lijst</Button>
+          {week.includes(vandaag) && plan.some((p) => p.plan_date === vandaag && p.recipe_id) ? (
+            <Button onClick={() => { void boodschappenVoorDag(vandaag); setBoodschappenOpen(false); }} className="h-14 w-full text-base"><ShoppingCart className="size-5" /> Boodschappen voor vandaag</Button>
+          ) : null}
+          <Button variant={week.includes(vandaag) && plan.some((p) => p.plan_date === vandaag && p.recipe_id) ? "outline" : "default"} onClick={() => { void alleBoodschappen(); setBoodschappenOpen(false); }} disabled={!plan.length} className="h-14 w-full text-base"><ShoppingCart className="size-5" /> Hele week op de lijst</Button>
           <Button variant="outline" asChild className="h-14 w-full text-base"><Link to="/boodschappen">Open boodschappen</Link></Button>
         </SheetContent>
       </Sheet>
