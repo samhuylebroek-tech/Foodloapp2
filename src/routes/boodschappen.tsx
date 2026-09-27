@@ -92,6 +92,7 @@ type Item = {
   checked: boolean;
   recipe_id?: string | null;
   recept?: string | null;
+  note?: string | null;
 };
 
 function itemTekst(item: Item) {
@@ -123,6 +124,7 @@ function BoodschappenPage() {
   const [bewerkNaam, setBewerkNaam] = useState("");
   const [bewerkAantal, setBewerkAantal] = useState("");
   const [bewerkEenheid, setBewerkEenheid] = useState("");
+  const [bewerkNota, setBewerkNota] = useState("");
   const [wisVraag, setWisVraag] = useState<"afgevinkt" | "alles" | null>(null);
   const [dicht, setDicht] = useState<Record<string, boolean>>({});
   const [kiesModus, setKiesModus] = useState(false);
@@ -211,7 +213,7 @@ function BoodschappenPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shopping_items")
-        .select("id, name, quantity, unit, checked, recipe_id, recipes(title)")
+        .select("id, name, quantity, unit, checked, recipe_id, note, recipes(title)")
         .eq("list_id", actief!)
         .order("checked")
         .order("name");
@@ -223,6 +225,7 @@ function BoodschappenPage() {
         unit: r.unit,
         checked: r.checked,
         recipe_id: r.recipe_id,
+        note: r.note,
         recept: (r.recipes as { title?: string } | null)?.title ?? null,
       })) as Item[];
     },
@@ -493,7 +496,7 @@ function BoodschappenPage() {
     await voegTekstToe(tekst);
   }
 
-  async function voegMeerdereToe(lijst: { name: string; quantity: number | null; unit: string }[], melding: string) {
+  async function voegMeerdereToe(lijst: { name: string; quantity: number | null; unit: string; note?: string | null }[], melding: string) {
     if (!user || !actief || !lijst.length) return;
     const draaiOm = snapshotToevoegen(lijst.map((l) => l.name));
     try {
@@ -579,7 +582,7 @@ function BoodschappenPage() {
     const lijstId = actief;
     onthoud(`${item.name} staat terug op je lijst`, async () => {
       await supabase.from("shopping_items").insert({
-        user_id: user.id, list_id: lijstId, name: item.name, quantity: item.quantity, unit: item.unit, checked: item.checked, recipe_id: item.recipe_id ?? null,
+        user_id: user.id, list_id: lijstId, name: item.name, quantity: item.quantity, unit: item.unit, checked: item.checked, recipe_id: item.recipe_id ?? null, note: item.note ?? null,
       });
     });
     toast.success(`${item.name} verwijderd`, {
@@ -594,6 +597,7 @@ function BoodschappenPage() {
               quantity: item.quantity,
               unit: item.unit,
               checked: item.checked,
+              note: item.note ?? null,
             });
             refresh();
           })();
@@ -652,6 +656,7 @@ function BoodschappenPage() {
     setBewerkNaam(item.name);
     setBewerkAantal(item.quantity == null ? "" : String(item.quantity));
     setBewerkEenheid(item.unit);
+    setBewerkNota(item.note ?? "");
     setBewerkCategorie(categorieVan(item.name, correcties));
   }
 
@@ -666,7 +671,7 @@ function BoodschappenPage() {
     const vorig = bewerkItem;
     const { error } = await supabase
       .from("shopping_items")
-      .update({ name: bewerkNaam.trim(), quantity: maat.quantity, unit: maat.unit })
+      .update({ name: bewerkNaam.trim(), quantity: maat.quantity, unit: maat.unit, note: bewerkNota.trim() ? bewerkNota.trim().slice(0, 100) : null })
       .eq("id", bewerkItem.id);
     if (error) {
       toast.error("Het lukte niet om op te slaan. Probeer het opnieuw.");
@@ -677,7 +682,7 @@ function BoodschappenPage() {
     }
     setBewerkItem(null);
     onthoud(`${vorig.name} teruggezet zoals het was`, async () => {
-      await supabase.from("shopping_items").update({ name: vorig.name, quantity: vorig.quantity, unit: vorig.unit }).eq("id", vorig.id);
+      await supabase.from("shopping_items").update({ name: vorig.name, quantity: vorig.quantity, unit: vorig.unit, note: vorig.note ?? null }).eq("id", vorig.id);
     });
     refresh();
     toast.success("Opgeslagen");
@@ -884,7 +889,7 @@ function BoodschappenPage() {
           </div>
           <Button variant="secondary" className="h-14 w-full justify-start gap-3 text-base" onClick={() => setWinkelIdeeen(true)}>
             <ShoppingCart className="size-5" />
-            <span className="flex-1 text-left">Door de winkel — ideeën per afdeling</span>
+            <span className="flex-1 text-left">Winkelideeën — ideeën per afdeling</span>
             <ChevronRight className="size-5" />
           </Button>
           {typSuggesties.length > 0 ? (
@@ -1073,9 +1078,9 @@ function BoodschappenPage() {
         onOpenChange={setWinkelIdeeen}
         opLijst={opLijstNamen}
         vaakNamen={vaakLos.map((e) => e.name)}
-        onVoegToe={async (naam) => {
+        onVoegToe={async (keuze) => {
           void meet("boodschappen.winkel_idee");
-          await voegMeerdereToe([{ name: naam, quantity: null, unit: "" }], "");
+          await voegMeerdereToe([keuze], "");
         }}
       />
 
@@ -1253,6 +1258,9 @@ function BoodschappenPage() {
                 <Input placeholder="bv. kg, stuk(s)" value={bewerkEenheid} onChange={(event) => setBewerkEenheid(event.target.value)} className="mt-1 h-14 text-base" />
               </label>
             </div>
+            <label className="block text-sm font-semibold">Nota
+              <Input placeholder="bv. de biologische" value={bewerkNota} maxLength={100} onChange={(event) => setBewerkNota(event.target.value)} className="mt-1 h-14 text-base" />
+            </label>
             <label className="block text-sm font-semibold">Afdeling
               <select
                 value={bewerkCategorie}
@@ -1497,6 +1505,7 @@ function ItemRij({
           <span className={item.checked ? "block truncate text-lg text-muted-foreground line-through" : "block truncate text-lg"}>
             {item.name}
           </span>
+          {item.note ? <span className="block truncate text-sm text-muted-foreground">{item.note}</span> : null}
           {item.recept ? <span className="block truncate text-sm text-muted-foreground">voor {item.recept}</span> : null}
         </span>
         {maatTekst(item) ? <span className="shrink-0 text-base text-muted-foreground">{maatTekst(item)}</span> : null}

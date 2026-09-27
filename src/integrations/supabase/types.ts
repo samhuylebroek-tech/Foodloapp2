@@ -1756,6 +1756,7 @@ export type Database = {
           id: string
           list_id: string | null
           name: string
+          note: string | null
           quantity: number | null
           recipe_id: string | null
           unit: string
@@ -1767,6 +1768,7 @@ export type Database = {
           id?: string
           list_id?: string | null
           name: string
+          note?: string | null
           quantity?: number | null
           recipe_id?: string | null
           unit?: string
@@ -1778,6 +1780,7 @@ export type Database = {
           id?: string
           list_id?: string | null
           name?: string
+          note?: string | null
           quantity?: number | null
           recipe_id?: string | null
           unit?: string
