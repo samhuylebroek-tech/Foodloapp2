@@ -4,13 +4,14 @@ import { RecipeForm } from "@/components/RecipeForm";
 import { useAuth } from "@/hooks/useAuth";
 import { useLimiet } from "@/lib/limiet";
 
-type NieuwSearch = { title?: string | undefined; text?: string | undefined; url?: string | undefined };
+type NieuwSearch = { title?: string | undefined; text?: string | undefined; url?: string | undefined; koppel?: string | undefined };
 
 export const Route = createFileRoute("/recepten/nieuw")({
   validateSearch: (search: Record<string, unknown>): NieuwSearch => ({
     title: typeof search["title"] === "string" ? search["title"] : undefined,
     text: typeof search["text"] === "string" ? search["text"] : undefined,
     url: typeof search["url"] === "string" ? search["url"] : undefined,
+    koppel: typeof search["koppel"] === "string" ? search["koppel"] : undefined,
   }),
   head: () => ({
     meta: [
@@ -25,6 +26,8 @@ export const Route = createFileRoute("/recepten/nieuw")({
         property: "og:description",
         content: "Nieuw recept toevoegen met foto, ingrediënten en bereidingsstappen.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: NieuwPage,
@@ -32,7 +35,7 @@ export const Route = createFileRoute("/recepten/nieuw")({
 
 function NieuwPage() {
   const gedeeld = Route.useSearch();
-  const heeftGedeeld = Boolean(gedeeld.title || gedeeld.text || gedeeld.url);
+  const heeftGedeeld = !gedeeld.koppel && Boolean(gedeeld.title || gedeeld.text || gedeeld.url);
   const { user, loading: authLaden } = useAuth();
   const { data: limiet, isLoading: limietLaden } = useLimiet(user?.id);
 
@@ -69,7 +72,11 @@ function NieuwPage() {
               en controleer daarna het resultaat.
             </p>
           )}
-          <RecipeForm gedeeld={gedeeld} vraagInplannen />
+          {gedeeld.koppel ? (
+            <RecipeForm koppelMaaltijd={gedeeld.koppel} startNaam={gedeeld.title} />
+          ) : (
+            <RecipeForm gedeeld={gedeeld} vraagInplannen />
+          )}
         </>
       )}
     </AppShell>

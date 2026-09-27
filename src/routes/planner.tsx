@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { meet } from "@/lib/meten";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Trash2,
@@ -14,6 +14,9 @@ import {
   Sparkles,
   ListPlus,
   Type,
+  Copy,
+  Repeat,
+  Pencil,
   Settings,
   CookingPot,
   RefreshCw,
@@ -79,6 +82,7 @@ import {
 import { kiesUitEigen, type DagRegel, type Soortkeuze } from "@/lib/weekmenu-voorstel";
 import { zorgVoorLijst, maakLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
 import { tijdLabel } from "@/lib/tijd";
+import { normaliseerTekst } from "@/lib/zoeken";
 import { useSignedUrl } from "@/lib/photos";
 
 export const Route = createFileRoute("/planner")({
@@ -107,6 +111,7 @@ type PlanRow = {
   meal_type: string;
   recipe_id: string | null;
   custom_title: string | null;
+  soort?: string | null;
   user_id: string;
   group_id: string | null;
   recipes: Recipe | null;
@@ -148,6 +153,8 @@ function weekLabel(start: Date, kort = false) {
   return `${beginTekst} – ${eindeTekst}`;
 }
 
+type NieuwExtra = { soort?: string; maakRecept?: boolean };
+
 type Basis = {
   title: string;
   description: string;
@@ -172,6 +179,9 @@ function PlannerPage() {
   // Dagdelen: eigen keuze voor het weekmenu, anders je algemene momenten.
   const momenten = weekmenu.momenten.length ? weekmenu.momenten : algemeneMomenten;
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  const [verplaats, setVerplaats] = useState<{ rij: PlanRow; kopie: boolean } | null>(null);
+  const [koppelRij, setKoppelRij] = useState<PlanRow | null>(null);
   const [weekStart, setWeekStart] = useState(() => maandagVan(new Date()));
   const [kiezen, setKiezen] = useState<{ datum: string; moment: string; vraagDag?: boolean } | null>(
     null,
@@ -252,7 +262,7 @@ function PlannerPage() {
     queryFn: async () => {
       let q = supabase
         .from("meal_plan")
-        .select("id, plan_date, meal_type, recipe_id, custom_title, user_id, group_id, recipes(*)")
+        .select("id, plan_date, meal_type, recipe_id, custom_title, soort, user_id, group_id, recipes(*)")
         .gte("plan_date", week[0]!)
         .lte("plan_date", week[6]!)
         .order("plan_date");
@@ -461,7 +471,7 @@ function PlannerPage() {
   }
 
 
-  async function nieuw_gerecht(naam: string, basis: Basis | null, datum: string, moment: string) {
+  async function nieuw_gerecht(naam: string, basis: Basis | null, datum: string, moment: string, extra?: NieuwExtra) {
     if (!user) return;
     let recipeId: string | null = null;
 
@@ -503,16 +513,22 @@ function PlannerPage() {
       }
     }
 
-    const { error } = await supabase.from("meal_plan").insert({
+    const { data: geplandeRij, error } = await supabase.from("meal_plan").insert({
       user_id: user.id,
       recipe_id: recipeId,
       custom_title: recipeId ? null : naam,
+      soort: extra?.soort ?? null,
       plan_date: datum,
       meal_type: moment,
       group_id: weergave === "gezin" ? gezin!.id : null,
-    });
+    }).select("id").single();
     if (error) {
       toast.error("Inplannen lukte niet");
+      return;
+    }
+    if (extra?.maakRecept && geplandeRij) {
+      setKiezen(null);
+      navigate({ to: "/recepten/nieuw", search: { title: naam, koppel: geplandeRij.id } });
       return;
     }
     setKiezen(null);
@@ -552,9 +568,51 @@ function PlannerPage() {
     }
   }
 
+  /** Verplaatst of dupliceert een geplande maaltijd naar een andere dag/moment. */
+  async function verplaatsNaar(rij: PlanRow, datum: string, moment: string, kopie: boolean) {
+    if (!user) return;
+    const { error } = kopie
+      ? await supabase.from("meal_plan").insert({
+          user_id: user.id,
+          recipe_id: rij.recipe_id,
+          custom_title: rij.custom_title,
+          plan_date: datum,
+          meal_type: moment,
+          group_id: rij.group_id,
+        })
+      : await supabase.from("meal_plan").update({ plan_date: datum, meal_type: moment }).eq("id", rij.id);
+    if (error) {
+      toast.error(kopie ? "Dupliceren lukte niet" : "Verplaatsen lukte niet");
+      return;
+    }
+    toast.success(kopie ? `Ook ingepland op ${labelVoor(datum)}` : `Verplaatst naar ${labelVoor(datum)}`);
+    setVerplaats(null);
+    qc.invalidateQueries({ queryKey: ["meal-plan"] });
+  }
+
+  async function koppelRecept(rij: PlanRow, recept: Recipe) {
+    const { error } = await supabase
+      .from("meal_plan")
+      .update({ recipe_id: recept.id, custom_title: null })
+      .eq("id", rij.id);
+    if (error) {
+      toast.error("Koppelen lukte niet");
+      return;
+    }
+    toast.success(`${recept.title} gekoppeld`);
+    setKoppelRij(null);
+    qc.invalidateQueries({ queryKey: ["meal-plan"] });
+  }
+
   async function alleBoodschappen() {
     if (!user || plan.length === 0) return;
     const ids = plan.map((p) => p.recipe_id).filter((x): x is string => !!x);
+    const zonderRecept = plan.filter((p) => !p.recipe_id && !p.soort).map((p) => p.custom_title).filter(Boolean);
+    if (zonderRecept.length) {
+      toast.message(
+        `${zonderRecept.slice(0, 2).join(", ")}${zonderRecept.length > 2 ? " …" : ""} ${zonderRecept.length === 1 ? "heeft" : "hebben"} nog geen recept — zet zelf iets op de lijst of voeg een recept toe.`,
+      );
+    }
     if (!ids.length) {
       toast.error("Geen ingrediënten gevonden");
       return;
@@ -767,12 +825,17 @@ function PlannerPage() {
                   <ul className="space-y-2">
                   {items.map((p) => (
                     <li key={p.id} className="flex min-h-20 items-center gap-2 rounded-xl border border-border bg-card p-2 shadow-sm">
-                      {p.recipe_id ? <Link to="/recepten/$id" params={{ id: p.recipe_id }} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ReceptFoto url={p.recipes?.image_url ?? null} /><span className="min-w-0"><span className="block text-xs font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-base font-semibold leading-tight">{p.recipes?.title ?? "Recept"}</span>{p.recipes ? <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground"><Clock3 className="size-3.5" /> {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) || "Tijd niet ingevuld"}</span> : null}</span></Link> : <div className="flex min-w-0 flex-1 items-center gap-3"><ReceptFoto url={null} /><span className="min-w-0"><span className="block text-xs font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-base font-semibold leading-tight">{p.custom_title}</span></span></div>}
+                      {p.recipe_id ? <Link to="/recepten/$id" params={{ id: p.recipe_id }} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ReceptFoto url={p.recipes?.image_url ?? null} /><span className="min-w-0"><span className="block text-xs font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-base font-semibold leading-tight">{p.recipes?.title ?? "Recept"}</span>{p.recipes ? <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground"><Clock3 className="size-3.5" /> {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) || "Tijd niet ingevuld"}</span> : null}</span></Link> : <div className="flex min-w-0 flex-1 items-center gap-3"><ReceptFoto url={null} /><span className="min-w-0"><span className="block text-xs font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-base font-semibold leading-tight">{p.custom_title}</span>{!p.soort ? <button type="button" onClick={() => setKoppelRij(p)} className="mt-0.5 block text-left text-xs font-semibold text-primary underline underline-offset-2">Nog geen recept · koppelen</button> : null}</span></div>}
                       {weergave === "gezin" && p.user_id !== user?.id ? <Avatar naam={plannerNamen[p.user_id] ?? "?"} sleutel={p.user_id} className="size-8 shrink-0 text-xs" /> : null}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" aria-label={`Acties voor ${p.recipes?.title ?? p.custom_title ?? "maaltijd"}`} className="size-12 shrink-0"><MoreVertical className="size-5" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-60 p-2">
                           {p.recipe_id ? <DropdownMenuItem onSelect={() => setVraagLijst({ recipeId: p.recipe_id as string, titel: p.recipes?.title ?? "Recept" })} className="min-h-12 rounded-lg text-base"><ShoppingCart className="size-5" /> Op boodschappenlijst</DropdownMenuItem> : null}
+                          {!p.recipe_id && !p.soort ? <DropdownMenuItem onSelect={() => setKoppelRij(p)} className="min-h-12 rounded-lg text-base"><BookOpen className="size-5" /> Recept koppelen</DropdownMenuItem> : null}
+                          {!p.recipe_id && !p.soort ? <DropdownMenuItem onSelect={() => navigate({ to: "/recepten/nieuw", search: { title: p.custom_title ?? "", koppel: p.id } })} className="min-h-12 rounded-lg text-base"><Plus className="size-5" /> Recept maken of importeren</DropdownMenuItem> : null}
+                          <DropdownMenuItem onSelect={() => setVerplaats({ rij: p, kopie: false })} className="min-h-12 rounded-lg text-base"><CalendarDays className="size-5" /> Verplaatsen</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => setVerplaats({ rij: p, kopie: true })} className="min-h-12 rounded-lg text-base"><Copy className="size-5" /> Dupliceren</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => { const d = new Date(`${p.plan_date}T12:00:00`); d.setDate(d.getDate() + 7); void verplaatsNaar(p, datumTekst(d), p.meal_type, true); }} className="min-h-12 rounded-lg text-base"><Repeat className="size-5" /> Volgende week opnieuw</DropdownMenuItem>
                           <DropdownMenuItem onSelect={() => void verwijder(p.id, p.recipe_id, p.recipes?.title ?? "Dit gerecht")} className="min-h-12 rounded-lg text-base text-destructive focus:text-destructive"><Trash2 className="size-5" /> Uit planning halen</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -836,6 +899,25 @@ function PlannerPage() {
           onSluit={() => setKiezen(null)}
           onKies={plan_toevoegen}
           onNieuw={nieuw_gerecht}
+        />
+      )}
+
+      {verplaats && (
+        <VerplaatsSheet
+          rij={verplaats.rij}
+          kopie={verplaats.kopie}
+          momenten={momenten}
+          onSluit={() => setVerplaats(null)}
+          onKies={(d, m) => void verplaatsNaar(verplaats.rij, d, m, verplaats.kopie)}
+        />
+      )}
+
+      {koppelRij && (
+        <KoppelSheet
+          rij={koppelRij}
+          onSluit={() => setKoppelRij(null)}
+          onKies={(r) => void koppelRecept(koppelRij, r)}
+          onNieuw={() => navigate({ to: "/recepten/nieuw", search: { title: koppelRij.custom_title ?? "", koppel: koppelRij.id } })}
         />
       )}
 
@@ -988,7 +1070,7 @@ function ReceptKiezer({
   start: { datum: string; moment: string; vraagDag?: boolean };
   onSluit: () => void;
   onKies: (id: string, datum: string, moment: string, titel: string) => void;
-  onNieuw: (naam: string, basis: Basis | null, datum: string, moment: string) => void;
+  onNieuw: (naam: string, basis: Basis | null, datum: string, moment: string, extra?: NieuwExtra) => void;
 }) {
   const { user } = useAuth();
   const { taal } = useVoorkeuren();
@@ -1174,6 +1256,7 @@ function ReceptKiezer({
         .from("recipes")
         .select("*")
         .is("deleted_at", null)
+        .eq("is_concept", false)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Recipe[];
@@ -1416,7 +1499,7 @@ function ReceptKiezer({
               <div className="flex gap-2">
                 <div className="relative min-w-0 flex-1">
                   <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
-                  <Input value={zoek} onChange={(e) => setZoek(e.target.value)} placeholder="Zoek recepten" aria-label="Zoek een recept" className="h-14 w-full pl-12 text-base" />
+                  <Input value={zoek} onChange={(e) => setZoek(e.target.value)} placeholder="Wat wil je eten?" aria-label="Wat wil je eten?" className="h-14 w-full pl-12 text-base" />
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -1477,6 +1560,21 @@ function ReceptKiezer({
                   {gefilterdeRecepten.map((r) => <li key={r.id}><GerechtKaart recept={r} onKies={() => onKies(r.id, datum, moment, r.title)} /></li>)}
                 </ul>
               )}
+              <div className="mt-4 space-y-2 border-t border-border pt-4">
+                {term ? (
+                  <>
+                    <Button variant="outline" onClick={() => onNieuw(term, null, datum, moment)} className="h-auto min-h-14 w-full justify-start whitespace-normal text-left text-base"><Type className="size-5" /> “{term}” inplannen zonder recept</Button>
+                    <Button variant="outline" onClick={() => onNieuw(term, null, datum, moment, { maakRecept: true })} className="h-auto min-h-14 w-full justify-start whitespace-normal text-left text-base"><Plus className="size-5" /> Inplannen en recept maken of importeren</Button>
+                  </>
+                ) : null}
+                <p className="px-1 pt-1 text-sm font-semibold text-muted-foreground">Snel kiezen</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {([["Restjes", "restjes"], ["Uit eten", "uit_eten"], ["Later bepalen", "later"]] as const).map(([label, soort]) => (
+                    <Button key={soort} variant="secondary" onClick={() => onNieuw(label, null, datum, moment, { soort })} className="h-14 min-w-0 whitespace-normal px-2 text-sm leading-tight">{label}</Button>
+                  ))}
+                </div>
+                <Button variant="ghost" onClick={() => setBron("inspiratie")} className="h-14 w-full justify-start text-base"><Lightbulb className="size-5" /> Inspiratie nodig?</Button>
+              </div>
             </div>
           </>
         ) : bron === "inspiratie" ? (
@@ -1507,7 +1605,7 @@ function ReceptKiezer({
         ) : (
           <div className="flex-1 space-y-4 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4">
             <div><label htmlFor="nieuwe-maaltijd" className="text-base font-semibold">Hoe heet de maaltijd?</label><Input id="nieuwe-maaltijd" value={zoek} onChange={(e) => setZoek(e.target.value)} placeholder="Bijv. soep met brood" className="mt-2 h-14 text-base" /></div>
-            {term ? <div className="space-y-2"><Button variant="outline" onClick={() => onNieuw(term, null, datum, moment)} className="h-14 w-full justify-start text-base"><Type className="size-5" /> Alleen als naam inplannen</Button><Button disabled={aiBezig} onClick={() => void maakVoorstel(term)} className="h-14 w-full justify-start text-base">{aiBezig ? <Loader2 className="size-5 animate-spin" /> : <Sparkles className="size-5" />} {aiBezig ? "Foodlo maakt het recept…" : "Maak er een volledig recept van"}</Button><p className="px-1 text-sm text-muted-foreground">Een volledig recept maken kost credits. Je controleert het eerst.</p></div> : <p className="rounded-xl bg-secondary p-4 text-base text-muted-foreground">Typ een naam. Daarna kies je of alleen de naam genoeg is, of Foodlo een volledig recept maakt.</p>}
+            {term ? <div className="space-y-2"><Button variant="outline" onClick={() => onNieuw(term, null, datum, moment)} className="h-14 w-full justify-start text-base"><Type className="size-5" /> Alleen als naam inplannen</Button><Button variant="outline" onClick={() => onNieuw(term, null, datum, moment, { maakRecept: true })} className="h-14 w-full justify-start text-base"><Pencil className="size-5" /> Zelf een recept maken of importeren</Button><Button disabled={aiBezig} onClick={() => void maakVoorstel(term)} className="h-14 w-full justify-start text-base">{aiBezig ? <Loader2 className="size-5 animate-spin" /> : <Sparkles className="size-5" />} {aiBezig ? "Foodlo maakt het recept…" : "Maak er een volledig recept van"}</Button><p className="px-1 text-sm text-muted-foreground">Een volledig recept maken kost credits. Je controleert het eerst.</p></div> : <p className="rounded-xl bg-secondary p-4 text-base text-muted-foreground">Typ een naam. Daarna kies je of alleen de naam genoeg is, of Foodlo een volledig recept maakt.</p>}
           </div>
         )}
       </SheetContent>
@@ -1941,6 +2039,7 @@ function WeekmenuVoorstel({
         .from("recipes")
         .select("*")
         .is("deleted_at", null)
+        .eq("is_concept", false)
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) throw error;
@@ -2437,5 +2536,111 @@ function WeekmenuVoorstel({
         ) : null}
       </div>
     </div>
+  );
+}
+
+function VerplaatsSheet({
+  rij,
+  kopie,
+  momenten,
+  onSluit,
+  onKies,
+}: {
+  rij: PlanRow;
+  kopie: boolean;
+  momenten: string[];
+  onSluit: () => void;
+  onKies: (datum: string, moment: string) => void;
+}) {
+  const [datum, setDatum] = useState(rij.plan_date);
+  const [moment, setMoment] = useState(rij.meal_type);
+  const opties = momenten.length ? momenten : [rij.meal_type];
+  const titel = rij.recipes?.title ?? rij.custom_title ?? "Maaltijd";
+  return (
+    <Sheet open onOpenChange={(o) => { if (!o) onSluit(); }}>
+      <SheetContent side="bottom" className="space-y-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <SheetHeader className="text-left">
+          <SheetTitle>{kopie ? "Ook op een andere dag" : "Verplaatsen"}</SheetTitle>
+          <SheetDescription>{titel}</SheetDescription>
+        </SheetHeader>
+        <div>
+          <label htmlFor="verplaats-datum" className="text-base font-semibold">Dag</label>
+          <Input id="verplaats-datum" type="date" value={datum} onChange={(e) => setDatum(e.target.value)} className="mt-2 h-14 text-base" />
+          <p className="mt-1 text-sm capitalize text-muted-foreground">{datum ? labelVoor(datum) : ""}</p>
+        </div>
+        {opties.length > 1 ? (
+          <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Moment">
+            {opties.map((m) => (
+              <Button key={m} role="radio" aria-checked={moment === m} variant={moment === m ? "default" : "secondary"} onClick={() => setMoment(m)} className="h-14 capitalize">{m}</Button>
+            ))}
+          </div>
+        ) : null}
+        <Button disabled={!datum} onClick={() => onKies(datum, moment)} className="h-14 w-full text-base">
+          {kopie ? "Dupliceren" : "Verplaatsen"}
+        </Button>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function KoppelSheet({
+  rij,
+  onSluit,
+  onKies,
+  onNieuw,
+}: {
+  rij: PlanRow;
+  onSluit: () => void;
+  onKies: (r: Recipe) => void;
+  onNieuw: () => void;
+}) {
+  const naam = rij.custom_title ?? "";
+  const [zoek, setZoek] = useState(naam);
+  const { data: recepten = [], isLoading } = useQuery({
+    queryKey: ["recipes"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("recipes")
+        .select("*")
+        .is("deleted_at", null)
+        .eq("is_concept", false)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as Recipe[];
+    },
+  });
+  const woorden = normaliseerTekst(zoek).split(" ").filter((w) => w.length > 1);
+  const score = (r: Recipe) => {
+    const t = normaliseerTekst(r.title);
+    return woorden.reduce((n, w) => n + (t.includes(w) ? 1 : 0), 0);
+  };
+  const lijst = [...recepten]
+    .map((r) => ({ r, s: score(r) }))
+    .filter((x) => !woorden.length || x.s > 0)
+    .sort((a, b) => b.s - a.s)
+    .slice(0, 30)
+    .map((x) => x.r);
+  return (
+    <Sheet open onOpenChange={(o) => { if (!o) onSluit(); }}>
+      <SheetContent side="bottom" className="flex max-h-[90dvh] flex-col gap-0 p-0">
+        <SheetHeader className="border-b border-border px-4 pb-3 pt-4 text-left">
+          <SheetTitle>Recept koppelen</SheetTitle>
+          <SheetDescription>Welk recept hoort bij “{naam}”?</SheetDescription>
+        </SheetHeader>
+        <div className="px-4 pt-3">
+          <Input value={zoek} onChange={(e) => setZoek(e.target.value)} placeholder="Zoek in je recepten" aria-label="Zoek in je recepten" className="h-14 text-base" />
+        </div>
+        <div className="flex-1 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3">
+          {isLoading ? (
+            <div className="grid min-h-32 place-items-center text-muted-foreground"><Loader2 className="size-6 animate-spin" /></div>
+          ) : lijst.length === 0 ? (
+            <p className="py-6 text-center text-base text-muted-foreground">Geen recept gevonden met deze naam.</p>
+          ) : (
+            <ul className="space-y-2">{lijst.map((r) => <li key={r.id}><GerechtKaart recept={r} onKies={() => onKies(r)} /></li>)}</ul>
+          )}
+          <Button variant="outline" onClick={onNieuw} className="mt-4 h-14 w-full text-base"><Plus className="size-5" /> Nieuw recept maken of importeren</Button>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
