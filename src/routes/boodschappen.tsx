@@ -860,7 +860,7 @@ function BoodschappenPage() {
             </div>
           ) : null}
           {actieveLijst?.group_id ? (
-            <p className="mt-2 text-sm text-muted-foreground">Iedereen in je gezin kan aanvullen en afvinken.</p>
+            <p className="mt-2 text-base text-muted-foreground">Iedereen in je gezin kan aanvullen en afvinken.</p>
           ) : null}
           {openAantal > 0 ? (
             <Button onClick={() => setWinkel(true)} className="mt-4 h-16 w-full text-lg">
@@ -907,7 +907,7 @@ function BoodschappenPage() {
         {vaakLosOpen.length > 0 && (
           <section aria-label="Vaak gekocht" className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
             <h2 className="flex items-center gap-2 text-lg font-semibold"><Star className="size-5 text-primary" /> Vaak gekocht</h2>
-            <p className="text-sm text-muted-foreground">Wat je vaak los meeneemt. Tik om toe te voegen.</p>
+            <p className="text-base text-muted-foreground">Wat je vaak los meeneemt. Tik om toe te voegen.</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {(vaakAlles ? vaakLosOpen : vaakLosOpen.slice(0, 8)).map((e) => (
                 <Button
@@ -936,7 +936,7 @@ function BoodschappenPage() {
                 <li key={g.recipe_id} className="flex min-h-16 items-center gap-3">
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-lg">{g.titel}</span>
-                    <span className="block text-sm capitalize text-muted-foreground">{datumLabel(g.dag)}</span>
+                    <span className="block text-base capitalize text-muted-foreground">{datumLabel(g.dag)}</span>
                   </span>
                   <Button variant="outline" className="h-12 shrink-0" onClick={() => void zetGerechtOpLijst(g.recipe_id, g.titel)}>
                     <Plus /> Zet op lijst
@@ -1000,7 +1000,7 @@ function BoodschappenPage() {
                     >
                       {open ? <ChevronDown className="size-5 text-muted-foreground" /> : <ChevronRight className="size-5 text-muted-foreground" />}
                       <span className="text-base font-semibold">{CATEGORIE_LABEL[id]}</span>
-                      <span className="rounded-full bg-secondary px-2 py-0.5 text-sm font-semibold text-secondary-foreground">
+                      <span className="rounded-full bg-secondary px-2.5 py-1 text-base font-semibold text-secondary-foreground">
                         {lijst.length}
                       </span>
                     </button>
@@ -1038,7 +1038,7 @@ function BoodschappenPage() {
             {klaar.length > 0 ? (
               <Accordion type="single" collapsible defaultValue="klaar" className="rounded-2xl bg-secondary/50 px-3 ring-1 ring-border/60">
                 <AccordionItem value="klaar" className="border-0">
-                  <AccordionTrigger className="min-h-12 px-1 text-sm font-semibold text-muted-foreground no-underline hover:no-underline">
+                  <AccordionTrigger className="min-h-12 px-1 text-base font-semibold text-muted-foreground no-underline hover:no-underline">
                     <span className="flex items-center gap-2"><ShoppingCart className="size-5" /> In je kar ({klaar.length})</span>
                   </AccordionTrigger>
                   <AccordionContent className="space-y-1 pb-2">
