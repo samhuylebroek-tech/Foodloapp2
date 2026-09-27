@@ -150,7 +150,7 @@ function KaartTegel({ kaart, winkels }: { kaart: Kaart; winkels: Winkel[] }) {
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-lg font-bold">{kaart.winkel_naam}</p>
-            <p className="truncate text-sm text-muted-foreground">
+            <p className="truncate text-base text-muted-foreground">
               {kaart.kaartnaam || groepeer(kaart.nummer)}
             </p>
           </div>
@@ -250,7 +250,7 @@ function ToevoegVenster({
           <Button onClick={() => setScannen(true)} className="h-14 w-full gap-2 text-base">
             <ScanLine className="size-5" aria-hidden /> Scan je kaart
           </Button>
-          <p className="text-center text-sm text-muted-foreground">of</p>
+          <p className="text-center text-base text-muted-foreground">of</p>
           <div className="grid grid-cols-2 gap-3">
           <Button
             variant="secondary"
@@ -363,7 +363,7 @@ function ToevoegVenster({
           <label className="flex items-center justify-between rounded-2xl border border-border p-3">
             <span className="text-base">
               Delen met mijn gezin
-              <span className="block text-sm text-muted-foreground">Standaard blijft je kaart privé.</span>
+              <span className="block text-base text-muted-foreground">Standaard blijft je kaart privé.</span>
             </span>
             <Switch checked={gedeeld} onCheckedChange={setGedeeld} />
           </label>

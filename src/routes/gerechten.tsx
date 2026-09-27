@@ -336,7 +336,7 @@ function GerechtenPage() {
                 onClick={() => setEigenaar(waarde)}
                 aria-pressed={eigenaar === waarde}
                 className={cn(
-                  "min-h-12 rounded-lg px-2 text-sm font-semibold transition-colors",
+                  "min-h-12 rounded-lg px-2 text-base font-semibold transition-colors",
                   eigenaar === waarde
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground",
@@ -458,11 +458,11 @@ function GerechtenPage() {
                         )}
                       </p>
                       {r.user_id !== user?.id && eigenaren[r.user_id] ? (
-                        <p className="mt-1 text-sm font-medium text-muted-foreground">
+                        <p className="mt-1 text-base font-medium text-muted-foreground">
                           {t("van")} {eigenaren[r.user_id]}
                         </p>
                       ) : null}
-                      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-base text-muted-foreground">
                         {tijdLabel(r.prep_minutes, r.cook_minutes) ? (
                           <span className="inline-flex items-center gap-1">
                             <Clock className="size-4" aria-hidden />
@@ -558,7 +558,7 @@ function SwipeRij({
           setDx(0);
         }}
         aria-label="Verwijder dit gerecht"
-        className="absolute inset-y-0 right-0 flex w-22 flex-col items-center justify-center gap-1 rounded-r-2xl bg-destructive text-sm font-semibold text-destructive-foreground"
+        className="absolute inset-y-0 right-0 flex w-22 flex-col items-center justify-center gap-1 rounded-r-2xl bg-destructive text-base font-semibold text-destructive-foreground"
       >
         <Trash2 className="size-6" aria-hidden />
       </button>
@@ -589,7 +589,7 @@ function FilterSelect({
   return (
     <div className="min-w-0 sm:min-w-[8rem] sm:flex-1">
       <label
-        className="mb-0.5 block truncate text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+        className="mb-0.5 block truncate text-base font-semibold uppercase tracking-wide text-muted-foreground"
         htmlFor={`filter-${label}`}
       >
         {label}
@@ -597,12 +597,12 @@ function FilterSelect({
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger
           id={`filter-${label}`}
-          className="h-10 w-full rounded-lg border-border bg-card px-3 text-sm"
+          className="h-10 w-full rounded-lg border-border bg-card px-3 text-base"
           aria-label={label}
         >
           <SelectValue />
         </SelectTrigger>
-        <SelectContent className="rounded-xl border-border bg-card text-sm">
+        <SelectContent className="rounded-xl border-border bg-card text-base">
           {options.map((opt) => (
             <SelectItem
               key={opt.value}

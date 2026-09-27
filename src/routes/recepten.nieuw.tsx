@@ -45,7 +45,7 @@ function NieuwPage() {
   return (
     <AppShell title="Nieuw recept">
       {limiet?.betalenActief && !volzet && Number.isFinite(limiet.totaal) && (
-        <p className="mb-5 rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
+        <p className="mb-5 rounded-2xl border border-border bg-card p-4 text-base text-muted-foreground">
           Je hebt {limiet.gebruikt} van {limiet.totaal} gerechten in gebruik — nog {limiet.over}{" "}
           beschikbaar.
         </p>

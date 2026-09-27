@@ -263,7 +263,7 @@ function VriendPage() {
                             .filter(Boolean)
                             .join(" · ")}
                         </p>
-                        <p className="text-sm text-muted-foreground">Gedeeld door {naam}</p>
+                        <p className="text-base text-muted-foreground">Gedeeld door {naam}</p>
                       </div>
                     </Link>
                   </li>
@@ -278,7 +278,7 @@ function VriendPage() {
             <h2 className="flex items-center gap-2 font-display text-xl">
               <CalendarDays className="size-5 text-primary" aria-hidden /> Weekmenu van {naam}
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-base text-muted-foreground">
               Alleen bekijken. {gezinId ? "Het gezinsmenu staat er ook bij." : ""}
             </p>
             {weekmenu.length === 0 ? (
@@ -301,7 +301,7 @@ function VriendPage() {
                     </span>
                     <span className="flex min-w-0 items-center gap-2">
                       {m.group_id ? (
-                        <span className="shrink-0 rounded-full bg-secondary px-2 py-1 text-xs font-semibold">
+                        <span className="shrink-0 rounded-full bg-secondary px-2 py-1 text-base font-semibold">
                           Gezin
                         </span>
                       ) : null}
@@ -322,7 +322,7 @@ function VriendPage() {
             <h2 className="flex items-center gap-2 font-display text-xl">
               <ShoppingCart className="size-5 text-primary" aria-hidden /> Boodschappen van {naam}
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-base text-muted-foreground">
               Alleen bekijken. {gezinId ? "De gezinslijst staat er ook bij." : ""}
             </p>
             {boodschappen.length === 0 ? (
@@ -341,7 +341,7 @@ function VriendPage() {
                   >
                     <span className="flex min-w-0 items-center gap-2">
                       {b.gezin ? (
-                        <span className="shrink-0 rounded-full bg-secondary px-2 py-1 text-xs font-semibold">
+                        <span className="shrink-0 rounded-full bg-secondary px-2 py-1 text-base font-semibold">
                           Gezin
                         </span>
                       ) : null}

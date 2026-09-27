@@ -117,7 +117,7 @@ function InstallerenPage() {
               "Scan deze QR-code met je camera. Je opent de app meteen in je browser — geen app store nodig."
             )}
           </p>
-          <p className="mt-3 inline-block rounded-full bg-emerald-50 px-4 py-1.5 text-sm font-semibold text-emerald-700">
+          <p className="mt-3 inline-block rounded-full bg-emerald-50 px-4 py-1.5 text-base font-semibold text-emerald-700">
             {t("Geen App Store of Play Store nodig")}
           </p>
 
@@ -135,7 +135,7 @@ function InstallerenPage() {
             )}
           </div>
 
-          <p className="mt-4 break-all text-sm text-muted-foreground">{link}</p>
+          <p className="mt-4 break-all text-base text-muted-foreground">{link}</p>
 
           <div className="mt-5 flex gap-3">
             <Button
@@ -168,7 +168,7 @@ function InstallerenPage() {
           )}
 
           {isInstalled && (
-            <p className="mt-4 rounded-2xl bg-emerald-50 p-3 text-sm font-medium text-emerald-700">
+            <p className="mt-4 rounded-2xl bg-emerald-50 p-3 text-base font-medium text-emerald-700">
               {t("Foodlo staat al op je startscherm. Veel kookplezier!")}
             </p>
           )}
