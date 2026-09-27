@@ -194,7 +194,7 @@
 
 ## Actief — Weekmenu → boodschappen + Inspiratie (plan 27 sep, goedgekeurd)
 - [x] Centrale productherkenning: synoniemen (look=knoflook=garlic, ajuin=ui), veilig samenvoegen, varianten apart
-- [x] Vandaag-blok in weekmenu: samenvatting + "Boodschappen voor vandaag" (plakkend op mobiel)
+- [x] Vandaag alleen subtiel markeren; boodschappen standaard voor de hele zichtbare week
 - [x] Review-sheet: AL OP JE LIJST / NIEUW, per-item keuze, "Alleen nieuwe" / "Alles toevoegen", idempotentie
 - [x] Boodschappen: merge-hint bij handmatig toevoegen + herkomst in itemdetail
 - [ ] Tabellen canonical_items/item_synonyms + Control Center-beheer en monitoring
@@ -202,3 +202,9 @@
 - [x] inspiration_recipes-tabel met ontdubbeling (Control Center-onderdeel Inspiratie staat hieronder)
 - [x] Eindcontrole mobiel (390x844) + desktop (1280x1800), typecheck en build groen
 - [ ] Control Center-onderdeel Inspiratie: beheer, kwaliteitsstatus en gebruiks-inzichten
+
+## Klaar — Boodschappen minder op vandaag richten (27 sep)
+- [x] Groot apart vandaag-blok uit het weekmenu verwijderd
+- [x] Hele zichtbare week is de standaard boodschappenkeuze
+- [x] Alleen geplande dagen met recepten als optionele dagkeuze tonen
+- [x] Bestaande controle op nieuwe en reeds aanwezige ingrediënten behouden
