@@ -998,6 +998,7 @@ export type Database = {
           meal_type: string
           plan_date: string
           recipe_id: string | null
+          soort: string | null
           user_id: string
         }
         Insert: {
@@ -1008,6 +1009,7 @@ export type Database = {
           meal_type?: string
           plan_date: string
           recipe_id?: string | null
+          soort?: string | null
           user_id: string
         }
         Update: {
@@ -1018,6 +1020,7 @@ export type Database = {
           meal_type?: string
           plan_date?: string
           recipe_id?: string | null
+          soort?: string | null
           user_id?: string
         }
         Relationships: [
@@ -1507,6 +1510,7 @@ export type Database = {
           id: string
           image_url: string | null
           instructions: string[]
+          is_concept: boolean
           prep_minutes: number
           servings: number
           source_url: string | null
@@ -1526,6 +1530,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           instructions?: string[]
+          is_concept?: boolean
           prep_minutes?: number
           servings?: number
           source_url?: string | null
@@ -1545,6 +1550,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           instructions?: string[]
+          is_concept?: boolean
           prep_minutes?: number
           servings?: number
           source_url?: string | null

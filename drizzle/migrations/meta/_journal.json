@@ -295,6 +295,13 @@
       "when": 1790506194388,
       "tag": "0041_shopping_history_en_vaste_boodschappen",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1790508172741,
+      "tag": "0042_concepten_en_maaltijdsoort",
+      "breakpoints": true
     }
   ]
 }
