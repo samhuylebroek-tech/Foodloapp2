@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { CATEGORIES, DIFFICULTIES, type Recipe } from "@/lib/types";
 import { DIETEN, bepaalDieet } from "@/lib/dieet";
+import { DEMO_FAVORIETEN, DEMO_INGREDIENTEN, DEMO_RECEPTEN, demoBericht, isDemo } from "@/lib/demo";
 import { Sterren } from "@/components/Sterren";
 import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
@@ -261,6 +262,11 @@ function GerechtenPage() {
   }
 
   async function verwijder(r: Recipe) {
+    if (demo) {
+      demoBericht();
+      setTeVerwijderen(null);
+      return;
+    }
     setBezig(true);
     const { error } = await supabase
       .from("recipes")
