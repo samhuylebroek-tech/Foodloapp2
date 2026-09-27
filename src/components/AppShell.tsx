@@ -175,15 +175,15 @@ export function AppShell({
 
           <main className="mx-auto w-full max-w-3xl overflow-x-hidden px-4 py-6 pb-32 sm:px-6 lg:max-w-4xl lg:py-8 lg:pb-16">
             {demo && !session ? (
-              <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl bg-accent px-4 py-3 ring-1 ring-border/60" role="status">
-                <p className="min-w-0 flex-1 text-base font-semibold text-accent-foreground">
-                  {t("Je bekijkt een voorbeeld — er wordt niets bewaard.")}
+              <div className="mb-6 flex items-center gap-2 rounded-2xl bg-accent px-4 py-2.5 ring-1 ring-border/60" role="status">
+                <p className="min-w-0 flex-1 text-sm font-semibold text-accent-foreground">
+                  {t("Je bekijkt een voorbeeld")}
                 </p>
-                <Button size="sm" onClick={() => { stopDemo(); navigate({ to: "/aanmelden" }); }}>
+                <Button size="sm" className="shrink-0" onClick={() => { stopDemo(); navigate({ to: "/aanmelden" }); }}>
                   {t("Account maken")}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => { stopDemo(); navigate({ to: "/aanmelden" }); }}>
-                  {t("Stop voorbeeld")}
+                <Button size="sm" variant="ghost" className="shrink-0" onClick={() => { stopDemo(); navigate({ to: "/aanmelden" }); }}>
+                  {t("Stop")}
                 </Button>
               </div>
             ) : null}

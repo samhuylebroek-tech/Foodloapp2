@@ -217,8 +217,10 @@ function dagVanDezeWeek(offset: number): string {
 
 export function demoPlan(): (DemoPlanItem & { plan_date: string })[] {
   const r = (id: string) => DEMO_RECEPTEN.find((x) => x.id === id) ?? null;
+  const vandaag = new Date();
+  const vandaagTekst = `${vandaag.getFullYear()}-${String(vandaag.getMonth() + 1).padStart(2, "0")}-${String(vandaag.getDate()).padStart(2, "0")}`;
   return [
-    { id: "demo-p1", plan_date: dagVanDezeWeek(0), meal_type: "avondeten", recipe_id: "demo-1", custom_title: null, group_id: null, recipes: r("demo-1") },
+    { id: "demo-p0", plan_date: vandaagTekst, meal_type: "avondeten", recipe_id: "demo-1", custom_title: null, group_id: null, recipes: r("demo-1") },
     { id: "demo-p2", plan_date: dagVanDezeWeek(1), meal_type: "avondeten", recipe_id: "demo-2", custom_title: null, group_id: null, recipes: r("demo-2") },
     { id: "demo-p3", plan_date: dagVanDezeWeek(2), meal_type: "avondeten", recipe_id: null, custom_title: "Restjes", group_id: null, recipes: null },
     { id: "demo-p4", plan_date: dagVanDezeWeek(3), meal_type: "avondeten", recipe_id: "demo-4", custom_title: null, group_id: null, recipes: r("demo-4") },
