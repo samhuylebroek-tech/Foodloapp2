@@ -25,32 +25,85 @@ import {
 import { useAdmin } from "@/hooks/useAdmin";
 import type { Rechten } from "@/lib/admin.functions";
 
-const MENU: { pad: string; label: string; icoon: typeof Users; recht: Rechten }[] = [
-  { pad: "/beheer", label: "Dashboard", icoon: BarChart3, recht: "dashboard.view" },
-  { pad: "/beheer/activiteit", label: "Activiteit", icoon: Activity, recht: "dashboard.view" },
-  { pad: "/beheer/ui", label: "User Intelligence", icoon: LineChart, recht: "dashboard.view" },
-  { pad: "/beheer/gebruikers", label: "Gebruikers", icoon: Users, recht: "users.view" },
-  { pad: "/beheer/groepen", label: "Gezinnen", icoon: Users, recht: "users.view" },
-  { pad: "/beheer/communicatie", label: "Communicatie", icoon: Megaphone, recht: "users.view" },
-  { pad: "/beheer/recepten", label: "Recepten", icoon: BookOpen, recht: "recipes.view" },
-  { pad: "/beheer/inhoud", label: "Inhoud & labels", icoon: Tags, recht: "content.manage" },
-  { pad: "/beheer/ai", label: "AI & import", icoon: Sparkles, recht: "ai.view" },
-  { pad: "/beheer/imports", label: "Importcentrum", icoon: Link2, recht: "ai.view" },
+type Sub = { pad: string; label: string; recht: Rechten; ook?: string[] };
+type Sectie = { label: string; icoon: typeof Users; subs: Sub[] };
 
-  { pad: "/beheer/kaarten", label: "Klantenkaarten", icoon: CreditCard, recht: "content.manage" },
-  { pad: "/beheer/teksten", label: "Teksten & berichten", icoon: Megaphone, recht: "content.manage" },
-  { pad: "/beheer/meldingen", label: "Meldingen", icoon: Bell, recht: "dashboard.view" },
-  { pad: "/beheer/analytics", label: "Analytics", icoon: LineChart, recht: "dashboard.view" },
-  { pad: "/beheer/credits", label: "Credits & kosten", icoon: Coins, recht: "dashboard.view" },
-  { pad: "/beheer/kosten", label: "Kosten", icoon: Coins, recht: "dashboard.view" },
-
-  { pad: "/beheer/beveiliging", label: "Beveiliging", icoon: Lock, recht: "dashboard.view" },
-  { pad: "/beheer/support", label: "Support", icoon: LifeBuoy, recht: "support.view" },
-  { pad: "/beheer/systeem", label: "Systeem", icoon: Activity, recht: "system.view" },
-  { pad: "/beheer/logboek", label: "Auditlogboek", icoon: FileClock, recht: "audit.view" },
-  { pad: "/beheer/instellingen", label: "Instellingen", icoon: Settings2, recht: "settings.manage" },
-  { pad: "/beheer/team", label: "Beheerders", icoon: ShieldCheck, recht: "admins.manage" },
+/** Zes hoofdsecties; alle bestaande schermen hangen eronder als tabbladen. */
+const SECTIES: Sectie[] = [
+  { label: "Overzicht", icoon: BarChart3, subs: [{ pad: "/beheer", label: "Overzicht", recht: "dashboard.view" }] },
+  {
+    label: "Gebruikers",
+    icoon: Users,
+    subs: [
+      { pad: "/beheer/gebruikers", label: "Alle gebruikers", recht: "users.view", ook: ["/beheer/gebruiker/", "/beheer/ui/gebruiker"] },
+      { pad: "/beheer/groepen", label: "Gezinnen", recht: "users.view", ook: ["/beheer/ui/groep"] },
+      { pad: "/beheer/ui/segmenten", label: "Segmenten", recht: "dashboard.view" },
+      { pad: "/beheer/support", label: "Support", recht: "support.view" },
+    ],
+  },
+  {
+    label: "Activiteit",
+    icoon: Activity,
+    subs: [
+      { pad: "/beheer/activiteit", label: "Vandaag & tijdlijn", recht: "dashboard.view" },
+      { pad: "/beheer/ui", label: "Diepgaand", recht: "dashboard.view" },
+      { pad: "/beheer/analytics", label: "Functies", recht: "dashboard.view" },
+      { pad: "/beheer/recepten", label: "Recepten", recht: "recipes.view" },
+      { pad: "/beheer/imports", label: "Imports", recht: "ai.view" },
+    ],
+  },
+  {
+    label: "Finance",
+    icoon: Coins,
+    subs: [
+      { pad: "/beheer/finance", label: "Overzicht", recht: "dashboard.view" },
+      { pad: "/beheer/credits", label: "Credits", recht: "dashboard.view" },
+      { pad: "/beheer/kosten", label: "Kosten", recht: "dashboard.view" },
+      { pad: "/beheer/ai", label: "AI-gebruik", recht: "ai.view" },
+    ],
+  },
+  {
+    label: "Communicatie",
+    icoon: Megaphone,
+    subs: [
+      { pad: "/beheer/communicatie", label: "Berichten", recht: "users.view" },
+      { pad: "/beheer/meldingen", label: "Pushmeldingen", recht: "dashboard.view" },
+      { pad: "/beheer/teksten", label: "Teksten & aankondigingen", recht: "content.manage" },
+    ],
+  },
+  {
+    label: "Systeem",
+    icoon: Settings2,
+    subs: [
+      { pad: "/beheer/systeem", label: "Status", recht: "system.view" },
+      { pad: "/beheer/integraties", label: "Integraties", recht: "system.view" },
+      { pad: "/beheer/inhoud", label: "Inhoud & labels", recht: "content.manage" },
+      { pad: "/beheer/kaarten", label: "Klantenkaarten", recht: "content.manage" },
+      { pad: "/beheer/beveiliging", label: "Beveiliging", recht: "dashboard.view" },
+      { pad: "/beheer/logboek", label: "Auditlogboek", recht: "audit.view" },
+      { pad: "/beheer/instellingen", label: "Instellingen", recht: "settings.manage" },
+      { pad: "/beheer/team", label: "Beheerders", recht: "admins.manage" },
+    ],
+  },
 ];
+
+function scoor(pad: string, s: Sub): number {
+  if (s.pad === "/beheer") return pad === "/beheer" || pad === "/beheer/" ? 100 : 0;
+  const kand = [s.pad, ...(s.ook ?? [])];
+  return Math.max(0, ...kand.map((k) => (pad === k || pad.startsWith(k.endsWith("/") ? k : `${k}/`) || pad.startsWith(k) && k.endsWith("/") ? k.length : 0)));
+}
+
+function actieveSub(pad: string): { sectie: Sectie; sub: Sub } | null {
+  let best: { sectie: Sectie; sub: Sub; score: number } | null = null;
+  for (const sectie of SECTIES)
+    for (const sub of sectie.subs) {
+      const sc = scoor(pad, sub);
+      if (sc > (best?.score ?? 0)) best = { sectie, sub, score: sc };
+    }
+  return best;
+}
+// ongebruikte iconen behouden voor compatibiliteit
+void [Bell, BookOpen, CreditCard, Link2, FileClock, LifeBuoy, LineChart, Lock, ShieldCheck, Sparkles, Tags];
 
 export function AdminShell({
   titel,
@@ -65,6 +118,7 @@ export function AdminShell({
 }) {
   const { profiel, mag, alleenLezen, mfaOk } = useAdmin();
   const pad = useRouterState({ select: (s) => s.location.pathname });
+  const huidig = actieveSub(pad);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -80,18 +134,20 @@ export function AdminShell({
             </div>
           </div>
           <nav className="flex flex-1 flex-col gap-1">
-            {MENU.filter((m) => mag(m.recht)).map((m) => {
-              const actief = m.pad === "/beheer" ? pad === "/beheer" : pad.startsWith(m.pad);
+            {SECTIES.map((s) => {
+              const subs = s.subs.filter((x) => mag(x.recht));
+              if (!subs.length) return null;
+              const actief = huidig?.sectie === s;
               return (
                 <Link
-                  key={m.pad}
-                  to={m.pad}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
-                    actief ? "bg-emerald-500/15 text-emerald-300" : "text-slate-300 hover:bg-white/5"
+                  key={s.label}
+                  to={subs[0]!.pad}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] transition ${
+                    actief ? "bg-emerald-500/15 font-medium text-emerald-300" : "text-slate-300 hover:bg-white/5"
                   }`}
                 >
-                  <m.icoon className="size-4" />
-                  {m.label}
+                  <s.icoon className="size-4" />
+                  {s.label}
                 </Link>
               );
             })}
@@ -106,33 +162,51 @@ export function AdminShell({
         </aside>
 
         <main className="min-w-0 flex-1">
-          <header className="sticky top-0 z-10 border-b border-white/10 bg-slate-950/80 px-6 py-4 backdrop-blur">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+          <header className="sticky top-0 z-10 border-b border-white/10 bg-slate-950/80 px-6 pt-4 backdrop-blur">
+            <nav className="mb-3 flex gap-1 overflow-x-auto lg:hidden">
+              {SECTIES.map((s) => {
+                const subs = s.subs.filter((x) => mag(x.recht));
+                if (!subs.length) return null;
+                return (
+                  <Link
+                    key={s.label}
+                    to={subs[0]!.pad}
+                    className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm ${
+                      huidig?.sectie === s ? "bg-emerald-500/15 text-emerald-300" : "border border-white/10 text-slate-300"
+                    }`}
+                  >
+                    {s.label}
+                  </Link>
+                );
+              })}
+            </nav>
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3">
               <div>
+                {huidig && huidig.sectie.label !== "Overzicht" ? (
+                  <p className="text-xs uppercase tracking-wide text-slate-500">{huidig.sectie.label}</p>
+                ) : null}
                 <h1 className="text-xl font-semibold tracking-tight">{titel}</h1>
                 {omschrijving ? <p className="text-sm text-slate-400">{omschrijving}</p> : null}
               </div>
-              <div className="flex items-center gap-2">
-                {acties}
-                <Link
-                  to="/"
-                  className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-300 hover:bg-emerald-500/20"
-                >
-                  Terug naar de app
-                </Link>
-              </div>
+              <div className="flex items-center gap-2">{acties}</div>
             </div>
-            <nav className="mt-3 flex gap-1 overflow-x-auto lg:hidden">
-              {MENU.filter((m) => mag(m.recht)).map((m) => (
-                <Link
-                  key={m.pad}
-                  to={m.pad}
-                  className="whitespace-nowrap rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300"
-                >
-                  {m.label}
-                </Link>
-              ))}
-            </nav>
+            {huidig && huidig.sectie.subs.filter((x) => mag(x.recht)).length > 1 ? (
+              <nav className="-mb-px flex gap-4 overflow-x-auto">
+                {huidig.sectie.subs
+                  .filter((x) => mag(x.recht))
+                  .map((x) => (
+                    <Link
+                      key={x.pad}
+                      to={x.pad}
+                      className={`whitespace-nowrap border-b-2 pb-2 text-sm ${
+                        huidig.sub === x ? "border-emerald-400 text-emerald-300" : "border-transparent text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      {x.label}
+                    </Link>
+                  ))}
+              </nav>
+            ) : null}
           </header>
           {alleenLezen ? (
             <div className="border-b border-amber-500/30 bg-amber-500/10 px-6 py-2 text-sm text-amber-200">
