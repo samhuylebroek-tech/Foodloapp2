@@ -8,6 +8,7 @@ import {
   adminBerichten,
   adminOntvangersTellen,
 } from "@/lib/monitoring.functions";
+import { adminPersonenLijst } from "@/lib/admin.functions";
 import { SEGMENT_LABEL, SEGMENTEN } from "@/lib/segmenten";
 import { AdminShell, Kaart } from "@/components/AdminShell";
 import { Button } from "@/components/ui/button";
@@ -31,15 +32,29 @@ function Communicatie() {
   const [bericht, setBericht] = useState("");
   const [kanaal, setKanaal] = useState<"in_app" | "email">("in_app");
 
+  const [persoonZoek, setPersoonZoek] = useState("");
+
   const telFn = useServerFn(adminOntvangersTellen);
   const stuurFn = useServerFn(adminBerichtVersturen);
   const lijstFn = useServerFn(adminBerichten);
+  const personenFn = useServerFn(adminPersonenLijst);
 
   const ontvangers = useQuery({
     queryKey: ["admin-ontvangers", doelgroep, doelId, segment],
     queryFn: () => telFn({ data: { doelgroep, doelId, segment } }),
   });
   const geschiedenis = useQuery({ queryKey: ["admin-berichten"], queryFn: () => lijstFn() });
+  const personen = useQuery({ queryKey: ["admin-personen-lijst"], queryFn: () => personenFn() });
+
+  const gekozenPersoon = (personen.data ?? []).find((p) => p.id === doelId);
+  const gefilterdePersonen = (personen.data ?? []).filter((p) =>
+    p.naam.toLowerCase().includes(persoonZoek.trim().toLowerCase()),
+  );
+  const voorbeeldNaam = gekozenPersoon?.naam ?? "Sam Voorbeeld";
+  const persoonlijk = (tekst: string) =>
+    tekst
+      .replace(/\{voornaam\}/gi, voorbeeldNaam.trim().split(/\s+/)[0] ?? "")
+      .replace(/\{naam\}/gi, voorbeeldNaam);
 
   const versturen = useMutation({
     mutationFn: () => stuurFn({ data: { doelgroep, doelId, segment, onderwerp, bericht, kanaal, test: false } }),
