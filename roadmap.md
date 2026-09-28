@@ -10,6 +10,10 @@
 - [x] Fase 7: Meer/kaarten/gezin/instellingen/welkom — tekstgroottes app-wide opgehoogd (beheerdersdeel uitgezonderd)
 
 ## Open
+- [ ] Recepten/ideeën: vaste toevoegknop, uniforme filters en duidelijkere invoer
+- [ ] Kookstand: native scherm-aan-functie
+- [ ] Boodschappen: tab voor gerechten en betrouwbare toegevoegd-status
+- [ ] Receptfoto's: hoofdfoto vervangen en extra fotogalerij
 - [x] Toevoegen vanuit Ideeën: controlevenster vóór bewaren en direct uit Ideeën verwijderen
 - [ ] Gedeelde gezinslijst met twee mensen tegelijk testen (tweede persoon nodig)
 - [ ] Receptbouwer verder opsplitsen
