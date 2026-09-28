@@ -158,7 +158,7 @@ function Overzicht() {
   );
 }
 
-function Groot({ label, waarde, vorig, geld, omgekeerd, to, extra }: { label: string; waarde?: number; vorig?: number; geld?: boolean; omgekeerd?: boolean; to: string; extra?: string }) {
+function Groot({ label, waarde, vorig, geld, omgekeerd, to, extra }: { label: string; waarde?: number | undefined; vorig?: number | undefined; geld?: boolean; omgekeerd?: boolean; to: string; extra?: string | undefined }) {
   const d = waarde == null || vorig == null ? null : verschil(waarde, vorig);
   const goed = d == null || d === 0 ? null : omgekeerd ? d < 0 : d > 0;
   const Pijl = !d ? Minus : d > 0 ? ArrowUpRight : ArrowDownRight;

@@ -248,7 +248,7 @@ export function Kpi({
   label: string;
   waarde: ReactNode;
   extra?: string;
-  evolutie?: number;
+  evolutie?: number | undefined;
 }) {
   return (
     <Kaart>
