@@ -111,7 +111,7 @@ function ReceptPage() {
   useEffect(() => {
     if (!kookstand) return;
     let actief = true;
-    const vraag = async () => { if (actief) await houdSchermAan(); };
+    const vraag = async () => actief ? houdSchermAan() : false;
     void vraag().then((ok) => { if (!ok && actief) toast.info(t("Zet de automatische schermvergrendeling tijdelijk uit tijdens het koken.")); });
     const zichtbaar = () => { if (document.visibilityState === "visible") void vraag(); };
     document.addEventListener("visibilitychange", zichtbaar);
