@@ -29,6 +29,7 @@ export function huidigeAanbieder(): MailAanbieder {
         const { sendTemplateEmail } = await import("@/lib/email-templates/send-email");
         const r = await sendTemplateEmail("admin-bericht", naar, {
           templateData: { onderwerp, bericht: tekst },
+          replyTo: "sam@5all.be",
         });
         if (!r.sent) throw new Error("Deze persoon wil geen e-mails meer ontvangen.");
       },
