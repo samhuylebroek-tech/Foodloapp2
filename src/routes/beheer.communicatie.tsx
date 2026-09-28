@@ -100,11 +100,41 @@ function Communicatie() {
               </div>
             </div>
 
-            {doelgroep === "gebruiker" || doelgroep === "groep" ? (
+            {doelgroep === "gebruiker" ? (
+              <div className="space-y-2">
+                <Input
+                  value={persoonZoek}
+                  onChange={(e) => setPersoonZoek(e.target.value)}
+                  placeholder="Zoek een persoon…"
+                />
+                <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-white/10 p-1">
+                  {gefilterdePersonen.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setDoelId(p.id)}
+                      aria-pressed={doelId === p.id}
+                      className={`block w-full rounded-md px-3 py-2 text-left text-sm ${
+                        doelId === p.id ? "bg-emerald-500/20 text-emerald-300" : "text-slate-300 hover:bg-white/5"
+                      }`}
+                    >
+                      {p.naam}
+                    </button>
+                  ))}
+                  {!gefilterdePersonen.length ? (
+                    <p className="px-3 py-2 text-sm text-slate-400">Niemand gevonden.</p>
+                  ) : null}
+                </div>
+                {gekozenPersoon ? (
+                  <p className="text-sm text-emerald-300">Gekozen: {gekozenPersoon.naam}</p>
+                ) : null}
+              </div>
+            ) : null}
+            {doelgroep === "groep" ? (
               <Input
                 value={doelId}
                 onChange={(e) => setDoelId(e.target.value)}
-                placeholder={doelgroep === "gebruiker" ? "Gebruikers-id" : "Gezins-id"}
+                placeholder="Gezins-id"
               />
             ) : null}
             {doelgroep === "segment" ? (
@@ -160,11 +190,15 @@ function Communicatie() {
               placeholder="Je bericht…"
               rows={7}
             />
+            <p className="text-xs text-slate-400">
+              Slimme tekens: <code>{"{voornaam}"}</code> en <code>{"{naam}"}</code> worden per persoon automatisch
+              ingevuld, bv. "Dag {"{voornaam}"}, …"
+            </p>
 
             <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm">
-              <p className="font-medium">Voorbeeld</p>
-              <p className="mt-1 text-slate-300">{onderwerp || "(onderwerp)"}</p>
-              <p className="whitespace-pre-wrap text-slate-400">{bericht || "(bericht)"}</p>
+              <p className="font-medium">Voorbeeld{voorbeeldNaam ? ` voor ${voorbeeldNaam}` : ""}</p>
+              <p className="mt-1 text-slate-300">{persoonlijk(onderwerp) || "(onderwerp)"}</p>
+              <p className="whitespace-pre-wrap text-slate-400">{persoonlijk(bericht) || "(bericht)"}</p>
               <p className="mt-2 text-xs text-slate-400">
                 Ontvangers: {ontvangers.data?.aantal ?? "…"}
                 {ontvangers.data?.voorbeeld?.length ? ` · ${ontvangers.data.voorbeeld.join(", ")}…` : ""}
