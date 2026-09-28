@@ -155,6 +155,12 @@ function RootComponent() {
       .catch(() => undefined);
   }, []);
 
+  // In de iPhone/Android-app: terugknop, app-links en opstartscherm.
+  const router = useRouter();
+  useEffect(() => {
+    void import("@/lib/native").then((m) => m.startNatief((pad) => void router.navigate({ href: pad })));
+  }, [router]);
+
   // Klik op een melding registreren en de tijdzone bijhouden wanneer je reist.
   useEffect(() => {
     void verwerkMeldingKlik();
