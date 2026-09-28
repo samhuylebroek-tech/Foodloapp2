@@ -87,7 +87,7 @@ export function RecipeForm({
   startNaam?: string | undefined;
 }) {
   const { user } = useAuth();
-  const { taal, momenten } = useVoorkeuren();
+  const { taal } = useVoorkeuren();
   const navigate = useNavigate();
 
   const gedeeldeTekst = [gedeeld?.title, gedeeld?.text].filter(Boolean).join("\n\n");
