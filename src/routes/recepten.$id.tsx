@@ -43,6 +43,7 @@ import { koppelStappen, toonHoeveelheid } from "@/lib/stap-ingredienten";
 import { netteStap } from "@/lib/tekst-opkuis";
 import { toonBelgischeMaat } from "@/lib/ingredienten";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { houdSchermAan, laatSchermWeerSlapen } from "@/lib/native";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PageSkeleton } from "@/components/PageSkeleton";
 
@@ -108,20 +109,14 @@ function ReceptPage() {
 
   // Kookstand: scherm van gsm/tablet blijft aan.
   useEffect(() => {
-    if (!kookstand || typeof navigator === "undefined" || !("wakeLock" in navigator)) return;
-    let lock: { release: () => Promise<void> } | null = null;
+    if (!kookstand) return;
     let actief = true;
-    const vraag = async () => {
-      try {
-        const l = await (navigator as unknown as { wakeLock: { request: (t: string) => Promise<{ release: () => Promise<void> }> } }).wakeLock.request("screen");
-        if (actief) lock = l; else void l.release();
-      } catch { /* niet ondersteund of geweigerd */ }
-    };
-    void vraag();
+    const vraag = async () => { if (actief) await houdSchermAan(); };
+    void vraag().then((ok) => { if (!ok && actief) toast.info(t("Zet de automatische schermvergrendeling tijdelijk uit tijdens het koken.")); });
     const zichtbaar = () => { if (document.visibilityState === "visible") void vraag(); };
     document.addEventListener("visibilitychange", zichtbaar);
-    return () => { actief = false; document.removeEventListener("visibilitychange", zichtbaar); void lock?.release(); };
-  }, [kookstand]);
+    return () => { actief = false; document.removeEventListener("visibilitychange", zichtbaar); void laatSchermWeerSlapen(); };
+  }, [kookstand, t]);
 
   async function vervangFoto(bestand: File) {
     if (!user) return;
@@ -142,6 +137,29 @@ function ReceptPage() {
     } finally {
       setFotoBezig(false);
     }
+  }
+
+  async function voegExtraFotoToe(bestand: File) {
+    if (!user || !isAfbeelding(bestand)) return;
+    setFotoBezig(true);
+    try {
+      const pad = await uploadRecipePhoto(bestand, user.id);
+      const { error } = await supabase.from("recipe_photos").insert({ recipe_id: id, path: pad, position: extraFotos.length });
+      if (error) throw error;
+      await qc.invalidateQueries({ queryKey: ["recipe-photos", id] });
+      toast.success(t("Extra foto toegevoegd"));
+    } catch {
+      toast.error(t("De foto kon niet worden opgeslagen. Probeer het opnieuw."));
+    } finally {
+      setFotoBezig(false);
+    }
+  }
+
+  async function maakHoofdfoto(pad: string) {
+    const { error } = await supabase.from("recipes").update({ image_url: pad }).eq("id", id);
+    if (error) { toast.error(t("De foto kon niet worden aangepast.")); return; }
+    await Promise.all([qc.invalidateQueries({ queryKey: ["recipe", id] }), qc.invalidateQueries({ queryKey: ["recipes"] })]);
+    toast.success(t("Hoofdfoto aangepast"));
   }
 
   useEffect(() => {
@@ -186,6 +204,15 @@ function ReceptPage() {
         .eq("recipe_id", id)
         .maybeSingle();
       return data?.stars ?? 0;
+    },
+  });
+
+  const { data: extraFotos = [] } = useQuery({
+    queryKey: ["recipe-photos", id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("recipe_photos").select("id, path, position").eq("recipe_id", id).order("position");
+      if (error) throw error;
+      return data ?? [];
     },
   });
 
@@ -574,6 +601,17 @@ function ReceptPage() {
               onBestand={(f) => void vervangFoto(f)}
             />
           )}
+          {extraFotos.length > 0 ? (
+            <div className="grid grid-cols-3 gap-2" aria-label={t("Extra foto's")}>
+              {extraFotos.map((foto) => (
+                <button key={foto.id} type="button" onClick={() => isOwner && void maakHoofdfoto(foto.path)} className="relative overflow-hidden rounded-xl border border-border text-left">
+                  <RecipePhoto path={foto.path} alt={recipe.title} className="aspect-square w-full" />
+                  {isOwner ? <span className="absolute inset-x-1 bottom-1 rounded-lg bg-card/90 px-2 py-1 text-center text-sm font-semibold">Maak hoofdfoto</span> : null}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {isOwner ? <FotoKiezer bezig={fotoBezig} heeftFoto={extraFotos.length > 0} onBestand={(file) => void voegExtraFotoToe(file)} /> : null}
         </div>
 
         <div>

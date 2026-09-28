@@ -1697,8 +1697,8 @@ export function RecipeForm({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={basisOpen} onOpenChange={() => undefined}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" hideClose>
+      <Dialog open={basisOpen} onOpenChange={(open) => { if (!open) setBasisOpen(false); }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-left text-xl">Eerst de basis</DialogTitle>
             <DialogDescription className="text-left text-base">Drie korte keuzes, daarna vul je het recept verder in.</DialogDescription>
