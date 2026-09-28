@@ -882,6 +882,17 @@ export function RecipeForm({
   return (
     <div className="space-y-6">
       {!recipe && (
+        <div className="sticky top-[calc(4.25rem+env(safe-area-inset-top))] z-10 -mx-1 flex items-center gap-2 rounded-2xl border border-border bg-card/95 p-2 shadow-sm backdrop-blur">
+          <p className="flex-1 px-2 text-base font-medium">
+            {koppelMaaltijd ? "Bijna klaar om te koppelen" : "Nieuw gerecht"}
+          </p>
+          <Button onClick={openControle} disabled={saving} className="h-14 shrink-0 px-6 text-base">
+            {saving ? <Loader2 className="size-5 animate-spin" /> : null}
+            {koppelMaaltijd ? "Klaar en koppelen" : "Bewaren"}
+          </Button>
+        </div>
+      )}
+      {!recipe && (
         <section className="rounded-2xl border border-border bg-card p-4">
           <h2 className="text-lg">Hoe wil je beginnen?</h2>
           <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -1593,14 +1604,7 @@ export function RecipeForm({
             {autoStatus === "bezig" ? "Bezig met bewaren…" : "Automatisch bewaard als concept"}
           </p>
         ) : null}
-        <Button
-          onClick={() => {
-            if (!title.trim()) { toast.error("Geef het gerecht een naam"); return; }
-            setControleOpen(true);
-          }}
-          disabled={saving}
-          className="h-14 w-full text-lg"
-        >
+        <Button onClick={openControle} disabled={saving} className="h-14 w-full text-lg">
           {saving ? <Loader2 className="size-5 animate-spin" /> : null}
           {koppelMaaltijd ? "Klaar en koppelen" : "Klaar"}
         </Button>
@@ -1773,60 +1777,7 @@ export function RecipeForm({
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={!!netOpgeslagen}
-        onOpenChange={(open) => {
-          if (!open) sluitInplannen();
-        }}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Meteen inplannen?</DialogTitle>
-            <DialogDescription>
-              Zet “{netOpgeslagen?.titel}” meteen in je weekmenu.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <input
-              type="date"
-              value={planDatum}
-              onChange={(e) => {
-                if (e.target.value) setPlanDatum(e.target.value);
-              }}
-              aria-label="Kies een datum"
-              className="h-14 w-full rounded-xl border border-input bg-background px-3 text-base"
-            />
-            {momenten.length > 1 && (
-              <div className="flex gap-2" role="group" aria-label="Kies een dagdeel">
-                {momenten.map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setPlanMoment(m)}
-                    aria-pressed={actiefMoment === m}
-                    className={
-                      actiefMoment === m
-                        ? "min-h-12 flex-1 rounded-xl bg-primary px-3 text-base font-semibold capitalize text-primary-foreground"
-                        : "min-h-12 flex-1 rounded-xl border border-border bg-secondary px-3 text-base font-semibold capitalize"
-                    }
-                  >
-                    {m}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <DialogFooter className="gap-2 sm:justify-between">
-            <Button variant="outline" onClick={sluitInplannen} className="h-14 text-base">
-              Nu niet
-            </Button>
-            <Button disabled={planBezig} onClick={() => void planNu()} className="h-14 text-base">
-              {planBezig ? "Bezig…" : "Plan in het weekmenu"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-     </div>
+      </div>
   );
 }
 
