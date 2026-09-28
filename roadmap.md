@@ -19,5 +19,5 @@
 - [ ] Receptbouwer verder opsplitsen
 - [ ] Control Center-onderdeel Inspiratie
 - [ ] Publiceren — alleen na expliciete toestemming
-- [ ] Communicatie: persoon kiezen uit lijst i.p.v. gebruikers-ID typen
-- [ ] Communicatie: slimme tekens {voornaam}/{naam} automatisch invullen per ontvanger
+- [x] Communicatie: persoon kiezen uit lijst i.p.v. gebruikers-ID typen
+- [x] Communicatie: slimme tekens {voornaam}/{naam} automatisch invullen per ontvanger

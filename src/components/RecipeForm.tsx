@@ -75,22 +75,19 @@ export function RecipeForm({
   recipe,
   ingredients,
   gedeeld,
-  vraagInplannen = false,
   koppelMaaltijd,
   startNaam,
 }: {
   recipe?: Recipe;
   ingredients?: Ingredient[];
   gedeeld?: { title?: string | undefined; text?: string | undefined; url?: string | undefined };
-  /** Vraagt na het bewaren van een nieuw recept of je het meteen inplant. */
-  vraagInplannen?: boolean;
   /** Geplande maaltijd (zonder recept) die na bewaren aan dit recept gekoppeld wordt. */
   koppelMaaltijd?: string | undefined;
   /** Naam die al bekend is (bv. vanuit het weekmenu): meteen zelf invoeren. */
   startNaam?: string | undefined;
 }) {
   const { user } = useAuth();
-  const { taal, momenten } = useVoorkeuren();
+  const { taal } = useVoorkeuren();
   const navigate = useNavigate();
 
   const gedeeldeTekst = [gedeeld?.title, gedeeld?.text].filter(Boolean).join("\n\n");
@@ -123,13 +120,6 @@ export function RecipeForm({
   const [taalBezig, setTaalBezig] = useState(false);
   const [taalVoorstel, setTaalVoorstel] = useState<string[] | null>(null);
   const verbeterStappenFn = useServerFn(verbeterStappen);
-
-  // Na het bewaren van een nieuw recept: meteen inplannen?
-  const [netOpgeslagen, setNetOpgeslagen] = useState<{ id: string; titel: string } | null>(null);
-  const [planDatum, setPlanDatum] = useState(() => new Date().toISOString().slice(0, 10));
-  const [planMoment, setPlanMoment] = useState("");
-  const [planBezig, setPlanBezig] = useState(false);
-  const actiefMoment = planMoment || momenten[0] || "maaltijd";
 
   // Stappen en ingrediënten zoals ze nu in het formulier staan
   const stappen = stappenTekst
@@ -859,8 +849,6 @@ export function RecipeForm({
           .eq("id", koppelMaaltijd);
         toast.success("Gekoppeld aan je weekmenu");
         navigate({ to: "/planner" });
-      } else if (vraagInplannen && !recipe?.id) {
-        setNetOpgeslagen({ id: recipeId!, titel: title.trim() || "Je nieuwe recept" });
       } else {
         navigate({ to: "/recepten/$id", params: { id: recipeId! } });
       }
@@ -877,36 +865,10 @@ export function RecipeForm({
     }
   }
 
-  /** Zet het net bewaarde recept meteen in het weekmenu. */
-  async function planNu() {
-    if (!user || !netOpgeslagen) return;
-    setPlanBezig(true);
-    const { error } = await supabase.from("meal_plan").insert({
-      user_id: user.id,
-      recipe_id: netOpgeslagen.id,
-      plan_date: planDatum,
-      meal_type: actiefMoment,
-      group_id: null,
-    });
-    setPlanBezig(false);
-    if (error) {
-      toast.error("Inplannen lukte niet");
-      return;
-    }
-    toast.success(
-      `${netOpgeslagen.titel} staat op ${new Date(`${planDatum}T12:00:00`).toLocaleDateString(
-        "nl-BE",
-        { weekday: "long", day: "numeric", month: "long" },
-      )}`,
-    );
-    navigate({ to: "/planner" });
-  }
-
-  /** Verlaat het inplannen-scherm zonder in te plannen. */
-  function sluitInplannen() {
-    const id = netOpgeslagen?.id;
-    setNetOpgeslagen(null);
-    if (id) navigate({ to: "/recepten/$id", params: { id } });
+  /** Opent het controlevenster — vanaf de knop boven- of onderaan. */
+  function openControle() {
+    if (!title.trim()) { toast.error("Geef het gerecht een naam"); return; }
+    setControleOpen(true);
   }
 
   const manieren: { id: Manier; label: string; icon: typeof Link2 }[] = [
@@ -919,6 +881,17 @@ export function RecipeForm({
 
   return (
     <div className="space-y-6">
+      {!recipe && (
+        <div className="sticky top-[calc(4.25rem+env(safe-area-inset-top))] z-10 -mx-1 flex items-center gap-2 rounded-2xl border border-border bg-card/95 p-2 shadow-sm backdrop-blur">
+          <p className="flex-1 px-2 text-base font-medium">
+            {koppelMaaltijd ? "Bijna klaar om te koppelen" : "Nieuw gerecht"}
+          </p>
+          <Button onClick={openControle} disabled={saving} className="h-14 shrink-0 px-6 text-base">
+            {saving ? <Loader2 className="size-5 animate-spin" /> : null}
+            {koppelMaaltijd ? "Klaar en koppelen" : "Bewaren"}
+          </Button>
+        </div>
+      )}
       {!recipe && (
         <section className="rounded-2xl border border-border bg-card p-4">
           <h2 className="text-lg">Hoe wil je beginnen?</h2>
@@ -1631,14 +1604,7 @@ export function RecipeForm({
             {autoStatus === "bezig" ? "Bezig met bewaren…" : "Automatisch bewaard als concept"}
           </p>
         ) : null}
-        <Button
-          onClick={() => {
-            if (!title.trim()) { toast.error("Geef het gerecht een naam"); return; }
-            setControleOpen(true);
-          }}
-          disabled={saving}
-          className="h-14 w-full text-lg"
-        >
+        <Button onClick={openControle} disabled={saving} className="h-14 w-full text-lg">
           {saving ? <Loader2 className="size-5 animate-spin" /> : null}
           {koppelMaaltijd ? "Klaar en koppelen" : "Klaar"}
         </Button>
@@ -1811,60 +1777,7 @@ export function RecipeForm({
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={!!netOpgeslagen}
-        onOpenChange={(open) => {
-          if (!open) sluitInplannen();
-        }}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Meteen inplannen?</DialogTitle>
-            <DialogDescription>
-              Zet “{netOpgeslagen?.titel}” meteen in je weekmenu.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <input
-              type="date"
-              value={planDatum}
-              onChange={(e) => {
-                if (e.target.value) setPlanDatum(e.target.value);
-              }}
-              aria-label="Kies een datum"
-              className="h-14 w-full rounded-xl border border-input bg-background px-3 text-base"
-            />
-            {momenten.length > 1 && (
-              <div className="flex gap-2" role="group" aria-label="Kies een dagdeel">
-                {momenten.map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setPlanMoment(m)}
-                    aria-pressed={actiefMoment === m}
-                    className={
-                      actiefMoment === m
-                        ? "min-h-12 flex-1 rounded-xl bg-primary px-3 text-base font-semibold capitalize text-primary-foreground"
-                        : "min-h-12 flex-1 rounded-xl border border-border bg-secondary px-3 text-base font-semibold capitalize"
-                    }
-                  >
-                    {m}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <DialogFooter className="gap-2 sm:justify-between">
-            <Button variant="outline" onClick={sluitInplannen} className="h-14 text-base">
-              Nu niet
-            </Button>
-            <Button disabled={planBezig} onClick={() => void planNu()} className="h-14 text-base">
-              {planBezig ? "Bezig…" : "Plan in het weekmenu"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-     </div>
+      </div>
   );
 }
 
