@@ -627,9 +627,9 @@ function ReceptPage() {
         {recipe.instructions.length > 0 ? <Button onClick={() => { setStap(-1); void meet("kookmodus.gestart", undefined, { id }); setKookstand(true); }} className="h-16 w-full text-lg"><ChefHat className="size-6" />{t("Start koken")}</Button> : null}
 
         <div className="grid grid-cols-2 gap-3">
-          <Button onClick={() => setPlanOpen(true)} className="h-16 text-lg"><CalendarPlus />{t("Inplannen")}</Button>
-          <Button variant="secondary" onClick={() => setBoodschappenOpen(true)} disabled={!ingredients.length} className="h-16 text-lg">
-            <ShoppingCart className="size-5 shrink-0" /> {t("Boodschappenlijst")}
+          <Button onClick={() => setPlanOpen(true)} className="h-16 px-2 text-base sm:text-lg"><CalendarPlus />{t("Inplannen")}</Button>
+          <Button variant="secondary" onClick={() => setBoodschappenOpen(true)} disabled={!ingredients.length} className="h-16 gap-2 px-2 text-base sm:text-lg">
+            <ShoppingCart className="size-5 shrink-0" /> {t("Voeg toe aan boodschappenlijst")}
           </Button>
         </div>
 
