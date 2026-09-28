@@ -75,15 +75,12 @@ export function RecipeForm({
   recipe,
   ingredients,
   gedeeld,
-  vraagInplannen = false,
   koppelMaaltijd,
   startNaam,
 }: {
   recipe?: Recipe;
   ingredients?: Ingredient[];
   gedeeld?: { title?: string | undefined; text?: string | undefined; url?: string | undefined };
-  /** Vraagt na het bewaren van een nieuw recept of je het meteen inplant. */
-  vraagInplannen?: boolean;
   /** Geplande maaltijd (zonder recept) die na bewaren aan dit recept gekoppeld wordt. */
   koppelMaaltijd?: string | undefined;
   /** Naam die al bekend is (bv. vanuit het weekmenu): meteen zelf invoeren. */
@@ -123,13 +120,6 @@ export function RecipeForm({
   const [taalBezig, setTaalBezig] = useState(false);
   const [taalVoorstel, setTaalVoorstel] = useState<string[] | null>(null);
   const verbeterStappenFn = useServerFn(verbeterStappen);
-
-  // Na het bewaren van een nieuw recept: meteen inplannen?
-  const [netOpgeslagen, setNetOpgeslagen] = useState<{ id: string; titel: string } | null>(null);
-  const [planDatum, setPlanDatum] = useState(() => new Date().toISOString().slice(0, 10));
-  const [planMoment, setPlanMoment] = useState("");
-  const [planBezig, setPlanBezig] = useState(false);
-  const actiefMoment = planMoment || momenten[0] || "maaltijd";
 
   // Stappen en ingrediënten zoals ze nu in het formulier staan
   const stappen = stappenTekst
@@ -859,8 +849,6 @@ export function RecipeForm({
           .eq("id", koppelMaaltijd);
         toast.success("Gekoppeld aan je weekmenu");
         navigate({ to: "/planner" });
-      } else if (vraagInplannen && !recipe?.id) {
-        setNetOpgeslagen({ id: recipeId!, titel: title.trim() || "Je nieuwe recept" });
       } else {
         navigate({ to: "/recepten/$id", params: { id: recipeId! } });
       }
