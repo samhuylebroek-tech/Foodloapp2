@@ -76,7 +76,7 @@ export async function bezorg(
   const aanbieder = huidigeAanbieder();
   if (voorkeur === "email" && aanbieder.beschikbaar && ontvanger.email) {
     try {
-      await aanbieder.verstuur({ naar: ontvanger.email, onderwerp, tekst: bericht, html });
+      await aanbieder.verstuur({ naar: ontvanger.email, onderwerp, tekst: bericht, ...(html ? { html } : {}) });
       return { userId: ontvanger.userId, kanaal: "email", ok: true };
     } catch (e) {
       return { userId: ontvanger.userId, kanaal: "email", ok: false, fout: (e as Error).message };
