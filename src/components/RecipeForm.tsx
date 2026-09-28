@@ -33,6 +33,7 @@ import {
   type ImportedRecipe,
 } from "@/lib/ai.functions";
 import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/types";
+import { EETSTIJLEN, eetstijlUitTags, soortLabel, tagsMetEetstijl, type Eetstijl } from "@/lib/recept-keuzes";
 import { useVoorkeuren } from "@/lib/voorkeuren";
 import { schatPersonen } from "@/lib/porties";
 import { parseIngredientText, ingredientToLine } from "@/lib/ingredienten";
@@ -109,6 +110,8 @@ export function RecipeForm({
   const [soortHandmatig, setSoortHandmatig] = useState(Boolean(recipe));
   const [difficulty, setDifficulty] = useState(recipe?.difficulty ?? "makkelijk");
   const [tags, setTags] = useState((recipe?.tags ?? []).join(", "));
+  const [eetstijl, setEetstijl] = useState<Eetstijl>(eetstijlUitTags(recipe?.tags ?? []));
+  const [basisOpen, setBasisOpen] = useState(!recipe && !startNaam);
   const [photoPath, setPhotoPath] = useState<string | null>(recipe?.image_url ?? null);
   const [sourceUrl, setSourceUrl] = useState(recipe?.source_url ?? gedeeldeLink);
   const [ingredientTekst, setIngredientTekst] = useState(
@@ -779,12 +782,12 @@ export function RecipeForm({
         cook_minutes: over ? over.cook : Number(cook) || 0,
         difficulty: over?.difficulty ?? difficulty,
         category: over?.category ?? category,
-        tags: over
-          ? over.tags
-          : tags
-              .split(",")
-              .map((t) => t.trim().toLowerCase())
-              .filter(Boolean),
+        tags: tagsMetEetstijl(
+          over
+            ? over.tags
+            : tags.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean),
+          eetstijl,
+        ),
         instructions: over ? over.stappen : stappen,
         step_ingredients: !over && Object.keys(stapKeuze).length ? stapKeuze : null,
         source_url: over ? over.sourceUrl : sourceUrl.trim() || null,
@@ -909,9 +912,9 @@ export function RecipeForm({
 
   const manieren: { id: Manier; label: string; icon: typeof Link2 }[] = [
     { id: "zelf", label: "Zelf invoeren", icon: Pencil },
-    { id: "link", label: "Van een link", icon: Link2 },
-    { id: "foto", label: "Foto of scan", icon: Camera },
-    { id: "zoek", label: "Zoeken of AI", icon: Search },
+    { id: "link", label: "Van tekst of link", icon: Link2 },
+    { id: "foto", label: "Foto toevoegen", icon: Camera },
+    { id: "zoek", label: "Zoeken", icon: Search },
   ];
 
 
@@ -1145,7 +1148,7 @@ export function RecipeForm({
                   {importInfo.ontbrekend.length > 0 ? (
                     <p className="mt-1 text-muted-foreground">
                       Niet alles stond erbij: vul zelf nog {importInfo.ontbrekend.join(" en ")} aan.
-                      Je kan ook een schermafbeelding toevoegen met “AI foto”.
+                      Je kan ook een foto toevoegen.
                     </p>
                   ) : (
                     <p className="mt-1 text-muted-foreground">
@@ -1184,8 +1187,7 @@ export function RecipeForm({
           {manier === "foto" && (
             <div className="mt-4">
               <p className="text-base text-muted-foreground">
-                Heb je een schermafbeelding van een recept (bijvoorbeeld van Instagram)? Kies die
-                hieronder. Of kies een foto van een klaar gerecht: dan bedenken wij een voorstel.
+                Kies een foto waarop het recept leesbaar staat, of een foto van een klaar gerecht.
               </p>
               <label className="mt-3 inline-flex min-h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-5 text-base font-semibold">
                 {screenshotBezig ? (
@@ -1193,7 +1195,7 @@ export function RecipeForm({
                 ) : (
                   <Camera className="size-5" />
                 )}
-                Schermafbeelding van Instagram of een website
+                Foto met recepttekst toevoegen
                 <input
                   type="file"
                   accept="image/*"
@@ -1420,7 +1422,7 @@ export function RecipeForm({
                       {s}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
-                      {formIngredienten.map((ing, idx) => {
+                      {formIngredienten.map((ing, idx) => ({ ing, idx })).filter(({ ing }) => aan.has(normaliseer(ing.name))).map(({ ing, idx }) => {
                         const actief = aan.has(normaliseer(ing.name));
                         return (
                           <button
@@ -1439,6 +1441,15 @@ export function RecipeForm({
                         );
                       })}
                     </div>
+                    <details className="mt-3">
+                      <summary className="min-h-12 cursor-pointer py-3 text-base font-semibold text-primary">Ingrediënten aanpassen</summary>
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        {formIngredienten.map((ing, idx) => {
+                          const actief = aan.has(normaliseer(ing.name));
+                          return <Button key={`extra-${i}-${idx}`} type="button" variant={actief ? "default" : "outline"} className="min-h-12" onClick={() => wisselStapIngredient(i, ing.name)}>{ing.name}</Button>;
+                        })}
+                      </div>
+                    </details>
                   </div>
                 );
               })}
@@ -1648,8 +1659,12 @@ export function RecipeForm({
               <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 h-14 text-base" />
             </label>
             <div>
-              <p className="text-base font-medium">Categorie</p>
+              <p className="text-base font-medium">Soort gerecht</p>
               <SoortKeuze waarde={category} onKies={(c) => { setCategory(c); setSoortHandmatig(true); }} />
+            </div>
+            <div>
+              <p className="text-base font-medium">Eetstijl</p>
+              <EetstijlKeuze waarde={eetstijl} onKies={setEetstijl} />
             </div>
             <div>
               <p className="text-base font-medium">Moeilijkheid</p>
@@ -1678,6 +1693,24 @@ export function RecipeForm({
               </Button>
               <Button variant="secondary" onClick={() => setControleOpen(false)} className="h-14 w-full text-lg">Nog iets aanpassen</Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={basisOpen} onOpenChange={() => undefined}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" hideClose>
+          <DialogHeader>
+            <DialogTitle className="text-left text-xl">Eerst de basis</DialogTitle>
+            <DialogDescription className="text-left text-base">Drie korte keuzes, daarna vul je het recept verder in.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5">
+            <div><p className="text-base font-medium">Soort gerecht</p><SoortKeuze waarde={category} onKies={(c) => { setCategory(c); setSoortHandmatig(true); }} /></div>
+            <div><p className="text-base font-medium">Eetstijl</p><EetstijlKeuze waarde={eetstijl} onKies={setEetstijl} /></div>
+            <div>
+              <p className="text-base font-medium">Moeilijkheid</p>
+              <div className="mt-2 flex flex-wrap gap-2">{DIFFICULTIES.map((d) => <Button key={d} type="button" variant={difficulty === d ? "default" : "outline"} className="min-h-12 capitalize" onClick={() => setDifficulty(d)}>{d}</Button>)}</div>
+            </div>
+            <Button className="h-14 w-full text-lg" onClick={() => setBasisOpen(false)}>Verder met het recept</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1878,10 +1911,14 @@ function SoortKeuze({
                 : "min-h-12 rounded-xl border border-input bg-card px-4 text-base"
             }
           >
-            {c}
+            {soortLabel(c)}
           </button>
         );
       })}
     </div>
   );
+}
+
+function EetstijlKeuze({ waarde, onKies }: { waarde: Eetstijl; onKies: (waarde: Eetstijl) => void }) {
+  return <div className="mt-2 grid grid-cols-3 gap-2">{EETSTIJLEN.map((keuze) => <Button key={keuze.waarde} type="button" variant={waarde === keuze.waarde ? "default" : "outline"} className="min-h-12 px-2" onClick={() => onKies(keuze.waarde)}>{keuze.label}</Button>)}</div>;
 }
