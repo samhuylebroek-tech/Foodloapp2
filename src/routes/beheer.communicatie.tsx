@@ -31,6 +31,18 @@ function Communicatie() {
   const [onderwerp, setOnderwerp] = useState("");
   const [bericht, setBericht] = useState("");
   const [kanaal, setKanaal] = useState<"in_app" | "email">("in_app");
+  const [htmlModus, setHtmlModus] = useState(false);
+  const [html, setHtml] = useState("");
+  const naarTekst = (h: string) =>
+    h
+      .replace(/<(style|script|head)[\s\S]*?<\/\1>/gi, " ")
+      .replace(/<br\s*\/?>|<\/(p|div|h\d|li|tr)>/gi, "\n")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/[ \t]+/g, " ")
+      .replace(/\n\s*\n+/g, "\n\n")
+      .trim()
+      .slice(0, 4000);
 
   const [persoonZoek, setPersoonZoek] = useState("");
 
@@ -56,12 +68,26 @@ function Communicatie() {
       .replace(/\{voornaam\}/gi, voorbeeldNaam.trim().split(/\s+/)[0] ?? "")
       .replace(/\{naam\}/gi, voorbeeldNaam);
 
+  const htmlActief = kanaal === "email" && htmlModus && html.trim().length > 0;
   const versturen = useMutation({
-    mutationFn: () => stuurFn({ data: { doelgroep, doelId, segment, onderwerp, bericht, kanaal, test: false } }),
+    mutationFn: () =>
+      stuurFn({
+        data: {
+          doelgroep,
+          doelId,
+          segment,
+          onderwerp,
+          bericht,
+          kanaal,
+          test: false,
+          ...(htmlActief ? { html } : {}),
+        },
+      }),
     onSuccess: (r) => {
       toast.success(`Verstuurd naar ${r.verzonden} van ${r.ontvangers} mensen`);
       setOnderwerp("");
       setBericht("");
+      setHtml("");
       qc.invalidateQueries({ queryKey: ["admin-berichten"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -184,12 +210,57 @@ function Communicatie() {
             </div>
 
             <Input value={onderwerp} onChange={(e) => setOnderwerp(e.target.value)} placeholder="Onderwerp" />
-            <Textarea
-              value={bericht}
-              onChange={(e) => setBericht(e.target.value)}
-              placeholder="Je bericht…"
-              rows={7}
-            />
+            {kanaal === "email" ? (
+              <div className="flex gap-2">
+                {(
+                  [
+                    [false, "Gewone tekst"],
+                    [true, "HTML plakken"],
+                  ] as [boolean, string][]
+                ).map(([w, l]) => (
+                  <button
+                    key={l}
+                    type="button"
+                    onClick={() => setHtmlModus(w)}
+                    aria-pressed={htmlModus === w}
+                    className={`rounded-full px-3 py-1.5 text-sm ${
+                      htmlModus === w ? "bg-emerald-500/20 text-emerald-300" : "border border-white/10 text-slate-300"
+                    }`}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            {kanaal === "email" && htmlModus ? (
+              <>
+                <Textarea
+                  value={html}
+                  onChange={(e) => {
+                    setHtml(e.target.value);
+                    setBericht(naarTekst(e.target.value));
+                  }}
+                  placeholder="Plak hier je volledige HTML-mail (bv. uit Canva, Stripo of Beefree)…"
+                  rows={10}
+                  className="font-mono text-xs"
+                />
+                {html ? (
+                  <iframe
+                    title="Voorbeeld van de mail"
+                    sandbox=""
+                    srcDoc={persoonlijk(html)}
+                    className="h-[480px] w-full rounded-lg border border-white/10 bg-white"
+                  />
+                ) : null}
+              </>
+            ) : (
+              <Textarea
+                value={bericht}
+                onChange={(e) => setBericht(e.target.value)}
+                placeholder="Je bericht…"
+                rows={7}
+              />
+            )}
             <p className="text-xs text-slate-400">
               Slimme tekens: <code>{"{voornaam}"}</code> en <code>{"{naam}"}</code> worden per persoon automatisch
               ingevuld, bv. "Dag {"{voornaam}"}, …"
