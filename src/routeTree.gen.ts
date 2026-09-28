@@ -25,6 +25,7 @@ import { Route as InstellingenRouteImport } from './routes/instellingen'
 import { Route as MeerRouteImport } from './routes/meer'
 import { Route as MeldingenRouteImport } from './routes/meldingen'
 import { Route as PlannerRouteImport } from './routes/planner'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RondleidingRouteImport } from './routes/rondleiding'
 import { Route as UitnodigingRouteImport } from './routes/uitnodiging'
 import { Route as VoorraadRouteImport } from './routes/voorraad'
@@ -161,6 +162,11 @@ const MeldingenRoute = MeldingenRouteImport.update({
 const PlannerRoute = PlannerRouteImport.update({
   id: '/planner',
   path: '/planner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RondleidingRoute = RondleidingRouteImport.update({
@@ -467,6 +473,7 @@ export interface FileRoutesByFullPath {
   '/meer': typeof MeerRoute
   '/meldingen': typeof MeldingenRoute
   '/planner': typeof PlannerRoute
+  '/privacy': typeof PrivacyRoute
   '/rondleiding': typeof RondleidingRoute
   '/uitnodiging': typeof UitnodigingRoute
   '/voorraad': typeof VoorraadRoute
@@ -540,6 +547,7 @@ export interface FileRoutesByTo {
   '/meer': typeof MeerRoute
   '/meldingen': typeof MeldingenRoute
   '/planner': typeof PlannerRoute
+  '/privacy': typeof PrivacyRoute
   '/rondleiding': typeof RondleidingRoute
   '/uitnodiging': typeof UitnodigingRoute
   '/voorraad': typeof VoorraadRoute
@@ -615,6 +623,7 @@ export interface FileRoutesById {
   '/meer': typeof MeerRoute
   '/meldingen': typeof MeldingenRoute
   '/planner': typeof PlannerRoute
+  '/privacy': typeof PrivacyRoute
   '/rondleiding': typeof RondleidingRoute
   '/uitnodiging': typeof UitnodigingRoute
   '/voorraad': typeof VoorraadRoute
@@ -692,6 +701,7 @@ export interface FileRouteTypes {
     | '/meer'
     | '/meldingen'
     | '/planner'
+    | '/privacy'
     | '/rondleiding'
     | '/uitnodiging'
     | '/voorraad'
@@ -765,6 +775,7 @@ export interface FileRouteTypes {
     | '/meer'
     | '/meldingen'
     | '/planner'
+    | '/privacy'
     | '/rondleiding'
     | '/uitnodiging'
     | '/voorraad'
@@ -839,6 +850,7 @@ export interface FileRouteTypes {
     | '/meer'
     | '/meldingen'
     | '/planner'
+    | '/privacy'
     | '/rondleiding'
     | '/uitnodiging'
     | '/voorraad'
@@ -915,6 +927,7 @@ export interface RootRouteChildren {
   MeerRoute: typeof MeerRoute
   MeldingenRoute: typeof MeldingenRoute
   PlannerRoute: typeof PlannerRoute
+  PrivacyRoute: typeof PrivacyRoute
   RondleidingRoute: typeof RondleidingRoute
   UitnodigingRoute: typeof UitnodigingRoute
   VoorraadRoute: typeof VoorraadRoute
@@ -1042,6 +1055,13 @@ declare module '@tanstack/react-router' {
       path: '/planner'
       fullPath: '/planner'
       preLoaderRoute: typeof PlannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/rondleiding': {
@@ -1580,6 +1600,7 @@ const rootRouteChildren: RootRouteChildren = {
   MeerRoute: MeerRoute,
   MeldingenRoute: MeldingenRoute,
   PlannerRoute: PlannerRoute,
+  PrivacyRoute: PrivacyRoute,
   RondleidingRoute: RondleidingRoute,
   UitnodigingRoute: UitnodigingRoute,
   VoorraadRoute: VoorraadRoute,
