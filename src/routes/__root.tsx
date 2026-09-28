@@ -84,7 +84,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { name: "referrer", content: "no-referrer" },
       { title: "Foodlo – recepten verzamelen, plannen en koken" },
       {
@@ -154,6 +154,12 @@ function RootComponent() {
       .then((registratie) => registratie.update())
       .catch(() => undefined);
   }, []);
+
+  // In de iPhone/Android-app: terugknop, app-links en opstartscherm.
+  const router = useRouter();
+  useEffect(() => {
+    void import("@/lib/native").then((m) => m.startNatief((pad) => void router.navigate({ href: pad })));
+  }, [router]);
 
   // Klik op een melding registreren en de tijdzone bijhouden wanneer je reist.
   useEffect(() => {
