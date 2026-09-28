@@ -865,36 +865,10 @@ export function RecipeForm({
     }
   }
 
-  /** Zet het net bewaarde recept meteen in het weekmenu. */
-  async function planNu() {
-    if (!user || !netOpgeslagen) return;
-    setPlanBezig(true);
-    const { error } = await supabase.from("meal_plan").insert({
-      user_id: user.id,
-      recipe_id: netOpgeslagen.id,
-      plan_date: planDatum,
-      meal_type: actiefMoment,
-      group_id: null,
-    });
-    setPlanBezig(false);
-    if (error) {
-      toast.error("Inplannen lukte niet");
-      return;
-    }
-    toast.success(
-      `${netOpgeslagen.titel} staat op ${new Date(`${planDatum}T12:00:00`).toLocaleDateString(
-        "nl-BE",
-        { weekday: "long", day: "numeric", month: "long" },
-      )}`,
-    );
-    navigate({ to: "/planner" });
-  }
-
-  /** Verlaat het inplannen-scherm zonder in te plannen. */
-  function sluitInplannen() {
-    const id = netOpgeslagen?.id;
-    setNetOpgeslagen(null);
-    if (id) navigate({ to: "/recepten/$id", params: { id } });
+  /** Opent het controlevenster — vanaf de knop boven- of onderaan. */
+  function openControle() {
+    if (!title.trim()) { toast.error("Geef het gerecht een naam"); return; }
+    setControleOpen(true);
   }
 
   const manieren: { id: Manier; label: string; icon: typeof Link2 }[] = [
