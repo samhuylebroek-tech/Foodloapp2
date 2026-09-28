@@ -906,15 +906,24 @@ export const adminBerichtVersturen = createServerFn({ method: "POST" })
       .single();
     if (!bericht) throw new Error("Bericht kon niet worden aangemaakt.");
 
+    const namen = await naamKaart(db, ids);
+    const persoonlijk = (tekst: string, naam: string) => {
+      const voornaam = naam.trim().split(/\s+/)[0] ?? "";
+      return tekst
+        .replace(/\{voornaam\}/gi, voornaam)
+        .replace(/\{naam\}/gi, naam);
+    };
+
     let ok = 0;
     let mis = 0;
     for (const id of ids.slice(0, 500)) {
       const { data: auth } = await db.auth.admin.getUserById(id);
+      const naam = namen.get(id) ?? "";
       const r = await bezorg(
         db,
-        { userId: id, email: auth?.user?.email ?? null, naam: "" },
-        data.onderwerp,
-        data.bericht,
+        { userId: id, email: auth?.user?.email ?? null, naam },
+        persoonlijk(data.onderwerp, naam),
+        persoonlijk(data.bericht, naam),
         // E-mail alleen voor persoonlijke berichten; massaberichten blijven in de app.
         data.doelgroep === "gebruiker" ? data.kanaal : "in_app",
       );

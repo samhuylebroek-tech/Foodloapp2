@@ -8,6 +8,7 @@ import {
   adminBerichten,
   adminOntvangersTellen,
 } from "@/lib/monitoring.functions";
+import { adminPersonenLijst } from "@/lib/admin.functions";
 import { SEGMENT_LABEL, SEGMENTEN } from "@/lib/segmenten";
 import { AdminShell, Kaart } from "@/components/AdminShell";
 import { Button } from "@/components/ui/button";
@@ -31,15 +32,29 @@ function Communicatie() {
   const [bericht, setBericht] = useState("");
   const [kanaal, setKanaal] = useState<"in_app" | "email">("in_app");
 
+  const [persoonZoek, setPersoonZoek] = useState("");
+
   const telFn = useServerFn(adminOntvangersTellen);
   const stuurFn = useServerFn(adminBerichtVersturen);
   const lijstFn = useServerFn(adminBerichten);
+  const personenFn = useServerFn(adminPersonenLijst);
 
   const ontvangers = useQuery({
     queryKey: ["admin-ontvangers", doelgroep, doelId, segment],
     queryFn: () => telFn({ data: { doelgroep, doelId, segment } }),
   });
   const geschiedenis = useQuery({ queryKey: ["admin-berichten"], queryFn: () => lijstFn() });
+  const personen = useQuery({ queryKey: ["admin-personen-lijst"], queryFn: () => personenFn() });
+
+  const gekozenPersoon = (personen.data ?? []).find((p) => p.id === doelId);
+  const gefilterdePersonen = (personen.data ?? []).filter((p) =>
+    p.naam.toLowerCase().includes(persoonZoek.trim().toLowerCase()),
+  );
+  const voorbeeldNaam = gekozenPersoon?.naam ?? "Sam Voorbeeld";
+  const persoonlijk = (tekst: string) =>
+    tekst
+      .replace(/\{voornaam\}/gi, voorbeeldNaam.trim().split(/\s+/)[0] ?? "")
+      .replace(/\{naam\}/gi, voorbeeldNaam);
 
   const versturen = useMutation({
     mutationFn: () => stuurFn({ data: { doelgroep, doelId, segment, onderwerp, bericht, kanaal, test: false } }),
@@ -85,11 +100,41 @@ function Communicatie() {
               </div>
             </div>
 
-            {doelgroep === "gebruiker" || doelgroep === "groep" ? (
+            {doelgroep === "gebruiker" ? (
+              <div className="space-y-2">
+                <Input
+                  value={persoonZoek}
+                  onChange={(e) => setPersoonZoek(e.target.value)}
+                  placeholder="Zoek een persoon…"
+                />
+                <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-white/10 p-1">
+                  {gefilterdePersonen.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setDoelId(p.id)}
+                      aria-pressed={doelId === p.id}
+                      className={`block w-full rounded-md px-3 py-2 text-left text-sm ${
+                        doelId === p.id ? "bg-emerald-500/20 text-emerald-300" : "text-slate-300 hover:bg-white/5"
+                      }`}
+                    >
+                      {p.naam}
+                    </button>
+                  ))}
+                  {!gefilterdePersonen.length ? (
+                    <p className="px-3 py-2 text-sm text-slate-400">Niemand gevonden.</p>
+                  ) : null}
+                </div>
+                {gekozenPersoon ? (
+                  <p className="text-sm text-emerald-300">Gekozen: {gekozenPersoon.naam}</p>
+                ) : null}
+              </div>
+            ) : null}
+            {doelgroep === "groep" ? (
               <Input
                 value={doelId}
                 onChange={(e) => setDoelId(e.target.value)}
-                placeholder={doelgroep === "gebruiker" ? "Gebruikers-id" : "Gezins-id"}
+                placeholder="Gezins-id"
               />
             ) : null}
             {doelgroep === "segment" ? (
@@ -145,11 +190,15 @@ function Communicatie() {
               placeholder="Je bericht…"
               rows={7}
             />
+            <p className="text-xs text-slate-400">
+              Slimme tekens: <code>{"{voornaam}"}</code> en <code>{"{naam}"}</code> worden per persoon automatisch
+              ingevuld, bv. "Dag {"{voornaam}"}, …"
+            </p>
 
             <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm">
-              <p className="font-medium">Voorbeeld</p>
-              <p className="mt-1 text-slate-300">{onderwerp || "(onderwerp)"}</p>
-              <p className="whitespace-pre-wrap text-slate-400">{bericht || "(bericht)"}</p>
+              <p className="font-medium">Voorbeeld{voorbeeldNaam ? ` voor ${voorbeeldNaam}` : ""}</p>
+              <p className="mt-1 text-slate-300">{persoonlijk(onderwerp) || "(onderwerp)"}</p>
+              <p className="whitespace-pre-wrap text-slate-400">{persoonlijk(bericht) || "(bericht)"}</p>
               <p className="mt-2 text-xs text-slate-400">
                 Ontvangers: {ontvangers.data?.aantal ?? "…"}
                 {ontvangers.data?.voorbeeld?.length ? ` · ${ontvangers.data.voorbeeld.join(", ")}…` : ""}
@@ -158,7 +207,12 @@ function Communicatie() {
 
             <Button
               onClick={() => versturen.mutate()}
-              disabled={versturen.isPending || onderwerp.length < 2 || bericht.length < 2}
+              disabled={
+                versturen.isPending ||
+                onderwerp.length < 2 ||
+                bericht.length < 2 ||
+                (doelgroep === "gebruiker" && !doelId)
+              }
             >
               {versturen.isPending ? "Versturen…" : "Versturen"}
             </Button>
