@@ -23,6 +23,9 @@ export interface SendTemplateEmailOptions {
   /** Dedupes retries of the same logical send; defaults to a random UUID (no dedupe). */
   idempotencyKey?: string
   replyTo?: string
+  /** Eigen (geplakte) HTML-opmaak; vervangt de gerenderde template. */
+  html?: string
+  text?: string
 }
 
 /**
@@ -58,8 +61,8 @@ export async function sendTemplateEmail(
 
   const templateData = options.templateData ?? {}
   const element = React.createElement(template.component, templateData)
-  const html = await render(element)
-  const text = await render(element, { plainText: true })
+  const html = options.html ?? (await render(element))
+  const text = options.text ?? (await render(element, { plainText: true }))
   const subject =
     typeof template.subject === 'function'
       ? template.subject(templateData)
