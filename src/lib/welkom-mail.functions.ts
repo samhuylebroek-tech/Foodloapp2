@@ -39,7 +39,7 @@ export const meldNieuweGebruiker = createServerFn({ method: "POST" })
     const aan = lees("nieuw_gebruiker_mail_aan");
     const adresWaarde = lees("nieuw_gebruiker_mail_adres");
     const actief = aan === undefined || aan === null ? true : Boolean(aan);
-    const adres = typeof adresWaarde === "string" && adresWaarde.includes("@") ? adresWaarde : "sam@5all.com";
+    const adres = typeof adresWaarde === "string" && adresWaarde.includes("@") ? adresWaarde : "sam@5all.be";
     if (!actief) return { gemaild: false as const };
 
     const { data: authGebruiker } = await supabaseAdmin.auth.admin.getUserById(userId);
