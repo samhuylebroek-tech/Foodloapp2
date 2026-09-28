@@ -45,6 +45,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmptyState } from "@/components/EmptyState";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WinkelIdeeen } from "@/components/WinkelIdeeen";
 import {
   CATEGORIE_LABEL,
@@ -363,6 +364,7 @@ function BoodschappenPage() {
   const refresh = () => qc.invalidateQueries({ queryKey: ["shopping"] });
   const refreshLijsten = () => qc.invalidateQueries({ queryKey: ["shopping-lists"] });
   const [vraagVerwijder, setVraagVerwijder] = useState(false);
+  const [weergave, setWeergave] = useState<"lijst" | "gerechten">("lijst");
   const actieveLijst = lijsten.find((l) => l.id === actief);
   const actieveNaam = actieveLijst?.name ?? "";
   const openAantal = items.filter((item) => !item.checked).length;
@@ -423,9 +425,13 @@ function BoodschappenPage() {
   );
   const beurten = useMemo(() => perBeurt(geschiedenis).slice(0, 10), [geschiedenis]);
   const weekOpen = useMemo(() => {
-    const opLijst = new Set(items.map((i) => i.recipe_id).filter(Boolean));
-    return weekGerechten.filter((g) => !opLijst.has(g.recipe_id)).slice(0, 3);
-  }, [weekGerechten, items]);
+    const alToegevoegd = new Set([
+      ...items.map((i) => i.recipe_id).filter(Boolean),
+      ...geschiedenis.map((i) => i.recipe_id).filter(Boolean),
+    ]);
+    return weekGerechten.filter((g) => !alToegevoegd.has(g.recipe_id));
+  }, [weekGerechten, items, geschiedenis]);
+  const toegevoegdeWeekGerechten = useMemo(() => weekGerechten.filter((g) => !weekOpen.some((open) => open.recipe_id === g.recipe_id)), [weekGerechten, weekOpen]);
   const typSuggesties = useMemo(() => {
     const t = normaliseerTekst(nieuw);
     if (t.length < 2) return [];
@@ -869,7 +875,15 @@ function BoodschappenPage() {
           ) : null}
         </section>
 
+        <Tabs value={weergave} onValueChange={(waarde) => setWeergave(waarde as "lijst" | "gerechten")}>
+          <TabsList className="grid h-14 w-full grid-cols-2">
+            <TabsTrigger value="lijst" className="h-12 text-base">Mijn lijst</TabsTrigger>
+            <TabsTrigger value="gerechten" className="h-12 text-base">Uit gerechten</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {/* 2. Snel toevoegen */}
+        {weergave === "lijst" ? <>
         <section aria-label="Iets toevoegen" className="space-y-2">
           <label htmlFor="toevoegen" className="px-1 text-lg font-semibold">Iets toevoegen</label>
           <div className="flex gap-2">
@@ -925,25 +939,6 @@ function BoodschappenPage() {
                 {vaakAlles ? "Minder tonen" : `Alles tonen (${vaakLosOpen.length})`}
               </Button>
             ) : null}
-          </section>
-        )}
-
-        {weekOpen.length > 0 && (
-          <section aria-label="Uit je weekmenu" className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
-            <h2 className="flex items-center gap-2 text-lg font-semibold"><CalendarDays className="size-5 text-primary" /> Uit je weekmenu</h2>
-            <ul className="mt-2 divide-y divide-border/70">
-              {weekOpen.map((g) => (
-                <li key={g.recipe_id} className="flex min-h-16 items-center gap-3">
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-lg">{g.titel}</span>
-                    <span className="block text-base capitalize text-muted-foreground">{datumLabel(g.dag)}</span>
-                  </span>
-                  <Button variant="outline" className="h-12 shrink-0" onClick={() => void zetGerechtOpLijst(g.recipe_id, g.titel)}>
-                    <Plus /> Zet op lijst
-                  </Button>
-                </li>
-              ))}
-            </ul>
           </section>
         )}
 
@@ -1071,6 +1066,23 @@ function BoodschappenPage() {
             <AccordionContent><Klantenkaarten /></AccordionContent>
           </AccordionItem>
         </Accordion>
+        </> : (
+          <section aria-label="Uit je gerechten" className="rounded-2xl bg-card p-4 ring-1 ring-border/60">
+            <h2 className="flex items-center gap-2 text-xl font-semibold"><CalendarDays className="size-5 text-primary" /> Gerechten uit je weekmenu</h2>
+            <p className="mt-1 text-base text-muted-foreground">Voeg ingrediënten toe zonder je boodschappenlijst uit het oog te verliezen.</p>
+            {weekGerechten.length === 0 ? <EmptyState title="Nog geen gerechten gepland" description="Plan eerst een gerecht in je weekmenu." /> : (
+              <ul className="mt-4 divide-y divide-border/70">
+                {weekGerechten.map((g) => {
+                  const toegevoegd = toegevoegdeWeekGerechten.some((item) => item.recipe_id === g.recipe_id);
+                  return <li key={g.recipe_id} className="flex min-h-20 items-center gap-3">
+                    <span className="min-w-0 flex-1"><span className="block truncate text-lg font-semibold">{g.titel}</span><span className="block text-base capitalize text-muted-foreground">{datumLabel(g.dag)}</span></span>
+                    <Button variant={toegevoegd ? "secondary" : "outline"} disabled={toegevoegd} className="h-12 shrink-0" onClick={() => void zetGerechtOpLijst(g.recipe_id, g.titel)}>{toegevoegd ? <><Check /> Toegevoegd</> : <><Plus /> Zet op lijst</>}</Button>
+                  </li>;
+                })}
+              </ul>
+            )}
+          </section>
+        )}
       </div>
 
       <WinkelIdeeen
