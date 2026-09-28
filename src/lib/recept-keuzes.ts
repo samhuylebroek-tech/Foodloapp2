@@ -14,7 +14,7 @@ export const SOORTEN = CATEGORIES.map((waarde) => ({
 }));
 
 export function soortLabel(waarde: string) {
-  return SOORTEN.find((soort) => soort.waarde === waarde)?.label ?? waarde;
+  return SOORTEN.find((soort) => soort.waarde === waarde.toLowerCase())?.label ?? waarde;
 }
 
 export function eetstijlUitTags(tags: string[]): Eetstijl {
