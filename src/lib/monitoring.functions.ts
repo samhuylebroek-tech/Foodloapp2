@@ -915,7 +915,8 @@ export const adminBerichtVersturen = createServerFn({ method: "POST" })
         { userId: id, email: auth?.user?.email ?? null, naam: "" },
         data.onderwerp,
         data.bericht,
-        data.kanaal,
+        // E-mail alleen voor persoonlijke berichten; massaberichten blijven in de app.
+        data.doelgroep === "gebruiker" ? data.kanaal : "in_app",
       );
       if (r.ok) ok += 1;
       else mis += 1;

@@ -17,15 +17,20 @@ export type MailAanbieder = {
   verstuur: (o: { naar: string; onderwerp: string; tekst: string }) => Promise<void>;
 };
 
-/** Later te vervangen door Resend, Postmark, … zonder de rest aan te passen. */
+/** Standaard: Foodlo's eigen maildomein (notify.foodloapp.com). Resend blijft optioneel. */
 export function huidigeAanbieder(): MailAanbieder {
   const sleutel = process.env["RESEND_API_KEY"];
   if (!sleutel) {
+    const lovable = !!process.env["LOVABLE_API_KEY"];
     return {
-      naam: "geen",
-      beschikbaar: false,
-      verstuur: async () => {
-        throw new Error("Er is nog geen e-mailaanbieder gekoppeld.");
+      naam: lovable ? "foodloapp.com" : "geen",
+      beschikbaar: lovable,
+      verstuur: async ({ naar, onderwerp, tekst }) => {
+        const { sendTemplateEmail } = await import("@/lib/email-templates/send-email");
+        const r = await sendTemplateEmail("admin-bericht", naar, {
+          templateData: { onderwerp, bericht: tekst },
+        });
+        if (!r.sent) throw new Error("Deze persoon wil geen e-mails meer ontvangen.");
       },
     };
   }

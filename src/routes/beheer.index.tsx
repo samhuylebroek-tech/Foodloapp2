@@ -1,258 +1,191 @@
-import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { adminDashboard, adminPersonenLijst } from "@/lib/admin.functions";
-import {
-  adminAandacht,
-  adminActiviteit,
-  adminGebeurtenissen,
-  adminKosten,
-} from "@/lib/monitoring.functions";
-import {
-  AdminShell,
-  Kaart,
-  Kpi,
-  PeriodeKiezer,
-  WieKiezer,
-  WIE_ALLES,
-  type Periode,
-  type WieKeuze,
-} from "@/components/AdminShell";
+import { ArrowDownRight, ArrowUpRight, Mail, Minus, UserSearch, Wallet, Wrench } from "lucide-react";
+import { adminAandacht, adminActiviteit, adminGebeurtenissen } from "@/lib/monitoring.functions";
+import { adminFinance } from "@/lib/finance.functions";
+import { AdminShell, Kaart } from "@/components/AdminShell";
 import { GEBEURTENIS_LABEL } from "@/lib/meten";
 
-export const Route = createFileRoute("/beheer/")({ component: Dashboard });
+export const Route = createFileRoute("/beheer/")({ component: Overzicht });
 
-const OMSCHRIJVING: Record<Periode, string> = {
-  dag: "laatste 24 uur",
-  week: "laatste 7 dagen",
-  maand: "laatste 30 dagen",
-  jaar: "laatste 12 maanden",
-};
-
-const KOP: Record<Periode, string> = {
-  dag: "Vandaag",
-  week: "Deze week",
-  maand: "Deze maand",
-  jaar: "Dit jaar",
-};
-
-const BEREIK: Record<Periode, "vandaag" | "zeven" | "dertig" | "jaar"> = {
-  dag: "vandaag",
-  week: "zeven",
-  maand: "dertig",
-  jaar: "jaar",
-};
-
-const DAGEN: Record<Periode, number> = { dag: 1, week: 7, maand: 30, jaar: 365 };
-
-const euro = (n: number) => `€ ${Number(n ?? 0).toFixed(Number(n) < 1 ? 4 : 2)}`;
+const euro = (n: number) => `€ ${Number(n ?? 0).toLocaleString("nl-BE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const klok = (iso: string) => new Date(iso).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" });
 
-function Dashboard() {
-  const [periode, setPeriode] = useState<Periode>("week");
-  const [wie, setWie] = useState<WieKeuze>(WIE_ALLES);
-  const fn = useServerFn(adminDashboard);
-  const vandaagFn = useServerFn(adminActiviteit);
+function verschil(nu: number, toen: number) {
+  if (!toen) return nu ? 100 : 0;
+  return Math.round(((nu - toen) / toen) * 100);
+}
+
+function Overzicht() {
+  const actFn = useServerFn(adminActiviteit);
   const recentFn = useServerFn(adminGebeurtenissen);
-  const kostFn = useServerFn(adminKosten);
   const aandachtFn = useServerFn(adminAandacht);
-  const personenFn = useServerFn(adminPersonenLijst);
+  const finFn = useServerFn(adminFinance);
 
-  const personen = useQuery({ queryKey: ["admin-personen"], queryFn: () => personenFn() });
+  const vandaag = useQuery({ queryKey: ["cc-vandaag"], queryFn: () => actFn({ data: { bereik: "vandaag" } as any }), refetchInterval: 60_000 });
+  const gisteren = useQuery({ queryKey: ["cc-gisteren"], queryFn: () => actFn({ data: { bereik: "gisteren" } as any }) });
+  const recent = useQuery({ queryKey: ["cc-recent"], queryFn: () => recentFn({ data: { bereik: "vandaag", limiet: 12 } as any }), refetchInterval: 30_000 });
+  const aandacht = useQuery({ queryKey: ["cc-aandacht"], queryFn: () => aandachtFn() });
+  const fin = useQuery({ queryKey: ["cc-fin", 30], queryFn: () => finFn({ data: { dagen: 30 } }) });
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin-dashboard", periode, wie],
-    queryFn: () => fn({ data: { periode, ...wie } }),
-  });
-  const bereik = BEREIK[periode];
-  const vandaag = useQuery({
-    queryKey: ["admin-vandaag", bereik, wie],
-    queryFn: () => vandaagFn({ data: { bereik, ...wie } }),
-    refetchInterval: periode === "dag" ? 60_000 : false,
-  });
-  const recent = useQuery({
-    queryKey: ["admin-recent", bereik],
-    queryFn: () => recentFn({ data: { bereik, limiet: 20 } }),
-    refetchInterval: periode === "dag" ? 30_000 : false,
-  });
-  const kosten = useQuery({
-    queryKey: ["admin-kosten", periode, wie],
-    queryFn: () => kostFn({ data: { dagen: DAGEN[periode], ...wie } }),
-  });
-  const aandacht = useQuery({ queryKey: ["admin-aandacht"], queryFn: () => aandachtFn() });
+  const v = vandaag.data?.kpi as any;
+  const g = gisteren.data?.kpi as any;
+  const hoog = (aandacht.data ?? []).filter((a: any) => a.ernst === "hoog").length;
 
-  const max = Math.max(1, ...(data?.grafiek ?? []).map((g) => Math.max(g.aantal, g.gebruikers)));
-  const tijd = OMSCHRIJVING[periode];
-  const v = vandaag.data?.kpi;
+  const status = !v
+    ? null
+    : v.fouten > 5 || hoog > 3
+      ? { toon: "rood", tekst: `Aandacht nodig: ${v.fouten} fouten vandaag en ${hoog} gebruikers met hoge prioriteit.` }
+      : v.fouten > 0 || hoog > 0
+        ? { toon: "geel", tekst: `Foodlo draait goed, met ${v.fouten} fout${v.fouten === 1 ? "" : "en"} en ${hoog} gebruiker${hoog === 1 ? "" : "s"} om op te volgen.` }
+        : { toon: "groen", tekst: "Foodlo draait goed. Geen fouten en niemand die dringend aandacht nodig heeft." };
+
+  const inzichten: string[] = [];
+  if (v && g) {
+    const d = verschil(v.actieveGebruikers, g.actieveGebruikers);
+    if (d) inzichten.push(`${Math.abs(d)}% ${d > 0 ? "meer" : "minder"} actieve gebruikers dan gisteren (${v.actieveGebruikers} vs ${g.actieveGebruikers}).`);
+    if (v.nieuweGebruikers) inzichten.push(`${v.nieuweGebruikers} nieuwe gebruiker${v.nieuweGebruikers === 1 ? "" : "s"} vandaag.`);
+    const k = verschil(v.kostEur, g.kostEur);
+    if (Math.abs(k) >= 25 && v.kostEur > 0.01) inzichten.push(`AI-kosten ${k > 0 ? "stijgen" : "dalen"} ${Math.abs(k)}% t.o.v. gisteren.`);
+    if (v.imports > g.imports) inzichten.push(`Meer recepten geïmporteerd dan gisteren (${v.imports}).`);
+  }
+  if (fin.data && fin.data.omzet === 0) inzichten.push("Nog geen omzet: betalingen zijn nog niet gekoppeld.");
 
   return (
-    <AdminShell
-      titel="Dashboard"
-      omschrijving="Overzicht van het platform"
-      acties={
-        <div className="flex items-center gap-2">
-          <WieKiezer waarde={wie} onKies={setWie} personen={personen.data ?? []} />
-          <PeriodeKiezer waarde={periode} onKies={setPeriode} />
-        </div>
-      }
-    >
-
+    <AdminShell titel="Hoe gaat Foodlo?" omschrijving={new Date().toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" })}>
       <div className="space-y-6">
-        <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
-            {KOP[periode]} · {tijd}
-          </h2>
-          {!v ? (
-            <p className="text-slate-400">Laden…</p>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <Kpi label="Actieve gebruikers" waarde={v.actieveGebruikers} extra={`${v.sessies} sessies`} />
-              <Kpi label="Nieuwe gebruikers" waarde={v.nieuweGebruikers} />
-              <Kpi label="AI-oproepen" waarde={v.aiCalls} extra={`${v.credits} credits`} />
-              <Kpi label="AI-kosten" waarde={euro(v.kostEur)} extra={`${euro(v.kostPerActieve)} per actieve gebruiker`} />
-              <Kpi label="Nieuwe recepten" waarde={v.nieuweRecepten} extra={`${v.imports} geïmporteerd`} />
-              <Kpi label="Weekmenu-items" waarde={v.weekmenus} />
-              <Kpi label="Boodschappenlijsten" waarde={v.lijsten} />
-              <Kpi label="Fouten" waarde={v.fouten} />
+        {status ? (
+          <div
+            className={`rounded-xl border p-4 text-base ${
+              status.toon === "groen"
+                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-100"
+                : status.toon === "geel"
+                  ? "border-amber-500/30 bg-amber-500/10 text-amber-100"
+                  : "border-red-500/30 bg-red-500/10 text-red-100"
+            }`}
+          >
+            {status.tekst}
+          </div>
+        ) : null}
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Groot label="Actief vandaag" waarde={v?.actieveGebruikers} vorig={g?.actieveGebruikers} to="/beheer/activiteit" />
+          <Groot label="Nieuwe gebruikers" waarde={v?.nieuweGebruikers} vorig={g?.nieuweGebruikers} to="/beheer/gebruikers" />
+          <Groot label="Kosten vandaag" waarde={v?.kostEur} vorig={g?.kostEur} geld omgekeerd to="/beheer/kosten" />
+          <Groot label="Omzet (30 dagen)" waarde={fin.data?.omzet} vorig={fin.data?.omzetVorig} geld to="/beheer/finance" extra={fin.data?.omzet === 0 ? "Betalingen niet gekoppeld" : undefined} />
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-3">
+          <Kaart className="xl:col-span-2">
+            <h2 className="mb-3 text-sm font-semibold">Wat is er veranderd?</h2>
+            {inzichten.length ? (
+              <ul className="space-y-2 text-[15px] text-slate-200">
+                {inzichten.map((i) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="mt-2 size-1.5 shrink-0 rounded-full bg-emerald-400" />
+                    {i}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-slate-400">Geen opvallende veranderingen t.o.v. gisteren.</p>
+            )}
+            {v ? (
+              <div className="mt-4 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+                <Klein label="Sessies" w={v.sessies} />
+                <Klein label="AI-oproepen" w={v.aiCalls} />
+                <Klein label="Credits verbruikt" w={v.credits} />
+                <Klein label="Nieuwe recepten" w={v.nieuweRecepten} />
+              </div>
+            ) : null}
+          </Kaart>
+
+          <Kaart>
+            <h2 className="mb-3 text-sm font-semibold">Snelle acties</h2>
+            <div className="grid gap-2">
+              <Actie to="/beheer/gebruikers" icoon={UserSearch} label="Gebruiker opzoeken" />
+              <Actie to="/beheer/communicatie" icoon={Mail} label="Bericht versturen" />
+              <Actie to="/beheer/finance" icoon={Wallet} label="Kosten en omzet" />
+              <Actie to="/beheer/systeem" icoon={Wrench} label="Systeemstatus" />
             </div>
-          )}
-        </section>
+          </Kaart>
+        </div>
 
         <div className="grid gap-4 xl:grid-cols-2">
           <Kaart>
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm font-medium">Recente activiteit · {tijd}</p>
-              <Link to="/beheer/activiteit" className="text-xs text-emerald-400 hover:underline">
-                Alles bekijken
-              </Link>
+              <h2 className="text-sm font-semibold">Wie heeft aandacht nodig?</h2>
+              <Link to="/beheer/ui/segmenten" className="text-xs text-emerald-400 hover:underline">Segmenten</Link>
             </div>
             <div className="space-y-1 text-sm">
-              {(recent.data ?? []).map((r, i) => (
-                <div key={i} className="flex gap-3 border-b border-white/5 py-1.5">
-                  <span className="w-12 text-slate-400">{klok(r.tijd)}</span>
-                  {r.user_id ? (
-                    <Link to="/beheer/gebruiker/$id" params={{ id: r.user_id }} className="text-emerald-300 hover:underline">
-                      {r.naam}
-                    </Link>
-                  ) : (
-                    <span>{r.naam}</span>
-                  )}
-                  <span className={r.type === "fout" ? "text-red-300" : r.type === "ai" ? "text-amber-300" : "text-slate-300"}>
-                    {GEBEURTENIS_LABEL[r.titel as keyof typeof GEBEURTENIS_LABEL] ?? r.titel}
-                  </span>
-                </div>
+              {(aandacht.data ?? []).slice(0, 8).map((a: any, i: number) => (
+                <Link key={`${a.id}-${i}`} to="/beheer/gebruiker/$id" params={{ id: a.id }} className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-white/5">
+                  <span className={`size-2 shrink-0 rounded-full ${a.ernst === "hoog" ? "bg-red-400" : a.ernst === "midden" ? "bg-amber-400" : "bg-slate-500"}`} />
+                  <span className="font-medium">{a.naam}</span>
+                  <span className="truncate text-slate-400">{a.reden}</span>
+                </Link>
               ))}
-              {!(recent.data ?? []).length ? (
-                <p className="text-slate-400">Nog niets in deze periode.</p>
-              ) : null}
+              {aandacht.data && !aandacht.data.length ? <p className="text-slate-400">Niemand. Alles ziet er goed uit.</p> : null}
             </div>
           </Kaart>
 
           <Kaart>
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm font-medium">Kosten</p>
-              <Link to="/beheer/credits" className="text-xs text-emerald-400 hover:underline">
-                Credits & kosten
-              </Link>
+              <h2 className="text-sm font-semibold">Net gebeurd</h2>
+              <Link to="/beheer/activiteit" className="text-xs text-emerald-400 hover:underline">Volledige tijdlijn</Link>
             </div>
-            {!kosten.data ? (
-              <p className="text-slate-400">Laden…</p>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-                  <Cijfer label={KOP[periode]} waarde={euro(kosten.data.periodeKost)} />
-                  <Cijfer label="Vandaag" waarde={euro(kosten.data.vandaag)} />
-                  <Cijfer label="Gisteren" waarde={euro(kosten.data.gisteren)} />
-                  <Cijfer label="30 dagen" waarde={euro(kosten.data.dertig)} />
+            <div className="space-y-1 text-sm">
+              {(recent.data ?? []).map((r: any, i: number) => (
+                <div key={i} className="flex gap-3 border-b border-white/5 py-1.5">
+                  <span className="w-12 shrink-0 text-slate-500">{klok(r.tijd)}</span>
+                  {r.user_id ? (
+                    <Link to="/beheer/gebruiker/$id" params={{ id: r.user_id }} className="shrink-0 text-emerald-300 hover:underline">{r.naam}</Link>
+                  ) : (
+                    <span className="shrink-0">{r.naam}</span>
+                  )}
+                  <span className={`truncate ${r.type === "fout" ? "text-red-300" : r.type === "ai" ? "text-amber-300" : "text-slate-300"}`}>
+                    {GEBEURTENIS_LABEL[r.titel as keyof typeof GEBEURTENIS_LABEL] ?? r.titel}
+                  </span>
                 </div>
-                <p className="mt-3 text-xs uppercase tracking-wide text-slate-400">Per functie · {tijd}</p>
-                <div className="mt-1 space-y-1 text-sm">
-                  {kosten.data.perFeature.slice(0, 6).map((f) => (
-                    <div key={f.sleutel} className="flex justify-between border-b border-white/5 py-1">
-                      <span>{f.sleutel}</span>
-                      <span className="text-slate-400">
-                        {f.aantal}× · {euro(f.kost)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+              ))}
+              {recent.data && !recent.data.length ? <p className="text-slate-400">Vandaag nog niets gebeurd.</p> : null}
+            </div>
           </Kaart>
         </div>
-
-        <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Gebruikersactiviteit · {tijd}
-          </h2>
-          {isLoading || !data ? (
-            <p className="text-slate-400">Laden…</p>
-          ) : (
-            <div className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <Kpi label="Gebruikers" waarde={data.gebruikers} extra={`+${data.nieuweGebruikers} in ${tijd}`} evolutie={data.evoluties.gebruikers} />
-                <Kpi label="Recepten" waarde={data.recepten} extra={`+${data.nieuweRecepten} in ${tijd}`} evolutie={data.evoluties.recepten} />
-                <Kpi label="Open supportvragen" waarde={data.openTickets} />
-                <Kpi label={`AI-oproepen (${tijd})`} waarde={data.ai.totaal} extra={`${data.ai.fouten} fouten · gem. ${data.ai.gemiddeldMs} ms`} evolutie={data.evoluties.ai} />
-              </div>
-              <Kaart>
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-medium">Evolutie · {tijd}</p>
-                  <p className="flex items-center gap-3 text-xs text-slate-400">
-                    <span className="flex items-center gap-1">
-                      <span className="inline-block size-2 rounded-sm bg-emerald-500/70" /> nieuwe recepten
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="inline-block size-2 rounded-sm bg-sky-400/70" /> nieuwe gebruikers
-                    </span>
-                  </p>
-                </div>
-                <div className="flex h-36 items-end gap-1">
-                  {data.grafiek.map((g) => (
-                    <div key={g.datum} className="flex h-full flex-1 items-end gap-0.5" title={`${g.datum}: ${g.aantal} recepten · ${g.gebruikers} gebruikers`}>
-                      <div className="w-full rounded-t bg-emerald-500/70" style={{ height: `${Math.max(2, (g.aantal / max) * 100)}%` }} />
-                      <div className="w-full rounded-t bg-sky-400/70" style={{ height: `${Math.max(2, (g.gebruikers / max) * 100)}%` }} />
-                    </div>
-                  ))}
-                </div>
-              </Kaart>
-            </div>
-          )}
-        </section>
-
-        <Kaart>
-          <p className="mb-3 text-sm font-medium">Gebruikers die aandacht nodig hebben</p>
-          <div className="space-y-1 text-sm">
-            {(aandacht.data ?? []).slice(0, 15).map((a, i) => (
-              <Link
-                key={`${a.id}-${i}`}
-                to="/beheer/gebruiker/$id"
-                params={{ id: a.id }}
-                className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-white/5"
-              >
-                <span
-                  className={`size-2 rounded-full ${
-                    a.ernst === "hoog" ? "bg-red-400" : a.ernst === "midden" ? "bg-amber-400" : "bg-slate-500"
-                  }`}
-                />
-                <span className="font-medium">{a.naam}</span>
-                <span className="text-slate-400">{a.reden}</span>
-              </Link>
-            ))}
-            {!(aandacht.data ?? []).length ? <p className="text-slate-400">Alles ziet er goed uit.</p> : null}
-          </div>
-        </Kaart>
       </div>
     </AdminShell>
   );
 }
 
-function Cijfer({ label, waarde }: { label: string; waarde: string }) {
+function Groot({ label, waarde, vorig, geld, omgekeerd, to, extra }: { label: string; waarde?: number | undefined; vorig?: number | undefined; geld?: boolean; omgekeerd?: boolean; to: string; extra?: string | undefined }) {
+  const d = waarde == null || vorig == null ? null : verschil(waarde, vorig);
+  const goed = d == null || d === 0 ? null : omgekeerd ? d < 0 : d > 0;
+  const Pijl = !d ? Minus : d > 0 ? ArrowUpRight : ArrowDownRight;
   return (
-    <div className="rounded-lg border border-white/10 bg-white/5 p-2">
+    <Link to={to} className="rounded-xl border border-white/10 bg-slate-900/60 p-5 transition hover:border-emerald-500/40">
+      <p className="text-sm text-slate-400">{label}</p>
+      <p className="mt-2 text-3xl font-semibold tracking-tight">{waarde == null ? "…" : geld ? euro(waarde) : waarde.toLocaleString("nl-BE")}</p>
+      <p className={`mt-2 flex items-center gap-1 text-xs ${goed == null ? "text-slate-500" : goed ? "text-emerald-300" : "text-red-300"}`}>
+        {extra ?? (d == null ? "" : <><Pijl className="size-3.5" /> {d > 0 ? "+" : ""}{d}% t.o.v. vorige periode</>)}
+      </p>
+    </Link>
+  );
+}
+
+function Klein({ label, w }: { label: string; w: number }) {
+  return (
+    <div className="rounded-lg bg-white/5 p-2">
       <p className="text-xs text-slate-400">{label}</p>
-      <p className="text-base font-semibold">{waarde}</p>
+      <p className="text-base font-semibold">{w}</p>
     </div>
+  );
+}
+
+function Actie({ to, icoon: I, label }: { to: string; icoon: typeof Mail; label: string }) {
+  return (
+    <Link to={to} className="flex items-center gap-3 rounded-lg border border-white/10 px-3 py-3 text-sm hover:bg-white/5">
+      <I className="size-4 text-emerald-400" /> {label}
+    </Link>
   );
 }
