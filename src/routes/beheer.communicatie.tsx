@@ -207,7 +207,12 @@ function Communicatie() {
 
             <Button
               onClick={() => versturen.mutate()}
-              disabled={versturen.isPending || onderwerp.length < 2 || bericht.length < 2}
+              disabled={
+                versturen.isPending ||
+                onderwerp.length < 2 ||
+                bericht.length < 2 ||
+                (doelgroep === "gebruiker" && !doelId)
+              }
             >
               {versturen.isPending ? "Versturen…" : "Versturen"}
             </Button>
