@@ -111,7 +111,6 @@ export function RecipeForm({
   const [difficulty, setDifficulty] = useState(recipe?.difficulty ?? "makkelijk");
   const [tags, setTags] = useState((recipe?.tags ?? []).join(", "));
   const [eetstijl, setEetstijl] = useState<Eetstijl>(eetstijlUitTags(recipe?.tags ?? []));
-  const [basisOpen, setBasisOpen] = useState(!recipe && !startNaam);
   const [photoPath, setPhotoPath] = useState<string | null>(recipe?.image_url ?? null);
   const [sourceUrl, setSourceUrl] = useState(recipe?.source_url ?? gedeeldeLink);
   const [ingredientTekst, setIngredientTekst] = useState(
@@ -913,7 +912,7 @@ export function RecipeForm({
   const manieren: { id: Manier; label: string; icon: typeof Link2 }[] = [
     { id: "zelf", label: "Zelf invoeren", icon: Pencil },
     { id: "link", label: "Van tekst of link", icon: Link2 },
-    { id: "foto", label: "Foto toevoegen", icon: Camera },
+    { id: "foto", label: "Foto", icon: Camera },
     { id: "zoek", label: "Zoeken", icon: Search },
   ];
 
@@ -1187,7 +1186,7 @@ export function RecipeForm({
           {manier === "foto" && (
             <div className="mt-4">
               <p className="text-base text-muted-foreground">
-                Kies een foto waarop het recept leesbaar staat, of een foto van een klaar gerecht.
+                Upload een bestaande foto met recepttekst, of neem een foto van een klaar gerecht.
               </p>
               <label className="mt-3 inline-flex min-h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-5 text-base font-semibold">
                 {screenshotBezig ? (
@@ -1195,7 +1194,7 @@ export function RecipeForm({
                 ) : (
                   <Camera className="size-5" />
                 )}
-                Foto met recepttekst toevoegen
+                Foto uploaden
                 <input
                   type="file"
                   accept="image/*"
@@ -1213,7 +1212,7 @@ export function RecipeForm({
                 ) : (
                   <Sparkles className="size-5" />
                 )}
-                Maak een recept van mijn foto
+                Foto nemen
                 <input
                   type="file"
                   accept="image/*"
@@ -1693,24 +1692,6 @@ export function RecipeForm({
               </Button>
               <Button variant="secondary" onClick={() => setControleOpen(false)} className="h-14 w-full text-lg">Nog iets aanpassen</Button>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={basisOpen} onOpenChange={(open) => { if (!open) setBasisOpen(false); }}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="text-left text-xl">Eerst de basis</DialogTitle>
-            <DialogDescription className="text-left text-base">Drie korte keuzes, daarna vul je het recept verder in.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-5">
-            <div><p className="text-base font-medium">Soort gerecht</p><SoortKeuze waarde={category} onKies={(c) => { setCategory(c); setSoortHandmatig(true); }} /></div>
-            <div><p className="text-base font-medium">Eetstijl</p><EetstijlKeuze waarde={eetstijl} onKies={setEetstijl} /></div>
-            <div>
-              <p className="text-base font-medium">Moeilijkheid</p>
-              <div className="mt-2 flex flex-wrap gap-2">{DIFFICULTIES.map((d) => <Button key={d} type="button" variant={difficulty === d ? "default" : "outline"} className="min-h-12 capitalize" onClick={() => setDifficulty(d)}>{d}</Button>)}</div>
-            </div>
-            <Button className="h-14 w-full text-lg" onClick={() => setBasisOpen(false)}>Verder met het recept</Button>
           </div>
         </DialogContent>
       </Dialog>
