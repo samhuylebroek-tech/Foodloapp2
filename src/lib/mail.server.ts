@@ -14,7 +14,7 @@ export type Verzending = { userId: string; kanaal: "email" | "in_app"; ok: boole
 export type MailAanbieder = {
   naam: string;
   beschikbaar: boolean;
-  verstuur: (o: { naar: string; onderwerp: string; tekst: string; html?: string }) => Promise<void>;
+  verstuur: (o: { naar: string; onderwerp: string; tekst: string; html?: string | undefined }) => Promise<void>;
 };
 
 /** Haalt gevaarlijke onderdelen uit geplakte HTML (scripts, iframes, event-handlers). */
