@@ -8,6 +8,7 @@ import { exporteerMijnGegevens } from "@/lib/export.functions";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { creditOverzicht } from "@/lib/credits.functions";
+import { verwijderMijnAccount } from "@/lib/account.functions";
 
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -350,8 +351,57 @@ function InstellingenPage() {
         >
           <LogOut className="size-5" /> {t("Afmelden")}
         </Button>
+
+        <AccountVerwijderen />
+        <Link to="/privacy" className="block py-3 text-center text-lg font-semibold text-primary">
+          Privacybeleid
+        </Link>
       </div>
     </AppShell>
+  );
+}
+
+function AccountVerwijderen() {
+  const [open, setOpen] = useState(false);
+  const [tekst, setTekst] = useState("");
+  const [bezig, setBezig] = useState(false);
+  const verwijder = useServerFn(verwijderMijnAccount);
+  if (!open)
+    return (
+      <Button variant="ghost" onClick={() => setOpen(true)} className="h-16 w-full text-lg text-destructive">
+        Account verwijderen
+      </Button>
+    );
+  return (
+    <div className="space-y-3 rounded-2xl border border-destructive/40 p-4">
+      <p className="text-lg font-semibold">Weet je het zeker?</p>
+      <p className="text-base text-muted-foreground">
+        Je account, recepten, weekmenu's, lijsten en foto's worden definitief gewist. Dit kan niet ongedaan gemaakt worden. Typ VERWIJDER om te bevestigen.
+      </p>
+      <Input value={tekst} onChange={(e) => setTekst(e.target.value)} className="h-14 text-lg" aria-label="Typ VERWIJDER" />
+      <div className="grid grid-cols-2 gap-2">
+        <Button variant="outline" className="h-14 text-base" onClick={() => setOpen(false)}>Annuleren</Button>
+        <Button
+          variant="destructive"
+          className="h-14 text-base"
+          disabled={tekst.trim() !== "VERWIJDER" || bezig}
+          onClick={async () => {
+            setBezig(true);
+            try {
+              await verwijder({ data: { bevestiging: "VERWIJDER" } });
+              await supabase.auth.signOut();
+              toast.success("Je account is verwijderd.");
+              window.location.href = "/";
+            } catch (e) {
+              toast.error((e as Error).message);
+              setBezig(false);
+            }
+          }}
+        >
+          {bezig ? <Loader2 className="size-5 animate-spin" /> : "Definitief verwijderen"}
+        </Button>
+      </div>
+    </div>
   );
 }
 
