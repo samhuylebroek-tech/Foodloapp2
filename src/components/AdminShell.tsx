@@ -90,7 +90,12 @@ const SECTIES: Sectie[] = [
 function scoor(pad: string, s: Sub): number {
   if (s.pad === "/beheer") return pad === "/beheer" || pad === "/beheer/" ? 100 : 0;
   const kand = [s.pad, ...(s.ook ?? [])];
-  return Math.max(0, ...kand.map((k) => (pad === k || pad.startsWith(k.endsWith("/") ? k : `${k}/`) || pad.startsWith(k) && k.endsWith("/") ? k.length : 0)));
+  let best = 0;
+  for (const k of kand) {
+    const past = pad === k || pad.startsWith(k.endsWith("/") ? k : `${k}/`) || (k.endsWith("/") ? false : pad.startsWith(k) && k.includes("/ui/"));
+    if (past && k.length > best) best = k.length;
+  }
+  return best;
 }
 
 function actieveSub(pad: string): { sectie: Sectie; sub: Sub } | null {
