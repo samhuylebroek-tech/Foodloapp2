@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { CATEGORIES, DIFFICULTIES, type Recipe } from "@/lib/types";
 import { DIETEN, bepaalDieet } from "@/lib/dieet";
+import { soortLabel } from "@/lib/recept-keuzes";
 import { Sterren, SterrenSnel } from "@/components/Sterren";
 import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
@@ -390,7 +391,7 @@ function GerechtenPage() {
               onChange={(v) => setCategorie(v === "alles" ? null : v)}
               options={[
                 { value: "alles", label: t("Alles") },
-                ...CATEGORIES.map((c) => ({ value: c, label: t(c) })),
+                ...CATEGORIES.map((c) => ({ value: c, label: t(soortLabel(c)) })),
               ]}
             />
 
