@@ -75,7 +75,7 @@ function NieuwPage() {
           {gedeeld.koppel ? (
             <RecipeForm koppelMaaltijd={gedeeld.koppel} startNaam={gedeeld.title} />
           ) : (
-            <RecipeForm gedeeld={gedeeld} vraagInplannen />
+            <RecipeForm gedeeld={gedeeld} />
           )}
           <Link
             to="/inspiratie"

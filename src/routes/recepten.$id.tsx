@@ -573,7 +573,6 @@ function ReceptPage() {
             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label={t("Meer")}><MoreHorizontal /></Button></DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-52 rounded-xl p-2">
               {isOwner ? <DropdownMenuItem asChild className="min-h-12 text-base"><Link to="/recepten/$id/bewerken" params={{ id: recipe.id }}><Pencil />{t("Aanpassen")}</Link></DropdownMenuItem> : <DropdownMenuItem onSelect={() => void kopieerNaarMij()} className="min-h-12 text-base"><Copy />{t("Zet in mijn gerechten")}</DropdownMenuItem>}
-              <DropdownMenuItem onSelect={() => setPlanOpen(true)} className="min-h-12 text-base"><CalendarPlus />{t("Inplannen")}</DropdownMenuItem>
               {isOwner ? <><DropdownMenuSeparator /><DropdownMenuItem onSelect={() => void verwijder()} className="min-h-12 text-base text-destructive"><Trash2 />{t("Verwijderen")}</DropdownMenuItem></> : null}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -627,14 +626,14 @@ function ReceptPage() {
 
         {recipe.instructions.length > 0 ? <Button onClick={() => { setStap(-1); void meet("kookmodus.gestart", undefined, { id }); setKookstand(true); }} className="h-16 w-full text-lg"><ChefHat className="size-6" />{t("Start koken")}</Button> : null}
 
-        <Button
-          variant="secondary"
-          onClick={() => setBoodschappenOpen(true)}
-          disabled={!ingredients.length}
-          className="h-16 w-full text-lg"
-        >
-          <ShoppingCart className="size-5" /> {t("Voeg toe aan boodschappenlijst")}
-        </Button>
+        <div className="grid grid-cols-2 gap-3">
+          <Button onClick={() => setPlanOpen(true)} className="h-16 text-lg"><CalendarPlus />{t("Inplannen")}</Button>
+          <Button variant="secondary" onClick={() => setBoodschappenOpen(true)} disabled={!ingredients.length} className="h-16 text-lg">
+            <ShoppingCart className="size-5 shrink-0" /> {t("Boodschappenlijst")}
+          </Button>
+        </div>
+
+        {planOpen ? <PlanKiezer momenten={momenten} onKies={planOp} /> : null}
 
         {isOwner && (ingredients.length === 0 || recipe.instructions.length === 0) && (
           <div className="rounded-2xl border border-primary/40 bg-secondary p-4">
@@ -670,8 +669,6 @@ function ReceptPage() {
               <div className="flex flex-wrap gap-x-5 gap-y-2 text-base text-muted-foreground"><span>{t(recipe.category)}</span><span>{t(recipe.difficulty)}</span></div>
               {isOwner ? <SnelAanpassen recipe={recipe} onKlaar={() => qc.invalidateQueries({ queryKey: ["recipe", recipe.id] })} /> : null}
               <SterrenKiezer waarde={mijnScore} onKies={zetScore} label={t("Jouw score")} />
-              <Button variant="secondary" onClick={() => setPlanOpen(!planOpen)} className="w-full"><CalendarPlus />{t("Inplannen")}</Button>
-              {planOpen ? <PlanKiezer momenten={momenten} onKies={planOp} /> : null}
               {recipe.source_url ? <a href={recipe.source_url} target="_blank" rel="noreferrer" className="block text-base text-primary underline underline-offset-4">{t("Bekijk origineel op")} {bronNaam(recipe.source_url)}</a> : null}
               {isOwner && recipe.image_url ? <FotoKiezer bezig={fotoBezig} heeftFoto onBestand={(file) => void vervangFoto(file)} /> : null}
             </div>
