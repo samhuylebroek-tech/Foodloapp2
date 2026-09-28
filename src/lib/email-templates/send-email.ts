@@ -72,7 +72,8 @@ export async function sendTemplateEmail(
     await sendLovableEmail(
       {
         to: recipient,
-        from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
+        // Een echt klinkend adres (geen "noreply") landt minder snel in spam.
+        from: `${SITE_NAME} <hallo@${FROM_DOMAIN}>`,
         sender_domain: SENDER_DOMAIN,
         subject,
         html,
