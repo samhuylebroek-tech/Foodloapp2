@@ -1529,6 +1529,38 @@ export type Database = {
           },
         ]
       }
+      recipe_photos: {
+        Row: {
+          created_at: string
+          id: string
+          path: string
+          position: number
+          recipe_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          path: string
+          position?: number
+          recipe_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          path?: string
+          position?: number
+          recipe_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_photos_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recipe_ratings: {
         Row: {
           created_at: string
