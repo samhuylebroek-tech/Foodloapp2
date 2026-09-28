@@ -36,11 +36,13 @@ import { Route as BeheerAnalyticsRouteImport } from './routes/beheer.analytics'
 import { Route as BeheerBeveiligingRouteImport } from './routes/beheer.beveiliging'
 import { Route as BeheerCommunicatieRouteImport } from './routes/beheer.communicatie'
 import { Route as BeheerCreditsRouteImport } from './routes/beheer.credits'
+import { Route as BeheerFinanceRouteImport } from './routes/beheer.finance'
 import { Route as BeheerGebruikersRouteImport } from './routes/beheer.gebruikers'
 import { Route as BeheerGroepenRouteImport } from './routes/beheer.groepen'
 import { Route as BeheerImportsRouteImport } from './routes/beheer.imports'
 import { Route as BeheerInhoudRouteImport } from './routes/beheer.inhoud'
 import { Route as BeheerInstellingenRouteImport } from './routes/beheer.instellingen'
+import { Route as BeheerIntegratiesRouteImport } from './routes/beheer.integraties'
 import { Route as BeheerKaartenRouteImport } from './routes/beheer.kaarten'
 import { Route as BeheerKostenRouteImport } from './routes/beheer.kosten'
 import { Route as BeheerLogboekRouteImport } from './routes/beheer.logboek'
@@ -216,6 +218,11 @@ const BeheerCreditsRoute = BeheerCreditsRouteImport.update({
   path: '/credits',
   getParentRoute: () => BeheerRoute,
 } as any)
+const BeheerFinanceRoute = BeheerFinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
+  getParentRoute: () => BeheerRoute,
+} as any)
 const BeheerGebruikersRoute = BeheerGebruikersRouteImport.update({
   id: '/gebruikers',
   path: '/gebruikers',
@@ -239,6 +246,11 @@ const BeheerInhoudRoute = BeheerInhoudRouteImport.update({
 const BeheerInstellingenRoute = BeheerInstellingenRouteImport.update({
   id: '/instellingen',
   path: '/instellingen',
+  getParentRoute: () => BeheerRoute,
+} as any)
+const BeheerIntegratiesRoute = BeheerIntegratiesRouteImport.update({
+  id: '/integraties',
+  path: '/integraties',
   getParentRoute: () => BeheerRoute,
 } as any)
 const BeheerKaartenRoute = BeheerKaartenRouteImport.update({
@@ -465,11 +477,13 @@ export interface FileRoutesByFullPath {
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
   '/beheer/communicatie': typeof BeheerCommunicatieRoute
   '/beheer/credits': typeof BeheerCreditsRoute
+  '/beheer/finance': typeof BeheerFinanceRoute
   '/beheer/gebruikers': typeof BeheerGebruikersRoute
   '/beheer/groepen': typeof BeheerGroepenRoute
   '/beheer/imports': typeof BeheerImportsRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
+  '/beheer/integraties': typeof BeheerIntegratiesRoute
   '/beheer/kaarten': typeof BeheerKaartenRoute
   '/beheer/kosten': typeof BeheerKostenRoute
   '/beheer/logboek': typeof BeheerLogboekRoute
@@ -536,11 +550,13 @@ export interface FileRoutesByTo {
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
   '/beheer/communicatie': typeof BeheerCommunicatieRoute
   '/beheer/credits': typeof BeheerCreditsRoute
+  '/beheer/finance': typeof BeheerFinanceRoute
   '/beheer/gebruikers': typeof BeheerGebruikersRoute
   '/beheer/groepen': typeof BeheerGroepenRoute
   '/beheer/imports': typeof BeheerImportsRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
+  '/beheer/integraties': typeof BeheerIntegratiesRoute
   '/beheer/kaarten': typeof BeheerKaartenRoute
   '/beheer/kosten': typeof BeheerKostenRoute
   '/beheer/logboek': typeof BeheerLogboekRoute
@@ -609,11 +625,13 @@ export interface FileRoutesById {
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
   '/beheer/communicatie': typeof BeheerCommunicatieRoute
   '/beheer/credits': typeof BeheerCreditsRoute
+  '/beheer/finance': typeof BeheerFinanceRoute
   '/beheer/gebruikers': typeof BeheerGebruikersRoute
   '/beheer/groepen': typeof BeheerGroepenRoute
   '/beheer/imports': typeof BeheerImportsRoute
   '/beheer/inhoud': typeof BeheerInhoudRoute
   '/beheer/instellingen': typeof BeheerInstellingenRoute
+  '/beheer/integraties': typeof BeheerIntegratiesRoute
   '/beheer/kaarten': typeof BeheerKaartenRoute
   '/beheer/kosten': typeof BeheerKostenRoute
   '/beheer/logboek': typeof BeheerLogboekRoute
@@ -684,11 +702,13 @@ export interface FileRouteTypes {
     | '/beheer/beveiliging'
     | '/beheer/communicatie'
     | '/beheer/credits'
+    | '/beheer/finance'
     | '/beheer/gebruikers'
     | '/beheer/groepen'
     | '/beheer/imports'
     | '/beheer/inhoud'
     | '/beheer/instellingen'
+    | '/beheer/integraties'
     | '/beheer/kaarten'
     | '/beheer/kosten'
     | '/beheer/logboek'
@@ -755,11 +775,13 @@ export interface FileRouteTypes {
     | '/beheer/beveiliging'
     | '/beheer/communicatie'
     | '/beheer/credits'
+    | '/beheer/finance'
     | '/beheer/gebruikers'
     | '/beheer/groepen'
     | '/beheer/imports'
     | '/beheer/inhoud'
     | '/beheer/instellingen'
+    | '/beheer/integraties'
     | '/beheer/kaarten'
     | '/beheer/kosten'
     | '/beheer/logboek'
@@ -827,11 +849,13 @@ export interface FileRouteTypes {
     | '/beheer/beveiliging'
     | '/beheer/communicatie'
     | '/beheer/credits'
+    | '/beheer/finance'
     | '/beheer/gebruikers'
     | '/beheer/groepen'
     | '/beheer/imports'
     | '/beheer/inhoud'
     | '/beheer/instellingen'
+    | '/beheer/integraties'
     | '/beheer/kaarten'
     | '/beheer/kosten'
     | '/beheer/logboek'
@@ -1097,6 +1121,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerCreditsRouteImport
       parentRoute: typeof BeheerRoute
     }
+    '/beheer/finance': {
+      id: '/beheer/finance'
+      path: '/finance'
+      fullPath: '/beheer/finance'
+      preLoaderRoute: typeof BeheerFinanceRouteImport
+      parentRoute: typeof BeheerRoute
+    }
     '/beheer/gebruikers': {
       id: '/beheer/gebruikers'
       path: '/gebruikers'
@@ -1130,6 +1161,13 @@ declare module '@tanstack/react-router' {
       path: '/instellingen'
       fullPath: '/beheer/instellingen'
       preLoaderRoute: typeof BeheerInstellingenRouteImport
+      parentRoute: typeof BeheerRoute
+    }
+    '/beheer/integraties': {
+      id: '/beheer/integraties'
+      path: '/integraties'
+      fullPath: '/beheer/integraties'
+      preLoaderRoute: typeof BeheerIntegratiesRouteImport
       parentRoute: typeof BeheerRoute
     }
     '/beheer/kaarten': {
@@ -1459,11 +1497,13 @@ interface BeheerRouteChildren {
   BeheerBeveiligingRoute: typeof BeheerBeveiligingRoute
   BeheerCommunicatieRoute: typeof BeheerCommunicatieRoute
   BeheerCreditsRoute: typeof BeheerCreditsRoute
+  BeheerFinanceRoute: typeof BeheerFinanceRoute
   BeheerGebruikersRoute: typeof BeheerGebruikersRoute
   BeheerGroepenRoute: typeof BeheerGroepenRoute
   BeheerImportsRoute: typeof BeheerImportsRoute
   BeheerInhoudRoute: typeof BeheerInhoudRoute
   BeheerInstellingenRoute: typeof BeheerInstellingenRoute
+  BeheerIntegratiesRoute: typeof BeheerIntegratiesRoute
   BeheerKaartenRoute: typeof BeheerKaartenRoute
   BeheerKostenRoute: typeof BeheerKostenRoute
   BeheerLogboekRoute: typeof BeheerLogboekRoute
@@ -1485,11 +1525,13 @@ const BeheerRouteChildren: BeheerRouteChildren = {
   BeheerBeveiligingRoute: BeheerBeveiligingRoute,
   BeheerCommunicatieRoute: BeheerCommunicatieRoute,
   BeheerCreditsRoute: BeheerCreditsRoute,
+  BeheerFinanceRoute: BeheerFinanceRoute,
   BeheerGebruikersRoute: BeheerGebruikersRoute,
   BeheerGroepenRoute: BeheerGroepenRoute,
   BeheerImportsRoute: BeheerImportsRoute,
   BeheerInhoudRoute: BeheerInhoudRoute,
   BeheerInstellingenRoute: BeheerInstellingenRoute,
+  BeheerIntegratiesRoute: BeheerIntegratiesRoute,
   BeheerKaartenRoute: BeheerKaartenRoute,
   BeheerKostenRoute: BeheerKostenRoute,
   BeheerLogboekRoute: BeheerLogboekRoute,
