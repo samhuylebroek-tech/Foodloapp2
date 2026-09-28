@@ -31,3 +31,39 @@ export async function startNatief(navigeer: (pad: string) => void) {
     /* geen splash */
   }
 }
+
+/** Houdt tijdens het koken het scherm aan, met een echte native terugval. */
+export async function houdSchermAan(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (Capacitor.isNativePlatform()) {
+      const { KeepAwake } = await import("@capacitor-community/keep-awake");
+      await KeepAwake.keepAwake();
+      return true;
+    }
+    if (!("wakeLock" in navigator)) return false;
+    const lock = await navigator.wakeLock.request("screen");
+    (window as Window & { __foodloWakeLock?: WakeLockSentinel }).__foodloWakeLock = lock;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function laatSchermWeerSlapen() {
+  if (typeof window === "undefined") return;
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (Capacitor.isNativePlatform()) {
+      const { KeepAwake } = await import("@capacitor-community/keep-awake");
+      await KeepAwake.allowSleep();
+      return;
+    }
+    const venster = window as Window & { __foodloWakeLock?: WakeLockSentinel };
+    await venster.__foodloWakeLock?.release();
+    delete venster.__foodloWakeLock;
+  } catch {
+    // Het toestel heeft de blokkering al vrijgegeven.
+  }
+}

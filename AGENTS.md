@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Generate and privately store a photo only after a recipe exists and still has no image, so existing user-selected photos are never overwritten.
+- Keep `recipes.image_url` as the cover image; store additional user photos in `recipe_photos` so existing recipe cards stay compatible.

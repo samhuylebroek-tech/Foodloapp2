@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Search, SlidersHorizontal, Shuffle, Clock3, X } from "lucide-react";
+import { Search, SlidersHorizontal, Shuffle, Clock3, X, Plus } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { normaliseerTekst } from "@/lib/zoeken";
@@ -18,6 +18,7 @@ import {
   type InspiratieRecept,
 } from "@/lib/inspiratie";
 import { useSignedUrl } from "@/lib/photos";
+import { soortLabel } from "@/lib/recept-keuzes";
 
 export const Route = createFileRoute("/inspiratie/")({
   head: () => ({
@@ -123,7 +124,14 @@ function InspiratiePage() {
   }
 
   return (
-    <AppShell title="Ideeën om te koken">
+    <AppShell
+      title="Ideeën om te koken"
+      action={
+        <Button asChild className="h-12 shrink-0 px-4">
+          <Link to="/recepten/nieuw"><Plus /> Toevoegen</Link>
+        </Button>
+      }
+    >
       <div className="space-y-4">
         <nav aria-label="Recepten of ideeën" className="grid grid-cols-2 gap-1 rounded-2xl bg-muted p-1">
           <Link
@@ -209,7 +217,7 @@ function InspiratiePage() {
                   <div className="space-y-1 p-3">
                     <p className="line-clamp-2 text-base font-semibold leading-tight">{r.title}</p>
                     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base text-muted-foreground">
-                      {r.category ? <span className="capitalize">{r.category}</span> : null}
+                      {r.category ? <span>{soortLabel(r.category)}</span> : null}
                       {tijdLabel(r) ? (
                         <span className="flex items-center gap-1 whitespace-nowrap">
                           <Clock3 className="size-3" /> {tijdLabel(r)}
@@ -234,7 +242,7 @@ function InspiratiePage() {
                   <DialogTitle className="text-xl leading-snug">{verrassing.title}</DialogTitle>
                 </DialogHeader>
                 <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-base text-muted-foreground">
-                  {verrassing.category ? <span className="capitalize">{verrassing.category}</span> : null}
+                  {verrassing.category ? <span>{soortLabel(verrassing.category)}</span> : null}
                   {tijdLabel(verrassing) ? (
                     <span className="flex items-center gap-1 whitespace-nowrap">
                       <Clock3 className="size-4" /> {tijdLabel(verrassing)}
@@ -280,9 +288,9 @@ function InspiratiePage() {
                     variant={filters.categorie === c ? "default" : "outline"}
                     onClick={() => setFilters((f) => ({ ...f, categorie: f.categorie === c ? "" : c }))}
                     aria-pressed={filters.categorie === c}
-                    className="h-12 rounded-xl px-4 text-base capitalize"
+                    className="h-12 rounded-xl px-4 text-base"
                   >
-                    {c}
+                    {soortLabel(c)}
                   </Button>
                 ))}
               </div>
