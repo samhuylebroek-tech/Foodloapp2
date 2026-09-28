@@ -816,6 +816,7 @@ const berichtSchema = z.object({
   segment: z.string().default(""),
   onderwerp: z.string().min(2).max(150),
   bericht: z.string().min(2).max(4000),
+  html: z.string().max(200000).optional(),
   kanaal: z.enum(["in_app", "email"]).default("in_app"),
   test: z.boolean().default(false),
 });
@@ -926,6 +927,7 @@ export const adminBerichtVersturen = createServerFn({ method: "POST" })
         persoonlijk(data.bericht, naam),
         // E-mail alleen voor persoonlijke berichten; massaberichten blijven in de app.
         data.doelgroep === "gebruiker" ? data.kanaal : "in_app",
+        data.html ? persoonlijk(data.html, naam) : undefined,
       );
       if (r.ok) ok += 1;
       else mis += 1;
