@@ -61,9 +61,9 @@ export const Route = createFileRoute("/recepten/$id")({
       { property: "og:description", content: "Ingrediënten, stappen en kookstand in één scherm." },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>) => {
-    const n = Number(search.personen);
-    return { personen: Number.isInteger(n) && n >= 1 && n <= 50 ? n : null };
+  validateSearch: (search: Record<string, unknown>): { personen?: number } => {
+    const n = Number(search["personen"]);
+    return Number.isInteger(n) && n >= 1 && n <= 50 ? { personen: n } : {};
   },
   component: ReceptPage,
 });
