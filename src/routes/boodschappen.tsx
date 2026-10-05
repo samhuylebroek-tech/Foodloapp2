@@ -1084,7 +1084,7 @@ function BoodschappenPage() {
                   const toegevoegd = toegevoegdeWeekGerechten.some((item) => item.recipe_id === g.recipe_id);
                   return <li key={g.recipe_id} className="flex min-h-20 items-center gap-3">
                     <span className="min-w-0 flex-1"><span className="block truncate text-lg font-semibold">{g.titel}</span><span className="block text-base capitalize text-muted-foreground">{datumLabel(g.dag)}</span></span>
-                    <Button variant={toegevoegd ? "secondary" : "outline"} disabled={toegevoegd} className="h-12 shrink-0" onClick={() => void zetGerechtOpLijst(g.recipe_id, g.titel)}>{toegevoegd ? <><Check /> Toegevoegd</> : <><Plus /> Zet op lijst</>}</Button>
+                    <Button variant={toegevoegd ? "secondary" : "outline"} disabled={toegevoegd} className="h-12 shrink-0" onClick={() => void zetGerechtOpLijst(g.recipe_id, g.titel, g.personen, g.servings)}>{toegevoegd ? <><Check /> Toegevoegd</> : <><Plus /> Zet op lijst</>}</Button>
                   </li>;
                 })}
               </ul>
