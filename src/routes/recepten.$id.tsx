@@ -61,6 +61,10 @@ export const Route = createFileRoute("/recepten/$id")({
       { property: "og:description", content: "Ingrediënten, stappen en kookstand in één scherm." },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>): { personen?: number } => {
+    const n = Number(search["personen"]);
+    return Number.isInteger(n) && n >= 1 && n <= 50 ? { personen: n } : {};
+  },
   component: ReceptPage,
 });
 
@@ -97,7 +101,9 @@ function ReceptPage() {
   const qc = useQueryClient();
   const t = useT();
   const { momenten } = useVoorkeuren();
-  const [personen, setPersonen] = useState<number | null>(null);
+  // Voorkeuraantal personen: gekend vanuit de weekmenu-planning, of zelf te kiezen.
+  const zoek = Route.useSearch();
+  const [personen, setPersonen] = useState<number | null>(zoek.personen ?? null);
   const [kookstand, setKookstand] = useState(false);
   const [stap, setStap] = useState(0);
   const [klaarVragen, setKlaarVragen] = useState(false);
@@ -327,11 +333,11 @@ function ReceptPage() {
   }
 
 
-  async function planOp(datum: string, moment: string) {
+  async function planOp(datum: string, moment: string, personen: number) {
     if (!user) return;
     const { error } = await supabase
       .from("meal_plan")
-      .insert({ user_id: user.id, recipe_id: recipe.id, plan_date: datum, meal_type: moment });
+      .insert({ user_id: user.id, recipe_id: recipe.id, plan_date: datum, meal_type: moment, personen });
     if (error) toast.error("Inplannen lukte niet");
     else {
       toast.success("In je planning gezet");
@@ -633,7 +639,7 @@ function ReceptPage() {
           </Button>
         </div>
 
-        {planOpen ? <PlanKiezer momenten={momenten} onKies={planOp} /> : null}
+        {planOpen ? <PlanKiezer momenten={momenten} servings={recipe.servings} onKies={planOp} /> : null}
 
         {isOwner && (ingredients.length === 0 || recipe.instructions.length === 0) && (
           <div className="rounded-2xl border border-primary/40 bg-secondary p-4">
@@ -819,13 +825,16 @@ function ReceptPage() {
 
 function PlanKiezer({
   momenten,
+  servings,
   onKies,
 }: {
   momenten: string[];
-  onKies: (datum: string, moment: string) => void;
+  servings: number;
+  onKies: (datum: string, moment: string, personen: number) => void;
 }) {
   const [datum, setDatum] = useState(new Date().toISOString().slice(0, 10));
   const [moment, setMoment] = useState<string>(momenten[momenten.length - 1] ?? "avondeten");
+  const [personen, setPersonen] = useState(servings > 0 ? servings : 4);
   return (
     <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
       <input
@@ -847,7 +856,15 @@ function PlanKiezer({
           </option>
         ))}
       </select>
-      <Button onClick={() => onKies(datum, moment)} className="h-16 w-full text-lg">
+      <div className="flex items-center justify-between gap-3 rounded-xl bg-secondary p-2">
+        <span className="text-base font-medium">Voor hoeveel personen?</span>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={() => setPersonen(Math.max(1, personen - 1))} aria-label="Minder personen" className="size-12 bg-card"><Minus className="size-5" /></Button>
+          <span className="min-w-10 text-center text-lg font-semibold">{personen}</span>
+          <Button variant="secondary" onClick={() => setPersonen(Math.min(50, personen + 1))} aria-label="Meer personen" className="size-12 bg-card"><Plus className="size-5" /></Button>
+        </div>
+      </div>
+      <Button onClick={() => onKies(datum, moment, personen)} className="h-16 w-full text-lg">
         Zet in planning
       </Button>
     </div>

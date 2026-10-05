@@ -35,6 +35,7 @@ import {
   SlidersHorizontal,
   ChevronDown,
   UtensilsCrossed,
+  Minus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -112,10 +113,29 @@ type PlanRow = {
   recipe_id: string | null;
   custom_title: string | null;
   soort?: string | null;
+  personen?: number | null;
   user_id: string;
   group_id: string | null;
   recipes: Recipe | null;
 };
+
+/** Hoeveel x het originele recept elk gepland gerecht moet geschaald worden (personen ÷ basisporties). */
+function schaalPerRecept(plan: { recipe_id: string | null; personen?: number | null; recipes: { servings?: number } | null }[]) {
+  const factoren = new Map<string, number>();
+  for (const rij of plan) {
+    if (!rij.recipe_id) continue;
+    const basis = rij.recipes?.servings ?? 0;
+    const gewenst = rij.personen ?? basis;
+    factoren.set(rij.recipe_id, basis > 0 && gewenst > 0 ? gewenst / basis : 1);
+  }
+  return factoren;
+}
+
+/** Hoeveelheid afronden op 2 decimalen; null blijft null. */
+function schaalHoeveelheid(hoeveelheid: number | null, factor: number) {
+  if (hoeveelheid === null || hoeveelheid === undefined) return null;
+  return Math.round(hoeveelheid * factor * 100) / 100;
+}
 
 function maandagVan(d: Date) {
   const kopie = new Date(d);
@@ -262,7 +282,7 @@ function PlannerPage() {
     queryFn: async () => {
       let q = supabase
         .from("meal_plan")
-        .select("id, plan_date, meal_type, recipe_id, custom_title, soort, user_id, group_id, recipes(*)")
+        .select("id, plan_date, meal_type, recipe_id, custom_title, soort, personen, user_id, group_id, recipes(*)")
         .gte("plan_date", week[0]!)
         .lte("plan_date", week[6]!)
         .order("plan_date");
@@ -338,7 +358,7 @@ function PlannerPage() {
   }
 
 
-  async function plan_toevoegen(recipeId: string, datum: string, moment: string, titel: string) {
+  async function plan_toevoegen(recipeId: string, datum: string, moment: string, titel: string, personen: number) {
     if (!user) return;
     const { data, error } = await supabase
       .from("meal_plan")
@@ -347,6 +367,7 @@ function PlannerPage() {
         recipe_id: recipeId,
         plan_date: datum,
         meal_type: moment,
+        personen,
         group_id: weergave === "gezin" ? gezin!.id : null,
       })
       .select("id")
@@ -515,7 +536,7 @@ function PlannerPage() {
   }
 
 
-  async function nieuw_gerecht(naam: string, basis: Basis | null, datum: string, moment: string, extra?: NieuwExtra) {
+  async function nieuw_gerecht(naam: string, basis: Basis | null, datum: string, moment: string, extra?: NieuwExtra, personen?: number) {
     if (!user) return;
     let recipeId: string | null = null;
 
@@ -567,6 +588,7 @@ function PlannerPage() {
       soort: extra?.soort ?? null,
       plan_date: datum,
       meal_type: moment,
+      personen: personen ?? null,
       group_id: weergave === "gezin" ? gezin!.id : null,
     }).select("id").single();
     if (error) {
@@ -616,6 +638,8 @@ function PlannerPage() {
           user_id: user.id,
           recipe_id: rij.recipe_id,
           custom_title: rij.custom_title,
+          soort: rij.soort ?? null,
+          personen: rij.personen ?? null,
           plan_date: datum,
           meal_type: moment,
           group_id: rij.group_id,
@@ -660,6 +684,7 @@ function PlannerPage() {
     const standaardLijst =
       weergave === "gezin" && gezinsLijst ? gezinsLijst.id : lijstId || lijsten[0]?.id;
     const listId = standaardLijst || (await zorgVoorLijst(user.id));
+    const factoren = schaalPerRecept(plan);
     const { data, error } = await supabase
       .from("recipe_ingredients")
       .select("name, quantity, unit, recipe_id")
@@ -671,7 +696,7 @@ function PlannerPage() {
     await ingredienNaarLijst(
       data.map((i) => ({
         name: i.name as string,
-        quantity: i.quantity as number | null,
+        quantity: schaalHoeveelheid(i.quantity as number | null, factoren.get(i.recipe_id as string) ?? 1),
         unit: (i.unit as string) ?? "",
         recipe_id: i.recipe_id as string,
       })),
@@ -701,6 +726,7 @@ function PlannerPage() {
     const standaardLijst =
       weergave === "gezin" && gezinsLijst ? gezinsLijst.id : lijstId || lijsten[0]?.id;
     const listId = standaardLijst || (await zorgVoorLijst(user.id));
+    const factoren = schaalPerRecept(dagPlan);
     const { data, error } = await supabase
       .from("recipe_ingredients")
       .select("name, quantity, unit, recipe_id")
@@ -712,7 +738,7 @@ function PlannerPage() {
     await ingredienNaarLijst(
       data.map((i) => ({
         name: i.name as string,
-        quantity: i.quantity as number | null,
+        quantity: schaalHoeveelheid(i.quantity as number | null, factoren.get(i.recipe_id as string) ?? 1),
         unit: (i.unit as string) ?? "",
         recipe_id: i.recipe_id as string,
       })),
@@ -735,7 +761,7 @@ function PlannerPage() {
     const titel = datum.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" });
     const kaart = (p: PlanRow) => (
                     <li key={p.id} className="flex min-h-24 items-center gap-2 rounded-2xl border border-border bg-card p-3">
-                      {p.recipe_id ? <Link to="/recepten/$id" params={{ id: p.recipe_id }} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ReceptFoto url={p.recipes?.image_url ?? null} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.recipes?.title ?? "Recept"}</span>{p.recipes ? <span className="mt-0.5 flex items-center gap-1 text-base text-muted-foreground"><Clock3 className="size-3.5" /> {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) || "Tijd niet ingevuld"}</span> : null}</span></Link> : <div className="flex min-w-0 flex-1 items-center gap-3"><ReceptFoto url={null} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.custom_title}</span>{!p.soort ? <button type="button" onClick={() => setKoppelRij(p)} className="mt-0.5 block text-left text-base font-semibold text-primary underline underline-offset-2">Nog geen recept · koppelen</button> : null}</span></div>}
+                      {p.recipe_id ? <Link to="/recepten/$id" params={{ id: p.recipe_id }} search={p.personen != null ? { personen: p.personen } : {}} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ReceptFoto url={p.recipes?.image_url ?? null} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.recipes?.title ?? "Recept"}</span>{p.recipes ? <span className="mt-0.5 flex items-center gap-1 text-base text-muted-foreground"><Clock3 className="size-3.5" /> {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) || "Tijd niet ingevuld"}</span> : null}</span></Link> : <div className="flex min-w-0 flex-1 items-center gap-3"><ReceptFoto url={null} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.custom_title}</span>{!p.soort ? <button type="button" onClick={() => setKoppelRij(p)} className="mt-0.5 block text-left text-base font-semibold text-primary underline underline-offset-2">Nog geen recept · koppelen</button> : null}</span></div>}
                       {weergave === "gezin" && p.user_id !== user?.id ? <Avatar naam={plannerNamen[p.user_id] ?? "?"} sleutel={p.user_id} className="size-8 shrink-0 text-base" /> : null}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" aria-label={`Acties voor ${p.recipes?.title ?? p.custom_title ?? "maaltijd"}`} className="size-12 shrink-0"><MoreVertical className="size-5" /></Button></DropdownMenuTrigger>
@@ -1342,8 +1368,8 @@ function ReceptKiezer({
   instelling: WeekmenuInstelling;
   start: { datum: string; moment: string; vraagDag?: boolean };
   onSluit: () => void;
-  onKies: (id: string, datum: string, moment: string, titel: string) => void;
-  onNieuw: (naam: string, basis: Basis | null, datum: string, moment: string, extra?: NieuwExtra) => void;
+  onKies: (id: string, datum: string, moment: string, titel: string, personen: number) => void;
+  onNieuw: (naam: string, basis: Basis | null, datum: string, moment: string, extra?: NieuwExtra, personen?: number) => void;
 }) {
   const { user } = useAuth();
   const { taal } = useVoorkeuren();
@@ -1352,6 +1378,8 @@ function ReceptKiezer({
   const [moment, setMoment] = useState(start.moment);
   const [dagKiezen, setDagKiezen] = useState(!!start.vraagDag);
   const [aiBezig, setAiBezig] = useState(false);
+  // Voor hoeveel personen kook je dit gerecht? Eén keer gevraagd bij het inplannen.
+  const [personen, setPersonen] = useState(4);
   const [voorstel, setVoorstel] = useState<Basis | null>(null);
   const [voorstelNaam, setVoorstelNaam] = useState("");
   const [ideeen, setIdeeen] = useState<WeekmenuIdee[] | null>(null);
@@ -1659,7 +1687,7 @@ function ReceptKiezer({
               Terug
             </Button>
             <Button
-              onClick={() => onNieuw(voorstelNaam || voorstel.title, voorstel, datum, moment)}
+              onClick={() => onNieuw(voorstelNaam || voorstel.title, voorstel, datum, moment, undefined, personen)}
               className="mt-0 h-14 flex-[2] text-base"
             >
               <Check className="size-5" /> Bevestigen
@@ -1752,6 +1780,15 @@ function ReceptKiezer({
           </SheetDescription>
         </SheetHeader>
 
+        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2">
+          <span className="text-base font-medium">Voor hoeveel personen?</span>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={() => setPersonen(Math.max(1, personen - 1))} aria-label="Minder personen" className="size-12 bg-card"><Minus className="size-5" /></Button>
+            <span className="min-w-8 text-center text-lg font-semibold">{personen}</span>
+            <Button variant="secondary" onClick={() => setPersonen(Math.min(50, personen + 1))} aria-label="Meer personen" className="size-12 bg-card"><Plus className="size-5" /></Button>
+          </div>
+        </div>
+
         <div className="border-b border-border px-4 py-3">
           <div className="grid grid-cols-3 rounded-lg bg-secondary p-1" role="tablist" aria-label="Kies hoe je een maaltijd toevoegt">
             {([
@@ -1830,20 +1867,20 @@ function ReceptKiezer({
                 <div className="py-8 text-center"><p className="text-base text-muted-foreground">{term ? `Geen resultaat binnen ${actiefFilter.label.toLowerCase()}${actieveSoortLabel ? ` · ${actieveSoortLabel.toLowerCase()}` : ""}.` : `Nog niets bij ${actiefFilter.label.toLowerCase()}${actieveSoortLabel ? ` · ${actieveSoortLabel.toLowerCase()}` : ""}.`}</p>{term ? <div className="mt-3 flex flex-col items-center gap-2"><Button variant="outline" onClick={() => { setReceptFilter("alles"); setSoortFilter(null); }}><BookOpen className="size-5" /> Zoek in alle recepten</Button><Button variant="ghost" onClick={() => { setBron("nieuw"); }}><Plus className="size-5" /> Voeg “{term}” toe</Button></div> : <Button variant="outline" onClick={() => { setReceptFilter("alles"); setSoortFilter(null); }} className="mt-3"><BookOpen className="size-5" /> Toon alle recepten</Button>}</div>
               ) : (
                 <ul className="space-y-2">
-                  {gefilterdeRecepten.map((r) => <li key={r.id}><GerechtKaart recept={r} onKies={() => onKies(r.id, datum, moment, r.title)} /></li>)}
+                  {gefilterdeRecepten.map((r) => <li key={r.id}><GerechtKaart recept={r} onKies={() => onKies(r.id, datum, moment, r.title, personen)} /></li>)}
                 </ul>
               )}
               <div className="mt-4 space-y-2 border-t border-border pt-4">
                 {term ? (
                   <>
-                    <Button variant="outline" onClick={() => onNieuw(term, null, datum, moment)} className="h-auto min-h-14 w-full justify-start whitespace-normal text-left text-base"><Type className="size-5" /> “{term}” inplannen zonder recept</Button>
-                    <Button variant="outline" onClick={() => onNieuw(term, null, datum, moment, { maakRecept: true })} className="h-auto min-h-14 w-full justify-start whitespace-normal text-left text-base"><Plus className="size-5" /> Inplannen en recept maken of importeren</Button>
+                    <Button variant="outline" onClick={() => onNieuw(term, null, datum, moment, undefined, personen)} className="h-auto min-h-14 w-full justify-start whitespace-normal text-left text-base"><Type className="size-5" /> “{term}” inplannen zonder recept</Button>
+                    <Button variant="outline" onClick={() => onNieuw(term, null, datum, moment, { maakRecept: true }, personen)} className="h-auto min-h-14 w-full justify-start whitespace-normal text-left text-base"><Plus className="size-5" /> Inplannen en recept maken of importeren</Button>
                   </>
                 ) : null}
                 <p className="px-1 pt-1 text-base font-semibold text-muted-foreground">Snel kiezen</p>
                 <div className="grid grid-cols-3 gap-2">
                   {([["Restjes", "restjes"], ["Uit eten", "uit_eten"], ["Later bepalen", "later"]] as const).map(([label, soort]) => (
-                    <Button key={soort} variant="secondary" onClick={() => onNieuw(label, null, datum, moment, { soort })} className="h-14 min-w-0 whitespace-normal px-2 text-base leading-tight">{label}</Button>
+                    <Button key={soort} variant="secondary" onClick={() => onNieuw(label, null, datum, moment, { soort }, personen)} className="h-14 min-w-0 whitespace-normal px-2 text-base leading-tight">{label}</Button>
                   ))}
                 </div>
                 <Button variant="ghost" onClick={() => setBron("inspiratie")} className="h-14 w-full justify-start text-base"><Lightbulb className="size-5" /> Inspiratie nodig?</Button>
@@ -1878,7 +1915,7 @@ function ReceptKiezer({
         ) : (
           <div className="flex-1 space-y-4 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4">
             <div><label htmlFor="nieuwe-maaltijd" className="text-base font-semibold">Hoe heet de maaltijd?</label><Input id="nieuwe-maaltijd" value={zoek} onChange={(e) => setZoek(e.target.value)} placeholder="Bijv. soep met brood" className="mt-2 h-14 text-base" /></div>
-            {term ? <div className="space-y-2"><Button variant="outline" onClick={() => onNieuw(term, null, datum, moment)} className="h-14 w-full justify-start text-base"><Type className="size-5" /> Alleen als naam inplannen</Button><Button variant="outline" onClick={() => onNieuw(term, null, datum, moment, { maakRecept: true })} className="h-14 w-full justify-start text-base"><Pencil className="size-5" /> Zelf een recept maken of importeren</Button><Button disabled={aiBezig} onClick={() => void maakVoorstel(term)} className="h-14 w-full justify-start text-base">{aiBezig ? <Loader2 className="size-5 animate-spin" /> : <Sparkles className="size-5" />} {aiBezig ? "Foodlo maakt het recept…" : "Maak er een volledig recept van"}</Button><p className="px-1 text-base text-muted-foreground">Een volledig recept maken kost credits. Je controleert het eerst.</p></div> : <p className="rounded-xl bg-secondary p-4 text-base text-muted-foreground">Typ een naam. Daarna kies je of alleen de naam genoeg is, of Foodlo een volledig recept maakt.</p>}
+            {term ? <div className="space-y-2"><Button variant="outline" onClick={() => onNieuw(term, null, datum, moment, undefined, personen)} className="h-14 w-full justify-start text-base"><Type className="size-5" /> Alleen als naam inplannen</Button><Button variant="outline" onClick={() => onNieuw(term, null, datum, moment, { maakRecept: true }, personen)} className="h-14 w-full justify-start text-base"><Pencil className="size-5" /> Zelf een recept maken of importeren</Button><Button disabled={aiBezig} onClick={() => void maakVoorstel(term)} className="h-14 w-full justify-start text-base">{aiBezig ? <Loader2 className="size-5 animate-spin" /> : <Sparkles className="size-5" />} {aiBezig ? "Foodlo maakt het recept…" : "Maak er een volledig recept van"}</Button><p className="px-1 text-base text-muted-foreground">Een volledig recept maken kost credits. Je controleert het eerst.</p></div> : <p className="rounded-xl bg-secondary p-4 text-base text-muted-foreground">Typ een naam. Daarna kies je of alleen de naam genoeg is, of Foodlo een volledig recept maakt.</p>}
           </div>
         )}
       </SheetContent>

@@ -262,7 +262,7 @@ function BoodschappenPage() {
       const tot = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
       const { data } = await supabase
         .from("meal_plan")
-        .select("recipe_id, plan_date, recipes(title)")
+        .select("recipe_id, plan_date, personen, recipes(title, servings)")
         .not("recipe_id", "is", null)
         .gte("plan_date", van)
         .lte("plan_date", tot)
@@ -274,6 +274,8 @@ function BoodschappenPage() {
           recipe_id: r.recipe_id as string,
           dag: r.plan_date as string,
           titel: (r.recipes as { title?: string } | null)?.title ?? "Gerecht",
+          personen: (r.personen as number | null) ?? null,
+          servings: (r.recipes as { servings?: number } | null)?.servings ?? null,
         }));
     },
   });
@@ -516,14 +518,20 @@ function BoodschappenPage() {
     if (melding) toast.success(melding);
   }
 
-  async function zetGerechtOpLijst(recipeId: string, titel: string) {
+  async function zetGerechtOpLijst(recipeId: string, titel: string, personen?: number | null, servings?: number | null) {
     if (!user || !actief) return;
+    // Schaalt de ingrediënten mee met het geplande aantal personen, indien gekend.
+    const factor = personen && servings && servings > 0 ? personen / servings : 1;
     const { data } = await supabase
       .from("recipe_ingredients")
       .select("name, quantity, unit")
       .eq("recipe_id", recipeId)
       .order("position");
-    const lijst = (data ?? []).map((i) => ({ ...i, recipe_id: recipeId }));
+    const lijst = (data ?? []).map((i) => ({
+      ...i,
+      quantity: i.quantity === null || i.quantity === undefined ? null : Math.round(i.quantity * factor * 100) / 100,
+      recipe_id: recipeId,
+    }));
     if (!lijst.length) {
       toast.info("Dit gerecht heeft nog geen ingrediënten.");
       return;
@@ -1076,7 +1084,7 @@ function BoodschappenPage() {
                   const toegevoegd = toegevoegdeWeekGerechten.some((item) => item.recipe_id === g.recipe_id);
                   return <li key={g.recipe_id} className="flex min-h-20 items-center gap-3">
                     <span className="min-w-0 flex-1"><span className="block truncate text-lg font-semibold">{g.titel}</span><span className="block text-base capitalize text-muted-foreground">{datumLabel(g.dag)}</span></span>
-                    <Button variant={toegevoegd ? "secondary" : "outline"} disabled={toegevoegd} className="h-12 shrink-0" onClick={() => void zetGerechtOpLijst(g.recipe_id, g.titel)}>{toegevoegd ? <><Check /> Toegevoegd</> : <><Plus /> Zet op lijst</>}</Button>
+                    <Button variant={toegevoegd ? "secondary" : "outline"} disabled={toegevoegd} className="h-12 shrink-0" onClick={() => void zetGerechtOpLijst(g.recipe_id, g.titel, g.personen, g.servings)}>{toegevoegd ? <><Check /> Toegevoegd</> : <><Plus /> Zet op lijst</>}</Button>
                   </li>;
                 })}
               </ul>

@@ -344,6 +344,13 @@
       "when": 1790625591573,
       "tag": "0048_add_recipe_photo_gallery",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1791187816829,
+      "tag": "0049_meal_plan_personen_toevoegen",
+      "breakpoints": true
     }
   ]
 }
