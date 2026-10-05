@@ -1347,8 +1347,8 @@ function ReceptKiezer({
   instelling: WeekmenuInstelling;
   start: { datum: string; moment: string; vraagDag?: boolean };
   onSluit: () => void;
-  onKies: (id: string, datum: string, moment: string, titel: string) => void;
-  onNieuw: (naam: string, basis: Basis | null, datum: string, moment: string, extra?: NieuwExtra) => void;
+  onKies: (id: string, datum: string, moment: string, titel: string, personen: number) => void;
+  onNieuw: (naam: string, basis: Basis | null, datum: string, moment: string, extra?: NieuwExtra, personen?: number) => void;
 }) {
   const { user } = useAuth();
   const { taal } = useVoorkeuren();
@@ -1357,6 +1357,8 @@ function ReceptKiezer({
   const [moment, setMoment] = useState(start.moment);
   const [dagKiezen, setDagKiezen] = useState(!!start.vraagDag);
   const [aiBezig, setAiBezig] = useState(false);
+  // Voor hoeveel personen kook je dit gerecht? Eén keer gevraagd bij het inplannen.
+  const [personen, setPersonen] = useState(4);
   const [voorstel, setVoorstel] = useState<Basis | null>(null);
   const [voorstelNaam, setVoorstelNaam] = useState("");
   const [ideeen, setIdeeen] = useState<WeekmenuIdee[] | null>(null);
@@ -1756,6 +1758,15 @@ function ReceptKiezer({
             </Button>
           </SheetDescription>
         </SheetHeader>
+
+        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2">
+          <span className="text-base font-medium">Voor hoeveel personen?</span>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={() => setPersonen(Math.max(1, personen - 1))} aria-label="Minder personen" className="size-12 bg-card"><Minus className="size-5" /></Button>
+            <span className="min-w-8 text-center text-lg font-semibold">{personen}</span>
+            <Button variant="secondary" onClick={() => setPersonen(Math.min(50, personen + 1))} aria-label="Meer personen" className="size-12 bg-card"><Plus className="size-5" /></Button>
+          </div>
+        </div>
 
         <div className="border-b border-border px-4 py-3">
           <div className="grid grid-cols-3 rounded-lg bg-secondary p-1" role="tablist" aria-label="Kies hoe je een maaltijd toevoegt">
