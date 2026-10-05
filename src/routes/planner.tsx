@@ -118,6 +118,24 @@ type PlanRow = {
   recipes: Recipe | null;
 };
 
+/** Hoeveel x het originele recept elk gepland gerecht moet geschaald worden (personen ÷ basisporties). */
+function schaalPerRecept(plan: { recipe_id: string | null; personen?: number | null; recipes: { servings?: number } | null }[]) {
+  const factoren = new Map<string, number>();
+  for (const rij of plan) {
+    if (!rij.recipe_id) continue;
+    const basis = rij.recipes?.servings ?? 0;
+    const gewenst = rij.personen ?? basis;
+    factoren.set(rij.recipe_id, basis > 0 && gewenst > 0 ? gewenst / basis : 1);
+  }
+  return factoren;
+}
+
+/** Hoeveelheid afronden op 2 decimalen; null blijft null. */
+function schaalHoeveelheid(hoeveelheid: number | null, factor: number) {
+  if (hoeveelheid === null || hoeveelheid === undefined) return null;
+  return Math.round(hoeveelheid * factor * 100) / 100;
+}
+
 function maandagVan(d: Date) {
   const kopie = new Date(d);
   const dag = (kopie.getDay() + 6) % 7;
