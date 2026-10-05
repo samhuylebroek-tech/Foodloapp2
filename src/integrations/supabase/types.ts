@@ -1093,6 +1093,7 @@ export type Database = {
           group_id: string | null
           id: string
           meal_type: string
+          personen: number | null
           plan_date: string
           recipe_id: string | null
           soort: string | null
@@ -1104,6 +1105,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           meal_type?: string
+          personen?: number | null
           plan_date: string
           recipe_id?: string | null
           soort?: string | null
@@ -1115,6 +1117,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           meal_type?: string
+          personen?: number | null
           plan_date?: string
           recipe_id?: string | null
           soort?: string | null
