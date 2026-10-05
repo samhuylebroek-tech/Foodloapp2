@@ -1666,7 +1666,7 @@ function ReceptKiezer({
               Terug
             </Button>
             <Button
-              onClick={() => onNieuw(voorstelNaam || voorstel.title, voorstel, datum, moment)}
+              onClick={() => onNieuw(voorstelNaam || voorstel.title, voorstel, datum, moment, undefined, personen)}
               className="mt-0 h-14 flex-[2] text-base"
             >
               <Check className="size-5" /> Bevestigen
@@ -1846,20 +1846,20 @@ function ReceptKiezer({
                 <div className="py-8 text-center"><p className="text-base text-muted-foreground">{term ? `Geen resultaat binnen ${actiefFilter.label.toLowerCase()}${actieveSoortLabel ? ` · ${actieveSoortLabel.toLowerCase()}` : ""}.` : `Nog niets bij ${actiefFilter.label.toLowerCase()}${actieveSoortLabel ? ` · ${actieveSoortLabel.toLowerCase()}` : ""}.`}</p>{term ? <div className="mt-3 flex flex-col items-center gap-2"><Button variant="outline" onClick={() => { setReceptFilter("alles"); setSoortFilter(null); }}><BookOpen className="size-5" /> Zoek in alle recepten</Button><Button variant="ghost" onClick={() => { setBron("nieuw"); }}><Plus className="size-5" /> Voeg “{term}” toe</Button></div> : <Button variant="outline" onClick={() => { setReceptFilter("alles"); setSoortFilter(null); }} className="mt-3"><BookOpen className="size-5" /> Toon alle recepten</Button>}</div>
               ) : (
                 <ul className="space-y-2">
-                  {gefilterdeRecepten.map((r) => <li key={r.id}><GerechtKaart recept={r} onKies={() => onKies(r.id, datum, moment, r.title)} /></li>)}
+                  {gefilterdeRecepten.map((r) => <li key={r.id}><GerechtKaart recept={r} onKies={() => onKies(r.id, datum, moment, r.title, personen)} /></li>)}
                 </ul>
               )}
               <div className="mt-4 space-y-2 border-t border-border pt-4">
                 {term ? (
                   <>
-                    <Button variant="outline" onClick={() => onNieuw(term, null, datum, moment)} className="h-auto min-h-14 w-full justify-start whitespace-normal text-left text-base"><Type className="size-5" /> “{term}” inplannen zonder recept</Button>
-                    <Button variant="outline" onClick={() => onNieuw(term, null, datum, moment, { maakRecept: true })} className="h-auto min-h-14 w-full justify-start whitespace-normal text-left text-base"><Plus className="size-5" /> Inplannen en recept maken of importeren</Button>
+                    <Button variant="outline" onClick={() => onNieuw(term, null, datum, moment, undefined, personen)} className="h-auto min-h-14 w-full justify-start whitespace-normal text-left text-base"><Type className="size-5" /> “{term}” inplannen zonder recept</Button>
+                    <Button variant="outline" onClick={() => onNieuw(term, null, datum, moment, { maakRecept: true }, personen)} className="h-auto min-h-14 w-full justify-start whitespace-normal text-left text-base"><Plus className="size-5" /> Inplannen en recept maken of importeren</Button>
                   </>
                 ) : null}
                 <p className="px-1 pt-1 text-base font-semibold text-muted-foreground">Snel kiezen</p>
                 <div className="grid grid-cols-3 gap-2">
                   {([["Restjes", "restjes"], ["Uit eten", "uit_eten"], ["Later bepalen", "later"]] as const).map(([label, soort]) => (
-                    <Button key={soort} variant="secondary" onClick={() => onNieuw(label, null, datum, moment, { soort })} className="h-14 min-w-0 whitespace-normal px-2 text-base leading-tight">{label}</Button>
+                    <Button key={soort} variant="secondary" onClick={() => onNieuw(label, null, datum, moment, { soort }, personen)} className="h-14 min-w-0 whitespace-normal px-2 text-base leading-tight">{label}</Button>
                   ))}
                 </div>
                 <Button variant="ghost" onClick={() => setBron("inspiratie")} className="h-14 w-full justify-start text-base"><Lightbulb className="size-5" /> Inspiratie nodig?</Button>
@@ -1894,7 +1894,7 @@ function ReceptKiezer({
         ) : (
           <div className="flex-1 space-y-4 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4">
             <div><label htmlFor="nieuwe-maaltijd" className="text-base font-semibold">Hoe heet de maaltijd?</label><Input id="nieuwe-maaltijd" value={zoek} onChange={(e) => setZoek(e.target.value)} placeholder="Bijv. soep met brood" className="mt-2 h-14 text-base" /></div>
-            {term ? <div className="space-y-2"><Button variant="outline" onClick={() => onNieuw(term, null, datum, moment)} className="h-14 w-full justify-start text-base"><Type className="size-5" /> Alleen als naam inplannen</Button><Button variant="outline" onClick={() => onNieuw(term, null, datum, moment, { maakRecept: true })} className="h-14 w-full justify-start text-base"><Pencil className="size-5" /> Zelf een recept maken of importeren</Button><Button disabled={aiBezig} onClick={() => void maakVoorstel(term)} className="h-14 w-full justify-start text-base">{aiBezig ? <Loader2 className="size-5 animate-spin" /> : <Sparkles className="size-5" />} {aiBezig ? "Foodlo maakt het recept…" : "Maak er een volledig recept van"}</Button><p className="px-1 text-base text-muted-foreground">Een volledig recept maken kost credits. Je controleert het eerst.</p></div> : <p className="rounded-xl bg-secondary p-4 text-base text-muted-foreground">Typ een naam. Daarna kies je of alleen de naam genoeg is, of Foodlo een volledig recept maakt.</p>}
+            {term ? <div className="space-y-2"><Button variant="outline" onClick={() => onNieuw(term, null, datum, moment, undefined, personen)} className="h-14 w-full justify-start text-base"><Type className="size-5" /> Alleen als naam inplannen</Button><Button variant="outline" onClick={() => onNieuw(term, null, datum, moment, { maakRecept: true }, personen)} className="h-14 w-full justify-start text-base"><Pencil className="size-5" /> Zelf een recept maken of importeren</Button><Button disabled={aiBezig} onClick={() => void maakVoorstel(term)} className="h-14 w-full justify-start text-base">{aiBezig ? <Loader2 className="size-5 animate-spin" /> : <Sparkles className="size-5" />} {aiBezig ? "Foodlo maakt het recept…" : "Maak er een volledig recept van"}</Button><p className="px-1 text-base text-muted-foreground">Een volledig recept maken kost credits. Je controleert het eerst.</p></div> : <p className="rounded-xl bg-secondary p-4 text-base text-muted-foreground">Typ een naam. Daarna kies je of alleen de naam genoeg is, of Foodlo een volledig recept maakt.</p>}
           </div>
         )}
       </SheetContent>
