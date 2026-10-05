@@ -262,7 +262,7 @@ function BoodschappenPage() {
       const tot = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
       const { data } = await supabase
         .from("meal_plan")
-        .select("recipe_id, plan_date, recipes(title)")
+        .select("recipe_id, plan_date, personen, recipes(title, servings)")
         .not("recipe_id", "is", null)
         .gte("plan_date", van)
         .lte("plan_date", tot)
@@ -274,6 +274,8 @@ function BoodschappenPage() {
           recipe_id: r.recipe_id as string,
           dag: r.plan_date as string,
           titel: (r.recipes as { title?: string } | null)?.title ?? "Gerecht",
+          personen: (r.personen as number | null) ?? null,
+          servings: (r.recipes as { servings?: number } | null)?.servings ?? null,
         }));
     },
   });
@@ -516,14 +518,20 @@ function BoodschappenPage() {
     if (melding) toast.success(melding);
   }
 
-  async function zetGerechtOpLijst(recipeId: string, titel: string) {
+  async function zetGerechtOpLijst(recipeId: string, titel: string, personen?: number | null, servings?: number | null) {
     if (!user || !actief) return;
+    // Schaalt de ingrediënten mee met het geplande aantal personen, indien gekend.
+    const factor = personen && servings && servings > 0 ? personen / servings : 1;
     const { data } = await supabase
       .from("recipe_ingredients")
       .select("name, quantity, unit")
       .eq("recipe_id", recipeId)
       .order("position");
-    const lijst = (data ?? []).map((i) => ({ ...i, recipe_id: recipeId }));
+    const lijst = (data ?? []).map((i) => ({
+      ...i,
+      quantity: i.quantity === null || i.quantity === undefined ? null : Math.round(i.quantity * factor * 100) / 100,
+      recipe_id: recipeId,
+    }));
     if (!lijst.length) {
       toast.info("Dit gerecht heeft nog geen ingrediënten.");
       return;
