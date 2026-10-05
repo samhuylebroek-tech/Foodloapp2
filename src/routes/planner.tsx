@@ -112,6 +112,7 @@ type PlanRow = {
   recipe_id: string | null;
   custom_title: string | null;
   soort?: string | null;
+  personen?: number | null;
   user_id: string;
   group_id: string | null;
   recipes: Recipe | null;
@@ -262,7 +263,7 @@ function PlannerPage() {
     queryFn: async () => {
       let q = supabase
         .from("meal_plan")
-        .select("id, plan_date, meal_type, recipe_id, custom_title, soort, user_id, group_id, recipes(*)")
+        .select("id, plan_date, meal_type, recipe_id, custom_title, soort, personen, user_id, group_id, recipes(*)")
         .gte("plan_date", week[0]!)
         .lte("plan_date", week[6]!)
         .order("plan_date");
@@ -338,7 +339,7 @@ function PlannerPage() {
   }
 
 
-  async function plan_toevoegen(recipeId: string, datum: string, moment: string, titel: string) {
+  async function plan_toevoegen(recipeId: string, datum: string, moment: string, titel: string, personen: number) {
     if (!user) return;
     const { data, error } = await supabase
       .from("meal_plan")
@@ -347,6 +348,7 @@ function PlannerPage() {
         recipe_id: recipeId,
         plan_date: datum,
         meal_type: moment,
+        personen,
         group_id: weergave === "gezin" ? gezin!.id : null,
       })
       .select("id")
@@ -515,7 +517,7 @@ function PlannerPage() {
   }
 
 
-  async function nieuw_gerecht(naam: string, basis: Basis | null, datum: string, moment: string, extra?: NieuwExtra) {
+  async function nieuw_gerecht(naam: string, basis: Basis | null, datum: string, moment: string, extra?: NieuwExtra, personen?: number) {
     if (!user) return;
     let recipeId: string | null = null;
 
@@ -567,6 +569,7 @@ function PlannerPage() {
       soort: extra?.soort ?? null,
       plan_date: datum,
       meal_type: moment,
+      personen: personen ?? null,
       group_id: weergave === "gezin" ? gezin!.id : null,
     }).select("id").single();
     if (error) {
@@ -616,6 +619,8 @@ function PlannerPage() {
           user_id: user.id,
           recipe_id: rij.recipe_id,
           custom_title: rij.custom_title,
+          soort: rij.soort ?? null,
+          personen: rij.personen ?? null,
           plan_date: datum,
           meal_type: moment,
           group_id: rij.group_id,
