@@ -99,7 +99,9 @@ export function RecipeForm({
 
   const [title, setTitle] = useState(recipe?.title ?? startNaam ?? "");
   const [description, setDescription] = useState(recipe?.description ?? "");
-  const [servings, setServings] = useState(String(recipe?.servings ?? 4));
+  // Vragen naar het aantal personen doen we niet hier, maar pas bij het eerste
+  // inplannen of koken. Voor de voedingswaarden schatten we het aantal zelf.
+  const [servings, setServings] = useState(String(recipe?.servings ?? ""));
   const [prep, setPrep] = useState(String(recipe?.prep_minutes ?? 15));
   const [cook, setCook] = useState(String(recipe?.cook_minutes ?? 20));
   const [category, setCategory] = useState(recipe?.category ?? "hoofdgerecht");
@@ -766,7 +768,7 @@ export function RecipeForm({
         title: naam,
         description: (over?.description ?? description).trim(),
         image_url: bewaardeFoto,
-        servings: over ? over.servings : Number(servings) || 1,
+        servings: over ? over.servings : Number(servings) || schatting || 4,
         prep_minutes: over ? over.prep : Number(prep) || 0,
         cook_minutes: over ? over.cook : Number(cook) || 0,
         difficulty: over?.difficulty ?? difficulty,
@@ -1223,55 +1225,6 @@ export function RecipeForm({
           />
         </div>
 
-        <div>
-          <Label htmlFor="servings-top" className="text-base">
-            Voor hoeveel personen zijn deze ingrediënten?
-          </Label>
-          <div className="mt-2 flex w-full items-center gap-2 sm:gap-3">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setServings(String(Math.max(1, (Number(servings) || 1) - 1)))}
-              aria-label="Minder personen"
-              className="size-12 shrink-0 sm:size-14"
-            >
-              –
-            </Button>
-            <Input
-              id="servings-top"
-              value={servings}
-              onChange={(e) => setServings(e.target.value)}
-              inputMode="numeric"
-              className="h-12 min-w-0 flex-1 text-center text-base sm:h-14 sm:w-24 sm:flex-none"
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setServings(String((Number(servings) || 0) + 1))}
-              aria-label="Meer personen"
-              className="size-12 shrink-0 sm:size-14"
-            >
-              +
-            </Button>
-            <span className="shrink-0 text-base text-muted-foreground">personen</span>
-          </div>
-          <p className="mt-2 text-base text-muted-foreground">
-            Weet je het niet zeker? Laat het gerust staan — je kan de hoeveelheden later altijd
-            omrekenen.
-            {schatting && schatting !== (Number(servings) || 0) ? (
-              <>
-                {" "}
-                <button
-                  type="button"
-                  onClick={() => setServings(String(schatting))}
-                  className="underline underline-offset-4"
-                >
-                  Lijkt op {schatting} personen — overnemen
-                </button>
-              </>
-            ) : null}
-          </p>
-        </div>
 
 
 
@@ -1312,7 +1265,7 @@ export function RecipeForm({
         {ingredientTekst.trim() && (
           <Voedingswaarden
             ingredienten={parseIngredientText(ingredientTekst)}
-            porties={Number(servings) || 1}
+            porties={Number(servings) || schatting || 4}
           />
         )}
 
@@ -1490,7 +1443,7 @@ export function RecipeForm({
           aria-expanded={meerDetails}
           className="flex min-h-14 w-full items-center justify-between px-4 text-left text-base font-semibold"
         >
-          Meer details (personen, tijd, soort) — mag je overslaan
+          Meer details (tijd) — mag je overslaan
           <ChevronDown
             className={meerDetails ? "size-6 rotate-180 transition" : "size-6 transition"}
             aria-hidden
@@ -1642,8 +1595,7 @@ export function RecipeForm({
                 ))}
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <label className="text-base">Personen<Input type="number" min={1} value={servings} onChange={(e) => setServings(e.target.value)} className="mt-1 h-14 text-base" /></label>
+            <div className="grid grid-cols-2 gap-2">
               <label className="text-base">Voorbereiden (min)<Input type="number" min={0} value={prep} onChange={(e) => setPrep(e.target.value)} className="mt-1 h-14 text-base" /></label>
               <label className="text-base">Koken (min)<Input type="number" min={0} value={cook} onChange={(e) => setCook(e.target.value)} className="mt-1 h-14 text-base" /></label>
             </div>
