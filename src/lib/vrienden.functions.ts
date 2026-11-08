@@ -4,35 +4,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { teksten } from "@/lib/melding-teksten";
 import { stuurPush } from "@/lib/webpush.server";
 
-export type Rechten = {
-  recipes_view: boolean;
-  recipes_edit: boolean;
-  planner_view: boolean;
-  planner_edit: boolean;
-  shopping_view: boolean;
-  shopping_edit: boolean;
-};
+import { schoonRechten, type Rechten } from "@/lib/deel-rechten";
 
-const LEEG: Rechten = {
-  recipes_view: false,
-  recipes_edit: false,
-  planner_view: false,
-  planner_edit: false,
-  shopping_view: false,
-  shopping_edit: false,
-};
-
-function schoonRechten(input: Partial<Rechten> | null | undefined): Rechten {
-  const uit = { ...LEEG };
-  for (const sleutel of Object.keys(LEEG) as (keyof Rechten)[]) {
-    uit[sleutel] = Boolean(input?.[sleutel]);
-  }
-  // Bewerken impliceert bekijken.
-  if (uit.recipes_edit) uit.recipes_view = true;
-  if (uit.planner_edit) uit.planner_view = true;
-  if (uit.shopping_edit) uit.shopping_view = true;
-  return uit;
-}
+export type { Rechten };
 
 /**
  * Zet een bericht in het meldingenlogboek van de ontvanger en stuurt
