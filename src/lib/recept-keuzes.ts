@@ -28,5 +28,10 @@ export function eetstijlUitTags(tags: string[]): Eetstijl {
 }
 
 export function tagsMetEetstijl(tags: string[], eetstijl: Eetstijl) {
-  return [...new Set([...tags.filter((tag) => !EETSTIJLEN.some((keuze) => keuze.waarde === tag.toLowerCase())), eetstijl])];
+  return [
+    ...new Set([
+      ...tags.filter((tag) => !EETSTIJLEN.some((keuze) => keuze.waarde === tag.toLowerCase())),
+      eetstijl,
+    ]),
+  ];
 }

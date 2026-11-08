@@ -408,7 +408,10 @@ export function RecipeForm({
     setEetstijl(
       bepaalDieet(
         title,
-        tags.split(",").map((t) => t.trim()).filter(Boolean),
+        tags
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
         parseIngredientText(ingredientTekst).map((i) => i.name),
       ),
     );
@@ -700,11 +703,7 @@ export function RecipeForm({
 
   useEffect(() => {
     if (recipe || !user || saving || !title.trim()) return;
-    const t = setTimeout(() => {
-      if (conceptBezig.current || bewarenBezig.current) return;
-      conceptBezig.current = true;
-      setAutoStatus("bezig");
-      conceptBelofte.current = (async () => {
+    const bewaarConcept = async () => {
       try {
         const velden = {
           title: title.trim(),
@@ -740,7 +739,12 @@ export function RecipeForm({
       } finally {
         conceptBezig.current = false;
       }
-      })();
+    };
+    const t = setTimeout(() => {
+      if (conceptBezig.current || bewarenBezig.current) return;
+      conceptBezig.current = true;
+      setAutoStatus("bezig");
+      conceptBelofte.current = bewaarConcept();
     }, 1500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps

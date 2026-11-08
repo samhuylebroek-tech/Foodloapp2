@@ -3,15 +3,60 @@ export type Dieet = "vlees" | "vis" | "vegetarisch";
 export const DIETEN: Dieet[] = ["vlees", "vis", "vegetarisch"];
 
 const VLEES = [
-  "vlees", "kip", "kalkoen", "rund", "biefstuk", "steak", "gehakt", "varken", "spek", "ham",
-  "worst", "chorizo", "salami", "lam", "kalf", "eend", "konijn", "bacon", "hesp", "stoofvlees",
-  "burger", "schnitzel", "ribbetjes", "braadworst", "prosciutto", "pancetta", "kipfilet",
+  "vlees",
+  "kip",
+  "kalkoen",
+  "rund",
+  "biefstuk",
+  "steak",
+  "gehakt",
+  "varken",
+  "spek",
+  "ham",
+  "worst",
+  "chorizo",
+  "salami",
+  "lam",
+  "kalf",
+  "eend",
+  "konijn",
+  "bacon",
+  "hesp",
+  "stoofvlees",
+  "burger",
+  "schnitzel",
+  "ribbetjes",
+  "braadworst",
+  "prosciutto",
+  "pancetta",
+  "kipfilet",
 ];
 
 const VIS = [
-  "vis", "zalm", "kabeljauw", "tonijn", "garnaal", "garnalen", "scampi", "mossel", "schelp",
-  "inktvis", "calamares", "forel", "haring", "makreel", "ansjovis", "sardine", "tilapia",
-  "pangasius", "krab", "kreeft", "zeevruchten", "schol", "victoriabaars", "sushi",
+  "vis",
+  "zalm",
+  "kabeljauw",
+  "tonijn",
+  "garnaal",
+  "garnalen",
+  "scampi",
+  "mossel",
+  "schelp",
+  "inktvis",
+  "calamares",
+  "forel",
+  "haring",
+  "makreel",
+  "ansjovis",
+  "sardine",
+  "tilapia",
+  "pangasius",
+  "krab",
+  "kreeft",
+  "zeevruchten",
+  "schol",
+  "victoriabaars",
+  "sushi",
 ];
 
 /**
@@ -32,18 +77,15 @@ function bevat(tekst: string, woorden: string[]) {
 /** Exacte eetstijl-tag (zoals de app die zelf bewaart), of null. */
 function eetstijlTag(tags: string[]): Dieet | null {
   const schoon = tags.map((t) => t.trim().toLowerCase());
-  if (schoon.some((t) => t === "vegan" || t === "veganistisch" || t === "vegetarisch")) return "vegetarisch";
+  if (schoon.some((t) => t === "vegan" || t === "veganistisch" || t === "vegetarisch"))
+    return "vegetarisch";
   if (schoon.includes("vis")) return "vis";
   if (schoon.includes("vlees")) return "vlees";
   return null;
 }
 
 /** Bepaalt of een gerecht vlees, vis of vegetarisch is op basis van naam, labels en ingrediënten. */
-export function bepaalDieet(
-  title: string,
-  tags: string[],
-  ingredientNamen: string[] = [],
-): Dieet {
+export function bepaalDieet(title: string, tags: string[], ingredientNamen: string[] = []): Dieet {
   const gekozen = eetstijlTag(tags);
   if (gekozen) return gekozen;
 
