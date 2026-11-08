@@ -5,8 +5,9 @@ import { defineConfig, devices } from "@playwright/test";
  * Elke request naar een ander adres dan 127.0.0.1/localhost wordt in de tests
  * geblokkeerd (zie tests/e2e/helpers.ts), zodat productie nooit geraakt wordt.
  */
-const APP_PORT = 4319;
-const SUPA_PORT = 54399;
+// Eigen poorten, zodat de demo (4319/54399) mag blijven draaien tijdens het testen.
+const APP_PORT = 4339;
+const SUPA_PORT = 54439;
 const SUPA_URL = `http://127.0.0.1:${SUPA_PORT}`;
 
 export default defineConfig({

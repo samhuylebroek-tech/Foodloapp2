@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test as basis, type Page } from "@playwright/test";
 
-export const NEP_SUPABASE = "http://127.0.0.1:54399";
+export const NEP_SUPABASE = "http://127.0.0.1:54439";
 
 /**
  * Elke test krijgt een pagina waarop alle externe requests geblokkeerd zijn.

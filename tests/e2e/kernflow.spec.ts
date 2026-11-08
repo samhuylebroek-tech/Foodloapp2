@@ -431,3 +431,39 @@ test.describe("Responsief — geen horizontale overloop (met demodata)", () => {
     });
   }
 });
+
+test.describe("Recept vastleggen — duidelijke keuzes", () => {
+  test("vier keuzes met uitleg; foto van recept en gerecht herkennen zijn duidelijk verschillend", async ({
+    page,
+    extern,
+  }) => {
+    await page.goto("/recepten/nieuw");
+    for (const naam of [/Link plakken/, /Foto van recept/, /Zelf typen/, /Zoeken/]) {
+      await expect(page.getByRole("button", { name: naam })).toBeVisible();
+    }
+    await page.getByRole("button", { name: /Foto van recept/ }).click();
+    await expect(page.getByRole("button", { name: /Foto van recept/ })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    // Twee manieren om een recept-op-papier te lezen, en apart: een gerecht herkennen.
+    await expect(page.getByText("Recept fotograferen")).toBeVisible();
+    await expect(page.getByText("Kies een foto")).toBeVisible();
+    await expect(page.getByText("Gerecht herkennen")).toBeVisible();
+    await expect(page.getByText(/Dat is een gok/)).toBeVisible();
+    expect(await axeErnstig(page)).toEqual([]);
+    void extern;
+  });
+
+  test("voorbeelden staan als hulptekst onder het veld, niet als nep-invoer", async ({
+    page,
+    extern,
+  }) => {
+    await page.goto("/recepten/nieuw");
+    const ingr = page.getByLabel(/Ingrediënten — één per regel/);
+    await expect(ingr).toHaveValue("");
+    await expect(ingr).not.toHaveAttribute("placeholder", /bloem/);
+    await expect(ingr).toHaveAccessibleDescription(/bijvoorbeeld: 500 g bloem/);
+    void extern;
+  });
+});

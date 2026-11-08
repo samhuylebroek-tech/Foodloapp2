@@ -34,5 +34,8 @@ test("kernschermen", async ({ page, extern }, info) => {
   await schiet("5-weekmenu");
   await page.goto("/boodschappen");
   await schiet("6-boodschappen");
+  await page.goto("/recepten/nieuw");
+  await page.getByRole("button", { name: /Foto van recept/ }).click();
+  await schiet("7-nieuw-recept");
   void extern;
 });

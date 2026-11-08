@@ -10,6 +10,7 @@ import {
   Pencil,
   Search,
   X,
+  ImagePlus as ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -913,18 +914,33 @@ export function RecipeForm({
     setControleOpen(true);
   }
 
-  const manieren: { id: Manier; label: string; icon: typeof Link2 }[] = [
-    { id: "zelf", label: "Zelf invoeren", icon: Pencil },
-    { id: "link", label: "Van tekst of link", icon: Link2 },
-    { id: "foto", label: "Foto", icon: Camera },
-    { id: "zoek", label: "Zoeken", icon: Search },
+  const manieren: { id: Manier; label: string; uitleg: string; icon: typeof Link2 }[] = [
+    { id: "link", label: "Link plakken", uitleg: "Website, Instagram, TikTok, YouTube", icon: Link2 },
+    { id: "foto", label: "Foto van recept", uitleg: "Kookboek, briefje of screenshot", icon: Camera },
+    { id: "zelf", label: "Zelf typen", uitleg: "Begin met een lege kaart", icon: Pencil },
+    { id: "zoek", label: "Zoeken", uitleg: "Vind een recept op naam", icon: Search },
   ];
+
+  // Eén duidelijke voortgangsmelding tijdens het inlezen (ook voor schermlezers).
+  const bezigMet = importing
+    ? "De link wordt ingelezen…"
+    : lezenTekst
+      ? "De tekst wordt gelezen…"
+      : screenshotBezig
+        ? "De foto wordt gelezen…"
+        : suggereren
+          ? "We herkennen het gerecht…"
+          : recognizing
+            ? "We zoeken de ingrediënten op de foto…"
+            : null;
 
 
   return (
     <div className="space-y-6">
       {!recipe && (
-        <div className="sticky top-[calc(4.25rem+env(safe-area-inset-top))] z-10 -mx-1 flex items-center gap-2 rounded-2xl border border-border bg-card/95 p-2 shadow-sm backdrop-blur">
+        <div className="flex items-center gap-2 rounded-2xl bg-card p-2 shadow-zacht">
+          {/* Niet plakkend: de paginakop is hoger dan 4,25 rem, waardoor deze balk bij het
+              scrollen onder de kop verdween en inhoud bedekte. "Klaar" staat ook onderaan. */}
           <p className="flex-1 px-2 text-base font-medium">
             {koppelMaaltijd ? "Bijna klaar om te koppelen" : "Nieuw gerecht"}
           </p>
@@ -935,9 +951,9 @@ export function RecipeForm({
         </div>
       )}
       {!recipe && (
-        <section className="rounded-2xl border border-border bg-card p-4">
-          <h2 className="text-lg">Hoe wil je beginnen?</h2>
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <section className="rounded-3xl bg-card p-4 shadow-kaart sm:p-5">
+          <h2 className="text-sectietitel">Hoe wil je je recept toevoegen?</h2>
+          <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
             {manieren.map((m) => {
               const Icon = m.icon;
               const actief = manier === m.id;
@@ -949,16 +965,38 @@ export function RecipeForm({
                   aria-pressed={actief}
                   className={
                     actief
-                      ? "flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-primary bg-primary px-2 py-3 text-center text-base font-semibold leading-tight text-primary-foreground"
-                      : "flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-border bg-secondary px-2 py-3 text-center text-base font-semibold leading-tight"
+                      ? "flex min-h-28 flex-col items-start justify-between gap-2 rounded-2xl border-2 border-primary bg-primary p-3 text-left text-primary-foreground shadow-zacht"
+                      : "flex min-h-28 flex-col items-start justify-between gap-2 rounded-2xl border-2 border-transparent bg-secondary p-3 text-left transition-colors hover:border-primary/40"
                   }
                 >
-                  <Icon className="size-6" aria-hidden />
-                  {m.label}
+                  <span
+                    className={
+                      actief
+                        ? "flex size-10 items-center justify-center rounded-xl bg-white/15"
+                        : "flex size-10 items-center justify-center rounded-xl bg-card text-primary"
+                    }
+                  >
+                    <Icon className="size-5" aria-hidden />
+                  </span>
+                  <span>
+                    <span className="block text-base font-semibold leading-tight">{m.label}</span>
+                    <span className={actief ? "block text-[0.9rem] leading-snug text-primary-foreground/85" : "block text-[0.9rem] leading-snug text-muted-foreground"}>
+                      {m.uitleg}
+                    </span>
+                  </span>
                 </button>
               );
             })}
           </div>
+
+          {bezigMet ? (
+            <p role="status" className="mt-4 flex items-center gap-3 rounded-2xl bg-[var(--honing-zacht)] px-4 py-3 text-base font-medium text-[var(--honing-foreground)]">
+              <Loader2 className="size-5 shrink-0 animate-spin" aria-hidden />
+              <span>
+                {bezigMet} <span className="text-[var(--honing-foreground)]/80">Dit duurt meestal 5 à 15 seconden.</span>
+              </span>
+            </p>
+          ) : null}
 
           {laagSaldo && (
             <p className="mt-3 text-base text-muted-foreground">
@@ -1199,47 +1237,66 @@ export function RecipeForm({
           )}
 
           {manier === "foto" && (
-            <div className="mt-4">
-              <p className="text-base text-muted-foreground">
-                Upload een bestaande foto met recepttekst, of neem een foto van een klaar gerecht.
-              </p>
-              <label className="mt-3 inline-flex min-h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-5 text-base font-semibold">
-                {screenshotBezig ? (
-                  <Loader2 className="size-5 animate-spin" />
-                ) : (
-                  <Camera className="size-5" />
-                )}
-                Foto uploaden
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="sr-only"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) void handleScreenshot(f);
-                  }}
-                />
-              </label>
+            <div className="mt-4 space-y-4">
+              <div>
+                <p className="text-base font-semibold">Een recept op papier of scherm</p>
+                <p className="text-base text-muted-foreground">
+                  Een bladzijde uit een kookboek, een handgeschreven briefje of een screenshot. Wij lezen de tekst en vullen het recept in. Je kijkt het daarna na.
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <label className="flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-3 text-center text-base font-semibold leading-tight text-primary-foreground focus-within:outline focus-within:outline-3 focus-within:outline-ring">
+                    {screenshotBezig ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <Camera className="size-5" aria-hidden />}
+                    Recept fotograferen
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        e.target.value = "";
+                        if (f) void handleScreenshot(f);
+                      }}
+                    />
+                  </label>
+                  <label className="flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-3 text-center text-base font-semibold leading-tight focus-within:outline focus-within:outline-3 focus-within:outline-ring">
+                    <ImageIcon className="size-5" aria-hidden />
+                    Kies een foto
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        e.target.value = "";
+                        if (f) void handleScreenshot(f);
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
 
-              <label className="mt-3 inline-flex min-h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-5 text-base font-semibold text-primary-foreground">
-                {suggereren ? (
-                  <Loader2 className="size-5 animate-spin" />
-                ) : (
-                  <Sparkles className="size-5" />
-                )}
-                Foto nemen
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="sr-only"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) void handleFotoSuggestie(f);
-                  }}
-                />
-              </label>
-
+              <div className="border-t border-border pt-4">
+                <p className="text-base font-semibold">Een gerecht dat je voor je ziet</p>
+                <p className="text-base text-muted-foreground">
+                  Neem een foto van een bord eten. We stellen een passend recept voor. Dat is een gok, dus kijk het goed na.
+                </p>
+                <label className="mt-3 flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-3 text-center text-base font-semibold focus-within:outline focus-within:outline-3 focus-within:outline-ring">
+                  {suggereren ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <Sparkles className="size-5" aria-hidden />}
+                  Gerecht herkennen
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="sr-only"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      e.target.value = "";
+                      if (f) void handleFotoSuggestie(f);
+                    }}
+                  />
+                </label>
+              </div>
             </div>
           )}
 
@@ -1260,9 +1317,12 @@ export function RecipeForm({
             id="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Bijvoorbeeld: Stoofvlees van oma"
+            aria-describedby="title-hulp"
             className="mt-2 h-14 text-base"
           />
+          <p id="title-hulp" className="mt-1 text-[0.9rem] text-muted-foreground">
+            Bijvoorbeeld: Stoofvlees van oma
+          </p>
         </div>
 
 
@@ -1297,9 +1357,14 @@ export function RecipeForm({
             value={ingredientTekst}
             onChange={(e) => setIngredientTekst(e.target.value)}
             rows={6}
-            placeholder={"500 g bloem\n2 eieren\nsnuf zout"}
+            aria-describedby="ingredienten-hulp"
             className="mt-2 text-base"
           />
+          {/* Voorbeeld als hulptekst i.p.v. placeholder: grijze voorbeeldtekst in het
+              veld leek al ingevuld (BUG-038). */}
+          <p id="ingredienten-hulp" className="mt-1 text-[0.9rem] text-muted-foreground">
+            Eén ingrediënt per regel, bijvoorbeeld: 500 g bloem · 2 eieren · snufje zout
+          </p>
         </div>
 
         {ingredientTekst.trim() && (
@@ -1318,9 +1383,12 @@ export function RecipeForm({
             value={stappenTekst}
             onChange={(e) => setStappenTekst(e.target.value)}
             rows={7}
-            placeholder={"Verwarm de oven op 180 graden.\nMeng de bloem met de eieren."}
+            aria-describedby="stappen-hulp"
             className="mt-2 text-base"
           />
+          <p id="stappen-hulp" className="mt-1 text-[0.9rem] text-muted-foreground">
+            Eén stap per regel, bijvoorbeeld: Verwarm de oven op 180 graden.
+          </p>
           {stappen.length > 0 && (
             <Button
               type="button"
