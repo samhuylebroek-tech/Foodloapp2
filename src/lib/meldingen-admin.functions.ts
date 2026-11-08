@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type MeldingStats = {
@@ -89,7 +90,22 @@ export const meldingStatistieken = createServerFn({ method: "GET" })
 
 export const bewaarMeldingStandaard = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { key: string; value: string }) => input)
+  .inputValidator((input: { key: string; value: string }) => {
+    const { key, value } = z
+      .object({ key: z.string().regex(/^[a-z_]{1,40}$/), value: z.string().max(5000) })
+      .parse(input);
+    // Ongeldige JSON geeft een gewone boodschap, geen technische fout.
+    let json: unknown;
+    try {
+      json = JSON.parse(value);
+    } catch {
+      throw new Error("Deze instelling is geen geldige JSON.");
+    }
+    if (json === null || typeof json !== "object" || Array.isArray(json)) {
+      throw new Error('Deze instelling moet een object zijn, bv. {"on": true}.');
+    }
+    return { key, value };
+  })
   .handler(async ({ data, context }) => {
     await moetAdminZijn(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
