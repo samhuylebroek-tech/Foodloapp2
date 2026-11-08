@@ -70,3 +70,53 @@ export async function heeftHorizontaleScroll(page: Page) {
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
   );
 }
+
+/** Opslagsleutel van supabase-js voor URL http://127.0.0.1:… */
+const SESSIE_SLEUTEL = "sb-127-auth-token";
+
+/** Zet een (nep)sessie klaar vóór de app laadt: de gebruiker is ingelogd. */
+export async function meldAan(page: Page) {
+  const { token, user } = (await (await fetch(`${NEP_SUPABASE}/__token`)).json()) as {
+    token: string;
+    user: Record<string, unknown>;
+  };
+  const sessie = {
+    access_token: token,
+    refresh_token: "nep-refresh",
+    token_type: "bearer",
+    expires_in: 86400,
+    expires_at: Math.floor(Date.now() / 1000) + 86400,
+    user,
+  };
+  await page.addInitScript(
+    ([sleutel, waarde]) => {
+      // Slechts één keer per tabblad: anders zou afmelden meteen ongedaan gemaakt worden.
+      if (window.sessionStorage.getItem("nep-sessie-gezet")) return;
+      window.sessionStorage.setItem("nep-sessie-gezet", "1");
+      window.localStorage.setItem(sleutel!, waarde!);
+      // Rondleiding/onboarding-hints overslaan zodat de kernflow centraal staat.
+      window.localStorage.setItem("rondleiding-gezien", "1");
+    },
+    [SESSIE_SLEUTEL, JSON.stringify(sessie)],
+  );
+  return user;
+}
+
+export async function nepDb(): Promise<Record<string, Record<string, unknown>[]>> {
+  return (await (await fetch(`${NEP_SUPABASE}/__db`)).json()) as never;
+}
+
+export async function storing(s: {
+  pad: string;
+  soort: "fout" | "traag" | "netwerk";
+  methode?: string;
+  keer?: number;
+  ms?: number;
+  status?: number;
+}) {
+  await fetch(`${NEP_SUPABASE}/__storing`, { method: "POST", body: JSON.stringify(s) });
+}
+
+export async function seedDb(data: Record<string, Record<string, unknown>[]>) {
+  await fetch(`${NEP_SUPABASE}/__seed`, { method: "POST", body: JSON.stringify(data) });
+}

@@ -1,37 +1,129 @@
 // Nep-Supabase voor end-to-end-tests. Draait enkel lokaal (127.0.0.1).
-// Antwoordt met vaste, voorspelbare data en houdt bij welke oproepen gebeurden,
-// zodat tests nooit een echte (productie)database raken.
+// Bevat een testgebruiker, een kleine database in het geheugen en
+// stuurknoppen (/__*) waarmee tests storingen kunnen nabootsen.
+// Raakt nooit een echte (productie)database.
 import http from "node:http";
+import { maakDb, rest } from "./nep-db.mjs";
 
 const PORT = Number(process.env.FAKE_SUPABASE_PORT ?? 54399);
+
+export const TEST_USER = {
+  id: "11111111-1111-4111-8111-111111111111",
+  aud: "authenticated",
+  role: "authenticated",
+  email: "marie@example.com",
+  app_metadata: { provider: "email" },
+  user_metadata: { display_name: "Marie Test", voornaam: "Marie", achternaam: "Test" },
+  created_at: "2026-01-01T00:00:00Z",
+};
+export const TEST_TOKEN_PREFIX = "nep-token";
+
+function seed() {
+  return {
+    profiles: [
+      {
+        id: TEST_USER.id,
+        display_name: "Marie Test",
+        handle: "marie",
+        taal: "nl",
+        thema: "sage",
+        onboarding_klaar: true,
+        welkom_mail_verstuurd: true,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    ],
+    user_credits: [
+      {
+        user_id: TEST_USER.id,
+        balance: 50,
+        gratis_totaal: 50,
+        gebruikt_totaal: 0,
+        gekocht_totaal: 0,
+      },
+    ],
+    notification_preferences: [
+      { user_id: TEST_USER.id, onboarding_gezien: true, tijdzone: "Europe/Brussels" },
+    ],
+  };
+}
+
+const db = maakDb(seed());
 const log = [];
+/** Storingen per pad: { pad: { soort: "fout"|"traag"|"netwerk", keer, ms, status } } */
+const storingen = new Map();
 
 const cors = {
   "access-control-allow-origin": "*",
   "access-control-allow-headers": "*",
-  "access-control-allow-methods": "GET,POST,PATCH,PUT,DELETE,OPTIONS",
+  "access-control-allow-methods": "GET,POST,PATCH,PUT,DELETE,OPTIONS,HEAD",
   "access-control-expose-headers": "*",
 };
 
-function stuur(res, status, body) {
-  res.writeHead(status, { "content-type": "application/json", ...cors });
-  res.end(JSON.stringify(body));
+function stuur(res, status, body, extra = {}) {
+  res.writeHead(status, { "content-type": "application/json", ...cors, ...extra });
+  res.end(body === null || body === undefined ? "" : JSON.stringify(body));
 }
+
+function b64url(o) {
+  return Buffer.from(JSON.stringify(o)).toString("base64url");
+}
+/** HS256-vormige JWT: supabase-js kan die niet lokaal verifiëren en vraagt /auth/v1/user. */
+export function maakToken(sub = TEST_USER.id) {
+  const kop = b64url({ alg: "HS256", typ: "JWT" });
+  const inhoud = b64url({
+    sub,
+    aud: "authenticated",
+    role: "authenticated",
+    email: TEST_USER.email,
+    exp: Math.floor(Date.now() / 1000) + 3600 * 24,
+    iat: Math.floor(Date.now() / 1000),
+    aal: "aal1",
+    session_id: "nep-sessie",
+  });
+  return `${kop}.${inhoud}.${TEST_TOKEN_PREFIX}`;
+}
+const geldigToken = (auth) =>
+  (auth ?? "").startsWith("Bearer ") && auth.endsWith(`.${TEST_TOKEN_PREFIX}`);
+
+const RPC_STANDAARD = {
+  credits_saldo: { saldo: 50 },
+  mijn_credits: { balance: 50 },
+  is_admin: false,
+  heeft_admin: false,
+};
 
 const server = http.createServer((req, res) => {
   let data = "";
   req.on("data", (c) => (data += c));
-  req.on("end", () => {
+  req.on("end", async () => {
     const url = new URL(req.url ?? "/", `http://127.0.0.1:${PORT}`);
     if (req.method === "OPTIONS") {
       res.writeHead(204, cors);
       return res.end();
     }
+
+    // ---- Stuurknoppen voor tests ----
     if (url.pathname === "/__log") return stuur(res, 200, log);
     if (url.pathname === "/__reset") {
       log.length = 0;
+      storingen.clear();
+      db.reset(seed());
       return stuur(res, 200, { ok: true });
     }
+    if (url.pathname === "/__db") return stuur(res, 200, Object.fromEntries(db.tabellen));
+    if (url.pathname === "/__token")
+      return stuur(res, 200, { token: maakToken(), user: TEST_USER });
+    if (url.pathname === "/__storing" && req.method === "POST") {
+      const s = JSON.parse(data || "{}");
+      storingen.set(s.pad, { keer: 1, ...s });
+      return stuur(res, 200, { ok: true });
+    }
+    if (url.pathname === "/__seed" && req.method === "POST") {
+      const s = JSON.parse(data || "{}");
+      for (const [tabel, rijen] of Object.entries(s)) db.t(tabel).push(...rijen);
+      return stuur(res, 200, { ok: true });
+    }
+
     let body = null;
     try {
       body = data ? JSON.parse(data) : null;
@@ -40,8 +132,31 @@ const server = http.createServer((req, res) => {
     }
     log.push({ method: req.method, path: url.pathname, query: url.search, body });
 
-    // --- Auth ---
+    // ---- Storing nabootsen (enkel voor de volgende N oproepen op dat pad/methode) ----
+    for (const [pad, s] of storingen) {
+      if (!url.pathname.startsWith(pad) || (s.methode && s.methode !== req.method) || s.keer <= 0)
+        continue;
+      s.keer -= 1;
+      if (s.soort === "traag") await new Promise((r) => setTimeout(r, s.ms ?? 1500));
+      if (s.soort === "netwerk") return req.socket.destroy();
+      if (s.soort === "fout")
+        return stuur(res, s.status ?? 500, { code: "XX000", message: "nep-fout" });
+    }
+
+    const auth = req.headers["authorization"];
+
+    // ---- Auth ----
     if (url.pathname === "/auth/v1/token") {
+      if (url.searchParams.get("grant_type") === "refresh_token") {
+        return stuur(res, 200, {
+          access_token: maakToken(),
+          refresh_token: "nep-refresh",
+          token_type: "bearer",
+          expires_in: 86400,
+          expires_at: Math.floor(Date.now() / 1000) + 86400,
+          user: TEST_USER,
+        });
+      }
       if (body?.email === "traag@example.com") {
         return setTimeout(
           () =>
@@ -81,12 +196,31 @@ const server = http.createServer((req, res) => {
       });
     }
     if (url.pathname === "/auth/v1/recover") return stuur(res, 200, {});
-    if (url.pathname === "/auth/v1/user") return stuur(res, 401, { code: 401, msg: "no session" });
+    if (url.pathname === "/auth/v1/user") {
+      if (geldigToken(auth)) return stuur(res, 200, TEST_USER);
+      return stuur(res, 401, { code: 401, error_code: "bad_jwt", msg: "invalid JWT" });
+    }
+    if (url.pathname === "/auth/v1/logout") return stuur(res, 204, null);
     if (url.pathname.startsWith("/auth/v1/")) return stuur(res, 200, {});
 
-    // --- Data ---
-    if (url.pathname.startsWith("/rest/v1/")) return stuur(res, 200, []);
-    if (url.pathname.startsWith("/storage/v1/")) return stuur(res, 404, { error: "not found" });
+    // ---- Data ----
+    if (url.pathname.startsWith("/rest/v1/rpc/")) {
+      const naam = url.pathname.slice("/rest/v1/rpc/".length);
+      return stuur(res, 200, RPC_STANDAARD[naam] ?? null);
+    }
+    if (url.pathname.startsWith("/rest/v1/")) {
+      const tabel = url.pathname.slice("/rest/v1/".length);
+      // Zonder geldige sessie geeft PostgREST (RLS) niets terug.
+      if (!geldigToken(auth) && req.method === "GET") return stuur(res, 200, []);
+      const params = [...url.searchParams.entries()];
+      const p = Object.assign(params, { get: (k) => url.searchParams.get(k) });
+      const r = rest(db, { method: req.method, tabel, params: p, body, headers: req.headers });
+      return stuur(res, r.status, r.body, r.kop);
+    }
+    if (url.pathname.startsWith("/storage/v1/"))
+      return stuur(res, 400, { error: "niet in nep-Supabase" });
+    if (url.pathname.startsWith("/functions/v1/"))
+      return stuur(res, 404, { error: "geen functies" });
     return stuur(res, 404, { error: "onbekend in nep-Supabase" });
   });
 });

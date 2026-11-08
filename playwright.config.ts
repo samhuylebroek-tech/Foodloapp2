@@ -26,12 +26,28 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
-    // Beginner op een kleine telefoon, met grotere tekst.
-    { name: "telefoon", use: { ...devices["Pixel 7"] } },
+    // Beginner op een kleine telefoon (Pixel 7, 412 px).
+    { name: "telefoon", use: { ...devices["Pixel 7"] }, testIgnore: /kernflow/ },
     // Creator op desktop.
     {
       name: "desktop",
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
+    },
+    // Kernflow op de gevraagde breedtes (de desktop-run hierboven dekt 1280 px).
+    {
+      name: "mobiel-360",
+      use: { ...devices["Pixel 7"], viewport: { width: 360, height: 740 } },
+      testMatch: /kernflow/,
+    },
+    {
+      name: "mobiel-390",
+      use: { ...devices["Pixel 7"], viewport: { width: 390, height: 844 } },
+      testMatch: /kernflow/,
+    },
+    {
+      name: "tablet-768",
+      use: { ...devices["Desktop Chrome"], viewport: { width: 768, height: 1024 }, hasTouch: true },
+      testMatch: /kernflow/,
     },
   ],
   webServer: [
