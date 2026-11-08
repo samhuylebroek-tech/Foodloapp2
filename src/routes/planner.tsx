@@ -358,21 +358,33 @@ function PlannerPage() {
   }
 
 
+  // BUG-032: een dubbele tik terwijl de eerste nog bezig is, mag niet twee keer inplannen.
+  const planBezig = useRef(false);
+
   async function plan_toevoegen(recipeId: string, datum: string, moment: string, titel: string, personen: number) {
-    if (!user) return;
-    const { data, error } = await supabase
-      .from("meal_plan")
-      .insert({
-        user_id: user.id,
-        recipe_id: recipeId,
-        plan_date: datum,
-        meal_type: moment,
-        personen,
-        group_id: weergave === "gezin" ? gezin!.id : null,
-      })
-      .select("id")
-      .single();
-    if (error) {
+    if (!user || planBezig.current) return;
+    planBezig.current = true;
+    let resultaat: { data: { id: string } | null; error: unknown };
+    try {
+      resultaat = await supabase
+        .from("meal_plan")
+        .insert({
+          user_id: user.id,
+          recipe_id: recipeId,
+          plan_date: datum,
+          meal_type: moment,
+          personen,
+          group_id: weergave === "gezin" ? gezin!.id : null,
+        })
+        .select("id")
+        .single();
+    } catch (e) {
+      resultaat = { data: null, error: e };
+    } finally {
+      planBezig.current = false;
+    }
+    const { data, error } = resultaat;
+    if (error || !data) {
       toast.error("Inplannen lukte niet");
       return;
     }
@@ -860,8 +872,8 @@ function PlannerPage() {
                 <button
                   type="button"
                   className="flex h-14 min-w-0 flex-1 flex-col items-center justify-center rounded-xl px-2 text-center transition-colors hover:bg-muted"
-                  aria-label="Kies een week in de kalender"
                 >
+                  {/* Zichtbare tekst blijft deel van de naam (WCAG 2.5.3); de uitleg komt erbij. */}
                   <span className="font-display text-xl font-semibold leading-tight">
                     {weekVerschil === 0 ? "Deze week" : weekVerschil === 1 ? "Volgende week" : weekVerschil === -1 ? "Vorige week" : "Week"}
                   </span>
@@ -870,6 +882,7 @@ function PlannerPage() {
                     {" – "}
                     {new Date(`${week[6]}T12:00:00`).toLocaleDateString("nl-BE", { day: "numeric", month: "short" })}
                   </span>
+                  <span className="sr-only"> — kies een week in de kalender</span>
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="center">
@@ -938,7 +951,6 @@ function PlannerPage() {
                   type="button"
                   role="tab"
                   aria-selected={actief}
-                  aria-label={`${d.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" })}${isVandaag ? ", vandaag" : ""}${aantal ? `, ${aantal} gepland` : ""}`}
                   onClick={() => { setDagKeuze(dag); setHeleWeek(false); }}
                   className={[
                     "flex min-h-[4.5rem] flex-col items-center justify-center gap-0.5 rounded-xl border-2 transition-colors",
@@ -958,6 +970,11 @@ function PlannerPage() {
                     aria-hidden
                     className={`mt-0.5 size-1.5 rounded-full ${aantal ? (actief ? "bg-primary-foreground" : "bg-primary") : "bg-transparent"}`}
                   />
+                  {/* Volledige uitleg als verborgen tekst ná de zichtbare tekst, zodat de
+                      knopnaam altijd begint met wat je ziet ("ma 2") — WCAG 2.5.3. */}
+                  <span className="sr-only">
+                    {`, ${d.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" })}${isVandaag ? ", vandaag" : ""}${aantal ? `, ${aantal} gepland` : ""}`}
+                  </span>
                 </button>
               );
             })}
@@ -1938,11 +1955,37 @@ function LijstVraag({
 }) {
   const [nieuweNaam, setNieuweNaam] = useState("");
   const [nieuwTonen, setNieuwTonen] = useState(false);
+  const venster = useRef<HTMLDivElement>(null);
+  const sluitRef = useRef(onSluit);
+  sluitRef.current = onSluit;
+
+  // Toegankelijk venster: focus erin, Escape sluit, focus terug bij sluiten (BUG-030).
+  // Eén keer bij openen (geen afhankelijkheden), zodat de focus niet verspringt.
+  useEffect(() => {
+    const vorige = document.activeElement as HTMLElement | null;
+    venster.current?.querySelector<HTMLElement>("button")?.focus();
+    const opToets = (e: KeyboardEvent) => {
+      if (e.key === "Escape") sluitRef.current();
+    };
+    document.addEventListener("keydown", opToets);
+    return () => {
+      document.removeEventListener("keydown", opToets);
+      vorige?.focus?.();
+    };
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
-      <div className="w-full max-w-lg rounded-t-3xl bg-card p-4 sm:rounded-3xl">
-        <h2 className="font-display text-xl">Ook op je boodschappenlijst?</h2>
+      <div
+        ref={venster}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lijstvraag-titel"
+        className="w-full max-w-lg rounded-t-3xl bg-card p-4 sm:rounded-3xl"
+      >
+        <h2 id="lijstvraag-titel" className="font-display text-xl">
+          Ook op je boodschappenlijst?
+        </h2>
         <p className="mt-1 text-base text-muted-foreground">
           De ingrediënten van “{titel}” worden bij je lijst opgeteld.
         </p>

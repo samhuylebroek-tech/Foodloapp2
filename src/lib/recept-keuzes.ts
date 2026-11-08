@@ -17,11 +17,14 @@ export function soortLabel(waarde: string) {
   return SOORTEN.find((soort) => soort.waarde === waarde.toLowerCase())?.label ?? waarde;
 }
 
+/** De eetstijl die als tag bewaard is (exacte tag), of null als er nog geen gekozen is. */
+export function bewaardeEetstijl(tags: string[]): Eetstijl | null {
+  const schoon = tags.map((t) => t.trim().toLowerCase());
+  return EETSTIJLEN.find((k) => schoon.includes(k.waarde))?.waarde ?? null;
+}
+
 export function eetstijlUitTags(tags: string[]): Eetstijl {
-  const tekst = tags.join(" ").toLowerCase();
-  if (tekst.includes("vis")) return "vis";
-  if (tekst.includes("vlees")) return "vlees";
-  return "vegetarisch";
+  return bewaardeEetstijl(tags) ?? "vegetarisch";
 }
 
 export function tagsMetEetstijl(tags: string[], eetstijl: Eetstijl) {

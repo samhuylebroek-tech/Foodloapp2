@@ -33,7 +33,15 @@ import {
   type ImportedRecipe,
 } from "@/lib/ai.functions";
 import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/types";
-import { EETSTIJLEN, eetstijlUitTags, soortLabel, tagsMetEetstijl, type Eetstijl } from "@/lib/recept-keuzes";
+import {
+  bewaardeEetstijl,
+  EETSTIJLEN,
+  eetstijlUitTags,
+  soortLabel,
+  tagsMetEetstijl,
+  type Eetstijl,
+} from "@/lib/recept-keuzes";
+import { bepaalDieet } from "@/lib/dieet";
 import { useVoorkeuren } from "@/lib/voorkeuren";
 import { schatPersonen } from "@/lib/porties";
 import { parseIngredientText, ingredientToLine } from "@/lib/ingredienten";
@@ -110,6 +118,11 @@ export function RecipeForm({
   const [difficulty, setDifficulty] = useState(recipe?.difficulty ?? "makkelijk");
   const [tags, setTags] = useState((recipe?.tags ?? []).join(", "));
   const [eetstijl, setEetstijl] = useState<Eetstijl>(eetstijlUitTags(recipe?.tags ?? []));
+  // Eetstijl raden we mee (zoals de soort) tot jij zelf kiest. Vroeger stond een
+  // nieuw recept altijd op "vegetarisch", ook stoofvlees (BUG-028).
+  const [eetstijlHandmatig, setEetstijlHandmatig] = useState(
+    bewaardeEetstijl(recipe?.tags ?? []) !== null,
+  );
   const [photoPath, setPhotoPath] = useState<string | null>(recipe?.image_url ?? null);
   const [sourceUrl, setSourceUrl] = useState(recipe?.source_url ?? gedeeldeLink);
   const [ingredientTekst, setIngredientTekst] = useState(
@@ -179,6 +192,10 @@ export function RecipeForm({
   const [conceptId, setConceptId] = useState<string | null>(null);
   const [autoStatus, setAutoStatus] = useState<"" | "bezig" | "ok">("");
   const conceptBezig = useRef(false);
+  // BUG-031: een concept dat nog onderweg is mag bij Bewaren geen tweede recept opleveren.
+  const conceptIdRef = useRef<string | null>(null);
+  const conceptBelofte = useRef<Promise<void> | null>(null);
+  const bewarenBezig = useRef(false);
   const [voorstelFoto, setVoorstelFoto] = useState<string | null>(null);
   const [fotoBezig, setFotoBezig] = useState(false);
   const [fotoGeweigerd, setFotoGeweigerd] = useState(false);
@@ -384,6 +401,18 @@ export function RecipeForm({
       ),
     );
   }, [title, tags, ingredientTekst, soortHandmatig]);
+
+  useEffect(() => {
+    if (eetstijlHandmatig) return;
+    if (!title.trim() && !ingredientTekst.trim()) return;
+    setEetstijl(
+      bepaalDieet(
+        title,
+        tags.split(",").map((t) => t.trim()).filter(Boolean),
+        parseIngredientText(ingredientTekst).map((i) => i.name),
+      ),
+    );
+  }, [title, tags, ingredientTekst, eetstijlHandmatig]);
 
   function vulIn(data: ImportedRecipe) {
     setTitle(data.title);
@@ -671,10 +700,11 @@ export function RecipeForm({
 
   useEffect(() => {
     if (recipe || !user || saving || !title.trim()) return;
-    const t = setTimeout(async () => {
-      if (conceptBezig.current) return;
+    const t = setTimeout(() => {
+      if (conceptBezig.current || bewarenBezig.current) return;
       conceptBezig.current = true;
       setAutoStatus("bezig");
+      conceptBelofte.current = (async () => {
       try {
         const velden = {
           title: title.trim(),
@@ -685,7 +715,7 @@ export function RecipeForm({
           category,
           is_concept: true,
         };
-        let id = conceptId;
+        let id = conceptIdRef.current ?? conceptId;
         if (id) {
           await supabase.from("recipes").update(velden).eq("id", id);
         } else {
@@ -696,6 +726,7 @@ export function RecipeForm({
             .single();
           if (error) throw error;
           id = data.id;
+          conceptIdRef.current = id;
           setConceptId(id);
         }
         await supabase.from("recipe_ingredients").delete().eq("recipe_id", id!);
@@ -709,6 +740,7 @@ export function RecipeForm({
       } finally {
         conceptBezig.current = false;
       }
+      })();
     }, 1500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -739,7 +771,10 @@ export function RecipeForm({
       return;
     }
     setSaving(true);
+    bewarenBezig.current = true;
     try {
+      // Wacht op een concept dat nog onderweg is, en werk dát recept bij.
+      if (conceptBelofte.current) await conceptBelofte.current.catch(() => undefined);
       // Bij direct bewaren vanuit het voorbeeldvenster staat de foto nog niet in de
       // schermstate; die wordt dan meegegeven.
       let bewaardeFoto = over !== undefined ? (over.imageUrl ?? photoPath) : photoPath;
@@ -786,7 +821,7 @@ export function RecipeForm({
       };
 
 
-      let recipeId = recipe?.id ?? conceptId ?? undefined;
+      let recipeId = recipe?.id ?? conceptIdRef.current ?? conceptId ?? undefined;
       if (recipeId && !recipe?.id) {
         const { error } = await supabase.from("recipes").update(payload).eq("id", recipeId);
         if (error) throw error;
@@ -863,6 +898,7 @@ export function RecipeForm({
       }
 
     } finally {
+      bewarenBezig.current = false;
       setSaving(false);
     }
   }
@@ -1582,7 +1618,13 @@ export function RecipeForm({
             </div>
             <div>
               <p className="text-base font-medium">Eetstijl</p>
-              <EetstijlKeuze waarde={eetstijl} onKies={setEetstijl} />
+              <EetstijlKeuze
+                waarde={eetstijl}
+                onKies={(e) => {
+                  setEetstijl(e);
+                  setEetstijlHandmatig(true);
+                }}
+              />
             </div>
             <div>
               <p className="text-base font-medium">Moeilijkheid</p>

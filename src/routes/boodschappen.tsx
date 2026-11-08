@@ -836,7 +836,7 @@ function BoodschappenPage() {
             onClick={() => void zetTerug()}
             disabled={terugAantal === 0}
             className="h-12 rounded-xl bg-card px-4 text-base shadow-sm"
-            aria-label="Laatste actie terugzetten"
+            aria-label="Ongedaan maken: laatste actie terugzetten"
           >
             <Undo2 className="size-5" /> Ongedaan maken
           </Button>
@@ -885,8 +885,9 @@ function BoodschappenPage() {
 
         <Tabs value={weergave} onValueChange={(waarde) => setWeergave(waarde as "lijst" | "gerechten")}>
           <TabsList className="grid h-14 w-full grid-cols-2">
-            <TabsTrigger value="lijst" className="h-12 text-base">Mijn lijst</TabsTrigger>
-            <TabsTrigger value="gerechten" className="h-12 text-base">Uit gerechten</TabsTrigger>
+            {/* Gebruikt als schakelaar; de inhoud staat buiten <Tabs>, dus geen aria-controls naar een paneel dat niet bestaat. */}
+            <TabsTrigger value="lijst" className="h-12 text-base" aria-controls={undefined}>Mijn lijst</TabsTrigger>
+            <TabsTrigger value="gerechten" className="h-12 text-base" aria-controls={undefined}>Uit gerechten</TabsTrigger>
           </TabsList>
         </Tabs>
 
