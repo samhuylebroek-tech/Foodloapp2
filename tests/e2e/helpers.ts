@@ -120,3 +120,8 @@ export async function storing(s: {
 export async function seedDb(data: Record<string, Record<string, unknown>[]>) {
   await fetch(`${NEP_SUPABASE}/__seed`, { method: "POST", body: JSON.stringify(data) });
 }
+
+/** Zet de nep-database terug op de demodataset (recepten, weekmenu, lijst). */
+export async function resetDemo() {
+  await fetch(`${NEP_SUPABASE}/__reset?demo=1`);
+}

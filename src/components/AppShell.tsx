@@ -18,13 +18,19 @@ import { Aankondigingen } from "@/components/Aankondigingen";
 import { MeldingVraag, telAanmelding } from "@/components/MeldingVraag";
 import { meet } from "@/lib/meten";
 
-const NAV = [
+const NAV: readonly {
+  to: "/" | "/gerechten" | "/planner" | "/boodschappen" | "/meer";
+  label: string;
+  /** Korter label voor de mobiele tabbalk (5 gelijke vakken op 360 px). */
+  kort?: string;
+  icon: typeof Home;
+}[] = [
   { to: "/", label: "Start", icon: Home },
   { to: "/gerechten", label: "Recepten", icon: BookOpen },
   { to: "/planner", label: "Weekmenu", icon: CalendarDays },
-  { to: "/boodschappen", label: "Boodschappen", icon: ShoppingCart },
+  { to: "/boodschappen", label: "Boodschappen", kort: "Lijst", icon: ShoppingCart },
   { to: "/meer", label: "Meer", icon: MoreHorizontal },
-] as const;
+];
 
 const TABS = NAV;
 
@@ -38,11 +44,17 @@ export function AppShell({
   children,
   action,
   sidebar,
+  breed = false,
+  ondertitel,
 }: {
   title: string;
   children: ReactNode;
   action?: ReactNode;
   sidebar?: ReactNode;
+  /** Brede inhoud op grote schermen (overzichten zoals Start en Recepten). */
+  breed?: boolean;
+  /** Korte regel onder de paginatitel. */
+  ondertitel?: ReactNode;
 }) {
   const { session, loading } = useAuth();
   const t = useT();
@@ -102,8 +114,10 @@ export function AppShell({
   const menu = (
     <nav aria-label="Hoofdmenu">
       <Link to="/" className="flex items-center gap-3 px-3">
-        <img src={logo} alt="" width={36} height={36} className="size-9" />
-        <p className="text-2xl font-extrabold tracking-tight text-foreground">Foodlo</p>
+        <span className="flex size-11 items-center justify-center rounded-2xl bg-card shadow-zacht">
+          <img src={logo} alt="" width={30} height={30} className="size-7" />
+        </span>
+        <p className="font-display text-[1.65rem] font-semibold tracking-tight text-foreground">Foodlo</p>
       </Link>
       <ul className="mt-10 space-y-1.5">
         {NAV.map((item) => {
@@ -116,11 +130,17 @@ export function AppShell({
                 data-tour={`nav-${item.to}`}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-h-14 items-center gap-4 rounded-xl px-4 text-lg font-semibold transition-colors",
-                  active ? "bg-secondary text-secondary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  "flex min-h-14 items-center gap-4 rounded-2xl px-4 text-lg font-semibold transition-colors",
+                  active
+                    ? "bg-card text-foreground shadow-zacht"
+                    : "text-muted-foreground hover:bg-card/70 hover:text-foreground",
                 )}
               >
-                <Icon className="size-6 shrink-0" strokeWidth={active ? 2.4 : 2} aria-hidden />
+                <Icon
+                  className={cn("size-6 shrink-0", active ? "text-primary" : "")}
+                  strokeWidth={active ? 2.4 : 2}
+                  aria-hidden
+                />
                 {t(item.label)}
               </Link>
             </li>
@@ -133,7 +153,7 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex w-full max-w-7xl">
-        <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-border px-5 py-8 lg:block">
+        <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-border/70 bg-muted/40 px-5 py-8 lg:block">
           {menu}
           {sidebar ? <div className="mt-8 border-t border-border pt-6">{sidebar}</div> : null}
         </aside>
@@ -143,7 +163,7 @@ export function AppShell({
             className="sticky top-0 z-20 bg-background/95 backdrop-blur-md"
             style={{ paddingTop: "env(safe-area-inset-top)" }}
           >
-            <div className="mx-auto grid min-h-16 w-full max-w-3xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 pt-2 sm:px-6 lg:max-w-4xl">
+            <div className={cn("mx-auto grid min-h-16 w-full max-w-3xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 pt-2 sm:px-6", breed ? "lg:max-w-6xl" : "lg:max-w-4xl")}>
               <div className="flex min-w-0 items-center gap-2">
                 {toonTerug ? (
                   <button
@@ -162,13 +182,14 @@ export function AppShell({
               </div>
               {action ? <div className="shrink-0">{action}</div> : null}
             </div>
-            <div className="mx-auto w-full max-w-3xl px-4 pb-3 sm:px-6 lg:max-w-4xl">
+            <div className={cn("mx-auto w-full max-w-3xl px-4 pb-3 sm:px-6", breed ? "lg:max-w-6xl" : "lg:max-w-4xl")}>
               <h1 className="line-clamp-2 break-words text-paginatitel">{title}</h1>
+              {ondertitel ? <div className="mt-1 text-base text-muted-foreground">{ondertitel}</div> : null}
             </div>
-            <div className="h-px bg-border" aria-hidden />
+            <div className="h-px bg-border/70" aria-hidden />
           </header>
 
-          <main className="mx-auto w-full max-w-3xl overflow-x-hidden px-4 py-6 pb-36 sm:px-6 lg:max-w-4xl lg:py-8 lg:pb-16">
+          <main className={cn("mx-auto w-full max-w-3xl overflow-x-hidden px-4 py-6 pb-36 sm:px-6 lg:py-8 lg:pb-16", breed ? "lg:max-w-6xl" : "lg:max-w-4xl")}>
             <Aankondigingen />
             {children}
             <MeldingVraag actief={pathname === "/"} />
@@ -179,15 +200,16 @@ export function AppShell({
       {/* Mobiele tabbalk onderaan: altijd dezelfde vijf plekken, met tekst */}
       <nav
         aria-label="Snelmenu"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-border/70 bg-card/95 shadow-[0_-8px_24px_-12px_oklch(0.3_0.02_60/0.18)] backdrop-blur-md lg:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <ul className="mx-auto flex max-w-lg items-stretch px-0.5 pt-1">
+        {/* Kolommen naar labellengte: zo past "Weekmenu" ook op 360 px zonder afkappen. */}
+        <ul className="mx-auto grid max-w-lg grid-cols-[0.95fr_1.15fr_1.2fr_0.9fr_0.8fr] items-stretch pt-1">
           {TABS.map((item) => {
             const active = isActief(item.to);
             const Icon = item.icon;
             return (
-              <li key={item.to} className={item.to === "/boodschappen" ? "min-w-0 flex-[1.45]" : item.to === "/meer" ? "min-w-0 flex-[0.8]" : "min-w-0 flex-1"}>
+              <li key={item.to} className="min-w-0">
                 <Link
                   to={item.to}
                   data-tour={`tab-${item.to}`}
@@ -205,7 +227,11 @@ export function AppShell({
                   >
                     <Icon className="size-6" strokeWidth={active ? 2.4 : 2} aria-hidden />
                   </span>
-                  <span className="max-w-full whitespace-nowrap">{t(item.label)}</span>
+                  <span className="max-w-full truncate whitespace-nowrap">
+                    {t(item.kort ?? item.label)}
+                    {/* Volledige naam voor schermlezers, na de zichtbare tekst (WCAG 2.5.3). */}
+                    {item.kort ? <span className="sr-only"> ({t(item.label)})</span> : null}
+                  </span>
                 </Link>
               </li>
             );

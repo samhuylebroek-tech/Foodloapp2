@@ -1,0 +1,2 @@
+# Schermafbeeldingen worden lokaal gemaakt (SCHERMEN=1 …), niet in git bewaard.
+*.png

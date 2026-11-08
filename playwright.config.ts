@@ -16,6 +16,8 @@ export default defineConfig({
   workers: 1,
   retries: process.env["CI"] ? 1 : 0,
   timeout: 45_000,
+  // Ruimer dan de standaard 5 s: een koude dev-server optimaliseert soms eerst afhankelijkheden.
+  expect: { timeout: 10_000 },
   reporter: process.env["CI"]
     ? [["github"], ["list"], ["html", { outputFolder: "tests/e2e/.rapport", open: "never" }]]
     : [["list"]],
@@ -27,7 +29,7 @@ export default defineConfig({
   },
   projects: [
     // Beginner op een kleine telefoon (Pixel 7, 412 px).
-    { name: "telefoon", use: { ...devices["Pixel 7"] }, testIgnore: /kernflow/ },
+    { name: "telefoon", use: { ...devices["Pixel 7"] }, testIgnore: /kernflow|schermen/ },
     // Creator op desktop.
     {
       name: "desktop",
@@ -42,7 +44,7 @@ export default defineConfig({
     {
       name: "mobiel-390",
       use: { ...devices["Pixel 7"], viewport: { width: 390, height: 844 } },
-      testMatch: /kernflow/,
+      testMatch: /kernflow|schermen/,
     },
     {
       name: "tablet-768",

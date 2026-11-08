@@ -11,6 +11,7 @@ import {
   meldAan,
   nepDb,
   nepLog,
+  resetDemo,
   resetNep,
   seedDb,
   storing,
@@ -410,4 +411,23 @@ test.describe("Sessie", () => {
     expect((await nepLog()).some((l) => l.path === "/auth/v1/logout")).toBe(true);
     void extern;
   });
+});
+
+test.describe("Responsief — geen horizontale overloop (met demodata)", () => {
+  for (const pad of [
+    "/",
+    "/gerechten",
+    "/recepten/aaaaaaaa-0000-4000-8000-000000000001",
+    "/planner",
+    "/boodschappen",
+  ]) {
+    test(`${pad} past in de breedte`, async ({ page, extern }) => {
+      await resetDemo();
+      await page.goto(pad);
+      await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
+      await page.waitForLoadState("networkidle");
+      expect(await heeftHorizontaleScroll(page)).toBe(false);
+      void extern;
+    });
+  }
 });

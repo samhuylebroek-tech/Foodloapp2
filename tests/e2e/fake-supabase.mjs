@@ -4,6 +4,10 @@
 // Raakt nooit een echte (productie)database.
 import http from "node:http";
 import { maakDb, rest } from "./nep-db.mjs";
+import { demoSeed } from "./demo-data.mjs";
+
+/** DEMO=1: rijke voorbeelddata + login met demo@foodlo.be / demo1234 (lokale preview). */
+const DEMO = process.env.DEMO === "1";
 
 const PORT = Number(process.env.FAKE_SUPABASE_PORT ?? 54399);
 
@@ -47,7 +51,8 @@ function seed() {
   };
 }
 
-const db = maakDb(seed());
+const metDemo = (aan) => (aan ? { ...seed(), ...demoSeed() } : seed());
+const db = maakDb(metDemo(DEMO));
 const log = [];
 /** Storingen per pad: { pad: { soort: "fout"|"traag"|"netwerk", keer, ms, status } } */
 const storingen = new Map();
@@ -107,7 +112,7 @@ const server = http.createServer((req, res) => {
     if (url.pathname === "/__reset") {
       log.length = 0;
       storingen.clear();
-      db.reset(seed());
+      db.reset(metDemo(DEMO || url.searchParams.get("demo") === "1"));
       return stuur(res, 200, { ok: true });
     }
     if (url.pathname === "/__db") return stuur(res, 200, Object.fromEntries(db.tabellen));
@@ -147,7 +152,8 @@ const server = http.createServer((req, res) => {
 
     // ---- Auth ----
     if (url.pathname === "/auth/v1/token") {
-      if (url.searchParams.get("grant_type") === "refresh_token") {
+      const demoLogin = DEMO && body?.email === "demo@foodlo.be" && body?.password === "demo1234";
+      if (url.searchParams.get("grant_type") === "refresh_token" || demoLogin) {
         return stuur(res, 200, {
           access_token: maakToken(),
           refresh_token: "nep-refresh",

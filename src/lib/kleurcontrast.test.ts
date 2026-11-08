@@ -39,6 +39,7 @@ const TEKST_PAREN: [string, string][] = [
   ["primary", "card"],
   ["destructive", "background"], // foutmeldingen in rode tekst
   ["destructive", "card"],
+  ["terracotta-foreground", "terracotta"], // V2-accent
 ];
 
 /** Focusring moet minstens 3:1 halen tegen de achtergrond (WCAG 1.4.11 / 2.4.13). */
@@ -46,6 +47,8 @@ const UI_PAREN: [string, string][] = [
   ["ring", "background"],
   ["ring", "card"],
   ["honing-foreground", "card"], // rand van gekozen sterren (SterrenSnel)
+  ["terracotta", "terracotta-zacht"], // icoon in snelkoppeling (V2)
+  ["terracotta", "card"], // favorietenhartje op witte badge (V2)
 ];
 
 // De extra thema's (instellingen) leggen hun tokens over het lichte basisthema.

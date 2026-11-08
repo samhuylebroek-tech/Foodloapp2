@@ -58,8 +58,9 @@
 }
 
 :root {
-  /* Foodlo "rustige keuken": warm papier, inkt, één kruidengroen accent */
-  --radius: 0.625rem;
+  /* Foodlo "rustige keuken": warm papier, inkt, één kruidengroen accent.
+     V2: rondere vormen, warme accenten (terracotta, honing) en zachte diepte. */
+  --radius: 0.875rem;
   --background: oklch(0.975 0.011 80);
   --foreground: oklch(0.26 0.018 158);
   --card: oklch(1 0 0);
@@ -99,6 +100,12 @@
   --honing: oklch(0.77 0.14 72);
   --honing-foreground: oklch(0.25 0.04 60);
   --honing-zacht: oklch(0.95 0.045 80);
+  --terracotta: oklch(0.55 0.13 38);
+  --terracotta-foreground: oklch(0.99 0.005 85);
+  --terracotta-zacht: oklch(0.95 0.03 50);
+  --schaduw-zacht: 0 1px 2px oklch(0.3 0.02 60 / 0.06), 0 2px 8px oklch(0.3 0.02 60 / 0.05);
+  --schaduw-kaart: 0 1px 2px oklch(0.3 0.02 60 / 0.06), 0 8px 24px -6px oklch(0.3 0.02 60 / 0.12);
+  --schaduw-zwevend: 0 2px 6px oklch(0.3 0.02 60 / 0.08), 0 18px 40px -12px oklch(0.3 0.02 60 / 0.25);
 }
 
 .dark {
@@ -142,6 +149,12 @@
   --honing: oklch(0.8 0.13 75);
   --honing-foreground: oklch(0.9 0.08 80);
   --honing-zacht: oklch(0.32 0.05 75);
+  --terracotta: oklch(0.72 0.12 42);
+  --terracotta-foreground: oklch(0.18 0.02 40);
+  --terracotta-zacht: oklch(0.3 0.04 45);
+  --schaduw-zacht: 0 1px 2px oklch(0 0 0 / 0.3);
+  --schaduw-kaart: 0 1px 2px oklch(0 0 0 / 0.35), 0 8px 24px -6px oklch(0 0 0 / 0.45);
+  --schaduw-zwevend: 0 2px 6px oklch(0 0 0 / 0.4), 0 18px 40px -12px oklch(0 0 0 / 0.6);
 }
 
 /* Oude warme keukenstijl, nu als alternatief thema */
@@ -209,7 +222,13 @@
 
 @theme inline {
   --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --color-terracotta: var(--terracotta);
+  --color-terracotta-foreground: var(--terracotta-foreground);
+  --color-terracotta-zacht: var(--terracotta-zacht);
+  --shadow-zacht: var(--schaduw-zacht);
+  --shadow-kaart: var(--schaduw-kaart);
+  --shadow-zwevend: var(--schaduw-zwevend);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
@@ -221,18 +240,44 @@
 
 /* Vaste tekstschaal: overal dezelfde vier niveaus */
 @utility text-paginatitel {
-  font-family: "Outfit", "Figtree", sans-serif;
-  font-size: 2.1rem;
-  line-height: 1.15;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 2.15rem;
+  line-height: 1.12;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  font-variation-settings: "opsz" 96;
 }
 @utility text-sectietitel {
-  font-family: "Outfit", "Figtree", sans-serif;
-  font-size: 1.3rem;
-  line-height: 1.25;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.4rem;
+  line-height: 1.22;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  font-variation-settings: "opsz" 48;
+}
+/* Grote, redactionele titel voor uitgelichte recepten (V2). */
+@utility text-heldentitel {
+  hyphens: auto;
+  hyphenate-limit-chars: 9 4 4;
+  overflow-wrap: break-word;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: clamp(1.75rem, 1.2rem + 2.4vw, 2.6rem);
+  line-height: 1.08;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variation-settings: "opsz" 120;
+}
+/* Kaarttitel: serif, compact, goed leesbaar. */
+@utility text-kaarttitel {
+  hyphens: auto;
+  /* Alleen lange woorden afbreken ("Chocolade-mousse"), niet "ci-troen". */
+  hyphenate-limit-chars: 9 4 4;
+  overflow-wrap: break-word;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.15rem;
+  line-height: 1.22;
+  font-weight: 600;
+  font-variation-settings: "opsz" 36;
 }
 @utility text-label {
   font-size: 0.84rem;
@@ -262,11 +307,16 @@
   }
 
   h1,
-  h2,
-  h3 {
-    font-family: "Outfit", "Figtree", ui-sans-serif, system-ui, sans-serif;
-    font-weight: 700;
+  h2 {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
     letter-spacing: -0.01em;
+  }
+
+  h3 {
+    font-family: "Figtree", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.005em;
   }
 
   :focus-visible {
@@ -283,3 +333,57 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ------------------------------------------------------------------
+ * V2 — receptomslagen zonder foto: warm verloop per soort gerecht.
+ * Decoratief; de tekst staat altijd ernaast of erover met eigen contrast.
+ * ------------------------------------------------------------------ */
+.omslag {
+  position: relative;
+  isolation: isolate;
+  background-image:
+    radial-gradient(120% 90% at 85% 10%, oklch(1 0 0 / 0.35), transparent 55%),
+    linear-gradient(145deg, var(--omslag-van), var(--omslag-tot));
+}
+.omslag::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.18;
+  background-image: radial-gradient(oklch(1 0 0 / 0.9) 1px, transparent 1.5px);
+  background-size: 14px 14px;
+}
+.omslag-vlees { --omslag-van: oklch(0.86 0.07 45); --omslag-tot: oklch(0.66 0.13 35); }
+.omslag-vis { --omslag-van: oklch(0.89 0.05 215); --omslag-tot: oklch(0.66 0.08 232); }
+.omslag-groen { --omslag-van: oklch(0.91 0.07 135); --omslag-tot: oklch(0.68 0.1 152); }
+.omslag-soep { --omslag-van: oklch(0.9 0.09 75); --omslag-tot: oklch(0.72 0.14 52); }
+.omslag-zoet { --omslag-van: oklch(0.86 0.05 55); --omslag-tot: oklch(0.52 0.07 40); }
+.omslag-ontbijt { --omslag-van: oklch(0.94 0.08 95); --omslag-tot: oklch(0.79 0.13 75); }
+.omslag-drank { --omslag-van: oklch(0.88 0.06 330); --omslag-tot: oklch(0.62 0.1 345); }
+.omslag-neutraal { --omslag-van: oklch(0.92 0.03 80); --omslag-tot: oklch(0.74 0.06 70); }
+
+.dark .omslag-vlees { --omslag-van: oklch(0.5 0.09 40); --omslag-tot: oklch(0.32 0.07 35); }
+.dark .omslag-vis { --omslag-van: oklch(0.5 0.06 225); --omslag-tot: oklch(0.3 0.05 235); }
+.dark .omslag-groen { --omslag-van: oklch(0.52 0.08 145); --omslag-tot: oklch(0.32 0.06 155); }
+.dark .omslag-soep { --omslag-van: oklch(0.58 0.11 65); --omslag-tot: oklch(0.36 0.08 50); }
+.dark .omslag-zoet { --omslag-van: oklch(0.48 0.06 50); --omslag-tot: oklch(0.28 0.04 40); }
+.dark .omslag-ontbijt { --omslag-van: oklch(0.6 0.1 85); --omslag-tot: oklch(0.38 0.08 70); }
+.dark .omslag-drank { --omslag-van: oklch(0.5 0.08 335); --omslag-tot: oklch(0.3 0.06 345); }
+.dark .omslag-neutraal { --omslag-van: oklch(0.45 0.03 80); --omslag-tot: oklch(0.3 0.03 70); }
+
+/* Horizontale rij die op mobiel scrollt, zonder zichtbare schuifbalk. */
+.scroll-rij {
+  /* Positioned, zodat absoluut geplaatste kinderen (bv. sr-only) worden afgesneden. */
+  position: relative;
+  scrollbar-width: none;
+  scroll-padding-inline: 1rem;
+  scroll-snap-type: x mandatory;
+}
+.scroll-rij::-webkit-scrollbar {
+  display: none;
+}
+.scroll-rij > * {
+  scroll-snap-align: start;
+}
+

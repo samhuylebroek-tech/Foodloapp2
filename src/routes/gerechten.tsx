@@ -292,6 +292,7 @@ function GerechtenPage() {
 
   return (
     <AppShell
+      breed
       title={t("Recepten")}
       action={
         <Button asChild aria-label={t("Recept toevoegen")} className="shrink-0 px-4">
@@ -359,7 +360,7 @@ function GerechtenPage() {
                 onClick={() => setEigenaar(waarde)}
                 aria-pressed={eigenaar === waarde}
                 className={cn(
-                  "min-h-12 rounded-lg px-2 text-base font-semibold transition-colors",
+                  "min-h-12 whitespace-nowrap rounded-lg px-1 text-[0.94rem] font-semibold transition-colors",
                   eigenaar === waarde
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground",
@@ -456,50 +457,55 @@ function GerechtenPage() {
         ) : zichtbaar.length === 0 ? (
           <EmptyState icon={<Search className="size-7" />} title={t("Geen recepten gevonden")} description={t("Probeer een andere zoekterm of maak je filters leeg.")} action={<Button onClick={wisFilters}>{t("Filters wissen")}</Button>} />
         ) : (
-          <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {zichtbaar.map((r) => (
-              <li key={r.id}>
+              <li key={r.id} className="min-w-0">
                 <SwipeRij onVerwijder={() => setTeVerwijderen(r)}>
-                  <div className="group overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border/50 transition-shadow hover:shadow-md">
-                  <Link
-                    to="/recepten/$id"
-                    params={{ id: r.id }}
-                    className="block"
-                  >
-                    <RecipePhoto
-                      path={r.image_url}
-                      alt={r.title}
-                      className="aspect-square w-full rounded-none transition-transform duration-300 group-hover:scale-[1.02]"
-                    />
-                    <div className="p-3 pb-1">
-                      <p className="flex items-start gap-2 font-display text-base font-semibold leading-snug">
-                        <span className="min-w-0 flex-1">{t(r.title)}</span>
-                        {favorites.includes(r.id) && (
-                          <Heart
-                            className="mt-0.5 size-5 shrink-0 fill-primary text-primary"
-                            aria-label={t("Favoriet")}
-                          />
-                        )}
-                      </p>
-                      {r.user_id !== user?.id && eigenaren[r.user_id] ? (
-                        <p className="mt-1 text-base font-medium text-muted-foreground">
-                          {t("van")} {eigenaren[r.user_id]}
-                        </p>
-                      ) : null}
-                      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-base text-muted-foreground">
-                        {tijdLabel(r.prep_minutes, r.cook_minutes) ? (
-                          <span className="inline-flex items-center gap-1">
-                            <Clock className="size-4" aria-hidden />
-                            {tijdLabel(r.prep_minutes, r.cook_minutes)}
+                  <div className="group flex h-full flex-col overflow-hidden rounded-2xl bg-card shadow-zacht transition-shadow hover:shadow-kaart">
+                    <Link to="/recepten/$id" params={{ id: r.id }} className="block flex-1">
+                      <div className="relative overflow-hidden">
+                        <RecipePhoto
+                          path={r.image_url}
+                          alt={r.title}
+                          recept={r}
+                          className="aspect-[4/3] w-full transition-transform duration-500 group-hover:scale-[1.03]"
+                        />
+                        {/* Favoriet als badge op het beeld: overlapt de titel nooit meer. */}
+                        {favorites.includes(r.id) ? (
+                          <span className="absolute right-2 top-2 flex size-9 items-center justify-center rounded-full bg-card/95 shadow-zacht">
+                            <Heart className="size-5 fill-terracotta text-terracotta" aria-label={t("Favoriet")} />
                           </span>
                         ) : null}
-                        <span>{r.servings} {t("personen")}</span>
-                      </p>
+                        {/* Alleen afwijkende soorten tonen; "hoofdgerecht" is de standaard en zou ruis zijn. */}
+                        {r.category && r.category !== "hoofdgerecht" ? (
+                          <span className="absolute bottom-2 left-2 rounded-full bg-card/95 px-2.5 py-0.5 text-[0.9rem] font-semibold text-foreground shadow-zacht">
+                            {t(soortLabel(r.category))}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="p-3 pb-1">
+                        <h2 className="line-clamp-2 text-kaarttitel">{t(r.title)}</h2>
+                        {r.user_id !== user?.id && eigenaren[r.user_id] ? (
+                          <p className="mt-1 text-base font-medium text-muted-foreground">
+                            {t("van")} {eigenaren[r.user_id]}
+                          </p>
+                        ) : null}
+                        <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-base text-muted-foreground">
+                          {tijdLabel(r.prep_minutes, r.cook_minutes) ? (
+                            <span className="inline-flex items-center gap-1">
+                              <Clock className="size-4" aria-hidden />
+                              {tijdLabel(r.prep_minutes, r.cook_minutes)}
+                            </span>
+                          ) : null}
+                          <span>
+                            {r.servings} {t(r.servings === 1 ? "persoon" : "personen")}
+                          </span>
+                        </p>
+                      </div>
+                    </Link>
+                    <div className="mt-auto px-1.5 pb-2">
+                      <SterrenSnel waarde={scores[r.id] ?? 0} onKies={(n) => bewaarScore(r.id, n)} />
                     </div>
-                  </Link>
-                  <div className="px-1.5 pb-2">
-                    <SterrenSnel waarde={scores[r.id] ?? 0} onKies={(n) => bewaarScore(r.id, n)} />
-                  </div>
                   </div>
                 </SwipeRij>
               </li>
@@ -510,9 +516,14 @@ function GerechtenPage() {
 
       {teVerwijderen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
-          <div className="w-full max-w-md rounded-t-3xl bg-card p-5 sm:rounded-3xl">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="verwijder-titel"
+            className="w-full max-w-md rounded-t-3xl bg-card p-5 sm:rounded-3xl"
+          >
             <div className="flex items-start justify-between gap-3">
-              <h2 className="font-display text-xl">{t("Zeker verwijderen?")}</h2>
+              <h2 id="verwijder-titel" className="font-display text-xl">{t("Zeker verwijderen?")}</h2>
               <Button
                 variant="ghost"
                 onClick={() => setTeVerwijderen(null)}
@@ -586,6 +597,9 @@ function SwipeRij({
           setDx(0);
         }}
         aria-label="Verwijder dit gerecht"
+        // Alleen bereikbaar als hij zichtbaar is (WCAG 2.4.11); anders via het receptmenu.
+        tabIndex={dx === OPEN ? 0 : -1}
+        aria-hidden={dx === OPEN ? undefined : true}
         className="absolute inset-y-0 right-0 flex w-22 flex-col items-center justify-center gap-1 rounded-r-2xl bg-destructive text-base font-semibold text-destructive-foreground"
       >
         <Trash2 className="size-6" aria-hidden />
