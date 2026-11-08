@@ -135,7 +135,7 @@ export function KookTimers({ voorstellen }: { voorstellen: TimerVoorstel[] }) {
                 </span>
                 <span className="relative min-w-0 flex-1">
                   <span
-                    className="block font-display text-3xl font-semibold tabular-nums"
+                    className="block text-3xl font-bold tabular-nums"
                     role="timer"
                     aria-label={`${t.label}: nog ${toonTijd(rest)}`}
                   >

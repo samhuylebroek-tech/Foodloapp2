@@ -399,7 +399,7 @@ function StartPage() {
                       <span className="text-base font-semibold uppercase tracking-wide text-muted-foreground">
                         {kort}
                       </span>
-                      <span className="font-display text-xl font-semibold">{dag.getDate()}</span>
+                      <span className="text-xl font-bold">{dag.getDate()}</span>
                     </span>
                     {eersteRij?.recipes ? (
                       <RecipePhoto

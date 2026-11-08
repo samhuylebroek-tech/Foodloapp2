@@ -18,7 +18,6 @@ import {
   Repeat,
   Pencil,
   Settings,
-  CookingPot,
   RefreshCw,
   Lightbulb,
   Globe,
@@ -65,6 +64,7 @@ import {
 } from "@/components/ui/sheet";
 
 import { CATEGORIES, type Recipe } from "@/lib/types";
+import { RecipePhoto } from "@/components/RecipePhoto";
 import {
   importRecipeFromText,
   importRecipeFromUrl,
@@ -771,8 +771,8 @@ function PlannerPage() {
     const alleMomenten = [...new Set([...momenten, ...items.map((p) => p.meal_type)])];
     const titel = datum.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" });
     const kaart = (p: PlanRow) => (
-                    <li key={p.id} className="flex min-h-24 items-center gap-2 rounded-2xl border border-border bg-card p-3">
-                      {p.recipe_id ? <Link to="/recepten/$id" params={{ id: p.recipe_id }} search={p.personen != null ? { personen: p.personen } : {}} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ReceptFoto url={p.recipes?.image_url ?? null} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.recipes?.title ?? "Recept"}</span>{p.recipes ? <span className="mt-0.5 flex items-center gap-1 text-base text-muted-foreground"><Clock3 className="size-3.5" /> {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) || "Tijd niet ingevuld"}</span> : null}</span></Link> : <div className="flex min-w-0 flex-1 items-center gap-3"><ReceptFoto url={null} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.custom_title}</span>{!p.soort ? <button type="button" onClick={() => setKoppelRij(p)} className="mt-0.5 block text-left text-base font-semibold text-primary underline underline-offset-2">Nog geen recept · koppelen</button> : null}</span></div>}
+                    <li key={p.id} className="flex min-h-24 items-center gap-2 rounded-2xl bg-card p-3 shadow-zacht">
+                      {p.recipe_id ? <Link to="/recepten/$id" params={{ id: p.recipe_id }} search={p.personen != null ? { personen: p.personen } : {}} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ReceptFoto url={p.recipes?.image_url ?? null} recept={p.recipes} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.recipes?.title ?? "Recept"}</span>{p.recipes ? <span className="mt-0.5 flex items-center gap-1 text-base text-muted-foreground"><Clock3 className="size-3.5" /> {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) || "Tijd niet ingevuld"}</span> : null}</span></Link> : <div className="flex min-w-0 flex-1 items-center gap-3"><ReceptFoto url={null} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.custom_title}</span>{!p.soort ? <button type="button" onClick={() => setKoppelRij(p)} className="mt-0.5 block text-left text-base font-semibold text-primary underline underline-offset-2">Nog geen recept · koppelen</button> : null}</span></div>}
                       {weergave === "gezin" && p.user_id !== user?.id ? <Avatar naam={plannerNamen[p.user_id] ?? "?"} sleutel={p.user_id} className="size-8 shrink-0 text-base" /> : null}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" aria-label={`Acties voor ${p.recipes?.title ?? p.custom_title ?? "maaltijd"}`} className="size-12 shrink-0"><MoreVertical className="size-5" /></Button></DropdownMenuTrigger>
@@ -964,7 +964,8 @@ function PlannerPage() {
                   <span className="text-base font-semibold uppercase tracking-wide">
                     {d.toLocaleDateString("nl-BE", { weekday: "short" }).replace(".", "")}
                   </span>
-                  <span className="font-display text-xl font-semibold leading-none">{d.getDate()}</span>
+                  {/* Figtree voor getallen: Fraunces-cijfers zijn "oldstyle" (ongelijke hoogte). */}
+                  <span className="text-xl font-bold leading-none">{d.getDate()}</span>
                   <span
                     aria-hidden
                     className={`mt-0.5 size-1.5 rounded-full ${aantal ? (actief ? "bg-primary-foreground" : "bg-primary") : "bg-transparent"}`}
@@ -2274,51 +2275,21 @@ function WeekmenuInstellingen({
   );
 }
 
-/** Kleine foto bij een ingepland gerecht. */
-function ReceptFoto({ url }: { url: string | null }) {
-  const [mislukt, setMislukt] = useState(false);
-  const echteUrl = useSignedUrl(url);
-  useEffect(() => setMislukt(false), [echteUrl]);
-  if (echteUrl && !mislukt) {
-    return (
-      <img
-        src={echteUrl}
-        alt=""
-        loading="lazy"
-        onError={() => setMislukt(true)}
-        className="size-14 shrink-0 rounded-full object-cover ring-1 ring-border"
-      />
-    );
-  }
+/** Kleine foto bij een ingepland gerecht; zonder foto de warme V2-omslag. */
+function ReceptFoto({ url, recept }: { url: string | null; recept?: Pick<Recipe, "title" | "category" | "tags"> | null }) {
   return (
-    <span
-      aria-hidden
-      className="flex size-14 shrink-0 items-center justify-center rounded-full bg-secondary ring-1 ring-border"
-    >
-      <CookingPot className="size-6 text-primary" />
-    </span>
+    <RecipePhoto
+      path={url}
+      alt=""
+      recept={recept ?? { title: "" }}
+      className="size-16 shrink-0 rounded-2xl"
+      icoonClassName="size-8"
+    />
   );
 }
 
-function VoorstelFoto({ url }: { url: string | null }) {
-  const [mislukt, setMislukt] = useState(false);
-  const echteUrl = useSignedUrl(url);
-  useEffect(() => setMislukt(false), [echteUrl]);
-  if (echteUrl && !mislukt) {
-    return (
-      <img
-        src={echteUrl}
-        alt=""
-        onError={() => setMislukt(true)}
-        className="aspect-[16/9] w-full object-cover"
-      />
-    );
-  }
-  return (
-    <div className="grid aspect-[16/7] place-items-center bg-secondary">
-      <CookingPot className="size-12 text-primary" />
-    </div>
-  );
+function VoorstelFoto({ url, recept }: { url: string | null; recept?: Pick<Recipe, "title" | "category" | "tags"> | null }) {
+  return <RecipePhoto path={url} alt="" recept={recept ?? { title: "" }} className="aspect-[16/9] w-full" />;
 }
 
 const TIJD_KEUZES = [
@@ -2820,7 +2791,7 @@ function WeekmenuVoorstel({
             </div>
 
             <div className="mt-5 overflow-hidden rounded-2xl border border-border bg-card">
-              <VoorstelFoto url={actieveRij.recept?.image_url ?? null} />
+              <VoorstelFoto url={actieveRij.recept?.image_url ?? null} recept={actieveRij.recept} />
               <div className="p-5">
                 <p className="text-base font-semibold uppercase text-primary">{actieveRij.idee ? "Nieuw idee" : "Voorstel van Foodlo"}</p>
                 <h4 className="mt-1 font-display text-2xl leading-tight">
