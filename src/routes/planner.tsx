@@ -767,18 +767,81 @@ function PlannerPage() {
   /** Acties voor een geplande maaltijd — gedeeld door de daglijst en het weekraster. */
   function planActies(p: PlanRow, compact = false) {
     return (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild><Button variant="ghost" aria-label={`Acties voor ${p.recipes?.title ?? p.custom_title ?? "maaltijd"}`} className={compact ? "size-11 shrink-0" : "size-12 shrink-0"}><MoreVertical className="size-5" /></Button></DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-60 p-2">
-                          {p.recipe_id ? <DropdownMenuItem onSelect={() => setVraagLijst({ recipeId: p.recipe_id as string, titel: p.recipes?.title ?? "Recept" })} className="min-h-12 rounded-lg text-base"><ShoppingCart className="size-5" /> Op boodschappenlijst</DropdownMenuItem> : null}
-                          {!p.recipe_id && !p.soort ? <DropdownMenuItem onSelect={() => setKoppelRij(p)} className="min-h-12 rounded-lg text-base"><BookOpen className="size-5" /> Recept koppelen</DropdownMenuItem> : null}
-                          {!p.recipe_id && !p.soort ? <DropdownMenuItem onSelect={() => navigate({ to: "/recepten/nieuw", search: { title: p.custom_title ?? "", koppel: p.id } })} className="min-h-12 rounded-lg text-base"><Plus className="size-5" /> Recept maken of importeren</DropdownMenuItem> : null}
-                          <DropdownMenuItem onSelect={() => setVerplaats({ rij: p, kopie: false })} className="min-h-12 rounded-lg text-base"><CalendarDays className="size-5" /> Verplaatsen</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => setVerplaats({ rij: p, kopie: true })} className="min-h-12 rounded-lg text-base"><Copy className="size-5" /> Dupliceren</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => { const d = new Date(`${p.plan_date}T12:00:00`); d.setDate(d.getDate() + 7); void verplaatsNaar(p, datumTekst(d), p.meal_type, true); }} className="min-h-12 rounded-lg text-base"><Repeat className="size-5" /> Volgende week opnieuw</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => void verwijder(p.id, p.recipe_id, p.recipes?.title ?? "Dit gerecht")} className="min-h-12 rounded-lg text-base text-destructive focus:text-destructive"><Trash2 className="size-5" /> Uit planning halen</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            aria-label={`Acties voor ${p.recipes?.title ?? p.custom_title ?? "maaltijd"}`}
+            className={compact ? "size-11 shrink-0" : "size-12 shrink-0"}
+          >
+            <MoreVertical className="size-5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-60 p-2">
+          {p.recipe_id ? (
+            <DropdownMenuItem
+              onSelect={() =>
+                setVraagLijst({
+                  recipeId: p.recipe_id as string,
+                  titel: p.recipes?.title ?? "Recept",
+                })
+              }
+              className="min-h-12 rounded-lg text-base"
+            >
+              <ShoppingCart className="size-5" /> Op boodschappenlijst
+            </DropdownMenuItem>
+          ) : null}
+          {!p.recipe_id && !p.soort ? (
+            <DropdownMenuItem
+              onSelect={() => setKoppelRij(p)}
+              className="min-h-12 rounded-lg text-base"
+            >
+              <BookOpen className="size-5" /> Recept koppelen
+            </DropdownMenuItem>
+          ) : null}
+          {!p.recipe_id && !p.soort ? (
+            <DropdownMenuItem
+              onSelect={() =>
+                navigate({
+                  to: "/recepten/nieuw",
+                  search: { title: p.custom_title ?? "", koppel: p.id },
+                })
+              }
+              className="min-h-12 rounded-lg text-base"
+            >
+              <Plus className="size-5" /> Recept maken of importeren
+            </DropdownMenuItem>
+          ) : null}
+          <DropdownMenuItem
+            onSelect={() => setVerplaats({ rij: p, kopie: false })}
+            className="min-h-12 rounded-lg text-base"
+          >
+            <CalendarDays className="size-5" /> Verplaatsen
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() => setVerplaats({ rij: p, kopie: true })}
+            className="min-h-12 rounded-lg text-base"
+          >
+            <Copy className="size-5" /> Dupliceren
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() => {
+              const d = new Date(`${p.plan_date}T12:00:00`);
+              d.setDate(d.getDate() + 7);
+              void verplaatsNaar(p, datumTekst(d), p.meal_type, true);
+            }}
+            className="min-h-12 rounded-lg text-base"
+          >
+            <Repeat className="size-5" /> Volgende week opnieuw
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() => void verwijder(p.id, p.recipe_id, p.recipes?.title ?? "Dit gerecht")}
+            className="min-h-12 rounded-lg text-base text-destructive focus:text-destructive"
+          >
+            <Trash2 className="size-5" /> Uit planning halen
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   }
 
@@ -794,13 +857,19 @@ function PlannerPage() {
             const voorbij = dag < vandaag;
             const items = plan.filter((p) => p.plan_date === dag);
             return (
-              <div key={dag} className={`flex min-w-0 flex-col rounded-3xl p-2.5 ${isVandaag ? "bg-inkt text-inkt-foreground shadow-kaart" : voorbij ? "bg-muted/60" : "bg-card shadow-zacht"}`}>
+              <div
+                key={dag}
+                className={`flex min-w-0 flex-col rounded-3xl p-2.5 ${isVandaag ? "bg-inkt text-inkt-foreground shadow-kaart" : voorbij ? "bg-muted/60" : "bg-card shadow-zacht"}`}
+              >
                 <h2 className="px-1.5 pb-2 pt-1">
-                  <span className={`block text-base font-semibold uppercase tracking-wide ${isVandaag ? "text-inkt-zacht" : "text-muted-foreground"}`}>
+                  <span
+                    className={`block text-base font-semibold uppercase tracking-wide ${isVandaag ? "text-inkt-zacht" : "text-muted-foreground"}`}
+                  >
                     {isVandaag ? "Vandaag" : d.toLocaleDateString("nl-BE", { weekday: "long" })}
                   </span>
                   <span className="block text-2xl font-bold leading-tight">
-                    {d.getDate()} {d.toLocaleDateString("nl-BE", { month: "short" }).replace(".", "")}
+                    {d.getDate()}{" "}
+                    {d.toLocaleDateString("nl-BE", { month: "short" }).replace(".", "")}
                   </span>
                 </h2>
                 <div className="flex flex-1 flex-col gap-2">
@@ -809,22 +878,46 @@ function PlannerPage() {
                     if (!bij.length && items.length && momenten.length === 1) return null;
                     return (
                       <div key={m} className="min-w-0">
-                        <p className={`px-1.5 text-[0.9rem] font-semibold first-letter:uppercase ${isVandaag ? "text-inkt-zacht" : "text-muted-foreground"}`}>{m}</p>
+                        <p
+                          className={`px-1.5 text-[0.9rem] font-semibold first-letter:uppercase ${isVandaag ? "text-inkt-zacht" : "text-muted-foreground"}`}
+                        >
+                          {m}
+                        </p>
                         {bij.length ? (
                           <ul className="mt-1 space-y-2">
                             {bij.map((p) => (
-                              <li key={p.id} className="overflow-hidden rounded-2xl bg-card text-foreground shadow-zacht">
+                              <li
+                                key={p.id}
+                                className="overflow-hidden rounded-2xl bg-card text-foreground shadow-zacht"
+                              >
                                 {p.recipe_id ? (
-                                  <Link to="/recepten/$id" params={{ id: p.recipe_id }} search={p.personen != null ? { personen: p.personen } : {}} className="block">
-                                    <RecipePhoto path={p.recipes?.image_url ?? null} alt="" recept={p.recipes ?? { title: "" }} className="aspect-[4/3] w-full" icoonClassName="size-10" />
-                                    <span className="line-clamp-2 px-2.5 pt-2 text-base font-semibold leading-snug">{p.recipes?.title ?? "Recept"}</span>
+                                  <Link
+                                    to="/recepten/$id"
+                                    params={{ id: p.recipe_id }}
+                                    search={p.personen != null ? { personen: p.personen } : {}}
+                                    className="block"
+                                  >
+                                    <RecipePhoto
+                                      path={p.recipes?.image_url ?? null}
+                                      alt=""
+                                      recept={p.recipes ?? { title: "" }}
+                                      className="aspect-[4/3] w-full"
+                                      icoonClassName="size-10"
+                                    />
+                                    <span className="line-clamp-2 px-2.5 pt-2 text-base font-semibold leading-snug">
+                                      {p.recipes?.title ?? "Recept"}
+                                    </span>
                                   </Link>
                                 ) : (
-                                  <span className="line-clamp-2 block px-2.5 pt-2.5 text-base font-semibold leading-snug">{p.custom_title}</span>
+                                  <span className="line-clamp-2 block px-2.5 pt-2.5 text-base font-semibold leading-snug">
+                                    {p.custom_title}
+                                  </span>
                                 )}
                                 <div className="flex items-center justify-between gap-1 pb-1 pl-2.5 pr-1">
                                   <span className="truncate text-[0.9rem] text-muted-foreground">
-                                    {p.recipes ? tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) : ""}
+                                    {p.recipes
+                                      ? tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes)
+                                      : ""}
                                   </span>
                                   {planActies(p, true)}
                                 </div>
@@ -832,7 +925,11 @@ function PlannerPage() {
                             ))}
                           </ul>
                         ) : voorbij ? (
-                          <p className={`px-1.5 py-2 text-[0.9rem] ${isVandaag ? "text-inkt-zacht" : "text-muted-foreground"}`}>—</p>
+                          <p
+                            className={`px-1.5 py-2 text-[0.9rem] ${isVandaag ? "text-inkt-zacht" : "text-muted-foreground"}`}
+                          >
+                            —
+                          </p>
                         ) : (
                           <button
                             type="button"

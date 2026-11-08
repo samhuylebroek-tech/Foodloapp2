@@ -47,9 +47,14 @@ import { netteStap } from "@/lib/tekst-opkuis";
 import { toonBelgischeMaat } from "@/lib/ingredienten";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { houdSchermAan, laatSchermWeerSlapen } from "@/lib/native";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { PageSkeleton } from "@/components/PageSkeleton";
-
 
 export const Route = createFileRoute("/recepten/$id")({
   head: () => ({
@@ -69,7 +74,8 @@ export const Route = createFileRoute("/recepten/$id")({
     const uit: { personen?: number; koken?: true } = {};
     if (Number.isInteger(n) && n >= 1 && n <= 50) uit.personen = n;
     // V2: "Start koken" vanaf Vandaag opent meteen de kookstand.
-    if (search["koken"] === true || search["koken"] === "1" || search["koken"] === 1) uit.koken = true;
+    if (search["koken"] === true || search["koken"] === "1" || search["koken"] === 1)
+      uit.koken = true;
     return uit;
   },
   component: ReceptPage,
@@ -90,13 +96,28 @@ function bronNaam(url: string) {
   }
 }
 
-
 function PersonenKiezer({ aantal, onZet }: { aantal: number; onZet: (n: number) => void }) {
   return (
     <div className="flex items-center justify-between gap-2 rounded-2xl bg-secondary p-1">
-      <Button variant="secondary" onClick={() => onZet(Math.max(1, aantal - 1))} aria-label="Minder personen" className="size-14 shrink-0 bg-card"><Minus className="size-5" /></Button>
-      <span className="flex-1 text-center text-lg font-semibold">Koken voor {aantal} {aantal === 1 ? "persoon" : "personen"}</span>
-      <Button variant="secondary" onClick={() => onZet(aantal + 1)} aria-label="Meer personen" className="size-14 shrink-0 bg-card"><Plus className="size-5" /></Button>
+      <Button
+        variant="secondary"
+        onClick={() => onZet(Math.max(1, aantal - 1))}
+        aria-label="Minder personen"
+        className="size-14 shrink-0 bg-card"
+      >
+        <Minus className="size-5" />
+      </Button>
+      <span className="flex-1 text-center text-lg font-semibold">
+        Koken voor {aantal} {aantal === 1 ? "persoon" : "personen"}
+      </span>
+      <Button
+        variant="secondary"
+        onClick={() => onZet(aantal + 1)}
+        aria-label="Meer personen"
+        className="size-14 shrink-0 bg-card"
+      >
+        <Plus className="size-5" />
+      </Button>
     </div>
   );
 }
@@ -127,11 +148,20 @@ function ReceptPage() {
   useEffect(() => {
     if (!kookstand) return;
     let actief = true;
-    const vraag = async () => actief ? houdSchermAan() : false;
-    void vraag().then((ok) => { if (!ok && actief) toast.info(t("Zet de automatische schermvergrendeling tijdelijk uit tijdens het koken.")); });
-    const zichtbaar = () => { if (document.visibilityState === "visible") void vraag(); };
+    const vraag = async () => (actief ? houdSchermAan() : false);
+    void vraag().then((ok) => {
+      if (!ok && actief)
+        toast.info(t("Zet de automatische schermvergrendeling tijdelijk uit tijdens het koken."));
+    });
+    const zichtbaar = () => {
+      if (document.visibilityState === "visible") void vraag();
+    };
     document.addEventListener("visibilitychange", zichtbaar);
-    return () => { actief = false; document.removeEventListener("visibilitychange", zichtbaar); void laatSchermWeerSlapen(); };
+    return () => {
+      actief = false;
+      document.removeEventListener("visibilitychange", zichtbaar);
+      void laatSchermWeerSlapen();
+    };
   }, [kookstand, t]);
 
   async function vervangFoto(bestand: File) {
@@ -160,7 +190,9 @@ function ReceptPage() {
     setFotoBezig(true);
     try {
       const pad = await uploadRecipePhoto(bestand, user.id);
-      const { error } = await supabase.from("recipe_photos").insert({ recipe_id: id, path: pad, position: extraFotos.length });
+      const { error } = await supabase
+        .from("recipe_photos")
+        .insert({ recipe_id: id, path: pad, position: extraFotos.length });
       if (error) throw error;
       await qc.invalidateQueries({ queryKey: ["recipe-photos", id] });
       toast.success(t("Extra foto toegevoegd"));
@@ -173,8 +205,14 @@ function ReceptPage() {
 
   async function maakHoofdfoto(pad: string) {
     const { error } = await supabase.from("recipes").update({ image_url: pad }).eq("id", id);
-    if (error) { toast.error(t("De foto kon niet worden aangepast.")); return; }
-    await Promise.all([qc.invalidateQueries({ queryKey: ["recipe", id] }), qc.invalidateQueries({ queryKey: ["recipes"] })]);
+    if (error) {
+      toast.error(t("De foto kon niet worden aangepast."));
+      return;
+    }
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["recipe", id] }),
+      qc.invalidateQueries({ queryKey: ["recipes"] }),
+    ]);
     toast.success(t("Hoofdfoto aangepast"));
   }
 
@@ -182,7 +220,6 @@ function ReceptPage() {
     markeerGezien(id);
     void meet("recept.bekeken", undefined, { id });
   }, [id]);
-
 
   const { data, isLoading } = useQuery({
     queryKey: ["recipe", id],
@@ -226,7 +263,11 @@ function ReceptPage() {
   const { data: extraFotos = [] } = useQuery({
     queryKey: ["recipe-photos", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("recipe_photos").select("id, path, position").eq("recipe_id", id).order("position");
+      const { data, error } = await supabase
+        .from("recipe_photos")
+        .select("id, path, position")
+        .eq("recipe_id", id)
+        .order("position");
       if (error) throw error;
       return data ?? [];
     },
@@ -270,7 +311,8 @@ function ReceptPage() {
   // Bewaarde kookvoortgang ophalen (alleen in de browser).
   const kookRecept = data?.recipe;
   useEffect(() => {
-    if (kookRecept && !kookstand) setBewaardeStap(leesVoortgang(kookRecept.id, kookRecept.instructions.length));
+    if (kookRecept && !kookstand)
+      setBewaardeStap(leesVoortgang(kookRecept.id, kookRecept.instructions.length));
   }, [kookRecept, kookstand]);
 
   // Elke stap bewaren, en bij een nieuwe stap de focus op de staptekst zetten
@@ -298,8 +340,6 @@ function ReceptPage() {
     window.addEventListener("keydown", opToets);
     return () => window.removeEventListener("keydown", opToets);
   }, [kookstand, klaarVragen, stap, kookRecept]);
-
-
 
   async function zetScore(n: number) {
     if (!user) return;
@@ -375,12 +415,17 @@ function ReceptPage() {
     }
   }
 
-
   async function planOp(datum: string, moment: string, personen: number) {
     if (!user) return;
     const { error } = await supabase
       .from("meal_plan")
-      .insert({ user_id: user.id, recipe_id: recipe.id, plan_date: datum, meal_type: moment, personen });
+      .insert({
+        user_id: user.id,
+        recipe_id: recipe.id,
+        plan_date: datum,
+        meal_type: moment,
+        personen,
+      });
     if (error) toast.error("Inplannen lukte niet");
     else {
       toast.success("In je planning gezet");
@@ -484,7 +529,6 @@ function ReceptPage() {
     }
   }
 
-
   if (kookstand && klaarVragen) {
     return (
       <div className="flex min-h-screen items-center bg-background p-5">
@@ -543,7 +587,13 @@ function ReceptPage() {
         <div className="mx-auto max-w-2xl">
           <div className="flex items-center justify-between">
             <p className="text-lg font-semibold text-muted-foreground">
-              {voorbereiding ? t("Alles klaarzetten") : <>Stap {stap + 1} van {stappen.length}</>}
+              {voorbereiding ? (
+                t("Alles klaarzetten")
+              ) : (
+                <>
+                  Stap {stap + 1} van {stappen.length}
+                </>
+              )}
             </p>
             <Button variant="ghost" onClick={() => setKookstand(false)} className="h-14">
               <X className="size-6" /> Sluiten
@@ -556,12 +606,16 @@ function ReceptPage() {
             aria-valuemin={0}
             aria-valuemax={stappen.length}
             aria-valuenow={voorbereiding ? 0 : stap + 1}
-            aria-valuetext={voorbereiding ? t("Alles klaarzetten") : `Stap ${stap + 1} van ${stappen.length}`}
+            aria-valuetext={
+              voorbereiding ? t("Alles klaarzetten") : `Stap ${stap + 1} van ${stappen.length}`
+            }
             className="mt-3 h-2.5 overflow-hidden rounded-full bg-secondary"
           >
             <div
               className="h-full rounded-full bg-primary transition-[width] duration-300"
-              style={{ width: `${voorbereiding ? 4 : ((stap + 1) / Math.max(1, stappen.length)) * 100}%` }}
+              style={{
+                width: `${voorbereiding ? 4 : ((stap + 1) / Math.max(1, stappen.length)) * 100}%`,
+              }}
             />
           </div>
           <h2 className="mt-6 font-display text-3xl">{recipe.title}</h2>
@@ -570,12 +624,19 @@ function ReceptPage() {
               <p className="mt-3 text-lg text-muted-foreground">
                 {t("Neem eerst alles wat je nodig hebt. Daarna koken we stap voor stap.")}
               </p>
-              <div className="mt-4"><PersonenKiezer aantal={aantal} onZet={setPersonen} /></div>
+              <div className="mt-4">
+                <PersonenKiezer aantal={aantal} onZet={setPersonen} />
+              </div>
               <ul className="mt-6 space-y-2 rounded-2xl border border-border bg-card p-4 text-lg">
                 {ingredients.map((ing) => (
-                  <li key={ing.id} className="flex min-h-12 items-center justify-between gap-3 border-b border-border py-2 last:border-0">
+                  <li
+                    key={ing.id}
+                    className="flex min-h-12 items-center justify-between gap-3 border-b border-border py-2 last:border-0"
+                  >
                     <span>{t(ing.name)}</span>
-                    <span className="shrink-0 font-semibold text-primary">{toonHoeveelheid(ing, factor)}</span>
+                    <span className="shrink-0 font-semibold text-primary">
+                      {toonHoeveelheid(ing, factor)}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -595,21 +656,23 @@ function ReceptPage() {
           )}
           {/* Vaste plek in de boom: lopende timers blijven bestaan bij het bladeren. */}
           <KookTimers voorstellen={voorbereiding ? [] : vindTimers(stappen[stap] ?? "")} />
-          {!voorbereiding ? <details className="mt-6 rounded-2xl border border-border bg-card p-4">
-            <summary className="cursor-pointer text-lg font-semibold">
-              {t("Alle ingrediënten bekijken")}
-            </summary>
-            <ul className="mt-3 space-y-2 text-lg">
-              {ingredients.map((ing) => (
-                <li key={ing.id} className="flex justify-between gap-3">
-                  <span>{t(ing.name)}</span>
-                  <span className="shrink-0 text-muted-foreground">
-                    {toonHoeveelheid(ing, factor)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </details> : null}
+          {!voorbereiding ? (
+            <details className="mt-6 rounded-2xl border border-border bg-card p-4">
+              <summary className="cursor-pointer text-lg font-semibold">
+                {t("Alle ingrediënten bekijken")}
+              </summary>
+              <ul className="mt-3 space-y-2 text-lg">
+                {ingredients.map((ing) => (
+                  <li key={ing.id} className="flex justify-between gap-3">
+                    <span>{t(ing.name)}</span>
+                    <span className="shrink-0 text-muted-foreground">
+                      {toonHoeveelheid(ing, factor)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
           <div className="sticky bottom-0 -mx-6 mt-10 flex gap-3 bg-background/95 px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
             <Button
               variant="secondary"
@@ -631,7 +694,6 @@ function ReceptPage() {
     );
   }
 
-
   return (
     <AppShell
       title={t(recipe.title)}
@@ -640,12 +702,49 @@ function ReceptPage() {
           <Button variant="ghost" size="icon" onClick={toggleFavorite} aria-label={t("Favoriet")}>
             <Heart className={isFavorite ? "fill-primary text-primary" : ""} />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => void deelRecept()} aria-label={t("Delen")}><Share2 /></Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => void deelRecept()}
+            aria-label={t("Delen")}
+          >
+            <Share2 />
+          </Button>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label={t("Meer")}><MoreHorizontal /></Button></DropdownMenuTrigger>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label={t("Meer")}>
+                <MoreHorizontal />
+              </Button>
+            </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-52 rounded-xl p-2">
-              {isOwner ? <DropdownMenuItem asChild className="min-h-12 text-base"><Link to="/recepten/$id/bewerken" params={{ id: recipe.id }}><Pencil />{t("Aanpassen")}</Link></DropdownMenuItem> : <DropdownMenuItem onSelect={() => void kopieerNaarMij()} className="min-h-12 text-base"><Copy />{t("Zet in mijn gerechten")}</DropdownMenuItem>}
-              {isOwner ? <><DropdownMenuSeparator /><DropdownMenuItem onSelect={() => void verwijder()} className="min-h-12 text-base text-destructive"><Trash2 />{t("Verwijderen")}</DropdownMenuItem></> : null}
+              {isOwner ? (
+                <DropdownMenuItem asChild className="min-h-12 text-base">
+                  <Link to="/recepten/$id/bewerken" params={{ id: recipe.id }}>
+                    <Pencil />
+                    {t("Aanpassen")}
+                  </Link>
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  onSelect={() => void kopieerNaarMij()}
+                  className="min-h-12 text-base"
+                >
+                  <Copy />
+                  {t("Zet in mijn gerechten")}
+                </DropdownMenuItem>
+              )}
+              {isOwner ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={() => void verwijder()}
+                    className="min-h-12 text-base text-destructive"
+                  >
+                    <Trash2 />
+                    {t("Verwijderen")}
+                  </DropdownMenuItem>
+                </>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -654,241 +753,333 @@ function ReceptPage() {
       <div className="space-y-10">
         {/* V2: kop met foto en acties naast elkaar op desktop. */}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-10">
-        <div className="space-y-3">
-          <div className="relative">
-            <RecipePhoto
-              path={recipe.image_url}
-              alt={recipe.title}
-              recept={recipe}
-              className="aspect-[4/3] w-full rounded-3xl shadow-kaart sm:aspect-[16/9]"
-            />
-            {fotoBezig && (
-              <div className="absolute inset-0 flex items-center justify-center rounded-3xl bg-card/70">
-                <Loader2 className="size-8 animate-spin" aria-hidden />
+          <div className="space-y-3">
+            <div className="relative">
+              <RecipePhoto
+                path={recipe.image_url}
+                alt={recipe.title}
+                recept={recipe}
+                className="aspect-[4/3] w-full rounded-3xl shadow-kaart sm:aspect-[16/9]"
+              />
+              {fotoBezig && (
+                <div className="absolute inset-0 flex items-center justify-center rounded-3xl bg-card/70">
+                  <Loader2 className="size-8 animate-spin" aria-hidden />
+                </div>
+              )}
+            </div>
+            {isOwner && !recipe.image_url && (
+              <FotoKiezer
+                bezig={fotoBezig}
+                heeftFoto={!!recipe.image_url}
+                onBestand={(f) => void vervangFoto(f)}
+              />
+            )}
+            {extraFotos.length > 0 ? (
+              <div className="grid grid-cols-3 gap-2" aria-label={t("Extra foto's")}>
+                {extraFotos.map((foto) => (
+                  <button
+                    key={foto.id}
+                    type="button"
+                    onClick={() => isOwner && void maakHoofdfoto(foto.path)}
+                    className="relative overflow-hidden rounded-xl border border-border text-left"
+                  >
+                    <RecipePhoto
+                      path={foto.path}
+                      alt={recipe.title}
+                      className="aspect-square w-full"
+                    />
+                    {isOwner ? (
+                      <span className="absolute inset-x-1 bottom-1 rounded-lg bg-card/90 px-2 py-1 text-center text-sm font-semibold">
+                        Maak hoofdfoto
+                      </span>
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            {/* Extra foto's pas als er een hoofdfoto is; anders zouden er twee identieke
+              "Foto nemen"-knoppen met een verschillende werking staan (WCAG 3.2.4). */}
+          </div>
+
+          <div className="space-y-5">
+            {/* De receptnaam staat als paginatitel (h1) bovenaan; hier de kenmerken. */}
+            <ul className="flex flex-wrap gap-2" aria-label={t("Kenmerken")}>
+              {tijdLabel(recipe.prep_minutes, recipe.cook_minutes) ? (
+                <li className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-card px-3.5 text-base font-medium shadow-zacht">
+                  <Clock className="size-5 text-primary" aria-hidden />
+                  {tijdLabel(recipe.prep_minutes, recipe.cook_minutes)}
+                </li>
+              ) : null}
+              <li className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-card px-3.5 text-base font-medium shadow-zacht">
+                <Users className="size-5 text-primary" aria-hidden />
+                {aantal} {t(aantal === 1 ? "persoon" : "personen")}
+              </li>
+              {recipe.category ? (
+                <li className="inline-flex min-h-10 items-center rounded-full bg-secondary px-3.5 text-base font-medium text-secondary-foreground">
+                  {t(soortLabel(recipe.category))}
+                </li>
+              ) : null}
+              {recipe.difficulty ? (
+                <li className="inline-flex min-h-10 items-center rounded-full bg-[var(--honing-zacht)] px-3.5 text-base font-medium capitalize text-[var(--honing-foreground)]">
+                  {t(recipe.difficulty)}
+                </li>
+              ) : null}
+            </ul>
+
+            {recipe.description ? (
+              <p className="font-display text-xl leading-relaxed text-foreground/90">
+                {t(recipe.description)}
+              </p>
+            ) : null}
+
+            {recipe.instructions.length > 0 ? (
+              <Button
+                onClick={() => {
+                  setStap(-1);
+                  void meet("kookmodus.gestart", undefined, { id });
+                  setKookstand(true);
+                }}
+                className="h-16 w-full text-lg"
+              >
+                <ChefHat className="size-6" />
+                {t("Start koken")}
+              </Button>
+            ) : null}
+            {bewaardeStap !== null ? (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setStap(bewaardeStap);
+                  setKookstand(true);
+                }}
+                className="-mt-2 h-14 w-full text-lg"
+              >
+                {t("Verder koken bij stap")} {bewaardeStap + 1}
+              </Button>
+            ) : null}
+
+            {/* Gestapeld op smalle schermen: lange labels lopen nooit buiten de knop. */}
+            <div className="grid grid-cols-1 gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setPlanOpen(true)}
+                className="h-16 whitespace-normal px-3 text-lg leading-snug"
+              >
+                <CalendarPlus />
+                {t("Inplannen")}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setBoodschappenOpen(true)}
+                disabled={!ingredients.length}
+                className="h-16 gap-2 whitespace-normal px-3 text-lg leading-snug"
+              >
+                <ShoppingCart className="size-5 shrink-0" /> {t("Voeg toe aan boodschappenlijst")}
+              </Button>
+            </div>
+
+            {planOpen ? (
+              <PlanKiezer momenten={momenten} servings={recipe.servings} onKies={planOp} />
+            ) : null}
+
+            {isOwner && (ingredients.length === 0 || recipe.instructions.length === 0) && (
+              <div className="rounded-2xl border border-primary/40 bg-secondary p-4">
+                <p className="text-base">
+                  {t(
+                    "Dit gerecht heeft nog geen ingrediënten of stappen. Laat het ons voorstellen.",
+                  )}
+                </p>
+                <Button
+                  onClick={vulAanMetAI}
+                  disabled={aanvullen}
+                  className="mt-3 h-14 w-full text-base"
+                >
+                  {aanvullen ? (
+                    <Loader2 className="size-5 animate-spin" />
+                  ) : (
+                    <Sparkles className="size-5" />
+                  )}
+                  {t("Vul dit gerecht aan")}
+                </Button>
               </div>
             )}
           </div>
-          {isOwner && !recipe.image_url && (
-            <FotoKiezer
-              bezig={fotoBezig}
-              heeftFoto={!!recipe.image_url}
-              onBestand={(f) => void vervangFoto(f)}
-            />
-          )}
-          {extraFotos.length > 0 ? (
-            <div className="grid grid-cols-3 gap-2" aria-label={t("Extra foto's")}>
-              {extraFotos.map((foto) => (
-                <button key={foto.id} type="button" onClick={() => isOwner && void maakHoofdfoto(foto.path)} className="relative overflow-hidden rounded-xl border border-border text-left">
-                  <RecipePhoto path={foto.path} alt={recipe.title} className="aspect-square w-full" />
-                  {isOwner ? <span className="absolute inset-x-1 bottom-1 rounded-lg bg-card/90 px-2 py-1 text-center text-sm font-semibold">Maak hoofdfoto</span> : null}
-                </button>
-              ))}
-            </div>
-          ) : null}
-          {/* Extra foto's pas als er een hoofdfoto is; anders zouden er twee identieke
-              "Foto nemen"-knoppen met een verschillende werking staan (WCAG 3.2.4). */}
-
-        </div>
-
-        <div className="space-y-5">
-        {/* De receptnaam staat als paginatitel (h1) bovenaan; hier de kenmerken. */}
-        <ul className="flex flex-wrap gap-2" aria-label={t("Kenmerken")}>
-          {tijdLabel(recipe.prep_minutes, recipe.cook_minutes) ? (
-            <li className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-card px-3.5 text-base font-medium shadow-zacht">
-              <Clock className="size-5 text-primary" aria-hidden />
-              {tijdLabel(recipe.prep_minutes, recipe.cook_minutes)}
-            </li>
-          ) : null}
-          <li className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-card px-3.5 text-base font-medium shadow-zacht">
-            <Users className="size-5 text-primary" aria-hidden />
-            {aantal} {t(aantal === 1 ? "persoon" : "personen")}
-          </li>
-          {recipe.category ? (
-            <li className="inline-flex min-h-10 items-center rounded-full bg-secondary px-3.5 text-base font-medium text-secondary-foreground">
-              {t(soortLabel(recipe.category))}
-            </li>
-          ) : null}
-          {recipe.difficulty ? (
-            <li className="inline-flex min-h-10 items-center rounded-full bg-[var(--honing-zacht)] px-3.5 text-base font-medium capitalize text-[var(--honing-foreground)]">
-              {t(recipe.difficulty)}
-            </li>
-          ) : null}
-        </ul>
-
-        {recipe.description ? (
-          <p className="font-display text-xl leading-relaxed text-foreground/90">{t(recipe.description)}</p>
-        ) : null}
-
-        {recipe.instructions.length > 0 ? <Button onClick={() => { setStap(-1); void meet("kookmodus.gestart", undefined, { id }); setKookstand(true); }} className="h-16 w-full text-lg"><ChefHat className="size-6" />{t("Start koken")}</Button> : null}
-        {bewaardeStap !== null ? (
-          <Button
-            variant="outline"
-            onClick={() => {
-              setStap(bewaardeStap);
-              setKookstand(true);
-            }}
-            className="-mt-2 h-14 w-full text-lg"
-          >
-            {t("Verder koken bij stap")} {bewaardeStap + 1}
-          </Button>
-        ) : null}
-
-        {/* Gestapeld op smalle schermen: lange labels lopen nooit buiten de knop. */}
-        <div className="grid grid-cols-1 gap-3">
-          <Button variant="outline" onClick={() => setPlanOpen(true)} className="h-16 whitespace-normal px-3 text-lg leading-snug"><CalendarPlus />{t("Inplannen")}</Button>
-          <Button variant="secondary" onClick={() => setBoodschappenOpen(true)} disabled={!ingredients.length} className="h-16 gap-2 whitespace-normal px-3 text-lg leading-snug">
-            <ShoppingCart className="size-5 shrink-0" /> {t("Voeg toe aan boodschappenlijst")}
-          </Button>
-        </div>
-
-        {planOpen ? <PlanKiezer momenten={momenten} servings={recipe.servings} onKies={planOp} /> : null}
-
-        {isOwner && (ingredients.length === 0 || recipe.instructions.length === 0) && (
-          <div className="rounded-2xl border border-primary/40 bg-secondary p-4">
-            <p className="text-base">
-              {t("Dit gerecht heeft nog geen ingrediënten of stappen. Laat het ons voorstellen.")}
-            </p>
-            <Button
-              onClick={vulAanMetAI}
-              disabled={aanvullen}
-              className="mt-3 h-14 w-full text-base"
-            >
-              {aanvullen ? (
-                <Loader2 className="size-5 animate-spin" />
-              ) : (
-                <Sparkles className="size-5" />
-              )}
-              {t("Vul dit gerecht aan")}
-            </Button>
-          </div>
-        )}
-
-        </div>
         </div>
 
         {/* V2: geen tabbladen meer — ingrediënten en bereiding in één oogopslag.
             Desktop: ingrediënten blijven in beeld terwijl je de stappen leest. */}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,23rem)_minmax(0,1fr)] lg:gap-12">
-        <section aria-labelledby="ingredienten-titel" className="rounded-3xl bg-card p-5 shadow-zacht lg:sticky lg:top-24 lg:self-start">
-          <div className="flex flex-col gap-3">
-            <h2 id="ingredienten-titel" className="text-sectietitel">{t("Ingrediënten")}</h2>
-            <div className="flex w-full items-center justify-between gap-2 rounded-2xl bg-secondary p-1">
-              <Button
-                variant="secondary"
-                onClick={() => setPersonen(Math.max(1, aantal - 1))}
-                aria-label="Minder personen"
-                className="size-12 shrink-0 bg-card"
-              >
-                <Minus className="size-5" />
-              </Button>
-              <span className="min-w-0 flex-1 text-center text-base font-semibold sm:text-lg">
-                {aantal} {t(aantal === 1 ? "persoon" : "personen")}
-              </span>
-              <Button
-                variant="secondary"
-                onClick={() => setPersonen(aantal + 1)}
-                aria-label="Meer personen"
-                className="size-12 shrink-0 bg-card"
-              >
-                <Plus className="size-5" />
-              </Button>
+          <section
+            aria-labelledby="ingredienten-titel"
+            className="rounded-3xl bg-card p-5 shadow-zacht lg:sticky lg:top-24 lg:self-start"
+          >
+            <div className="flex flex-col gap-3">
+              <h2 id="ingredienten-titel" className="text-sectietitel">
+                {t("Ingrediënten")}
+              </h2>
+              <div className="flex w-full items-center justify-between gap-2 rounded-2xl bg-secondary p-1">
+                <Button
+                  variant="secondary"
+                  onClick={() => setPersonen(Math.max(1, aantal - 1))}
+                  aria-label="Minder personen"
+                  className="size-12 shrink-0 bg-card"
+                >
+                  <Minus className="size-5" />
+                </Button>
+                <span className="min-w-0 flex-1 text-center text-base font-semibold sm:text-lg">
+                  {aantal} {t(aantal === 1 ? "persoon" : "personen")}
+                </span>
+                <Button
+                  variant="secondary"
+                  onClick={() => setPersonen(aantal + 1)}
+                  aria-label="Meer personen"
+                  className="size-12 shrink-0 bg-card"
+                >
+                  <Plus className="size-5" />
+                </Button>
+              </div>
             </div>
-          </div>
 
-          <ul className="mt-4 space-y-2 text-lg">
-            {ingredients.map((i) => (
-              <li key={i.id} className="flex justify-between gap-3 border-b border-border py-2">
-                <span>{t(i.name)}</span>
-                <span className="shrink-0 font-semibold">
-                  {i.quantity === null
-                    ? ""
-                    : toonBelgischeMaat(i.quantity * factor, i.unit)}
-                </span>
-              </li>
-            ))}
-            {ingredients.length === 0 && (
-              <li className="py-2 text-muted-foreground">{t("Nog geen ingrediënten.")}</li>
-            )}
-          </ul>
+            <ul className="mt-4 space-y-2 text-lg">
+              {ingredients.map((i) => (
+                <li key={i.id} className="flex justify-between gap-3 border-b border-border py-2">
+                  <span>{t(i.name)}</span>
+                  <span className="shrink-0 font-semibold">
+                    {i.quantity === null ? "" : toonBelgischeMaat(i.quantity * factor, i.unit)}
+                  </span>
+                </li>
+              ))}
+              {ingredients.length === 0 && (
+                <li className="py-2 text-muted-foreground">{t("Nog geen ingrediënten.")}</li>
+              )}
+            </ul>
 
-          {aantal !== recipe.servings ? (
-            <p className="mt-3 text-base text-muted-foreground">
-              {t("Hoeveelheden aangepast. Het originele recept is voor")} {recipe.servings} {t("personen")}.
-            </p>
-          ) : null}
-          {lijstenMetRecept.length ? (
-            <p className="mt-4 flex items-center gap-2 rounded-2xl bg-secondary px-4 py-3 text-base text-secondary-foreground">
-              <Check className="size-5 text-primary" aria-hidden />
-              {t("Dit recept staat al op een boodschappenlijst")}
-            </p>
-          ) : null}
-        </section>
+            {aantal !== recipe.servings ? (
+              <p className="mt-3 text-base text-muted-foreground">
+                {t("Hoeveelheden aangepast. Het originele recept is voor")} {recipe.servings}{" "}
+                {t("personen")}.
+              </p>
+            ) : null}
+            {lijstenMetRecept.length ? (
+              <p className="mt-4 flex items-center gap-2 rounded-2xl bg-secondary px-4 py-3 text-base text-secondary-foreground">
+                <Check className="size-5 text-primary" aria-hidden />
+                {t("Dit recept staat al op een boodschappenlijst")}
+              </p>
+            ) : null}
+          </section>
 
-        <section aria-labelledby="bereiding-titel">
-          <h2 id="bereiding-titel" className="text-sectietitel">{t("Bereiding")}</h2>
+          <section aria-labelledby="bereiding-titel">
+            <h2 id="bereiding-titel" className="text-sectietitel">
+              {t("Bereiding")}
+            </h2>
 
-          <ol className="mt-4 space-y-3">
-            {recipe.instructions.map((s, i) => (
-              <li key={i} className="flex gap-4 rounded-3xl bg-card p-5 shadow-zacht">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-inkt text-lg font-bold text-inkt-foreground" aria-hidden>
-                  {i + 1}
-                </span>
-                <span className="sr-only">{t("Stap")} {i + 1}:</span>
-                <div className="min-w-0">
-                  <p className="text-lg leading-relaxed">{netteStap(t(s))}</p>
-                  <StapIngredienten ingredienten={stapIngredienten(i)} factor={factor} />
-                </div>
-              </li>
-            ))}
-          </ol>
+            <ol className="mt-4 space-y-3">
+              {recipe.instructions.map((s, i) => (
+                <li key={i} className="flex gap-4 rounded-3xl bg-card p-5 shadow-zacht">
+                  <span
+                    className="flex size-10 shrink-0 items-center justify-center rounded-full bg-inkt text-lg font-bold text-inkt-foreground"
+                    aria-hidden
+                  >
+                    {i + 1}
+                  </span>
+                  <span className="sr-only">
+                    {t("Stap")} {i + 1}:
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-lg leading-relaxed">{netteStap(t(s))}</p>
+                    <StapIngredienten ingredienten={stapIngredienten(i)} factor={factor} />
+                  </div>
+                </li>
+              ))}
+            </ol>
 
-          {recipe.instructions.length > 0 ? (
-            <Button
-              onClick={() => { setStap(-1); void meet("kookmodus.gestart", undefined, { id }); setKookstand(true); }}
-              className="mt-4 h-16 w-full text-lg"
-            >
-              <ChefHat className="size-5" /> {t("Start koken")}
-            </Button>
-          ) : null}
-        </section>
+            {recipe.instructions.length > 0 ? (
+              <Button
+                onClick={() => {
+                  setStap(-1);
+                  void meet("kookmodus.gestart", undefined, { id });
+                  setKookstand(true);
+                }}
+                className="mt-4 h-16 w-full text-lg"
+              >
+                <ChefHat className="size-5" /> {t("Start koken")}
+              </Button>
+            ) : null}
+          </section>
         </div>
 
         <details className="group rounded-3xl bg-card p-5 shadow-zacht">
           <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between text-sectietitel">
             {t("Voedingswaarden")}
-            <span className="text-base font-sans font-semibold text-primary group-open:hidden">{t("Tonen")}</span>
-            <span className="hidden text-base font-sans font-semibold text-primary group-open:inline">{t("Verbergen")}</span>
+            <span className="text-base font-sans font-semibold text-primary group-open:hidden">
+              {t("Tonen")}
+            </span>
+            <span className="hidden text-base font-sans font-semibold text-primary group-open:inline">
+              {t("Verbergen")}
+            </span>
           </summary>
           <div className="mt-4">
             <Voedingswaarden ingredienten={ingredients} porties={aantal} />
           </div>
         </details>
 
-        <section aria-labelledby="jouw-recept-titel" className="space-y-5 rounded-3xl bg-muted/60 p-5">
-          <h2 id="jouw-recept-titel" className="text-sectietitel">{t("Jouw recept")}</h2>
+        <section
+          aria-labelledby="jouw-recept-titel"
+          className="space-y-5 rounded-3xl bg-muted/60 p-5"
+        >
+          <h2 id="jouw-recept-titel" className="text-sectietitel">
+            {t("Jouw recept")}
+          </h2>
           <SterrenKiezer waarde={mijnScore} onKies={zetScore} label={t("Jouw score")} />
-          {recipe.source_url ? <a href={recipe.source_url} target="_blank" rel="noreferrer" className="block text-base text-primary underline underline-offset-4">{t("Bekijk origineel op")} {bronNaam(recipe.source_url)}</a> : null}
-          {isOwner ? <SnelAanpassen recipe={recipe} onKlaar={() => qc.invalidateQueries({ queryKey: ["recipe", recipe.id] })} /> : null}
+          {recipe.source_url ? (
+            <a
+              href={recipe.source_url}
+              target="_blank"
+              rel="noreferrer"
+              className="block text-base text-primary underline underline-offset-4"
+            >
+              {t("Bekijk origineel op")} {bronNaam(recipe.source_url)}
+            </a>
+          ) : null}
+          {isOwner ? (
+            <SnelAanpassen
+              recipe={recipe}
+              onKlaar={() => qc.invalidateQueries({ queryKey: ["recipe", recipe.id] })}
+            />
+          ) : null}
           {isOwner && recipe.image_url ? (
             <div className="space-y-2">
               <p className="text-base font-semibold">{t("Foto's")}</p>
-              <FotoKiezer bezig={fotoBezig} heeftFoto onBestand={(file) => void vervangFoto(file)} />
+              <FotoKiezer
+                bezig={fotoBezig}
+                heeftFoto
+                onBestand={(file) => void vervangFoto(file)}
+              />
               {/* Extra foto's: rustig onderaan, niet tussen de foto en "Start koken". */}
-              <FotoKiezer extra bezig={fotoBezig} onBestand={(file) => void voegExtraFotoToe(file)} />
+              <FotoKiezer
+                extra
+                bezig={fotoBezig}
+                onBestand={(file) => void voegExtraFotoToe(file)}
+              />
             </div>
           ) : null}
         </section>
-
       </div>
       {vraagNogmaals ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
           <div className="w-full max-w-md rounded-t-3xl bg-card p-5 sm:rounded-3xl">
             <h2 className="font-display text-xl">{t("Staat al op je lijst")}</h2>
             <p className="mt-2 text-base text-muted-foreground">
-              {t("Dit recept staat al op je boodschappenlijst. Wil je de ingrediënten nog eens toevoegen?")}
+              {t(
+                "Dit recept staat al op je boodschappenlijst. Wil je de ingrediënten nog eens toevoegen?",
+              )}
             </p>
             <div className="mt-4 flex gap-2">
-              <Button variant="ghost" onClick={() => setVraagNogmaals(false)} className="h-14 flex-1 text-base">
+              <Button
+                variant="ghost"
+                onClick={() => setVraagNogmaals(false)}
+                className="h-14 flex-1 text-base"
+              >
                 {t("Annuleren")}
               </Button>
               <Button onClick={() => void naarBoodschappen(true)} className="h-14 flex-1 text-base">
@@ -904,26 +1095,60 @@ function ReceptPage() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="font-display text-xl">Naar boodschappenlijst</h2>
-                <p className="mt-1 text-base text-muted-foreground">Hoeveelheden voor {aantal} personen</p>
+                <p className="mt-1 text-base text-muted-foreground">
+                  Hoeveelheden voor {aantal} personen
+                </p>
               </div>
-              <Button variant="ghost" onClick={() => setBoodschappenOpen(false)} aria-label="Sluiten" className="size-12"><X /></Button>
+              <Button
+                variant="ghost"
+                onClick={() => setBoodschappenOpen(false)}
+                aria-label="Sluiten"
+                className="size-12"
+              >
+                <X />
+              </Button>
             </div>
             <div className="mt-4 flex items-center justify-between rounded-2xl bg-secondary p-2">
-              <Button variant="secondary" onClick={() => setPersonen(Math.max(1, aantal - 1))} aria-label="Minder personen" className="size-12"><Minus /></Button>
+              <Button
+                variant="secondary"
+                onClick={() => setPersonen(Math.max(1, aantal - 1))}
+                aria-label="Minder personen"
+                className="size-12"
+              >
+                <Minus />
+              </Button>
               <span className="text-lg font-semibold">{aantal} personen</span>
-              <Button variant="secondary" onClick={() => setPersonen(aantal + 1)} aria-label="Meer personen" className="size-12"><Plus /></Button>
+              <Button
+                variant="secondary"
+                onClick={() => setPersonen(aantal + 1)}
+                aria-label="Meer personen"
+                className="size-12"
+              >
+                <Plus />
+              </Button>
             </div>
             {boodschappenLijsten.length > 1 ? (
               <label className="mt-4 block text-base font-semibold">
                 Kies een lijst
-                <select value={gekozenLijst} onChange={(e) => setGekozenLijst(e.target.value)} className="mt-2 h-14 w-full rounded-xl border border-input bg-background px-3 text-base">
-                  {boodschappenLijsten.map((lijst) => <option key={lijst.id} value={lijst.id}>{lijst.name}</option>)}
+                <select
+                  value={gekozenLijst}
+                  onChange={(e) => setGekozenLijst(e.target.value)}
+                  className="mt-2 h-14 w-full rounded-xl border border-input bg-background px-3 text-base"
+                >
+                  {boodschappenLijsten.map((lijst) => (
+                    <option key={lijst.id} value={lijst.id}>
+                      {lijst.name}
+                    </option>
+                  ))}
                 </select>
               </label>
             ) : null}
             {staatOpLijst ? (
               <p className="mt-4 rounded-xl bg-secondary px-4 py-3 text-base">
-                Dit recept staat al op {boodschappenLijsten.find((lijst) => lijst.id === gekozenLijst)?.name ?? "deze lijst"}.
+                Dit recept staat al op{" "}
+                {boodschappenLijsten.find((lijst) => lijst.id === gekozenLijst)?.name ??
+                  "deze lijst"}
+                .
               </p>
             ) : null}
             <Button onClick={() => void naarBoodschappen()} className="mt-4 h-16 w-full text-lg">
@@ -976,9 +1201,23 @@ function PlanKiezer({
       <div className="flex items-center justify-between gap-3 rounded-xl bg-secondary p-2">
         <span className="text-base font-medium">Voor hoeveel personen?</span>
         <div className="flex items-center gap-2">
-          <Button variant="secondary" onClick={() => setPersonen(Math.max(1, personen - 1))} aria-label="Minder personen" className="size-12 bg-card"><Minus className="size-5" /></Button>
+          <Button
+            variant="secondary"
+            onClick={() => setPersonen(Math.max(1, personen - 1))}
+            aria-label="Minder personen"
+            className="size-12 bg-card"
+          >
+            <Minus className="size-5" />
+          </Button>
           <span className="min-w-10 text-center text-lg font-semibold">{personen}</span>
-          <Button variant="secondary" onClick={() => setPersonen(Math.min(50, personen + 1))} aria-label="Meer personen" className="size-12 bg-card"><Plus className="size-5" /></Button>
+          <Button
+            variant="secondary"
+            onClick={() => setPersonen(Math.min(50, personen + 1))}
+            aria-label="Meer personen"
+            className="size-12 bg-card"
+          >
+            <Plus className="size-5" />
+          </Button>
         </div>
       </div>
       <Button onClick={() => onKies(datum, moment, personen)} className="h-16 w-full text-lg">
@@ -1008,14 +1247,21 @@ function SnelAanpassen({ recipe, onKlaar }: { recipe: Recipe; onKlaar: () => voi
 
   if (!open) {
     return (
-      <Button variant="outline" onClick={() => setOpen(true)} className="h-14 w-full justify-start text-base">
+      <Button
+        variant="outline"
+        onClick={() => setOpen(true)}
+        className="h-14 w-full justify-start text-base"
+      >
         <Pencil className="size-5" /> Snel aanpassen
       </Button>
     );
   }
 
   return (
-    <section className="space-y-4 rounded-2xl bg-card p-4 ring-1 ring-border/60" aria-label="Snel aanpassen">
+    <section
+      className="space-y-4 rounded-2xl bg-card p-4 ring-1 ring-border/60"
+      aria-label="Snel aanpassen"
+    >
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Snel aanpassen</h3>
         <Button variant="ghost" size="icon" aria-label="Sluiten" onClick={() => setOpen(false)}>
@@ -1071,7 +1317,10 @@ function SnelAanpassen({ recipe, onKlaar }: { recipe: Recipe; onKlaar: () => voi
         <p className="text-base font-medium">Labels</p>
         <div className="mt-2 flex flex-wrap gap-2">
           {(recipe.tags ?? []).map((tag) => (
-            <span key={tag} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-secondary px-3 text-base">
+            <span
+              key={tag}
+              className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-secondary px-3 text-base"
+            >
               {tag}
               <button
                 type="button"
@@ -1120,7 +1369,8 @@ function SnelAanpassen({ recipe, onKlaar }: { recipe: Recipe; onKlaar: () => voi
             defaultValue={recipe.servings}
             onBlur={(e) => {
               const n = Number(e.target.value);
-              if (Number.isFinite(n) && n > 0 && n !== recipe.servings) void bewaar({ servings: n });
+              if (Number.isFinite(n) && n > 0 && n !== recipe.servings)
+                void bewaar({ servings: n });
             }}
             className="mt-1 h-14 text-base"
           />
@@ -1133,7 +1383,8 @@ function SnelAanpassen({ recipe, onKlaar }: { recipe: Recipe; onKlaar: () => voi
             defaultValue={recipe.prep_minutes}
             onBlur={(e) => {
               const n = Number(e.target.value);
-              if (Number.isFinite(n) && n >= 0 && n !== recipe.prep_minutes) void bewaar({ prep_minutes: n });
+              if (Number.isFinite(n) && n >= 0 && n !== recipe.prep_minutes)
+                void bewaar({ prep_minutes: n });
             }}
             className="mt-1 h-14 text-base"
           />
@@ -1146,7 +1397,8 @@ function SnelAanpassen({ recipe, onKlaar }: { recipe: Recipe; onKlaar: () => voi
             defaultValue={recipe.cook_minutes}
             onBlur={(e) => {
               const n = Number(e.target.value);
-              if (Number.isFinite(n) && n >= 0 && n !== recipe.cook_minutes) void bewaar({ cook_minutes: n });
+              if (Number.isFinite(n) && n >= 0 && n !== recipe.cook_minutes)
+                void bewaar({ cook_minutes: n });
             }}
             className="mt-1 h-14 text-base"
           />

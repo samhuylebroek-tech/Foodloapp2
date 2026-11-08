@@ -56,7 +56,10 @@ function decodeerEntiteiten(tekst: string): string {
   return tekst
     .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
     .replace(/&#x([0-9a-f]+);/gi, (_, n: string) => String.fromCodePoint(parseInt(n, 16)))
-    .replace(/&([a-z][a-z0-9]{1,8});/gi, (hele, naam: string) => ENTITEITEN[naam.toLowerCase()] ?? hele);
+    .replace(
+      /&([a-z][a-z0-9]{1,8});/gi,
+      (hele, naam: string) => ENTITEITEN[naam.toLowerCase()] ?? hele,
+    );
 }
 
 /** Maakt één bereidingsstap netjes leesbaar. */
@@ -73,7 +76,9 @@ export function netteStap(tekst: string): string {
     .replace(/\s+([,.;:!?])/g, "$1")
     // Spatie na , ; : — maar niet tussen twee cijfers ("2,5 uur", "18:30").
     .replace(/([,;:])(?=\S)/g, (teken, _t, positie: number, geheel: string) =>
-      /\d/.test(geheel[positie - 1] ?? "") && /\d/.test(geheel[positie + 1] ?? "") ? teken : `${teken} `,
+      /\d/.test(geheel[positie - 1] ?? "") && /\d/.test(geheel[positie + 1] ?? "")
+        ? teken
+        : `${teken} `,
     )
     .replace(/([.!?])(?=[A-Za-zÀ-ÿ])/g, "$1 ")
     .replace(/([.,!?;:]){2,}/g, "$1")
