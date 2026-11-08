@@ -2,6 +2,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { teksten } from "@/lib/melding-teksten";
 import { stuurPush } from "@/lib/webpush.server";
+import {
+  meldingSleutelSchema,
+  meldingVoorkeurenSchema,
+  pushAbonnementSchema,
+  pushEndpointSchema,
+  tijdzoneSchema,
+} from "@/lib/meldingen-schema";
 
 export type MeldingVoorkeuren = {
   daily_menu_on: boolean;
@@ -57,19 +64,31 @@ export const haalMeldingVoorkeuren = createServerFn({ method: "GET" })
 
 export const bewaarMeldingVoorkeuren = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: Partial<MeldingVoorkeuren>) => input)
+  // zod laat ontbrekende velden weg (nooit expliciet undefined), dus deze vorm klopt.
+  .inputValidator(
+    (input: Partial<MeldingVoorkeuren>) =>
+      meldingVoorkeurenSchema.parse(input) as Partial<MeldingVoorkeuren>,
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { error } = await supabase
       .from("notification_preferences")
-      .upsert({ user_id: userId, ...data }, { onConflict: "user_id" });
+      .upsert({ ...data, user_id: userId }, { onConflict: "user_id" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
 export const bewaarPushAbonnement = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { endpoint: string; p256dh: string; auth: string; userAgent?: string; tijdzone?: string }) => input)
+  .inputValidator(
+    (input: {
+      endpoint: string;
+      p256dh: string;
+      auth: string;
+      userAgent?: string;
+      tijdzone?: string;
+    }) => pushAbonnementSchema.parse(input),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { error } = await supabase.from("push_subscriptions").upsert(
@@ -96,7 +115,7 @@ export const bewaarPushAbonnement = createServerFn({ method: "POST" })
 
 export const verwijderPushAbonnement = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { endpoint: string }) => input)
+  .inputValidator((input: { endpoint: string }) => pushEndpointSchema.parse(input))
   .handler(async ({ data, context }) => {
     await context.supabase
       .from("push_subscriptions")
@@ -108,7 +127,7 @@ export const verwijderPushAbonnement = createServerFn({ method: "POST" })
 
 export const bewaarTijdzone = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { tijdzone: string }) => input)
+  .inputValidator((input: { tijdzone: string }) => tijdzoneSchema.parse(input))
   .handler(async ({ data, context }) => {
     await context.supabase
       .from("notification_preferences")
@@ -119,7 +138,7 @@ export const bewaarTijdzone = createServerFn({ method: "POST" })
 
 export const meldingAangetikt = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { sleutel: string }) => input)
+  .inputValidator((input: { sleutel: string }) => meldingSleutelSchema.parse(input))
   .handler(async ({ data, context }) => {
     await context.supabase
       .from("notification_log")

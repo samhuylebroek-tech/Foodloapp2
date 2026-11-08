@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { teksten } from "@/lib/melding-teksten";
 import { stuurPush } from "@/lib/webpush.server";
@@ -113,7 +114,11 @@ async function mijnNaam(supabase: { from: (t: string) => any }, userId: string) 
 /** Nodigt een bestaande gebruiker uit en verwittigt die persoon. */
 export const nodigUitVriend = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { doelId: string; rechten: Partial<Rechten> }) => input)
+  .inputValidator((input: { doelId: string; rechten: Partial<Rechten> }) => {
+    // Rechten worden daarna nog door schoonRechten() tot booleans herleid.
+    const { doelId } = z.object({ doelId: z.string().uuid() }).parse(input);
+    return { doelId, rechten: (input?.rechten ?? {}) as Partial<Rechten> };
+  })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     if (!data.doelId || data.doelId === userId) {
@@ -150,9 +155,12 @@ export const nodigUitVriend = createServerFn({ method: "POST" })
 /** Neemt een uitnodiging aan of weigert ze, en deelt optioneel iets terug. */
 export const beantwoordUitnodiging = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (input: { token: string; ja: boolean; terug?: Partial<Rechten> | null }) => input,
-  )
+  .inputValidator((input: { token: string; ja: boolean; terug?: Partial<Rechten> | null }) => {
+    const { token, ja } = z
+      .object({ token: z.string().min(1).max(200), ja: z.boolean() })
+      .parse(input);
+    return { token, ja, terug: (input?.terug ?? null) as Partial<Rechten> | null };
+  })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 

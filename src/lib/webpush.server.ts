@@ -3,6 +3,8 @@
  * Werkt in de Worker-omgeving; geen Node-only bibliotheken.
  */
 
+import { isVeiligPushEndpoint } from "@/lib/meldingen-schema";
+
 const enc = new TextEncoder();
 
 function b64urlNaarBytes(s: string): Uint8Array {
@@ -107,9 +109,18 @@ export async function stuurPush(abo: PushAbonnement, payload: unknown, ttl = 360
   const subject = process.env["VAPID_SUBJECT"] ?? "mailto:hallo@foodloapp.com";
   if (!publiek || !prive) return { ok: false, status: 0, verlopen: false, fout: "VAPID ontbreekt" };
 
+  // Oude of gemanipuleerde abonnementen: nooit naar een intern adres posten.
+  // `verlopen: true` zorgt dat het abonnement wordt uitgeschakeld.
+  if (!isVeiligPushEndpoint(abo.endpoint)) {
+    return { ok: false, status: 0, verlopen: true, fout: "onveilig endpoint" };
+  }
+
   try {
     const body = await versleutel(abo, JSON.stringify(payload));
     const res = await fetch(abo.endpoint, {
+      // Pushdiensten sturen nooit door; een omleiding volgen we dus niet.
+      redirect: "manual",
+      signal: AbortSignal.timeout(10_000),
       method: "POST",
       headers: {
         Authorization: await vapidHeader(abo.endpoint, publiek, prive, subject),

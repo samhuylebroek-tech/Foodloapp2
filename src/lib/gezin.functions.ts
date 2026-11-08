@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type BerichtSoort = "gezinsuitnodiging" | "gezin_ok";
@@ -73,7 +74,9 @@ async function naamVan(supabase: { from: (t: string) => any }, userId: string) {
 /** Een actief gezinslid nodigt een bestaande gebruiker uit voor het gezin. */
 export const nodigUitGezin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { groupId: string; doelId: string }) => input)
+  .inputValidator((input: { groupId: string; doelId: string }) =>
+    z.object({ groupId: z.string().uuid(), doelId: z.string().uuid() }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     if (!data.groupId || !data.doelId) return { ok: false as const, reden: "ongeldig" as const };
@@ -111,7 +114,9 @@ export const nodigUitGezin = createServerFn({ method: "POST" })
 /** De uitgenodigde aanvaardt of weigert de gezinsuitnodiging. */
 export const beantwoordGezinsUitnodiging = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { groupId: string; ja: boolean }) => input)
+  .inputValidator((input: { groupId: string; ja: boolean }) =>
+    z.object({ groupId: z.string().uuid(), ja: z.boolean() }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     if (!data.groupId) return { ok: false as const };
