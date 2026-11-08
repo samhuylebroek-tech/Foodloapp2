@@ -101,11 +101,21 @@ Elk item: kleine PR's, eerst testen, toegankelijkheid en alle toestanden (laden,
 - Schema-drift (BUG-011) is niet opgelost tot er een staging-omgeving is.
 - Lint-baseline (5 472 meldingen) blijft bestaan om conflicten met Lovable te vermijden.
 
-## 7. Volgende vijf taken (stand 2026-11-08)
-| # | Taak | Waarom nu | Acceptatie | Gate |
-|---|------|-----------|------------|------|
-| 1 | **Beveiligingsfix live zetten** (BUG-034): alleen de TanStack/seroval/vite-upgrade als losse wijziging naar productie. | Kritieke XSS in de live app. | Review + build + E2E groen; deploy door eigenaar. | **G3/G4 — eigenaar beslist** |
-| 2 | **zod 3 → 4** (BUG-035) in kleine stappen, eerst serverfuncties met nieuwe schema's. | Enige overgebleven runtime-kwetsbaarheid (hoog). | Alle 306 unit- + 86 E2E-tests groen; `bun audit` zonder zod. | — |
-| 3 | **Kookmodus-E2E + verbeteringen** (één stap per scherm, grote knoppen, timers, scherm-aan, herstel na wegnavigeren) — kernlus "Cook". | Laatste ontbrekende schakel in de geteste kernlus. | E2E op 360/768 px; axe schoon; herstel na herladen. | — |
-| 4 | **Staging opzetten + schema-drift** (BUG-011, `STAGING-VOORSTELLEN.md` §0–1). | Voorwaarde voor elke database-, RLS-, opslag- of creatorwijziging. | Diff-rapport productie ↔ migraties. | **G1 — eigenaar maakt staging-project** |
-| 5 | **UX-inventaris + designsysteem-basis**: navigatie, termen, lege/laad/foutstaten, één knop/kaart/dialoogpatroon (o.a. BUG-016/038). | Kernflow is nu betrouwbaar getest; volgende stap is consistentie voor beide doelgroepen. | Inventarisdocument + gedeelde componenten met tests; geen visuele herschrijving in één keer. | — |
+## 7. Stand na het V2-ontwerp (2026-11-08)
+**Designsysteem (geïmplementeerd in code, `src/styles.css` + gedeelde componenten):**
+- Typografie: Fraunces (titels: `text-paginatitel`, `text-sectietitel`, `text-heldentitel`, `text-kaarttitel`) + Figtree (tekst, getallen). Basis 18 px.
+- Kleur: salie/emerald-primair, warme accenten `terracotta` en `honing`, contrast bewaakt in 5 thema's (128 checks).
+- Vorm en diepte: radius 0,875 rem, schaduwen `shadow-zacht` / `shadow-kaart` / `shadow-zwevend`.
+- Omslagen: `RecipePhoto` + `src/lib/omslag.ts` (kleurverloop en icoon per soort gerecht).
+- Patronen: kaarten zonder harde randen, chips voor kenmerken, scrollstroken (`.scroll-rij`, altijd `relative`), toegankelijke dialogen, meldingen van 18 px.
+
+**Schermen vernieuwd:** shell en navigatie, Start, Recepten, Receptdetail, Kookstand (timers en herstel), Weekmenu (omslagen); Boodschappen via tokens.
+
+## 8. Volgende vijf taken
+| # | Taak | Waarom | Gate |
+|---|------|--------|------|
+| 1 | **Beveiligingsrelease live** (`SECURITY-RELEASE.md`) | Kritieke XSS en deserialisatie in de live app | **G3/G4: eigenaar** |
+| 2 | **Tweede beveiligingsrelease** voorbereiden: SSRF, begrensde lijsten, invoervalidatie (op een aparte branch vanaf `main`) | Ook live relevant (BUG-001/002/003/007/049) | G3/G4 |
+| 3 | **Zod 4-migratie** stap 1–2 (`ZOD4-MIGRATIE.md`) | Laatste runtime-advisory | — |
+| 4 | **Boodschappen en weekmenu verdiepen**: weekoverzicht als raster op desktop, planner opsplitsen (2 950 regels), BUG-037/038 | Consistentie en onderhoudbaarheid | — |
+| 5 | **Staging opzetten** (schema-drift BUG-011, foto's naar Storage BUG-012, AVG-verwijdering BUG-025) | Voorwaarde voor database- en creatorwerk | **G1: eigenaar maakt staging-project** |
