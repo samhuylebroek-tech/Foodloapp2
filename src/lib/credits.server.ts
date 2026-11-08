@@ -159,10 +159,49 @@ export async function metCredits<T>(
     throw vertaalFout(e);
   }
 
+  let resultaat: T;
   try {
-    const resultaat = await run(meter);
-    if (reservering.txn) await db.rpc("credits_afronden", { _txn: reservering.txn });
-    if (hash) {
+    resultaat = await run(meter);
+  } catch (e) {
+    // Terugstorten mag nooit de oorspronkelijke fout verbergen.
+    if (reservering.txn) {
+      try {
+        await db.rpc("credits_terugstorten", { _txn: reservering.txn });
+      } catch (terugFout) {
+        console.error(
+          "credits_terugstorten mislukt",
+          opts.feature,
+          terugFout instanceof Error ? terugFout.message : "onbekend",
+        );
+      }
+    }
+    await meet(
+      {
+        user_id: opts.userId,
+        feature: opts.feature,
+        model,
+        cache_hit: false,
+        credits: 0,
+        duration_ms: Date.now() - start,
+        ok: false,
+      },
+      meter,
+    );
+    throw vertaalFout(e);
+  }
+
+  // Vanaf hier is de AI-taak geslaagd en al betaald (de reservering schreef af).
+  // Boekhouding achteraf mag het resultaat nooit meer weggooien, anders betaalt
+  // de gebruiker opnieuw voor dezelfde vraag.
+  if (reservering.txn) {
+    try {
+      await db.rpc("credits_afronden", { _txn: reservering.txn });
+    } catch (e) {
+      console.error("credits_afronden mislukt", opts.feature, e instanceof Error ? e.message : "onbekend");
+    }
+  }
+  if (hash) {
+    try {
       await db.from("ai_cache").upsert(
         {
           input_hash: hash,
@@ -173,8 +212,12 @@ export async function metCredits<T>(
         },
         { onConflict: "input_hash" },
       );
+    } catch {
+      // zonder cache werkt alles nog; enkel een volgende keer duurder
     }
-    await meet({
+  }
+  await meet(
+    {
       user_id: opts.userId,
       feature: opts.feature,
       model,
@@ -182,19 +225,8 @@ export async function metCredits<T>(
       credits: reservering.kosten,
       duration_ms: Date.now() - start,
       ok: true,
-    }, meter);
-    return { resultaat, credits: reservering.kosten, cache: false, saldo: reservering.saldo };
-  } catch (e) {
-    if (reservering.txn) await db.rpc("credits_terugstorten", { _txn: reservering.txn });
-    await meet({
-      user_id: opts.userId,
-      feature: opts.feature,
-      model,
-      cache_hit: false,
-      credits: 0,
-      duration_ms: Date.now() - start,
-      ok: false,
-    }, meter);
-    throw vertaalFout(e);
-  }
+    },
+    meter,
+  );
+  return { resultaat, credits: reservering.kosten, cache: false, saldo: reservering.saldo };
 }

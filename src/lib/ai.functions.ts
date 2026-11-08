@@ -14,6 +14,7 @@ import {
   velden,
   type Platform,
 } from "@/lib/import.server";
+import { leesBeperkt, TeGrootFout, veiligeUrl, veiligOphalen } from "@/lib/veilige-url";
 
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
@@ -220,20 +221,6 @@ export function canoniekeUrl(ruw: string): string {
   }
 }
 
-/** Blokkeert interne adressen (SSRF-bescherming). */
-function veiligeUrl(ruw: string) {
-  const u = new URL(ruw);
-  if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("Alleen gewone weblinks werken.");
-  const host = u.hostname.toLowerCase();
-  const intern =
-    host === "localhost" ||
-    host.endsWith(".local") ||
-    host.endsWith(".internal") ||
-    /^\d+\.\d+\.\d+\.\d+$/.test(host) ||
-    host.includes(":");
-  if (intern) throw new Error("Deze link kunnen we niet openen.");
-  return u.toString();
-}
 
 function minuten(iso: unknown): number {
   if (typeof iso === "number") return iso;
@@ -1205,18 +1192,33 @@ export const haalAfbeelding = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ url: z.string().min(8) }).parse(data))
   .handler(async ({ data }) => {
-    const url = veiligeUrl(data.url);
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; Foodlo/1.0)", Accept: "image/*" },
-      redirect: "follow",
-    });
+    // Elke omleiding wordt opnieuw gecontroleerd; tijdslimiet en maximale grootte
+    // voorkomen dat een trage of enorme foto de server ophoudt.
+    let res: Response;
+    try {
+      ({ res } = await veiligOphalen(
+        data.url,
+        { headers: { "User-Agent": "Mozilla/5.0 (compatible; Foodlo/1.0)", Accept: "image/*" } },
+        { timeoutMs: 10_000 },
+      ));
+    } catch (e) {
+      if (e instanceof Error && e.name === "OnveiligeUrlFout") throw e;
+      throw new Error("De foto kon niet worden opgehaald.");
+    }
     if (!res.ok) throw new Error("De foto kon niet worden opgehaald.");
     const type = (res.headers.get("content-type") ?? "").split(";")[0]!.trim().toLowerCase();
     if (!/^image\/(jpeg|jpg|png|webp|avif|gif)$/.test(type)) {
+      await res.body?.cancel().catch(() => undefined);
       throw new Error("Dit is geen gewone afbeelding.");
     }
-    const buf = new Uint8Array(await res.arrayBuffer());
-    if (!buf.byteLength || buf.byteLength > 8_000_000) throw new Error("De foto is te groot.");
+    let buf: Uint8Array;
+    try {
+      buf = await leesBeperkt(res, 8_000_000);
+    } catch (e) {
+      if (e instanceof TeGrootFout) throw new Error("De foto is te groot.");
+      throw new Error("De foto kon niet worden opgehaald.");
+    }
+    if (!buf.byteLength) throw new Error("De foto is te groot.");
     let binair = "";
     for (let i = 0; i < buf.length; i += 8192) {
       binair += String.fromCharCode(...buf.subarray(i, i + 8192));

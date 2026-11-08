@@ -5,6 +5,11 @@
  * -> metadata/bijschrift -> pas dan AI. Elke poging wordt gelogd voor het Control Center.
  */
 
+import { leesTekstBeperkt, OnveiligeUrlFout, TeGrootFout, veiligOphalen } from "@/lib/veilige-url";
+
+/** Recepten-HTML is zelden groter dan 2 MB; 5 MB laat ruime marge. */
+const MAX_PAGINA_BYTES = 5_000_000;
+
 export type Platform =
   | "instagram"
   | "tiktok"
@@ -201,17 +206,24 @@ export async function haalPagina(url: string, agents: string[]): Promise<string>
   let laatste = "";
   for (const ua of agents) {
     try {
-      const res = await fetch(url, {
-        headers: {
-          "User-Agent": ua,
-          Accept: "text/html,application/xhtml+xml",
-          "Accept-Language": "nl,en;q=0.8",
+      const { res } = await veiligOphalen(
+        url,
+        {
+          headers: {
+            "User-Agent": ua,
+            Accept: "text/html,application/xhtml+xml",
+            "Accept-Language": "nl,en;q=0.8",
+          },
         },
-        redirect: "follow",
-      });
-      if (res.ok) return await res.text();
+        { timeoutMs: 12_000 },
+      );
+      if (res.ok) return await leesTekstBeperkt(res, MAX_PAGINA_BYTES);
+      await res.body?.cancel().catch(() => undefined);
       laatste = `status ${res.status}`;
     } catch (e) {
+      // Een onveilige omleiding probeer je niet opnieuw met een andere browser.
+      if (e instanceof OnveiligeUrlFout) throw e;
+      if (e instanceof TeGrootFout) throw new Error("Deze pagina is te groot om in te lezen.");
       laatste = e instanceof Error ? e.message : String(e);
     }
   }
@@ -349,18 +361,23 @@ function tekstVan(waarde: unknown): string {
 export async function leesReceptKop(url: string): Promise<ReceptKop | null> {
   let html = "";
   try {
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent": BROWSER_UA,
-        Accept: "text/html,application/xhtml+xml",
-        "Accept-Language": "nl,en;q=0.8",
+    const { res } = await veiligOphalen(
+      url,
+      {
+        headers: {
+          "User-Agent": BROWSER_UA,
+          Accept: "text/html,application/xhtml+xml",
+          "Accept-Language": "nl,en;q=0.8",
+        },
       },
-      redirect: "follow",
       // Een trage website mag het zoeken niet ophouden.
-      signal: AbortSignal.timeout(6000),
-    });
-    if (!res.ok) return null;
-    html = await res.text();
+      { timeoutMs: 6000 },
+    );
+    if (!res.ok) {
+      await res.body?.cancel().catch(() => undefined);
+      return null;
+    }
+    html = await leesTekstBeperkt(res, MAX_PAGINA_BYTES);
   } catch {
     return null;
   }
