@@ -37,8 +37,6 @@ const TABS = NAV;
 /** Hoofdbestemmingen krijgen geen terugknop; alle andere schermen wel. */
 const HOOFDPADEN = new Set<string>(NAV.map((n) => n.to));
 
-
-
 export function AppShell({
   title,
   children,
@@ -117,7 +115,9 @@ export function AppShell({
         <span className="flex size-11 items-center justify-center rounded-2xl bg-card shadow-zacht">
           <img src={logo} alt="" width={30} height={30} className="size-7" />
         </span>
-        <p className="font-display text-[1.65rem] font-semibold tracking-tight text-foreground">Foodlo</p>
+        <p className="font-display text-[1.65rem] font-semibold tracking-tight text-foreground">
+          Foodlo
+        </p>
       </Link>
       <ul className="mt-10 space-y-1.5">
         {NAV.map((item) => {
@@ -163,7 +163,12 @@ export function AppShell({
             className="sticky top-0 z-20 bg-background/95 backdrop-blur-md"
             style={{ paddingTop: "env(safe-area-inset-top)" }}
           >
-            <div className={cn("mx-auto grid min-h-16 w-full max-w-3xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 pt-2 sm:px-6", breed ? "lg:max-w-6xl" : "lg:max-w-4xl")}>
+            <div
+              className={cn(
+                "mx-auto grid min-h-16 w-full max-w-3xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 pt-2 sm:px-6",
+                breed ? "lg:max-w-6xl" : "lg:max-w-4xl",
+              )}
+            >
               <div className="flex min-w-0 items-center gap-2">
                 {toonTerug ? (
                   <button
@@ -175,21 +180,37 @@ export function AppShell({
                     {t("Terug")}
                   </button>
                 ) : (
-                  <Link to="/" aria-label="Foodlo Start" className="flex size-11 shrink-0 items-center justify-center lg:hidden">
+                  <Link
+                    to="/"
+                    aria-label="Foodlo Start"
+                    className="flex size-11 shrink-0 items-center justify-center lg:hidden"
+                  >
                     <img src={logo} alt="" width={30} height={30} className="size-8" />
                   </Link>
                 )}
               </div>
               {action ? <div className="shrink-0">{action}</div> : null}
             </div>
-            <div className={cn("mx-auto w-full max-w-3xl px-4 pb-3 sm:px-6", breed ? "lg:max-w-6xl" : "lg:max-w-4xl")}>
+            <div
+              className={cn(
+                "mx-auto w-full max-w-3xl px-4 pb-3 sm:px-6",
+                breed ? "lg:max-w-6xl" : "lg:max-w-4xl",
+              )}
+            >
               <h1 className="line-clamp-2 break-words text-paginatitel">{title}</h1>
-              {ondertitel ? <div className="mt-1 text-base text-muted-foreground">{ondertitel}</div> : null}
+              {ondertitel ? (
+                <div className="mt-1 text-base text-muted-foreground">{ondertitel}</div>
+              ) : null}
             </div>
             <div className="h-px bg-border/70" aria-hidden />
           </header>
 
-          <main className={cn("mx-auto w-full max-w-3xl overflow-x-hidden px-4 py-6 pb-36 sm:px-6 lg:py-8 lg:pb-16", breed ? "lg:max-w-6xl" : "lg:max-w-4xl")}>
+          <main
+            className={cn(
+              "mx-auto w-full max-w-3xl overflow-x-hidden px-4 py-6 pb-36 sm:px-6 lg:py-8 lg:pb-16",
+              breed ? "lg:max-w-6xl" : "lg:max-w-4xl",
+            )}
+          >
             <Aankondigingen />
             {children}
             <MeldingVraag actief={pathname === "/"} />
