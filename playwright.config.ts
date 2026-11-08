@@ -30,7 +30,11 @@ export default defineConfig({
   },
   projects: [
     // Beginner op een kleine telefoon (Pixel 7, 412 px).
-    { name: "telefoon", use: { ...devices["Pixel 7"] }, testIgnore: /kernflow|schermen|kookstand|voorraad/ },
+    {
+      name: "telefoon",
+      use: { ...devices["Pixel 7"] },
+      testIgnore: /kernflow|schermen|kookstand|voorraad/,
+    },
     // Creator op desktop.
     {
       name: "desktop",
