@@ -357,7 +357,6 @@ function PlannerPage() {
     toast.success("Ingrediënten van je boodschappenlijst gehaald");
   }
 
-
   // BUG-032: een dubbele tik terwijl de eerste nog bezig is, mag niet twee keer inplannen.
   const planBezig = useRef(false);
 
