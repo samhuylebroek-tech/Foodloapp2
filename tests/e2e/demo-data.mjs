@@ -306,21 +306,20 @@ export function demoSeed() {
       note: null,
       created_at: new Date(Date.now() - i * 60000).toISOString(),
     })),
+    // Kolommen zoals de echte tabel: naam / hoeveelheid / eenheid.
     pantry_items: [
-      {
-        id: "99999999-0000-4000-8000-000000000001",
-        user_id: DEMO_USER_ID,
-        name: "bloem",
-        quantity: 1,
-        unit: "kg",
-      },
-      {
-        id: "99999999-0000-4000-8000-000000000002",
-        user_id: DEMO_USER_ID,
-        name: "olijfolie",
-        quantity: 1,
-        unit: "l",
-      },
-    ],
+      ["bloem", 1, "kg"],
+      ["olijfolie", 1, "l"],
+      ["eieren", 6, ""],
+      ["uien", 4, ""],
+      ["rundvlees", 1, "kg"],
+      ["pompoen", 1, ""],
+    ].map(([naam, hoeveelheid, eenheid], i) => ({
+      id: `99999999-0000-4000-8000-00000000000${i}`,
+      user_id: DEMO_USER_ID,
+      naam,
+      hoeveelheid,
+      eenheid,
+    })),
   };
 }

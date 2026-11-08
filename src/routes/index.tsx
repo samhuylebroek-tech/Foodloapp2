@@ -9,6 +9,7 @@ import {
   Clock,
   Heart,
   Plus,
+  Refrigerator,
   ShoppingCart,
   Sparkles,
   Users,
@@ -503,7 +504,7 @@ function StartPage() {
               </span>
             </span>
           </Link>
-          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-1">
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
             <SnelTegel
               to="/boodschappen"
               icon={ShoppingCart}
@@ -529,6 +530,13 @@ function StartPage() {
               uitleg={t("Zoek iets nieuws om te maken")}
               kleur="bg-[var(--honing-zacht)] text-[var(--honing-foreground)]"
             />
+            <SnelTegel
+              to="/voorraad"
+              icon={Refrigerator}
+              titel={t("Wat kan ik koken?")}
+              uitleg={t("Met wat je al in huis hebt")}
+              kleur="bg-secondary text-primary"
+            />
           </ul>
         </aside>
       </div>
@@ -543,7 +551,7 @@ function SnelTegel({
   uitleg,
   kleur,
 }: {
-  to: "/boodschappen" | "/planner" | "/inspiratie";
+  to: "/boodschappen" | "/planner" | "/inspiratie" | "/voorraad";
   icon: typeof ShoppingCart;
   titel: string;
   uitleg: string;

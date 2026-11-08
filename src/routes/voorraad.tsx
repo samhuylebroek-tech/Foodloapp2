@@ -1,18 +1,22 @@
-import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Check, ChefHat, Loader2, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RecipePhoto } from "@/components/RecipePhoto";
 import { useT } from "@/lib/voorkeuren";
 import { meet } from "@/lib/meten";
 import { parseIngredientLine, toonBelgischeMaat } from "@/lib/ingredienten";
 import { EmptyState } from "@/components/EmptyState";
 import { PageSkeleton } from "@/components/PageSkeleton";
+import { watKanIkKoken, zitInVoorraad } from "@/lib/voorraad-match";
+import { vindDubbels, voegToeAlsNieuw, zorgVoorLijst } from "@/lib/boodschappen";
+import type { Recipe } from "@/lib/types";
 
 export const Route = createFileRoute("/voorraad")({
   head: () => ({
@@ -42,11 +46,28 @@ type Item = {
   eenheid: string;
 };
 
+type Ing = { recipe_id: string; name: string; quantity: number | null; unit: string };
+
+/** Snel toevoegen: wat veel mensen standaard in huis hebben. */
+const SNEL = [
+  "bloem",
+  "eieren",
+  "melk",
+  "boter",
+  "rijst",
+  "pasta",
+  "uien",
+  "look",
+  "tomaten",
+  "kaas",
+];
+
 function VoorraadPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const t = useT();
   const [nieuw, setNieuw] = useState("");
+  const [bezigMet, setBezigMet] = useState<string | null>(null);
 
   useEffect(() => {
     void meet("voorraad.bekeken");
@@ -66,8 +87,59 @@ function VoorraadPage() {
     },
   });
 
-  const voegToe = async () => {
-    const regel = nieuw.trim();
+  // Eigen recepten met ingrediënten, voor "Wat kan ik koken?".
+  const { data: recepten = [] } = useQuery({
+    queryKey: ["voorraad-recepten", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("recipes")
+        .select("id, title, image_url, category, tags")
+        .eq("user_id", user!.id)
+        .is("deleted_at", null)
+        .eq("is_concept", false)
+        .limit(300);
+      if (error) throw error;
+      return (data ?? []) as Pick<Recipe, "id" | "title" | "image_url" | "category" | "tags">[];
+    },
+  });
+  const ids = recepten.map((r) => r.id);
+  const { data: ingredienten = [] } = useQuery({
+    queryKey: ["voorraad-ingredienten", ids.join(",")],
+    enabled: ids.length > 0,
+    queryFn: async () => {
+      const uit: Ing[] = [];
+      // In blokken, zodat de URL nooit te lang wordt.
+      for (let i = 0; i < ids.length; i += 100) {
+        const { data, error } = await supabase
+          .from("recipe_ingredients")
+          .select("recipe_id, name, quantity, unit")
+          .in("recipe_id", ids.slice(i, i + 100));
+        if (error) throw error;
+        uit.push(...((data ?? []) as Ing[]));
+      }
+      return uit;
+    },
+  });
+
+  const voorraadNamen = useMemo(() => items.map((i) => i.naam), [items]);
+  const suggesties = useMemo(() => {
+    const perRecept = new Map<string, { name: string }[]>();
+    for (const ing of ingredienten) {
+      const lijst = perRecept.get(ing.recipe_id) ?? [];
+      lijst.push({ name: ing.name });
+      perRecept.set(ing.recipe_id, lijst);
+    }
+    return watKanIkKoken(
+      recepten.map((r) => ({ id: r.id, title: r.title, ingredienten: perRecept.get(r.id) ?? [] })),
+      voorraadNamen,
+      { minAanwezig: 1, max: 6 },
+    );
+  }, [recepten, ingredienten, voorraadNamen]);
+
+  const vernieuw = () => void qc.invalidateQueries({ queryKey: ["voorraad", user?.id] });
+
+  const voegToe = async (regel = nieuw.trim()) => {
     if (!regel || !user) return;
     const ontleed = parseIngredientLine(regel);
     const { error } = await supabase.from("pantry_items").insert({
@@ -80,66 +152,241 @@ function VoorraadPage() {
       toast.error(t("Toevoegen lukte niet."));
       return;
     }
-    setNieuw("");
-    void qc.invalidateQueries({ queryKey: ["voorraad", user.id] });
+    if (regel === nieuw.trim()) setNieuw("");
+    vernieuw();
   };
 
-  const verwijder = async (id: string) => {
-    const { error } = await supabase.from("pantry_items").delete().eq("id", id);
+  const verwijder = async (item: Item) => {
+    const { error } = await supabase.from("pantry_items").delete().eq("id", item.id);
     if (error) {
       toast.error(t("Verwijderen lukte niet."));
       return;
     }
-    void qc.invalidateQueries({ queryKey: ["voorraad", user?.id] });
+    vernieuw();
+    // Vergissing hersteld met één tik.
+    toast(`${item.naam} ${t("is weg uit je voorraad")}`, {
+      action: {
+        label: t("Ongedaan maken"),
+        onClick: async () => {
+          if (!user) return;
+          await supabase.from("pantry_items").insert({
+            user_id: user.id,
+            naam: item.naam,
+            hoeveelheid: item.hoeveelheid,
+            eenheid: item.eenheid,
+          });
+          vernieuw();
+        },
+      },
+    });
   };
 
+  const zetOntbrekendeOpLijst = async (receptId: string, ontbreekt: string[]) => {
+    if (!user) return;
+    setBezigMet(receptId);
+    try {
+      const listId = await zorgVoorLijst(user.id);
+      const rijen = ingredienten
+        .filter((i) => i.recipe_id === receptId && ontbreekt.includes(i.name.trim()))
+        .map((i) => ({ name: i.name, quantity: i.quantity, unit: i.unit, recipe_id: receptId }));
+      // Wat al (nog te kopen) op de lijst staat, zetten we er niet nog eens op.
+      const dubbels = new Set((await vindDubbels(listId, rijen)).map((d) => d.index));
+      const nieuwe = rijen.filter((_, i) => !dubbels.has(i));
+      await voegToeAlsNieuw(user.id, listId, nieuwe);
+      void qc.invalidateQueries({ queryKey: ["shopping"] });
+      toast.success(
+        nieuwe.length
+          ? `${nieuwe.length} ${t(nieuwe.length === 1 ? "ding op je lijst gezet" : "dingen op je lijst gezet")}${
+              dubbels.size ? `, ${dubbels.size} ${t("stond(en) er al")}` : ""
+            }`
+          : t("Alles stond al op je lijst."),
+      );
+    } catch {
+      toast.error(t("Op je lijst zetten lukte niet. Probeer het opnieuw."));
+    } finally {
+      setBezigMet(null);
+    }
+  };
+
+  const snelKeuzes = SNEL.filter((s) => !zitInVoorraad(s, voorraadNamen));
+
   return (
-    <AppShell title={t("Voorraadkast")}>
-      <p className="text-base text-muted-foreground">{t("Wat heb je al in huis?")}</p>
-
-      <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-        <Input
-          value={nieuw}
-          onChange={(e) => setNieuw(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") void voegToe();
-          }}
-          placeholder={t("Bijvoorbeeld: 500 g bloem")}
-          aria-label={t("Nieuw product")}
-          className="h-14 text-lg"
-        />
-        <Button onClick={() => void voegToe()} className="h-14 px-5 text-lg">
-          <Plus aria-hidden /><span className="sr-only sm:not-sr-only">{t("Toevoegen")}</span>
-        </Button>
-      </div>
-
-      {isLoading ? (
-        <div className="mt-6"><PageSkeleton rows={2} /></div>
-      ) : items.length === 0 ? (
-        <EmptyState title={t("Je voorraadkast is nog leeg")} description={t("Voeg toe wat je vaak in huis hebt.")} />
-      ) : (
-        <ul className="mt-6 space-y-2">
-          {items.map((item) => (
-            <li
-              key={item.id}
-              className="flex min-h-16 items-center gap-3 rounded-2xl border border-border bg-card px-4"
-            >
-              <span className="min-w-0 flex-1 truncate text-lg font-semibold">
-                {item.hoeveelheid ? `${toonBelgischeMaat(item.hoeveelheid, item.eenheid)} ` : ""}
-                {item.naam}
+    <AppShell
+      breed
+      title={t("Voorraadkast")}
+      ondertitel={t("Wat heb je al in huis? Dan zie je meteen wat je ermee kan koken.")}
+    >
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-12">
+        <section aria-labelledby="in-huis-titel" className="min-w-0">
+          <h2 id="in-huis-titel" className="text-sectietitel">
+            {t("In huis")}
+            {items.length ? (
+              <span className="ml-2 font-sans text-base font-medium text-muted-foreground">
+                ({items.length})
               </span>
-              <button
-                type="button"
-                onClick={() => void verwijder(item.id)}
-                aria-label={`${t("Verwijderen")}: ${item.naam}`}
-                className="flex size-12 items-center justify-center rounded-xl border border-border"
-              >
-                <Trash2 className="size-5" aria-hidden />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+            ) : null}
+          </h2>
+
+          <form
+            className="mt-4 flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void voegToe();
+            }}
+          >
+            <Input
+              value={nieuw}
+              onChange={(e) => setNieuw(e.target.value)}
+              aria-label={t("Nieuw product")}
+              aria-describedby="voorraad-hulp"
+              className="h-14 text-lg"
+            />
+            <Button type="submit" className="h-14 shrink-0 px-5 text-lg">
+              <Plus aria-hidden />
+              {t("Toevoegen")}
+            </Button>
+          </form>
+          <p id="voorraad-hulp" className="mt-1 text-[0.9rem] text-muted-foreground">
+            {t("Bijvoorbeeld: 500 g bloem of 6 eieren")}
+          </p>
+
+          {snelKeuzes.length ? (
+            <div className="mt-4">
+              <p className="text-base font-semibold">{t("Snel toevoegen")}</p>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {snelKeuzes.map((s) => (
+                  <li key={s}>
+                    <button
+                      type="button"
+                      onClick={() => void voegToe(s)}
+                      aria-label={`${t(s)} ${t("toevoegen")}`}
+                      className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-secondary px-4 text-base font-medium text-secondary-foreground transition-colors hover:bg-secondary/70"
+                    >
+                      <Plus className="size-4" aria-hidden />
+                      {t(s)}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {isLoading ? (
+            <div className="mt-6">
+              <PageSkeleton rows={2} />
+            </div>
+          ) : items.length === 0 ? (
+            <div className="mt-6">
+              <EmptyState
+                title={t("Je voorraadkast is nog leeg")}
+                description={t(
+                  "Voeg toe wat je in huis hebt. Dan tonen we welke recepten je meteen kan maken.",
+                )}
+              />
+            </div>
+          ) : (
+            <ul className="mt-6 space-y-2" aria-label={t("In huis")}>
+              {items.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex min-h-16 items-center gap-3 rounded-2xl bg-card px-4 shadow-zacht"
+                >
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-primary">
+                    <Check className="size-5" aria-hidden />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-lg font-semibold">
+                    {item.naam}
+                    {item.hoeveelheid ? (
+                      <span className="ml-2 text-base font-medium text-muted-foreground">
+                        {toonBelgischeMaat(item.hoeveelheid, item.eenheid)}
+                      </span>
+                    ) : null}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => void verwijder(item)}
+                    aria-label={`${t("Verwijderen")}: ${item.naam}`}
+                    className="flex size-12 shrink-0 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <Trash2 className="size-5" aria-hidden />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section aria-labelledby="koken-titel" className="min-w-0">
+          <h2 id="koken-titel" className="text-sectietitel">
+            {t("Wat kan ik koken?")}
+          </h2>
+          <p className="mt-1 text-base text-muted-foreground">
+            {t("Je eigen recepten. Bovenaan: waarvoor je het minst hoeft te kopen.")}
+          </p>
+          {!items.length ? (
+            <p className="mt-4 rounded-2xl bg-muted px-4 py-3 text-base text-muted-foreground">
+              {t("Voeg eerst iets toe aan je voorraad.")}
+            </p>
+          ) : !suggesties.length ? (
+            <p className="mt-4 rounded-2xl bg-muted px-4 py-3 text-base text-muted-foreground">
+              {t("Geen van je recepten gebruikt wat je nu in huis hebt.")}
+            </p>
+          ) : (
+            <ul className="mt-4 space-y-3" aria-label={t("Recepten met wat je in huis hebt")}>
+              {suggesties.map((m) => {
+                const recept = recepten.find((r) => r.id === m.id);
+                return (
+                  <li key={m.id} className="overflow-hidden rounded-2xl bg-card shadow-zacht">
+                    <Link
+                      to="/recepten/$id"
+                      params={{ id: m.id }}
+                      className="flex items-center gap-3 p-3 hover:bg-muted/40"
+                    >
+                      <RecipePhoto
+                        path={recept?.image_url ?? null}
+                        alt=""
+                        recept={recept ?? { title: m.title }}
+                        className="size-16 shrink-0 rounded-xl"
+                        icoonClassName="size-8"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-kaarttitel">{t(m.title)}</span>
+                        <span className="mt-0.5 block text-base font-medium text-primary">
+                          {m.ontbreekt.length === 0
+                            ? t("Je hebt alles in huis")
+                            : `${t("Je hebt")} ${m.aanwezig.length} ${t("van de")} ${m.totaal}`}
+                        </span>
+                      </span>
+                      <ChefHat className="size-6 shrink-0 text-muted-foreground" aria-hidden />
+                    </Link>
+                    {m.ontbreekt.length ? (
+                      <div className="border-t border-border/70 px-3 py-3">
+                        <p className="text-base">
+                          <span className="font-semibold">{t("Nog nodig")}: </span>
+                          <span className="text-muted-foreground">{m.ontbreekt.join(", ")}</span>
+                        </p>
+                        <Button
+                          variant="secondary"
+                          onClick={() => void zetOntbrekendeOpLijst(m.id, m.ontbreekt)}
+                          disabled={bezigMet === m.id}
+                          className="mt-2 h-12 w-full text-base sm:w-auto"
+                        >
+                          {bezigMet === m.id ? (
+                            <Loader2 className="size-5 animate-spin" aria-hidden />
+                          ) : (
+                            <ShoppingCart className="size-5" aria-hidden />
+                          )}
+                          {t("Ontbrekende op mijn lijst")}
+                        </Button>
+                      </div>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      </div>
     </AppShell>
   );
 }

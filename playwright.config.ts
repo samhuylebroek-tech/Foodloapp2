@@ -30,7 +30,7 @@ export default defineConfig({
   },
   projects: [
     // Beginner op een kleine telefoon (Pixel 7, 412 px).
-    { name: "telefoon", use: { ...devices["Pixel 7"] }, testIgnore: /kernflow|schermen|kookstand/ },
+    { name: "telefoon", use: { ...devices["Pixel 7"] }, testIgnore: /kernflow|schermen|kookstand|voorraad/ },
     // Creator op desktop.
     {
       name: "desktop",
@@ -40,7 +40,7 @@ export default defineConfig({
     {
       name: "mobiel-360",
       use: { ...devices["Pixel 7"], viewport: { width: 360, height: 740 } },
-      testMatch: /kernflow|kookstand/,
+      testMatch: /kernflow|kookstand|voorraad/,
     },
     {
       name: "mobiel-390",
