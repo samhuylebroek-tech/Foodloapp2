@@ -849,7 +849,7 @@ function PlannerPage() {
   function weekRaster() {
     const alleMomenten = [...new Set([...momenten, ...plan.map((p) => p.meal_type)])];
     return (
-      <section aria-label="Weekoverzicht" className="hidden lg:block">
+      <section aria-label="Weekoverzicht" className="hidden lg:col-span-2 lg:block">
         <div className="grid grid-cols-7 gap-3">
           {week.map((dag) => {
             const d = new Date(`${dag}T12:00:00`);
@@ -1003,11 +1003,9 @@ function PlannerPage() {
 
   return (
     <AppShell title="Weekmenu" breed>
-      <div className="space-y-6">
-        {/* Desktop: planning/opties en weekkeuze op één rij, zodat het raster hoog begint. */}
-        <div className="space-y-6 lg:flex lg:flex-row-reverse lg:items-center lg:justify-between lg:gap-6 lg:space-y-0">
-        {/* Kopregel: welke planning en opties */}
-        <div className="flex items-center gap-2">
+      <div className="space-y-6 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-x-6 lg:gap-y-6 lg:space-y-0">
+        {/* Kopregel: welke planning en opties (desktop: rechts naast de weekkeuze) */}
+        <div className="flex items-center gap-2 lg:col-start-2 lg:row-start-1 lg:self-center">
           {gezin ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -1035,7 +1033,7 @@ function PlannerPage() {
         </div>
 
         {/* Week kiezen: duidelijke titel met datums, grote pijlen, rustige dagkeuze */}
-        <section aria-label="Week kiezen" className="rounded-3xl bg-card p-4 shadow-zacht lg:w-full lg:max-w-lg">
+        <section aria-label="Week kiezen" className="rounded-3xl bg-card p-4 shadow-zacht lg:col-start-1 lg:row-start-1 lg:w-full lg:max-w-lg">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -1160,22 +1158,18 @@ function PlannerPage() {
           </div>
         </section>
 
-        </div>
-
         {weekRaster()}
-        <div className="lg:hidden">
         {heleWeek ? (
-          <section aria-label="Hele week" className="space-y-6">
+          <section aria-label="Hele week" className="space-y-6 lg:hidden">
             <h2 className="text-sectietitel">De hele week</h2>
             {zichtbareDagen.map((dag) => <div key={dag}>{toonDag(dag, false)}</div>)}
           </section>
         ) : (
-          <section aria-label="Gekozen dag">{toonDag(gekozenDag, true)}</section>
+          <section aria-label="Gekozen dag" className="lg:hidden">{toonDag(gekozenDag, true)}</section>
         )}
-        </div>
 
         {/* Acties: één hoofdknop, twee rustige knoppen */}
-        <section aria-label="Acties" className="space-y-3">
+        <section aria-label="Acties" className="space-y-3 lg:col-span-2">
           <Button onClick={() => setBoodschappenOpen(true)} className="h-16 w-full gap-3 text-lg">
             <ShoppingCart className="size-6" /> Boodschappen voor deze week
           </Button>
