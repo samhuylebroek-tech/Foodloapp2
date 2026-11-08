@@ -67,7 +67,7 @@
   --card-foreground: oklch(0.26 0.018 158);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.26 0.018 158);
-  --primary: oklch(0.47 0.075 158);
+  --primary: oklch(0.41 0.07 160);
   --primary-foreground: oklch(0.99 0.005 85);
   --secondary: oklch(0.945 0.018 150);
   --secondary-foreground: oklch(0.32 0.06 158);
@@ -83,7 +83,7 @@
   --warning-foreground: oklch(0.25 0.04 60);
   --border: oklch(0.9 0.012 80);
   --input: oklch(0.84 0.014 80);
-  --ring: oklch(0.47 0.075 158);
+  --ring: oklch(0.41 0.07 160);
   --chart-1: oklch(0.43 0.09 155);
   --chart-2: oklch(0.52 0.08 220);
   --chart-3: oklch(0.65 0.1 80);
@@ -103,6 +103,10 @@
   --terracotta: oklch(0.55 0.13 38);
   --terracotta-foreground: oklch(0.99 0.005 85);
   --terracotta-zacht: oklch(0.95 0.03 50);
+  /* V2 "redactioneel": diep inktgroen voor banden en de actieve navigatie. */
+  --inkt: oklch(0.27 0.035 162);
+  --inkt-foreground: oklch(0.97 0.015 85);
+  --inkt-zacht: oklch(0.82 0.03 150);
   --schaduw-zacht: 0 1px 2px oklch(0.3 0.02 60 / 0.06), 0 2px 8px oklch(0.3 0.02 60 / 0.05);
   --schaduw-kaart: 0 1px 2px oklch(0.3 0.02 60 / 0.06), 0 8px 24px -6px oklch(0.3 0.02 60 / 0.12);
   --schaduw-zwevend: 0 2px 6px oklch(0.3 0.02 60 / 0.08), 0 18px 40px -12px oklch(0.3 0.02 60 / 0.25);
@@ -152,6 +156,9 @@
   --terracotta: oklch(0.72 0.12 42);
   --terracotta-foreground: oklch(0.18 0.02 40);
   --terracotta-zacht: oklch(0.3 0.04 45);
+  --inkt: oklch(0.3 0.04 160);
+  --inkt-foreground: oklch(0.97 0.015 85);
+  --inkt-zacht: oklch(0.8 0.03 150);
   --schaduw-zacht: 0 1px 2px oklch(0 0 0 / 0.3);
   --schaduw-kaart: 0 1px 2px oklch(0 0 0 / 0.35), 0 8px 24px -6px oklch(0 0 0 / 0.45);
   --schaduw-zwevend: 0 2px 6px oklch(0 0 0 / 0.4), 0 18px 40px -12px oklch(0 0 0 / 0.6);
@@ -226,6 +233,9 @@
   --color-terracotta: var(--terracotta);
   --color-terracotta-foreground: var(--terracotta-foreground);
   --color-terracotta-zacht: var(--terracotta-zacht);
+  --color-inkt: var(--inkt);
+  --color-inkt-foreground: var(--inkt-foreground);
+  --color-inkt-zacht: var(--inkt-zacht);
   --shadow-zacht: var(--schaduw-zacht);
   --shadow-kaart: var(--schaduw-kaart);
   --shadow-zwevend: var(--schaduw-zwevend);
@@ -379,7 +389,8 @@
   position: relative;
   scrollbar-width: none;
   scroll-padding-inline: 1rem;
-  scroll-snap-type: x mandatory;
+  /* proximity: na het laden van data sprong 'mandatory' soms naar een andere tegel. */
+  scroll-snap-type: x proximity;
 }
 .scroll-rij::-webkit-scrollbar {
   display: none;

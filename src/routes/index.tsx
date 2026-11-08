@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
+  ArrowRight,
   BookOpen,
   CalendarDays,
   ChefHat,
@@ -191,190 +192,170 @@ function StartPage() {
 
   const eerste = maaltijden[0];
   const overige = maaltijden.slice(1);
-  const datum = new Date().toLocaleDateString("nl-BE", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
+  const datum = new Date().toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" });
   const datumHoofdletter = datum.charAt(0).toUpperCase() + datum.slice(1);
   const vandaagIso = vandaag();
-  const weekPerDag = week.map((d) => ({
-    datum: d,
-    rijen: weekmenu.filter((m) => m.plan_date === d),
-  }));
+  const weekPerDag = week.map((d) => ({ datum: d, rijen: weekmenu.filter((m) => m.plan_date === d) }));
   const geplandDezeWeek = weekPerDag.filter((d) => d.rijen.length).length;
+  const groetTekst = `${t(groet(new Date().getHours()))}${naam ? `, ${naam}` : ""}`;
+  const [uitgelicht, ...rest] = recent;
 
-  return (
-    <AppShell
-      breed
-      title={`${t(groet(new Date().getHours()))}${naam ? `, ${naam}` : ""}`}
-      ondertitel={
-        <span className="inline-flex items-center gap-2">
-          <CalendarDays className="size-5 text-terracotta" aria-hidden />
-          {datumHoofdletter}
-        </span>
-      }
+  // Redactionele band: datum, groet en wat er vandaag op tafel komt.
+  const kop = (
+    <section
+      aria-labelledby="vandaag-groet"
+      className="relative mb-10 overflow-hidden rounded-[2rem] bg-inkt text-inkt-foreground shadow-kaart"
     >
-      {/* Desktop: vandaag + snelkoppelingen naast elkaar, week en favorieten over de volle breedte.
-          Mobiel: vandaag, week, favorieten, dan snelkoppelingen. */}
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,1fr)_21rem] lg:gap-x-12">
-        <section aria-labelledby="vandaag-titel" className="min-w-0">
-          <h2 id="vandaag-titel" className="text-sectietitel">
-            {t("Vandaag op het menu")}
-          </h2>
-          <p className="mt-1 text-base text-muted-foreground">
-            {t("Dit staat er vandaag voor je klaar.")}
+      <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
+        <div className="flex flex-col p-6 sm:p-8 lg:p-10">
+          <p className="flex items-center gap-2 text-base font-medium text-inkt-zacht">
+            <CalendarDays className="size-5" aria-hidden />
+            {datumHoofdletter}
           </p>
+          <h1 id="vandaag-groet" className="mt-2 text-paginatitel text-inkt-foreground">
+            {groetTekst}
+          </h1>
 
-          <div className="mt-4">
+          <div className="mt-8 lg:mt-auto lg:pt-10">
             {isLoading ? (
-              <PageSkeleton rows={2} />
-            ) : eerste ? (
-              <div className="space-y-3">
-                {eerste.recipes ? (
+              <p className="text-lg text-inkt-zacht">{t("Even kijken wat er op het menu staat…")}</p>
+            ) : eerste?.recipes ? (
+              <>
+                <p className="text-base font-semibold uppercase tracking-[0.12em] text-[var(--honing)]">
+                  {t(eerste.meal_type ? `${eerste.meal_type} vandaag` : "Vandaag op tafel")}
+                  {eerste.group_id ? ` · ${t("met het gezin")}` : ""}
+                </p>
+                <h2 className="mt-2 text-heldentitel text-inkt-foreground">{t(eerste.recipes.title)}</h2>
+                <p className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-base text-inkt-zacht">
+                  {tijdLabel(eerste.recipes.prep_minutes, eerste.recipes.cook_minutes) ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Clock className="size-5" aria-hidden />
+                      {tijdLabel(eerste.recipes.prep_minutes, eerste.recipes.cook_minutes)}
+                    </span>
+                  ) : null}
+                  <span className="inline-flex items-center gap-1.5">
+                    <Users className="size-5" aria-hidden />
+                    {eerste.recipes.servings} {t(eerste.recipes.servings === 1 ? "persoon" : "personen")}
+                  </span>
+                </p>
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                   <Link
                     to="/recepten/$id"
                     params={{ id: eerste.recipes.id }}
-                    className="group block overflow-hidden rounded-3xl bg-card shadow-kaart outline-offset-4"
-                    aria-label={`${t("Bekijk recept")}: ${eerste.recipes.title}`}
+                    search={{ koken: true }}
+                    className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-inkt-foreground px-6 text-lg font-semibold text-inkt hover:bg-inkt-foreground/90"
                   >
-                    <div className="relative overflow-hidden">
-                      <RecipePhoto
-                        path={eerste.recipes.image_url}
-                        alt=""
-                        recept={eerste.recipes}
-                        className="aspect-[16/9] w-full transition-transform duration-500 group-hover:scale-[1.02]"
-                      />
-                      <p className="absolute left-4 top-4 inline-flex items-center rounded-full bg-card/95 px-3 py-1 text-base font-semibold capitalize text-foreground shadow-zacht">
-                        {t(eerste.meal_type || "Vandaag")}
-                        {eerste.group_id ? ` · ${t("met het gezin")}` : ""}
-                      </p>
-                    </div>
-                    {/* Tekst onder het beeld: blijft leesbaar bij grote lettergrootte. */}
-                    <div className="p-5 sm:p-6">
-                      <h3 className="text-heldentitel">{t(eerste.recipes.title)}</h3>
-                      {eerste.recipes.description ? (
-                        <p className="mt-2 line-clamp-2 text-base text-muted-foreground">
-                          {t(eerste.recipes.description)}
-                        </p>
-                      ) : null}
-                      <p className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-base font-medium text-muted-foreground">
-                        {tijdLabel(eerste.recipes.prep_minutes, eerste.recipes.cook_minutes) ? (
-                          <span className="inline-flex items-center gap-1.5">
-                            <Clock className="size-5" aria-hidden />
-                            {tijdLabel(eerste.recipes.prep_minutes, eerste.recipes.cook_minutes)}
-                          </span>
-                        ) : null}
-                        <span className="inline-flex items-center gap-1.5">
-                          <Users className="size-5" aria-hidden />
-                          {eerste.recipes.servings}{" "}
-                          {t(eerste.recipes.servings === 1 ? "persoon" : "personen")}
-                        </span>
-                      </p>
-                      <span className="mt-5 flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-primary px-6 text-lg font-semibold text-primary-foreground transition-colors group-hover:bg-primary/90 sm:inline-flex">
-                        <ChefHat className="size-6" aria-hidden />
-                        {t("Recept openen")}
-                      </span>
-                    </div>
+                    <ChefHat className="size-6" aria-hidden />
+                    {t("Start koken")}
                   </Link>
-                ) : (
-                  <MaaltijdRij
-                    to="/planner"
-                    moment={eerste.meal_type}
-                    titel={eerste.custom_title ?? "Maaltijd"}
-                    t={t}
-                  />
-                )}
-                {overige.map((m) =>
-                  m.recipes ? (
+                  <Link
+                    to="/recepten/$id"
+                    params={{ id: eerste.recipes.id }}
+                    className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl border-2 border-inkt-foreground/40 px-6 text-lg font-semibold text-inkt-foreground hover:bg-white/10"
+                  >
+                    {t("Bekijk recept")}
+                  </Link>
+                </div>
+              </>
+            ) : eerste ? (
+              <>
+                <p className="text-base font-semibold uppercase tracking-[0.12em] text-[var(--honing)]">
+                  {t(eerste.meal_type || "Vandaag")}
+                </p>
+                <h2 className="mt-2 text-heldentitel text-inkt-foreground">{t(eerste.custom_title ?? "Maaltijd")}</h2>
+                <Link
+                  to="/planner"
+                  className="mt-6 inline-flex min-h-14 items-center gap-2 rounded-2xl bg-inkt-foreground px-6 text-lg font-semibold text-inkt"
+                >
+                  {t("Naar het weekmenu")}
+                  <ArrowRight className="size-5" aria-hidden />
+                </Link>
+              </>
+            ) : (
+              <>
+                <h2 className="text-heldentitel text-inkt-foreground">{t("Wat eten we vandaag?")}</h2>
+                <p className="mt-3 max-w-md text-lg text-inkt-zacht">
+                  {recipes.length
+                    ? t("Er staat nog niets gepland. Kies een gerecht uit je recepten.")
+                    : t("Bewaar eerst een recept dat je lekker vindt. Daarna kan je het inplannen.")}
+                </p>
+                <Link
+                  to={recipes.length ? "/planner" : "/recepten/nieuw"}
+                  className="mt-6 inline-flex min-h-14 items-center gap-2 rounded-2xl bg-inkt-foreground px-6 text-lg font-semibold text-inkt"
+                >
+                  <Plus className="size-5" aria-hidden />
+                  {recipes.length ? t("Gerecht kiezen") : t("Recept toevoegen")}
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+
+        {eerste?.recipes ? (
+          <Link
+            to="/recepten/$id"
+            params={{ id: eerste.recipes.id }}
+            tabIndex={-1}
+            aria-hidden
+            className="relative block min-h-56 overflow-hidden lg:min-h-full"
+          >
+            <RecipePhoto
+              path={eerste.recipes.image_url}
+              alt=""
+              recept={eerste.recipes}
+              className="absolute inset-0 size-full"
+              icoonClassName="size-28 max-h-28 max-w-28"
+            />
+          </Link>
+        ) : (
+          <div className="omslag omslag-groen hidden min-h-56 lg:block" aria-hidden />
+        )}
+      </div>
+    </section>
+  );
+
+  return (
+    <AppShell breed title={groetTekst} kop={kop}>
+      <div className="space-y-12">
+        {overige.length ? (
+          <section aria-labelledby="ook-vandaag">
+            <h2 id="ook-vandaag" className="text-sectietitel">{t("Ook vandaag")}</h2>
+            <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {overige.map((m) => (
+                <li key={m.id}>
+                  {m.recipes ? (
                     <Link
-                      key={m.id}
                       to="/recepten/$id"
                       params={{ id: m.recipes.id }}
-                      className="flex min-h-20 items-center gap-4 rounded-2xl bg-card p-3 shadow-zacht transition-shadow hover:shadow-kaart"
+                      className="flex min-h-20 items-center gap-4 rounded-2xl bg-card p-3 shadow-zacht hover:shadow-kaart"
                     >
-                      <RecipePhoto
-                        path={m.recipes.image_url}
-                        alt=""
-                        recept={m.recipes}
-                        className="size-16 shrink-0 rounded-xl"
-                      />
+                      <RecipePhoto path={m.recipes.image_url} alt="" recept={m.recipes} className="size-16 shrink-0 rounded-xl" icoonClassName="size-8" />
                       <span className="min-w-0 flex-1">
-                        <span className="block text-base capitalize text-muted-foreground">
-                          {t(m.meal_type)}
-                        </span>
-                        <span className="block truncate text-lg font-semibold">
-                          {t(m.recipes.title)}
-                        </span>
+                        <span className="block text-base capitalize text-muted-foreground">{t(m.meal_type)}</span>
+                        <span className="block truncate text-lg font-semibold">{t(m.recipes.title)}</span>
                       </span>
                       <ChevronRight className="size-6 shrink-0 text-muted-foreground" aria-hidden />
                     </Link>
                   ) : (
-                    <MaaltijdRij
-                      key={m.id}
-                      to="/planner"
-                      moment={m.meal_type}
-                      titel={m.custom_title ?? "Maaltijd"}
-                      t={t}
-                    />
-                  ),
-                )}
-              </div>
-            ) : recipes.length === 0 ? (
-              <EmptyState
-                icon={<BookOpen className="size-7" aria-hidden />}
-                title={t("Je kookboek is nog leeg")}
-                description={t(
-                  "Bewaar eerst een recept dat je lekker vindt. Daarna kan je het op je weekmenu zetten.",
-                )}
-                action={
-                  <Link
-                    to="/recepten/nieuw"
-                    className="inline-flex min-h-14 items-center gap-2 rounded-xl bg-primary px-6 text-lg font-semibold text-primary-foreground"
-                  >
-                    <Plus className="size-5" />
-                    {t("Recept toevoegen")}
-                  </Link>
-                }
-              />
-            ) : (
-              <div className="omslag omslag-neutraal overflow-hidden rounded-3xl p-6 text-center shadow-zacht sm:p-8">
-                <div className="mx-auto max-w-md rounded-2xl bg-card/95 p-6 shadow-zacht">
-                  <CalendarDays className="mx-auto size-8 text-primary" aria-hidden />
-                  <p className="mt-3 font-display text-2xl font-semibold">
-                    {t("Er staat nog niets gepland")}
-                  </p>
-                  <p className="mt-1 text-base text-muted-foreground">
-                    {t("Kies een gerecht voor vandaag of voor de hele week.")}
-                  </p>
-                  <Link
-                    to="/planner"
-                    className="mt-5 flex min-h-14 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-lg font-semibold text-primary-foreground"
-                  >
-                    {t("Weekmenu maken")}
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
+                    <MaaltijdRij to="/planner" moment={m.meal_type} titel={m.custom_title ?? "Maaltijd"} t={t} />
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
 
-        <section aria-labelledby="week-titel" className="min-w-0 lg:col-span-2">
+        <section aria-labelledby="week-titel">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <h2 id="week-titel" className="text-sectietitel">
-                {t("Deze week")}
-              </h2>
+              <h2 id="week-titel" className="text-sectietitel">{t("Deze week")}</h2>
               <p className="mt-1 text-base text-muted-foreground">
                 {geplandDezeWeek
                   ? `${geplandDezeWeek} ${t(geplandDezeWeek === 1 ? "dag gepland" : "dagen gepland")}`
                   : t("Nog niets gepland deze week.")}
               </p>
             </div>
-            <Link
-              to="/planner"
-              className="flex min-h-12 shrink-0 items-center gap-1 text-base font-semibold text-primary"
-            >
+            <Link to="/planner" className="flex min-h-12 shrink-0 items-center gap-1 text-base font-semibold text-primary">
               {t("Weekmenu")}
               <ChevronRight className="size-5" aria-hidden />
             </Link>
@@ -392,37 +373,26 @@ function StartPage() {
                   <Link
                     to="/planner"
                     className={[
-                      "flex h-full min-h-40 flex-col overflow-hidden rounded-2xl bg-card shadow-zacht transition-shadow hover:shadow-kaart",
-                      isVandaag ? "ring-2 ring-primary" : "",
+                      "flex h-full min-h-40 flex-col overflow-hidden rounded-2xl transition-shadow hover:shadow-kaart",
+                      isVandaag ? "bg-inkt text-inkt-foreground shadow-kaart" : "bg-card shadow-zacht",
                     ].join(" ")}
                   >
                     <span className="flex items-baseline justify-between px-3 pt-2.5">
-                      <span className="text-base font-semibold uppercase tracking-wide text-muted-foreground">
-                        {kort}
+                      <span className={isVandaag ? "text-base font-semibold uppercase tracking-wide text-inkt-zacht" : "text-base font-semibold uppercase tracking-wide text-muted-foreground"}>
+                        {isVandaag ? t("Vandaag") : kort}
                       </span>
                       <span className="text-xl font-bold">{dag.getDate()}</span>
                     </span>
                     {eersteRij?.recipes ? (
-                      <RecipePhoto
-                        path={eersteRij.recipes.image_url}
-                        alt=""
-                        recept={eersteRij.recipes}
-                        className="mx-2 mt-2 aspect-[4/3] rounded-xl"
-                        icoonClassName="size-10"
-                      />
+                      <RecipePhoto path={eersteRij.recipes.image_url} alt="" recept={eersteRij.recipes} className="mx-2 mt-2 aspect-[4/3] rounded-xl" icoonClassName="size-10" />
                     ) : (
-                      <span className="mx-2 mt-2 flex aspect-[4/3] items-center justify-center rounded-xl border-2 border-dashed border-border text-muted-foreground">
+                      <span className={isVandaag ? "mx-2 mt-2 flex aspect-[4/3] items-center justify-center rounded-xl border-2 border-dashed border-inkt-foreground/30" : "mx-2 mt-2 flex aspect-[4/3] items-center justify-center rounded-xl border-2 border-dashed border-border text-muted-foreground"}>
                         <Plus className="size-6" aria-hidden />
                       </span>
                     )}
                     <span className="line-clamp-2 px-3 pb-3 pt-2 text-base font-semibold leading-snug">
-                      {titel ? (
-                        t(titel)
-                      ) : (
-                        <span className="font-medium text-muted-foreground">{t("Nog vrij")}</span>
-                      )}
+                      {titel ? t(titel) : <span className={isVandaag ? "font-medium text-inkt-zacht" : "font-medium text-muted-foreground"}>{t("Nog vrij")}</span>}
                     </span>
-                    {isVandaag ? <span className="sr-only">{t("vandaag")}</span> : null}
                   </Link>
                 </li>
               );
@@ -430,41 +400,66 @@ function StartPage() {
           </ul>
         </section>
 
-        {recent.length > 0 ? (
-          <section aria-labelledby="favorieten-titel" className="min-w-0 lg:col-span-2">
+        <section aria-labelledby="slim-titel" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <h2 id="slim-titel" className="sr-only">{t("Snel verder")}</h2>
+          <Link
+            to="/boodschappen"
+            className="group flex min-h-28 items-center gap-4 rounded-3xl bg-terracotta-zacht p-5 hover:shadow-kaart"
+          >
+            <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-card text-terracotta shadow-zacht">
+              <ShoppingCart className="size-7" aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-display text-2xl font-semibold">{t("Boodschappen")}</span>
+              <span className="block text-base text-foreground/80">
+                {openItems ? `${openItems} ${t(openItems === 1 ? "ding nog te kopen" : "dingen nog te kopen")}` : t("Je lijst is leeg")}
+              </span>
+            </span>
+            <ArrowRight className="size-6 shrink-0 transition-transform group-hover:translate-x-1" aria-hidden />
+          </Link>
+          <Link
+            to="/voorraad"
+            className="group flex min-h-28 items-center gap-4 rounded-3xl bg-secondary p-5 hover:shadow-kaart"
+          >
+            <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-card text-primary shadow-zacht">
+              <Refrigerator className="size-7" aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-display text-2xl font-semibold">{t("Wat kan ik koken?")}</span>
+              <span className="block text-base text-foreground/80">{t("Met wat je al in huis hebt")}</span>
+            </span>
+            <ArrowRight className="size-6 shrink-0 transition-transform group-hover:translate-x-1" aria-hidden />
+          </Link>
+        </section>
+
+        {uitgelicht ? (
+          <section aria-labelledby="favorieten-titel">
             <div className="flex items-end justify-between gap-4">
-              <h2 id="favorieten-titel" className="text-sectietitel">
-                {t(favorites.length ? "Je favorieten" : "Laatst toegevoegd")}
-              </h2>
-              <Link
-                to="/gerechten"
-                className="flex min-h-12 shrink-0 items-center gap-1 text-base font-semibold text-primary"
-              >
+              <h2 id="favorieten-titel" className="text-sectietitel">{t(favorites.length ? "Je favorieten" : "Laatst toegevoegd")}</h2>
+              <Link to="/gerechten" className="flex min-h-12 shrink-0 items-center gap-1 text-base font-semibold text-primary">
                 {t("Alle recepten")}
                 <ChevronRight className="size-5" aria-hidden />
               </Link>
             </div>
-            <ul className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {recent.map((recipe) => (
-                <li key={recipe.id}>
+            {/* Magazine-indeling: één groot uitgelicht recept, de rest kleiner. */}
+            <ul className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+              {[uitgelicht, ...rest].map((recipe, i) => (
+                <li key={recipe.id} className={i === 0 ? "col-span-2 lg:row-span-2" : ""}>
                   <Link to="/recepten/$id" params={{ id: recipe.id }} className="group block">
                     <div className="relative overflow-hidden rounded-2xl shadow-zacht">
                       <RecipePhoto
                         path={recipe.image_url}
                         alt={recipe.title}
                         recept={recipe}
-                        className="aspect-[4/5] w-full transition-transform duration-500 group-hover:scale-[1.03]"
+                        className={i === 0 ? "aspect-[4/3] w-full transition-transform duration-500 group-hover:scale-[1.03] lg:aspect-[5/4]" : "aspect-[4/5] w-full transition-transform duration-500 group-hover:scale-[1.03]"}
                       />
                       {favorites.includes(recipe.id) ? (
                         <span className="absolute right-2.5 top-2.5 flex size-9 items-center justify-center rounded-full bg-card/95 shadow-zacht">
-                          <Heart
-                            className="size-5 fill-terracotta text-terracotta"
-                            aria-label={t("Favoriet")}
-                          />
+                          <Heart className="size-5 fill-terracotta text-terracotta" aria-label={t("Favoriet")} />
                         </span>
                       ) : null}
                     </div>
-                    <h3 className="mt-2.5 line-clamp-2 text-kaarttitel">{t(recipe.title)}</h3>
+                    <h3 className={i === 0 ? "mt-3 text-heldentitel" : "mt-2.5 line-clamp-2 text-kaarttitel"}>{t(recipe.title)}</h3>
                     {tijdLabel(recipe.prep_minutes, recipe.cook_minutes) ? (
                       <p className="mt-1 flex items-center gap-1.5 text-base text-muted-foreground">
                         <Clock className="size-4" aria-hidden />
@@ -476,126 +471,41 @@ function StartPage() {
               ))}
             </ul>
           </section>
+        ) : recipes.length === 0 && !isLoading ? (
+          <EmptyState
+            icon={<BookOpen className="size-7" aria-hidden />}
+            title={t("Je kookboek is nog leeg")}
+            description={t("Bewaar eerst een recept dat je lekker vindt. Daarna kan je het op je weekmenu zetten.")}
+            action={<Link to="/recepten/nieuw" className="inline-flex min-h-14 items-center gap-2 rounded-xl bg-primary px-6 text-lg font-semibold text-primary-foreground"><Plus className="size-5" />{t("Recept toevoegen")}</Link>}
+          />
         ) : null}
 
-        <aside
-          aria-labelledby="snel-titel"
-          className="order-last space-y-4 lg:order-none lg:col-start-2 lg:row-start-1 lg:self-start"
-        >
-          <div>
-            <h2 id="snel-titel" className="text-sectietitel">
-              {t("Verder met")}
-            </h2>
-            <p className="mt-1 text-base text-muted-foreground">
-              {t("Ga meteen verder waar je gebleven was.")}
-            </p>
+        <section aria-labelledby="ideeen-titel" className="flex flex-col items-start gap-4 rounded-3xl bg-[var(--honing-zacht)] p-6 sm:flex-row sm:items-center">
+          <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-card text-[var(--honing-foreground)] shadow-zacht">
+            <Sparkles className="size-7" aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 id="ideeen-titel" className="font-display text-2xl font-semibold">{t("Zin in iets nieuws?")}</h2>
+            <p className="text-base text-[var(--honing-foreground)]">{t("Bekijk ideeën om te koken en bewaar wat je lekker lijkt.")}</p>
           </div>
-          <Link
-            to="/recepten/nieuw"
-            className="flex min-h-20 items-center gap-4 rounded-2xl bg-primary p-4 text-primary-foreground shadow-kaart transition-transform hover:-translate-y-0.5"
-          >
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-white/15">
-              <Plus className="size-7" aria-hidden />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-lg font-semibold">{t("Recept toevoegen")}</span>
-              <span className="block text-base text-primary-foreground/85">
-                {t("Typ, plak een link of neem een foto")}
-              </span>
-            </span>
+          <Link to="/inspiratie" className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-card px-5 text-base font-semibold shadow-zacht">
+            {t("Ideeën bekijken")}
+            <ArrowRight className="size-5" aria-hidden />
           </Link>
-          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            <SnelTegel
-              to="/boodschappen"
-              icon={ShoppingCart}
-              titel={t("Boodschappen")}
-              uitleg={
-                openItems
-                  ? `${openItems} ${t(openItems === 1 ? "ding nog te kopen" : "dingen nog te kopen")}`
-                  : t("Je lijst is leeg")
-              }
-              kleur="bg-terracotta-zacht text-terracotta"
-            />
-            <SnelTegel
-              to="/planner"
-              icon={CalendarDays}
-              titel={t("Weekmenu")}
-              uitleg={t("Bekijk of plan je week")}
-              kleur="bg-secondary text-primary"
-            />
-            <SnelTegel
-              to="/inspiratie"
-              icon={Sparkles}
-              titel={t("Ideeën om te koken")}
-              uitleg={t("Zoek iets nieuws om te maken")}
-              kleur="bg-[var(--honing-zacht)] text-[var(--honing-foreground)]"
-            />
-            <SnelTegel
-              to="/voorraad"
-              icon={Refrigerator}
-              titel={t("Wat kan ik koken?")}
-              uitleg={t("Met wat je al in huis hebt")}
-              kleur="bg-secondary text-primary"
-            />
-          </ul>
-        </aside>
+        </section>
       </div>
     </AppShell>
   );
 }
 
-function SnelTegel({
-  to,
-  icon: Icon,
-  titel,
-  uitleg,
-  kleur,
-}: {
-  to: "/boodschappen" | "/planner" | "/inspiratie" | "/voorraad";
-  icon: typeof ShoppingCart;
-  titel: string;
-  uitleg: string;
-  kleur: string;
-}) {
-  return (
-    <li>
-      <Link
-        to={to}
-        className="flex h-full min-h-20 items-center gap-4 rounded-2xl bg-card p-4 shadow-zacht transition-shadow hover:shadow-kaart"
-      >
-        <span className={`flex size-12 shrink-0 items-center justify-center rounded-xl ${kleur}`}>
-          <Icon className="size-6" aria-hidden />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-lg font-semibold">{titel}</span>
-          <span className="block text-base text-muted-foreground">{uitleg}</span>
-        </span>
-        <ChevronRight className="size-6 shrink-0 text-muted-foreground" aria-hidden />
-      </Link>
-    </li>
-  );
-}
-
-function MaaltijdRij({
-  to,
-  moment,
-  titel,
-  t,
-}: {
-  to: "/planner";
-  moment: string;
-  titel: string;
-  t: (s: string) => string;
-}) {
+function MaaltijdRij({ to, moment, titel, t }: { to: "/planner"; moment: string; titel: string; t: (s: string) => string }) {
   return (
     <Link to={to} className="flex min-h-20 items-center gap-4 rounded-2xl bg-card p-4 shadow-zacht">
       <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
         <CalendarDays className="size-6" aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-base capitalize text-muted-foreground">
-          {t(moment || "Vandaag")}
-        </span>
+        <span className="block text-base capitalize text-muted-foreground">{t(moment || "Vandaag")}</span>
         <span className="block truncate text-lg font-semibold">{t(titel)}</span>
       </span>
       <ChevronRight className="size-6 shrink-0 text-muted-foreground" aria-hidden />

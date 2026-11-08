@@ -37,6 +37,16 @@ export async function nepLog(): Promise<
 
 /** WCAG 2.2 A/AA-controle; enkel ernstige en kritieke problemen laten de test falen. */
 export async function axeErnstig(page: Page) {
+  // Eerst eindige animaties laten uitlopen (bv. een melding die invliegt): halfdoorzichtig
+  // gemeten geeft vals contrastalarm. Oneindige animaties (laadspinners) tellen niet mee.
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getTiming().iterations !== Infinity)
+        .map((a) => a.finished.catch(() => undefined)),
+    ),
+  );
   const r = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();

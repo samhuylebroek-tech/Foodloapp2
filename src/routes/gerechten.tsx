@@ -263,6 +263,56 @@ function GerechtenPage() {
     (minSterren ? 1 : 0) +
     (alleenFavorieten ? 1 : 0);
 
+  // V2: collecties als visuele ingangen (afgeleid van bestaande gegevens, geen nieuwe tabel).
+  type Collectie = { id: string; titel: string; aantal: number; voorbeeld: Recipe | undefined; actief: boolean; kies: () => void };
+  const collecties: Collectie[] = useMemo(() => {
+    const eigen = recipes;
+    const uit: Collectie[] = [];
+    const fav = eigen.filter((r) => favorites.includes(r.id));
+    uit.push({
+      id: "favorieten",
+      titel: "Favorieten",
+      aantal: fav.length,
+      voorbeeld: fav[0],
+      actief: alleenFavorieten,
+      kies: () => setAlleenFavorieten(!alleenFavorieten),
+    });
+    const snel = eigen.filter((r) => r.prep_minutes + r.cook_minutes <= 30);
+    uit.push({
+      id: "snel",
+      titel: "Snel klaar",
+      aantal: snel.length,
+      voorbeeld: snel[0],
+      actief: maxTijd === 30,
+      kies: () => setMaxTijd(maxTijd === 30 ? 0 : 30),
+    });
+    for (const d of DIETEN) {
+      const lijst = eigen.filter((r) => dieetPerRecept.get(r.id) === d);
+      uit.push({
+        id: `dieet-${d}`,
+        titel: d.charAt(0).toUpperCase() + d.slice(1),
+        aantal: lijst.length,
+        voorbeeld: lijst[0],
+        actief: dieet === d,
+        kies: () => setDieet(dieet === d ? null : d),
+      });
+    }
+    for (const c of CATEGORIES) {
+      if (c === "hoofdgerecht") continue;
+      const lijst = eigen.filter((r) => r.category === c);
+      if (!lijst.length) continue;
+      uit.push({
+        id: `soort-${c}`,
+        titel: soortLabel(c),
+        aantal: lijst.length,
+        voorbeeld: lijst[0],
+        actief: categorie === c,
+        kies: () => setCategorie(categorie === c ? null : c),
+      });
+    }
+    return uit.filter((c) => c.aantal > 0);
+  }, [recipes, favorites, alleenFavorieten, maxTijd, dieet, categorie, dieetPerRecept]);
+
   function wisFilters() {
     setCategorie(null);
     setMoeilijkheid(null);
@@ -294,11 +344,7 @@ function GerechtenPage() {
     <AppShell
       breed
       title={t("Recepten")}
-      action={
-        <Button asChild aria-label={t("Recept toevoegen")} className="shrink-0 px-4">
-          <Link to="/recepten/nieuw"><Plus /> <span className="inline">{t("Toevoegen")}</span></Link>
-        </Button>
-      }
+      ondertitel={`${recipes.length} ${t(recipes.length === 1 ? "recept in je kookboek" : "recepten in je kookboek")}`}
     >
       <div className="space-y-4">
         <nav aria-label={t("Recepten of ideeën")} className="grid grid-cols-2 gap-1 rounded-2xl bg-muted p-1">
@@ -340,10 +386,49 @@ function GerechtenPage() {
             value={zoek}
             onChange={(e) => setZoek(e.target.value)}
             placeholder={t("Zoek een recept…")}
-            className="h-14 rounded-xl border-0 bg-card pl-12 text-base shadow-sm ring-1 ring-border/60"
+            className="h-16 rounded-2xl border-0 bg-card pl-12 text-lg shadow-zacht ring-1 ring-border/60"
             aria-label={t("Zoeken")}
           />
         </div>
+
+        {collecties.length ? (
+          <section aria-labelledby="collecties-titel">
+            <h2 id="collecties-titel" className="text-sectietitel">{t("Collecties")}</h2>
+            {/* Tik op een collectie om ze te tonen; nog eens tikken zet ze uit. */}
+            <ul className="scroll-rij relative -mx-4 mt-3 flex gap-3 overflow-x-auto px-4 pb-2 lg:mx-0 lg:grid lg:grid-cols-6 lg:overflow-visible lg:px-0">
+              {collecties.map((c) => (
+                <li key={c.id} className="w-36 shrink-0 lg:w-auto">
+                  <button
+                    type="button"
+                    onClick={c.kies}
+                    aria-pressed={c.actief}
+                    className={cn(
+                      "group relative block w-full overflow-hidden rounded-2xl text-left shadow-zacht outline-offset-2",
+                      c.actief ? "ring-4 ring-primary" : "",
+                    )}
+                  >
+                    <RecipePhoto
+                      path={c.voorbeeld?.image_url ?? null}
+                      alt=""
+                      recept={c.voorbeeld ?? { title: c.titel }}
+                      className="aspect-[4/5] w-full transition-transform duration-500 group-hover:scale-[1.04]"
+                      icoonClassName="size-12"
+                    />
+                    {/* Donker verloop onderaan: witte tekst haalt voldoende contrast. */}
+                    <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" aria-hidden />
+                    <span className="absolute inset-x-0 bottom-0 p-3 text-white">
+                      <span className="block font-display text-xl font-semibold leading-tight">{t(c.titel)}</span>
+                      <span className="block text-[0.9rem] text-white/90">
+                        {c.aantal} {t(c.aantal === 1 ? "recept" : "recepten")}
+                        {c.actief ? ` · ${t("gekozen")}` : ""}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
 
         <div className="space-y-2">
           <div className="grid grid-cols-3 rounded-xl bg-secondary p-1" role="group" aria-label={t("Van wie")}>

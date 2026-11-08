@@ -1,12 +1,17 @@
 import { Link, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
   BookOpen,
   CalendarDays,
-  ShoppingCart,
+  CalendarPlus,
+  ChevronRight,
+  CircleUserRound,
   Home,
-  MoreHorizontal,
+  Plus,
+  Refrigerator,
+  ShoppingCart,
+  type LucideIcon,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,46 +21,89 @@ import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.png";
 import { Aankondigingen } from "@/components/Aankondigingen";
 import { MeldingVraag, telAanmelding } from "@/components/MeldingVraag";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { meet } from "@/lib/meten";
 
-const NAV: readonly {
-  to: "/" | "/gerechten" | "/planner" | "/boodschappen" | "/meer";
-  label: string;
-  /** Korter label voor de mobiele tabbalk (5 gelijke vakken op 360 px). */
-  kort?: string;
-  icon: typeof Home;
-}[] = [
-  { to: "/", label: "Start", icon: Home },
-  { to: "/gerechten", label: "Recepten", icon: BookOpen },
-  { to: "/planner", label: "Weekmenu", icon: CalendarDays },
-  { to: "/boodschappen", label: "Boodschappen", kort: "Lijst", icon: ShoppingCart },
-  { to: "/meer", label: "Meer", icon: MoreHorizontal },
-];
+type Pad = "/" | "/gerechten" | "/planner" | "/boodschappen" | "/voorraad" | "/meer";
 
-const TABS = NAV;
+/**
+ * V2-navigatie.
+ * Mobiel: 4 bestemmingen + één vaste plek om iets nieuws toe te voegen (midden).
+ * Desktop: horizontale topbalk; de voorraadkast is een hoofdbestemming.
+ */
+const NAV: readonly { to: Pad; label: string; kort: string; icon: LucideIcon; mobiel: boolean }[] =
+  [
+    { to: "/", label: "Vandaag", kort: "Vandaag", icon: Home, mobiel: true },
+    { to: "/gerechten", label: "Recepten", kort: "Recepten", icon: BookOpen, mobiel: true },
+    { to: "/planner", label: "Weekmenu", kort: "Week", icon: CalendarDays, mobiel: true },
+    { to: "/boodschappen", label: "Boodschappen", kort: "Lijst", icon: ShoppingCart, mobiel: true },
+    { to: "/voorraad", label: "Voorraad", kort: "Voorraad", icon: Refrigerator, mobiel: false },
+  ];
 
 /** Hoofdbestemmingen krijgen geen terugknop; alle andere schermen wel. */
-const HOOFDPADEN = new Set<string>(NAV.map((n) => n.to));
+const HOOFDPADEN = new Set<string>(["/", "/gerechten", "/planner", "/boodschappen", "/meer"]);
+
+const NIEUW: readonly {
+  to: Pad | "/recepten/nieuw";
+  titel: string;
+  uitleg: string;
+  icon: LucideIcon;
+}[] = [
+  {
+    to: "/recepten/nieuw",
+    titel: "Recept toevoegen",
+    uitleg: "Plak een link, fotografeer een recept of typ het zelf",
+    icon: BookOpen,
+  },
+  {
+    to: "/planner",
+    titel: "Gerecht inplannen",
+    uitleg: "Kies een dag en een maaltijd",
+    icon: CalendarPlus,
+  },
+  {
+    to: "/boodschappen",
+    titel: "Iets op de lijst",
+    uitleg: "Zet iets op je boodschappenlijst",
+    icon: ShoppingCart,
+  },
+  {
+    to: "/voorraad",
+    titel: "Iets in de voorraad",
+    uitleg: "Wat heb je al in huis?",
+    icon: Refrigerator,
+  },
+];
 
 export function AppShell({
   title,
   children,
   action,
-  sidebar,
   breed = false,
   ondertitel,
+  kop,
 }: {
   title: string;
   children: ReactNode;
+  /** Knoppen naast de paginatitel (bv. favoriet, delen). */
   action?: ReactNode;
   sidebar?: ReactNode;
-  /** Brede inhoud op grote schermen (overzichten zoals Start en Recepten). */
+  /** Brede inhoud op grote schermen (overzichten zoals Vandaag, Recepten, Weekmenu). */
   breed?: boolean;
   /** Korte regel onder de paginatitel. */
   ondertitel?: ReactNode;
+  /** Eigen paginakop (bv. de redactionele band op Vandaag). Vervangt titel en ondertitel. */
+  kop?: ReactNode;
 }) {
   const { session, loading } = useAuth();
   const t = useT();
+  const [nieuwOpen, setNieuwOpen] = useState(false);
 
   const navigate = useNavigate();
   const router = useRouter();
@@ -108,150 +156,171 @@ export function AppShell({
 
   const isActief = (to: string) =>
     to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(`${to}/`);
-
-  const menu = (
-    <nav aria-label="Hoofdmenu">
-      <Link to="/" className="flex items-center gap-3 px-3">
-        <span className="flex size-11 items-center justify-center rounded-2xl bg-card shadow-zacht">
-          <img src={logo} alt="" width={30} height={30} className="size-7" />
-        </span>
-        <p className="font-display text-[1.65rem] font-semibold tracking-tight text-foreground">
-          Foodlo
-        </p>
-      </Link>
-      <ul className="mt-10 space-y-1.5">
-        {NAV.map((item) => {
-          const active = isActief(item.to);
-          const Icon = item.icon;
-          return (
-            <li key={item.to}>
-              <Link
-                to={item.to}
-                data-tour={`nav-${item.to}`}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "flex min-h-14 items-center gap-4 rounded-2xl px-4 text-lg font-semibold transition-colors",
-                  active
-                    ? "bg-card text-foreground shadow-zacht"
-                    : "text-muted-foreground hover:bg-card/70 hover:text-foreground",
-                )}
-              >
-                <Icon
-                  className={cn("size-6 shrink-0", active ? "text-primary" : "")}
-                  strokeWidth={active ? 2.4 : 2}
-                  aria-hidden
-                />
-                {t(item.label)}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
-  );
+  const breedte = breed ? "max-w-6xl" : "max-w-3xl lg:max-w-4xl";
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto flex w-full max-w-7xl">
-        <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-border/70 bg-muted/40 px-5 py-8 lg:block">
-          {menu}
-          {sidebar ? <div className="mt-8 border-t border-border pt-6">{sidebar}</div> : null}
-        </aside>
+      <a
+        href="#inhoud"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-xl focus:bg-inkt focus:px-4 focus:py-3 focus:text-inkt-foreground"
+      >
+        {t("Naar de inhoud")}
+      </a>
 
-        <div className="min-w-0 flex-1">
-          <header
-            className="sticky top-0 z-20 bg-background/95 backdrop-blur-md"
-            style={{ paddingTop: "env(safe-area-inset-top)" }}
-          >
-            <div
+      {/* Topbalk: woordmerk of terug, (desktop) hoofdmenu, Nieuw en Meer. */}
+      <header
+        className="sticky top-0 z-30 border-b border-border/60 bg-background/90 backdrop-blur-md"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
+        <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
+          {toonTerug ? (
+            <button
+              type="button"
+              onClick={gaTerug}
+              className="-ml-2 flex min-h-12 shrink-0 items-center gap-1.5 rounded-xl px-2 text-base font-semibold text-primary hover:bg-muted"
+            >
+              <ArrowLeft className="size-6" aria-hidden />
+              {t("Terug")}
+            </button>
+          ) : (
+            <Link
+              to="/"
+              className="flex min-h-12 shrink-0 items-center gap-2 rounded-xl pr-2"
+              aria-label="Foodlo, Vandaag"
+            >
+              <img src={logo} alt="" width={30} height={30} className="size-8" />
+              <span className="font-display text-[1.6rem] font-semibold leading-none tracking-tight">
+                Foodlo
+              </span>
+            </Link>
+          )}
+
+          <nav aria-label="Hoofdmenu" className="hidden flex-1 justify-center lg:flex">
+            <ul className="flex items-center gap-1">
+              {NAV.map((item) => {
+                const actief = isActief(item.to);
+                return (
+                  <li key={item.to}>
+                    <Link
+                      to={item.to}
+                      data-tour={`nav-${item.to}`}
+                      aria-current={actief ? "page" : undefined}
+                      className={cn(
+                        "flex min-h-11 items-center rounded-full px-4 text-base font-semibold transition-colors",
+                        actief
+                          ? "bg-inkt text-inkt-foreground"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      )}
+                    >
+                      {t(item.label)}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setNieuwOpen(true)}
+              className="hidden min-h-11 items-center gap-2 rounded-full bg-primary px-4 text-base font-semibold text-primary-foreground shadow-zacht hover:bg-primary/90 lg:inline-flex"
+            >
+              <Plus className="size-5" aria-hidden />
+              {t("Nieuw")}
+            </button>
+            <Link
+              to="/meer"
+              aria-current={isActief("/meer") ? "page" : undefined}
               className={cn(
-                "mx-auto grid min-h-16 w-full max-w-3xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 pt-2 sm:px-6",
-                breed ? "lg:max-w-6xl" : "lg:max-w-4xl",
+                "flex min-h-11 items-center gap-2 rounded-full px-3 text-base font-semibold transition-colors",
+                isActief("/meer")
+                  ? "bg-inkt text-inkt-foreground"
+                  : "text-foreground hover:bg-muted",
               )}
             >
-              <div className="flex min-w-0 items-center gap-2">
-                {toonTerug ? (
-                  <button
-                    type="button"
-                    onClick={gaTerug}
-                    className="-ml-2 flex min-h-12 shrink-0 items-center gap-1 rounded-xl px-2 text-base font-semibold text-primary hover:bg-muted"
-                  >
-                    <ArrowLeft className="size-6" aria-hidden />
-                    {t("Terug")}
-                  </button>
-                ) : (
-                  <Link
-                    to="/"
-                    aria-label="Foodlo Start"
-                    className="flex size-11 shrink-0 items-center justify-center lg:hidden"
-                  >
-                    <img src={logo} alt="" width={30} height={30} className="size-8" />
-                  </Link>
-                )}
-              </div>
-              {action ? <div className="shrink-0">{action}</div> : null}
-            </div>
-            <div
-              className={cn(
-                "mx-auto w-full max-w-3xl px-4 pb-3 sm:px-6",
-                breed ? "lg:max-w-6xl" : "lg:max-w-4xl",
-              )}
-            >
-              <h1 className="line-clamp-2 break-words text-paginatitel">{title}</h1>
+              <CircleUserRound className="size-6" aria-hidden />
+              {t("Meer")}
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <main
+        id="inhoud"
+        className={cn(
+          "mx-auto w-full overflow-x-hidden px-4 pb-36 pt-6 sm:px-6 lg:pb-16 lg:pt-10",
+          breedte,
+        )}
+      >
+        {kop ?? (
+          <div className="mb-6 flex flex-wrap items-start justify-between gap-x-4 gap-y-3 lg:mb-8">
+            {/* Titel breekt nooit midden in een woord; knoppen springen desnoods eronder. */}
+            <div className="min-w-[min(100%,14rem)] flex-1">
+              <h1 className="text-paginatitel">{title}</h1>
               {ondertitel ? (
-                <div className="mt-1 text-base text-muted-foreground">{ondertitel}</div>
+                <div className="mt-1.5 text-base text-muted-foreground">{ondertitel}</div>
               ) : null}
             </div>
-            <div className="h-px bg-border/70" aria-hidden />
-          </header>
+            {action ? <div className="shrink-0">{action}</div> : null}
+          </div>
+        )}
+        <Aankondigingen />
+        {children}
+        <MeldingVraag actief={pathname === "/"} />
+      </main>
 
-          <main
-            className={cn(
-              "mx-auto w-full max-w-3xl overflow-x-hidden px-4 py-6 pb-36 sm:px-6 lg:py-8 lg:pb-16",
-              breed ? "lg:max-w-6xl" : "lg:max-w-4xl",
-            )}
-          >
-            <Aankondigingen />
-            {children}
-            <MeldingVraag actief={pathname === "/"} />
-          </main>
-        </div>
-      </div>
-
-      {/* Mobiele tabbalk onderaan: altijd dezelfde vijf plekken, met tekst */}
+      {/* Mobiel: altijd dezelfde vijf plekken, met tekst. "Nieuw" staat in het midden. */}
       <nav
         aria-label="Snelmenu"
         className="fixed inset-x-0 bottom-0 z-30 border-t border-border/70 bg-card/95 shadow-[0_-8px_24px_-12px_oklch(0.3_0.02_60/0.18)] backdrop-blur-md lg:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        {/* Kolommen naar labellengte: zo past "Weekmenu" ook op 360 px zonder afkappen. */}
-        <ul className="mx-auto grid max-w-lg grid-cols-[0.95fr_1.15fr_1.2fr_0.9fr_0.8fr] items-stretch pt-1">
-          {TABS.map((item) => {
-            const active = isActief(item.to);
+        <ul className="mx-auto grid max-w-lg grid-cols-5 items-end pt-1">
+          {[NAV[0]!, NAV[1]!, null, NAV[2]!, NAV[3]!].map((item, i) => {
+            if (!item) {
+              return (
+                <li key="nieuw" className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setNieuwOpen(true)}
+                    aria-haspopup="dialog"
+                    className="flex min-h-18 flex-col items-center justify-end gap-1 pb-2 text-[0.84rem] font-semibold text-foreground"
+                  >
+                    <span className="-mt-5 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-kaart ring-4 ring-background">
+                      <Plus className="size-7" strokeWidth={2.5} aria-hidden />
+                    </span>
+                    {t("Nieuw")}
+                  </button>
+                </li>
+              );
+            }
+            const actief = isActief(item.to);
             const Icon = item.icon;
             return (
-              <li key={item.to} className="min-w-0">
+              <li key={`${item.to}-${i}`} className="min-w-0">
                 <Link
                   to={item.to}
                   data-tour={`tab-${item.to}`}
-                  aria-current={active ? "page" : undefined}
+                  aria-current={actief ? "page" : undefined}
                   className={cn(
                     "flex min-h-18 flex-col items-center justify-center gap-1 px-0 pb-2 pt-1 text-[0.84rem] font-semibold tracking-tight transition-colors",
-                    active ? "text-foreground" : "text-muted-foreground",
+                    actief ? "text-foreground" : "text-muted-foreground",
                   )}
                 >
                   <span
                     className={cn(
                       "flex h-8 w-14 items-center justify-center rounded-full transition-colors",
-                      active ? "bg-secondary text-primary" : "",
+                      actief ? "bg-inkt text-inkt-foreground" : "",
                     )}
                   >
-                    <Icon className="size-6" strokeWidth={active ? 2.4 : 2} aria-hidden />
+                    <Icon className="size-6" strokeWidth={actief ? 2.4 : 2} aria-hidden />
                   </span>
                   <span className="max-w-full truncate whitespace-nowrap">
-                    {t(item.kort ?? item.label)}
-                    {/* Volledige naam voor schermlezers, na de zichtbare tekst (WCAG 2.5.3). */}
-                    {item.kort ? <span className="sr-only"> ({t(item.label)})</span> : null}
+                    {t(item.kort)}
+                    {item.kort !== item.label ? (
+                      <span className="sr-only"> ({t(item.label)})</span>
+                    ) : null}
                   </span>
                 </Link>
               </li>
@@ -259,6 +328,44 @@ export function AppShell({
           })}
         </ul>
       </nav>
+
+      {/* Eén vaste plek om iets nieuws te beginnen. */}
+      <Sheet open={nieuwOpen} onOpenChange={setNieuwOpen}>
+        <SheetContent
+          side="bottom"
+          className="mx-auto max-w-lg rounded-t-3xl p-0 sm:bottom-6 sm:rounded-3xl"
+        >
+          <SheetHeader className="px-5 pb-2 pt-5 text-left">
+            <SheetTitle className="text-sectietitel">{t("Wat wil je doen?")}</SheetTitle>
+            <SheetDescription className="text-base">
+              {t("Kies wat je wil toevoegen.")}
+            </SheetDescription>
+          </SheetHeader>
+          <ul className="space-y-2 px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-2">
+            {NIEUW.map((n) => {
+              const Icon = n.icon;
+              return (
+                <li key={n.titel}>
+                  <Link
+                    to={n.to}
+                    onClick={() => setNieuwOpen(false)}
+                    className="flex min-h-20 items-center gap-4 rounded-2xl bg-muted/70 p-4 hover:bg-muted"
+                  >
+                    <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-inkt text-inkt-foreground">
+                      <Icon className="size-6" aria-hidden />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-lg font-semibold">{t(n.titel)}</span>
+                      <span className="block text-base text-muted-foreground">{t(n.uitleg)}</span>
+                    </span>
+                    <ChevronRight className="size-6 shrink-0 text-muted-foreground" aria-hidden />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

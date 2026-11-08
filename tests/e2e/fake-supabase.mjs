@@ -3,8 +3,13 @@
 // stuurknoppen (/__*) waarmee tests storingen kunnen nabootsen.
 // Raakt nooit een echte (productie)database.
 import http from "node:http";
+import { readFileSync, existsSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { maakDb, rest } from "./nep-db.mjs";
 import { demoSeed } from "./demo-data.mjs";
+
+const FOTO_MAP = path.join(path.dirname(fileURLToPath(import.meta.url)), "demo-fotos");
 
 /** DEMO=1: rijke voorbeelddata + login met demo@foodlo.be / demo1234 (lokale preview). */
 const DEMO = process.env.DEMO === "1";
@@ -100,7 +105,14 @@ const RPC_STANDAARD = {
 const server = http.createServer((req, res) => {
   let data = "";
   req.on("data", (c) => (data += c));
-  req.on("end", async () => {
+  req.on("end", () => {
+    // Eén foute aanvraag mag de hele nep-server nooit laten crashen.
+    verwerk().catch((e) => {
+      console.error("[nep-supabase] fout:", e instanceof Error ? e.message : e);
+      if (!res.headersSent) stuur(res, 500, { message: "nep-fout" });
+    });
+  });
+  const verwerk = async () => {
     const url = new URL(req.url ?? "/", `http://127.0.0.1:${PORT}`);
     if (req.method === "OPTIONS") {
       res.writeHead(204, cors);
@@ -223,12 +235,29 @@ const server = http.createServer((req, res) => {
       const r = rest(db, { method: req.method, tabel, params: p, body, headers: req.headers });
       return stuur(res, r.status, r.body, r.kop);
     }
+    // Opslag: alleen de demofoto's (pad "demo/<bestand>"). createSignedUrl -> getekende URL -> bestand.
+    const teken = url.pathname.match(
+      /^\/storage\/v1\/object\/sign\/recipe-photos\/(demo\/[a-z0-9-]+\.jpg)$/,
+    );
+    if (teken && req.method === "POST") {
+      return stuur(res, 200, { signedURL: `/object/sign/recipe-photos/${teken[1]}?token=demo` });
+    }
+    if (teken && req.method === "GET") {
+      const bestand = path.join(FOTO_MAP, path.basename(teken[1]));
+      if (!existsSync(bestand)) return stuur(res, 404, { error: "geen demofoto" });
+      res.writeHead(200, {
+        "content-type": "image/jpeg",
+        "cache-control": "max-age=3600",
+        ...cors,
+      });
+      return res.end(readFileSync(bestand));
+    }
     if (url.pathname.startsWith("/storage/v1/"))
       return stuur(res, 400, { error: "niet in nep-Supabase" });
     if (url.pathname.startsWith("/functions/v1/"))
       return stuur(res, 404, { error: "geen functies" });
     return stuur(res, 404, { error: "onbekend in nep-Supabase" });
-  });
+  };
 });
 
 server.listen(PORT, "127.0.0.1", () => {

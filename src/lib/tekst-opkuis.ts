@@ -71,7 +71,10 @@ export function netteStap(tekst: string): string {
     .replace(/^\s*(?:stap\s*\d+\s*[:.)-]?\s*|\d+\s*[.)]\s*|[-•*]\s*)/i, "")
     .replace(/\s+/g, " ")
     .replace(/\s+([,.;:!?])/g, "$1")
-    .replace(/([,;:])(?=\S)/g, "$1 ")
+    // Spatie na , ; : — maar niet tussen twee cijfers ("2,5 uur", "18:30").
+    .replace(/([,;:])(?=\S)/g, (teken, _t, positie: number, geheel: string) =>
+      /\d/.test(geheel[positie - 1] ?? "") && /\d/.test(geheel[positie + 1] ?? "") ? teken : `${teken} `,
+    )
     .replace(/([.!?])(?=[A-Za-zÀ-ÿ])/g, "$1 ")
     .replace(/([.,!?;:]){2,}/g, "$1")
     .trim();

@@ -764,18 +764,11 @@ function PlannerPage() {
     setWeekStart(d);
   }
 
-  function toonDag(dag: string, groot: boolean) {
-    const items = plan.filter((p) => p.plan_date === dag);
-    const datum = new Date(`${dag}T12:00:00`);
-    const voorbij = dag < vandaag;
-    const alleMomenten = [...new Set([...momenten, ...items.map((p) => p.meal_type)])];
-    const titel = datum.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" });
-    const kaart = (p: PlanRow) => (
-                    <li key={p.id} className="flex min-h-24 items-center gap-2 rounded-2xl bg-card p-3 shadow-zacht">
-                      {p.recipe_id ? <Link to="/recepten/$id" params={{ id: p.recipe_id }} search={p.personen != null ? { personen: p.personen } : {}} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ReceptFoto url={p.recipes?.image_url ?? null} recept={p.recipes} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.recipes?.title ?? "Recept"}</span>{p.recipes ? <span className="mt-0.5 flex items-center gap-1 text-base text-muted-foreground"><Clock3 className="size-3.5" /> {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) || "Tijd niet ingevuld"}</span> : null}</span></Link> : <div className="flex min-w-0 flex-1 items-center gap-3"><ReceptFoto url={null} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.custom_title}</span>{!p.soort ? <button type="button" onClick={() => setKoppelRij(p)} className="mt-0.5 block text-left text-base font-semibold text-primary underline underline-offset-2">Nog geen recept · koppelen</button> : null}</span></div>}
-                      {weergave === "gezin" && p.user_id !== user?.id ? <Avatar naam={plannerNamen[p.user_id] ?? "?"} sleutel={p.user_id} className="size-8 shrink-0 text-base" /> : null}
+  /** Acties voor een geplande maaltijd — gedeeld door de daglijst en het weekraster. */
+  function planActies(p: PlanRow, compact = false) {
+    return (
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild><Button variant="ghost" aria-label={`Acties voor ${p.recipes?.title ?? p.custom_title ?? "maaltijd"}`} className="size-12 shrink-0"><MoreVertical className="size-5" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" aria-label={`Acties voor ${p.recipes?.title ?? p.custom_title ?? "maaltijd"}`} className={compact ? "size-11 shrink-0" : "size-12 shrink-0"}><MoreVertical className="size-5" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-60 p-2">
                           {p.recipe_id ? <DropdownMenuItem onSelect={() => setVraagLijst({ recipeId: p.recipe_id as string, titel: p.recipes?.title ?? "Recept" })} className="min-h-12 rounded-lg text-base"><ShoppingCart className="size-5" /> Op boodschappenlijst</DropdownMenuItem> : null}
                           {!p.recipe_id && !p.soort ? <DropdownMenuItem onSelect={() => setKoppelRij(p)} className="min-h-12 rounded-lg text-base"><BookOpen className="size-5" /> Recept koppelen</DropdownMenuItem> : null}
@@ -786,6 +779,93 @@ function PlannerPage() {
                           <DropdownMenuItem onSelect={() => void verwijder(p.id, p.recipe_id, p.recipes?.title ?? "Dit gerecht")} className="min-h-12 rounded-lg text-base text-destructive focus:text-destructive"><Trash2 className="size-5" /> Uit planning halen</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+    );
+  }
+
+  /** V2 — desktop: de hele week in één raster (dagen als kolommen, maaltijden als rijen). */
+  function weekRaster() {
+    const alleMomenten = [...new Set([...momenten, ...plan.map((p) => p.meal_type)])];
+    return (
+      <section aria-label="Weekoverzicht" className="hidden lg:block">
+        <div className="grid grid-cols-7 gap-3">
+          {week.map((dag) => {
+            const d = new Date(`${dag}T12:00:00`);
+            const isVandaag = dag === vandaag;
+            const voorbij = dag < vandaag;
+            const items = plan.filter((p) => p.plan_date === dag);
+            return (
+              <div key={dag} className={`flex min-w-0 flex-col rounded-3xl p-2.5 ${isVandaag ? "bg-inkt text-inkt-foreground shadow-kaart" : voorbij ? "bg-muted/60" : "bg-card shadow-zacht"}`}>
+                <h2 className="px-1.5 pb-2 pt-1">
+                  <span className={`block text-base font-semibold uppercase tracking-wide ${isVandaag ? "text-inkt-zacht" : "text-muted-foreground"}`}>
+                    {isVandaag ? "Vandaag" : d.toLocaleDateString("nl-BE", { weekday: "long" })}
+                  </span>
+                  <span className="block text-2xl font-bold leading-tight">
+                    {d.getDate()} {d.toLocaleDateString("nl-BE", { month: "short" }).replace(".", "")}
+                  </span>
+                </h2>
+                <div className="flex flex-1 flex-col gap-2">
+                  {alleMomenten.map((m) => {
+                    const bij = items.filter((p) => p.meal_type === m);
+                    if (!bij.length && items.length && momenten.length === 1) return null;
+                    return (
+                      <div key={m} className="min-w-0">
+                        <p className={`px-1.5 text-[0.9rem] font-semibold first-letter:uppercase ${isVandaag ? "text-inkt-zacht" : "text-muted-foreground"}`}>{m}</p>
+                        {bij.length ? (
+                          <ul className="mt-1 space-y-2">
+                            {bij.map((p) => (
+                              <li key={p.id} className="overflow-hidden rounded-2xl bg-card text-foreground shadow-zacht">
+                                {p.recipe_id ? (
+                                  <Link to="/recepten/$id" params={{ id: p.recipe_id }} search={p.personen != null ? { personen: p.personen } : {}} className="block">
+                                    <RecipePhoto path={p.recipes?.image_url ?? null} alt="" recept={p.recipes ?? { title: "" }} className="aspect-[4/3] w-full" icoonClassName="size-10" />
+                                    <span className="line-clamp-2 px-2.5 pt-2 text-base font-semibold leading-snug">{p.recipes?.title ?? "Recept"}</span>
+                                  </Link>
+                                ) : (
+                                  <span className="line-clamp-2 block px-2.5 pt-2.5 text-base font-semibold leading-snug">{p.custom_title}</span>
+                                )}
+                                <div className="flex items-center justify-between gap-1 pb-1 pl-2.5 pr-1">
+                                  <span className="truncate text-[0.9rem] text-muted-foreground">
+                                    {p.recipes ? tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) : ""}
+                                  </span>
+                                  {planActies(p, true)}
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : voorbij ? (
+                          <p className={`px-1.5 py-2 text-[0.9rem] ${isVandaag ? "text-inkt-zacht" : "text-muted-foreground"}`}>—</p>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setKiezen({ datum: dag, moment: m })}
+                            aria-label={`Gerecht toevoegen: ${m}, ${d.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" })}`}
+                            className={`mt-1 flex min-h-16 w-full items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed text-base font-semibold transition-colors ${isVandaag ? "border-inkt-foreground/30 text-inkt-foreground hover:bg-white/10" : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"}`}
+                          >
+                            <Plus className="size-5" aria-hidden /> Toevoegen
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    );
+  }
+
+  function toonDag(dag: string, groot: boolean) {
+    const items = plan.filter((p) => p.plan_date === dag);
+    const datum = new Date(`${dag}T12:00:00`);
+    const voorbij = dag < vandaag;
+    const alleMomenten = [...new Set([...momenten, ...items.map((p) => p.meal_type)])];
+    const titel = datum.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" });
+    const kaart = (p: PlanRow) => (
+                    <li key={p.id} className="flex min-h-24 items-center gap-2 rounded-2xl bg-card p-3 shadow-zacht">
+                      {p.recipe_id ? <Link to="/recepten/$id" params={{ id: p.recipe_id }} search={p.personen != null ? { personen: p.personen } : {}} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ReceptFoto url={p.recipes?.image_url ?? null} recept={p.recipes} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.recipes?.title ?? "Recept"}</span>{p.recipes ? <span className="mt-0.5 flex items-center gap-1 text-base text-muted-foreground"><Clock3 className="size-3.5" /> {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) || "Tijd niet ingevuld"}</span> : null}</span></Link> : <div className="flex min-w-0 flex-1 items-center gap-3"><ReceptFoto url={null} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.custom_title}</span>{!p.soort ? <button type="button" onClick={() => setKoppelRij(p)} className="mt-0.5 block text-left text-base font-semibold text-primary underline underline-offset-2">Nog geen recept · koppelen</button> : null}</span></div>}
+                      {weergave === "gezin" && p.user_id !== user?.id ? <Avatar naam={plannerNamen[p.user_id] ?? "?"} sleutel={p.user_id} className="size-8 shrink-0 text-base" /> : null}
+                      {planActies(p)}
                     </li>
     );
     return (
@@ -825,8 +905,10 @@ function PlannerPage() {
   }
 
   return (
-    <AppShell title="Weekmenu">
+    <AppShell title="Weekmenu" breed>
       <div className="space-y-6">
+        {/* Desktop: planning/opties en weekkeuze op één rij, zodat het raster hoog begint. */}
+        <div className="space-y-6 lg:flex lg:flex-row-reverse lg:items-center lg:justify-between lg:gap-6 lg:space-y-0">
         {/* Kopregel: welke planning en opties */}
         <div className="flex items-center gap-2">
           {gezin ? (
@@ -856,7 +938,7 @@ function PlannerPage() {
         </div>
 
         {/* Week kiezen: duidelijke titel met datums, grote pijlen, rustige dagkeuze */}
-        <section aria-label="Week kiezen" className="rounded-2xl border border-border bg-card p-4">
+        <section aria-label="Week kiezen" className="rounded-3xl bg-card p-4 shadow-zacht lg:w-full lg:max-w-lg">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -917,7 +999,7 @@ function PlannerPage() {
             </button>
           ) : null}
           {/* Keuze: één dag of de hele week met alle planning */}
-          <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1" role="tablist" aria-label="Weergave kiezen">
+          <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1 lg:hidden" role="tablist" aria-label="Weergave kiezen">
             <button
               type="button"
               role="tab"
@@ -937,7 +1019,7 @@ function PlannerPage() {
               Hele week
             </button>
           </div>
-          <div className="mt-3 grid grid-cols-7 gap-1.5" role="tablist" aria-label="Dag kiezen">
+          <div className="mt-3 grid grid-cols-7 gap-1.5 lg:hidden" role="tablist" aria-label="Dag kiezen">
             {week.map((dag) => {
               const d = new Date(`${dag}T12:00:00`);
               const actief = !heleWeek && dag === gekozenDag;
@@ -981,6 +1063,10 @@ function PlannerPage() {
           </div>
         </section>
 
+        </div>
+
+        {weekRaster()}
+        <div className="lg:hidden">
         {heleWeek ? (
           <section aria-label="Hele week" className="space-y-6">
             <h2 className="text-sectietitel">De hele week</h2>
@@ -989,6 +1075,7 @@ function PlannerPage() {
         ) : (
           <section aria-label="Gekozen dag">{toonDag(gekozenDag, true)}</section>
         )}
+        </div>
 
         {/* Acties: één hoofdknop, twee rustige knoppen */}
         <section aria-label="Acties" className="space-y-3">

@@ -31,7 +31,13 @@ function waarde(ruw) {
   if (ruw === "null") return null;
   if (ruw === "true") return true;
   if (ruw === "false") return false;
-  return decodeURIComponent(ruw.replace(/^"(.*)"$/, "$1"));
+  const zonderAanhalingstekens = ruw.replace(/^"(.*)"$/, "$1");
+  // "%" komt voor in ilike-patronen (bv. "%zalm%") en is dan geen escape.
+  try {
+    return decodeURIComponent(zonderAanhalingstekens);
+  } catch {
+    return zonderAanhalingstekens;
+  }
 }
 
 function vergelijk(rij, kolom, op, arg) {

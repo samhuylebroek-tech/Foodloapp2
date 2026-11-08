@@ -213,12 +213,14 @@ const RECEPTEN = [
 ];
 
 export function demoSeed() {
+  // Twee demofoto's (CC0, zie demo-fotos/LICENTIES.md); de rest toont bewust de omslag.
+  const FOTO = { 1: "demo/stoofvlees.jpg", 2: "demo/pompoensoep.jpg" };
   const recipes = RECEPTEN.map((r, i) => ({
     id: R(r.n),
     user_id: DEMO_USER_ID,
     title: r.title,
     description: r.description,
-    image_url: null,
+    image_url: FOTO[r.n] ?? null,
     servings: r.servings,
     prep_minutes: r.prep,
     cook_minutes: r.cook,

@@ -64,9 +64,13 @@ export const Route = createFileRoute("/recepten/$id")({
       { property: "og:description", content: "Ingrediënten, stappen en kookstand in één scherm." },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>): { personen?: number } => {
+  validateSearch: (search: Record<string, unknown>): { personen?: number; koken?: true } => {
     const n = Number(search["personen"]);
-    return Number.isInteger(n) && n >= 1 && n <= 50 ? { personen: n } : {};
+    const uit: { personen?: number; koken?: true } = {};
+    if (Number.isInteger(n) && n >= 1 && n <= 50) uit.personen = n;
+    // V2: "Start koken" vanaf Vandaag opent meteen de kookstand.
+    if (search["koken"] === true || search["koken"] === "1" || search["koken"] === 1) uit.koken = true;
+    return uit;
   },
   component: ReceptPage,
 });
@@ -107,8 +111,8 @@ function ReceptPage() {
   // Voorkeuraantal personen: gekend vanuit de weekmenu-planning, of zelf te kiezen.
   const zoek = Route.useSearch();
   const [personen, setPersonen] = useState<number | null>(zoek.personen ?? null);
-  const [kookstand, setKookstand] = useState(false);
-  const [stap, setStap] = useState(0);
+  const [kookstand, setKookstand] = useState(zoek.koken === true);
+  const [stap, setStap] = useState(zoek.koken === true ? -1 : 0);
   const [klaarVragen, setKlaarVragen] = useState(false);
   // V2: na per ongeluk wegklikken of herladen verder koken bij de juiste stap.
   const [bewaardeStap, setBewaardeStap] = useState<number | null>(null);
@@ -493,9 +497,11 @@ function ReceptPage() {
             <SterrenKiezer
               waarde={mijnScore}
               onKies={async (n) => {
+                // Eerst de voortgang wissen (lokaal, onmiddellijk), dan pas de score
+                // over het netwerk bewaren: wie meteen afsluit, ziet geen oude stap meer.
+                wisVoortgang(recipe.id);
                 await zetScore(n);
                 toast.success(t("Bedankt voor je score"));
-                wisVoortgang(recipe.id);
                 setKlaarVragen(false);
                 setKookstand(false);
               }}
@@ -645,7 +651,9 @@ function ReceptPage() {
         </div>
       }
     >
-      <div className="space-y-5">
+      <div className="space-y-10">
+        {/* V2: kop met foto en acties naast elkaar op desktop. */}
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-10">
         <div className="space-y-3">
           <div className="relative">
             <RecipePhoto
@@ -679,11 +687,10 @@ function ReceptPage() {
           ) : null}
           {/* Extra foto's pas als er een hoofdfoto is; anders zouden er twee identieke
               "Foto nemen"-knoppen met een verschillende werking staan (WCAG 3.2.4). */}
-          {isOwner && recipe.image_url ? (
-            <FotoKiezer extra bezig={fotoBezig} onBestand={(file) => void voegExtraFotoToe(file)} />
-          ) : null}
+
         </div>
 
+        <div className="space-y-5">
         {/* De receptnaam staat als paginatitel (h1) bovenaan; hier de kenmerken. */}
         <ul className="flex flex-wrap gap-2" aria-label={t("Kenmerken")}>
           {tijdLabel(recipe.prep_minutes, recipe.cook_minutes) ? (
@@ -708,8 +715,9 @@ function ReceptPage() {
           ) : null}
         </ul>
 
-        <PersonenKiezer aantal={aantal} onZet={setPersonen} />
-        {aantal !== recipe.servings ? <p className="-mt-2 text-base text-muted-foreground">{t("Hoeveelheden aangepast. Het originele recept is voor")} {recipe.servings} {t("personen")}.</p> : null}
+        {recipe.description ? (
+          <p className="font-display text-xl leading-relaxed text-foreground/90">{t(recipe.description)}</p>
+        ) : null}
 
         {recipe.instructions.length > 0 ? <Button onClick={() => { setStap(-1); void meet("kookmodus.gestart", undefined, { id }); setKookstand(true); }} className="h-16 w-full text-lg"><ChefHat className="size-6" />{t("Start koken")}</Button> : null}
         {bewaardeStap !== null ? (
@@ -726,7 +734,7 @@ function ReceptPage() {
         ) : null}
 
         {/* Gestapeld op smalle schermen: lange labels lopen nooit buiten de knop. */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3">
           <Button variant="outline" onClick={() => setPlanOpen(true)} className="h-16 whitespace-normal px-3 text-lg leading-snug"><CalendarPlus />{t("Inplannen")}</Button>
           <Button variant="secondary" onClick={() => setBoodschappenOpen(true)} disabled={!ingredients.length} className="h-16 gap-2 whitespace-normal px-3 text-lg leading-snug">
             <ShoppingCart className="size-5 shrink-0" /> {t("Voeg toe aan boodschappenlijst")}
@@ -755,45 +763,32 @@ function ReceptPage() {
           </div>
         )}
 
-        <Tabs defaultValue="overzicht" className="w-full">
-          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:grid-cols-4">
-            <TabsTrigger value="overzicht">{t("Overzicht")}</TabsTrigger>
-            <TabsTrigger value="ingredienten">{t("Ingrediënten")}</TabsTrigger>
-            <TabsTrigger value="bereiding">{t("Bereiding")}</TabsTrigger>
-            <TabsTrigger value="voeding">{t("Voeding")}</TabsTrigger>
-          </TabsList>
+        </div>
+        </div>
 
-          <TabsContent value="overzicht" className="pt-4">
-            <div className="space-y-5">
-              {recipe.description ? <p className="text-lg leading-relaxed">{t(recipe.description)}</p> : null}
-              {isOwner ? <SnelAanpassen recipe={recipe} onKlaar={() => qc.invalidateQueries({ queryKey: ["recipe", recipe.id] })} /> : null}
-              <SterrenKiezer waarde={mijnScore} onKies={zetScore} label={t("Jouw score")} />
-              {recipe.source_url ? <a href={recipe.source_url} target="_blank" rel="noreferrer" className="block text-base text-primary underline underline-offset-4">{t("Bekijk origineel op")} {bronNaam(recipe.source_url)}</a> : null}
-              {isOwner && recipe.image_url ? <FotoKiezer bezig={fotoBezig} heeftFoto onBestand={(file) => void vervangFoto(file)} /> : null}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="ingredienten" className="pt-4">
-        <section className="rounded-2xl bg-card p-4 shadow-sm ring-1 ring-border/60">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-xl">Ingrediënten</h2>
-            <div className="flex w-full items-center justify-between gap-2 rounded-2xl bg-secondary p-1 sm:w-auto sm:justify-end sm:bg-transparent sm:p-0">
+        {/* V2: geen tabbladen meer — ingrediënten en bereiding in één oogopslag.
+            Desktop: ingrediënten blijven in beeld terwijl je de stappen leest. */}
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,23rem)_minmax(0,1fr)] lg:gap-12">
+        <section aria-labelledby="ingredienten-titel" className="rounded-3xl bg-card p-5 shadow-zacht lg:sticky lg:top-24 lg:self-start">
+          <div className="flex flex-col gap-3">
+            <h2 id="ingredienten-titel" className="text-sectietitel">{t("Ingrediënten")}</h2>
+            <div className="flex w-full items-center justify-between gap-2 rounded-2xl bg-secondary p-1">
               <Button
                 variant="secondary"
                 onClick={() => setPersonen(Math.max(1, aantal - 1))}
                 aria-label="Minder personen"
-                className="size-12 shrink-0 sm:size-14"
+                className="size-12 shrink-0 bg-card"
               >
                 <Minus className="size-5" />
               </Button>
-              <span className="min-w-0 flex-1 text-center text-base font-semibold sm:w-24 sm:flex-none sm:text-lg">
-                {aantal} pers.
+              <span className="min-w-0 flex-1 text-center text-base font-semibold sm:text-lg">
+                {aantal} {t(aantal === 1 ? "persoon" : "personen")}
               </span>
               <Button
                 variant="secondary"
                 onClick={() => setPersonen(aantal + 1)}
                 aria-label="Meer personen"
-                className="size-12 shrink-0 sm:size-14"
+                className="size-12 shrink-0 bg-card"
               >
                 <Plus className="size-5" />
               </Button>
@@ -816,27 +811,29 @@ function ReceptPage() {
             )}
           </ul>
 
+          {aantal !== recipe.servings ? (
+            <p className="mt-3 text-base text-muted-foreground">
+              {t("Hoeveelheden aangepast. Het originele recept is voor")} {recipe.servings} {t("personen")}.
+            </p>
+          ) : null}
           {lijstenMetRecept.length ? (
             <p className="mt-4 flex items-center gap-2 rounded-2xl bg-secondary px-4 py-3 text-base text-secondary-foreground">
               <Check className="size-5 text-primary" aria-hidden />
               {t("Dit recept staat al op een boodschappenlijst")}
             </p>
           ) : null}
-          <Button onClick={() => setBoodschappenOpen(true)} className="mt-4 h-16 w-full text-lg">
-            <ShoppingCart className="size-5" /> {t("Voeg toe aan boodschappenlijst")}
-          </Button>
         </section>
 
-          </TabsContent>
+        <section aria-labelledby="bereiding-titel">
+          <h2 id="bereiding-titel" className="text-sectietitel">{t("Bereiding")}</h2>
 
-          <TabsContent value="bereiding" className="pt-4">
-        <section>
-          <h2 className="text-xl">{t("Bereiding")}</h2>
-
-          <ol className="mt-3 space-y-3">
+          <ol className="mt-4 space-y-3">
             {recipe.instructions.map((s, i) => (
-              <li key={i} className="flex gap-3 rounded-2xl border border-border bg-card p-4">
-                <span className="font-display text-xl text-primary">{i + 1}</span>
+              <li key={i} className="flex gap-4 rounded-3xl bg-card p-5 shadow-zacht">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-inkt text-lg font-bold text-inkt-foreground" aria-hidden>
+                  {i + 1}
+                </span>
+                <span className="sr-only">{t("Stap")} {i + 1}:</span>
                 <div className="min-w-0">
                   <p className="text-lg leading-relaxed">{netteStap(t(s))}</p>
                   <StapIngredienten ingredienten={stapIngredienten(i)} factor={factor} />
@@ -854,10 +851,33 @@ function ReceptPage() {
             </Button>
           ) : null}
         </section>
-          </TabsContent>
+        </div>
 
-          <TabsContent value="voeding" className="pt-4"><Voedingswaarden ingredienten={ingredients} porties={aantal} /></TabsContent>
-        </Tabs>
+        <details className="group rounded-3xl bg-card p-5 shadow-zacht">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between text-sectietitel">
+            {t("Voedingswaarden")}
+            <span className="text-base font-sans font-semibold text-primary group-open:hidden">{t("Tonen")}</span>
+            <span className="hidden text-base font-sans font-semibold text-primary group-open:inline">{t("Verbergen")}</span>
+          </summary>
+          <div className="mt-4">
+            <Voedingswaarden ingredienten={ingredients} porties={aantal} />
+          </div>
+        </details>
+
+        <section aria-labelledby="jouw-recept-titel" className="space-y-5 rounded-3xl bg-muted/60 p-5">
+          <h2 id="jouw-recept-titel" className="text-sectietitel">{t("Jouw recept")}</h2>
+          <SterrenKiezer waarde={mijnScore} onKies={zetScore} label={t("Jouw score")} />
+          {recipe.source_url ? <a href={recipe.source_url} target="_blank" rel="noreferrer" className="block text-base text-primary underline underline-offset-4">{t("Bekijk origineel op")} {bronNaam(recipe.source_url)}</a> : null}
+          {isOwner ? <SnelAanpassen recipe={recipe} onKlaar={() => qc.invalidateQueries({ queryKey: ["recipe", recipe.id] })} /> : null}
+          {isOwner && recipe.image_url ? (
+            <div className="space-y-2">
+              <p className="text-base font-semibold">{t("Foto's")}</p>
+              <FotoKiezer bezig={fotoBezig} heeftFoto onBestand={(file) => void vervangFoto(file)} />
+              {/* Extra foto's: rustig onderaan, niet tussen de foto en "Start koken". */}
+              <FotoKiezer extra bezig={fotoBezig} onBestand={(file) => void voegExtraFotoToe(file)} />
+            </div>
+          ) : null}
+        </section>
 
       </div>
       {vraagNogmaals ? (
@@ -925,7 +945,11 @@ function PlanKiezer({
   servings: number;
   onKies: (datum: string, moment: string, personen: number) => void;
 }) {
-  const [datum, setDatum] = useState(new Date().toISOString().slice(0, 10));
+  // Lokale datum (niet UTC): anders stond tussen middernacht en 1-2 u 's nachts "gisteren" klaar.
+  const [datum, setDatum] = useState(() => {
+    const nu = new Date();
+    return `${nu.getFullYear()}-${String(nu.getMonth() + 1).padStart(2, "0")}-${String(nu.getDate()).padStart(2, "0")}`;
+  });
   const [moment, setMoment] = useState<string>(momenten[momenten.length - 1] ?? "avondeten");
   const [personen, setPersonen] = useState(servings > 0 ? servings : 4);
   return (

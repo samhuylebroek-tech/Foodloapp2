@@ -7,7 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import { Avatar } from "@/components/Avatar";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import type { Recipe } from "@/lib/types";
-import { tijdLabel } from "@/lib/tijd";
+import { tijdLabel, lokaleDatum } from "@/lib/tijd";
 import { toonBelgischeMaat } from "@/lib/ingredienten";
 
 export const Route = createFileRoute("/vrienden/$id")({
@@ -117,7 +117,7 @@ function VriendPage() {
     queryKey: ["vriend-weekmenu", id, gezinId],
     enabled: recht?.weekmenu === true,
     queryFn: async () => {
-      const vandaag = new Date().toISOString().slice(0, 10);
+      const vandaag = lokaleDatum();
       const basis = () =>
         supabase
           .from("meal_plan")

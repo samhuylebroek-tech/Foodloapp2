@@ -1,3 +1,4 @@
+import { lokaleDatum } from "@/lib/tijd";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { meet } from "@/lib/meten";
 import { createFileRoute } from "@tanstack/react-router";
@@ -106,7 +107,7 @@ function maatTekst(item: Item) {
 
 function datumLabel(dag: string) {
   const d = new Date(`${dag}T12:00:00`);
-  const vandaag = new Date().toISOString().slice(0, 10);
+  const vandaag = lokaleDatum();
   if (dag === vandaag) return "Vandaag";
   return d.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" });
 }
@@ -258,8 +259,8 @@ function BoodschappenPage() {
     queryKey: ["shopping-weekmenu", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const van = new Date().toISOString().slice(0, 10);
-      const tot = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+      const van = lokaleDatum();
+      const tot = lokaleDatum(new Date(Date.now() + 7 * 86400000));
       const { data } = await supabase
         .from("meal_plan")
         .select("recipe_id, plan_date, personen, recipes(title, servings)")

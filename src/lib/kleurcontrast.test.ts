@@ -40,6 +40,9 @@ const TEKST_PAREN: [string, string][] = [
   ["destructive", "background"], // foutmeldingen in rode tekst
   ["destructive", "card"],
   ["terracotta-foreground", "terracotta"], // V2-accent
+  ["inkt-foreground", "inkt"], // V2 redactionele band en actieve navigatie
+  ["inkt-zacht", "inkt"], // ondertitels in de inktband
+  ["honing", "inkt"], // label "avondeten vandaag" in de inktband
 ];
 
 /** Focusring moet minstens 3:1 halen tegen de achtergrond (WCAG 1.4.11 / 2.4.13). */
