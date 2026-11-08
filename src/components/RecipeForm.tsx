@@ -915,8 +915,18 @@ export function RecipeForm({
   }
 
   const manieren: { id: Manier; label: string; uitleg: string; icon: typeof Link2 }[] = [
-    { id: "link", label: "Link plakken", uitleg: "Website, Instagram, TikTok, YouTube", icon: Link2 },
-    { id: "foto", label: "Foto van recept", uitleg: "Kookboek, briefje of screenshot", icon: Camera },
+    {
+      id: "link",
+      label: "Link plakken",
+      uitleg: "Website, Instagram, TikTok, YouTube",
+      icon: Link2,
+    },
+    {
+      id: "foto",
+      label: "Foto van recept",
+      uitleg: "Kookboek, briefje of screenshot",
+      icon: Camera,
+    },
     { id: "zelf", label: "Zelf typen", uitleg: "Begin met een lege kaart", icon: Pencil },
     { id: "zoek", label: "Zoeken", uitleg: "Vind een recept op naam", icon: Search },
   ];
@@ -933,7 +943,6 @@ export function RecipeForm({
           : recognizing
             ? "We zoeken de ingrediënten op de foto…"
             : null;
-
 
   return (
     <div className="space-y-6">
@@ -980,7 +989,13 @@ export function RecipeForm({
                   </span>
                   <span>
                     <span className="block text-base font-semibold leading-tight">{m.label}</span>
-                    <span className={actief ? "block text-[0.9rem] leading-snug text-primary-foreground/85" : "block text-[0.9rem] leading-snug text-muted-foreground"}>
+                    <span
+                      className={
+                        actief
+                          ? "block text-[0.9rem] leading-snug text-primary-foreground/85"
+                          : "block text-[0.9rem] leading-snug text-muted-foreground"
+                      }
+                    >
                       {m.uitleg}
                     </span>
                   </span>
@@ -990,10 +1005,16 @@ export function RecipeForm({
           </div>
 
           {bezigMet ? (
-            <p role="status" className="mt-4 flex items-center gap-3 rounded-2xl bg-[var(--honing-zacht)] px-4 py-3 text-base font-medium text-[var(--honing-foreground)]">
+            <p
+              role="status"
+              className="mt-4 flex items-center gap-3 rounded-2xl bg-[var(--honing-zacht)] px-4 py-3 text-base font-medium text-[var(--honing-foreground)]"
+            >
               <Loader2 className="size-5 shrink-0 animate-spin" aria-hidden />
               <span>
-                {bezigMet} <span className="text-[var(--honing-foreground)]/80">Dit duurt meestal 5 à 15 seconden.</span>
+                {bezigMet}{" "}
+                <span className="text-[var(--honing-foreground)]/80">
+                  Dit duurt meestal 5 à 15 seconden.
+                </span>
               </span>
             </p>
           ) : null}
@@ -1241,11 +1262,16 @@ export function RecipeForm({
               <div>
                 <p className="text-base font-semibold">Een recept op papier of scherm</p>
                 <p className="text-base text-muted-foreground">
-                  Een bladzijde uit een kookboek, een handgeschreven briefje of een screenshot. Wij lezen de tekst en vullen het recept in. Je kijkt het daarna na.
+                  Een bladzijde uit een kookboek, een handgeschreven briefje of een screenshot. Wij
+                  lezen de tekst en vullen het recept in. Je kijkt het daarna na.
                 </p>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <label className="flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-3 text-center text-base font-semibold leading-tight text-primary-foreground focus-within:outline focus-within:outline-3 focus-within:outline-ring">
-                    {screenshotBezig ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <Camera className="size-5" aria-hidden />}
+                    {screenshotBezig ? (
+                      <Loader2 className="size-5 animate-spin" aria-hidden />
+                    ) : (
+                      <Camera className="size-5" aria-hidden />
+                    )}
                     Recept fotograferen
                     <input
                       type="file"
@@ -1279,10 +1305,15 @@ export function RecipeForm({
               <div className="border-t border-border pt-4">
                 <p className="text-base font-semibold">Een gerecht dat je voor je ziet</p>
                 <p className="text-base text-muted-foreground">
-                  Neem een foto van een bord eten. We stellen een passend recept voor. Dat is een gok, dus kijk het goed na.
+                  Neem een foto van een bord eten. We stellen een passend recept voor. Dat is een
+                  gok, dus kijk het goed na.
                 </p>
                 <label className="mt-3 flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-3 text-center text-base font-semibold focus-within:outline focus-within:outline-3 focus-within:outline-ring">
-                  {suggereren ? <Loader2 className="size-5 animate-spin" aria-hidden /> : <Sparkles className="size-5" aria-hidden />}
+                  {suggereren ? (
+                    <Loader2 className="size-5 animate-spin" aria-hidden />
+                  ) : (
+                    <Sparkles className="size-5" aria-hidden />
+                  )}
                   Gerecht herkennen
                   <input
                     type="file"
