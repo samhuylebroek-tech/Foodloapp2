@@ -35,3 +35,28 @@ jobs:
           if [ -n "$FILES" ]; then bunx eslint $FILES; fi
       - name: Build (lokaal, geen deploy)
         run: bun run build
+
+  e2e:
+    # Draait tegen een lokale dev-server en een NEP-Supabase; raakt nooit productie.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
+      - name: End-to-end (telefoon + desktop)
+        run: bun run test:e2e
+        env:
+          CI: "true"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-rapport
+          path: tests/e2e/.rapport
+          retention-days: 7

@@ -29,6 +29,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RondleidingRouteImport } from './routes/rondleiding'
 import { Route as UitnodigingRouteImport } from './routes/uitnodiging'
 import { Route as VoorraadRouteImport } from './routes/voorraad'
+import { Route as WachtwoordHerstellenRouteImport } from './routes/wachtwoord-herstellen'
 import { Route as WelkomRouteImport } from './routes/welkom'
 import { Route as BeheerIndexRouteImport } from './routes/beheer.index'
 import { Route as BeheerActiviteitRouteImport } from './routes/beheer.activiteit'
@@ -182,6 +183,11 @@ const UitnodigingRoute = UitnodigingRouteImport.update({
 const VoorraadRoute = VoorraadRouteImport.update({
   id: '/voorraad',
   path: '/voorraad',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WachtwoordHerstellenRoute = WachtwoordHerstellenRouteImport.update({
+  id: '/wachtwoord-herstellen',
+  path: '/wachtwoord-herstellen',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WelkomRoute = WelkomRouteImport.update({
@@ -477,6 +483,7 @@ export interface FileRoutesByFullPath {
   '/rondleiding': typeof RondleidingRoute
   '/uitnodiging': typeof UitnodigingRoute
   '/voorraad': typeof VoorraadRoute
+  '/wachtwoord-herstellen': typeof WachtwoordHerstellenRoute
   '/welkom': typeof WelkomRoute
   '/beheer/activiteit': typeof BeheerActiviteitRoute
   '/beheer/ai': typeof BeheerAiRoute
@@ -551,6 +558,7 @@ export interface FileRoutesByTo {
   '/rondleiding': typeof RondleidingRoute
   '/uitnodiging': typeof UitnodigingRoute
   '/voorraad': typeof VoorraadRoute
+  '/wachtwoord-herstellen': typeof WachtwoordHerstellenRoute
   '/welkom': typeof WelkomRoute
   '/beheer/activiteit': typeof BeheerActiviteitRoute
   '/beheer/ai': typeof BeheerAiRoute
@@ -627,6 +635,7 @@ export interface FileRoutesById {
   '/rondleiding': typeof RondleidingRoute
   '/uitnodiging': typeof UitnodigingRoute
   '/voorraad': typeof VoorraadRoute
+  '/wachtwoord-herstellen': typeof WachtwoordHerstellenRoute
   '/welkom': typeof WelkomRoute
   '/beheer/activiteit': typeof BeheerActiviteitRoute
   '/beheer/ai': typeof BeheerAiRoute
@@ -705,6 +714,7 @@ export interface FileRouteTypes {
     | '/rondleiding'
     | '/uitnodiging'
     | '/voorraad'
+    | '/wachtwoord-herstellen'
     | '/welkom'
     | '/beheer/activiteit'
     | '/beheer/ai'
@@ -779,6 +789,7 @@ export interface FileRouteTypes {
     | '/rondleiding'
     | '/uitnodiging'
     | '/voorraad'
+    | '/wachtwoord-herstellen'
     | '/welkom'
     | '/beheer/activiteit'
     | '/beheer/ai'
@@ -854,6 +865,7 @@ export interface FileRouteTypes {
     | '/rondleiding'
     | '/uitnodiging'
     | '/voorraad'
+    | '/wachtwoord-herstellen'
     | '/welkom'
     | '/beheer/activiteit'
     | '/beheer/ai'
@@ -931,6 +943,7 @@ export interface RootRouteChildren {
   RondleidingRoute: typeof RondleidingRoute
   UitnodigingRoute: typeof UitnodigingRoute
   VoorraadRoute: typeof VoorraadRoute
+  WachtwoordHerstellenRoute: typeof WachtwoordHerstellenRoute
   WelkomRoute: typeof WelkomRoute
   KaartenIdRoute: typeof KaartenIdRoute
   ReceptenIdRoute: typeof ReceptenIdRoute
@@ -1083,6 +1096,13 @@ declare module '@tanstack/react-router' {
       path: '/voorraad'
       fullPath: '/voorraad'
       preLoaderRoute: typeof VoorraadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wachtwoord-herstellen': {
+      id: '/wachtwoord-herstellen'
+      path: '/wachtwoord-herstellen'
+      fullPath: '/wachtwoord-herstellen'
+      preLoaderRoute: typeof WachtwoordHerstellenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/welkom': {
@@ -1604,6 +1624,7 @@ const rootRouteChildren: RootRouteChildren = {
   RondleidingRoute: RondleidingRoute,
   UitnodigingRoute: UitnodigingRoute,
   VoorraadRoute: VoorraadRoute,
+  WachtwoordHerstellenRoute: WachtwoordHerstellenRoute,
   WelkomRoute: WelkomRoute,
   KaartenIdRoute: KaartenIdRoute,
   ReceptenIdRoute: ReceptenIdRoute,

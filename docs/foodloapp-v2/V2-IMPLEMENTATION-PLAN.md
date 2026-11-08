@@ -37,6 +37,8 @@ De oudere map `foodloapp-v2-planning/` is niet gevonden (BUG-017). Als die terug
 | 0.7 | CI (lint op gewijzigde bestanden, typecheck, test, build) | ✅ concept | Workflow draait op `v2/**` en PR's | GitHub-minuten (klein) | bestand verwijderen |
 | 0.8 | Zod-validatie voor de overige ~74 serverfuncties, te beginnen bij admin, credits en export | ⏭ volgende | Elke functie heeft een schema plus een test voor een ongeldige invoer | 0 | per functie |
 | 0.9 | Pure helpers testen: `ingredienten`, `porties`, `boodschappen`, `zoeken`, `tijd`, `canoniekeUrl` | ⏭ | ≥ 90% branches op deze modules | 0 | — |
+| 0.11 | Playwright E2E + nep-Supabase + CI-job | ✅ | 34 tests op telefoon en desktop; geen request naar echte hosts | 0 (CI-minuten) | map `tests/e2e` verwijderen |
+| 0.12 | Aanmelden: gewone-taal-fouten, wachtwoord vergeten, toon-wachtwoord, hydratatie (BUG-021…024) | ✅ | E2E groen; axe zonder ernstige problemen | 0 | revert commit |
 | 0.10 | Staging-Supabase + schemadump → drift tussen de twee migratiemappen in kaart (BUG-011) | 🔒 G1 | Diff tussen live schema, `supabase/` en `drizzle/` gedocumenteerd | Supabase free/€25 | n.v.t. (alleen lezen) |
 
 ### Fase 1 — Kernlus: moeiteloos voor de beginner, snel voor de creator
@@ -70,7 +72,7 @@ Elk item: kleine PR's, eerst testen, toegankelijkheid en alle toestanden (laden,
 | 1 | Unit | Vitest |
 | 2 | Component/interactie | Testing Library + user-event |
 | 3 | Integratie/API-contract | serverfuncties met nep-Supabase; later staging |
-| 4 | End-to-end kernflow | Playwright tegen lokale build (Fase 1, nog toe te voegen) |
+| 4 | End-to-end kernflow | Playwright tegen lokale dev-server + nep-Supabase (`tests/e2e`); externe requests geblokkeerd |
 | 5 | Toegankelijkheid | axe-core in tests + contrastbewaking + handmatige VoiceOver/TalkBack-ronde |
 | 6 | Responsive/aanraakdoelen | Playwright-viewports 360/390/768/1280 + checks op klassen |
 | 7 | Beveiliging/autorisatie | SSRF-, mass-assignment- en rechtenmatrixtests; RLS-tests in staging |
@@ -91,7 +93,7 @@ Elk item: kleine PR's, eerst testen, toegankelijkheid en alle toestanden (laden,
 1. Kleine branch-commit op `v2/dev` (lokaal). 2. Eerst een test die de bug of eis vastlegt. 3. Fix. 4. Volledige suite, typecheck en build. 5. Bugregister bijwerken. 6. Geen push of merge zonder G3.
 
 ## 6. Residuele risico's (eerlijk)
-- Er is nog geen E2E-test: de UI-flows zijn alleen via componenttests gedekt.
+- E2E dekt nu alleen aanmelden, wachtwoordherstel en de bewaking van beschermde pagina's. Ingelogde flows (recept, planner, boodschappen) volgen met een nep-sessie.
 - Het SSRF-filter werkt op hostnaam en kan geen DNS-resolutie doen in Workers. Een publieke domeinnaam die naar een privé-IP wijst, wordt dus niet herkend. Cloudflare Workers blokkeren privé-netwerken grotendeels zelf; dat is een restrisico.
 - Schema-drift (BUG-011) is niet opgelost tot er een staging-omgeving is.
 - Lint-baseline (5 472 meldingen) blijft bestaan om conflicten met Lovable te vermijden.

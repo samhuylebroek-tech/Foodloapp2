@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import logo from "@/assets/logo.png";
 import { appOrigin } from "@/lib/app-url";
+import { authFoutTekst } from "@/lib/auth-fouten";
 
 export const Route = createFileRoute("/aanmelden")({
   head: () => ({
@@ -38,6 +39,14 @@ function AanmeldenPage() {
   const [voornaam, setVoornaam] = useState("");
   const [achternaam, setAchternaam] = useState("");
   const [busy, setBusy] = useState(false);
+  // Fout blijft zichtbaar in het formulier (een melding bovenaan verdwijnt te snel).
+  const [fout, setFout] = useState<string | null>(null);
+  const [melding, setMelding] = useState<string | null>(null);
+  const [toonWachtwoord, setToonWachtwoord] = useState(false);
+  // Tot de pagina interactief is, zou een tik het formulier herladen en de
+  // getypte tekst wissen (trage telefoons). Daarom pas daarna inschakelen.
+  const [klaar, setKlaar] = useState(false);
+  useEffect(() => setKlaar(true), []);
 
   useEffect(() => {
     if (loading || !session) return;
@@ -52,12 +61,14 @@ function AanmeldenPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setFout(null);
+    setMelding(null);
     setBusy(true);
     try {
       if (mode === "signup") {
         const volledigeNaam = `${voornaam.trim()} ${achternaam.trim()}`.trim();
         if (!voornaam.trim() || !achternaam.trim()) {
-          toast.error("Vul je voornaam en achternaam in");
+          setFout("Vul je voornaam en achternaam in.");
           setBusy(false);
           return;
         }
@@ -82,7 +93,37 @@ function AanmeldenPage() {
       }
       navigate({ to: "/" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Er ging iets mis");
+      const tekst = authFoutTekst(err);
+      setFout(tekst);
+      toast.error(tekst);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function stuurHerstelLink() {
+    setFout(null);
+    setMelding(null);
+    const adres = email.trim();
+    if (!adres) {
+      setFout(
+        "Vul eerst je e-mailadres in. Dan sturen we je een link om een nieuw wachtwoord te kiezen.",
+      );
+      document.getElementById("email")?.focus();
+      return;
+    }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(adres, {
+        redirectTo: `${appOrigin()}/wachtwoord-herstellen`,
+      });
+      // Alleen verbindings- of limietfouten tonen; nooit verraden of een adres bestaat.
+      if (error && (error.status === 429 || /rate|fetch|network/i.test(error.message))) throw error;
+      setMelding(
+        `Als er een account bestaat voor ${adres}, krijg je binnen enkele minuten een mail met een link. Kijk ook in je spam.`,
+      );
+    } catch (err) {
+      setFout(authFoutTekst(err));
     } finally {
       setBusy(false);
     }
@@ -99,7 +140,6 @@ function AanmeldenPage() {
     if (result.redirected) return;
     navigate({ to: "/" });
   }
-
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
@@ -123,7 +163,7 @@ function AanmeldenPage() {
               onClick={() => handleSso("google", "Google")}
               className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-input bg-card px-4 text-base font-semibold text-foreground transition-colors hover:bg-muted"
             >
-              <svg className="size-5" viewBox="0 0 24 24">
+              <svg className="size-5" viewBox="0 0 24 24" aria-hidden="true">
                 <path
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                   fill="#4285F4"
@@ -168,7 +208,6 @@ function AanmeldenPage() {
               </svg>
               Doorgaan met Microsoft
             </button>
-
           </div>
 
           <div className="relative my-6 text-center">
@@ -224,7 +263,9 @@ function AanmeldenPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="naam@voorbeeld.nl"
+                placeholder="naam@voorbeeld.be"
+                aria-invalid={fout ? true : undefined}
+                aria-describedby={fout ? "aanmeld-fout" : undefined}
                 className="mt-2 h-14 rounded-2xl border-input bg-muted px-5 text-base placeholder:text-muted-foreground focus-visible:ring-primary/20"
                 autoComplete="email"
               />
@@ -233,22 +274,67 @@ function AanmeldenPage() {
               <Label htmlFor="password" className="text-base font-semibold text-foreground">
                 Wachtwoord
               </Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="mt-2 h-14 rounded-2xl border-input bg-muted px-5 text-base placeholder:text-muted-foreground focus-visible:ring-primary/20"
-                autoComplete={mode === "signup" ? "new-password" : "current-password"}
-              />
+              <div className="relative mt-2">
+                <Input
+                  id="password"
+                  type={toonWachtwoord ? "text" : "password"}
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="h-14 rounded-2xl border-input bg-muted py-0 pl-5 pr-16 text-base placeholder:text-muted-foreground focus-visible:ring-primary/20"
+                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                  aria-invalid={fout ? true : undefined}
+                  aria-describedby={fout ? "aanmeld-fout" : undefined}
+                />
+                <button
+                  type="button"
+                  onClick={() => setToonWachtwoord((v) => !v)}
+                  aria-pressed={toonWachtwoord}
+                  aria-label={toonWachtwoord ? "Verberg wachtwoord" : "Toon wachtwoord"}
+                  className="absolute inset-y-0 right-1 my-auto flex size-12 items-center justify-center rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  {toonWachtwoord ? (
+                    <EyeOff className="size-6" aria-hidden />
+                  ) : (
+                    <Eye className="size-6" aria-hidden />
+                  )}
+                </button>
+              </div>
+              {mode === "login" ? (
+                <button
+                  type="button"
+                  onClick={() => void stuurHerstelLink()}
+                  disabled={busy}
+                  className="mt-2 min-h-11 text-base font-semibold text-primary underline underline-offset-4 disabled:opacity-60"
+                >
+                  Wachtwoord vergeten?
+                </button>
+              ) : null}
             </div>
+
+            {fout ? (
+              <p
+                id="aanmeld-fout"
+                role="alert"
+                className="rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-base font-medium text-foreground"
+              >
+                {fout}
+              </p>
+            ) : null}
+            {melding ? (
+              <p
+                role="status"
+                className="rounded-2xl bg-secondary px-4 py-3 text-base font-medium text-secondary-foreground"
+              >
+                {melding}
+              </p>
+            ) : null}
 
             <button
               type="submit"
-              disabled={busy}
+              disabled={busy || !klaar}
               className="flex h-16 w-full items-center justify-center gap-2 rounded-2xl bg-primary text-lg font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5 hover:bg-primary/90 active:translate-y-0 disabled:opacity-60"
             >
               {busy ? <Loader2 className="size-5 animate-spin" /> : null}
@@ -258,8 +344,12 @@ function AanmeldenPage() {
 
           <button
             type="button"
-            onClick={() => setMode(mode === "login" ? "signup" : "login")}
-            className="mt-6 w-full text-base font-semibold text-muted-foreground transition-colors hover:text-primary"
+            onClick={() => {
+              setMode(mode === "login" ? "signup" : "login");
+              setFout(null);
+              setMelding(null);
+            }}
+            className="mt-6 min-h-12 w-full text-base font-semibold text-muted-foreground transition-colors hover:text-primary"
           >
             {mode === "login" ? (
               <>
@@ -277,7 +367,6 @@ function AanmeldenPage() {
               </>
             )}
           </button>
-
         </div>
       </div>
     </div>
