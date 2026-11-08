@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { begrensdeLijst } from "@/lib/zod-hulp";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 // ============================================================
@@ -229,7 +230,7 @@ const PERIODE_DUUR: Record<Periode, number> = {
 export const wieSchema = z
   .object({
     wieModus: z.enum(["alles", "in", "uit"]).default("alles"),
-    wieIds: z.array(z.string().uuid()).default([]),
+    wieIds: begrensdeLijst(z.string().uuid(), 1000).default([]),
   })
   .default({ wieModus: "alles", wieIds: [] });
 
@@ -245,7 +246,7 @@ const periodeSchema = z
   .object({
     periode: z.enum(["dag", "week", "maand", "jaar"]).default("week"),
     wieModus: z.enum(["alles", "in", "uit"]).default("alles"),
-    wieIds: z.array(z.string().uuid()).default([]),
+    wieIds: begrensdeLijst(z.string().uuid(), 1000).default([]),
   })
   .default({ periode: "week", wieModus: "alles", wieIds: [] });
 

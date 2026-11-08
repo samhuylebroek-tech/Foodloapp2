@@ -6,6 +6,7 @@
  * blijven werken: zij sturen enkel velden die hier toegelaten zijn.
  */
 import { z } from "zod";
+import { begrensdeLijst } from "@/lib/zod-hulp";
 import { isInterneHost } from "@/lib/veilige-url";
 
 const tijd = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/, "Ongeldige tijd");
@@ -30,7 +31,7 @@ export const meldingVoorkeurenSchema = z
   .object({
     daily_menu_on: z.boolean(),
     daily_menu_time: tijd,
-    daily_menu_moments: z.array(z.string().regex(/^[a-z_]{1,30}$/)).max(8),
+    daily_menu_moments: begrensdeLijst(z.string().regex(/^[a-z_]{1,30}$/), 8),
     weekly_on: z.boolean(),
     weekly_dow: z.number().int().min(0).max(6),
     weekly_time: tijd,

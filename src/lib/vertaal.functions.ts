@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { begrensdeLijst } from "@/lib/zod-hulp";
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
@@ -8,7 +9,7 @@ export const translateTexts = createServerFn({ method: "POST" })
   .inputValidator((data) =>
     z
       .object({
-        texts: z.array(z.string().min(1).max(4000)).min(1).max(80),
+        texts: begrensdeLijst(z.string().min(1).max(4000), 80, 1),
         lang: z.string().min(2).max(8),
       })
       .parse(data),

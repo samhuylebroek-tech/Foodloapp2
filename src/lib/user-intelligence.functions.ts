@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { begrensdeLijst } from "@/lib/zod-hulp";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { bewaker, logboek } from "@/lib/admin.functions";
 
@@ -24,7 +25,7 @@ export const filterSchema = z.object({
   van: z.string().optional(),
   tot: z.string().optional(),
   zoek: z.string().default(""),
-  userIds: z.array(z.string().uuid()).default([]),
+  userIds: begrensdeLijst(z.string().uuid(), 1000).default([]),
   groupId: z.string().uuid().optional(),
   status: z.enum(["alles", "nieuw", "actief", "terugkerend", "weinig", "inactief", "nooit"]).default("alles"),
   device: z.string().default(""),
@@ -966,7 +967,7 @@ export const uiGebruiker = createServerFn({ method: "POST" })
 
 export const uiVergelijk = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ ids: z.array(z.string().uuid()).min(2).max(6) }).parse(d))
+  .inputValidator((d) => z.object({ ids: begrensdeLijst(z.string().uuid(), 6, 2) }).parse(d))
   .handler(async ({ context, data }) => {
     const { db } = await bewaker(context as Ctx, "users.view");
     const [{ data: prof }, { data: ev }, { data: ss }, { data: ai }, { data: fo }] = await Promise.all([

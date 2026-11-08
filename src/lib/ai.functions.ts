@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { begrensdeLijst } from "@/lib/zod-hulp";
 import { belgischeMaat, parseIngredientLine } from "@/lib/ingredienten";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { metCredits, type AiMeter } from "@/lib/credits.server";
@@ -637,8 +638,8 @@ export const ontdekSuggesties = createServerFn({ method: "POST" })
   .inputValidator((data) =>
     z
       .object({
-        bekend: z.array(z.string()).max(200).default([]),
-        favorieten: z.array(z.string()).max(50).default([]),
+        bekend: begrensdeLijst(z.string(), 200).default([]),
+        favorieten: begrensdeLijst(z.string(), 50).default([]),
         sfeer: z.string().max(200).default(""),
       })
       .parse(data),
@@ -1131,7 +1132,7 @@ export const weekmenuIdeeen = createServerFn({ method: "POST" })
         wensen: z.string().max(300).default(""),
         vermijd: z.string().max(300).default(""),
         maxMinuten: z.number().int().min(0).max(240).default(0),
-        bekend: z.array(z.string()).max(100).default([]),
+        bekend: begrensdeLijst(z.string(), 100).default([]),
       })
       .parse(data),
   )
@@ -1233,7 +1234,7 @@ export const haalAfbeelding = createServerFn({ method: "POST" })
 export const verbeterStappen = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
-    z.object({ stappen: z.array(z.string().min(1)).min(1).max(40) }).parse(data),
+    z.object({ stappen: begrensdeLijst(z.string().min(1), 40, 1) }).parse(data),
   )
   .handler(async ({ data, context }): Promise<string[]> => {
     const bron = data.stappen.join("\n");

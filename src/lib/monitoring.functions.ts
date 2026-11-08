@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { begrensdeLijst } from "@/lib/zod-hulp";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { bewaker, logboek, pasWie, type WieKeuze } from "@/lib/admin.functions";
 
@@ -18,7 +19,7 @@ const bereikSchema = z
     tot: z.string().optional(),
     bereik: z.enum(BEREIKEN).default("vandaag"),
     wieModus: z.enum(["alles", "in", "uit"]).default("alles"),
-    wieIds: z.array(z.string().uuid()).default([]),
+    wieIds: begrensdeLijst(z.string().uuid(), 1000).default([]),
   })
   .default({ bereik: "vandaag", wieModus: "alles", wieIds: [] });
 
@@ -489,7 +490,7 @@ export const adminKosten = createServerFn({ method: "GET" })
       .object({
         dagen: z.number().int().min(1).max(365).default(30),
         wieModus: z.enum(["alles", "in", "uit"]).default("alles"),
-        wieIds: z.array(z.string().uuid()).default([]),
+        wieIds: begrensdeLijst(z.string().uuid(), 1000).default([]),
       })
       .default({ dagen: 30, wieModus: "alles", wieIds: [] })
       .parse(d ?? {}),
