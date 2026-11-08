@@ -71,7 +71,10 @@ export function SterrenSnel({ waarde, onKies }: { waarde: number; onKies: (n: nu
             aria-hidden
             className={cn(
               "size-6",
-              n <= waarde ? "fill-[var(--honing)] text-[var(--honing)]" : "text-muted-foreground/60",
+              // Donkere rand: gele vulling alleen haalt geen 3:1 op wit (WCAG 1.4.11).
+              n <= waarde
+                ? "fill-[var(--honing)] text-[var(--honing-foreground)]"
+                : "text-muted-foreground/60",
             )}
           />
         </button>
