@@ -73,6 +73,33 @@ function leesAantal(tekst: string): number | null {
   return Number.isFinite(waarde) ? waarde : null;
 }
 
+const BEREIK = /^(?:[-–—]|à|tot)\s*\d+(?:[.,]\d+)?(?:\s*\/\s*\d+)?(?=\s|$)/i;
+
+/**
+ * Knipt de eenheid vooraan `rest` weg, ook als die punten bevat
+ * ("el. olijfolie", "fl. oz. melk"), en geeft de rest (de naam) terug.
+ */
+function naEenheid(rest: string, eenheid: string): string {
+  let i = 0;
+  for (let j = 0; j < eenheid.length;) {
+    const teken = rest[i];
+    if (teken === undefined) break;
+    if (teken === ".") {
+      i++;
+    } else if (eenheid[j] === " " && /\s/.test(teken)) {
+      while (rest[i] !== undefined && /\s/.test(rest[i]!)) i++;
+      j++;
+    } else if (teken.toLowerCase() === eenheid[j]) {
+      i++;
+      j++;
+    } else {
+      break;
+    }
+  }
+  while (rest[i] === ".") i++;
+  return rest.slice(i).trim();
+}
+
 /** Zet een regel als "500 g bloem" om in losse velden. */
 export function parseIngredientLine(line: string): ParsedIngredient | null {
   const clean = line
@@ -94,14 +121,16 @@ export function parseIngredientLine(line: string): ParsedIngredient | null {
   if (!match) return { name: clean, quantity: null, unit: "" };
 
   const quantity = leesAantal(match[1] ?? "");
-  const rest = (match[2] ?? "").trim();
+  // Een bereik ("2-3", "2 – 3", "2 à 3", "2 tot 3") hoort niet in de naam.
+  // De eerste waarde blijft de hoeveelheid, zoals voorheen.
+  const rest = (match[2] ?? "").replace(BEREIK, "").trim();
   const restSleutel = eenheidSleutel(rest);
   const maybeUnit = Object.keys(UNIT_ALIAS)
     .sort((a, b) => b.length - a.length)
     .find((unit) => restSleutel === unit || restSleutel.startsWith(`${unit} `));
 
   if (maybeUnit) {
-    const naam = rest.slice(maybeUnit.length).trim();
+    const naam = naEenheid(rest, maybeUnit);
     const maat = belgischeMaat(quantity, maybeUnit);
     return { name: naam, quantity: maat.quantity, unit: maat.unit };
   }

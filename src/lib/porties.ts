@@ -25,6 +25,25 @@ function naarGram(hoeveelheid: number, eenheid: string): number | null {
   return null;
 }
 
+/** Samenstellingen die geen hoofdingrediënt zijn ("kippenbouillon", "vissaus", ...). */
+const BIJPRODUCT = /(bouillon|fond|saus|azijn|kruiden|poeder|blokje|blokjes|olie|pasta$)/;
+
+/**
+ * True als één van de woorden in de naam met het trefwoord begint
+ * ("kippenfilet" bij "kip"), maar niet als het een bijproduct is of het
+ * trefwoord midden in een woord staat ("kleine" bevat "ei", "geitenkaas" ook).
+ */
+function bevatTrefwoord(naam: string, trefwoord: string): boolean {
+  return naam.split(" ").some((woord) => {
+    if (woord === trefwoord) return true;
+    if (!woord.startsWith(trefwoord)) return false;
+    // Korte trefwoorden ("ei", "vis", "kip") alleen als heel woord of meervoud,
+    // of (voor vlees/vis) als begin van een samenstelling zonder bijproduct.
+    if (trefwoord.length <= 2) return woord === `${trefwoord}eren` || woord === `${trefwoord}en`;
+    return !BIJPRODUCT.test(woord.slice(trefwoord.length));
+  });
+}
+
 /** Geeft een geschat aantal personen (1-12), of null als we het niet weten. */
 export function schatPersonen(ingredienten: Ing[]): number | null {
   const schattingen: number[] = [];
@@ -33,7 +52,7 @@ export function schatPersonen(ingredienten: Ing[]): number | null {
     if (!ing.quantity || ing.quantity <= 0) continue;
     const naam = normaliseerTekst(ing.name);
     for (const regel of PER_PERSOON) {
-      if (!regel.woorden.some((w) => naam.includes(w))) continue;
+      if (!regel.woorden.some((w) => bevatTrefwoord(naam, w))) continue;
       if (regel.eenheid === "g") {
         const gram = naarGram(ing.quantity, ing.unit);
         if (gram) schattingen.push(gram / regel.per);

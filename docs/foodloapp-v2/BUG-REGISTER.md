@@ -25,6 +25,10 @@ Laatste update: 2026-11-08 — branch `v2/dev`.
 | BUG-015 | Laag | Rechten | `schoonRechten` gebruikt `Boolean(x)`: de tekst `"false"` wordt `true`. Huidige clients sturen echte booleans. | Code-inspectie. | Open | Naar `=== true` na test van alle deel-flows. |
 | BUG-016 | Laag (a11y) | Sterren | `SterrenSnel`-knoppen zijn 44 px hoog; de eigen productstandaard (`.lovable/memory`) zegt min. 56 px. WCAG 2.5.8 (24 px) wordt wel gehaald. | `Sterren.test.tsx`. | Open | Ontwerpkeuze voor compacte kaarten; meenemen in UX-pass. |
 | BUG-017 | Info | Planning | De eerdere map `foodloapp-v2-planning/` (00–15 + `phase-0-staging/`) is niet gevonden op deze Mac. | `find ~ -maxdepth 6`. | Open | Plan is opgebouwd uit de handoff-documenten + broncode. Eigenaar: map in de repo of naast de repo plaatsen als die nog bestaat. |
+| BUG-018 | Medium | Ingrediënten inlezen | Eenheden met punt kwamen in de naam: "1 el. olijfolie" → naam ". olijfolie"; "1 fl. oz. melk" → "z. melk". Komt zo op de boodschappenlijst. | 6 tests faalden op oude code. | Opgelost | `naEenheid()` knipt eenheid incl. punten. `ingredienten.test.ts` |
+| BUG-019 | Medium | Ingrediënten inlezen | Bereiken braken de regel: "2-3 teentjes knoflook" → naam "-3 teentjes knoflook", eenheid verloren; ook "2 à 3", "2 tot 3", "1–2". | 6 tests faalden op oude code. | Opgelost | Bereik uit de naam; eerste waarde blijft hoeveelheid (zoals voorheen). Productkeuze "boven- of ondergrens" open. |
+| BUG-020 | Laag | Portieschatting | Substring-match: "kleine uien" en "geitenkaas" telden als eieren; "kippenbouillon", "visbouillon", "tomatenpasta" als vlees/vis/pasta → verkeerd voorgesteld aantal personen. | 6 tests faalden op oude code (bv. pasta 400 g + 4 kleine uien → 3 i.p.v. 4). | Opgelost | Woordgebaseerde match met bijproduct-filter. `porties.test.ts` |
 
 ## Hertest-log
-- 2026-11-08: na elke fix volledige suite (`bun run test`), `tsc --noEmit`, `vite build` — allemaal groen. 209 tests.
+- 2026-11-08: na elke fix volledige suite (`bun run test`), `tsc --noEmit`, `vite build` — allemaal groen. 266 tests.
+- Voor BUG-001/002/004/005/018/019/020 is bewezen dat de nieuwe tests falen op de oude code en slagen op de nieuwe; bestaande gevallen slagen op beide (geen gedragsregressie).
