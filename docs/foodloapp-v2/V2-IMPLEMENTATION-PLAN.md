@@ -39,6 +39,9 @@ De oudere map `foodloapp-v2-planning/` is niet gevonden (BUG-017). Als die terug
 | 0.9 | Pure helpers testen: `ingredienten`, `porties`, `boodschappen`, `zoeken`, `tijd`, `canoniekeUrl` | ⏭ | ≥ 90% branches op deze modules | 0 | — |
 | 0.11 | Playwright E2E + nep-Supabase + CI-job | ✅ | 34 tests op telefoon en desktop; geen request naar echte hosts | 0 (CI-minuten) | map `tests/e2e` verwijderen |
 | 0.12 | Aanmelden: gewone-taal-fouten, wachtwoord vergeten, toon-wachtwoord, hydratatie (BUG-021…024) | ✅ | E2E groen; axe zonder ernstige problemen | 0 | revert commit |
+| 0.13 | Afhankelijkheden: lockfile-onderzoek + kritieke TanStack/seroval-fix (BUG-034) | ✅ op `v2/dev` | `bun audit` 4→1 kritiek (rest dev-only) | 0 | revert `6c298b4` |
+| 0.14 | CI: lint-ratchet, merge-base, artefacten (BUG-036) | ✅ | Verse clone met CI=true volledig groen | CI-minuten | revert `d5c6899` |
+| 0.15 | Ingelogde E2E-kernflow (aanmelden → recept → weekmenu → boodschappen) op 360/390/768/1280 px + fixes BUG-028…033 | ✅ | 86 E2E-tests groen | 0 | revert per commit |
 | 0.10 | Staging-Supabase + schemadump → drift tussen de twee migratiemappen in kaart (BUG-011) | 🔒 G1 | Diff tussen live schema, `supabase/` en `drizzle/` gedocumenteerd | Supabase free/€25 | n.v.t. (alleen lezen) |
 
 ### Fase 1 — Kernlus: moeiteloos voor de beginner, snel voor de creator
@@ -97,3 +100,12 @@ Elk item: kleine PR's, eerst testen, toegankelijkheid en alle toestanden (laden,
 - Het SSRF-filter werkt op hostnaam en kan geen DNS-resolutie doen in Workers. Een publieke domeinnaam die naar een privé-IP wijst, wordt dus niet herkend. Cloudflare Workers blokkeren privé-netwerken grotendeels zelf; dat is een restrisico.
 - Schema-drift (BUG-011) is niet opgelost tot er een staging-omgeving is.
 - Lint-baseline (5 472 meldingen) blijft bestaan om conflicten met Lovable te vermijden.
+
+## 7. Volgende vijf taken (stand 2026-11-08)
+| # | Taak | Waarom nu | Acceptatie | Gate |
+|---|------|-----------|------------|------|
+| 1 | **Beveiligingsfix live zetten** (BUG-034): alleen de TanStack/seroval/vite-upgrade als losse wijziging naar productie. | Kritieke XSS in de live app. | Review + build + E2E groen; deploy door eigenaar. | **G3/G4 — eigenaar beslist** |
+| 2 | **zod 3 → 4** (BUG-035) in kleine stappen, eerst serverfuncties met nieuwe schema's. | Enige overgebleven runtime-kwetsbaarheid (hoog). | Alle 306 unit- + 86 E2E-tests groen; `bun audit` zonder zod. | — |
+| 3 | **Kookmodus-E2E + verbeteringen** (één stap per scherm, grote knoppen, timers, scherm-aan, herstel na wegnavigeren) — kernlus "Cook". | Laatste ontbrekende schakel in de geteste kernlus. | E2E op 360/768 px; axe schoon; herstel na herladen. | — |
+| 4 | **Staging opzetten + schema-drift** (BUG-011, `STAGING-VOORSTELLEN.md` §0–1). | Voorwaarde voor elke database-, RLS-, opslag- of creatorwijziging. | Diff-rapport productie ↔ migraties. | **G1 — eigenaar maakt staging-project** |
+| 5 | **UX-inventaris + designsysteem-basis**: navigatie, termen, lege/laad/foutstaten, één knop/kaart/dialoogpatroon (o.a. BUG-016/038). | Kernflow is nu betrouwbaar getest; volgende stap is consistentie voor beide doelgroepen. | Inventarisdocument + gedeelde componenten met tests; geen visuele herschrijving in één keer. | — |
