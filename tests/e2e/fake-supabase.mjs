@@ -44,20 +44,41 @@ const server = http.createServer((req, res) => {
     if (url.pathname === "/auth/v1/token") {
       if (body?.email === "traag@example.com") {
         return setTimeout(
-          () => stuur(res, 400, { code: 400, error_code: "invalid_credentials", msg: "Invalid login credentials" }),
+          () =>
+            stuur(res, 400, {
+              code: 400,
+              error_code: "invalid_credentials",
+              msg: "Invalid login credentials",
+            }),
           1500,
         );
       }
       if (body?.email === "druk@example.com") {
-        return stuur(res, 429, { code: 429, error_code: "over_request_rate_limit", msg: "Request rate limit reached" });
+        return stuur(res, 429, {
+          code: 429,
+          error_code: "over_request_rate_limit",
+          msg: "Request rate limit reached",
+        });
       }
-      return stuur(res, 400, { code: 400, error_code: "invalid_credentials", msg: "Invalid login credentials" });
+      return stuur(res, 400, {
+        code: 400,
+        error_code: "invalid_credentials",
+        msg: "Invalid login credentials",
+      });
     }
     if (url.pathname === "/auth/v1/signup") {
       if (body?.email === "bestaat@example.com") {
-        return stuur(res, 422, { code: 422, error_code: "user_already_exists", msg: "User already registered" });
+        return stuur(res, 422, {
+          code: 422,
+          error_code: "user_already_exists",
+          msg: "User already registered",
+        });
       }
-      return stuur(res, 422, { code: 422, error_code: "weak_password", msg: "Password should be at least 6 characters." });
+      return stuur(res, 422, {
+        code: 422,
+        error_code: "weak_password",
+        msg: "Password should be at least 6 characters.",
+      });
     }
     if (url.pathname === "/auth/v1/recover") return stuur(res, 200, {});
     if (url.pathname === "/auth/v1/user") return stuur(res, 401, { code: 401, msg: "no session" });

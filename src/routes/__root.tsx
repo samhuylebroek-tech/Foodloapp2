@@ -16,7 +16,6 @@ import { meet, meldFout } from "@/lib/meten";
 import { supabase } from "@/integrations/supabase/client";
 import { meldNieuweGebruiker } from "@/lib/welkom-mail.functions";
 
-
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -159,7 +158,9 @@ function RootComponent() {
   // In de iPhone/Android-app: terugknop, app-links en opstartscherm.
   const router = useRouter();
   useEffect(() => {
-    void import("@/lib/native").then((m) => m.startNatief((pad) => void router.navigate({ href: pad })));
+    void import("@/lib/native").then((m) =>
+      m.startNatief((pad) => void router.navigate({ href: pad })),
+    );
   }, [router]);
 
   // Klik op een melding registreren en de tijdzone bijhouden wanneer je reist.
@@ -197,7 +198,11 @@ function RootComponent() {
     const opFout = (e: ErrorEvent) =>
       void meldFout({ soort: "runtime", bericht: e.message, detail: e.error?.stack ?? "" });
     const opBelofte = (e: PromiseRejectionEvent) =>
-      void meldFout({ soort: "promise", bericht: String(e.reason?.message ?? e.reason ?? "onbekend"), detail: e.reason?.stack ?? "" });
+      void meldFout({
+        soort: "promise",
+        bericht: String(e.reason?.message ?? e.reason ?? "onbekend"),
+        detail: e.reason?.stack ?? "",
+      });
     window.addEventListener("error", opFout);
     window.addEventListener("unhandledrejection", opBelofte);
     return () => {
@@ -217,4 +222,3 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
-

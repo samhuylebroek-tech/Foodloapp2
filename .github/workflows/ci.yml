@@ -1,10 +1,12 @@
-# Foodloapp V2 — kwaliteitscontrole. Bouwt en test alleen; deployt nooit.
+# Foodloapp V2 — kwaliteitscontrole.
+# Bouwt en test alleen. Deployt NOOIT en gebruikt GEEN secrets of productie-omgeving.
 name: CI
 
 on:
   push:
     branches: ["v2/**"]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,25 +21,31 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Volledige geschiedenis: nodig om het aftakpunt (merge-base) met main te vinden.
+          fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.3
-      - run: bun install --frozen-lockfile
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Afhankelijkheden (exact volgens bun.lock)
+        run: bun install --frozen-lockfile
       - name: Typecheck
         run: bun run typecheck
-      - name: Tests
+      - name: Unit- en componenttests
         run: bun run test
-      - name: Lint (alleen nieuwe of gewijzigde bestanden)
-        if: github.event_name == 'pull_request'
+      - name: Lint-ratchet (nieuw = foutloos, gewijzigd = niet slechter)
         run: |
-          git fetch --depth=1 origin "${{ github.base_ref }}"
-          FILES=$(git diff --name-only --diff-filter=AM "origin/${{ github.base_ref }}" -- '*.ts' '*.tsx' | grep -v '^src/routeTree.gen.ts$' || true)
-          if [ -n "$FILES" ]; then bunx eslint $FILES; fi
+          BASIS="origin/${{ github.base_ref || 'main' }}"
+          git fetch --no-tags origin "${BASIS#origin/}"
+          node scripts/lint-ratchet.mjs "$BASIS"
       - name: Build (lokaal, geen deploy)
         run: bun run build
 
   e2e:
-    # Draait tegen een lokale dev-server en een NEP-Supabase; raakt nooit productie.
+    # Lokale dev-server + NEP-Supabase op 127.0.0.1. Externe requests worden geblokkeerd.
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -49,14 +57,18 @@ jobs:
         with:
           node-version: 22
       - run: bun install --frozen-lockfile
-      - run: bunx playwright install --with-deps chromium
+      - name: Playwright-browser
+        run: bunx playwright install --with-deps chromium
       - name: End-to-end (telefoon + desktop)
         run: bun run test:e2e
         env:
           CI: "true"
-      - uses: actions/upload-artifact@v4
+      - name: Rapport en traces bij fouten
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: playwright-rapport
-          path: tests/e2e/.rapport
+          path: |
+            tests/e2e/.rapport
+            tests/e2e/.resultaten
           retention-days: 7
