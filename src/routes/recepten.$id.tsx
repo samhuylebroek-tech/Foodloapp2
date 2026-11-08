@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { markeerGezien } from "@/lib/gezien";
 import { meet } from "@/lib/meten";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -35,7 +35,10 @@ import { Input } from "@/components/ui/input";
 import { importRecipeFromText } from "@/lib/ai.functions";
 import { useT, useVoorkeuren } from "@/lib/voorkeuren";
 import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/types";
-import { Copy } from "lucide-react";
+import { Copy, Users } from "lucide-react";
+import { KookTimers } from "@/components/KookTimers";
+import { bewaarVoortgang, leesVoortgang, vindTimers, wisVoortgang } from "@/lib/kookstand";
+import { soortLabel } from "@/lib/recept-keuzes";
 import { tijdLabel } from "@/lib/tijd";
 import { Voedingswaarden } from "@/components/Voedingswaarden";
 import { StapIngredienten } from "@/components/StapIngredienten";
@@ -107,6 +110,9 @@ function ReceptPage() {
   const [kookstand, setKookstand] = useState(false);
   const [stap, setStap] = useState(0);
   const [klaarVragen, setKlaarVragen] = useState(false);
+  // V2: na per ongeluk wegklikken of herladen verder koken bij de juiste stap.
+  const [bewaardeStap, setBewaardeStap] = useState<number | null>(null);
+  const stapKop = useRef<HTMLParagraphElement>(null);
   const [planOpen, setPlanOpen] = useState(false);
   const [aanvullen, setAanvullen] = useState(false);
   const [fotoBezig, setFotoBezig] = useState(false);
@@ -256,6 +262,39 @@ function ReceptPage() {
   });
   const staatOpLijst = gekozenLijst ? lijstenMetRecept.includes(gekozenLijst) : false;
   const [vraagNogmaals, setVraagNogmaals] = useState(false);
+
+  // Bewaarde kookvoortgang ophalen (alleen in de browser).
+  const kookRecept = data?.recipe;
+  useEffect(() => {
+    if (kookRecept && !kookstand) setBewaardeStap(leesVoortgang(kookRecept.id, kookRecept.instructions.length));
+  }, [kookRecept, kookstand]);
+
+  // Elke stap bewaren, en bij een nieuwe stap de focus op de staptekst zetten
+  // zodat een schermlezer hem meteen voorleest.
+  useEffect(() => {
+    if (!kookstand || !kookRecept || stap < 0) return;
+    bewaarVoortgang(kookRecept.id, stap);
+    stapKop.current?.focus();
+  }, [kookstand, stap, kookRecept]);
+
+  // Pijltjestoetsen: vorige / volgende stap.
+  useEffect(() => {
+    if (!kookstand || klaarVragen || !kookRecept) return;
+    const opToets = (e: KeyboardEvent) => {
+      const doel = e.target as HTMLElement | null;
+      if (doel && /^(INPUT|TEXTAREA|SELECT)$/.test(doel.tagName)) return;
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        if (stap < kookRecept.instructions.length - 1) setStap(stap + 1);
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        if (stap > -1) setStap(stap - 1);
+      }
+    };
+    window.addEventListener("keydown", opToets);
+    return () => window.removeEventListener("keydown", opToets);
+  }, [kookstand, klaarVragen, stap, kookRecept]);
+
 
 
   async function zetScore(n: number) {
@@ -456,6 +495,7 @@ function ReceptPage() {
               onKies={async (n) => {
                 await zetScore(n);
                 toast.success(t("Bedankt voor je score"));
+                wisVoortgang(recipe.id);
                 setKlaarVragen(false);
                 setKookstand(false);
               }}
@@ -475,6 +515,7 @@ function ReceptPage() {
           <Button
             variant="ghost"
             onClick={() => {
+              wisVoortgang(recipe.id);
               setKlaarVragen(false);
               setKookstand(false);
             }}
@@ -502,6 +543,21 @@ function ReceptPage() {
               <X className="size-6" /> Sluiten
             </Button>
           </div>
+          {/* Voortgang: zichtbaar én voor schermlezers. */}
+          <div
+            role="progressbar"
+            aria-label={t("Voortgang")}
+            aria-valuemin={0}
+            aria-valuemax={stappen.length}
+            aria-valuenow={voorbereiding ? 0 : stap + 1}
+            aria-valuetext={voorbereiding ? t("Alles klaarzetten") : `Stap ${stap + 1} van ${stappen.length}`}
+            className="mt-3 h-2.5 overflow-hidden rounded-full bg-secondary"
+          >
+            <div
+              className="h-full rounded-full bg-primary transition-[width] duration-300"
+              style={{ width: `${voorbereiding ? 4 : ((stap + 1) / Math.max(1, stappen.length)) * 100}%` }}
+            />
+          </div>
           <h2 className="mt-6 font-display text-3xl">{recipe.title}</h2>
           {voorbereiding ? (
             <>
@@ -520,7 +576,9 @@ function ReceptPage() {
             </>
           ) : (
             <>
-              <p className="mt-6 text-2xl leading-relaxed">{netteStap(t(stappen[stap] ?? ""))}</p>
+              <p ref={stapKop} tabIndex={-1} className="mt-6 text-2xl leading-relaxed outline-none">
+                {netteStap(t(stappen[stap] ?? ""))}
+              </p>
               <StapIngredienten ingredienten={stapIngredienten(stap)} factor={factor} groot />
               {stapIngredienten(stap).length === 0 ? (
                 <p className="mt-5 rounded-2xl bg-secondary px-4 py-3 text-lg text-muted-foreground">
@@ -529,6 +587,8 @@ function ReceptPage() {
               ) : null}
             </>
           )}
+          {/* Vaste plek in de boom: lopende timers blijven bestaan bij het bladeren. */}
+          <KookTimers voorstellen={voorbereiding ? [] : vindTimers(stappen[stap] ?? "")} />
           {!voorbereiding ? <details className="mt-6 rounded-2xl border border-border bg-card p-4">
             <summary className="cursor-pointer text-lg font-semibold">
               {t("Alle ingrediënten bekijken")}
@@ -568,7 +628,7 @@ function ReceptPage() {
 
   return (
     <AppShell
-      title={t("Recept")}
+      title={t(recipe.title)}
       action={
         <div className="flex items-center">
           <Button variant="ghost" size="icon" onClick={toggleFavorite} aria-label={t("Favoriet")}>
@@ -591,7 +651,8 @@ function ReceptPage() {
             <RecipePhoto
               path={recipe.image_url}
               alt={recipe.title}
-              className="aspect-[4/3] w-full rounded-2xl sm:aspect-[16/9]"
+              recept={recipe}
+              className="aspect-[4/3] w-full rounded-3xl shadow-kaart sm:aspect-[16/9]"
             />
             {fotoBezig && (
               <div className="absolute inset-0 flex items-center justify-center rounded-3xl bg-card/70">
@@ -616,25 +677,58 @@ function ReceptPage() {
               ))}
             </div>
           ) : null}
-          {isOwner ? <FotoKiezer bezig={fotoBezig} heeftFoto={extraFotos.length > 0} onBestand={(file) => void voegExtraFotoToe(file)} /> : null}
+          {/* Extra foto's pas als er een hoofdfoto is; anders zouden er twee identieke
+              "Foto nemen"-knoppen met een verschillende werking staan (WCAG 3.2.4). */}
+          {isOwner && recipe.image_url ? (
+            <FotoKiezer extra bezig={fotoBezig} onBestand={(file) => void voegExtraFotoToe(file)} />
+          ) : null}
         </div>
 
-        <div>
-          <h1 className="font-display text-3xl font-semibold leading-tight">{t(recipe.title)}</h1>
-          <p className="mt-2 flex flex-wrap items-center gap-2 text-base text-muted-foreground">
-            {tijdLabel(recipe.prep_minutes, recipe.cook_minutes) ? <><Clock className="size-5" />{tijdLabel(recipe.prep_minutes, recipe.cook_minutes)}<span>·</span></> : null}
-            <span>{aantal} {t("personen")}</span>
-          </p>
-        </div>
+        {/* De receptnaam staat als paginatitel (h1) bovenaan; hier de kenmerken. */}
+        <ul className="flex flex-wrap gap-2" aria-label={t("Kenmerken")}>
+          {tijdLabel(recipe.prep_minutes, recipe.cook_minutes) ? (
+            <li className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-card px-3.5 text-base font-medium shadow-zacht">
+              <Clock className="size-5 text-primary" aria-hidden />
+              {tijdLabel(recipe.prep_minutes, recipe.cook_minutes)}
+            </li>
+          ) : null}
+          <li className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-card px-3.5 text-base font-medium shadow-zacht">
+            <Users className="size-5 text-primary" aria-hidden />
+            {aantal} {t(aantal === 1 ? "persoon" : "personen")}
+          </li>
+          {recipe.category ? (
+            <li className="inline-flex min-h-10 items-center rounded-full bg-secondary px-3.5 text-base font-medium text-secondary-foreground">
+              {t(soortLabel(recipe.category))}
+            </li>
+          ) : null}
+          {recipe.difficulty ? (
+            <li className="inline-flex min-h-10 items-center rounded-full bg-[var(--honing-zacht)] px-3.5 text-base font-medium capitalize text-[var(--honing-foreground)]">
+              {t(recipe.difficulty)}
+            </li>
+          ) : null}
+        </ul>
 
         <PersonenKiezer aantal={aantal} onZet={setPersonen} />
         {aantal !== recipe.servings ? <p className="-mt-2 text-base text-muted-foreground">{t("Hoeveelheden aangepast. Het originele recept is voor")} {recipe.servings} {t("personen")}.</p> : null}
 
         {recipe.instructions.length > 0 ? <Button onClick={() => { setStap(-1); void meet("kookmodus.gestart", undefined, { id }); setKookstand(true); }} className="h-16 w-full text-lg"><ChefHat className="size-6" />{t("Start koken")}</Button> : null}
+        {bewaardeStap !== null ? (
+          <Button
+            variant="outline"
+            onClick={() => {
+              setStap(bewaardeStap);
+              setKookstand(true);
+            }}
+            className="-mt-2 h-14 w-full text-lg"
+          >
+            {t("Verder koken bij stap")} {bewaardeStap + 1}
+          </Button>
+        ) : null}
 
-        <div className="grid grid-cols-2 gap-3">
-          <Button onClick={() => setPlanOpen(true)} className="h-16 whitespace-normal px-2 text-base leading-snug sm:text-lg"><CalendarPlus />{t("Inplannen")}</Button>
-          <Button variant="secondary" onClick={() => setBoodschappenOpen(true)} disabled={!ingredients.length} className="h-16 gap-2 whitespace-normal px-2 text-base leading-snug sm:text-lg">
+        {/* Gestapeld op smalle schermen: lange labels lopen nooit buiten de knop. */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Button variant="outline" onClick={() => setPlanOpen(true)} className="h-16 whitespace-normal px-3 text-lg leading-snug"><CalendarPlus />{t("Inplannen")}</Button>
+          <Button variant="secondary" onClick={() => setBoodschappenOpen(true)} disabled={!ingredients.length} className="h-16 gap-2 whitespace-normal px-3 text-lg leading-snug">
             <ShoppingCart className="size-5 shrink-0" /> {t("Voeg toe aan boodschappenlijst")}
           </Button>
         </div>
@@ -672,7 +766,6 @@ function ReceptPage() {
           <TabsContent value="overzicht" className="pt-4">
             <div className="space-y-5">
               {recipe.description ? <p className="text-lg leading-relaxed">{t(recipe.description)}</p> : null}
-              <div className="flex flex-wrap gap-x-5 gap-y-2 text-base text-muted-foreground"><span>{t(recipe.category)}</span><span>{t(recipe.difficulty)}</span></div>
               {isOwner ? <SnelAanpassen recipe={recipe} onKlaar={() => qc.invalidateQueries({ queryKey: ["recipe", recipe.id] })} /> : null}
               <SterrenKiezer waarde={mijnScore} onKies={zetScore} label={t("Jouw score")} />
               {recipe.source_url ? <a href={recipe.source_url} target="_blank" rel="noreferrer" className="block text-base text-primary underline underline-offset-4">{t("Bekijk origineel op")} {bronNaam(recipe.source_url)}</a> : null}
