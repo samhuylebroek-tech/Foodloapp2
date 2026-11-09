@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ChefHat, Loader2, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import { Check, ChefHat, Loader2, Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -61,6 +61,15 @@ const SNEL = [
   "tomaten",
   "kaas",
 ];
+
+/** Hoeveel één tik op + of − verandert, afhankelijk van de eenheid. */
+function stapVoor(eenheid: string | null | undefined) {
+  const e = (eenheid ?? "").trim().toLowerCase();
+  if (e === "g" || e === "ml") return 100;
+  if (e === "cl") return 10;
+  if (e === "kg" || e === "l") return 0.5;
+  return 1;
+}
 
 function VoorraadPage() {
   const { user } = useAuth();
@@ -181,6 +190,26 @@ function VoorraadPage() {
     });
   };
 
+  // Hoeveelheid met één tik aanpassen; naar nul = uit de voorraad (met ongedaan maken).
+  const wijzigAantal = async (item: Item, richting: 1 | -1) => {
+    const stap = stapVoor(item.eenheid);
+    const huidig = item.hoeveelheid ?? 1;
+    const volgende = Math.round((huidig + richting * stap) * 100) / 100;
+    if (volgende <= 0) {
+      await verwijder(item);
+      return;
+    }
+    qc.setQueryData(["voorraad", user?.id], (oud: Item[] | undefined) =>
+      oud?.map((i) => (i.id === item.id ? { ...i, hoeveelheid: volgende } : i)),
+    );
+    const { error } = await supabase
+      .from("pantry_items")
+      .update({ hoeveelheid: volgende })
+      .eq("id", item.id);
+    if (error) toast.error(t("Aanpassen lukte niet."));
+    vernieuw();
+  };
+
   const zetOntbrekendeOpLijst = async (receptId: string, ontbreekt: string[]) => {
     if (!user) return;
     setBezigMet(receptId);
@@ -285,28 +314,48 @@ function VoorraadPage() {
               />
             </div>
           ) : (
-            <ul className="mt-6 space-y-2" aria-label={t("In huis")}>
+            <ul
+              className="paneel mt-6 divide-y divide-border/80 overflow-hidden"
+              aria-label={t("In huis")}
+            >
               {items.map((item) => (
                 <li
                   key={item.id}
-                  className="flex min-h-16 items-center gap-3 rounded-2xl bg-card px-4 shadow-zacht"
+                  className="flex min-h-[4.25rem] items-center gap-2 py-2 pl-4 pr-1"
                 >
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-primary">
-                    <Check className="size-5" aria-hidden />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-lg font-semibold leading-snug">
+                      {item.naam}
+                    </span>
+                    <span className="block text-[0.95rem] tabular-nums text-muted-foreground">
+                      {item.hoeveelheid
+                        ? toonBelgischeMaat(item.hoeveelheid, item.eenheid)
+                        : t("in huis")}
+                    </span>
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-lg font-semibold">
-                    {item.naam}
-                    {item.hoeveelheid ? (
-                      <span className="ml-2 text-base font-medium text-muted-foreground">
-                        {toonBelgischeMaat(item.hoeveelheid, item.eenheid)}
-                      </span>
-                    ) : null}
+                  <span className="flex shrink-0 items-center rounded-full bg-muted p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => void wijzigAantal(item, -1)}
+                      aria-label={`${t("Minder")}: ${item.naam}`}
+                      className="flex size-11 items-center justify-center rounded-full hover:bg-card active:bg-card"
+                    >
+                      <Minus className="size-5" aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void wijzigAantal(item, 1)}
+                      aria-label={`${t("Meer")}: ${item.naam}`}
+                      className="flex size-11 items-center justify-center rounded-full hover:bg-card active:bg-card"
+                    >
+                      <Plus className="size-5" aria-hidden />
+                    </button>
                   </span>
                   <button
                     type="button"
                     onClick={() => void verwijder(item)}
                     aria-label={`${t("Verwijderen")}: ${item.naam}`}
-                    className="flex size-12 shrink-0 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground"
+                    className="flex size-12 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-destructive"
                   >
                     <Trash2 className="size-5" aria-hidden />
                   </button>

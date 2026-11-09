@@ -764,6 +764,25 @@ function PlannerPage() {
     setWeekStart(d);
   }
 
+  // Mobiel: veeg over de dag om naar de vorige of volgende dag te gaan.
+  const veegStart = useRef<{ x: number; y: number } | null>(null);
+  function veegDag(e: React.TouchEvent, start: boolean) {
+    const t = start ? e.touches[0] : e.changedTouches[0];
+    if (!t) return;
+    if (start) {
+      veegStart.current = { x: t.clientX, y: t.clientY };
+      return;
+    }
+    const begin = veegStart.current;
+    veegStart.current = null;
+    if (!begin) return;
+    const dx = t.clientX - begin.x;
+    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(t.clientY - begin.y) * 1.5) return;
+    const i = week.indexOf(gekozenDag);
+    const volgende = week[i + (dx < 0 ? 1 : -1)];
+    if (volgende) setDagKeuze(volgende);
+  }
+
   /** Acties voor een geplande maaltijd — gedeeld door de daglijst en het weekraster. */
   function planActies(p: PlanRow, compact = false) {
     return (
@@ -959,7 +978,7 @@ function PlannerPage() {
     const alleMomenten = [...new Set([...momenten, ...items.map((p) => p.meal_type)])];
     const titel = datum.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" });
     const kaart = (p: PlanRow) => (
-                    <li key={p.id} className="flex min-h-24 items-center gap-2 rounded-2xl bg-card p-3 shadow-zacht">
+                    <li key={p.id} className="paneel flex min-h-24 items-center gap-2 p-3">
                       {p.recipe_id ? <Link to="/recepten/$id" params={{ id: p.recipe_id }} search={p.personen != null ? { personen: p.personen } : {}} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ReceptFoto url={p.recipes?.image_url ?? null} recept={p.recipes} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.recipes?.title ?? "Recept"}</span>{p.recipes ? <span className="mt-0.5 flex items-center gap-1 text-base text-muted-foreground"><Clock3 className="size-3.5" /> {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) || "Tijd niet ingevuld"}</span> : null}</span></Link> : <div className="flex min-w-0 flex-1 items-center gap-3"><ReceptFoto url={null} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.custom_title}</span>{!p.soort ? <button type="button" onClick={() => setKoppelRij(p)} className="mt-0.5 block text-left text-base font-semibold text-primary underline underline-offset-2">Nog geen recept · koppelen</button> : null}</span></div>}
                       {weergave === "gezin" && p.user_id !== user?.id ? <Avatar naam={plannerNamen[p.user_id] ?? "?"} sleutel={p.user_id} className="size-8 shrink-0 text-base" /> : null}
                       {planActies(p)}
@@ -984,13 +1003,13 @@ function PlannerPage() {
           if (!bij.length && items.length && momenten.length === 1) return null;
           return (
             <div key={m} className="space-y-2">
-              <h3 className="text-base font-semibold text-foreground first-letter:uppercase">{m}</h3>
+              <h3 className="px-1 text-[0.95rem] font-bold text-muted-foreground first-letter:uppercase">{m}</h3>
               {bij.length ? (
                 <ul className="space-y-2">{bij.map(kaart)}</ul>
               ) : voorbij ? (
                 <p className="text-base text-muted-foreground">Niets gepland</p>
               ) : (
-                <Button variant="ghost" onClick={() => setKiezen({ datum: dag, moment: m })} className="h-16 w-full justify-start gap-3 rounded-xl border-2 border-dashed border-border bg-card px-4 text-base text-muted-foreground">
+                <Button variant="ghost" onClick={() => setKiezen({ datum: dag, moment: m })} className="h-16 w-full justify-start gap-3 rounded-[1.25rem] border-2 border-dashed border-border px-4 text-base text-muted-foreground">
                   <Plus className="size-5" /> Gerecht toevoegen
                 </Button>
               )}
@@ -1033,13 +1052,13 @@ function PlannerPage() {
         </div>
 
         {/* Week kiezen: duidelijke titel met datums, grote pijlen, rustige dagkeuze */}
-        <section aria-label="Week kiezen" className="rounded-3xl bg-card p-4 shadow-zacht lg:col-start-1 lg:row-start-1 lg:w-full lg:max-w-lg">
+        <section aria-label="Week kiezen" className="paneel p-3 lg:col-start-1 lg:row-start-1 lg:w-full lg:max-w-lg lg:p-4">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               onClick={() => verschuif(-1)}
               aria-label="Vorige week"
-              className="size-14 shrink-0 rounded-full"
+              className="size-12 shrink-0 rounded-full"
             >
               <ChevronLeft className="size-7" />
             </Button>
@@ -1079,7 +1098,7 @@ function PlannerPage() {
               variant="outline"
               onClick={() => verschuif(1)}
               aria-label="Volgende week"
-              className="size-14 shrink-0 rounded-full"
+              className="size-12 shrink-0 rounded-full"
             >
               <ChevronRight className="size-7" />
             </Button>
@@ -1094,13 +1113,13 @@ function PlannerPage() {
             </button>
           ) : null}
           {/* Keuze: één dag of de hele week met alle planning */}
-          <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1 lg:hidden" role="tablist" aria-label="Weergave kiezen">
+          <div className="mt-3 grid grid-cols-2 gap-1 rounded-full bg-muted p-1 lg:hidden" role="tablist" aria-label="Weergave kiezen">
             <button
               type="button"
               role="tab"
               aria-selected={!heleWeek}
               onClick={() => setHeleWeek(false)}
-              className={`flex h-12 items-center justify-center rounded-lg text-base font-semibold transition-colors ${!heleWeek ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+              className={`flex h-12 items-center justify-center rounded-full text-base font-semibold transition-colors ${!heleWeek ? "bg-card text-foreground shadow-zacht" : "text-muted-foreground"}`}
             >
               Per dag
             </button>
@@ -1109,7 +1128,7 @@ function PlannerPage() {
               role="tab"
               aria-selected={heleWeek}
               onClick={() => setHeleWeek(true)}
-              className={`flex h-12 items-center justify-center rounded-lg text-base font-semibold transition-colors ${heleWeek ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
+              className={`flex h-12 items-center justify-center rounded-full text-base font-semibold transition-colors ${heleWeek ? "bg-card text-foreground shadow-zacht" : "text-muted-foreground"}`}
             >
               Hele week
             </button>
@@ -1129,12 +1148,12 @@ function PlannerPage() {
                   aria-selected={actief}
                   onClick={() => { setDagKeuze(dag); setHeleWeek(false); }}
                   className={[
-                    "flex min-h-[4.5rem] flex-col items-center justify-center gap-0.5 rounded-xl border-2 transition-colors",
+                    "flex min-h-[5.25rem] flex-col items-center justify-center gap-1 rounded-2xl transition-colors",
                     actief
-                      ? "border-primary bg-primary text-primary-foreground"
+                      ? "bg-inkt text-inkt-foreground shadow-zacht"
                       : isVandaag
-                        ? "border-primary/50 bg-primary/10 text-foreground"
-                        : "border-transparent text-foreground hover:bg-muted",
+                        ? "bg-honing-zacht text-foreground ring-2 ring-honing"
+                        : "text-foreground hover:bg-muted",
                     verborgen && !actief ? "opacity-40" : "",
                   ].join(" ")}
                 >
@@ -1143,10 +1162,26 @@ function PlannerPage() {
                   </span>
                   {/* Figtree voor getallen: Fraunces-cijfers zijn "oldstyle" (ongelijke hoogte). */}
                   <span className="text-xl font-bold leading-none">{d.getDate()}</span>
-                  <span
-                    aria-hidden
-                    className={`mt-0.5 size-1.5 rounded-full ${aantal ? (actief ? "bg-primary-foreground" : "bg-primary") : "bg-transparent"}`}
-                  />
+                  {/* Weekoverzicht in één oogopslag: één streepje per maaltijd, gevuld = gepland. */}
+                  <span aria-hidden className="flex flex-col items-center gap-[3px]">
+                    {momenten.map((m) => {
+                      const gepland = plan.some((p) => p.plan_date === dag && p.meal_type === m);
+                      return (
+                        <span
+                          key={m}
+                          className={`h-1 w-5 rounded-full ${
+                            gepland
+                              ? actief
+                                ? "bg-honing"
+                                : "bg-primary"
+                              : actief
+                                ? "bg-white/20"
+                                : "bg-border"
+                          }`}
+                        />
+                      );
+                    })}
+                  </span>
                   {/* Volledige uitleg als verborgen tekst ná de zichtbare tekst, zodat de
                       knopnaam altijd begint met wat je ziet ("ma 2") — WCAG 2.5.3. */}
                   <span className="sr-only">
@@ -1165,7 +1200,17 @@ function PlannerPage() {
             {zichtbareDagen.map((dag) => <div key={dag}>{toonDag(dag, false)}</div>)}
           </section>
         ) : (
-          <section aria-label="Gekozen dag" className="lg:hidden">{toonDag(gekozenDag, true)}</section>
+          <section
+            aria-label="Gekozen dag"
+            className="lg:hidden"
+            onTouchStart={(e) => veegDag(e, true)}
+            onTouchEnd={(e) => veegDag(e, false)}
+          >
+            {toonDag(gekozenDag, true)}
+            <p className="mt-4 text-center text-[0.95rem] text-muted-foreground">
+              Veeg opzij voor de vorige of volgende dag
+            </p>
+          </section>
         )}
 
         {/* Acties: één hoofdknop, twee rustige knoppen */}

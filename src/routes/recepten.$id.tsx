@@ -1,7 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { markeerGezien } from "@/lib/gezien";
 import { meet } from "@/lib/meten";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useBlocker, useNavigate } from "@tanstack/react-router";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -163,6 +173,14 @@ function ReceptPage() {
       void laatSchermWeerSlapen();
     };
   }, [kookstand, t]);
+
+  // Niet per ongeluk wegnavigeren tijdens het koken (terugknop, link, veeggebaar).
+  const [stopVraag, setStopVraag] = useState(false);
+  useBlocker({
+    shouldBlockFn: () => !window.confirm(t("Stoppen met koken? Je stap blijft bewaard.")),
+    disabled: !kookstand,
+    enableBeforeUnload: false,
+  });
 
   async function vervangFoto(bestand: File) {
     if (!user) return;
@@ -417,15 +435,13 @@ function ReceptPage() {
 
   async function planOp(datum: string, moment: string, personen: number) {
     if (!user) return;
-    const { error } = await supabase
-      .from("meal_plan")
-      .insert({
-        user_id: user.id,
-        recipe_id: recipe.id,
-        plan_date: datum,
-        meal_type: moment,
-        personen,
-      });
+    const { error } = await supabase.from("meal_plan").insert({
+      user_id: user.id,
+      recipe_id: recipe.id,
+      plan_date: datum,
+      meal_type: moment,
+      personen,
+    });
     if (error) toast.error("Inplannen lukte niet");
     else {
       toast.success("In je planning gezet");
@@ -532,8 +548,8 @@ function ReceptPage() {
   if (kookstand && klaarVragen) {
     return (
       <div className="flex min-h-screen items-center bg-background p-5">
-        <div className="mx-auto w-full max-w-2xl rounded-3xl border border-border bg-card p-6 text-center">
-          <h2 className="font-display text-3xl">{t("Smakelijk gegeten?")}</h2>
+        <div className="paneel mx-auto w-full max-w-2xl p-6 text-center">
+          <h2 className="text-paginatitel">{t("Smakelijk gegeten?")}</h2>
           <p className="mt-3 text-xl text-muted-foreground">
             {t("Hoeveel sterren geef je")} “{recipe.title}”?
           </p>
@@ -583,23 +599,32 @@ function ReceptPage() {
     const voorbereiding = stap < 0;
     const laatste = stap >= stappen.length - 1;
     return (
-      <div className="min-h-screen bg-background p-5">
-        <div className="mx-auto max-w-2xl">
-          <div className="flex items-center justify-between">
-            <p className="text-lg font-semibold text-muted-foreground">
-              {voorbereiding ? (
-                t("Alles klaarzetten")
-              ) : (
-                <>
-                  Stap {stap + 1} van {stappen.length}
-                </>
-              )}
-            </p>
-            <Button variant="ghost" onClick={() => setKookstand(false)} className="h-14">
-              <X className="size-6" /> Sluiten
+      <div className="min-h-screen bg-background">
+        {/* Vaste kop: wat kook je, waar ben je, en een bewuste uitgang. */}
+        <div
+          className="sticky top-0 z-20 border-b border-border/70 bg-background/95 px-4 pb-3 backdrop-blur-md"
+          style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}
+        >
+          <div className="mx-auto flex max-w-2xl items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-base font-semibold text-muted-foreground">
+                {recipe.title}
+              </p>
+              <p className="text-xl font-bold">
+                {voorbereiding ? (
+                  t("Alles klaarzetten")
+                ) : (
+                  <>
+                    Stap {stap + 1} van {stappen.length}
+                  </>
+                )}
+              </p>
+            </div>
+            <Button variant="zacht" onClick={() => setStopVraag(true)} className="h-14 shrink-0">
+              <X className="size-6" /> {t("Stoppen")}
             </Button>
           </div>
-          {/* Voortgang: zichtbaar én voor schermlezers. */}
+          {/* Voortgang: één blokje per stap, zichtbaar én voor schermlezers. */}
           <div
             role="progressbar"
             aria-label={t("Voortgang")}
@@ -609,32 +634,37 @@ function ReceptPage() {
             aria-valuetext={
               voorbereiding ? t("Alles klaarzetten") : `Stap ${stap + 1} van ${stappen.length}`
             }
-            className="mt-3 h-2.5 overflow-hidden rounded-full bg-secondary"
+            className="mx-auto mt-3 flex max-w-2xl gap-1"
           >
-            <div
-              className="h-full rounded-full bg-primary transition-[width] duration-300"
-              style={{
-                width: `${voorbereiding ? 4 : ((stap + 1) / Math.max(1, stappen.length)) * 100}%`,
-              }}
-            />
+            {stappen.map((_, i) => (
+              <span
+                key={i}
+                className={`h-2 flex-1 rounded-full transition-colors ${
+                  !voorbereiding && i <= stap ? "bg-primary" : "bg-secondary"
+                }`}
+              />
+            ))}
           </div>
-          <h2 className="mt-6 font-display text-3xl">{recipe.title}</h2>
+        </div>
+
+        <div className="mx-auto max-w-2xl px-5 pb-40 pt-6">
           {voorbereiding ? (
             <>
-              <p className="mt-3 text-lg text-muted-foreground">
+              <h2 className="text-paginatitel">{recipe.title}</h2>
+              <p className="mt-3 text-xl leading-relaxed text-muted-foreground">
                 {t("Neem eerst alles wat je nodig hebt. Daarna koken we stap voor stap.")}
               </p>
-              <div className="mt-4">
+              <div className="mt-5">
                 <PersonenKiezer aantal={aantal} onZet={setPersonen} />
               </div>
-              <ul className="mt-6 space-y-2 rounded-2xl border border-border bg-card p-4 text-lg">
+              <ul className="paneel mt-6 divide-y divide-border/80 px-4 text-xl">
                 {ingredients.map((ing) => (
                   <li
                     key={ing.id}
-                    className="flex min-h-12 items-center justify-between gap-3 border-b border-border py-2 last:border-0"
+                    className="flex min-h-16 items-center justify-between gap-3 py-3"
                   >
                     <span>{t(ing.name)}</span>
-                    <span className="shrink-0 font-semibold text-primary">
+                    <span className="shrink-0 font-bold tabular-nums text-primary">
                       {toonHoeveelheid(ing, factor)}
                     </span>
                   </li>
@@ -643,12 +673,22 @@ function ReceptPage() {
             </>
           ) : (
             <>
-              <p ref={stapKop} tabIndex={-1} className="mt-6 text-2xl leading-relaxed outline-none">
+              <span
+                aria-hidden
+                className="flex size-16 items-center justify-center rounded-full bg-inkt text-3xl font-bold text-inkt-foreground"
+              >
+                {stap + 1}
+              </span>
+              <p
+                ref={stapKop}
+                tabIndex={-1}
+                className="mt-5 text-[1.85rem] font-medium leading-snug outline-none sm:text-[2.1rem]"
+              >
                 {netteStap(t(stappen[stap] ?? ""))}
               </p>
               <StapIngredienten ingredienten={stapIngredienten(stap)} factor={factor} groot />
               {stapIngredienten(stap).length === 0 ? (
-                <p className="mt-5 rounded-2xl bg-secondary px-4 py-3 text-lg text-muted-foreground">
+                <p className="mt-6 rounded-2xl bg-muted px-4 py-3 text-lg text-muted-foreground">
                   {t("Voor deze stap heb je niets nieuws nodig.")}
                 </p>
               ) : null}
@@ -657,15 +697,15 @@ function ReceptPage() {
           {/* Vaste plek in de boom: lopende timers blijven bestaan bij het bladeren. */}
           <KookTimers voorstellen={voorbereiding ? [] : vindTimers(stappen[stap] ?? "")} />
           {!voorbereiding ? (
-            <details className="mt-6 rounded-2xl border border-border bg-card p-4">
-              <summary className="cursor-pointer text-lg font-semibold">
+            <details className="paneel mt-8 p-4">
+              <summary className="flex min-h-12 cursor-pointer items-center text-lg font-semibold">
                 {t("Alle ingrediënten bekijken")}
               </summary>
-              <ul className="mt-3 space-y-2 text-lg">
+              <ul className="mt-3 space-y-3 text-lg">
                 {ingredients.map((ing) => (
                   <li key={ing.id} className="flex justify-between gap-3">
                     <span>{t(ing.name)}</span>
-                    <span className="shrink-0 text-muted-foreground">
+                    <span className="shrink-0 tabular-nums text-muted-foreground">
                       {toonHoeveelheid(ing, factor)}
                     </span>
                   </li>
@@ -673,9 +713,16 @@ function ReceptPage() {
               </ul>
             </details>
           ) : null}
-          <div className="sticky bottom-0 -mx-6 mt-10 flex gap-3 bg-background/95 px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+        </div>
+
+        {/* Grote knoppen onderaan, binnen bereik van de duim (ook met natte handen). */}
+        <div
+          className="fixed inset-x-0 bottom-0 z-20 border-t border-border/70 bg-background/95 px-4 pt-3 backdrop-blur-md"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
+        >
+          <div className="mx-auto flex max-w-2xl gap-3">
             <Button
-              variant="secondary"
+              variant="zacht"
               disabled={voorbereiding}
               onClick={() => setStap(stap - 1)}
               className="h-20 flex-1 text-lg"
@@ -684,12 +731,34 @@ function ReceptPage() {
             </Button>
             <Button
               onClick={() => (laatste && !voorbereiding ? setKlaarVragen(true) : setStap(stap + 1))}
-              className="h-20 flex-1 text-lg"
+              className="h-20 flex-[2] text-xl"
             >
               {voorbereiding ? t("Begin met koken") : laatste ? t("Klaar met koken") : "Volgende"}
             </Button>
           </div>
         </div>
+
+        <AlertDialog open={stopVraag} onOpenChange={setStopVraag}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t("Stoppen met koken?")}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t("Je stap blijft bewaard. Je kan later verder koken waar je was.")}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t("Verder koken")}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setStopVraag(false);
+                  setKookstand(false);
+                }}
+              >
+                {t("Stoppen")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }

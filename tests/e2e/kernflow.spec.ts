@@ -146,7 +146,8 @@ test.describe("Kernflow", () => {
     expect(plan).toHaveLength(1);
     expect(plan[0]).toMatchObject({
       recipe_id: recept["id"],
-      plan_date: "2026-11-08",
+      // De plankiezer staat standaard op vandaag (lokale tijd).
+      plan_date: new Date().toLocaleDateString("sv-SE"),
       meal_type: "avondeten",
       user_id: GEBRUIKER,
     });
