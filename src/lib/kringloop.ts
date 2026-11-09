@@ -629,3 +629,82 @@ export function korteDag(dag: string, vandaag: string): string {
     .toLocaleDateString("nl-BE", { weekday: "short" })
     .replace(".", "");
 }
+
+// ---------------------------------------------------------------- B3 waarom op mijn lijst?
+
+export type Waarom = {
+  /** Geplande maaltijden die dit product nodig hebben (geschaald naar personen). */
+  voor: { titel: string; dag: string; quantity: number | null; unit: string }[];
+  /** Totaal nodig, in de eenheid van de eerste regel (null = niet op te tellen). */
+  nodig: { quantity: number | null; unit: string } | null;
+  /** Wat er al in de voorraad staat voor dit product. */
+  inHuis: { naam: string; quantity: number | null; unit: string }[];
+  /** Andere open regels op de lijst voor hetzelfde product (bv. je eigen regel). */
+  opLijst: { id: string; naam: string; quantity: number | null; unit: string; eigen: boolean }[];
+};
+
+/**
+ * Waarom staat dit product op de lijst? Puur: zelfde rekenregels als Slim aanvullen
+ * (porties geschaald, eenheden omgerekend, vervangen producten tellen mee).
+ */
+export function waaromNodig(opts: {
+  naam: string;
+  /** De regel zelf: die tellen we niet bij "ook op de lijst". */
+  regelId?: string;
+  plan: PlanMaaltijd[];
+  recepten: ReceptKort[];
+  ingredienten: ReceptIngredient[];
+  voorraad: (VoorraadRij | string)[];
+  lijst: LijstRegel[];
+  vanaf: string;
+}): Waarom {
+  const recepten = new Map(opts.recepten.map((r) => [r.id, r]));
+  const voor: Waarom["voor"] = [];
+  let familie: string | null = null;
+  let som: number | null = 0;
+  let eersteUnit = "";
+  const komend = [...opts.plan]
+    .filter((p) => p.plan_date >= opts.vanaf && p.recipe_id)
+    .sort((a, b) => a.plan_date.localeCompare(b.plan_date));
+  for (const p of komend) {
+    const r = recepten.get(p.recipe_id!);
+    if (!r) continue;
+    const factor = p.personen && r.servings && r.servings > 0 ? p.personen / r.servings : 1;
+    for (const ing of opts.ingredienten) {
+      if (ing.recipe_id !== r.id || !zelfdeProduct(ing.name, opts.naam)) continue;
+      const q = ing.quantity == null ? null : rond(ing.quantity * factor);
+      const unit = (ing.unit ?? "").trim();
+      voor.push({ titel: r.title, dag: p.plan_date, quantity: q, unit });
+      const maat = naarMaat(q, unit);
+      if (!voor.slice(0, -1).length) {
+        familie = maat?.familie ?? null;
+        eersteUnit = unit;
+      }
+      if (som == null || !maat || maat.familie !== familie) som = null;
+      else som += maat.waarde;
+    }
+  }
+  const nodig =
+    voor.length === 0
+      ? null
+      : {
+          quantity:
+            som == null || familie == null
+              ? null
+              : inEenheid(som, eersteUnit || basisEenheid(familie)),
+          unit: eersteUnit,
+        };
+  const inHuis = voorraadRijen(opts.voorraad)
+    .filter((v) => zitInVoorraad(opts.naam, [v.naam]))
+    .map((v) => ({ naam: v.naam, quantity: v.hoeveelheid, unit: v.eenheid ?? "" }));
+  const opLijst = opts.lijst
+    .filter((i) => !i.checked && i.id !== opts.regelId && zelfdeProduct(i.name, opts.naam))
+    .map((i) => ({
+      id: i.id,
+      naam: i.name,
+      quantity: i.quantity ?? null,
+      unit: i.unit ?? "",
+      eigen: !i.recipe_id,
+    }));
+  return { voor, nodig, inHuis, opLijst };
+}

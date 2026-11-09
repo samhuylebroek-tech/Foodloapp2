@@ -88,7 +88,7 @@ const voorraad = async () => ((await nepDb()).pantry_items ?? []).map((p) => p["
 
 async function naarWinkel(page: Page) {
   await page.goto("/boodschappen");
-  await page.getByRole("button", { name: "Ik ga boodschappen doen" }).click();
+  await page.getByRole("button", { name: "Ik ga winkelen" }).click();
   const winkel = page.getByRole("dialog", { name: "Winkelmodus" });
   await expect(winkel).toBeVisible();
   return winkel;

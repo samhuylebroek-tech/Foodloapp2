@@ -85,3 +85,45 @@ export function AanvulKaart({ toonKlaar = false }: { toonKlaar?: boolean }) {
     </section>
   );
 }
+
+/**
+ * B1 — compacte versie onder je lijst (telefoon en tablet): één regel, één knop.
+ * De lijst zelf blijft bovenaan; dit is een voorstel, geen kop.
+ */
+export function AanvulRegel() {
+  const { data, zetOpLijst } = useAanvulling();
+  const [bezig, setBezig] = useState(false);
+  const aantal = data?.aanvulling.kopen.length ?? 0;
+  if (!aantal) return null;
+  return (
+    <section
+      aria-label="Boodschappen voor je komende maaltijden"
+      className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[1.25rem] bg-honing-zacht px-4 py-3"
+    >
+      <p className="min-w-0 flex-1 text-base">
+        <strong className="font-semibold">
+          {aantal} {aantal === 1 ? "ding ontbreekt" : "dingen ontbreken"}
+        </strong>{" "}
+        voor je komende maaltijden
+      </p>
+      <div className="flex shrink-0 items-center gap-1">
+        <Button asChild variant="ghost" size="sm" className="h-11">
+          <Link to="/aanvullen">Bekijk</Link>
+        </Button>
+        <Button
+          size="sm"
+          className="h-11"
+          disabled={bezig}
+          onClick={async () => {
+            setBezig(true);
+            await zetOpLijst("alles");
+            setBezig(false);
+          }}
+        >
+          {bezig ? <Loader2 className="animate-spin" /> : <ShoppingCart />}
+          Zet erop
+        </Button>
+      </div>
+    </section>
+  );
+}

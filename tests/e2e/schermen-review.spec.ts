@@ -47,10 +47,29 @@ test("alle hoofdschermen", async ({ page }, info) => {
     await foto(page, p, naam);
   }
 
+  // C1: waarom op mijn lijst, winkelvolgorde, vaak gekocht in het invoerveld.
+  await page.goto("/boodschappen");
+  await klaar(page);
+  const waarom = page.getByRole("button", { name: /^Waarom staat / }).first();
+  if (await waarom.isVisible()) {
+    await waarom.click();
+    await page.waitForTimeout(800);
+    await foto(page, p, "13-waarom-op-lijst");
+    await page.keyboard.press("Escape");
+  }
+  await page.getByRole("button", { name: "Meer opties voor deze lijst" }).click();
+  await page.getByRole("button", { name: "Volgorde van je winkel" }).click();
+  await page.waitForTimeout(500);
+  await foto(page, p, "14-winkelvolgorde");
+  await page.keyboard.press("Escape");
+  await page.getByRole("textbox", { name: "Iets toevoegen" }).click();
+  await page.waitForTimeout(400);
+  await foto(page, p, "15-invoer-vaak-gekocht");
+
   // Winkelmodus en "niet gevonden".
   await page.goto("/boodschappen");
   await klaar(page);
-  const start = page.getByRole("button", { name: "Ik ga boodschappen doen" });
+  const start = page.getByRole("button", { name: "Ik ga winkelen" });
   if (await start.isVisible()) {
     await start.click();
     await page.waitForTimeout(500);

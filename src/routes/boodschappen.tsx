@@ -30,6 +30,7 @@ import {
   Lightbulb,
   PackageCheck,
   WalletCards,
+  ArrowUpDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,7 +39,7 @@ import { AppShell } from "@/components/AppShell";
 import { cn } from "@/lib/utils";
 import { Klantenkaarten } from "@/components/Klantenkaarten";
 import { Groep, Icoon } from "@/components/mobiel/Lijst";
-import { AanvulKaart } from "@/components/kringloop/AanvulKaart";
+import { AanvulKaart, AanvulRegel } from "@/components/kringloop/AanvulKaart";
 import { meldMetHerstel, useKringloopVernieuw } from "@/hooks/useAanvulling";
 import { HalfGelukt, klaarMetWinkelen } from "@/lib/kringloop-db";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,9 @@ import { EmptyState } from "@/components/EmptyState";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WinkelIdeeen } from "@/components/WinkelIdeeen";
 import { ItemNaam, Winkelmodus, type Vervanging } from "@/components/winkel/Winkelmodus";
+import { WaaromSheet, type WaaromRegel } from "@/components/lijst/WaaromSheet";
+import { WinkelvolgordeSheet } from "@/components/lijst/WinkelvolgordeSheet";
+import { bewaarVolgorde, leesVolgorde } from "@/lib/winkelvolgorde";
 import {
   CATEGORIE_LABEL,
   CATEGORIE_VOLGORDE,
@@ -367,22 +371,39 @@ function BoodschappenPage() {
     setCorrecties(bewaarCorrectie(naam, categorie));
   }
 
+  // B4: afdelingen in de volgorde van jouw winkel (per toestel).
+  const [volgorde, setVolgorde] = useState<CategorieId[]>([...CATEGORIE_VOLGORDE]);
+  const [volgordeOpen, setVolgordeOpen] = useState(false);
+  useEffect(() => {
+    setVolgorde(leesVolgorde());
+  }, []);
+  function zetVolgorde(v: CategorieId[]) {
+    setVolgorde(v);
+    bewaarVolgorde(v);
+  }
+  // B3: waarom staat dit op mijn lijst?
+  const [waarom, setWaarom] = useState<WaaromRegel | null>(null);
+  // B2: in het lege invoerveld meteen "vaak gekocht" tonen.
+  const [invoerFocus, setInvoerFocus] = useState(false);
+
   const groepen = useMemo(() => {
     const per = new Map<CategorieId, Item[]>();
     for (const item of items.filter((rij) => !rij.checked)) {
-      const naam = item.name.trim().toLowerCase();
       const handmatig = correcties[normaliseerTekst(item.name)];
-      const thuis = voorraad.some((v) => naam.includes(v) || v.includes(naam));
+      // Echte productherkenning (BUG-057): "ui" in de voorraad is geen "suiker".
+      const thuis = zitInVoorraad(item.name, voorraad);
       const id: CategorieId = handmatig ?? (thuis ? "voorraadkast" : categorieVan(item.name, correcties));
       const lijst = per.get(id) ?? [];
       lijst.push(item);
       per.set(id, lijst);
     }
-    return CATEGORIE_VOLGORDE.filter((id) => (per.get(id)?.length ?? 0) > 0).map((id) => ({
-      id,
-      lijst: per.get(id)!,
-    }));
-  }, [items, voorraad, correcties]);
+    return volgorde
+      .filter((id) => (per.get(id)?.length ?? 0) > 0)
+      .map((id) => ({
+        id,
+        lijst: per.get(id)!,
+      }));
+  }, [items, voorraad, correcties, volgorde]);
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["shopping"] });
   const refreshLijsten = () => qc.invalidateQueries({ queryKey: ["shopping-lists"] });
@@ -993,6 +1014,7 @@ function BoodschappenPage() {
 
   return (
     <AppShell
+      breed
       title="Boodschappen"
       kop={
         <div className="mb-5">
@@ -1020,14 +1042,22 @@ function BoodschappenPage() {
           {lijsten.length > 1 || actieveLijst?.group_id ? (
             <div className="mt-2">{lijstKiezer}</div>
           ) : null}
-          <p className="mt-1 text-lg text-muted-foreground">
-            {openAantal === 0
-              ? items.length
-                ? "Alles gekocht!"
-                : "Je lijst is leeg"
-              : `${openAantal} ${openAantal === 1 ? "ding" : "dingen"} nog te kopen`}
-            {klaar.length > 0 ? ` · ${klaar.length} in je kar` : ""}
-          </p>
+          {/* B1: status en "winkelen" op één regel — daaronder meteen de lijst. */}
+          <div className="mt-1 flex items-center justify-between gap-3">
+            <p className="text-lg text-muted-foreground">
+              {openAantal === 0
+                ? items.length
+                  ? "Alles gekocht!"
+                  : "Je lijst is leeg"
+                : `${openAantal} te kopen`}
+              {klaar.length > 0 ? ` · ${klaar.length} in je kar` : ""}
+            </p>
+            {openAantal > 0 ? (
+              <Button onClick={() => setWinkel(true)} className="h-12 shrink-0 px-4 text-base">
+                <ShoppingCart /> Ik ga winkelen
+              </Button>
+            ) : null}
+          </div>
           {totaal > 0 ? (
             <div
               className="mt-3 h-2 overflow-hidden rounded-full bg-secondary"
@@ -1062,37 +1092,41 @@ function BoodschappenPage() {
           </p>
         )}
 
-        {weergave === "lijst" ? <AanvulKaart /> : null}
-
-        {openAantal > 0 ? (
-          <Button variant="zacht" onClick={() => setWinkel(true)} className="h-16 w-full text-lg">
-            <ShoppingCart className="size-6" /> Ik ga boodschappen doen
-          </Button>
-        ) : null}
-
-        <Tabs
-          value={weergave}
-          onValueChange={(waarde) => setWeergave(waarde as "lijst" | "gerechten")}
-        >
-          <TabsList className="grid w-full grid-cols-2">
-            {/* Gebruikt als schakelaar; de inhoud staat buiten <Tabs>. */}
-            <TabsTrigger value="lijst" aria-controls={undefined}>
-              Mijn lijst
-            </TabsTrigger>
-            <TabsTrigger value="gerechten" aria-controls={undefined}>
-              Uit gerechten
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
         {weergave === "lijst" ? (
-          <>
+          // B1 — lijst eerst. Telefoon: lijst bovenaan, invoer vast onderaan, de rest ná de lijst.
+          // Tablet: invoer bovenaan, dan de lijst. Desktop: lijst links, toevoegen en aanvullen rechts.
+          <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-8">
             {/* Snel toevoegen: op de telefoon vast onderaan, binnen bereik van de duim. */}
             <section
               aria-label="Iets toevoegen"
-              className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 border-t border-border/70 bg-background/95 px-4 pb-3 pt-2 backdrop-blur-md md:static md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none"
+              className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 border-t border-border/70 bg-background/95 px-4 pb-3 pt-2 backdrop-blur-md md:static md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none lg:col-start-2 lg:row-start-1"
             >
               <div className="mx-auto max-w-3xl">
+                {invoerFocus && !nieuw.trim() && vaakLosOpen.length > 0 ? (
+                  <div
+                    className="scroll-rij -mx-1 mb-2 flex gap-2 overflow-x-auto px-1"
+                    aria-label="Vaak gekocht"
+                  >
+                    {vaakLosOpen.slice(0, 10).map((e) => (
+                      <Button
+                        key={e.name}
+                        variant="zacht"
+                        size="sm"
+                        className="shrink-0"
+                        onMouseDown={(ev) => ev.preventDefault()}
+                        onClick={() => {
+                          void meet("boodschappen.vaak_gekocht");
+                          void voegMeerdereToe(
+                            [{ name: e.name, quantity: e.quantity, unit: e.unit }],
+                            `${e.name} staat op je lijst`,
+                          );
+                        }}
+                      >
+                        <Plus className="size-4" /> {e.name}
+                      </Button>
+                    ))}
+                  </div>
+                ) : null}
                 {typSuggesties.length > 0 ? (
                   <div className="scroll-rij -mx-1 mb-2 flex gap-2 overflow-x-auto px-1" aria-label="Eerder gekocht">
                     {typSuggesties.map((s) => (
@@ -1120,6 +1154,8 @@ function BoodschappenPage() {
                     value={nieuw}
                     onChange={(e) => setNieuw(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && void voegToe()}
+                    onFocus={() => setInvoerFocus(true)}
+                    onBlur={() => window.setTimeout(() => setInvoerFocus(false), 150)}
                     placeholder="Melk, 6 eieren, wasmiddel…"
                     className="rounded-full bg-card px-5"
                     autoComplete="off"
@@ -1137,161 +1173,140 @@ function BoodschappenPage() {
               </div>
             </section>
 
-            {/* Hulpmiddelen: drie tegels, altijd met tekst. */}
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { label: "Eerder gekocht", icoon: History, doe: () => setGeheugenOpen(true) },
-                { label: "Winkelideeën", icoon: Lightbulb, doe: () => setWinkelIdeeen(true) },
-                { label: "Meer opties", icoon: Settings2, doe: () => setMeerOpen(true) },
-              ].map((h) => (
-                <button
-                  key={h.label}
-                  type="button"
-                  onClick={h.doe}
-                  className="paneel flex min-h-20 flex-col items-center justify-center gap-1.5 px-2 py-3 text-center text-[0.95rem] font-semibold leading-tight transition-colors hover:bg-muted active:bg-muted"
-                >
-                  <h.icoon className="size-6 text-primary" aria-hidden />
-                  {h.label}
-                </button>
-              ))}
-            </div>
+            <div className="min-w-0 lg:col-start-1 lg:row-span-2 lg:row-start-1">
+              {items.length === 0 ? (
+                <EmptyState
+                  icon={<ShoppingCart />}
+                  title="Nog niets op je lijst"
+                  description="Typ wat je nodig hebt, of kies iets dat je eerder kocht."
+                />
+              ) : (
+                <div className="space-y-4">
+                  <h2 className="sr-only">Je lijst</h2>
 
-            {/* Vaak gekocht — alleen echte losse aankopen, nooit verzonnen. */}
-            {vaakLosOpen.length > 0 && (
-              <section aria-labelledby="vaak-kop">
-                <h2
-                  id="vaak-kop"
-                  className="mb-2 flex items-center gap-2 px-1 text-[0.95rem] font-bold text-muted-foreground"
-                >
-                  <Star className="size-4" aria-hidden /> Vaak gekocht — tik om toe te voegen
-                </h2>
-                <div className="scroll-rij -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-                  {(vaakAlles ? vaakLosOpen : vaakLosOpen.slice(0, 12)).map((e) => (
-                    <Button
-                      key={e.name}
-                      variant="zacht"
-                      size="sm"
-                      className="shrink-0"
-                      onClick={() => {
-                        void meet("boodschappen.vaak_gekocht");
-                        void voegMeerdereToe(
-                          [{ name: e.name, quantity: e.quantity, unit: e.unit }],
-                          `${e.name} staat op je lijst`,
-                        );
-                      }}
-                    >
-                      <Plus className="size-4" /> {e.name}
-                    </Button>
-                  ))}
-                  {vaakLosOpen.length > 12 ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="shrink-0"
-                      onClick={() => setVaakAlles((v) => !v)}
-                    >
-                      {vaakAlles ? "Minder" : `Alles (${vaakLosOpen.length})`}
-                    </Button>
-                  ) : null}
-                </div>
-              </section>
-            )}
-
-            {items.length === 0 ? (
-              <EmptyState
-                icon={<ShoppingCart />}
-                title="Nog niets op je lijst"
-                description="Typ onderaan wat je nodig hebt, of kies iets dat je eerder kocht."
-              />
-            ) : (
-              <div className="space-y-4">
-                <h2 className="sr-only">Je lijst</h2>
-
-                {kiesModus && (
-                  <div className="sticky top-20 z-20 flex flex-wrap items-center gap-2 rounded-2xl bg-inkt p-3 text-inkt-foreground shadow-zwevend">
-                    <p className="flex-1 text-base font-semibold">{gekozen.size} gekozen</p>
-                    <Button
-                      variant="zacht"
-                      size="sm"
-                      onClick={() => {
-                        setKiesModus(false);
-                        setGekozen(new Set());
-                      }}
-                    >
-                      Stoppen
-                    </Button>
-                    {lijsten.filter((l) => l.id !== actief).length > 0 && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="zacht" size="sm">
-                            Verplaatsen
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="min-w-56">
-                          {lijsten
-                            .filter((l) => l.id !== actief)
-                            .map((l) => (
-                              <DropdownMenuItem
-                                key={l.id}
-                                onSelect={() => void verplaatsGekozen(l.id)}
-                              >
-                                {l.name}
-                              </DropdownMenuItem>
-                            ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => void verwijderGekozen()}
-                      disabled={!gekozen.size}
-                    >
-                      <Trash2 /> Verwijderen
-                    </Button>
-                  </div>
-                )}
-
-                {/* Desktop: afdelingen in twee kolommen, zoals een winkelbriefje (tablet: één brede kolom, namen blijven leesbaar). */}
-                <div className="space-y-4 lg:block lg:columns-2 lg:gap-4 lg:space-y-0 lg:[&>section]:mb-4 lg:[&>section]:break-inside-avoid">
-                  {groepen.map(({ id, lijst }) => {
-                    const open = !dicht[id];
-                    return (
-                      <section
-                        key={id}
-                        aria-label={CATEGORIE_LABEL[id]}
-                        className="paneel overflow-hidden"
+                  {kiesModus && (
+                    <div className="sticky top-20 z-20 flex flex-wrap items-center gap-2 rounded-2xl bg-inkt p-3 text-inkt-foreground shadow-zwevend">
+                      <p className="flex-1 text-base font-semibold">{gekozen.size} gekozen</p>
+                      <Button
+                        variant="zacht"
+                        size="sm"
+                        onClick={() => {
+                          setKiesModus(false);
+                          setGekozen(new Set());
+                        }}
                       >
-                        <div className="flex items-center gap-1 border-b border-border/70 bg-muted/40 py-1 pl-2 pr-1">
-                          <button
-                            type="button"
-                            onClick={() => setDicht((d) => ({ ...d, [id]: open }))}
-                            aria-expanded={open}
-                            className="flex min-h-12 flex-1 items-center gap-2 px-2 text-left"
-                          >
-                            <span className="text-[1.05rem] font-bold">{CATEGORIE_LABEL[id]}</span>
-                            <span className="rounded-full bg-card px-2.5 py-0.5 text-[0.95rem] font-semibold text-muted-foreground ring-1 ring-border">
-                              {lijst.length}
-                            </span>
-                            <span className="flex-1" />
-                            {open ? (
-                              <ChevronDown className="size-5 text-muted-foreground" />
-                            ) : (
-                              <ChevronRight className="size-5 text-muted-foreground" />
-                            )}
-                          </button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label={`Alles in ${CATEGORIE_LABEL[id]} afvinken`}
-                            onClick={() => void vinkCategorieAf(lijst)}
-                          >
-                            <CheckCheck />
-                          </Button>
-                        </div>
-                        {open ? (
+                        Stoppen
+                      </Button>
+                      {lijsten.filter((l) => l.id !== actief).length > 0 && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="zacht" size="sm">
+                              Verplaatsen
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="min-w-56">
+                            {lijsten
+                              .filter((l) => l.id !== actief)
+                              .map((l) => (
+                                <DropdownMenuItem
+                                  key={l.id}
+                                  onSelect={() => void verplaatsGekozen(l.id)}
+                                >
+                                  {l.name}
+                                </DropdownMenuItem>
+                              ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => void verwijderGekozen()}
+                        disabled={!gekozen.size}
+                      >
+                        <Trash2 /> Verwijderen
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Desktop: afdelingen in twee kolommen, zoals een winkelbriefje (tablet: één brede kolom, namen blijven leesbaar). */}
+                  <div className="space-y-4 lg:block lg:columns-2 lg:gap-4 lg:space-y-0 lg:[&>section]:mb-4 lg:[&>section]:break-inside-avoid">
+                    {groepen.map(({ id, lijst }) => {
+                      const open = !dicht[id];
+                      return (
+                        <section
+                          key={id}
+                          aria-label={CATEGORIE_LABEL[id]}
+                          className="paneel overflow-hidden"
+                        >
+                          <div className="flex items-center gap-1 border-b border-border/70 bg-muted/40 py-1 pl-2 pr-1">
+                            <button
+                              type="button"
+                              onClick={() => setDicht((d) => ({ ...d, [id]: open }))}
+                              aria-expanded={open}
+                              className="flex min-h-12 flex-1 items-center gap-2 px-2 text-left"
+                            >
+                              <span className="text-[1.05rem] font-bold">
+                                {CATEGORIE_LABEL[id]}
+                              </span>
+                              <span className="rounded-full bg-card px-2.5 py-0.5 text-[0.95rem] font-semibold text-muted-foreground ring-1 ring-border">
+                                {lijst.length}
+                              </span>
+                              <span className="flex-1" />
+                              {open ? (
+                                <ChevronDown className="size-5 text-muted-foreground" />
+                              ) : (
+                                <ChevronRight className="size-5 text-muted-foreground" />
+                              )}
+                            </button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={`Alles in ${CATEGORIE_LABEL[id]} afvinken`}
+                              onClick={() => void vinkCategorieAf(lijst)}
+                            >
+                              <CheckCheck />
+                            </Button>
+                          </div>
+                          {open ? (
+                            <ul className="divide-y divide-border/70">
+                              {lijst.map((item) => (
+                                <li key={item.id}>
+                                  <ItemRij
+                                    item={item}
+                                    kiesModus={kiesModus}
+                                    gekozen={gekozen.has(item.id)}
+                                    onKies={() => kies(item.id)}
+                                    onVink={() => vink(item)}
+                                    onBewerk={() => openBewerken(item)}
+                                    onVerwijder={() => verwijder(item)}
+                                    onWaarom={() => setWaarom(item)}
+                                    onCategorie={(c) => zetCategorie(item.name, c)}
+                                  />
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+                        </section>
+                      );
+                    })}
+                  </div>
+                  {klaar.length > 0 ? (
+                    <Accordion
+                      type="single"
+                      collapsible
+                      defaultValue="klaar"
+                      className="rounded-[1.25rem] bg-muted/60 px-2 ring-1 ring-border/70"
+                    >
+                      <AccordionItem value="klaar" className="border-0">
+                        <AccordionTrigger className="px-2 text-muted-foreground">
+                          <span className="flex items-center gap-2">
+                            <ShoppingCart className="size-5" /> In je kar ({klaar.length})
+                          </span>
+                        </AccordionTrigger>
+                        <AccordionContent className="pb-2">
                           <ul className="divide-y divide-border/70">
-                            {lijst.map((item) => (
+                            {klaar.map((item) => (
                               <li key={item.id}>
                                 <ItemRij
                                   item={item}
@@ -1301,84 +1316,160 @@ function BoodschappenPage() {
                                   onVink={() => vink(item)}
                                   onBewerk={() => openBewerken(item)}
                                   onVerwijder={() => verwijder(item)}
+                                  onWaarom={() => setWaarom(item)}
                                   onCategorie={(c) => zetCategorie(item.name, c)}
                                 />
                               </li>
                             ))}
                           </ul>
-                        ) : null}
-                      </section>
-                    );
-                  })}
+                          <Button
+                            onClick={() => void klaarMetWinkelenNu()}
+                            disabled={winkelKlaarBezig}
+                            className="mt-3 w-full"
+                          >
+                            <PackageCheck /> Klaar met winkelen
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            onClick={() => setWisVraag("afgevinkt")}
+                            className="mt-1 w-full text-destructive"
+                          >
+                            <Trash2 /> Wis afgevinkte boodschappen
+                          </Button>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  ) : null}
                 </div>
-                {klaar.length > 0 ? (
-                  <Accordion
-                    type="single"
-                    collapsible
-                    defaultValue="klaar"
-                    className="rounded-[1.25rem] bg-muted/60 px-2 ring-1 ring-border/70"
-                  >
-                    <AccordionItem value="klaar" className="border-0">
-                      <AccordionTrigger className="px-2 text-muted-foreground">
-                        <span className="flex items-center gap-2">
-                          <ShoppingCart className="size-5" /> In je kar ({klaar.length})
-                        </span>
-                      </AccordionTrigger>
-                      <AccordionContent className="pb-2">
-                        <ul className="divide-y divide-border/70">
-                          {klaar.map((item) => (
-                            <li key={item.id}>
-                              <ItemRij
-                                item={item}
-                                kiesModus={kiesModus}
-                                gekozen={gekozen.has(item.id)}
-                                onKies={() => kies(item.id)}
-                                onVink={() => vink(item)}
-                                onBewerk={() => openBewerken(item)}
-                                onVerwijder={() => verwijder(item)}
-                                onCategorie={(c) => zetCategorie(item.name, c)}
-                              />
-                            </li>
-                          ))}
-                        </ul>
-                        <Button
-                          onClick={() => void klaarMetWinkelenNu()}
-                          disabled={winkelKlaarBezig}
-                          className="mt-3 w-full"
-                        >
-                          <PackageCheck /> Klaar met winkelen
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => setWisVraag("afgevinkt")}
-                          className="mt-1 w-full text-destructive"
-                        >
-                          <Trash2 /> Wis afgevinkte boodschappen
-                        </Button>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-                ) : null}
+              )}
+            </div>
+            <aside
+              aria-label="Meer voor je lijst"
+              className="space-y-5 lg:col-start-2 lg:row-start-2"
+            >
+              {/* Aanvullen: compact onder de lijst; op desktop de volle kaart in de zijkolom. */}
+              <div className="lg:hidden">
+                <AanvulRegel />
               </div>
-            )}
+              <div className="hidden lg:block">
+                <AanvulKaart />
+              </div>
 
-            <Accordion type="single" collapsible className="paneel px-4">
-              <AccordionItem value="kaarten" className="border-0">
-                <AccordionTrigger>
-                  <span className="flex items-center gap-3">
-                    <Icoon icoon={WalletCards} tint="blauw" /> Klantenkaarten
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <Klantenkaarten />
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+              <section aria-labelledby="toevoegen-uit" className="paneel overflow-hidden">
+                <h2
+                  id="toevoegen-uit"
+                  className="px-4 pt-3 text-base font-bold text-muted-foreground"
+                >
+                  Toevoegen uit…
+                </h2>
+                <ul className="divide-y divide-border/70">
+                  {[
+                    {
+                      label: "Je weekmenu",
+                      uitleg: "Per gepland gerecht",
+                      icoon: CalendarDays,
+                      doe: () => setWeergave("gerechten"),
+                    },
+                    {
+                      label: "Eerder gekocht",
+                      uitleg: "Je vorige boodschappen",
+                      icoon: History,
+                      doe: () => setGeheugenOpen(true),
+                    },
+                    {
+                      label: "Winkelideeën",
+                      uitleg: "Wat je misschien vergeet",
+                      icoon: Lightbulb,
+                      doe: () => setWinkelIdeeen(true),
+                    },
+                  ].map((h) => (
+                    <li key={h.label}>
+                      <button
+                        type="button"
+                        onClick={h.doe}
+                        className="flex min-h-16 w-full items-center gap-3 px-4 py-2 text-left hover:bg-muted/60"
+                      >
+                        <h.icoon className="size-6 shrink-0 text-primary" aria-hidden />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-lg font-semibold">{h.label}</span>
+                          <span className="block text-base text-muted-foreground">{h.uitleg}</span>
+                        </span>
+                        <ChevronRight
+                          className="size-5 shrink-0 text-muted-foreground"
+                          aria-hidden
+                        />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              {/* Vaak gekocht — alleen echte losse aankopen, nooit verzonnen. */}
+              {vaakLosOpen.length > 0 && (
+                <section aria-labelledby="vaak-kop">
+                  <h2
+                    id="vaak-kop"
+                    className="mb-2 flex items-center gap-2 px-1 text-[0.95rem] font-bold text-muted-foreground"
+                  >
+                    <Star className="size-4" aria-hidden /> Vaak gekocht — tik om toe te voegen
+                  </h2>
+                  <div className="scroll-rij -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+                    {(vaakAlles ? vaakLosOpen : vaakLosOpen.slice(0, 12)).map((e) => (
+                      <Button
+                        key={e.name}
+                        variant="zacht"
+                        size="sm"
+                        className="shrink-0"
+                        onClick={() => {
+                          void meet("boodschappen.vaak_gekocht");
+                          void voegMeerdereToe(
+                            [{ name: e.name, quantity: e.quantity, unit: e.unit }],
+                            `${e.name} staat op je lijst`,
+                          );
+                        }}
+                      >
+                        <Plus className="size-4" /> {e.name}
+                      </Button>
+                    ))}
+                    {vaakLosOpen.length > 12 ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="shrink-0"
+                        onClick={() => setVaakAlles((v) => !v)}
+                      >
+                        {vaakAlles ? "Minder" : `Alles (${vaakLosOpen.length})`}
+                      </Button>
+                    ) : null}
+                  </div>
+                </section>
+              )}
+
+              <Accordion type="single" collapsible className="paneel px-4">
+                <AccordionItem value="kaarten" className="border-0">
+                  <AccordionTrigger>
+                    <span className="flex items-center gap-3">
+                      <Icoon icoon={WalletCards} tint="blauw" /> Klantenkaarten
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <Klantenkaarten />
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </aside>
             {/* Ruimte voor de vaste invoerbalk onderaan (alleen telefoon). */}
-            <div aria-hidden className="h-20 md:hidden" />
-          </>
+            <div aria-hidden className="h-28 md:hidden" />
+          </div>
         ) : (
           <div className="space-y-5">
+            <Button
+              variant="ghost"
+              className="-ml-2 h-12 text-base"
+              onClick={() => setWeergave("lijst")}
+            >
+              <ChevronRight className="rotate-180" /> Terug naar je lijst
+            </Button>
             {/* V2-kringloop: één tik voor alles wat nog ontbreekt (min voorraad). */}
             <Link
               to="/aanvullen"
@@ -1448,6 +1539,21 @@ function BoodschappenPage() {
         )}
       </div>
 
+      {user ? (
+        <WaaromSheet
+          regel={waarom}
+          userId={user.id}
+          listId={actief}
+          onSluit={() => setWaarom(null)}
+        />
+      ) : null}
+      <WinkelvolgordeSheet
+        open={volgordeOpen}
+        volgorde={volgorde}
+        onVolgorde={zetVolgorde}
+        onSluit={() => setVolgordeOpen(false)}
+      />
+
       <WinkelIdeeen
         open={winkelIdeeen}
         onOpenChange={setWinkelIdeeen}
@@ -1466,6 +1572,46 @@ function BoodschappenPage() {
             <SheetDescription>Alles voor “{actieveNaam}”.</SheetDescription>
           </SheetHeader>
           <div className="mt-4 space-y-2 pb-4">
+            <Button
+              variant="outline"
+              className="h-14 w-full justify-start text-base"
+              onClick={() => {
+                setMeerOpen(false);
+                setWeergave("gerechten");
+              }}
+            >
+              <CalendarDays /> Toevoegen uit je weekmenu
+            </Button>
+            <Button
+              variant="outline"
+              className="h-14 w-full justify-start text-base"
+              onClick={() => {
+                setMeerOpen(false);
+                setGeheugenOpen(true);
+              }}
+            >
+              <History /> Eerder gekocht
+            </Button>
+            <Button
+              variant="outline"
+              className="h-14 w-full justify-start text-base"
+              onClick={() => {
+                setMeerOpen(false);
+                setWinkelIdeeen(true);
+              }}
+            >
+              <Lightbulb /> Winkelideeën
+            </Button>
+            <Button
+              variant="outline"
+              className="h-14 w-full justify-start text-base"
+              onClick={() => {
+                setMeerOpen(false);
+                setVolgordeOpen(true);
+              }}
+            >
+              <ArrowUpDown /> Volgorde van je winkel
+            </Button>
             <Button variant="outline" className="h-14 w-full justify-start text-base" onClick={() => { setMeerOpen(false); setDeelOpen(true); }}><Share2 /> Lijst delen</Button>
             <Button variant="outline" className="h-14 w-full justify-start text-base" onClick={() => { setMeerOpen(false); void vinkVoorraadAf(); }}><Package /> Vink af wat ik al in huis heb</Button>
             {items.length > 0 ? <Button variant="outline" className="h-14 w-full justify-start text-base" onClick={() => { setMeerOpen(false); setKiesModus(true); setGekozen(new Set()); }}><CheckCheck /> Meerdere tegelijk kiezen</Button> : null}
@@ -1746,6 +1892,7 @@ function ItemRij({
   onBewerk,
   onVerwijder,
   onCategorie,
+  onWaarom,
 }: {
   item: Item;
   kiesModus: boolean;
@@ -1755,6 +1902,8 @@ function ItemRij({
   onBewerk: () => void;
   onVerwijder: () => void;
   onCategorie: (categorie: CategorieId) => void;
+  /** B3: uitleg waarom dit op de lijst staat. */
+  onWaarom?: () => void;
 }) {
   const start = useRef<number | null>(null);
 
@@ -1821,7 +1970,20 @@ function ItemRij({
           {item.note ? (
             <span className="block truncate text-[0.95rem] text-muted-foreground">{item.note}</span>
           ) : null}
-          {item.recept ? (
+          {item.recept && onWaarom ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onWaarom();
+              }}
+              aria-label={`Waarom staat ${item.name} op je lijst? Voor ${item.recept}`}
+              className="block min-h-6 max-w-full truncate text-left text-[0.95rem] text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground"
+            >
+              voor {item.recept}
+            </button>
+          ) : item.recept ? (
             <span className="block truncate text-[0.95rem] text-muted-foreground">
               voor {item.recept}
             </span>

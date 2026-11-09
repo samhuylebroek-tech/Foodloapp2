@@ -15,6 +15,8 @@ import { zorgVoorLijst } from "@/lib/boodschappen";
 import { bewaarGekocht } from "@/lib/boodschappen-geheugen";
 import {
   berekenAanvulling,
+  waaromNodig,
+  type Waarom,
   lijstBijsturen,
   lijstWijzigingen,
   verbruik,
@@ -784,4 +786,60 @@ export function lijstUitleg(e: LijstEffect): string {
     e.weg ? `${e.weg} eraf` : "",
   ].filter(Boolean);
   return delen.length ? `lijst: ${delen.join(", ")}` : "";
+}
+
+// ---------------------------------------------------------------- B3 waarom op mijn lijst?
+
+/**
+ * Waarom staat dit product op de lijst? Alleen lezen. Kijkt naar het eigen weekmenu van
+ * vandaag tot en met 6 dagen later (zoals Slim aanvullen), de voorraad en de gekozen lijst.
+ */
+export async function laadWaarom(opts: {
+  userId: string;
+  listId: string;
+  naam: string;
+  regelId?: string;
+  vandaag?: string;
+}): Promise<Waarom> {
+  const vandaag = opts.vandaag ?? lokaleDatum();
+  const [plan, voorraad, lijst] = await Promise.all([
+    supabase
+      .from("meal_plan")
+      .select("plan_date, recipe_id, personen, custom_title, soort")
+      .eq("user_id", opts.userId)
+      .is("group_id", null)
+      .gte("plan_date", vandaag)
+      .lte("plan_date", totDatum(vandaag)),
+    supabase
+      .from("pantry_items")
+      .select("id, naam, hoeveelheid, eenheid")
+      .eq("user_id", opts.userId),
+    supabase
+      .from("shopping_items")
+      .select("id, name, checked, quantity, unit, recipe_id")
+      .eq("list_id", opts.listId),
+  ]);
+  if (plan.error) throw plan.error;
+  const ids = [
+    ...new Set((plan.data ?? []).map((p) => p.recipe_id).filter((x): x is string => !!x)),
+  ];
+  const [recepten, ingredienten] = ids.length
+    ? await Promise.all([
+        supabase.from("recipes").select("id, title, servings").in("id", ids),
+        supabase
+          .from("recipe_ingredients")
+          .select("recipe_id, name, quantity, unit")
+          .in("recipe_id", ids),
+      ])
+    : [{ data: [] }, { data: [] }];
+  return waaromNodig({
+    naam: opts.naam,
+    ...(opts.regelId ? { regelId: opts.regelId } : {}),
+    plan: plan.data ?? [],
+    recepten: recepten.data ?? [],
+    ingredienten: ingredienten.data ?? [],
+    voorraad: voorraad.data ?? [],
+    lijst: (lijst.data ?? []) as never,
+    vanaf: vandaag,
+  });
 }
