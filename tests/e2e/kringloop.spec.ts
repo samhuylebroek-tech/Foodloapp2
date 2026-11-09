@@ -218,7 +218,10 @@ test.describe("betrouwbaarheid: fouten, dubbel tikken, alles-of-niets", () => {
       ((await nepDb()).pantry_items ?? []).map((p) => [p["naam"], p["hoeveelheid"]]).sort(),
     );
 
-  test.beforeEach(async () => {
+  test.beforeEach(async ({ page }) => {
+    // Vaste klok (14 u): na 21 u kijkt Vandaag bewust naar morgen (WP3), dan is er geen
+    // "Kook … vanavond". Zonder vaste klok faalden deze tests 's avonds (regressie C1, 21:37).
+    await zetKlok(page, 14);
     await fetch(`http://127.0.0.1:54439/rest/v1/meal_plan?plan_date=eq.${vandaag()}`, {
       method: "DELETE",
     });

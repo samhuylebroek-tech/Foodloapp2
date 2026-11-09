@@ -87,6 +87,22 @@ export function Winkelmodus({
   const [stap, setStap] = useState(0);
   const [overgeslagen, setOvergeslagen] = useState<Set<string>>(() => leesOvergeslagen(lijstId));
   const [nietGevonden, setNietGevonden] = useState<WinkelItem | null>(null);
+  // Net afgevinkt: meteen uit beeld (directe reactie, ook bij een trage verbinding; extra
+  // tikken op hetzelfde product doen niets). Komt het na enkele seconden toch nog als
+  // "te halen" binnen (opslaan mislukt), dan toont de winkelmodus het gewoon opnieuw.
+  const [onderweg, setOnderweg] = useState<Set<string>>(() => new Set());
+  const vink = (item: WinkelItem) => {
+    if (onderweg.has(item.id)) return;
+    setOnderweg((o) => new Set(o).add(item.id));
+    onVink(item);
+    window.setTimeout(() => {
+      setOnderweg((o) => {
+        const n = new Set(o);
+        n.delete(item.id);
+        return n;
+      });
+    }, 5000);
+  };
 
   // Scherm aan houden zolang je winkelt, waar de telefoon dat toelaat.
   useEffect(() => {
@@ -116,9 +132,16 @@ export function Winkelmodus({
   const zichtbaar = useMemo(
     () =>
       groepen
-        .map((g) => ({ ...g, lijst: g.lijst.filter((i) => !overgeslagen.has(i.id)) }))
+        .map((g) => ({
+          ...g,
+          lijst: g.lijst.filter((i) => !overgeslagen.has(i.id) && !onderweg.has(i.id)),
+        }))
         .filter((g) => g.lijst.length > 0),
-    [groepen, overgeslagen],
+    [groepen, overgeslagen, onderweg],
+  );
+  const onderwegOpen = useMemo(
+    () => groepen.flatMap((g) => g.lijst).filter((i) => onderweg.has(i.id)).length,
+    [groepen, onderweg],
   );
   const overgeslagenItems = useMemo(
     () => groepen.flatMap((g) => g.lijst).filter((i) => overgeslagen.has(i.id)),
@@ -129,8 +152,10 @@ export function Winkelmodus({
     if (stap > zichtbaar.length - 1) setStap(Math.max(0, zichtbaar.length - 1));
   }, [zichtbaar.length, stap]);
 
-  const huidig = zichtbaar[stap];
-  const teHalen = openAantal - overgeslagenItems.length;
+  // Meteen geklemd (niet pas na het effect): anders flitst "Klaar!" even op als de laatste
+  // afdeling leeg raakt terwijl er elders nog iets te halen is.
+  const huidig = zichtbaar[Math.min(stap, Math.max(0, zichtbaar.length - 1))];
+  const teHalen = Math.max(0, openAantal - overgeslagenItems.length - onderwegOpen);
   const totaal = openAantal + aantalGekocht;
   const procent = totaal
     ? Math.round(((aantalGekocht + overgeslagenItems.length) / totaal) * 100)
@@ -223,7 +248,7 @@ export function Winkelmodus({
                 <li key={item.id} className="paneel flex min-h-24 items-stretch overflow-hidden">
                   <button
                     type="button"
-                    onClick={() => onVink(item)}
+                    onClick={() => vink(item)}
                     className="flex min-w-0 flex-1 items-center gap-4 px-4 py-3 text-left transition-transform active:scale-[0.98]"
                   >
                     <span className="flex size-12 shrink-0 items-center justify-center rounded-full border-[3px] border-primary text-primary">

@@ -118,12 +118,14 @@ async function overslaan(page: Page, naam: string) {
 }
 
 /** Vink alles af wat nog te halen is in de winkelmodus (afdeling per afdeling). */
+/** Vinkt alles af; "Klaar" mag pas verschijnen als er écht niets meer te halen is. */
 async function vinkRestAf(page: Page) {
   const winkel = page.getByRole("dialog", { name: "Winkelmodus" });
   const knop = winkel.getByRole("button", { name: /— tik om af te vinken$/ });
   await expect(async () => {
     if ((await knop.count()) > 0) await knop.first().click();
     await expect(knop).toHaveCount(0, { timeout: 1000 });
+    await expect(winkel.getByTestId("te-halen")).toHaveText("0", { timeout: 1000 });
   }).toPass({ timeout: 30_000 });
 }
 
@@ -281,5 +283,22 @@ test("op een smal scherm is elke afdeling bereikbaar (rij scrolt)", async ({ pag
     await expect(chips.nth(i)).toHaveAttribute("aria-current", "step");
   }
   await expect(winkel).toBeVisible();
+  void extern;
+});
+
+test("dubbel tikken in de winkelmodus: één keer afgevinkt, product meteen uit beeld", async ({
+  page,
+  extern,
+}) => {
+  const winkel = await naarWinkel(page);
+  const knop = winkel.getByRole("button", { name: /^aardappelen .*tik om af te vinken$/ });
+  await expect(knop).toBeVisible();
+  await knop.dblclick();
+  await expect(knop).toBeHidden();
+  await page.waitForTimeout(1500);
+  expect((await regels()).find((r) => r["name"] === "aardappelen")).toMatchObject({
+    checked: true,
+  });
+  await expect(knop).toBeHidden();
   void extern;
 });
