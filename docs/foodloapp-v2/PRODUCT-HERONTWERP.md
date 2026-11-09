@@ -129,7 +129,8 @@ Geen lijst met tien taken. Altijd één knop.
 
 ## 5. Gebruikersstromen (A tot Z)
 
-**S1 — Week rond in één minuut** *(prototype gebouwd)*
+**S1 — Week rond in één minuut** *(gebouwd, verfijnd)*
+0. Meestal hoef je niet eens naar dit scherm: Vandaag en de Lijst tonen één kaart "12 dingen ontbreken voor je komende maaltijden" met één knop **Zet op mijn lijst**.
 1. Week → **Slim aanvullen** (of vanuit Lijst: "Uit je weekmenu").
 2. Scherm toont drie groepen:
    - **Nog kopen** (aangevinkt);
@@ -143,18 +144,18 @@ Geen lijst met tien taken. Altijd één knop.
   - Maaltijd zonder recept → aparte melding "zelf toevoegen".
   - Alles al in huis → "Je hebt alles. Smakelijk!"
 
-**S2 — Klaar met winkelen** *(prototype gebouwd)*
-1. In Lijst (of winkelmodus): **Klaar met winkelen**.
-2. Venster "Wat zet je in je voorraad?" met de afgevinkte items vooraf aangevinkt (basisproducten niet).
-3. **In voorraad (6)** zet ze erin; bestaande producten worden opgeteld. Daarna wordt de lijst opgeruimd.
-- Uitzonderingen:
-  - Niets afgevinkt → de knop verschijnt niet.
-  - Offline → lokaal bewaren en later doorsturen (bestaat voor de lijst; voor de voorraad is dat fase 2).
+**S2 — Klaar met winkelen** *(gebouwd, verfijnd)*
+1. Tik op **Klaar met winkelen** (in de lijst of aan het einde van de winkelmodus).
+2. Foodlo zet de afgevinkte items in de voorraad. Bestaande producten worden opgeteld (500 g bij 1 kg). Zout en dergelijke tellen niet. Daarna wordt de lijst opgeruimd.
+3. De melding zegt "8 dingen in je voorraad gezet" met **Ongedaan maken**. Dat zet lijst én voorraad terug.
+- Er komt geen tussenvraag: de eerste versie vroeg per item een bevestiging, en dat is geschrapt.
 
-**S3 — Gekookt → voorraad bijgewerkt** *(prototype gebouwd)*
-1. Kookstand → Klaar met koken → score (bestaat).
-2. "Wat heb je opgebruikt?" Ingrediënten die in je voorraad staan zijn vooraf aangevinkt.
-3. **Bijwerken** haalt ze uit de voorraad (met ongedaan maken). **Overslaan** mag altijd.
+**S3 — Gekookt → voorraad bijgewerkt** *(gebouwd, verfijnd)*
+1. Klaar met koken → score (of "Later").
+2. Foodlo trekt de gebruikte hoeveelheden af, aangepast aan het aantal personen. Voorbeelden: 2 el van 1 l olie wordt 0,97 l; 1 kg van 1 kg rundvlees betekent "op".
+3. Wat niet zeker te rekenen is (geen hoeveelheid, of "takjes" tegenover "bos") laat Foodlo staan, in plaats van te gokken.
+4. De melding zegt "Voorraad bijgewerkt: rundvlees op, uien minder" met **Ongedaan maken**.
+- Er komt geen tussenscherm meer: de eerste versie vroeg "Wat heb je opgebruikt?", en dat is geschrapt.
 
 **S4 — Iemand bij het huishouden halen** *(ontwerp, fase 2)*
 1. Profiel → Huishouden → **Iemand toevoegen**.
@@ -199,3 +200,25 @@ Geen lijst met tien taken. Altijd één knop.
 | K5 | Klaar met winkelen: afgevinkte items komen in de voorraad (bestaande worden opgeteld) en de lijst wordt opgeruimd | E2E |
 | K6 | Na het koken: aangevinkte gebruikte ingrediënten verdwijnen uit de voorraad; overslaan wijzigt niets | E2E |
 | K7 | Alle nieuwe vensters: dialoogrol, focus, Escape, raakdoelen ≥ 44 px, geen zijscroll op 360 px | E2E + axe |
+
+---
+
+## 8. Verfijning na kritische herbeoordeling (2026-11-09)
+
+| Probleem in de eerste versie | Waarom fout | Nu |
+|---|---|---|
+| Voorraad telde alleen op naam: 200 g bloem in huis = "heb je al", ook als je 500 g nodig hebt | Je komt thuis zonder genoeg | Hoeveelheden met eenheden (g/kg, ml/cl/dl/l/el/tl, stuks). Alleen het tekort gaat op de lijst, met "je hebt al 200 g" |
+| Een tekort bij iets dat al op de lijst stond, werd een tweede regel | Dubbels op de lijst | Wordt bijgeteld bij de bestaande regel |
+| Twee keer aanvullen, of twee gezinsleden tegelijk | Dubbels | Foodlo rekent vlak vóór het schrijven opnieuw. De tweede keer krijg je "Alles staat al op je lijst" |
+| Gerecht uit het menu gehaald, boodschappen bleven op de lijst | Onnodig kopen | "3 op je lijst: gerecht niet meer gepland → Haal weg" |
+| Aanvullen vroeg een apart scherm met 22 regels | Te veel lezen | Eén kaart op Vandaag en de Lijst. Het detailscherm is gegroepeerd per winkelafdeling, met korte regels en "in huis" als chips |
+| Klaar met winkelen en Na het koken vroegen telkens een bevestiging | Onnodige keuzes | Gebeurt meteen. De melding zegt wat er gebeurde, met één "Ongedaan maken" |
+| Na het koken alles uit de voorraad halen wat in het recept staat | Een fles olie verdwijnt na 2 eetlepels | Alleen aftrekken wat zeker te rekenen is |
+| Nep-databank vulde de aankoopdatum niet in → lijstscherm crashte na opruimen | Demo onbetrouwbaar | Hersteld (net als de echte databank: standaard "nu") |
+
+Getest van begin tot einde (`tests/e2e/kringloop.spec.ts`):
+1. Vandaag → aanvullen.
+2. Alles afvinken → klaar met winkelen → voorraad.
+3. Koken → voorraad bijgewerkt → ongedaan maken.
+
+Daarnaast getest: dubbel aanvullen vanuit twee vensters, en ongedaan maken van "klaar met winkelen". De randgevallen staan in de unit-tests `src/lib/kringloop.test.ts`: gedeeltelijke voorraad, eenheden, overlappende ingrediënten, niet meer geplande gerechten en verbruik.

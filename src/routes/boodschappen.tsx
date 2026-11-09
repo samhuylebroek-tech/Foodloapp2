@@ -38,8 +38,9 @@ import { AppShell } from "@/components/AppShell";
 import { cn } from "@/lib/utils";
 import { Klantenkaarten } from "@/components/Klantenkaarten";
 import { Groep, Icoon } from "@/components/mobiel/Lijst";
-import { voorraadNaKoop } from "@/lib/kringloop";
-import { isBasis } from "@/lib/voorraad-match";
+import { AanvulKaart } from "@/components/kringloop/AanvulKaart";
+import { meldMetHerstel, useKringloopVernieuw } from "@/hooks/useAanvulling";
+import { klaarMetWinkelen } from "@/lib/kringloop-db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -752,46 +753,33 @@ function BoodschappenPage() {
     toast.success("Gekochte boodschappen opgeruimd — je vindt ze terug bij Vorige boodschappen");
   }
 
-  // V2-kringloop (S2): gekochte boodschappen in één tik naar de voorraad.
-  const [naarVoorraad, setNaarVoorraad] = useState<Set<string> | null>(null);
-  const [voorraadBezig, setVoorraadBezig] = useState(false);
-  function openKlaarMetWinkelen() {
-    setNaarVoorraad(new Set(klaar.filter((i) => !isBasis(i.name)).map((i) => i.id)));
-  }
-  async function bewaarInVoorraad(meenemen: boolean) {
-    if (!user) return;
-    setVoorraadBezig(true);
+  // V2-kringloop (S2): klaar met winkelen = in de voorraad + lijst opgeruimd. Geen vraag,
+  // wel één "Ongedaan maken".
+  const vernieuwKringloop = useKringloopVernieuw();
+  const [winkelKlaarBezig, setWinkelKlaarBezig] = useState(false);
+  async function klaarMetWinkelenNu() {
+    if (!user || !actieveLijst || !klaar.length || winkelKlaarBezig) return;
+    setWinkelKlaarBezig(true);
     try {
-      const gekozen = meenemen ? klaar.filter((i) => naarVoorraad?.has(i.id)) : [];
-      if (gekozen.length) {
-        const { data: bestaand, error } = await supabase
-          .from("pantry_items")
-          .select("id, naam, hoeveelheid, eenheid")
-          .eq("user_id", user.id);
-        if (error) throw error;
-        const plan = voorraadNaKoop(gekozen, bestaand ?? []);
-        for (const b of plan.bijwerken) {
-          await supabase.from("pantry_items").update({ hoeveelheid: b.hoeveelheid }).eq("id", b.id);
-        }
-        if (plan.nieuw.length) {
-          const { error: fout } = await supabase
-            .from("pantry_items")
-            .insert(plan.nieuw.map((n) => ({ ...n, user_id: user.id })));
-          if (fout) throw fout;
-        }
-        void meet("kringloop.naar_voorraad", String(gekozen.length));
-        qc.invalidateQueries({ queryKey: ["voorraad"] });
-      }
-      setNaarVoorraad(null);
-      await wisAfgevinkt();
-      if (gekozen.length)
-        toast.success(
-          `${gekozen.length} ${gekozen.length === 1 ? "ding staat" : "dingen staan"} in je voorraad`,
-        );
+      const r = await klaarMetWinkelen({ userId: user.id, lijst: actieveLijst, gekocht: klaar });
+      void meet("kringloop.naar_voorraad", undefined, { aantal: r.inVoorraad });
+      refresh();
+      vernieuwKringloop();
+      qc.invalidateQueries({ queryKey: ["shopping-history"] });
+      meldMetHerstel(
+        r.inVoorraad
+          ? `${r.inVoorraad} ${r.inVoorraad === 1 ? "ding" : "dingen"} in je voorraad gezet`
+          : "Lijst opgeruimd",
+        async () => {
+          await r.herstel();
+          refresh();
+        },
+        vernieuwKringloop,
+      );
     } catch {
-      toast.error("In je voorraad zetten lukte niet. Je lijst blijft staan.");
+      toast.error("Dat lukte niet. Je lijst blijft staan.");
     } finally {
-      setVoorraadBezig(false);
+      setWinkelKlaarBezig(false);
     }
   }
 
@@ -975,8 +963,10 @@ function BoodschappenPage() {
           </p>
         )}
 
+        {weergave === "lijst" ? <AanvulKaart /> : null}
+
         {openAantal > 0 ? (
-          <Button variant="inkt" onClick={() => setWinkel(true)} className="h-16 w-full text-lg">
+          <Button variant="zacht" onClick={() => setWinkel(true)} className="h-16 w-full text-lg">
             <ShoppingCart className="size-6" /> Ik ga boodschappen doen
           </Button>
         ) : null}
@@ -1249,7 +1239,11 @@ function BoodschappenPage() {
                             </li>
                           ))}
                         </ul>
-                        <Button onClick={openKlaarMetWinkelen} className="mt-3 w-full">
+                        <Button
+                          onClick={() => void klaarMetWinkelenNu()}
+                          disabled={winkelKlaarBezig}
+                          className="mt-3 w-full"
+                        >
                           <PackageCheck /> Klaar met winkelen
                         </Button>
                         <Button
@@ -1455,7 +1449,7 @@ function BoodschappenPage() {
           aantalGekocht={klaar.length}
           onVink={(item) => void vink(item)}
           onSluit={() => setWinkel(false)}
-          onOpruimen={() => { setWinkel(false); openKlaarMetWinkelen(); }}
+          onOpruimen={() => { setWinkel(false); void klaarMetWinkelenNu(); }}
         />
       )}
 
@@ -1561,73 +1555,6 @@ function BoodschappenPage() {
               <Trash2 /> Verwijderen
             </Button>
             <Button onClick={() => void bewaarItem()}>Opslaan</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={naarVoorraad !== null}
-        onOpenChange={(open) => {
-          if (!open) setNaarVoorraad(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Wat zet je in je voorraad?</DialogTitle>
-            <DialogDescription>
-              Zo weet Foodlo wat je in huis hebt. Daarna ruimen we je lijst op.
-            </DialogDescription>
-          </DialogHeader>
-          <ul className="paneel max-h-[45dvh] divide-y divide-border/80 overflow-y-auto">
-            {klaar.map((item) => {
-              const aan = naarVoorraad?.has(item.id) ?? false;
-              return (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    role="checkbox"
-                    aria-checked={aan}
-                    onClick={() =>
-                      setNaarVoorraad((oud) => {
-                        const nieuw = new Set(oud ?? []);
-                        if (nieuw.has(item.id)) nieuw.delete(item.id);
-                        else nieuw.add(item.id);
-                        return nieuw;
-                      })
-                    }
-                    className="flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left"
-                  >
-                    <span
-                      aria-hidden
-                      className={cn(
-                        "flex size-7 shrink-0 items-center justify-center rounded-full border-2",
-                        aan ? "border-primary bg-primary text-primary-foreground" : "border-input",
-                      )}
-                    >
-                      {aan ? <Check className="size-4" strokeWidth={3} /> : null}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-lg">{item.name}</span>
-                    {maatTekst(item) ? (
-                      <span className="shrink-0 text-base text-muted-foreground">
-                        {maatTekst(item)}
-                      </span>
-                    ) : null}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              disabled={voorraadBezig}
-              onClick={() => void bewaarInVoorraad(false)}
-            >
-              Alleen opruimen
-            </Button>
-            <Button disabled={voorraadBezig} onClick={() => void bewaarInVoorraad(true)}>
-              <PackageCheck /> In voorraad ({naarVoorraad?.size ?? 0})
-            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1844,14 +1771,14 @@ function Winkelmodus({
             <p className="text-paginatitel">Klaar! Alles gekocht</p>
             {aantalGekocht > 0 ? (
               <Button className="h-16 w-full max-w-sm text-lg" onClick={onOpruimen}>
-                Lijst leegmaken
+                <PackageCheck className="size-6" /> Klaar met winkelen
               </Button>
             ) : null}
             <Button variant="outline" className="h-14 w-full max-w-sm text-lg" onClick={onSluit}>
               Nog iets vergeten
             </Button>
             <p className="text-base text-muted-foreground">
-              Wat je kocht, vind je later terug bij “Eerder gekocht”.
+              Wat je kocht, gaat naar je voorraad.
             </p>
           </div>
         )}

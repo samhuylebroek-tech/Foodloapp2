@@ -48,7 +48,8 @@ import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/ty
 import { Copy, Users } from "lucide-react";
 import { KookTimers } from "@/components/KookTimers";
 import { bewaarVoortgang, leesVoortgang, vindTimers, wisVoortgang } from "@/lib/kookstand";
-import { gebruiktUitVoorraad, type VoorraadRij } from "@/lib/kringloop";
+import { meldMetHerstel, useKringloopVernieuw } from "@/hooks/useAanvulling";
+import { verwerkKoken } from "@/lib/kringloop-db";
 import { soortLabel } from "@/lib/recept-keuzes";
 import { tijdLabel } from "@/lib/tijd";
 import { Voedingswaarden } from "@/components/Voedingswaarden";
@@ -177,9 +178,7 @@ function ReceptPage() {
 
   // Niet per ongeluk wegnavigeren tijdens het koken (terugknop, link, veeggebaar).
   const [stopVraag, setStopVraag] = useState(false);
-  // V2-kringloop (S3): na het koken de voorraad bijwerken.
-  const [opgebruikt, setOpgebruikt] = useState<VoorraadRij[] | null>(null);
-  const [opgebruiktKeuze, setOpgebruiktKeuze] = useState<Set<string>>(new Set());
+  const vernieuwKringloop = useKringloopVernieuw();
   useBlocker({
     shouldBlockFn: () => !window.confirm(t("Stoppen met koken? Je stap blijft bewaard.")),
     disabled: !kookstand,
@@ -550,118 +549,36 @@ function ReceptPage() {
   }
 
   function stopKoken() {
-    setOpgebruikt(null);
     setKlaarVragen(false);
     setKookstand(false);
   }
 
-  // Na de score: staat er iets uit dit recept in je voorraad? Dan één vraag, anders klaar.
+  // V2-kringloop (S3): na het koken haalt Foodlo de gebruikte hoeveelheden zelf uit
+  // je voorraad. Geen vraag; de melding zegt wat er gebeurde, met "Ongedaan maken".
   async function naKoken() {
-    if (!user) return stopKoken();
-    const { data: voorraad } = await supabase
-      .from("pantry_items")
-      .select("id, naam, hoeveelheid, eenheid")
-      .eq("user_id", user.id);
-    const gebruikt = gebruiktUitVoorraad(
-      ingredients.map((i) => i.name),
-      voorraad ?? [],
-    );
-    if (!gebruikt.length) return stopKoken();
-    setOpgebruiktKeuze(new Set(gebruikt.map((g) => g.id)));
-    setOpgebruikt(gebruikt);
-  }
-
-  async function haalUitVoorraad() {
-    const weg = (opgebruikt ?? []).filter((v) => opgebruiktKeuze.has(v.id));
-    if (weg.length) {
-      const { error } = await supabase
-        .from("pantry_items")
-        .delete()
-        .in(
-          "id",
-          weg.map((v) => v.id),
-        );
-      if (error) {
-        toast.error(t("Bijwerken lukte niet"));
-        return;
-      }
-      void meet("kringloop.opgebruikt", String(weg.length));
-      toast.success(
-        `${weg.length} ${t(weg.length === 1 ? "ding uit je voorraad" : "dingen uit je voorraad")}`,
-        {
-          action: {
-            label: t("Ongedaan maken"),
-            onClick: async () => {
-              if (!user) return;
-              await supabase.from("pantry_items").insert(
-                weg.map((v) => ({
-                  user_id: user.id,
-                  naam: v.naam,
-                  hoeveelheid: v.hoeveelheid,
-                  eenheid: v.eenheid ?? "",
-                })),
-              );
-            },
-          },
-        },
-      );
-    }
     stopKoken();
-  }
-
-  if (kookstand && klaarVragen && opgebruikt) {
-    return (
-      <div className="flex min-h-screen items-center bg-background p-5">
-        <div className="paneel mx-auto w-full max-w-2xl p-6">
-          <h2 className="text-paginatitel">{t("Wat heb je opgebruikt?")}</h2>
-          <p className="mt-2 text-lg text-muted-foreground">
-            {t("Dan klopt je voorraad weer. Tik om iets te laten staan.")}
-          </p>
-          <ul className="mt-5 divide-y divide-border/80 rounded-2xl ring-1 ring-border/70">
-            {opgebruikt.map((v) => {
-              const aan = opgebruiktKeuze.has(v.id);
-              return (
-                <li key={v.id}>
-                  <button
-                    type="button"
-                    role="checkbox"
-                    aria-checked={aan}
-                    onClick={() =>
-                      setOpgebruiktKeuze((oud) => {
-                        const nieuw = new Set(oud);
-                        if (nieuw.has(v.id)) nieuw.delete(v.id);
-                        else nieuw.add(v.id);
-                        return nieuw;
-                      })
-                    }
-                    className="flex min-h-16 w-full items-center gap-3 px-4 py-2 text-left"
-                  >
-                    <span
-                      aria-hidden
-                      className={`flex size-8 shrink-0 items-center justify-center rounded-full border-2 ${
-                        aan ? "border-primary bg-primary text-primary-foreground" : "border-input"
-                      }`}
-                    >
-                      {aan ? <Check className="size-5" strokeWidth={3} /> : null}
-                    </span>
-                    <span className="min-w-0 flex-1 text-xl">{v.naam}</span>
-                    <span className="shrink-0 text-base text-muted-foreground">
-                      {aan ? t("op") : t("blijft")}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          <Button onClick={() => void haalUitVoorraad()} className="mt-6 h-16 w-full text-lg">
-            {t("Voorraad bijwerken")}
-          </Button>
-          <Button variant="ghost" onClick={stopKoken} className="mt-2 h-14 w-full text-lg">
-            {t("Overslaan")}
-          </Button>
-        </div>
-      </div>
-    );
+    if (!user) return;
+    try {
+      const r = await verwerkKoken({
+        userId: user.id,
+        ingredienten: ingredients.map((i) => ({
+          name: i.name,
+          quantity: i.quantity,
+          unit: i.unit,
+        })),
+        factor,
+      });
+      if (!r) return;
+      void meet("kringloop.opgebruikt", undefined, { aantal: r.samenvatting.length });
+      vernieuwKringloop();
+      meldMetHerstel(
+        `${t("Voorraad bijgewerkt")}: ${r.samenvatting.join(", ")}`,
+        r.herstel,
+        vernieuwKringloop,
+      );
+    } catch {
+      /* voorraad bijwerken is een extraatje; koken is gelukt */
+    }
   }
 
   if (kookstand && klaarVragen) {

@@ -1,30 +1,20 @@
 /**
- * Slim aanvullen (prototype V2, stroom S1): wat heb je nodig voor je komende
- * maaltijden, min wat je al hebt? Eén tik zet de rest op je lijst.
+ * Slim aanvullen (V2, stroom S1): wat ontbreekt er voor je komende maaltijden?
+ * Foodlo rekent: porties, overlappende ingrediënten, wat in huis is, wat al op
+ * de lijst staat. Jij tikt één keer. Weglaten of toch meenemen = één tik.
  */
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import {
-  CalendarDays,
-  Check,
-  ListChecks,
-  PackageCheck,
-  ShoppingCart,
-  Sparkles,
-} from "lucide-react";
-import { toast } from "sonner";
+import { CalendarDays, Check, Loader2, Plus, ShoppingCart, Sparkles } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState } from "@/components/EmptyState";
 import { LadenRijen } from "@/components/mobiel/Lijst";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { zorgVoorLijst } from "@/lib/boodschappen";
+import { useAanvulling } from "@/hooks/useAanvulling";
+import { CATEGORIE_LABEL, CATEGORIE_VOLGORDE } from "@/lib/categorie";
 import { toonBelgischeMaat } from "@/lib/ingredienten";
-import { berekenAanvulling, korteDag, type Regel } from "@/lib/kringloop";
-import { meet } from "@/lib/meten";
-import { lokaleDatum } from "@/lib/tijd";
+import { KOMENDE_DAGEN } from "@/lib/kringloop-db";
+import { type Regel } from "@/lib/kringloop";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/aanvullen")({
@@ -40,69 +30,34 @@ export const Route = createFileRoute("/aanvullen")({
   component: AanvullenPagina,
 });
 
-const DAGEN = 7;
+function kortVoor(r: Regel) {
+  const eerste = r.voor[0]?.titel ?? "";
+  return r.voor.length > 1 ? `${eerste} +${r.voor.length - 1}` : eerste;
+}
 
 function AanvullenPagina() {
-  const { user } = useAuth();
-  const qc = useQueryClient();
-  const vandaag = lokaleDatum();
-  const tot = useMemo(() => {
-    const d = new Date(`${vandaag}T12:00:00`);
-    d.setDate(d.getDate() + DAGEN - 1);
-    return lokaleDatum(d);
-  }, [vandaag]);
+  const { data, isLoading, isError, refetch, zetOpLijst, haalWeg } = useAanvulling();
+  const a = data?.aanvulling;
 
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["aanvullen", user?.id, vandaag],
-    enabled: !!user,
-    queryFn: async () => {
-      const uid = user!.id;
-      const listId = await zorgVoorLijst(uid);
-      const [plan, voorraad, lijst] = await Promise.all([
-        supabase
-          .from("meal_plan")
-          .select("plan_date, recipe_id, personen, custom_title, soort")
-          .eq("user_id", uid)
-          .is("group_id", null)
-          .gte("plan_date", vandaag)
-          .lte("plan_date", tot),
-        supabase.from("pantry_items").select("naam").eq("user_id", uid),
-        supabase.from("shopping_items").select("name, checked").eq("list_id", listId),
-      ]);
-      if (plan.error) throw plan.error;
-      const ids = [
-        ...new Set((plan.data ?? []).map((p) => p.recipe_id).filter((x): x is string => !!x)),
-      ];
-      const [recepten, ingredienten] = ids.length
-        ? await Promise.all([
-            supabase.from("recipes").select("id, title, servings").in("id", ids),
-            supabase
-              .from("recipe_ingredients")
-              .select("recipe_id, name, quantity, unit")
-              .in("recipe_id", ids),
-          ])
-        : [{ data: [] }, { data: [] }];
-      return {
-        listId,
-        aanvulling: berekenAanvulling({
-          plan: plan.data ?? [],
-          recepten: recepten.data ?? [],
-          ingredienten: ingredienten.data ?? [],
-          voorraad: (voorraad.data ?? []).map((v) => v.naam),
-          lijst: lijst.data ?? [],
-          vanaf: vandaag,
-        }),
-      };
-    },
-  });
-
-  // Welke regels gaan mee? Standaard: alles uit "Nog kopen", niets uit "Heb je al".
+  // Standaard alles wat ontbreekt; "heb je al" alleen als je het zelf aantikt.
   const [gekozen, setGekozen] = useState<Set<string>>(new Set());
-  const [klaar, setKlaar] = useState<number | null>(null);
   const [bezig, setBezig] = useState(false);
+  const [klaar, setKlaar] = useState<number | null>(null);
+  const sleutels = a?.kopen.map((r) => r.sleutel).join(",");
   useEffect(() => {
-    if (data) setGekozen(new Set(data.aanvulling.kopen.map((r) => r.sleutel)));
-  }, [data]);
+    if (a) setGekozen(new Set(a.kopen.map((r) => r.sleutel)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sleutels]);
+
+  const perAfdeling = useMemo(() => {
+    const groepen = new Map<string, Regel[]>();
+    for (const r of a?.kopen ?? [])
+      groepen.set(r.categorie, [...(groepen.get(r.categorie) ?? []), r]);
+    return CATEGORIE_VOLGORDE.filter((c) => groepen.has(c)).map((c) => ({
+      id: c,
+      regels: groepen.get(c)!,
+    }));
+  }, [a]);
 
   function wissel(sleutel: string) {
     setGekozen((oud) => {
@@ -113,59 +68,12 @@ function AanvullenPagina() {
     });
   }
 
-  async function zetOpLijst() {
-    if (!user || !data) return;
-    const regels = [...data.aanvulling.kopen, ...data.aanvulling.inHuis].filter((r) =>
-      gekozen.has(r.sleutel),
-    );
-    if (!regels.length) return;
-    setBezig(true);
-    const { data: rijen, error } = await supabase
-      .from("shopping_items")
-      .insert(
-        regels.map((r) => ({
-          user_id: user.id,
-          list_id: data.listId,
-          name: r.naam,
-          quantity: r.quantity,
-          unit: r.unit,
-          recipe_id: r.recipe_id,
-          note: null,
-        })),
-      )
-      .select("id");
-    setBezig(false);
-    if (error) {
-      toast.error("Op je lijst zetten lukte niet. Probeer het opnieuw.");
-      return;
-    }
-    void meet("kringloop.aangevuld", String(regels.length));
-    void qc.invalidateQueries({ queryKey: ["shopping"] });
-    setKlaar(regels.length);
-    const ids = (rijen ?? []).map((r) => r.id as string);
-    toast.success(`${regels.length} ${regels.length === 1 ? "ding" : "dingen"} op je lijst`, {
-      action: {
-        label: "Ongedaan maken",
-        onClick: async () => {
-          await supabase.from("shopping_items").delete().in("id", ids);
-          setKlaar(null);
-          void refetch();
-        },
-      },
-    });
-  }
-
-  const a = data?.aanvulling;
   const aantal = gekozen.size;
 
   return (
     <AppShell
       title="Slim aanvullen"
-      ondertitel={
-        a
-          ? `${a.aantalGerechten} ${a.aantalGerechten === 1 ? "gerecht" : "gerechten"} in je komende ${DAGEN} dagen · min wat je al hebt`
-          : undefined
-      }
+      ondertitel={`Voor je komende ${KOMENDE_DAGEN} dagen. Wat je al hebt, laten we weg.`}
     >
       {isLoading ? (
         <LadenRijen aantal={5} label="Je week wordt berekend" />
@@ -184,7 +92,7 @@ function AanvullenPagina() {
         <EmptyState
           icon={<Check />}
           title={`${klaar} ${klaar === 1 ? "ding staat" : "dingen staan"} op je lijst`}
-          description="Wat je al in huis hebt, hebben we weggelaten."
+          description="Foodlo hield rekening met wat je al hebt."
           action={
             <Button asChild className="w-full">
               <Link to="/boodschappen">
@@ -197,7 +105,7 @@ function AanvullenPagina() {
         <EmptyState
           icon={<CalendarDays />}
           title="Nog niets gepland"
-          description="Plan eerst een paar gerechten. Daarna rekenen we uit wat je nodig hebt."
+          description="Plan een paar gerechten. Dan rekent Foodlo uit wat je nodig hebt."
           action={
             <Button asChild className="w-full">
               <Link to="/planner">Plan je week</Link>
@@ -206,166 +114,162 @@ function AanvullenPagina() {
         />
       ) : (
         <div className="space-y-7 pb-28">
-          {/* In één oogopslag: drie getallen. */}
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              {
-                n: a.kopen.length,
-                label: "nog kopen",
-                icoon: ShoppingCart,
-                tint: "bg-inkt text-inkt-foreground",
-              },
-              { n: a.inHuis.length, label: "heb je al", icoon: PackageCheck, tint: "paneel" },
-              { n: a.opLijst.length, label: "al op lijst", icoon: ListChecks, tint: "paneel" },
-            ].map((t) => (
-              <div key={t.label} className={cn("rounded-[1.25rem] p-3 text-center", t.tint)}>
-                <t.icoon className="mx-auto size-5 opacity-80" aria-hidden />
-                <p className="mt-1 text-3xl font-bold tabular-nums leading-none">{t.n}</p>
-                <p className="mt-1 text-[0.9rem] font-semibold leading-tight">{t.label}</p>
-              </div>
-            ))}
-          </div>
+          {a.nietMeerNodig.length ? (
+            <div className="paneel flex items-center gap-3 p-4">
+              <p className="min-w-0 flex-1 text-base">
+                <strong>{a.nietMeerNodig.length}</strong> op je lijst: gerecht niet meer gepland
+              </p>
+              <Button
+                variant="zacht"
+                size="sm"
+                onClick={() => void haalWeg(a.nietMeerNodig.map((n) => n.id))}
+              >
+                Haal weg
+              </Button>
+            </div>
+          ) : null}
 
-          {a.kopen.length === 0 && a.inHuis.length === 0 ? (
+          {a.kopen.length === 0 ? (
             <EmptyState
               icon={<Sparkles />}
               title="Je hebt alles"
-              description="Alles voor je komende maaltijden staat al op je lijst. Smakelijk!"
+              description="Alles voor je komende maaltijden is in huis of staat op je lijst."
             />
-          ) : null}
+          ) : (
+            perAfdeling.map((g) => (
+              <section key={g.id} aria-labelledby={`afd-${g.id}`}>
+                <h2
+                  id={`afd-${g.id}`}
+                  className="mb-2 px-1 text-[0.95rem] font-bold text-muted-foreground"
+                >
+                  {CATEGORIE_LABEL[g.id]}
+                </h2>
+                <ul
+                  className="paneel divide-y divide-border/80 overflow-hidden"
+                  aria-label={`Nog kopen: ${CATEGORIE_LABEL[g.id]}`}
+                >
+                  {g.regels.map((r) => {
+                    const aan = gekozen.has(r.sleutel);
+                    const maat = toonBelgischeMaat(r.quantity ?? r.nodig, r.unit);
+                    return (
+                      <li key={r.sleutel}>
+                        <button
+                          type="button"
+                          role="checkbox"
+                          aria-checked={aan}
+                          onClick={() => wissel(r.sleutel)}
+                          className={cn(
+                            "flex min-h-16 w-full items-center gap-3 px-4 py-2 text-left transition-colors active:bg-muted",
+                            !aan && "bg-muted/50",
+                          )}
+                        >
+                          <span
+                            aria-hidden
+                            className={cn(
+                              "flex size-8 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+                              aan
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-input bg-card",
+                            )}
+                          >
+                            {aan ? <Check className="size-5" strokeWidth={3} /> : null}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span
+                              className={cn(
+                                "block text-lg leading-snug",
+                                !aan && "text-muted-foreground line-through",
+                              )}
+                            >
+                              {r.naam}
+                            </span>
+                            <span className="block truncate text-[0.9rem] text-muted-foreground">
+                              {r.inHuisDeels
+                                ? `je hebt al ${r.inHuisDeels}`
+                                : r.opLijstDeels
+                                  ? `extra bij wat al op je lijst staat`
+                                  : kortVoor(r)}
+                            </span>
+                          </span>
+                          {maat ? (
+                            <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-[0.95rem] font-semibold tabular-nums">
+                              {maat}
+                            </span>
+                          ) : null}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ))
+          )}
 
-          <RegelGroep
-            id="kopen"
-            titel="Nog kopen"
-            uitleg="Tik om iets weg te laten."
-            regels={a.kopen}
-            gekozen={gekozen}
-            onWissel={wissel}
-            vandaag={vandaag}
-          />
-          <RegelGroep
-            id="in-huis"
-            titel="Heb je al in je voorraad"
-            uitleg="Toch nodig? Tik om het mee te nemen."
-            regels={a.inHuis}
-            gekozen={gekozen}
-            onWissel={wissel}
-            vandaag={vandaag}
-          />
-          {a.opLijst.length ? (
-            <section aria-labelledby="op-lijst-kop">
+          {a.inHuis.length ? (
+            <section aria-labelledby="in-huis-kop">
               <h2
-                id="op-lijst-kop"
+                id="in-huis-kop"
                 className="mb-2 px-1 text-[0.95rem] font-bold text-muted-foreground"
               >
-                Staat al op je lijst
+                In huis — toch nodig? Tik erop
               </h2>
-              <p className="paneel px-4 py-3 text-base text-muted-foreground">
-                {a.opLijst.map((r) => r.naam).join(", ")}
-              </p>
+              <ul className="flex flex-wrap gap-2" aria-label="Heb je al in huis">
+                {a.inHuis.map((r) => {
+                  const aan = gekozen.has(r.sleutel);
+                  return (
+                    <li key={r.sleutel}>
+                      <button
+                        type="button"
+                        role="checkbox"
+                        aria-checked={aan}
+                        onClick={() => wissel(r.sleutel)}
+                        className={cn(
+                          "inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-base font-semibold transition-colors",
+                          aan
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-secondary-foreground",
+                        )}
+                      >
+                        {aan ? (
+                          <Check className="size-4" aria-hidden />
+                        ) : (
+                          <Plus className="size-4" aria-hidden />
+                        )}
+                        {r.naam}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
             </section>
           ) : null}
+
           {a.zonderRecept.length ? (
             <p className="rounded-2xl bg-honing-zacht px-4 py-3 text-base text-honing-foreground">
-              Zonder recept, dus zelf aanvullen: {a.zonderRecept.join(", ")}
+              Zonder recept: {a.zonderRecept.join(", ")}
             </p>
           ) : null}
 
-          {/* Eén hoofdactie, altijd binnen bereik. */}
+          {/* Eén hoofdactie, altijd binnen bereik van de duim. */}
           <div className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 border-t border-border/70 bg-background/95 px-4 py-3 backdrop-blur-md lg:bottom-0">
             <div className="mx-auto max-w-3xl">
               <Button
-                onClick={() => void zetOpLijst()}
+                onClick={async () => {
+                  setBezig(true);
+                  const n = await zetOpLijst(gekozen);
+                  setBezig(false);
+                  if (n) setKlaar(n);
+                }}
                 disabled={!aantal || bezig}
                 className="h-16 w-full text-lg"
               >
-                <ShoppingCart className="size-6" />
-                {aantal
-                  ? `Zet ${aantal} ${aantal === 1 ? "ding" : "dingen"} op mijn lijst`
-                  : "Niets gekozen"}
+                {bezig ? <Loader2 className="animate-spin" /> : <ShoppingCart className="size-6" />}
+                {aantal ? `Zet ${aantal} op mijn lijst` : "Niets gekozen"}
               </Button>
             </div>
           </div>
         </div>
       )}
     </AppShell>
-  );
-}
-
-function RegelGroep({
-  id,
-  titel,
-  uitleg,
-  regels,
-  gekozen,
-  onWissel,
-  vandaag,
-}: {
-  id: string;
-  titel: string;
-  uitleg: string;
-  regels: Regel[];
-  gekozen: Set<string>;
-  onWissel: (sleutel: string) => void;
-  vandaag: string;
-}) {
-  if (!regels.length) return null;
-  return (
-    <section aria-labelledby={`${id}-kop`}>
-      <div className="mb-2 flex items-baseline justify-between gap-3 px-1">
-        <h2 id={`${id}-kop`} className="text-[0.95rem] font-bold text-muted-foreground">
-          {titel}
-        </h2>
-        <p className="text-[0.9rem] text-muted-foreground">{uitleg}</p>
-      </div>
-      <ul className="paneel divide-y divide-border/80 overflow-hidden" aria-label={titel}>
-        {regels.map((r) => {
-          const aan = gekozen.has(r.sleutel);
-          const maat = toonBelgischeMaat(r.quantity, r.unit);
-          const voor = r.voor.map((v) => `${v.titel} (${korteDag(v.dag, vandaag)})`).join(", ");
-          return (
-            <li key={r.sleutel}>
-              <button
-                type="button"
-                role="checkbox"
-                aria-checked={aan}
-                onClick={() => onWissel(r.sleutel)}
-                className={cn(
-                  "flex min-h-[4.25rem] w-full items-center gap-3 px-4 py-2.5 text-left transition-colors active:bg-muted",
-                  !aan && "bg-muted/40",
-                )}
-              >
-                <span
-                  aria-hidden
-                  className={cn(
-                    "flex size-8 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
-                    aan
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-input bg-card",
-                  )}
-                >
-                  {aan ? <Check className="size-5" strokeWidth={3} /> : null}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span
-                    className={cn("block text-lg leading-snug", !aan && "text-muted-foreground")}
-                  >
-                    {r.naam}
-                  </span>
-                  <span className="block truncate text-[0.9rem] text-muted-foreground">
-                    voor {voor}
-                  </span>
-                </span>
-                {maat ? (
-                  <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-[0.95rem] font-semibold tabular-nums text-muted-foreground">
-                    {maat}
-                  </span>
-                ) : null}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
   );
 }

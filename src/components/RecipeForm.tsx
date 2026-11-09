@@ -197,6 +197,9 @@ export function RecipeForm({
   const conceptIdRef = useRef<string | null>(null);
   const conceptBelofte = useRef<Promise<void> | null>(null);
   const bewarenBezig = useRef(false);
+  // Zodra het echte bewaren begon, schrijft het concept niets meer (anders kunnen
+  // ingrediënten dubbel in de databank komen).
+  const definitiefBewaard = useRef(false);
   const [voorstelFoto, setVoorstelFoto] = useState<string | null>(null);
   const [fotoBezig, setFotoBezig] = useState(false);
   const [fotoGeweigerd, setFotoGeweigerd] = useState(false);
@@ -703,7 +706,7 @@ export function RecipeForm({
 
 
   useEffect(() => {
-    if (recipe || !user || saving || !title.trim()) return;
+    if (recipe || !user || saving || definitiefBewaard.current || !title.trim()) return;
     const bewaarConcept = async () => {
       try {
         const velden = {
@@ -729,6 +732,7 @@ export function RecipeForm({
           conceptIdRef.current = id;
           setConceptId(id);
         }
+        if (bewarenBezig.current || definitiefBewaard.current) return;
         await supabase.from("recipe_ingredients").delete().eq("recipe_id", id!);
         const rijen = parseIngredientText(ingredientTekst).map((r, index) => ({
           recipe_id: id!, name: r.name, quantity: r.quantity, unit: r.unit, position: index,
@@ -742,7 +746,7 @@ export function RecipeForm({
       }
     };
     const t = setTimeout(() => {
-      if (conceptBezig.current || bewarenBezig.current) return;
+      if (conceptBezig.current || bewarenBezig.current || definitiefBewaard.current) return;
       conceptBezig.current = true;
       setAutoStatus("bezig");
       conceptBelofte.current = bewaarConcept();
@@ -775,8 +779,11 @@ export function RecipeForm({
       toast.error("Geef het gerecht een naam");
       return;
     }
+    // Twee keer snel tikken bewaart maar één keer.
+    if (bewarenBezig.current) return;
     setSaving(true);
     bewarenBezig.current = true;
+    definitiefBewaard.current = true;
     try {
       // Wacht op een concept dat nog onderweg is, en werk dát recept bij.
       if (conceptBelofte.current) await conceptBelofte.current.catch(() => undefined);
@@ -901,6 +908,8 @@ export function RecipeForm({
       } else {
         toast.error("Opslaan is niet gelukt");
       }
+      // Mislukt: concepten mogen weer bewaard worden.
+      definitiefBewaard.current = false;
 
     } finally {
       bewarenBezig.current = false;

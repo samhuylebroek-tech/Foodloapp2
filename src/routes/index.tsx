@@ -18,6 +18,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
+import { AanvulKaart } from "@/components/kringloop/AanvulKaart";
 import { EmptyState } from "@/components/EmptyState";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { RecipePhoto } from "@/components/RecipePhoto";
@@ -335,6 +336,8 @@ function StartPage() {
   return (
     <AppShell breed title={groetTekst} kop={kop}>
       <div className="space-y-12">
+        {/* Volgende stap: wat ontbreekt er voor je komende maaltijden? Eén knop. */}
+        <AanvulKaart toonKlaar />
         {overige.length ? (
           <section aria-labelledby="ook-vandaag">
             <h2 id="ook-vandaag" className="text-sectietitel">

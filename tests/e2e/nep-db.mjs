@@ -183,6 +183,8 @@ export function rest(db, { method, tabel, params, body, headers }) {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       ...(STANDAARD[tabel] ?? {}),
+      // Zoals de echte databank: aankoopdatum standaard "nu".
+      ...(tabel === "shopping_history" ? { gekocht_op: new Date().toISOString() } : {}),
       ...r,
     }));
     const conflict = params.get("on_conflict");
