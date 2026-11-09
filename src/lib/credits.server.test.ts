@@ -234,9 +234,11 @@ describe("maandbudget (kostenrem)", () => {
       // Budget verhoogd: na de geheugentijd (5 min) mag het weer.
       staat.budget = 50;
       vi.setSystemTime(new Date("2026-11-20T10:06:00Z"));
-      await expect(metCredits({ userId: "u1", feature: "import_url" }, run)).resolves.toMatchObject({
-        resultaat: "ok",
-      });
+      await expect(metCredits({ userId: "u1", feature: "import_url" }, run)).resolves.toMatchObject(
+        {
+          resultaat: "ok",
+        },
+      );
     } finally {
       vi.useRealTimers();
     }
