@@ -19,6 +19,7 @@ const PADEN = [
   "/recepten/nieuw",
   "/planner",
   "/boodschappen",
+  "/aanvullen",
   "/voorraad",
   "/meer",
   "/instellingen",

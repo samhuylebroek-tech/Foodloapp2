@@ -34,7 +34,7 @@ export default defineConfig({
     {
       name: "telefoon",
       use: { ...devices["Pixel 7"] },
-      testIgnore: /kernflow|schermen|kookstand|voorraad|personas|mobiel-breedtes/,
+      testIgnore: /kernflow|schermen|kookstand|voorraad|personas|mobiel-breedtes|kringloop/,
     },
     // Creator op desktop.
     {
@@ -52,7 +52,7 @@ export default defineConfig({
     {
       name: "mobiel-390",
       use: { ...devices["Pixel 7"], viewport: { width: 390, height: 844 } },
-      testMatch: /kernflow|schermen|personas|schermen-alle|mobiel-breedtes/,
+      testMatch: /kernflow|schermen|personas|schermen-alle|mobiel-breedtes|kringloop/,
     },
     {
       name: "tablet-768",

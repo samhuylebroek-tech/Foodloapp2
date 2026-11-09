@@ -20,6 +20,7 @@ const PADEN = [
   `/recepten/${RECEPT}/bewerken`,
   "/planner",
   "/boodschappen",
+  "/aanvullen",
   "/voorraad",
   "/meer",
   "/instellingen",

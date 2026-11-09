@@ -1,7 +1,7 @@
 import { lokaleDatum } from "@/lib/tijd";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { meet } from "@/lib/meten";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -28,6 +28,7 @@ import {
   Settings2,
   Undo2,
   Lightbulb,
+  PackageCheck,
   WalletCards,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -37,6 +38,8 @@ import { AppShell } from "@/components/AppShell";
 import { cn } from "@/lib/utils";
 import { Klantenkaarten } from "@/components/Klantenkaarten";
 import { Groep, Icoon } from "@/components/mobiel/Lijst";
+import { voorraadNaKoop } from "@/lib/kringloop";
+import { isBasis } from "@/lib/voorraad-match";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -749,6 +752,49 @@ function BoodschappenPage() {
     toast.success("Gekochte boodschappen opgeruimd — je vindt ze terug bij Vorige boodschappen");
   }
 
+  // V2-kringloop (S2): gekochte boodschappen in één tik naar de voorraad.
+  const [naarVoorraad, setNaarVoorraad] = useState<Set<string> | null>(null);
+  const [voorraadBezig, setVoorraadBezig] = useState(false);
+  function openKlaarMetWinkelen() {
+    setNaarVoorraad(new Set(klaar.filter((i) => !isBasis(i.name)).map((i) => i.id)));
+  }
+  async function bewaarInVoorraad(meenemen: boolean) {
+    if (!user) return;
+    setVoorraadBezig(true);
+    try {
+      const gekozen = meenemen ? klaar.filter((i) => naarVoorraad?.has(i.id)) : [];
+      if (gekozen.length) {
+        const { data: bestaand, error } = await supabase
+          .from("pantry_items")
+          .select("id, naam, hoeveelheid, eenheid")
+          .eq("user_id", user.id);
+        if (error) throw error;
+        const plan = voorraadNaKoop(gekozen, bestaand ?? []);
+        for (const b of plan.bijwerken) {
+          await supabase.from("pantry_items").update({ hoeveelheid: b.hoeveelheid }).eq("id", b.id);
+        }
+        if (plan.nieuw.length) {
+          const { error: fout } = await supabase
+            .from("pantry_items")
+            .insert(plan.nieuw.map((n) => ({ ...n, user_id: user.id })));
+          if (fout) throw fout;
+        }
+        void meet("kringloop.naar_voorraad", String(gekozen.length));
+        qc.invalidateQueries({ queryKey: ["voorraad"] });
+      }
+      setNaarVoorraad(null);
+      await wisAfgevinkt();
+      if (gekozen.length)
+        toast.success(
+          `${gekozen.length} ${gekozen.length === 1 ? "ding staat" : "dingen staan"} in je voorraad`,
+        );
+    } catch {
+      toast.error("In je voorraad zetten lukte niet. Je lijst blijft staan.");
+    } finally {
+      setVoorraadBezig(false);
+    }
+  }
+
   async function wisAlles() {
     if (!actief || !user || !actieveLijst) return;
     await bewaarGekocht(user.id, actieveLijst, klaar).catch(() => {});
@@ -1203,10 +1249,13 @@ function BoodschappenPage() {
                             </li>
                           ))}
                         </ul>
+                        <Button onClick={openKlaarMetWinkelen} className="mt-3 w-full">
+                          <PackageCheck /> Klaar met winkelen
+                        </Button>
                         <Button
                           variant="ghost"
                           onClick={() => setWisVraag("afgevinkt")}
-                          className="mt-2 w-full text-destructive"
+                          className="mt-1 w-full text-destructive"
                         >
                           <Trash2 /> Wis afgevinkte boodschappen
                         </Button>
@@ -1233,55 +1282,73 @@ function BoodschappenPage() {
             <div aria-hidden className="h-20 lg:hidden" />
           </>
         ) : (
-          <Groep
-            titel={
-              <span className="flex items-center gap-2">
-                <CalendarDays className="size-5" aria-hidden /> Gerechten uit je weekmenu
+          <div className="space-y-5">
+            {/* V2-kringloop: één tik voor alles wat nog ontbreekt (min voorraad). */}
+            <Link
+              to="/aanvullen"
+              className="flex items-center gap-4 rounded-[1.5rem] bg-inkt p-5 text-inkt-foreground shadow-kaart transition-transform active:scale-[0.99]"
+            >
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-honing text-honing-foreground">
+                <Sparkles className="size-6" aria-hidden />
               </span>
-            }
-            voet="Voeg ingrediënten toe zonder je boodschappenlijst uit het oog te verliezen."
-          >
-            {weekGerechten.length === 0 ? (
-              <p className="p-4 text-base text-muted-foreground">
-                Nog geen gerechten gepland. Plan eerst een gerecht in je weekmenu.
-              </p>
-            ) : (
-              weekGerechten.map((g) => {
-                const toegevoegd = toegevoegdeWeekGerechten.some(
-                  (item) => item.recipe_id === g.recipe_id,
-                );
-                return (
-                  <div key={g.recipe_id} className="flex min-h-20 items-center gap-3 px-4 py-3">
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[1.05rem] font-semibold">{g.titel}</span>
-                      <span className="block text-[0.95rem] capitalize text-muted-foreground">
-                        {datumLabel(g.dag)}
+              <span className="min-w-0 flex-1">
+                <span className="block text-kaarttitel">Slim aanvullen</span>
+                <span className="block text-base text-inkt-zacht">
+                  Alles voor je komende maaltijden, min wat je al hebt
+                </span>
+              </span>
+              <ChevronRight className="size-6 shrink-0" aria-hidden />
+            </Link>
+            <Groep
+              titel={
+                <span className="flex items-center gap-2">
+                  <CalendarDays className="size-5" aria-hidden /> Gerechten uit je weekmenu
+                </span>
+              }
+              voet="Voeg ingrediënten toe zonder je boodschappenlijst uit het oog te verliezen."
+            >
+              {weekGerechten.length === 0 ? (
+                <p className="p-4 text-base text-muted-foreground">
+                  Nog geen gerechten gepland. Plan eerst een gerecht in je weekmenu.
+                </p>
+              ) : (
+                weekGerechten.map((g) => {
+                  const toegevoegd = toegevoegdeWeekGerechten.some(
+                    (item) => item.recipe_id === g.recipe_id,
+                  );
+                  return (
+                    <div key={g.recipe_id} className="flex min-h-20 items-center gap-3 px-4 py-3">
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[1.05rem] font-semibold">{g.titel}</span>
+                        <span className="block text-[0.95rem] capitalize text-muted-foreground">
+                          {datumLabel(g.dag)}
+                        </span>
                       </span>
-                    </span>
-                    <Button
-                      variant={toegevoegd ? "secondary" : "zacht"}
-                      size="sm"
-                      disabled={toegevoegd}
-                      className="shrink-0"
-                      onClick={() =>
-                        void zetGerechtOpLijst(g.recipe_id, g.titel, g.personen, g.servings)
-                      }
-                    >
-                      {toegevoegd ? (
-                        <>
-                          <Check /> Toegevoegd
-                        </>
-                      ) : (
-                        <>
-                          <Plus /> Zet op lijst
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                );
-              })
-            )}
-          </Groep>
+                      <Button
+                        variant={toegevoegd ? "secondary" : "zacht"}
+                        size="sm"
+                        disabled={toegevoegd}
+                        className="shrink-0"
+                        onClick={() =>
+                          void zetGerechtOpLijst(g.recipe_id, g.titel, g.personen, g.servings)
+                        }
+                      >
+                        {toegevoegd ? (
+                          <>
+                            <Check /> Toegevoegd
+                          </>
+                        ) : (
+                          <>
+                            <Plus /> Zet op lijst
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  );
+                })
+              )}
+            </Groep>
+          </div>
         )}
       </div>
 
@@ -1388,7 +1455,7 @@ function BoodschappenPage() {
           aantalGekocht={klaar.length}
           onVink={(item) => void vink(item)}
           onSluit={() => setWinkel(false)}
-          onOpruimen={() => { setWinkel(false); void wisAfgevinkt(); }}
+          onOpruimen={() => { setWinkel(false); openKlaarMetWinkelen(); }}
         />
       )}
 
@@ -1494,6 +1561,73 @@ function BoodschappenPage() {
               <Trash2 /> Verwijderen
             </Button>
             <Button onClick={() => void bewaarItem()}>Opslaan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={naarVoorraad !== null}
+        onOpenChange={(open) => {
+          if (!open) setNaarVoorraad(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Wat zet je in je voorraad?</DialogTitle>
+            <DialogDescription>
+              Zo weet Foodlo wat je in huis hebt. Daarna ruimen we je lijst op.
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="paneel max-h-[45dvh] divide-y divide-border/80 overflow-y-auto">
+            {klaar.map((item) => {
+              const aan = naarVoorraad?.has(item.id) ?? false;
+              return (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={aan}
+                    onClick={() =>
+                      setNaarVoorraad((oud) => {
+                        const nieuw = new Set(oud ?? []);
+                        if (nieuw.has(item.id)) nieuw.delete(item.id);
+                        else nieuw.add(item.id);
+                        return nieuw;
+                      })
+                    }
+                    className="flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left"
+                  >
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "flex size-7 shrink-0 items-center justify-center rounded-full border-2",
+                        aan ? "border-primary bg-primary text-primary-foreground" : "border-input",
+                      )}
+                    >
+                      {aan ? <Check className="size-4" strokeWidth={3} /> : null}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-lg">{item.name}</span>
+                    {maatTekst(item) ? (
+                      <span className="shrink-0 text-base text-muted-foreground">
+                        {maatTekst(item)}
+                      </span>
+                    ) : null}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              disabled={voorraadBezig}
+              onClick={() => void bewaarInVoorraad(false)}
+            >
+              Alleen opruimen
+            </Button>
+            <Button disabled={voorraadBezig} onClick={() => void bewaarInVoorraad(true)}>
+              <PackageCheck /> In voorraad ({naarVoorraad?.size ?? 0})
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

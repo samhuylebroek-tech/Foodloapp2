@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AanmeldenRouteImport } from './routes/aanmelden'
+import { Route as AanvullenRouteImport } from './routes/aanvullen'
 import { Route as BeheerRouteImport } from './routes/beheer'
 import { Route as BoodschappenRouteImport } from './routes/boodschappen'
 import { Route as CreditsRouteImport } from './routes/credits'
@@ -93,6 +94,11 @@ const IndexRoute = IndexRouteImport.update({
 const AanmeldenRoute = AanmeldenRouteImport.update({
   id: '/aanmelden',
   path: '/aanmelden',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AanvullenRoute = AanvullenRouteImport.update({
+  id: '/aanvullen',
+  path: '/aanvullen',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BeheerRoute = BeheerRouteImport.update({
@@ -465,6 +471,7 @@ const LovableEmailTransactionalPreviewRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/aanmelden': typeof AanmeldenRoute
+  '/aanvullen': typeof AanvullenRoute
   '/beheer': typeof BeheerRouteWithChildren
   '/boodschappen': typeof BoodschappenRoute
   '/credits': typeof CreditsRoute
@@ -542,6 +549,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/aanmelden': typeof AanmeldenRoute
+  '/aanvullen': typeof AanvullenRoute
   '/boodschappen': typeof BoodschappenRoute
   '/credits': typeof CreditsRoute
   '/deel': typeof DeelRoute
@@ -617,6 +625,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/aanmelden': typeof AanmeldenRoute
+  '/aanvullen': typeof AanvullenRoute
   '/beheer': typeof BeheerRouteWithChildren
   '/boodschappen': typeof BoodschappenRoute
   '/credits': typeof CreditsRoute
@@ -696,6 +705,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/aanmelden'
+    | '/aanvullen'
     | '/beheer'
     | '/boodschappen'
     | '/credits'
@@ -773,6 +783,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/aanmelden'
+    | '/aanvullen'
     | '/boodschappen'
     | '/credits'
     | '/deel'
@@ -847,6 +858,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/aanmelden'
+    | '/aanvullen'
     | '/beheer'
     | '/boodschappen'
     | '/credits'
@@ -925,6 +937,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AanmeldenRoute: typeof AanmeldenRoute
+  AanvullenRoute: typeof AanvullenRoute
   BeheerRoute: typeof BeheerRouteWithChildren
   BoodschappenRoute: typeof BoodschappenRoute
   CreditsRoute: typeof CreditsRoute
@@ -970,6 +983,13 @@ declare module '@tanstack/react-router' {
       path: '/aanmelden'
       fullPath: '/aanmelden'
       preLoaderRoute: typeof AanmeldenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/aanvullen': {
+      id: '/aanvullen'
+      path: '/aanvullen'
+      fullPath: '/aanvullen'
+      preLoaderRoute: typeof AanvullenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/beheer': {
@@ -1606,6 +1626,7 @@ const InspiratieRouteWithChildren = InspiratieRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AanmeldenRoute: AanmeldenRoute,
+  AanvullenRoute: AanvullenRoute,
   BeheerRoute: BeheerRouteWithChildren,
   BoodschappenRoute: BoodschappenRoute,
   CreditsRoute: CreditsRoute,

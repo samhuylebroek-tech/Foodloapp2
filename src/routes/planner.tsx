@@ -1215,8 +1215,14 @@ function PlannerPage() {
 
         {/* Acties: één hoofdknop, twee rustige knoppen */}
         <section aria-label="Acties" className="space-y-3 lg:col-span-2">
-          <Button onClick={() => setBoodschappenOpen(true)} className="h-16 w-full gap-3 text-lg">
-            <ShoppingCart className="size-6" /> Boodschappen voor deze week
+          {/* V2-kringloop: wat nog nodig is, min voorraad en lijst — één tik. */}
+          <Button asChild className="h-16 w-full gap-3 text-lg">
+            <Link to="/aanvullen">
+              <Sparkles className="size-6" /> Slim aanvullen
+            </Link>
+          </Button>
+          <Button variant="outline" onClick={() => setBoodschappenOpen(true)} className="h-14 w-full gap-3 text-base">
+            <ShoppingCart className="size-5" /> Alles van deze week op de lijst
           </Button>
           <div className="grid gap-3 sm:grid-cols-2">
             <Button
