@@ -53,15 +53,17 @@ Volledige lijst per route: [FUNCTIE-INVENTARIS](FUNCTIE-INVENTARIS.md). Hieronde
 | | Menu gewijzigd → lijst bijgestuurd (erbij, weg, vervangen, verplaatst) | ✅ (WP4) | Automatisch, met ongedaan maken. Alleen het eigen weekmenu; het gezinsmenu volgt met het huishouden (WP9) |
 | | Restjes als voorraaditem | ⛔ G1 | Vereist `pantry_items.bron_recept_id` |
 | **Vandaag** | Nu-kaart: één volgende stap met één hoofdknop | ✅ (WP3) | Beslissing in `lib/vandaag.ts` (puur, getest) |
+| | Eigen etenstijden ("Wanneer eet je?") | ✅ (WP5) | In de bestaande profielinstelling `weekmenu` (geen schemawijziging) |
 | | "Daarna": hooguit drie signalen (ontbreekt, dagen vrij, lijst) | ✅ (WP3) | Vervangt de aanvulkaart, de snelkoppelingen en de ideeënband op Vandaag |
 | | "Wat eten we vanavond?" uit voorraad | ✅ (WP2) | Eén tik: gepland + tekort op de lijst + ongedaan maken |
 | | Bijna vervallen | ⛔ G1 | Vereist `vervalt_op` |
-| **Week** | Plannen, verplaatsen, kopiëren, restjes/uit eten, Laat Foodlo kiezen (AI), desktopraster, mobiel vegen | ✅/🟨 | 2 969 regels → opsplitsen (WP6) |
+| **Week** | Plannen, verplaatsen, kopiëren, restjes/uit eten, Laat Foodlo kiezen (AI), desktopraster, mobiel vegen, tablet week\|dag | ✅ (WP6) | Opgesplitst: `routes/planner.tsx` 3 392 → ±1 600 regels, zeven onderdelen in `components/planner/` |
 | | Gezinsmenu naast persoonlijk menu | 🟨 | Samenvoegen in het huishouden (⛔ G1/G2) |
 | | Mee-eters, porties per maaltijd | ⛔ G1 | HUISHOUDEN-ONTWERP |
 | | Agenda en beschikbare tijd | ⬜ | Fase 3 (koppeling met een kalender = externe verplichting) |
 | **Lijst** | Afdelingen, winkelmodus, eerder gekocht, vaste items, delen, realtime | ✅/🟨 | Behouden |
-| | Overslaan/vervangen in de winkel | ⬜ | WP5 |
+| | Overslaan/vervangen in de winkel (hoeveelheid en gerecht blijven) | ✅ (WP5) | Vervangen product telt voor maaltijd, voorraad en aanvullen als het origineel |
+| | Eigen boodschappen beschermd (Foodlo past ze nooit aan; elk verwijderen terug te zetten) | ✅ (WP5) | Tekort komt op een eigen Foodlo-regel "voor <gerecht>" |
 | | "Jan is aan het winkelen" (presence) | ⬜ | Fase 2 (geen schema) |
 | **Keuken: recepten** | Link, foto, scan, tekst, zoeken (AI); concept-autosave; versies; foto's | ✅/🟨 | Behouden. Bewaren is eenmalig (dubbele ingrediënten hersteld) |
 | | Collecties door de gebruiker | ⛔ G1 | Nieuwe tabel |
@@ -149,8 +151,8 @@ Status: architectuur en datamodel in §6. **Niets geactiveerd. ⛔ G5** (en voor
 - **WP2 "Wat eten we vanavond?"** Niets gepland → drie gerechten die je bijna helemaal in huis hebt. Eén tik plant het en zet wat ontbreekt op de lijst. ✅ **Gebouwd en getest** (zie §9a).
 - **WP3** Vandaag als één contextkaart: koken over X min → ontbreekt iets → vanavond → week half leeg. ✅ **Gebouwd en getest** (zie §9b).
 - **WP4** Gerecht verwijderen of vervangen in het menu → lijst automatisch bijsturen (met ongedaan maken). ✅ **Gebouwd en getest** voor het eigen weekmenu (zie §9b).
-- **WP5** Winkelmodus: overslaan of vervangen ("geen verse spinazie → diepvries").
-- **WP6** Planner opsplitsen (2 969 regels) in onderdelen. Tablet krijgt een tweekolommenweergave.
+- **WP5** Winkelmodus: overslaan of vervangen ("geen verse spinazie → diepvries"). ✅ **Gebouwd en getest** (zie §9c), met eigen boodschappen beschermd, instelbare etenstijden en BUG-055.
+- **WP6** Planner opsplitsen in onderdelen; tablet als eigen ervaring. ✅ **Gebouwd en getest** (zie §9c).
 - **WP7** Recept: ingrediënt vervangen (eigen tabel plus AI-terugval), persoonlijke notitie (lokaal tot G1).
 
 **Spoor B (parallel voorbereiden; uitvoeren na G1/G2):**
@@ -301,6 +303,76 @@ Alles in **Chromium-emulatie** met **nepdata**. Er zijn geen tests op echte toes
 - Ze staat als risico in §14 en als open punt in het bugregister.
 - De overgeslagen tests zijn bewust overgeslagen: schermafdruk-specs draaien alleen met `SCHERMEN=1`, en persona-tests gelden alleen voor telefoon óf desktop.
 
+## 9c. Verificatie WP5 en WP6 (2026-11-09)
+
+### Wat er gebouwd is
+**WP5, de winkelmodus.**
+- Elk product heeft een knop **Niet gevonden**, met twee keuzes:
+  - **Overslaan**: het product blijft op je lijst, maar telt deze winkelbeurt niet meer mee. Dat blijft zo na herladen, per toestel. Met **Toch gevonden** zet je het terug.
+  - **Vervangen**: hoeveelheid en eenheid staan al ingevuld. Het gekoppelde gerecht en de notitie blijven, en het product gaat meteen in je kar. Er is **Ongedaan maken**, en een foutmelding als bewaren mislukt.
+- Een vervanging heet bijvoorbeeld "Diepvriesspinazie (i.p.v. spinazie)". Ze telt voor de maaltijd, voor Slim aanvullen, na het winkelen voor de voorraad, en bij het koken voor het verbruik, als het oorspronkelijke product. Een eigen kolom is niet nodig (B9).
+- Snelle voorstellen ("Diepvries spinazie", "Tomaten uit blik") verschijnen alleen voor producten waar dat klopt. Geen AI, dus geen kosten.
+
+**Eigen boodschappen beschermd (B7).**
+- Foodlo past regels die je zelf toevoegde nooit meer aan, ook niet door bij te tellen. Wat een gerecht extra nodig heeft, komt op een eigen regel "voor <gerecht>".
+- Elk verwijderen is exact terug te zetten, ook meerdere tegelijk. Voorheen verloor de regel daarbij zijn koppeling aan het gerecht (BUG-058).
+- "Ongedaan maken" van een toevoeging wist geen regels meer die een ander toestel intussen toevoegde (BUG-059).
+- "Wat ik in huis heb afvinken" herkent echte producten: voorraad "ui" vinkte vroeger ook "suiker" af (BUG-057). Dat afvinken is nu ook ongedaan te maken.
+
+**Instelbare eetmomenten.**
+- Instellingen → **Wanneer eet je?** Een tijd per actief moment; "alles in één blok" volgt het avondeten.
+- Vandaag rekent "Begin om" met jouw tijd, en kijkt pas twee uur na je avondeten (op zijn vroegst om 21 u) naar morgen.
+- Opgeslagen in de bestaande profielinstelling `weekmenu`, zonder schemawijziging.
+
+**BUG-055 opgelost (geen testprobleem maar een appfout).**
+- De concept-autosave wachtte niet op de aanmelding.
+- Hij probeerde ook nooit opnieuw na een fout of na een overlap.
+- Bewezen met een nieuwe test, die faalt op de oude code en slaagt op de nieuwe.
+
+**BUG-056.**
+- In de winkelmodus en bij "Eerder gekocht" en "Vaak gekocht" kon de rij met afdelingen niet scrollen.
+- Op 390 px was de derde afdeling daardoor onbereikbaar. Die fout bestond al in V1.
+
+**Kostenrem** (zie §16):
+- vertalen met cache en limieten (BUG-061);
+- een maandbudget voor alle AI;
+- een schatting als de prijs van een model ontbreekt.
+
+**WP6: het weekmenu opgesplitst.**
+- `routes/planner.tsx` ging van 3 392 naar ±1 600 regels.
+- Zeven onderdelen staan nu in `components/planner/`: gedeelde helpers, recept kiezen, lijstvraag, instellingen, weekvoorstel, verplaatsen/koppelen en tabletweek.
+- De code is alleen verplaatst, zonder logicawijziging. Alle bestaande weekmenu- en kernflowtests slagen.
+
+**WP6: tablet als eigen ervaring (768–1023 px, B8).**
+- Een zijbalk met de vijf plekken, in plaats van een onderbalk.
+- **Weekmenu:** links de week met wat er gepland staat, rechts de gekozen dag.
+- **Vandaag:** de Nu-kaart met de foto ernaast; "Daarna" en "Ook vandaag" naast elkaar.
+- **Recept en voorraad:** tweekoloms kop.
+- **Lijst:** één brede kolom. Twee kolommen kapten op 768 px de productnamen af; dat bleek uit de review.
+- De vaste balken staan op tablet niet meer boven een onderbalk die er niet is.
+- De rondleiding wijst ook de zijbalk aan.
+- Liggende tablets (1024 px en breder) krijgen de desktopweergave.
+
+### Testresultaten (echte exitcodes)
+| Run | Wat | Resultaat | Exitcode |
+|---|---|---|---|
+| BUG-055 op de **oude** code | nieuwe test | 1 mislukt (zoals verwacht) | **1** |
+| BUG-055 op de nieuwe code | 3 tests × 3 viewports × 3 herhalingen | 36/36 | 0 |
+| WP5 winkelmodus, eerste poging | 10 tests, desktop + 390 | 6 mislukt: de testlocators waren dubbelzinnig, en op 390 px was een afdeling onbereikbaar (**echte fout**, BUG-056) | **1** |
+| WP5 winkelmodus, na de herstellingen | ×2 herhaald | 24/24 | 0 |
+| Geraakte specs na "eigen regels nooit aanpassen" | kernflow, kringloop, weekmenu-lijst, vandaag, voorraad | 82 geslaagd, 5 mislukt: 4 verwachtten nog het bijtellen bij een eigen regel (tests aangepast aan B7), 1 werd verstoord doordat ik tijdens de run een bronbestand bewerkte | **1** |
+| Dezelfde specs plus WP5, opnieuw | desktop + 390 | 99/99 | 0 |
+| Tablet en navigatie (768) | eerste poging | 7 geslaagd, 1 mislukt: de rondleiding vond de zijbalk niet (**echte fout**, hersteld) | **1** |
+| Navigatie op 390, 768 en 1280 | | 9/9 | 0 |
+| Tablet-spec na de review | | 5/5 | 0 |
+| Lint-ratchet na elke commit | | 2× eerst 1 (opmaak in een nieuw bestand), na prettier 0 | 0 |
+| **Volledige regressie** op commit `80dcfe4` | `tsc` | 0 fouten | **0** |
+| | `vitest` | 465/465, 23 bestanden | **0** |
+| | `vite build` | geslaagd | **0** |
+| | Playwright, alle projecten | PLAYWRIGHT_RESULTAAT | **PLAYWRIGHT_EXIT** |
+
+Alles draait in **Chromium-emulatie** met nepdata: telefoon 360/390/412, tablet 768 met aanraking, desktop 1280. Ik heb **niet** getest op een echte iPhone, Android-toestel of iPad, en **niet** met VoiceOver of TalkBack.
+
 ## 10. Acceptatiecriteria (per WP, kort)
 | WP | Criterium |
 |---|---|
@@ -308,22 +380,24 @@ Alles in **Chromium-emulatie** met **nepdata**. Er zijn geen tests op echte toes
 | WP2 | Niets gepland voor vanavond → maximaal drie voorstellen, gesorteerd op het minste dat ontbreekt. Eén tik zet het gerecht vandaag op het avondeten en wat ontbreekt op de lijst (geen dubbels). Ongedaan maken herstelt beide |
 | WP3 | De Nu-kaart toont precies één situatie, met één hoofdknop en hooguit één tweede actie. "Daarna" herhaalt niets uit de Nu-kaart. De inhoud hangt van het uur af en wordt getest met een vaste klok. Axe zonder ernstige meldingen |
 | WP4 | Erbij, weg, vervangen en verplaatsen sturen de lijst bij. Eigen regels worden nooit verlaagd of gewist. Eén regel per product. Fouten → niets half. Twee vensters tegelijk → geen dubbels. Ongedaan maken → menu én lijst terug |
+| WP5 | Overslaan houdt het product op de lijst (ook na herladen). Vervangen bewaart hoeveelheid, eenheid en gerecht, telt na het winkelen voor de maaltijd ("alles in huis") en is ongedaan te maken. Opslaan mislukt → melding, lijst onveranderd, opnieuw lukt. Eigen regels: nooit door Foodlo aangepast; verwijderen altijd exact terug te zetten. Elke afdeling bereikbaar op 390 px |
+| WP6 | Planner opgesplitst zonder gedragswijziging (alle bestaande E2E groen). Tablet 768: zijbalk, geen onderbalk, geen horizontaal scrollen; weekmenu week\|dag; Vandaag en recept tweekoloms; lijst leesbaar zonder afkapping; rondleiding wijst de zijbalk aan |
 | Kringloop | K1–K7 ([PRODUCT-HERONTWERP §7](PRODUCT-HERONTWERP.md)) ✅ |
 | Huishouden | H1–H6 ([HUISHOUDEN-ONTWERP §6](HUISHOUDEN-ONTWERP.md)) |
 
 ## 11. Teststrategie
 | # | Categorie | Nu | Doel |
 |---|---|---|---|
-| 1 | Unit/component | 418 (Vitest), incl. kringloop | Elke domeinfunctie |
+| 1 | Unit/component | 465 (Vitest), incl. kringloop, vervangen, kostenrem en maandbudget | Elke domeinfunctie |
 | 2 | Integratie/API | Serverfuncties tegen de nep-Supabase | + RPC's op staging |
-| 3 | E2E | 12 specs (Playwright), kringloop van begin tot einde, navigatie, betrouwbaarheid met storingen | Per WP een volledige stroom |
+| 3 | E2E | 18 specs (Playwright), kringloop van begin tot einde, navigatie (telefoon, tablet, desktop), winkelmodus, tablet, betrouwbaarheid met storingen | Per WP een volledige stroom |
 | 4 | Toegankelijkheid | axe op alle schermen (390 px) | + handmatig VoiceOver/TalkBack (**niet gedaan**) |
 | 5 | Mobiel/responsief | 6 breedtes, 19 schermen, tablet en desktop | + echte toestellen (**niet gedaan**) |
 | 6 | Beveiliging/autorisatie | Unit (SSRF, rechten) | RLS-tests met twee gebruikers op staging |
 | 7 | Data-integriteit/migratie | Gelijktijdigheid en ongedaan maken in de kringloop | Telling vóór en na de migratie op staging |
 | 8 | Fout/laden/herstel | Storingssimulatie (`/__storing`) | Per nieuw scherm |
 | 9 | Performance/belasting | — | k6 of vergelijkbaar op staging |
-| 10 | Kosten/AI | Credits en ai_usage | Kosten per actieve gebruiker in beheer |
+| 10 | Kosten/AI | Credits, ai_usage, maandbudget en kostenrem (unit, nep-Supabase) | Kosten per actieve gebruiker in beheer (§16) |
 
 Alles hierboven draait in **Chromium-emulatie**. Er zijn **geen** tests op een echte iPhone of Android of met een schermlezer uitgevoerd.
 
@@ -331,12 +405,13 @@ Alles hierboven draait in **Chromium-emulatie**. Er zijn **geen** tests op een e
 | ID | Prioriteit | Onderwerp |
 |---|---|---|
 | BUG-025 | Medium (privacy) | Foto's blijven staan na account verwijderen |
+| BUG-061 | Hoog (kosten, **live**) | Vertalen zonder limiet: opgelost op `v2/dev`, live pas na release (G3/G4) |
 | BUG-012 | Medium (kosten) | Base64-foto's in de AI-cache |
 | BUG-035 | Medium | zod 3 advisory (gemitigeerd) |
 | BUG-011 | Medium | Twee migratiemappen; `inspiration_*` ontbreekt in de migraties |
 | BUG-037/038/026/016/014/013 | Laag | Zie register |
 
-Er staan geen kritieke of hoge bugs open op `v2/dev`.
+Er staan geen kritieke of hoge bugs open op `v2/dev`. Live V1 heeft er nog twee (TanStack/seroval, BUG-061) zolang de beveiligingsrelease niet is uitgerold.
 
 ## 13. Beslissingen
 | ID | Beslissing | Status |
@@ -347,6 +422,9 @@ Er staan geen kritieke of hoge bugs open op `v2/dev`.
 | B4 | Geen rewrite; bestaande stack blijft | Genomen |
 | B5 | Betaalprovider Stripe Connect (voorstel) | **Wacht op jou** |
 | B6 | Staging-Supabase-project aanmaken | **Wacht op jou** (G1, kosten) |
+| B7 | Eigen lijstregels past Foodlo nooit aan; wat een gerecht extra nodig heeft, komt op een eigen regel "voor <gerecht>". Zo kan dezelfde productnaam twee keer op de lijst staan: jouw regel en die van Foodlo | Genomen (WP5; jouw eis "niet onbedoeld aanpassen" gaat voor "één regel per product") |
+| B8 | Tablet 768–1023: zijbalk, week\|dag, lijst in één brede kolom | Genomen (WP6) |
+| B9 | Vervangen product wordt gemarkeerd in de naam ("X (i.p.v. Y)") in plaats van in een nieuwe kolom | Genomen (geen schemawijziging); kolom later mogelijk (G1) |
 
 ## 14. Risico's
 | Risico | Impact | Mitigatie |
@@ -354,13 +432,20 @@ Er staan geen kritieke of hoge bugs open op `v2/dev`.
 | Geen staging → huishouden en voorraadvelden blijven geblokkeerd | Hoog | B6 zo snel mogelijk |
 | Lovable-conflicten bij grote bestanden | Middel | Gerichte wijzigingen, lint-ratchet, geen massale herformattering |
 | Meerstapsacties zonder transactie (kringloop client-side) | Middel | Herstelfunctie nu; RPC's na G1 |
-| WP4: een eigen lijstregel waarbij Foodlo het tekort optelde, wordt bij weghalen niet verkleind (er is geen kolom die bijhoudt wie welk deel toevoegde) | Laag (hooguit iets te veel kopen, nooit iets kwijt) | Kolom `hoeveelheid_auto` op `shopping_items` (⛔ G1) |
+| ~~WP4: eigen regel waarbij Foodlo bijtelde, wordt bij weghalen niet verkleind~~ | — | **Opgelost in WP5 (B7):** Foodlo telt niet meer bij eigen regels bij |
+| B7: hetzelfde product kan twee keer op de lijst staan (jouw regel en "… voor <gerecht>") | Laag (duidelijk gelabeld, nooit dubbel door Foodlo zelf) | Later visueel groeperen in één rij met twee bronnen (geen schema nodig) |
 | WP4: twee leden die exact tegelijk wijzigen → laatste schrijver wint per regel; de nacontrole voegt dubbels samen, maar zonder transactie is een zeldzame afwijking mogelijk | Laag | RPC per menuwijziging (WP11, ⛔ G1) |
-| Sporadische timeout van de concept-autosave in e2e onder zware last (1× in 2 volledige runs, 0× in 20 gerichte herhalingen) | Laag (test, geen gebruikersfout gezien) | Onderzoeken: debounce en wachten in de test; nu als open punt in het bugregister |
-| WP3: etenstijden staan vast (avondeten 18:30); "begin om" klopt niet voor wie later eet | Laag | Instelling "wanneer eten jullie?" (geen schemawijziging nodig: profielinstelling of lokaal) |
+| ~~Sporadische timeout van de concept-autosave~~ | — | **Opgelost (BUG-055):** het was een appfout. Eén van de twee oorzaken (aanmelding laadt na het typen) is aannemelijk maar niet afzonderlijk nagebootst |
+| ~~WP3: vaste etenstijden~~ | — | **Opgelost in WP5:** instelbaar per moment |
+| WP5: "overgeslagen" geldt per toestel en per sessie (sessionStorage), niet voor een gezinslid op een ander toestel | Laag | Presence/gedeelde winkelbeurt in fase 2 |
+| WP5: de vervangmarker zit in de naam. Haalt iemand "(i.p.v. …)" weg bij het aanpassen, dan vervalt de koppeling met het oorspronkelijke product | Laag | Kolom `vervangt` (⛔ G1) als dit in de praktijk gebeurt |
+| WP5: het paneel "Niet gevonden" en de winkelmodus houden de toetsenbordfocus niet volledig vast (geen focus trap) | Laag (a11y) | Radix-dialog gebruiken bij de volgende ronde |
+| WP6: tablet getest op 768 × 1024 (staand) in emulatie. Andere tabletmaten (820, 834, 1180 liggend) en echte iPads zijn niet getest | Middel | Testronde op een echte iPad vóór de release |
+| Review: het tijdveld in Instellingen toont AM/PM in de emulatie; op een toestel volgt het de taal van het toestel | Laag | Controleren op een echt toestel |
+| Kosten: maandbudget en vertaalrem werken per serverinstantie, met een stand van hooguit 5 minuten oud | Laag | Voldoende als noodrem; echte boekhouding blijft `ai_usage` |
 | Live V1 draait nog met de bekende TanStack/seroval-kwetsbaarheid | Hoog | Fix klaar, wacht op G3/G4 |
 | Geen echte toesteltests | Middel | Testronde op iPhone en Android vóór een release |
-| AI-kosten bij groei | Middel | Eerst eigen logica, credits, BUG-012 |
+| AI-kosten bij groei | Middel | Eerst eigen logica, credits, maandbudget, kostenrem (§16); BUG-012 |
 
 ## 15. Wat jouw akkoord nodig heeft
 1. **G1/B6:** een staging-Supabase-project (kosten, nieuw project) om het huishouden, de voorraadvelden en RPC's te kunnen bouwen.
@@ -368,3 +453,137 @@ Er staan geen kritieke of hoge bugs open op `v2/dev`.
 3. **B5/G5:** de keuze van betaalprovider (niets activeren).
 4. Pushen van `v2/dev` (lokaal voor op de remote; niets gepusht).
 5. **G7:** "Alles van deze week op de lijst" samenvoegen met Slim aanvullen (§9b).
+6. **G9 (kosten, nieuw):** zie §16.6. Spend caps controleren, maandbudget kiezen (standaard €25), beslissen over het dure zoekmodel en over automatische AI-foto's.
+7. **BUG-061** (vertalen zonder limiet) zit ook in live V1. De fix kan mee in de beveiligingsrelease (G3/G4).
+
+## 16. Kostenbeheersing (bindend sinds 2026-11-09)
+
+### 16.1 Regels
+1. Bestaande tools en abonnementen eerst: Lovable (bouwen, hosting, Lovable Cloud = Supabase, AI-gateway, e-mail), GitHub, lokale nep-Supabase voor tests en demo.
+2. **Geen nieuwe betaalde dienst, abonnement, API, upgrade of aankoop zonder jouw voorafgaand akkoord** (nieuwe poort **G9 — kosten**). Dat geldt ook voor het staging-project (B6) en een betaalprovider (B5).
+3. Volgorde voor elke "slimme" functie: **eigen logica → cache → goedkoopste model dat de kwaliteit haalt → duurder model**. Elke AI-oproep loopt via credits (`metCredits`) of de kostenrem, en wordt gemeten.
+4. Tests en demo raken nooit een betaalde dienst: AI, e-mail en betalingen zijn er uit of nagebootst (geen `LOVABLE_API_KEY` in de testserver; zie de melding "welkom-mail mislukt LOVABLE_API_KEY is not configured" in elke run).
+5. Een kostenwijziging die je niet kan terugdraaien (vooruitbetaling, jaarplan, commit-tarief) is altijd jouw beslissing.
+
+### 16.2 Vaste en variabele kosten
+
+| Post | Soort | Waar | Hoe begrensd |
+|---|---|---|---|
+| Lovable-abonnement (bouwen + hosting) | **Vast** per maand | Lovable | Jij kiest het plan; niets automatisch upgraden |
+| Lovable Cloud (databank, auth, opslag, functies) | Vast basisdeel + **variabel** gebruik | Lovable Cloud / Supabase | Maandtegoed van het plan; nooit zelf bijkopen; meten in Control Center |
+| AI (tekst, foto's herkennen, beelden maken, vertalen, web zoeken) | **Variabel** per oproep | Lovable AI-gateway | Credits per gebruiker, daglimiet per functie, aan/uit per functie, **maandbudget (nieuw)**, cache |
+| E-mail (welkom, meldingen) | Variabel per mail, meestal binnen gratis tier | Lovable e-mail / Resend als terugval | Alleen transactioneel; geen nieuwsbrieven zonder akkoord |
+| Opslag foto's | Variabel (GB/maand + uitgaand verkeer) | Supabase Storage | Foto's verkleinen bij upload; BUG-012 (AI-foto's als base64 in cache) oplossen na G1 |
+| Domein | Vast per jaar | Registrar (bestaand) | — |
+| Betalingen | Variabel (% per transactie), **niet actief** | Voorstel Stripe (B5) | Alleen na G5; nooit zelf kaartgegevens opslaan |
+| Ontwikkeling (Lovable-credits voor bouwen in de editor) | Variabel | Lovable | Werk in Claude Code lokaal op `v2/dev` kost geen Lovable-credits; pas bij synchroniseren/bouwen in Lovable |
+
+### 16.3 Kosten per AI-actie (schatting)
+
+Prijzen zijn **niet geverifieerd op een eigen factuur**. Ze komen uit openbare prijsoverzichten van derden (november 2026) en kunnen via de Lovable-gateway anders zijn. Controleer ze in het Control Center (`model_prices`) of op je Lovable-factuur, en vul `model_prices` aan. Zonder prijs rekent Foodlo nu met een **voorzichtig hoge schatting**, niet met 0 (zie 16.5).
+
+Aanname Gemini 3.8 Flash ≈ $0,75 per miljoen invoertokens en $3,75 per miljoen uitvoertokens.
+
+| Actie (feature) | Model in code | Tokens (schatting) | Kost per actie | Credits voor de gebruiker |
+|---|---|---|---|---|
+| Recept uit link (`import_url`) | Gemini 3.8 Flash | 3 000 in / 800 uit | ± €0,005 | 1 |
+| Recept uit tekst (`import_tekst`) | Gemini 3.8 Flash | 2 000 / 800 | ± €0,004 | 1 |
+| Recept of gerecht uit foto (`import_foto`, `gerecht_foto`) | Gemini 3.8 Flash | 2 500 / 800 | ± €0,005–0,01 | 3 |
+| Ingrediënten op foto (`ingredienten_foto`) | Gemini 3.8 Flash | 2 000 / 300 | ± €0,003 | 2 |
+| Nieuw voor jou (`suggesties`) | Gemini 3.8 Flash | 1 500 / 1 000 | ± €0,005 | 1 |
+| Gerecht zoeken, recept uitschrijven, weekmenu-ideeën (`suggesties`, `import_tekst`) | **GPT-6 Astra** (low reasoning) | 1 000 / 1 500 | **onbekend, waarschijnlijk het duurst** | 1 |
+| Web zoeken naar recepten (`web_zoeken`) | geen AI-model zelf; resultaten 24 u in cache | — | ± €0 (alleen serververkeer) | 0 |
+| Sfeerfoto maken (`foto_maken`) | **GPT-image 2.5** (low, 1024²) | 1 beeld | ± €0,01–0,05 | 2 |
+| Vertalen (UI en recepten) | Gemini 3.8 Flash | 1 500 / 1 500 per bundel | ± €0,007 per bundel; dankzij de cache meestal €0 | 0 |
+
+Bevindingen bij het nalopen (2026-11-09):
+- **Vertalen** was een open serverfunctie: geen aanmelding, geen limiet, geen meting, geen cache. Wie de functie herhaaldelijk aanroept, laat de AI-rekening oplopen. **Opgelost in code:** een gedeelde cache (dezelfde interfacetekst één keer betalen), max. 40 oproepen per bezoeker per 10 minuten en max. 1 500 per uur per serverinstantie. Daarboven blijft de tekst Nederlands, zonder fout en zonder kosten. Elke oproep wordt gemeten in `ai_events`. De rij `vertalen` in `credit_costs` (daglimiet 200) werd nooit toegepast.
+- **Gerecht zoeken, recepten uitschrijven en weekmenu-ideeën** gebruiken het duurste model (GPT-6 Astra) voor 1 credit, evenveel als een Flash-actie. Voorstel: Gemini Flash testen op kwaliteit. Lukt dat niet, dan 2 credits vragen. Beide vragen jouw akkoord: een modelwissel vraagt echte, betaalde testoproepen (G9), en een andere creditprijs verandert wat gebruikers betalen.
+- **Sfeerfoto** draait in de code op GPT-image, terwijl `credit_costs` "gemini-3.1-flash-lite-image" vermeldt. Daardoor klopt de kostenberekening niet. Voorstel: het model gelijk trekken of de prijsrij aanvullen. Een modelwissel vraagt een kwaliteitstest met echte oproepen (G9).
+- Elk opgeslagen recept zonder foto vraagt automatisch een AI-foto aan (`zorgVoorReceptFoto`, één keer per titel gecachet). Dat is de grootste variabele AI-post per actieve gebruiker. Een instelling "foto's automatisch maken: aan/uit" is goedkoop te bouwen. Voorstel voor WP7.
+
+### 16.4 Raming per fase (schatting, euro per maand)
+
+Aannames voor een **actieve gebruiker per maand**: 4 recepten bewaard (2 uit een link, 2 zelf getypt), 4 automatische foto's, 2× suggesties, af en toe vertalen (gecachet) en geen web zoeken. De AI-kost per actieve gebruiker is dan ±€0,04–0,22 per maand: ±€0,02 tekst plus €0,04–0,20 foto's. **Foto's zijn de grootste onzekerheid.**
+
+| Fase | Gebruikers (actief/maand) | Vast | Variabel (Cloud + AI + mail + opslag) | Totaal (bandbreedte) | Per actieve gebruiker |
+|---|---|---|---|---|---|
+| **Testfase** (nu: lokaal, demo, enkele testers) | 0–50 | Lovable-plan dat je al hebt (±€25) | AI < €5; Cloud binnen het tegoed van het plan; mail €0 | **±€25–30** | n.v.t. |
+| **Eerste lancering** | 500–2 000 | Lovable-plan ±€25–50 | Cloud ±€0–75 boven het tegoed; AI ±€20–440; mail €0–20; opslag < €5 | **±€50–590** | ±€0,10–0,30 |
+| **Groei** | 10 000 | Lovable-plan ±€50+ | Cloud ±€100–400; AI ±€400–2 200; mail ±€20–90; opslag/verkeer ±€10–50 | **±€600–2 800** | ±€0,06–0,28 |
+
+Hoe die bandbreedte kleiner wordt:
+- **Foto's.** Automatische AI-foto's uit: dat scheelt tot 90 % van de AI-kost. Of goedkopere beelden: BUG-012 plus het juiste model.
+- **Credits verkopen.** Bij groei zou de verkoop van credits (`credit_packs`, nu uit) de variabele AI-kost moeten dekken. Starter: 100 credits voor €2,99, dat is €0,03 per credit. Een AI-actie kost ±€0,005–0,05 en vraagt 1–3 credits. Met de huidige prijzen is AI per credit dus kostendekkend. Uitzondering: web zoeken (0 credits) en het automatische deel.
+- **Gemeten in plaats van geraamd.** Zodra er echt gebruik is, vervangt het Control Center (`ai_usage.kost_eur`, `beheer/kosten`) deze raming door werkelijke cijfers. Daarvoor moet `model_prices` gevuld zijn.
+
+### 16.5 Budgetlimieten, quota en waarschuwingen
+
+| Laag | Wat | Status |
+|---|---|---|
+| Per gebruiker | 50 gratis credits bij registratie; credits per AI-actie; daglimiet per functie (`credit_costs.max_per_dag`) | ✅ bestond |
+| Per functie | Aan/uit-schakelaar (`credit_costs.enabled`) en creditsysteem aan/uit (`credits_actief`) | ✅ bestond |
+| Cache | Zelfde invoer = 0 credits en geen nieuwe oproep (`ai_cache`) | ✅ bestond |
+| **Maandbudget alle AI** | `ai_budget_maand_eur` in `platform_settings` (standaard **€25** als niets is ingesteld). Waarschuwing vanaf **80 %** en blokkade op **100 %** worden gelogd in `ai_events` (`budget:waarschuwing`, `budget:op`). Op 100 % pauzeren alleen de slimme functies, met een duidelijke melding; de rest van de app blijft werken. | ✅ **nieuw (code, getest met nep-Supabase)** |
+| Kost zonder prijslijst | Ontbreekt een model in `model_prices`, dan rekent Foodlo met een hoge schatting (€1 per miljoen tokens in, €5 uit, €0,05 per beeld, minimum €0,002), niet met 0 | ✅ nieuw |
+| **Vertalen** | Gedeelde cache plus limiet per bezoeker en per uur (zie 16.3) | ✅ nieuw |
+| Hosting/databank | Spend cap van het Lovable-plan en Lovable Cloud: **nakijken in je Lovable-instellingen** (Plans & credit usage). Ik kan dat niet zien. | ⚠ jij |
+| Melding naar jou | Budgetgebeurtenissen staan in `ai_events` en zijn zichtbaar in het Control Center. Een e-mail of push bij 80 % is nog niet gebouwd. | ⬜ voorstel |
+
+Wat het maandbudget **niet** dekt:
+- Het werkt per serverinstantie, met een stand van hooguit 5 minuten oud. Onder zware gelijktijdige last kan het budget een paar oproepen overschrijden.
+- Het telt alleen oproepen via `metCredits`. Vertalen heeft een eigen rem.
+- Bij het nalopen van de code (2026-11-09) liep elke AI-oproep in `ai.functions.ts` via `metCredits`; vertalen was de enige uitzondering en heeft nu een eigen rem. Regel voor elke nieuwe functie: via `metCredits`.
+
+### 16.6 Wat dit vraagt van jou (G9)
+1. Je Lovable-plan en de spend caps controleren (Plans & credit usage). Zo weet je wat vast is en waar je automatisch geblokkeerd wordt.
+2. Het maandbudget kiezen: `ai_budget_maand_eur` (standaard €25). Wordt het na een merge en deploy van V2 actief, dan pauzeert AI bij €25 per maand totdat jij het verhoogt.
+3. Beslissen over het dure zoekmodel (Astra → Flash, of meer credits) en over automatische foto's (aan/uit). Dat zijn de twee grootste onzekerheden.
+4. Staging (B6) en een betaalprovider (B5) kosten geld en wachten op jou.
+
+## 17. Product- en UX-review na WP6 (2026-11-09)
+
+Hoe beoordeeld: 36 schermafdrukken van 12 hoofdschermen op telefoon (390), tablet (768) en desktop (1280), in Chromium-emulatie met demodata (`tests/e2e/schermen-review.spec.ts`, `SCHERMEN=1`). De bestanden staan lokaal in `docs/foodloapp-v2/schermen/review/` en zitten niet in git. Ik heb ze zelf bekeken. Er is geen gebruikersonderzoek gedaan en niets op echte toestellen getest.
+
+### Oordeel per scherm (1 = zwak, 5 = premium)
+| Scherm | Telefoon | Tablet | Desktop | Wat goed is | Wat nog niet goed is |
+|---|---|---|---|---|---|
+| **Vandaag** | 4 | 4 | 5 | Eén kaart met één beslissing; grote foto; het uur en de toestand sturen wat je ziet | Op de telefoon komt de foto pas ná de knoppen: de eerste indruk is een donker tekstvlak |
+| **Week** | 4 | 4 | 4 | Dagstrook met streepjes per maaltijd; tablet week\|dag; desktop 7 kolommen met foto's | Telefoon: titel, planningkeuze, weekkaart en schakelaar staan boven de eerste maaltijd (± 60 % van het scherm). Desktop: lege dagen tonen drie "Toevoegen"-vakken boven elkaar |
+| **Lijst** | **2** | 3 | 3 | Winkelmodus is sterk: grote doelen, afdelingen, niet gevonden/vervangen | **Op de telefoon staat geen enkele boodschap boven de vouw**: aanvulkaart, "Ik ga boodschappen doen", tabs, drie tegels en een vast invoerveld gaan eerst. Het vaste invoerveld valt over de tegels. Op desktop is het een smalle kolom met lege zijkanten |
+| **Winkelmodus** | 5 | 4 | 4 | Leesbaar met één hand, scherm blijft aan, "niet gevonden" duidelijk | Tablet/desktop: veel lege ruimte bij weinig producten |
+| **Keuken (recepten)** | 3 | 3 | 3 | Collecties als foto-tegels; zoeken bovenaan | Collecties zonder foto tonen een generiek icoon op een kleurverloop (vis op blauw): dat oogt als een sjabloon, niet als premium |
+| **Recept** | 4 | 4 | 4 | Grote foto, duidelijke hoofdknop "Start koken", porties ± | Drie even grote knoppen onder elkaar (koken, inplannen, lijst) concurreren; de omschrijving in een serif-cursief wijkt af van de rest |
+| **Voorraad** | 3 | 3 | 3 | Snel toevoegen met chips; "wat kan ik koken" | Het invoerveld heeft geen zichtbaar label of placeholder (het voorbeeld staat eronder) |
+| **Ontdek** | 2 | 2 | 2 | Zoekveld en filters | In de demo "Geen recepten gevonden": de catalogus komt van buiten en is in tests geblokkeerd. Een gebruiker zonder netwerk of catalogus krijgt een leeg scherm als eerste indruk |
+| **Meer / Instellingen** | 4 | 4 | 4 | Profielkaart, duidelijke groepen, eetmomenten | Standaard instellingslijsten (prima, niet onderscheidend). Het tijdveld toont AM/PM in de emulatie |
+
+### Ziet het eruit als een volledig nieuw, premium Foodloapp-product?
+**Gedeeltelijk.**
+
+De kern (Vandaag, Week, winkelmodus en recept) voelt als één nieuw product:
+- één visuele taal: donkere "inkt"-kaarten, Fraunces-koppen en een honingaccent;
+- grote foto's en ruime aanraakdoelen;
+- één duidelijke volgende stap.
+
+Op tablet is het nu een eigen ervaring, geen uitgerekte telefoon.
+
+**Over de hele linie nog niet premium:**
+1. **Lijst op de telefoon.** Het scherm dat je het vaakst gebruikt, toont eerst bedieningselementen in plaats van je boodschappen. Dit is de **grootste UX-schuld** en hoort voor een release opgelost te zijn.
+2. **Lege en generieke toestanden.** Lege collecties (icoon op kleurverloop), Ontdek zonder catalogus en lege dagen in het desktopraster zien eruit als een sjabloon.
+3. **Ongelijke breedtes op desktop.** Vandaag en Week gebruiken de volle breedte, Lijst en Recept een smalle middenkolom. Elk scherm heeft een eigen ritme.
+4. **Knoppenhiërarchie.** Op Recept en Lijst staan meerdere even zware knoppen naast elkaar.
+
+### Voorgestelde volgende ronde (geen databank nodig)
+- **WP7a, Lijst eerst:**
+  - de lijst bovenaan;
+  - aanvullen als één compacte regel in plaats van een grote kaart;
+  - "Ik ga boodschappen doen" als knop in de kop;
+  - tabs en tegels naar het menu "…";
+  - op desktop lijst en aanvullen naast elkaar.
+- **WP7b, lege toestanden:**
+  - collecties zonder foto tonen een collage van recepten of een getekende illustratie;
+  - Ontdek valt terug op eigen recepten en seizoensideeën zonder netwerk;
+  - lege desktopdagen krijgen één vak "Plan iets".
+- **WP7c, ritme:** dezelfde maximale breedte en kopstructuur per schermtype. Op Recept wordt "Start koken" de enige vulde knop.
+- Daarna de geplande WP7: ingrediënt vervangen en persoonlijke notitie.
