@@ -1266,7 +1266,7 @@ export function RecipeForm({
                   lezen de tekst en vullen het recept in. Je kijkt het daarna na.
                 </p>
                 <div className="mt-3 grid grid-cols-2 gap-2">
-                  <label className="flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-3 text-center text-base font-semibold leading-tight text-primary-foreground focus-within:outline focus-within:outline-3 focus-within:outline-ring">
+                  <label className="flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-3 text-center text-base font-semibold leading-tight text-primary-foreground focus-within:outline focus-within:outline-3 focus-within:outline-ring">
                     {screenshotBezig ? (
                       <Loader2 className="size-5 animate-spin" aria-hidden />
                     ) : (
@@ -1285,7 +1285,7 @@ export function RecipeForm({
                       }}
                     />
                   </label>
-                  <label className="flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-3 text-center text-base font-semibold leading-tight focus-within:outline focus-within:outline-3 focus-within:outline-ring">
+                  <label className="flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-full border-2 border-border bg-card px-3 text-center text-base font-semibold leading-tight focus-within:outline focus-within:outline-3 focus-within:outline-ring">
                     <ImageIcon className="size-5" aria-hidden />
                     Kies een foto
                     <input
@@ -1308,7 +1308,7 @@ export function RecipeForm({
                   Neem een foto van een bord eten. We stellen een passend recept voor. Dat is een
                   gok, dus kijk het goed na.
                 </p>
-                <label className="mt-3 flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-3 text-center text-base font-semibold focus-within:outline focus-within:outline-3 focus-within:outline-ring">
+                <label className="mt-3 flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-full border-2 border-border bg-card px-3 text-center text-base font-semibold focus-within:outline focus-within:outline-3 focus-within:outline-ring">
                   {suggereren ? (
                     <Loader2 className="size-5 animate-spin" aria-hidden />
                   ) : (
@@ -1364,7 +1364,7 @@ export function RecipeForm({
             <Label htmlFor="ingredienten" className="text-base">
               Ingrediënten — één per regel
             </Label>
-            <label className="inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-xl border border-border bg-secondary px-4 text-base font-semibold">
+            <label className="inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-full border-2 border-border bg-card px-4 text-base font-semibold">
               {recognizing ? (
                 <Loader2 className="size-5 animate-spin" />
               ) : (
@@ -1496,8 +1496,8 @@ export function RecipeForm({
                             onClick={() => wisselStapIngredient(i, ing.name)}
                             className={
                               actief
-                                ? "inline-flex min-h-11 items-center rounded-xl bg-primary px-3 text-base font-semibold text-primary-foreground"
-                                : "inline-flex min-h-11 items-center rounded-xl border border-border bg-secondary px-3 text-base text-muted-foreground"
+                                ? "inline-flex min-h-11 items-center rounded-full bg-primary px-3 text-base font-semibold text-primary-foreground"
+                                : "inline-flex min-h-11 items-center rounded-full border border-border bg-card px-3 text-base text-muted-foreground"
                             }
                           >
                             {ing.name}
@@ -1648,7 +1648,7 @@ export function RecipeForm({
                   id="difficulty"
                   value={difficulty}
                   onChange={(e) => setDifficulty(e.target.value)}
-                  className="mt-2 h-14 w-full rounded-xl border border-input bg-card px-3 text-base"
+                  className="mt-2 h-14 w-full rounded-2xl border-2 border-input bg-card px-4 text-base"
                 >
                   {DIFFICULTIES.map((d) => (
                     <option key={d} value={d}>
@@ -1734,7 +1734,7 @@ export function RecipeForm({
               <div className="mt-2 flex flex-wrap gap-2">
                 {DIFFICULTIES.map((d) => (
                   <button key={d} type="button" aria-pressed={difficulty === d} onClick={() => setDifficulty(d)}
-                    className={difficulty === d ? "min-h-12 rounded-xl bg-primary px-4 text-base font-medium text-primary-foreground" : "min-h-12 rounded-xl border border-input bg-card px-4 text-base"}>
+                    className={difficulty === d ? "min-h-12 rounded-full bg-primary px-4 text-base font-medium text-primary-foreground" : "min-h-12 rounded-full border-2 border-input bg-card px-4 text-base"}>
                     {d}
                   </button>
                 ))}
@@ -1898,8 +1898,8 @@ function SoortKeuze({
             onClick={() => onKies(c)}
             className={
               actief
-                ? "min-h-12 rounded-xl bg-primary px-4 text-base font-medium text-primary-foreground"
-                : "min-h-12 rounded-xl border border-input bg-card px-4 text-base"
+                ? "min-h-12 rounded-full bg-primary px-4 text-base font-medium text-primary-foreground"
+                : "min-h-12 rounded-full border-2 border-input bg-card px-4 text-base"
             }
           >
             {soortLabel(c)}

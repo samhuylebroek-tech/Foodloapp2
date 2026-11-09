@@ -99,7 +99,7 @@ function FeedbackPage() {
                   type="button"
                   onClick={() => setKind(s.value)}
                   className={cn(
-                    "min-h-14 rounded-xl border px-5 text-base font-semibold",
+                    "min-h-14 rounded-full border-2 px-5 text-base font-semibold",
                     kind === s.value
                       ? "border-primary bg-primary text-primary-foreground"
                       : "border-border bg-card",
@@ -134,7 +134,7 @@ function FeedbackPage() {
                   type="button"
                   onClick={() => setRating(n === rating ? 0 : n)}
                   aria-label={`${n} sterren`}
-                  className="flex size-14 items-center justify-center rounded-xl border border-border bg-card"
+                  className="flex size-14 items-center justify-center rounded-full border-2 border-border bg-card"
                 >
                   <Star
                     className={cn(

@@ -133,14 +133,14 @@ function InspiratiePage() {
       }
     >
       <div className="space-y-4">
-        <nav aria-label="Recepten of ideeën" className="grid grid-cols-2 gap-1 rounded-2xl bg-muted p-1">
+        <nav aria-label="Recepten of ideeën" className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
           <Link
             to="/gerechten"
-            className="flex min-h-12 items-center justify-center rounded-xl text-base font-semibold text-muted-foreground hover:text-foreground"
+            className="flex min-h-12 items-center justify-center rounded-full text-base font-semibold text-muted-foreground hover:text-foreground"
           >
             Mijn recepten
           </Link>
-          <span aria-current="page" className="flex min-h-12 items-center justify-center rounded-xl bg-card text-base font-semibold shadow-sm">
+          <span aria-current="page" className="flex min-h-12 items-center justify-center rounded-full bg-card text-base font-semibold shadow-zacht">
             Ideeën om te koken
           </span>
         </nav>
@@ -157,7 +157,7 @@ function InspiratiePage() {
             onChange={(e) => setFilters((f) => ({ ...f, zoek: e.target.value }))}
             placeholder="Waar heb je zin in?"
             aria-label="Zoeken in inspiratie"
-            className="h-14 rounded-xl pl-12 text-base"
+            className="h-14 pl-12 text-base"
           />
         </div>
 
@@ -165,7 +165,7 @@ function InspiratiePage() {
           <Button
             variant={actieveFilters ? "default" : "outline"}
             onClick={() => setFilterOpen(true)}
-            className="h-12 shrink-0 rounded-xl px-5 text-base"
+            className="h-12 shrink-0 px-5 text-base"
           >
             <SlidersHorizontal className="size-4" />
             Filters{actieveFilters ? ` (${actieveFilters})` : ""}
@@ -174,11 +174,11 @@ function InspiratiePage() {
             variant="outline"
             onClick={() => setFilters((f) => ({ ...f, maxTijd: f.maxTijd === 30 ? null : 30 }))}
             aria-pressed={filters.maxTijd === 30}
-            className="h-12 shrink-0 rounded-xl px-5 text-base"
+            className="h-12 shrink-0 px-5 text-base"
           >
             ≤ 30 min
           </Button>
-          <Button variant="outline" onClick={kiesVerrassing} disabled={!resultaten.length} className="h-12 shrink-0 rounded-xl px-5 text-base">
+          <Button variant="outline" onClick={kiesVerrassing} disabled={!resultaten.length} className="h-12 shrink-0 px-5 text-base">
             <Shuffle className="size-4" /> Verras mij
           </Button>
         </div>
@@ -186,15 +186,15 @@ function InspiratiePage() {
         {isLoading ? (
           <div className="grid grid-cols-2 gap-3" aria-label="Laden">
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="h-52 animate-pulse rounded-xl bg-secondary" />
+              <div key={i} className="h-52 animate-pulse rounded-[1.25rem] bg-muted" />
             ))}
           </div>
         ) : isError ? (
-          <p className="rounded-xl border border-border bg-card p-4 text-center text-muted-foreground">
+          <p className="paneel p-4 text-center text-muted-foreground">
             De inspiratie kon niet geladen worden. Probeer het straks opnieuw.
           </p>
         ) : !resultaten.length ? (
-          <div className="rounded-xl border border-border bg-card p-6 text-center">
+          <div className="paneel p-6 text-center">
             <p className="text-lg font-semibold">Geen recepten gevonden</p>
             <p className="mt-1 text-muted-foreground">
               We vinden momenteel geen gerecht met deze combinatie. Probeer bijvoorbeeld pasta, kip
@@ -211,7 +211,7 @@ function InspiratiePage() {
                 <Link
                   to="/inspiratie/$id"
                   params={{ id: r.id }}
-                  className="block overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:shadow-md"
+                  className="paneel block overflow-hidden transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:shadow-md"
                 >
                   <ReceptFoto pad={r.image_url} titel={r.title} />
                   <div className="space-y-1 p-3">
@@ -288,7 +288,7 @@ function InspiratiePage() {
                     variant={filters.categorie === c ? "default" : "outline"}
                     onClick={() => setFilters((f) => ({ ...f, categorie: f.categorie === c ? "" : c }))}
                     aria-pressed={filters.categorie === c}
-                    className="h-12 rounded-xl px-4 text-base"
+                    className="h-12 px-4 text-base"
                   >
                     {soortLabel(c)}
                   </Button>
@@ -304,7 +304,7 @@ function InspiratiePage() {
                     variant={filters.maxTijd === min ? "default" : "outline"}
                     onClick={() => setFilters((f) => ({ ...f, maxTijd: f.maxTijd === min ? null : min }))}
                     aria-pressed={filters.maxTijd === min}
-                    className="h-12 rounded-xl px-4 text-base"
+                    className="h-12 px-4 text-base"
                   >
                     ≤ {min} min
                   </Button>
@@ -320,7 +320,7 @@ function InspiratiePage() {
                     variant={filters.eetstijl === e.waarde ? "default" : "outline"}
                     onClick={() => setFilters((f) => ({ ...f, eetstijl: f.eetstijl === e.waarde ? "" : e.waarde }))}
                     aria-pressed={filters.eetstijl === e.waarde}
-                    className="h-12 rounded-xl px-4 text-base"
+                    className="h-12 px-4 text-base"
                   >
                     {e.label}
                   </Button>

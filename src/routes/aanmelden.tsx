@@ -142,16 +142,16 @@ function AanmeldenPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
-      <div className="w-full max-w-md">
-        <div className="rounded-2xl border border-border bg-card p-8 shadow-2xl shadow-muted/50 sm:p-10">
-          {/* Logo & Header */}
-          <div className="mb-8 text-center">
-            <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-secondary">
+    <div className="min-h-screen bg-background sm:flex sm:items-center sm:justify-center sm:px-4 sm:py-10">
+      <div className="w-full sm:max-w-md">
+        {/* Telefoon: volledig scherm met merkband; groter scherm: rustige kaart. */}
+        <div className="px-5 pb-10 sm:paneel sm:p-10">
+          <div className="-mx-5 mb-8 rounded-b-[2rem] bg-inkt px-6 pb-8 pt-[calc(env(safe-area-inset-top)+2.5rem)] text-inkt-foreground sm:mx-0 sm:rounded-none sm:bg-transparent sm:p-0 sm:text-center sm:text-foreground">
+            <div className="mb-5 flex size-16 items-center justify-center rounded-2xl bg-white/90 sm:mx-auto sm:bg-secondary">
               <img src={logo} alt="Foodlo logo" width={40} height={40} className="size-10" />
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Foodlo</h1>
-            <p className="mt-2 text-base font-medium text-muted-foreground">
+            <h1 className="text-heldentitel">Foodlo</h1>
+            <p className="mt-2 text-lg text-inkt-zacht sm:text-base sm:text-muted-foreground">
               Ontdek je volgende favoriete recept
             </p>
           </div>
@@ -161,7 +161,7 @@ function AanmeldenPage() {
             <button
               type="button"
               onClick={() => handleSso("google", "Google")}
-              className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-input bg-card px-4 text-base font-semibold text-foreground transition-colors hover:bg-muted"
+              className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-full border-2 border-input bg-card px-4 text-base font-semibold text-foreground transition-colors hover:bg-muted"
             >
               <svg className="size-5" viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -187,7 +187,7 @@ function AanmeldenPage() {
             <button
               type="button"
               onClick={() => handleSso("apple", "Apple")}
-              className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-input bg-card px-4 text-base font-semibold text-foreground transition-colors hover:bg-muted"
+              className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-full border-2 border-input bg-card px-4 text-base font-semibold text-foreground transition-colors hover:bg-muted"
             >
               <svg className="size-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M16.36 12.79c.02-2.2 1.8-3.26 1.88-3.31-1.03-1.5-2.62-1.71-3.19-1.73-1.36-.14-2.65.8-3.34.8-.69 0-1.75-.78-2.88-.76-1.48.02-2.85.86-3.61 2.19-1.54 2.67-.39 6.62 1.11 8.79.73 1.06 1.6 2.25 2.75 2.21 1.1-.045 1.52-.71 2.85-.71 1.33 0 1.71.71 2.88.69 1.19-.02 1.94-1.08 2.67-2.14.84-1.23 1.19-2.42 1.21-2.48-.03-.01-2.32-.89-2.33-3.55zM14.2 5.87c.61-.74 1.02-1.77.91-2.8-.88.04-1.94.59-2.57 1.32-.56.65-1.05 1.7-.92 2.7.98.08 1.98-.5 2.58-1.22z" />
@@ -198,7 +198,7 @@ function AanmeldenPage() {
             <button
               type="button"
               onClick={() => handleSso("microsoft", "Microsoft")}
-              className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-input bg-card px-4 text-base font-semibold text-foreground transition-colors hover:bg-muted"
+              className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-full border-2 border-input bg-card px-4 text-base font-semibold text-foreground transition-colors hover:bg-muted"
             >
               <svg className="size-5" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M2 2h9.5v9.5H2z" fill="#F25022" />
@@ -214,7 +214,7 @@ function AanmeldenPage() {
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-border" />
             </div>
-            <span className="relative bg-card px-4 text-base font-semibold uppercase tracking-wider text-muted-foreground">
+            <span className="relative bg-background px-4 text-base sm:bg-card font-semibold uppercase tracking-wider text-muted-foreground">
               Of met e-mail
             </span>
           </div>
@@ -233,7 +233,7 @@ function AanmeldenPage() {
                     value={voornaam}
                     onChange={(e) => setVoornaam(e.target.value)}
                     placeholder="Marie"
-                    className="mt-2 h-14 rounded-2xl border-input bg-muted px-5 text-base placeholder:text-muted-foreground focus-visible:ring-primary/20"
+                    className="mt-2 h-14 rounded-2xl bg-card px-5 text-base placeholder:text-muted-foreground"
                     autoComplete="given-name"
                   />
                 </div>
@@ -247,7 +247,7 @@ function AanmeldenPage() {
                     value={achternaam}
                     onChange={(e) => setAchternaam(e.target.value)}
                     placeholder="Janssens"
-                    className="mt-2 h-14 rounded-2xl border-input bg-muted px-5 text-base placeholder:text-muted-foreground focus-visible:ring-primary/20"
+                    className="mt-2 h-14 rounded-2xl bg-card px-5 text-base placeholder:text-muted-foreground"
                     autoComplete="family-name"
                   />
                 </div>
@@ -266,7 +266,7 @@ function AanmeldenPage() {
                 placeholder="naam@voorbeeld.be"
                 aria-invalid={fout ? true : undefined}
                 aria-describedby={fout ? "aanmeld-fout" : undefined}
-                className="mt-2 h-14 rounded-2xl border-input bg-muted px-5 text-base placeholder:text-muted-foreground focus-visible:ring-primary/20"
+                className="mt-2 h-14 rounded-2xl bg-card px-5 text-base placeholder:text-muted-foreground"
                 autoComplete="email"
               />
             </div>
@@ -283,7 +283,7 @@ function AanmeldenPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="h-14 rounded-2xl border-input bg-muted py-0 pl-5 pr-16 text-base placeholder:text-muted-foreground focus-visible:ring-primary/20"
+                  className="h-14 rounded-2xl bg-card py-0 pl-5 pr-16 text-base placeholder:text-muted-foreground"
                   autoComplete={mode === "signup" ? "new-password" : "current-password"}
                   aria-invalid={fout ? true : undefined}
                   aria-describedby={fout ? "aanmeld-fout" : undefined}

@@ -347,19 +347,19 @@ function GerechtenPage() {
       ondertitel={`${recipes.length} ${t(recipes.length === 1 ? "recept in je kookboek" : "recepten in je kookboek")}`}
     >
       <div className="space-y-4">
-        <nav aria-label={t("Recepten of ideeën")} className="grid grid-cols-2 gap-1 rounded-2xl bg-muted p-1">
-          <span aria-current="page" className="flex min-h-12 items-center justify-center rounded-xl bg-card text-base font-semibold shadow-sm">
+        <nav aria-label={t("Recepten of ideeën")} className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
+          <span aria-current="page" className="flex min-h-12 items-center justify-center rounded-full bg-card text-base font-semibold shadow-zacht">
             {t("Mijn recepten")}
           </span>
           <Link
             to="/inspiratie"
-            className="flex min-h-12 items-center justify-center rounded-xl text-base font-semibold text-muted-foreground hover:text-foreground"
+            className="flex min-h-12 items-center justify-center rounded-full text-base font-semibold text-muted-foreground hover:text-foreground"
           >
             {t("Ideeën om te koken")}
           </Link>
         </nav>
         {concepten.length > 0 ? (
-          <section aria-label="Concepten" className="rounded-2xl border border-border bg-card p-3 shadow-sm">
+          <section aria-label="Concepten" className="paneel p-3">
             <p className="px-1 text-base font-semibold text-muted-foreground">Nog niet klaar</p>
             <ul className="mt-2 space-y-2">
               {concepten.map((c) => (
@@ -367,7 +367,7 @@ function GerechtenPage() {
                   <Link
                     to="/recepten/$id/bewerken"
                     params={{ id: c.id }}
-                    className="flex min-h-14 items-center justify-between gap-3 rounded-lg bg-secondary px-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-muted px-4 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <span className="min-w-0 truncate">Je was bezig met <strong>{c.title}</strong></span>
                     <span className="shrink-0 font-semibold text-primary">Verdergaan</span>
@@ -431,7 +431,7 @@ function GerechtenPage() {
         ) : null}
 
         <div className="space-y-2">
-          <div className="grid grid-cols-3 rounded-xl bg-secondary p-1" role="group" aria-label={t("Van wie")}>
+          <div className="grid grid-cols-3 rounded-full bg-muted p-1" role="group" aria-label={t("Van wie")}>
             {(
               [
                 ["alles", "Alles"],
@@ -445,7 +445,7 @@ function GerechtenPage() {
                 onClick={() => setEigenaar(waarde)}
                 aria-pressed={eigenaar === waarde}
                 className={cn(
-                  "min-h-12 whitespace-nowrap rounded-lg px-1 text-[0.94rem] font-semibold transition-colors",
+                  "min-h-12 whitespace-nowrap rounded-full px-1 text-[0.94rem] font-semibold transition-colors",
                   eigenaar === waarde
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground",
@@ -722,20 +722,12 @@ function FilterSelect({
         {label}
       </label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger
-          id={`filter-${label}`}
-          className="h-10 w-full rounded-lg border-border bg-card px-3 text-base"
-          aria-label={label}
-        >
+        <SelectTrigger id={`filter-${label}`} className="min-h-12 w-full" aria-label={label}>
           <SelectValue />
         </SelectTrigger>
-        <SelectContent className="rounded-xl border-border bg-card text-base">
+        <SelectContent>
           {options.map((opt) => (
-            <SelectItem
-              key={opt.value}
-              value={opt.value}
-              className="min-h-11 cursor-pointer text-base focus:bg-secondary"
-            >
+            <SelectItem key={opt.value} value={opt.value} className="min-h-12">
               {opt.label}
             </SelectItem>
           ))}
