@@ -50,10 +50,10 @@ Volledige lijst per route: [FUNCTIE-INVENTARIS](FUNCTIE-INVENTARIS.md). Hieronde
 | **Kringloop** | Slim aanvullen (porties, eenheden, voorraad, lijst, dubbels, gelijktijdig) | ✅ | Behouden, uitbreiden |
 | | Gekocht → voorraad, met ongedaan maken | ✅ | Behouden |
 | | Gekookt → voorraad bijgewerkt, met ongedaan maken | ✅ | Behouden |
-| | Gerecht niet meer gepland → van de lijst | ✅ | Behouden. Automatisch bij verwijderen uit het menu ⬜ |
+| | Menu gewijzigd → lijst bijgestuurd (erbij, weg, vervangen, verplaatst) | ✅ (WP4) | Automatisch, met ongedaan maken. Alleen het eigen weekmenu; het gezinsmenu volgt met het huishouden (WP9) |
 | | Restjes als voorraaditem | ⛔ G1 | Vereist `pantry_items.bron_recept_id` |
-| **Vandaag** | Hoofdgerecht + Start koken, week, favorieten | ✅ | Herontwerpen naar één contextkaart |
-| | "N dingen ontbreken" | ✅ | Behouden |
+| **Vandaag** | Nu-kaart: één volgende stap met één hoofdknop | ✅ (WP3) | Beslissing in `lib/vandaag.ts` (puur, getest) |
+| | "Daarna": hooguit drie signalen (ontbreekt, dagen vrij, lijst) | ✅ (WP3) | Vervangt de aanvulkaart, de snelkoppelingen en de ideeënband op Vandaag |
 | | "Wat eten we vanavond?" uit voorraad | ✅ (WP2) | Eén tik: gepland + tekort op de lijst + ongedaan maken |
 | | Bijna vervallen | ⛔ G1 | Vereist `vervalt_op` |
 | **Week** | Plannen, verplaatsen, kopiëren, restjes/uit eten, Laat Foodlo kiezen (AI), desktopraster, mobiel vegen | ✅/🟨 | 2 969 regels → opsplitsen (WP6) |
@@ -147,8 +147,8 @@ Status: architectuur en datamodel in §6. **Niets geactiveerd. ⛔ G5** (en voor
 **Spoor A (nu, zonder migratie):**
 - **WP1 Vijf plekken.** Onderbalk Vandaag · Week · Lijst · Keuken · Ontdek. Keuken bundelt recepten en voorraad. "Nieuw" in de kop. ✅ **Gebouwd en getest** (zie §9a).
 - **WP2 "Wat eten we vanavond?"** Niets gepland → drie gerechten die je bijna helemaal in huis hebt. Eén tik plant het en zet wat ontbreekt op de lijst. ✅ **Gebouwd en getest** (zie §9a).
-- **WP3** Vandaag als één contextkaart: koken over X min → ontbreekt iets → vanavond → week half leeg.
-- **WP4** Gerecht verwijderen of vervangen in het menu → lijst automatisch bijsturen (met ongedaan maken).
+- **WP3** Vandaag als één contextkaart: koken over X min → ontbreekt iets → vanavond → week half leeg. ✅ **Gebouwd en getest** (zie §9b).
+- **WP4** Gerecht verwijderen of vervangen in het menu → lijst automatisch bijsturen (met ongedaan maken). ✅ **Gebouwd en getest** voor het eigen weekmenu (zie §9b).
 - **WP5** Winkelmodus: overslaan of vervangen ("geen verse spinazie → diepvries").
 - **WP6** Planner opsplitsen (2 969 regels) in onderdelen. Tablet krijgt een tweekolommenweergave.
 - **WP7** Recept: ingrediënt vervangen (eigen tabel plus AI-terugval), persoonlijke notitie (lokaal tot G1).
@@ -221,11 +221,93 @@ Alles hieronder is in **Chromium-emulatie** met **nepdata** getest (lokale nep-S
 
 **Schermafdrukken:** `docs/foodloapp-v2/schermen/v2.html` op 390 px en 1280 px (Vandaag gepland, Vandaag leeg met voorstellen, na "Vanavond", Nieuw-menu, de vijf plekken, de 7 rondleidingsstappen). De PNG's blijven lokaal (`*.png` staat in .gitignore).
 
+## 9b. Verificatie WP4 en WP3 (2026-11-09)
+Alles in **Chromium-emulatie** met **nepdata**. Er zijn geen tests op echte toestellen of met een schermlezer gedaan.
+
+**WP4: weekmenu gewijzigd → lijst bijgestuurd**
+- Rekenregel: `lijstBijsturen` in `lib/kringloop.ts` (puur), 15 unit-tests:
+  - erbij, weg, vervangen en verplaatsen;
+  - porties, eenheden en dubbels;
+  - eigen regels;
+  - meerdere dagen en idempotentie;
+  - telbare dingen.
+- Databank: `wijzigMenu` met `planErbij`, `planWeg`, `planVervang` en `planVerplaats`.
+  - Menu en lijst vormen samen één actie. Mislukt de lijst, dan wordt de menuwijziging teruggedraaid.
+  - Daarna volgt een nacontrole: dubbels, bijvoorbeeld uit een tweede venster, worden meteen samengevoegd.
+- Weekmenu (eigen planning):
+  - de vragen "Ook op je boodschappenlijst?" en "Ook van je lijst halen?" zijn weg. Er volgt één melding, bijvoorbeeld "Pasta uit je weekmenu · lijst: 1 minder, 1 eraf", met **Ongedaan maken**;
+  - nieuw: **Ander gerecht** (vervangen), waarbij het huidige gerecht niet in de keuze staat;
+  - dezelfde weg geldt voor de receptpagina ("Plan dit"), voor een nieuw recept koppelen aan een maaltijd, voor het weekvoorstel en voor "Kook dit vanavond";
+  - de handmatige knop "Op boodschappenlijst" in het maaltijdmenu blijft.
+- Regels:
+  - eigen regels (`recipe_id` leeg) worden nooit verlaagd of gewist;
+  - per product blijft er één Foodlo-regel over (g/kg, ml/cl/dl/l/el/tl, stuks);
+  - alleen weghalen zet nooit iets bij;
+  - alleen maaltijden in de komende 7 dagen sturen bij wat erbij komt, zoals bij Slim aanvullen ("Volgende week opnieuw" laat de lijst dus gelijk).
+- **Gevonden en hersteld tijdens het bouwen:**
+  - "gehakt" kreeg een lege productsleutel (het is ook een bijwoord) en werd op de lijst nooit herkend. Slim aanvullen kon het daardoor dubbel zetten;
+  - geschaalde porties gaven "1,14 uien". Telbare dingen worden nu naar boven afgerond, gewicht en volume blijven exact;
+  - Slim aanvullen meldde regels voor later geplande gerechten (buiten 7 dagen) ten onrechte als "niet meer nodig";
+  - BUG-030 op een nieuw pad: een venster dat vanuit het maaltijdmenu opent, verloor de focus aan het sluitende menu.
+- E2e `weekmenu-lijst.spec.ts` (390 px + desktop):
+  - weg (met ongedaan maken);
+  - vervangen (met ongedaan maken);
+  - buiten 7 dagen;
+  - fout bij verwijderen van lijstregels: menu en lijst onveranderd;
+  - fout bij toevoegen: niets half;
+  - **twee vensters tegelijk**: één regel per product, juiste totalen.
+  - Drie keer herhaald samen met `kringloop.spec`: 102/102.
+- Grenzen: zie §14 (eigen regel die niet verkleint, geen transactie). Het gezinsweekmenu houdt de oude vragen tot het huishouden (WP9).
+- **Voorstel, wacht op jou (G7):** "Alles van deze week op de lijst" in het weekmenu doet nu hetzelfde als Slim aanvullen plus WP4, maar via de oude weg (zonder herberekening). Mijn voorstel is samenvoegen met Slim aanvullen. Ik heb niets weggehaald.
+
+**WP3: Vandaag als één helder startscherm**
+- Bovenaan staat één **Nu-kaart** met precies één situatie, één hoofdknop en hooguit één tweede actie. De beslissing staat in `lib/vandaag.ts` (puur, 16 unit-tests). De volgorde:
+  1. je was aan het koken → **Ga verder met koken** (stap X van Y);
+  2. voor vandaag ontbreekt iets → **Zet op mijn lijst** (alleen wat vandaag nodig is);
+  3. alles staat op je lijst maar is niet gekocht → **Naar mijn lijst**;
+  4. alles in huis → **Start koken**, met "Begin om 16:30" als het nog vroeg is;
+  5. gepland zonder recept → naar het weekmenu;
+  6. vanaf 21 u → **Morgen** (wat ontbreekt, of "Plan morgen");
+  7. niets gepland → "Wat eten we vandaag?" met drie voorstellen uit de voorraad;
+  8. nog geen recepten → eerste recept.
+- Daaronder komt **Daarna**, met hooguit drie signalen en nooit iets dat de Nu-kaart al zegt:
+  - "N dingen ontbreken voor je komende maaltijden" met de knop **Zet op mijn lijst**;
+  - "N dagen nog vrij";
+  - "N dingen op je boodschappenlijst".
+- Op Vandaag weggehaald:
+  - de grote aanvulkaart: die zit nu in de Nu-kaart en in Daarna, en blijft op Lijst staan;
+  - de snelkoppelingen "Boodschappen" en "Wat kan ik koken?": die staan al in de onderbalk (Lijst, Keuken);
+  - de band "Zin in iets nieuws?": die is al te vinden via Ontdek.
+  - Er is geen functie verdwenen; alleen dubbele ingangen zijn weg.
+- Laden: één leesronde (`lib/vandaag-db.ts`). De stand ververst na elke menu-, lijst- of voorraadwijziging.
+- **Gevonden en hersteld:** op 390 px brak "20 dingen ontbreken" in smalle stukjes naast de knop. De knop staat nu onder de tekst.
+- E2e `vandaag.spec.ts` met vaste klok:
+  - 14 u: aanvullen, hooguit twee acties, Daarna herhaalt niets, axe;
+  - 22 u: morgen;
+  - hervatten.
+- `kringloop.spec`: de volledige lus begint nu op de Nu-kaart (aanvullen → winkelen → Daarna).
+- Schermafdrukken: `docs/foodloapp-v2/schermen/v2.html`, nrs. 30–33 (WP3) en 20–24 (WP4), op 390 px en desktop.
+
+**Regressie na WP4 en WP3 (echte exitcodes):** 
+
+| Run | tsc | Vitest | Playwright (alle projecten) |
+|---|---|---|---|
+| Na WP4 (vóór de herstellingen hieronder) | EXIT 0 | EXIT 0 (432/432) | **EXIT 1**: 199 geslaagd, 4 mislukt (kernflow: 1,14 uien, zie boven), 68 overgeslagen |
+| Na WP3, eerste volledige run | EXIT 0 | EXIT 0 (449/449) | **EXIT 1**: 208 geslaagd, **1 mislukt**, 74 overgeslagen |
+| Na WP3, tweede volledige run (gecommitte stand) | **EXIT 0** | **EXIT 0** (449/449, 21 bestanden) | **EXIT 0**: 209 geslaagd, 0 mislukt, 74 overgeslagen |
+
+- De ene fout in de eerste WP3-run zat in "netwerkfout bij bewaren" (tablet-768). Het automatische receptconcept verscheen niet binnen 20 s, aan het einde van een run van 11 minuten.
+- Apart vijf keer per project herhaald: 20/20 geslaagd. Het is dus een **sporadische timingfout** in een bestaande test, en ze is **niet opgelost**.
+- Ze staat als risico in §14 en als open punt in het bugregister.
+- De overgeslagen tests zijn bewust overgeslagen: schermafdruk-specs draaien alleen met `SCHERMEN=1`, en persona-tests gelden alleen voor telefoon óf desktop.
+
 ## 10. Acceptatiecriteria (per WP, kort)
 | WP | Criterium |
 |---|---|
 | WP1 | Elke bestaande route blijft bereikbaar. De actieve tab klopt voor alle 30 gebruikersroutes. De onderbalk heeft vijf labels zonder afkapping op 360 px. Axe zonder ernstige meldingen. Persona-taken zijn nog even kort of korter |
 | WP2 | Niets gepland voor vanavond → maximaal drie voorstellen, gesorteerd op het minste dat ontbreekt. Eén tik zet het gerecht vandaag op het avondeten en wat ontbreekt op de lijst (geen dubbels). Ongedaan maken herstelt beide |
+| WP3 | De Nu-kaart toont precies één situatie, met één hoofdknop en hooguit één tweede actie. "Daarna" herhaalt niets uit de Nu-kaart. De inhoud hangt van het uur af en wordt getest met een vaste klok. Axe zonder ernstige meldingen |
+| WP4 | Erbij, weg, vervangen en verplaatsen sturen de lijst bij. Eigen regels worden nooit verlaagd of gewist. Eén regel per product. Fouten → niets half. Twee vensters tegelijk → geen dubbels. Ongedaan maken → menu én lijst terug |
 | Kringloop | K1–K7 ([PRODUCT-HERONTWERP §7](PRODUCT-HERONTWERP.md)) ✅ |
 | Huishouden | H1–H6 ([HUISHOUDEN-ONTWERP §6](HUISHOUDEN-ONTWERP.md)) |
 
@@ -272,6 +354,10 @@ Er staan geen kritieke of hoge bugs open op `v2/dev`.
 | Geen staging → huishouden en voorraadvelden blijven geblokkeerd | Hoog | B6 zo snel mogelijk |
 | Lovable-conflicten bij grote bestanden | Middel | Gerichte wijzigingen, lint-ratchet, geen massale herformattering |
 | Meerstapsacties zonder transactie (kringloop client-side) | Middel | Herstelfunctie nu; RPC's na G1 |
+| WP4: een eigen lijstregel waarbij Foodlo het tekort optelde, wordt bij weghalen niet verkleind (er is geen kolom die bijhoudt wie welk deel toevoegde) | Laag (hooguit iets te veel kopen, nooit iets kwijt) | Kolom `hoeveelheid_auto` op `shopping_items` (⛔ G1) |
+| WP4: twee leden die exact tegelijk wijzigen → laatste schrijver wint per regel; de nacontrole voegt dubbels samen, maar zonder transactie is een zeldzame afwijking mogelijk | Laag | RPC per menuwijziging (WP11, ⛔ G1) |
+| Sporadische timeout van de concept-autosave in e2e onder zware last (1× in 2 volledige runs, 0× in 20 gerichte herhalingen) | Laag (test, geen gebruikersfout gezien) | Onderzoeken: debounce en wachten in de test; nu als open punt in het bugregister |
+| WP3: etenstijden staan vast (avondeten 18:30); "begin om" klopt niet voor wie later eet | Laag | Instelling "wanneer eten jullie?" (geen schemawijziging nodig: profielinstelling of lokaal) |
 | Live V1 draait nog met de bekende TanStack/seroval-kwetsbaarheid | Hoog | Fix klaar, wacht op G3/G4 |
 | Geen echte toesteltests | Middel | Testronde op iPhone en Android vóór een release |
 | AI-kosten bij groei | Middel | Eerst eigen logica, credits, BUG-012 |
@@ -280,4 +366,5 @@ Er staan geen kritieke of hoge bugs open op `v2/dev`.
 1. **G1/B6:** een staging-Supabase-project (kosten, nieuw project) om het huishouden, de voorraadvelden en RPC's te kunnen bouwen.
 2. **G3/G4:** de beveiligingsfix voor live V1 (branch klaar).
 3. **B5/G5:** de keuze van betaalprovider (niets activeren).
-4. Pushen van `v2/dev` (nu ±30 commits lokaal voor).
+4. Pushen van `v2/dev` (lokaal voor op de remote; niets gepusht).
+5. **G7:** "Alles van deze week op de lijst" samenvoegen met Slim aanvullen (§9b).
