@@ -43,7 +43,9 @@ test("elke route: juiste plek actief en terugknop alleen waar nodig", async ({ p
     } else {
       await expect(actief, pad).toHaveCount(0);
     }
-    await expect(page.getByRole("button", { name: "Terug", exact: true }), pad).toHaveCount(terug ? 1 : 0);
+    await expect(page.getByRole("button", { name: "Terug", exact: true }), pad).toHaveCount(
+      terug ? 1 : 0,
+    );
   }
   // Vijf plekken, altijd met tekst.
   await expect(menu.getByRole("link")).toHaveCount(5);
