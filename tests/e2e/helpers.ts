@@ -135,3 +135,13 @@ export async function seedDb(data: Record<string, Record<string, unknown>[]>) {
 export async function resetDemo() {
   await fetch(`${NEP_SUPABASE}/__reset?demo=1`);
 }
+
+/**
+ * Vaste klok (vandaag om `uur`): Vandaag (WP3) toont 's avonds laat al morgen. Zonder vaste
+ * klok zou een test die om 22 u draait iets anders zien dan om 14 u.
+ */
+export async function zetKlok(page: Page, uur = 14) {
+  const d = new Date();
+  d.setHours(uur, 0, 0, 0);
+  await page.clock.setFixedTime(d);
+}

@@ -69,9 +69,19 @@ test("ontbrekende ingrediënten op de lijst, zonder dubbels bij een tweede keer"
   void extern;
 });
 
-test("startpagina leidt naar 'Wat kan ik koken?'", async ({ page, extern }) => {
+test("vanaf Vandaag in twee tikken bij je voorraad (Keuken → Voorraad)", async ({
+  page,
+  extern,
+}) => {
   await page.goto("/");
-  await page.getByRole("link", { name: /Wat kan ik koken\?/ }).click();
+  await page
+    .getByRole("link", { name: /^Keuken/ })
+    .first()
+    .click();
+  await page
+    .getByRole("navigation", { name: "Keuken" })
+    .getByRole("link", { name: /Voorraad/ })
+    .click();
   await expect(page).toHaveURL(/\/voorraad$/);
   void extern;
 });

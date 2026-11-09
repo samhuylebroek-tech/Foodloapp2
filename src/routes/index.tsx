@@ -1,27 +1,17 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import {
-  ArrowRight,
-  BookOpen,
-  CalendarDays,
-  ChefHat,
-  ChevronRight,
-  Clock,
-  Heart,
-  Plus,
-  Refrigerator,
-  ShoppingCart,
-  Sparkles,
-  Users,
-} from "lucide-react";
+import { BookOpen, CalendarDays, ChevronRight, Clock, Heart, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
-import { AanvulKaart } from "@/components/kringloop/AanvulKaart";
-import { VanavondVoorstellen } from "@/components/kringloop/VanavondVoorstellen";
+import { NuKaart } from "@/components/vandaag/NuKaart";
+import { Daarna } from "@/components/vandaag/Daarna";
+import { useAanvulling } from "@/hooks/useAanvulling";
+import { leesVoortgang } from "@/lib/kookstand";
+import { hoofdStap, signalen as signalenVan } from "@/lib/vandaag";
+import { laadVandaag } from "@/lib/vandaag-db";
 import { EmptyState } from "@/components/EmptyState";
-import { PageSkeleton } from "@/components/PageSkeleton";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import type { Recipe } from "@/lib/types";
 import { useT } from "@/lib/voorkeuren";
@@ -139,26 +129,6 @@ function StartPage() {
       }[];
     },
   });
-  const { data: openItems = 0 } = useQuery({
-    queryKey: ["home-shopping", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      // Tel dezelfde lijst die Boodschappen standaard opent, zodat de aantallen overeenkomen.
-      const { data: eerste } = await supabase
-        .from("shopping_lists")
-        .select("id")
-        .order("created_at")
-        .limit(1)
-        .maybeSingle();
-      if (!eerste) return 0;
-      const { count } = await supabase
-        .from("shopping_items")
-        .select("id", { count: "exact", head: true })
-        .eq("checked", false)
-        .eq("list_id", eerste.id);
-      return count ?? 0;
-    },
-  });
   const week = useMemo(() => dezeWeek(), []);
   const { data: weekmenu = [] } = useQuery({
     queryKey: ["home-week", user?.id, week[0]],
@@ -175,6 +145,39 @@ function StartPage() {
       return (data ?? []) as unknown as WeekRij[];
     },
   });
+  // WP3: alles wat Vandaag moet weten (alleen lezen). Sleutel begint met "home-dagmenu",
+  // zodat elke menu- of lijstwijziging (die dat ververst) ook deze stand ververst.
+  const { data: stand, isLoading: standLaden } = useQuery({
+    queryKey: ["home-dagmenu", "stand", user?.id, vandaag()],
+    enabled: !!user,
+    staleTime: 15_000,
+    queryFn: () => laadVandaag(user!.id, vandaag()),
+  });
+  const aanvulling = useAanvulling();
+  const [zetBezig, setZetBezig] = useState(false);
+  const stap = useMemo(() => {
+    if (!stand) return null;
+    const voortgang: Record<string, number | null> = {};
+    for (const m of stand.vandaag)
+      if (m.recept) voortgang[m.recept.id] = leesVoortgang(m.recept.id, m.recept.stappen);
+    return hoofdStap({ ...stand, nu: new Date(), voortgang, heeftRecepten: recipes.length > 0 });
+  }, [stand, recipes.length]);
+  const signalen = useMemo(
+    () =>
+      stand && stap
+        ? signalenVan({ ...stand, nu: new Date(), voortgang: {}, heeftRecepten: true }, stap)
+        : [],
+    [stand, stap],
+  );
+  async function zetOpLijst(welke: Set<string> | "alles") {
+    setZetBezig(true);
+    try {
+      await aanvulling.zetOpLijst(welke);
+    } finally {
+      setZetBezig(false);
+    }
+  }
+
   const recent = useMemo(() => {
     const favoriet = recipes.filter((recipe) => favorites.includes(recipe.id));
     return (favoriet.length ? favoriet : recipes).slice(0, 4);
@@ -192,8 +195,10 @@ function StartPage() {
     return [...perSleutel.values()].sort((a, b) => (b.recipes ? 1 : 0) - (a.recipes ? 1 : 0));
   }, [dagmenu]);
 
-  const eerste = maaltijden[0];
-  const overige = maaltijden.slice(1);
+  // De maaltijd in de Nu-kaart staat niet nog eens onder "Ook vandaag".
+  const inNuKaart =
+    stap && "maaltijd" in stap && stap.soort !== "morgen" ? stap.maaltijd?.id : null;
+  const overige = maaltijden.filter((m) => m.id !== inNuKaart);
   const datum = new Date().toLocaleDateString("nl-BE", {
     weekday: "long",
     day: "numeric",
@@ -209,137 +214,24 @@ function StartPage() {
   const groetTekst = `${t(groet(new Date().getHours()))}${naam ? `, ${naam}` : ""}`;
   const [uitgelicht, ...rest] = recent;
 
-  // Redactionele band: datum, groet en wat er vandaag op tafel komt.
+  // WP3: één kaart met wat nú telt en één knop (beslissing in lib/vandaag.ts).
   const kop = (
-    <section
-      aria-labelledby="vandaag-groet"
-      className="relative mb-10 overflow-hidden rounded-[2rem] bg-inkt text-inkt-foreground shadow-kaart"
-    >
-      <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
-        <div className="flex flex-col p-6 sm:p-8 lg:p-10">
-          <p className="flex items-center gap-2 text-base font-medium text-inkt-zacht">
-            <CalendarDays className="size-5" aria-hidden />
-            {datumHoofdletter}
-          </p>
-          <h1 id="vandaag-groet" className="mt-2 text-paginatitel text-inkt-foreground">
-            {groetTekst}
-          </h1>
-
-          <div className="mt-8 lg:mt-auto lg:pt-10">
-            {isLoading ? (
-              <p className="text-lg text-inkt-zacht">
-                {t("Even kijken wat er op het menu staat…")}
-              </p>
-            ) : eerste?.recipes ? (
-              <>
-                <p className="text-base font-semibold uppercase tracking-[0.12em] text-[var(--honing)]">
-                  {t(eerste.meal_type ? `${eerste.meal_type} vandaag` : "Vandaag op tafel")}
-                  {eerste.group_id ? ` · ${t("met het gezin")}` : ""}
-                </p>
-                <h2 className="mt-2 text-heldentitel text-inkt-foreground">
-                  {t(eerste.recipes.title)}
-                </h2>
-                <p className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-base text-inkt-zacht">
-                  {tijdLabel(eerste.recipes.prep_minutes, eerste.recipes.cook_minutes) ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      <Clock className="size-5" aria-hidden />
-                      {tijdLabel(eerste.recipes.prep_minutes, eerste.recipes.cook_minutes)}
-                    </span>
-                  ) : null}
-                  <span className="inline-flex items-center gap-1.5">
-                    <Users className="size-5" aria-hidden />
-                    {eerste.recipes.servings}{" "}
-                    {t(eerste.recipes.servings === 1 ? "persoon" : "personen")}
-                  </span>
-                </p>
-                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                  <Link
-                    to="/recepten/$id"
-                    params={{ id: eerste.recipes.id }}
-                    search={{ koken: true }}
-                    className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-inkt-foreground px-6 text-lg font-semibold text-inkt hover:bg-inkt-foreground/90"
-                  >
-                    <ChefHat className="size-6" aria-hidden />
-                    {t("Start koken")}
-                  </Link>
-                  <Link
-                    to="/recepten/$id"
-                    params={{ id: eerste.recipes.id }}
-                    className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl border-2 border-inkt-foreground/40 px-6 text-lg font-semibold text-inkt-foreground hover:bg-white/10"
-                  >
-                    {t("Bekijk recept")}
-                  </Link>
-                </div>
-              </>
-            ) : eerste ? (
-              <>
-                <p className="text-base font-semibold uppercase tracking-[0.12em] text-[var(--honing)]">
-                  {t(eerste.meal_type || "Vandaag")}
-                </p>
-                <h2 className="mt-2 text-heldentitel text-inkt-foreground">
-                  {t(eerste.custom_title ?? "Maaltijd")}
-                </h2>
-                <Link
-                  to="/planner"
-                  className="mt-6 inline-flex min-h-14 items-center gap-2 rounded-2xl bg-inkt-foreground px-6 text-lg font-semibold text-inkt"
-                >
-                  {t("Naar het weekmenu")}
-                  <ArrowRight className="size-5" aria-hidden />
-                </Link>
-              </>
-            ) : (
-              <>
-                <h2 className="text-heldentitel text-inkt-foreground">
-                  {t("Wat eten we vandaag?")}
-                </h2>
-                <p className="mt-3 max-w-md text-lg text-inkt-zacht">
-                  {recipes.length
-                    ? t("Er staat nog niets gepland. Kies een gerecht uit je recepten.")
-                    : t(
-                        "Bewaar eerst een recept dat je lekker vindt. Daarna kan je het inplannen.",
-                      )}
-                </p>
-                <VanavondVoorstellen recepten={recipes} />
-                <Link
-                  to={recipes.length ? "/planner" : "/recepten/nieuw"}
-                  className="mt-6 inline-flex min-h-14 items-center gap-2 rounded-2xl bg-inkt-foreground px-6 text-lg font-semibold text-inkt"
-                >
-                  <Plus className="size-5" aria-hidden />
-                  {recipes.length ? t("Gerecht kiezen") : t("Recept toevoegen")}
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-
-        {eerste?.recipes ? (
-          <Link
-            to="/recepten/$id"
-            params={{ id: eerste.recipes.id }}
-            tabIndex={-1}
-            aria-hidden
-            className="relative block min-h-56 overflow-hidden lg:min-h-full"
-          >
-            <RecipePhoto
-              path={eerste.recipes.image_url}
-              alt=""
-              recept={eerste.recipes}
-              className="absolute inset-0 size-full"
-              icoonClassName="size-28 max-h-28 max-w-28"
-            />
-          </Link>
-        ) : (
-          <div className="omslag omslag-groen hidden min-h-56 lg:block" aria-hidden />
-        )}
-      </div>
-    </section>
+    <NuKaart
+      stap={stap}
+      datum={datumHoofdletter}
+      groet={groetTekst}
+      laden={isLoading || standLaden}
+      recepten={recipes}
+      bezig={zetBezig}
+      onZetOpLijst={() => void zetOpLijst(new Set(stand?.sleutelsVandaag ?? []))}
+    />
   );
 
   return (
     <AppShell breed title={groetTekst} kop={kop}>
       <div className="space-y-12">
-        {/* Volgende stap: wat ontbreekt er voor je komende maaltijden? Eén knop. */}
-        <AanvulKaart toonKlaar />
+        {/* Daarna: hooguit drie signalen, nooit wat de Nu-kaart al zegt. */}
+        <Daarna signalen={signalen} bezig={zetBezig} onAanvullen={() => void zetOpLijst("alles")} />
         {overige.length ? (
           <section aria-labelledby="ook-vandaag">
             <h2 id="ook-vandaag" className="text-sectietitel">
@@ -477,52 +369,6 @@ function StartPage() {
           </ul>
         </section>
 
-        <section aria-labelledby="slim-titel" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <h2 id="slim-titel" className="sr-only">
-            {t("Snel verder")}
-          </h2>
-          <Link
-            to="/boodschappen"
-            className="group flex min-h-28 items-center gap-4 rounded-3xl bg-terracotta-zacht p-5 hover:shadow-kaart"
-          >
-            <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-card text-terracotta shadow-zacht">
-              <ShoppingCart className="size-7" aria-hidden />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block font-display text-2xl font-semibold">{t("Boodschappen")}</span>
-              <span className="block text-base text-foreground/80">
-                {openItems
-                  ? `${openItems} ${t(openItems === 1 ? "ding nog te kopen" : "dingen nog te kopen")}`
-                  : t("Je lijst is leeg")}
-              </span>
-            </span>
-            <ArrowRight
-              className="size-6 shrink-0 transition-transform group-hover:translate-x-1"
-              aria-hidden
-            />
-          </Link>
-          <Link
-            to="/voorraad"
-            className="group flex min-h-28 items-center gap-4 rounded-3xl bg-secondary p-5 hover:shadow-kaart"
-          >
-            <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-card text-primary shadow-zacht">
-              <Refrigerator className="size-7" aria-hidden />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block font-display text-2xl font-semibold">
-                {t("Wat kan ik koken?")}
-              </span>
-              <span className="block text-base text-foreground/80">
-                {t("Met wat je al in huis hebt")}
-              </span>
-            </span>
-            <ArrowRight
-              className="size-6 shrink-0 transition-transform group-hover:translate-x-1"
-              aria-hidden
-            />
-          </Link>
-        </section>
-
         {uitgelicht ? (
           <section aria-labelledby="favorieten-titel">
             <div className="flex items-end justify-between gap-4">
@@ -598,30 +444,6 @@ function StartPage() {
             }
           />
         ) : null}
-
-        <section
-          aria-labelledby="ideeen-titel"
-          className="flex flex-col items-start gap-4 rounded-3xl bg-[var(--honing-zacht)] p-6 sm:flex-row sm:items-center"
-        >
-          <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-card text-[var(--honing-foreground)] shadow-zacht">
-            <Sparkles className="size-7" aria-hidden />
-          </span>
-          <div className="min-w-0 flex-1">
-            <h2 id="ideeen-titel" className="font-display text-2xl font-semibold">
-              {t("Zin in iets nieuws?")}
-            </h2>
-            <p className="text-base text-[var(--honing-foreground)]">
-              {t("Bekijk ideeën om te koken en bewaar wat je lekker lijkt.")}
-            </p>
-          </div>
-          <Link
-            to="/inspiratie"
-            className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-card px-5 text-base font-semibold shadow-zacht"
-          >
-            {t("Ideeën bekijken")}
-            <ArrowRight className="size-5" aria-hidden />
-          </Link>
-        </section>
       </div>
     </AppShell>
   );

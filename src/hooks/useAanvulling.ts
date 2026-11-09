@@ -11,6 +11,8 @@ export function useKringloopVernieuw() {
     void qc.invalidateQueries({ queryKey: ["aanvulling"] });
     void qc.invalidateQueries({ queryKey: ["shopping"] });
     void qc.invalidateQueries({ queryKey: ["voorraad"] });
+    // Vandaag (WP3) rekent met lijst en voorraad: mee verversen.
+    void qc.invalidateQueries({ queryKey: ["home-dagmenu"] });
   };
 }
 

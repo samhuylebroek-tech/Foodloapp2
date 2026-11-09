@@ -5,7 +5,7 @@
  * Resultaten worden gelogd als "PERSONA|<taak>|<stappen>" voor het verslag.
  */
 import type { Locator, Page } from "@playwright/test";
-import { axeErnstig, expect, meldAan, nepDb, resetDemo, test } from "./helpers";
+import { axeErnstig, expect, meldAan, nepDb, resetDemo, test, zetKlok } from "./helpers";
 
 function teller(page: Page) {
   let stappen = 0;
@@ -101,6 +101,7 @@ test.describe("Persona A — moeder van 70, telefoon", () => {
 
   test("A6: vanaf Vandaag beginnen met koken en een timer zetten", async ({ page, extern }) => {
     const s = teller(page);
+    await zetKlok(page);
     await page.goto("/");
     await s.tik(page.getByRole("link", { name: "Start koken" }));
     await s.tik(page.getByRole("button", { name: "Begin met koken" }));

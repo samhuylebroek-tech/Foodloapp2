@@ -3,7 +3,7 @@
  * Alleen nepdata (lokale nep-Supabase). Bestanden: docs/foodloapp-v2/schermen/v2/<project>-<naam>.png
  */
 import type { Page } from "@playwright/test";
-import { meldAan, resetDemo, test } from "./helpers";
+import { meldAan, resetDemo, test, zetKlok } from "./helpers";
 
 test.skip(!process.env["SCHERMEN"], "alleen met SCHERMEN=1");
 test.describe.configure({ timeout: 180_000 });
@@ -34,6 +34,7 @@ test.beforeEach(async ({ page }) => {
 
 test("vandaag en navigatie", async ({ page }, info) => {
   const p = info.project.name;
+  await zetKlok(page, 14);
   // 1. Vandaag met een geplande maaltijd + aanvulkaart.
   await page.goto("/");
   await klaar(page);
@@ -118,4 +119,44 @@ test("weekmenu → lijst (WP4)", async ({ page }, info) => {
   await page.goto("/boodschappen");
   await klaar(page);
   await foto(page, p, "24-lijst-na-vervangen", true);
+});
+
+test("Vandaag (WP3): de Nu-kaart in vijf situaties", async ({ page }, info) => {
+  const p = info.project.name;
+  const nu = page.locator("[data-nu]");
+  // 14 u: voor vanavond ontbreekt iets.
+  await zetKlok(page, 14);
+  await page.goto("/");
+  await nu.waitFor();
+  await klaar(page);
+  await foto(page, p, "30-nu-aanvullen", true);
+  // Eén tik → winkelen; "Daarna" toont de rest van de week.
+  await nu.getByRole("button", { name: "Zet op mijn lijst" }).click();
+  await page.locator('[data-nu="winkelen"]').waitFor();
+  await page.waitForTimeout(600);
+  await foto(page, p, "31-nu-winkelen", true);
+});
+
+test("Vandaag (WP3): morgen, hervatten, niets gepland", async ({ page }, info) => {
+  const p = info.project.name;
+  await zetKlok(page, 22);
+  await page.goto("/");
+  await page.locator('[data-nu="morgen"]').waitFor();
+  await klaar(page);
+  await foto(page, p, "32-nu-morgen");
+});
+
+test("Vandaag (WP3): hervatten", async ({ page }, info) => {
+  const p = info.project.name;
+  await zetKlok(page, 17);
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "foodlo:kookstand:aaaaaaaa-0000-4000-8000-000000000001",
+      JSON.stringify({ stap: 1, tijd: Date.now() }),
+    );
+  });
+  await page.goto("/");
+  await page.locator('[data-nu="hervatten"]').waitFor();
+  await klaar(page);
+  await foto(page, p, "33-nu-hervatten");
 });

@@ -13,6 +13,7 @@ import {
   resetDemo,
   storing,
   test,
+  zetKlok,
 } from "./helpers";
 
 const STOOFVLEES = "/recepten/aaaaaaaa-0000-4000-8000-000000000001";
@@ -89,14 +90,18 @@ test("de volledige kringloop: aanvullen → winkelen → voorraad → koken → 
   page,
   extern,
 }) => {
-  // 1. Vandaag zegt wat er ontbreekt; één tik zet het op de lijst.
+  // 1. Vandaag (WP3) zegt wat er voor vanavond ontbreekt; één tik zet het op de lijst.
+  await zetKlok(page);
   await page.goto("/");
-  const kaart = page.getByRole("region", { name: "Boodschappen voor je komende maaltijden" });
-  await expect(kaart).toBeVisible();
-  await kaart.getByRole("button", { name: "Zet op mijn lijst" }).click();
-  await expect(page.getByText(/dingen op je lijst/).first()).toBeVisible();
-  await expect(kaart).toHaveCount(0); // niets meer te doen
-  await expect(page.getByText("Alles voor je komende maaltijden staat klaar")).toBeVisible();
+  const nu = page.locator("[data-nu]");
+  await expect(nu).toHaveAttribute("data-nu", "aanvullen");
+  await nu.getByRole("button", { name: "Zet op mijn lijst" }).click();
+  await expect(page.getByText(/op je lijst/).first()).toBeVisible();
+  // Daarna is de volgende stap: winkelen. En pas nu toont "Daarna" de rest van de week.
+  await expect(nu).toHaveAttribute("data-nu", "winkelen");
+  const daarna = page.getByRole("region", { name: "Daarna" });
+  await daarna.getByRole("button", { name: "Zet op mijn lijst" }).click();
+  await expect(daarna.getByRole("button", { name: "Zet op mijn lijst" })).toHaveCount(0);
 
   // 2. In de winkel: alles afvinken, per afdeling.
   await page.goto("/boodschappen");
@@ -163,6 +168,7 @@ test("WP2 wat eten we vanavond: één tik plant het en zet alleen het tekort op 
     method: "DELETE",
   });
   const lijstVoor = (await open()).length;
+  await zetKlok(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Wat eten we vandaag?" })).toBeVisible();
   const voorstellen = page.getByRole("region", { name: "Met wat je in huis hebt" });
