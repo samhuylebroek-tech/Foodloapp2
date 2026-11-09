@@ -369,7 +369,7 @@ Alles in **Chromium-emulatie** met **nepdata**. Er zijn geen tests op echte toes
 | **Volledige regressie** op commit `80dcfe4` | `tsc` | 0 fouten | **0** |
 | | `vitest` | 465/465, 23 bestanden | **0** |
 | | `vite build` | geslaagd | **0** |
-| | Playwright, alle projecten | PLAYWRIGHT_RESULTAAT | **PLAYWRIGHT_EXIT** |
+| | Playwright, alle projecten (319 tests) | 242 geslaagd, 0 mislukt, 77 bewust overgeslagen (schermafdruk-specs zonder `SCHERMEN=1`, persona-tests per toestel) | **0** |
 
 Alles draait in **Chromium-emulatie** met nepdata: telefoon 360/390/412, tablet 768 met aanraking, desktop 1280. Ik heb **niet** getest op een echte iPhone, Android-toestel of iPad, en **niet** met VoiceOver of TalkBack.
 
