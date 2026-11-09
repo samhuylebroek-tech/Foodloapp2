@@ -90,3 +90,32 @@ test("rondleiding", async ({ page }, info) => {
     await venster.getByRole("button", { name: stap === 7 ? "Klaar" : "Volgende" }).click();
   }
 });
+
+test("weekmenu → lijst (WP4)", async ({ page }, info) => {
+  const p = info.project.name;
+  await page.goto("/planner");
+  await klaar(page);
+  await foto(page, p, "20-weekmenu");
+  const open = async (menu: string) => {
+    await page.getByRole("button", { name: "Acties voor Stoofvlees met frietjes" }).first().click();
+    await page.getByRole("menuitem", { name: menu }).waitFor();
+    await page.waitForTimeout(300);
+  };
+  await open("Ander gerecht");
+  await foto(page, p, "21-actiemenu");
+  await page.getByRole("menuitem", { name: "Ander gerecht" }).click();
+  const sheet = page.getByRole("dialog", { name: "Ander gerecht" });
+  await sheet.waitFor();
+  await page.waitForTimeout(600);
+  await foto(page, p, "22-ander-gerecht");
+  await sheet
+    .getByRole("button", { name: /Romige pompoensoep/ })
+    .first()
+    .click();
+  await page.getByText(/in plaats van Stoofvlees met frietjes/).waitFor();
+  await page.waitForTimeout(500);
+  await foto(page, p, "23-na-vervangen-melding");
+  await page.goto("/boodschappen");
+  await klaar(page);
+  await foto(page, p, "24-lijst-na-vervangen", true);
+});

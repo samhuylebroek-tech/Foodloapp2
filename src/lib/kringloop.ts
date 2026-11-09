@@ -64,6 +64,11 @@ function basisEenheid(familie: string) {
   return familie;
 }
 
+/** Telbare dingen koop je heel: 1,14 uien → 2 uien. Gewicht en volume blijven exact. */
+function heel(familie: string, waarde: number) {
+  return familie === "stuk" && waarde > 0 ? Math.ceil(waarde - 1e-9) : waarde;
+}
+
 function rond(n: number) {
   return Math.round(n * 100) / 100;
 }
@@ -142,49 +147,44 @@ type Behoefte = {
   recipe_id: string;
 };
 
-/**
- * Wat moet er nog gekocht worden voor de komende maaltijden?
- * - alleen maaltijden vanaf `vanaf` (vandaag);
- * - geschaald naar het aantal personen per maaltijd;
- * - zelfde product samengeteld over gerechten (g/kg, ml/cl/l/el/tl, stuks);
- * - gedeeltelijke voorraad of een gedeeltelijk al op de lijst gezette
- *   hoeveelheid wordt afgetrokken; alleen het tekort blijft over;
- * - basis (zout, peper, water) nooit.
- */
-export function berekenAanvulling(opts: {
-  plan: PlanMaaltijd[];
-  recepten: ReceptKort[];
-  ingredienten: ReceptIngredient[];
-  voorraad: (VoorraadRij | string)[];
-  lijst: LijstItem[];
-  vanaf: string;
-}): Aanvulling {
-  const recepten = new Map(opts.recepten.map((r) => [r.id, r]));
-  const komend = opts.plan.filter((p) => p.plan_date >= opts.vanaf);
-  const zonderRecept = komend
-    .filter((p) => !p.recipe_id && !p.soort && p.custom_title)
-    .map((p) => p.custom_title as string);
-  const geplandeRecepten = new Set(komend.map((p) => p.recipe_id).filter(Boolean));
-  const voorraad: VoorraadRij[] = opts.voorraad.map((v, i) =>
-    typeof v === "string" ? { id: `v${i}`, naam: v, hoeveelheid: null, eenheid: "" } : v,
+/** Voorraad mag ook als lijst namen binnenkomen (oudere aanroepen). */
+function voorraadRijen(v: (VoorraadRij | string)[]): VoorraadRij[] {
+  return v.map((x, i) =>
+    typeof x === "string" ? { id: `v${i}`, naam: x, hoeveelheid: null, eenheid: "" } : x,
   );
+}
 
+/** Sleutel van een product: zelfde naam (canoniek) én vergelijkbare eenheid. */
+function productSleutel(naam: string, unit: string | null | undefined, familie?: string) {
+  return `${canoniekeNaam(naam)}|${familie ?? familieVan(unit)}`;
+}
+
+/**
+ * Wat hebben de geplande maaltijden samen nodig, per product (geschaald naar personen,
+ * eenheden omgerekend, basis zoals zout nooit)?
+ */
+function behoeftenVan(
+  plan: PlanMaaltijd[],
+  receptenLijst: ReceptKort[],
+  ingredienten: ReceptIngredient[],
+): { behoeften: Map<string, Behoefte>; aantalGerechten: number } {
+  const recepten = new Map(receptenLijst.map((r) => [r.id, r]));
   const behoeften = new Map<string, Behoefte>();
   let aantalGerechten = 0;
-  for (const p of komend) {
+  for (const p of plan) {
     if (!p.recipe_id) continue;
     const recept = recepten.get(p.recipe_id);
     if (!recept) continue;
     aantalGerechten++;
     const factor =
       p.personen && recept.servings && recept.servings > 0 ? p.personen / recept.servings : 1;
-    for (const ing of opts.ingredienten) {
+    for (const ing of ingredienten) {
       if (ing.recipe_id !== p.recipe_id) continue;
       const naam = ing.name.trim();
       if (!naam || isBasis(naam)) continue;
       const maat = naarMaat(ing.quantity == null ? null : ing.quantity * factor, ing.unit);
       const familie = maat?.familie ?? familieVan(ing.unit);
-      const sleutel = `${canoniekeNaam(naam)}|${familie}`;
+      const sleutel = productSleutel(naam, ing.unit, familie);
       const voor = { titel: recept.title, dag: p.plan_date };
       const al = behoeften.get(sleutel);
       if (al) {
@@ -203,6 +203,36 @@ export function berekenAanvulling(opts: {
       });
     }
   }
+  return { behoeften, aantalGerechten };
+}
+
+/**
+ * Wat moet er nog gekocht worden voor de komende maaltijden?
+ * - alleen maaltijden vanaf `vanaf` (vandaag);
+ * - geschaald naar het aantal personen per maaltijd;
+ * - zelfde product samengeteld over gerechten (g/kg, ml/cl/l/el/tl, stuks);
+ * - gedeeltelijke voorraad of een gedeeltelijk al op de lijst gezette
+ *   hoeveelheid wordt afgetrokken; alleen het tekort blijft over;
+ * - basis (zout, peper, water) nooit.
+ */
+export function berekenAanvulling(opts: {
+  plan: PlanMaaltijd[];
+  recepten: ReceptKort[];
+  ingredienten: ReceptIngredient[];
+  voorraad: (VoorraadRij | string)[];
+  lijst: LijstItem[];
+  vanaf: string;
+  /** Recepten die ook later nog gepland zijn (buiten het venster): hun regels zijn niet "niet meer nodig". */
+  nogGepland?: Set<string>;
+}): Aanvulling {
+  const komend = opts.plan.filter((p) => p.plan_date >= opts.vanaf);
+  const zonderRecept = komend
+    .filter((p) => !p.recipe_id && !p.soort && p.custom_title)
+    .map((p) => p.custom_title as string);
+  const geplandeRecepten = new Set(komend.map((p) => p.recipe_id).filter(Boolean));
+  for (const id of opts.nogGepland ?? []) geplandeRecepten.add(id);
+  const voorraad = voorraadRijen(opts.voorraad);
+  const { behoeften, aantalGerechten } = behoeftenVan(komend, opts.recepten, opts.ingredienten);
 
   const openLijst = opts.lijst.filter((i) => !i.checked);
   const uit: Aanvulling = {
@@ -260,7 +290,7 @@ export function berekenAanvulling(opts: {
       uit.kopen.push(regel);
       continue;
     }
-    const tekort = rond(b.waarde - opLijst.waarde - inHuis.waarde);
+    const tekort = heel(b.familie, rond(b.waarde - opLijst.waarde - inHuis.waarde));
     if (tekort <= 0) {
       (opLijst.waarde >= b.waarde || !inHuis.aanwezig ? uit.opLijst : uit.inHuis).push(regel);
       continue;
@@ -317,6 +347,163 @@ export function lijstWijzigingen(
     } else nieuw.push(r);
   }
   return { bijtellen, nieuw };
+}
+
+// ---------------------------------------------------------------- WP4 menu gewijzigd → lijst
+
+export type LijstRegel = LijstItem & { id: string };
+
+export type Bijsturing = {
+  /** Nieuwe Foodlo-regels. */
+  nieuw: { naam: string; quantity: number | null; unit: string; recipe_id: string }[];
+  /** Bestaande regels met een andere hoeveelheid (of gekoppeld aan een ander gepland gerecht). */
+  bijwerken: {
+    id: string;
+    naam: string;
+    quantity: number | null;
+    recipe_id: string | null;
+    oud: { quantity: number | null; recipe_id: string | null };
+  }[];
+  /** Foodlo-regels die niet meer nodig zijn (volledige rij, om terug te kunnen zetten). */
+  weg: LijstRegel[];
+};
+
+/**
+ * Het weekmenu veranderde (gerecht erbij, weg, vervangen of verplaatst): stuur de lijst bij.
+ *
+ * Regels (zie masterplan WP4):
+ * - alleen producten van de gerechten die erbij kwamen of weggingen worden bekeken;
+ * - regels die de gebruiker zelf toevoegde (`recipe_id` leeg) worden nooit verlaagd of gewist;
+ *   ze tellen wel mee als "staat al op je lijst";
+ * - per product blijft er hooguit één Foodlo-regel over (dubbels samengevoegd, eenheden omgerekend);
+ * - komt er een gerecht bij, dan klopt de Foodlo-regel daarna met wat de komende maaltijden
+ *   nodig hebben, min voorraad en eigen regels;
+ * - gaat er alleen iets weg, dan wordt er nooit iets bijgezet: een regel wordt hooguit kleiner.
+ * Idempotent: twee keer uitvoeren op dezelfde stand geeft de tweede keer niets te doen.
+ */
+export function lijstBijsturen(opts: {
+  /** Het weekmenu ná de wijziging (alle maaltijden in het venster). */
+  plan: PlanMaaltijd[];
+  recepten: ReceptKort[];
+  /** Ingrediënten van de geplande én van de weggehaalde recepten. */
+  ingredienten: ReceptIngredient[];
+  voorraad: (VoorraadRij | string)[];
+  lijst: LijstRegel[];
+  vanaf: string;
+  toegevoegd: string[];
+  weggehaald: string[];
+  /** Recepten die later (buiten het venster) nog gepland zijn. */
+  nogGepland?: Set<string>;
+}): Bijsturing {
+  const uit: Bijsturing = { nieuw: [], bijwerken: [], weg: [] };
+  const komend = opts.plan.filter((p) => p.plan_date >= opts.vanaf);
+  const { behoeften } = behoeftenVan(komend, opts.recepten, opts.ingredienten);
+  const voorraad = voorraadRijen(opts.voorraad);
+  const erbij = new Set(opts.toegevoegd);
+  const eruit = new Set(opts.weggehaald);
+
+  // Welke producten zijn geraakt?
+  const geraakt = new Map<string, { naam: string; familie: string; erbij: boolean }>();
+  for (const ing of opts.ingredienten) {
+    const isErbij = erbij.has(ing.recipe_id);
+    if (!isErbij && !eruit.has(ing.recipe_id)) continue;
+    const naam = ing.name.trim();
+    if (!naam || isBasis(naam)) continue;
+    const familie = familieVan(ing.unit);
+    const sleutel = productSleutel(naam, ing.unit, familie);
+    const al = geraakt.get(sleutel);
+    if (al) al.erbij ||= isErbij;
+    else geraakt.set(sleutel, { naam, familie, erbij: isErbij });
+  }
+
+  const behandeld = new Set<string>();
+  const maatVan = (i: LijstItem) => naarMaat(i.quantity ?? null, i.unit);
+  for (const [sleutel, p] of geraakt) {
+    const b = behoeften.get(sleutel);
+    const naam = b?.naam ?? p.naam;
+    const open = opts.lijst.filter(
+      (i) => !i.checked && !behandeld.has(i.id) && zelfdeProduct(i.name, naam),
+    );
+    const vanFoodlo = open.filter((i) => i.recipe_id && familieVan(i.unit) === p.familie);
+    const eigen = open.filter((i) => !i.recipe_id);
+    for (const i of vanFoodlo) behandeld.add(i.id);
+
+    const eigenD = dekking(eigen, maatVan, p.familie);
+    const inHuis = dekking(
+      voorraad.filter((v) => zitInVoorraad(naam, [v.naam])),
+      (v) => naarMaat(v.hoeveelheid, v.eenheid),
+      p.familie,
+    );
+    // Doel voor de Foodlo-regel, als basiswaarde. null = nodig, hoeveelheid onbekend.
+    let doel: number | null;
+    if (!b) doel = 0;
+    else if (eigenD.aanwezig && (b.waarde == null || eigenD.onbekend)) doel = 0;
+    else if (inHuis.aanwezig && (b.waarde == null || inHuis.onbekend)) doel = 0;
+    else if (b.waarde == null) doel = null;
+    else doel = heel(p.familie, Math.max(0, rond(b.waarde - eigenD.waarde - inHuis.waarde)));
+
+    const huidigOnbekend = vanFoodlo.some((i) => maatVan(i) == null);
+    const huidig = vanFoodlo.reduce((som, i) => som + (maatVan(i)?.waarde ?? 0), 0);
+    if (!p.erbij) {
+      // Alleen weggehaald: nooit iets bijzetten, hooguit kleiner maken.
+      if (doel == null) continue;
+      if (huidigOnbekend) {
+        if (doel > 0) continue;
+      } else doel = Math.min(doel, huidig);
+    }
+
+    if (doel === 0) {
+      uit.weg.push(...vanFoodlo);
+      continue;
+    }
+    const [eerste, ...rest] = vanFoodlo;
+    uit.weg.push(...rest);
+    const receptNu = b?.recipe_id ?? eerste?.recipe_id ?? null;
+    if (eerste) {
+      const quantity = doel == null ? null : inEenheid(doel, eerste.unit);
+      if (quantity !== (eerste.quantity ?? null) || receptNu !== (eerste.recipe_id ?? null))
+        uit.bijwerken.push({
+          id: eerste.id,
+          naam: eerste.name,
+          quantity,
+          recipe_id: receptNu,
+          oud: { quantity: eerste.quantity ?? null, recipe_id: eerste.recipe_id ?? null },
+        });
+      continue;
+    }
+    if (!b) continue;
+    // Geen Foodlo-regel: tel bij een eigen regel met een gekende hoeveelheid op (één regel
+    // per product), anders een nieuwe regel.
+    const eigenMet = eigen.find((i) => maatVan(i)?.familie === p.familie && !behandeld.has(i.id));
+    if (eigenMet && doel != null) {
+      behandeld.add(eigenMet.id);
+      uit.bijwerken.push({
+        id: eigenMet.id,
+        naam: eigenMet.name,
+        quantity: inEenheid(maatVan(eigenMet)!.waarde + doel, eigenMet.unit),
+        recipe_id: eigenMet.recipe_id ?? null,
+        oud: { quantity: eigenMet.quantity ?? null, recipe_id: eigenMet.recipe_id ?? null },
+      });
+      continue;
+    }
+    const unit = b.eenheden.size === 1 ? [...b.eenheden][0]! : basisEenheid(p.familie);
+    uit.nieuw.push({
+      naam,
+      quantity: doel == null ? null : inEenheid(doel, unit),
+      unit,
+      recipe_id: b.recipe_id,
+    });
+  }
+
+  // Regels van een weggehaald gerecht die nergens meer bij horen (bv. recept intussen aangepast).
+  const gepland = new Set([...komend.map((p) => p.recipe_id), ...(opts.nogGepland ?? [])]);
+  for (const i of opts.lijst) {
+    if (i.checked || behandeld.has(i.id) || !i.recipe_id || !eruit.has(i.recipe_id)) continue;
+    if (gepland.has(i.recipe_id)) continue;
+    if ([...behoeften.values()].some((b) => zelfdeProduct(i.name, b.naam))) continue;
+    uit.weg.push(i);
+  }
+  return uit;
 }
 
 // ---------------------------------------------------------------- S2 kopen → voorraad

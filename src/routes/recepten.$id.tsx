@@ -49,7 +49,13 @@ import { Copy, Users } from "lucide-react";
 import { KookTimers } from "@/components/KookTimers";
 import { bewaarVoortgang, leesVoortgang, vindTimers, wisVoortgang } from "@/lib/kookstand";
 import { meldMetHerstel, useKringloopVernieuw } from "@/hooks/useAanvulling";
-import { HalfGelukt, verwerkKoken } from "@/lib/kringloop-db";
+import {
+  HalfGelukt,
+  lijstUitleg,
+  planErbij,
+  verwerkKoken,
+  wijzigMenu,
+} from "@/lib/kringloop-db";
 import { useVoorraadNamen } from "@/hooks/useVoorraadStand";
 import { isBasis, zitInVoorraad } from "@/lib/voorraad-match";
 import { soortLabel } from "@/lib/recept-keuzes";
@@ -440,19 +446,29 @@ function ReceptPage() {
     }
   }
 
+  // V2 (WP4): inplannen stuurt meteen de boodschappenlijst bij, met "Ongedaan maken".
   async function planOp(datum: string, moment: string, personen: number) {
     if (!user) return;
-    const { error } = await supabase.from("meal_plan").insert({
-      user_id: user.id,
-      recipe_id: recipe.id,
-      plan_date: datum,
-      meal_type: moment,
-      personen,
-    });
-    if (error) toast.error("Inplannen lukte niet");
-    else {
-      toast.success("In je planning gezet");
+    try {
+      const r = await wijzigMenu(
+        user.id,
+        planErbij({ userId: user.id, recipeId: recipe.id, datum, moment, personen }),
+      );
+      const uitleg = lijstUitleg(r.effect);
+      meldMetHerstel(
+        uitleg ? `In je planning gezet · ${uitleg}` : "In je planning gezet",
+        r.herstel,
+        vernieuwKringloop,
+      );
+      vernieuwKringloop();
+      qc.invalidateQueries({ queryKey: ["meal-plan"] });
       setPlanOpen(false);
+    } catch (fout) {
+      toast.error(
+        fout instanceof HalfGelukt
+          ? "Dat lukte maar half. Kijk je weekmenu en lijst even na."
+          : "Inplannen lukte niet. Er is niets veranderd.",
+      );
     }
   }
 

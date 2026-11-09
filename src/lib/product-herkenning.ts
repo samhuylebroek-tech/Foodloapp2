@@ -170,11 +170,11 @@ function canoniekWoord(woord: string): string {
 
 /** Canonieke productnaam: synoniemen samengebracht, bijwoorden weg, volgorde geneutraliseerd. */
 export function canoniekeNaam(name: string): string {
-  const woorden = normaliseerTekst(name)
-    .split(" ")
-    .filter(Boolean)
-    .map(canoniekWoord)
-    .filter((w) => w && !BIJWOORDEN.has(w));
+  const alle = normaliseerTekst(name).split(" ").filter(Boolean).map(canoniekWoord).filter(Boolean);
+  const zonderBijwoorden = alle.filter((w) => !BIJWOORDEN.has(w));
+  // Is de naam zélf een bijwoord ("gehakt", "light")? Dan is dat het product: anders
+  // werd de sleutel leeg en herkende Foodlo "gehakt" op de lijst nooit (dubbel aanvullen).
+  const woorden = zonderBijwoorden.length ? zonderBijwoorden : alle;
   // uniek houden en sorteren zodat "rijpe tomaten" en "tomaat" samenvallen
   return [...new Set(woorden)].sort().join(" ");
 }

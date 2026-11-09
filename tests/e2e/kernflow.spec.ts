@@ -137,10 +137,9 @@ test.describe("Kernflow", () => {
       .getByRole("button", { name: /Stoofvlees van oma/ })
       .click();
 
-    const vraag = page.getByRole("dialog", { name: "Ook op je boodschappenlijst?" });
-    await expect(vraag).toBeVisible();
-    // BUG-030: het venster krijgt de focus (toetsenbord/schermlezer).
-    expect(await vraag.evaluate((d) => d.contains(document.activeElement))).toBe(true);
+    // V2 (WP4): geen vraag meer — de lijst wordt meteen bijgestuurd, met "Ongedaan maken".
+    await expect(page.getByText(/Stoofvlees van oma staat op .* · lijst: /)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Ongedaan maken" })).toBeVisible();
 
     const plan = await rijen("meal_plan");
     expect(plan).toHaveLength(1);
@@ -152,16 +151,8 @@ test.describe("Kernflow", () => {
       user_id: GEBRUIKER,
     });
 
-    // Stap 4 — ingrediënten naar de bestaande lijst. Uien staan er al: de app vraagt
-    // wat je wil (nooit stil dubbel of stil samenvoegen). Bloem is al gekocht → telt niet als dubbel.
-    await vraag.getByRole("button", { name: /^\s*Boodschappen$/ }).click();
-    const dubbel = page.getByRole("dialog", { name: /Boodschappen voor/ });
-    await expect(dubbel).toBeVisible();
-    await expect(dubbel.getByRole("button", { name: /uien.*Staat al op je lijst/ })).toBeVisible();
-    await expect(dubbel.getByText("bloem", { exact: false }).first()).toBeVisible();
-    await dubbel.getByRole("button", { name: "Alleen nieuwe toevoegen" }).click();
-    await expect(dubbel).toBeHidden();
-
+    // Stap 4 — de lijst: uien stonden er al (1) en worden bijgeteld tot 2 (geen tweede regel);
+    // gekochte bloem telt niet; melk (eigen regel) blijft ongemoeid.
     await expect
       .poll(async () => (await rijen("shopping_items")).length, {
         message: "nieuwe items toegevoegd",
@@ -172,16 +163,37 @@ test.describe("Kernflow", () => {
     expect(naam("melk"), "bestaand item blijft ongemoeid").toEqual([
       expect.objectContaining({ quantity: 1, unit: "l", checked: false }),
     ]);
+    // Geschaald naar het aantal personen waarvoor gepland werd (de kiezer neemt het huishouden).
+    const geplandVoor = (plan[0]!["personen"] as number | null) ?? null;
+    const porties = (recept["servings"] as number | null) ?? null;
+    const factor = geplandVoor && porties ? geplandVoor / porties : 1;
+    const heel = (n: number) => Math.ceil(n - 1e-9);
     expect(naam("uien"), "uien niet dubbel").toHaveLength(1);
-    expect(naam("uien")[0]).toMatchObject({ quantity: 1, checked: false });
-    // De lijst rekent om naar een basiseenheid zodat optellen klopt: 1 kg → 1000 g.
-    expect(naam("rundvlees")).toEqual([
-      expect.objectContaining({ quantity: 1000, unit: "g", checked: false }),
-    ]);
+    // 1 stond er al; het tekort komt erbij, telbare dingen heel (nooit "1,14 uien").
+    expect(naam("uien")[0]).toMatchObject({
+      quantity: Math.max(1, 1 + heel(2 * factor - 1)),
+      checked: false,
+    });
+    expect(Number.isInteger(naam("uien")[0]!["quantity"])).toBe(true);
+    // Eén recept met kg: de lijst houdt de eenheid van het recept.
+    expect(naam("rundvlees")).toEqual([expect.objectContaining({ unit: "kg", checked: false })]);
+    expect(naam("rundvlees")[0]!["quantity"]).toBeCloseTo(1 * factor, 2);
     expect(naam("bloem"), "gekochte bloem blijft, nieuwe bloem erbij").toHaveLength(2);
-    expect(naam("laurierblaadjes")).toEqual([expect.objectContaining({ quantity: 2 })]);
+    expect(naam("laurierblaadjes")).toEqual([
+      expect.objectContaining({ quantity: heel(2 * factor) }),
+    ]);
     expect(items.every((i) => i["list_id"] === LIJST)).toBe(true);
     expect(items.every((i) => i["user_id"] === GEBRUIKER)).toBe(true);
+
+    // De handmatige weg blijft: "Op boodschappenlijst" in het maaltijdmenu vraagt naar de lijst.
+    await page.getByRole("button", { name: "Acties voor Stoofvlees van oma" }).first().click();
+    await page.getByRole("menuitem", { name: "Op boodschappenlijst" }).click();
+    const vraag = page.getByRole("dialog", { name: "Ook op je boodschappenlijst?" });
+    await expect(vraag).toBeVisible();
+    // BUG-030: het venster krijgt de focus (toetsenbord/schermlezer).
+    await expect.poll(() => vraag.evaluate((d) => d.contains(document.activeElement))).toBe(true);
+    await page.keyboard.press("Escape");
+    await expect(vraag).toBeHidden();
 
     // Stap 5 — de lijst tonen en afvinken / terugzetten.
     await page.goto("/boodschappen");
@@ -364,7 +376,7 @@ test.describe("Weekmenu en boodschappen — randgevallen", () => {
     void extern;
   });
 
-  test("'Nee, bedankt' en Escape laten de boodschappenlijst ongemoeid", async ({
+  test("inplannen zet het tekort op de lijst; Ongedaan maken zet menu én lijst terug", async ({
     page,
     extern,
   }) => {
@@ -375,12 +387,13 @@ test.describe("Weekmenu en boodschappen — randgevallen", () => {
       .getByRole("dialog")
       .getByRole("button", { name: /Spaghetti/ })
       .click();
-    const vraag = page.getByRole("dialog", { name: "Ook op je boodschappenlijst?" });
-    await expect(vraag).toBeVisible();
-    await page.keyboard.press("Escape");
-    await expect(vraag).toBeHidden();
-    expect(await rijen("shopping_items")).toHaveLength(0);
+    await expect(page.getByText(/Spaghetti.* staat op .* · lijst: 1 erbij/)).toBeVisible();
+    await expect.poll(async () => (await rijen("shopping_items")).length).toBe(1);
     expect(await rijen("meal_plan")).toHaveLength(1);
+    await page.getByRole("button", { name: "Ongedaan maken" }).click();
+    await expect(page.getByText("Teruggezet")).toBeVisible();
+    await expect.poll(async () => (await rijen("shopping_items")).length).toBe(0);
+    expect(await rijen("meal_plan")).toHaveLength(0);
     void extern;
   });
 

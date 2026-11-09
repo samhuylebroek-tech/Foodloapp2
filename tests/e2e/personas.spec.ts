@@ -174,11 +174,8 @@ test.describe("Persona B — foodcreator van 20, desktop", () => {
     await expect(raster).toBeVisible();
     await s.tik(raster.getByRole("button", { name: /Gerecht toevoegen: ontbijt/ }).first());
     await s.tik(page.getByRole("dialog").getByRole("button", { name: /Griekse salade/ }));
-    await s.tik(
-      page
-        .getByRole("dialog", { name: "Ook op je boodschappenlijst?" })
-        .getByRole("button", { name: "Nee, bedankt" }),
-    );
+    // V2 (WP4): geen vraag meer; de lijst wordt meteen bijgestuurd (één tik minder).
+    await expect(page.getByText(/Griekse salade staat op/)).toBeVisible();
     await expect(raster.getByText("Griekse salade").first()).toBeVisible();
     s.meld("B5 gerecht in weekraster");
     expect(await axeErnstig(page)).toEqual([]);

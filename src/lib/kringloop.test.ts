@@ -39,7 +39,8 @@ describe("berekenAanvulling", () => {
     const vlees = a.kopen.find((r) => r.naam === "rundvlees");
     expect(vlees?.quantity).toBe(500);
     const ui = a.kopen.find((r) => /^ui/.test(r.naam));
-    expect(ui?.quantity).toBe(1.5 + 2); // 3 × 2/4 + 1 × 4/2
+    // 3 × 2/4 + 1 × 4/2 = 3,5 uien → je koopt er 4 (telbare dingen heel).
+    expect(ui?.quantity).toBe(4);
     expect(ui?.voor.map((v) => v.titel)).toEqual(["Stoofvlees", "Soep"]);
   });
 

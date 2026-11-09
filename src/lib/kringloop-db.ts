@@ -15,11 +15,13 @@ import { zorgVoorLijst } from "@/lib/boodschappen";
 import { bewaarGekocht } from "@/lib/boodschappen-geheugen";
 import {
   berekenAanvulling,
+  lijstBijsturen,
   lijstWijzigingen,
   verbruik,
   voorraadNaKoop,
   type Aanvulling,
   type Gekocht,
+  type LijstRegel,
   type Regel,
   type VoorraadRij,
 } from "@/lib/kringloop";
@@ -98,7 +100,7 @@ export async function laadAanvulling(
 ): Promise<{ listId: string | null; aanvulling: Aanvulling }> {
   // Alleen lezen: bekijken mag niets aanmaken. De lijst komt er pas bij het aanvullen.
   const listId = await vindLijst(userId);
-  const [plan, voorraad, lijst] = await Promise.all([
+  const [plan, later, voorraad, lijst] = await Promise.all([
     supabase
       .from("meal_plan")
       .select("plan_date, recipe_id, personen, custom_title, soort")
@@ -106,6 +108,13 @@ export async function laadAanvulling(
       .is("group_id", null)
       .gte("plan_date", vandaag)
       .lte("plan_date", totDatum(vandaag)),
+    // Later geplande gerechten: hun regels op de lijst zijn niet "niet meer nodig".
+    supabase
+      .from("meal_plan")
+      .select("recipe_id")
+      .eq("user_id", userId)
+      .is("group_id", null)
+      .gt("plan_date", totDatum(vandaag)),
     supabase.from("pantry_items").select("id, naam, hoeveelheid, eenheid").eq("user_id", userId),
     listId
       ? supabase
@@ -136,6 +145,9 @@ export async function laadAanvulling(
       voorraad: voorraad.data ?? [],
       lijst: lijst.data ?? [],
       vanaf: vandaag,
+      nogGepland: new Set(
+        (later.data ?? []).map((p) => p.recipe_id).filter((x): x is string => !!x),
+      ),
     }),
   };
 }
@@ -240,66 +252,18 @@ export async function kookVanavond(opts: {
       .limit(1),
   );
   if (bestaand?.length) return { ontbreekt: 0, alGepland: true, herstel: async () => undefined };
-
-  const { data: plan } = moet(
-    await supabase
-      .from("meal_plan")
-      .insert({
-        user_id: userId,
-        recipe_id: recept.id,
-        plan_date: vandaag,
-        meal_type: moment,
-        personen: recept.servings,
-        group_id: null,
-      })
-      .select("id")
-      .single(),
+  // Zelfde weg als elke menuwijziging (WP4): plannen + lijst bijsturen, alles of niets.
+  const r = await wijzigMenu(
+    userId,
+    planErbij({
+      userId,
+      recipeId: recept.id,
+      datum: vandaag,
+      moment,
+      personen: recept.servings,
+    }),
   );
-  if (!plan) throw new Error("Inplannen lukte niet");
-  const planId = plan.id;
-  const planWeg: Herstel = async () => {
-    moet(await supabase.from("meal_plan").delete().eq("id", planId));
-  };
-  try {
-    const listId = await vindLijst(userId);
-    const [ingredienten, voorraad, lijst] = await Promise.all([
-      supabase
-        .from("recipe_ingredients")
-        .select("recipe_id, name, quantity, unit")
-        .eq("recipe_id", recept.id),
-      supabase.from("pantry_items").select("id, naam, hoeveelheid, eenheid").eq("user_id", userId),
-      listId
-        ? supabase
-            .from("shopping_items")
-            .select("id, name, checked, quantity, unit, recipe_id")
-            .eq("list_id", listId)
-        : Promise.resolve({ data: [] as never[], error: null }),
-    ]);
-    moet(ingredienten);
-    moet(voorraad);
-    moet(lijst);
-    const a = berekenAanvulling({
-      plan: [{ plan_date: vandaag, recipe_id: recept.id, personen: recept.servings }],
-      recepten: [recept],
-      ingredienten: ingredienten.data ?? [],
-      voorraad: voorraad.data ?? [],
-      lijst: lijst.data ?? [],
-      vanaf: vandaag,
-    });
-    const lijstHerstel = a.kopen.length ? await schrijfNaarLijst(userId, a.kopen) : null;
-    return {
-      ontbreekt: a.kopen.length,
-      alGepland: false,
-      herstel: eenmalig(async () => {
-        await lijstHerstel?.();
-        await planWeg();
-      }),
-    };
-  } catch (fout) {
-    // Geen half werk: de planning gaat weer weg.
-    await draaiTerug([planWeg]); // gooit HalfGelukt als terugdraaien niet lukte
-    throw fout;
-  }
+  return { ontbreekt: r.effect.erbij, alGepland: false, herstel: r.herstel };
 }
 
 /** Lijstregels voor gerechten die niet meer gepland zijn, weghalen (met herstel). */
@@ -469,4 +433,355 @@ export async function verwerkKoken(opts: {
     ],
     herstel: eenmalig(() => draaiTerug(gedaan)),
   };
+}
+
+// ---------------------------------------------------------------- WP4 weekmenu → lijst
+
+/** Een maaltijd die erbij kwam of wegging (voor de lijst telt alleen recept en dag). */
+export type PlanStap = { plan_date: string; recipe_id: string | null };
+
+export type PlanUitvoering = {
+  id?: string | undefined;
+  herstel: Herstel;
+  erbij: PlanStap[];
+  weg: PlanStap[];
+};
+
+export type LijstEffect = { erbij: number; minder: number; weg: number };
+
+const GEEN_EFFECT: LijstEffect = { erbij: 0, minder: 0, weg: 0 };
+
+/** Gerecht in het weekmenu zetten. */
+export function planErbij(o: {
+  userId: string;
+  recipeId: string | null;
+  datum: string;
+  moment: string;
+  personen?: number | null;
+  customTitle?: string | null;
+  soort?: string | null;
+}): () => Promise<PlanUitvoering> {
+  return async () => {
+    const { data } = moet(
+      await supabase
+        .from("meal_plan")
+        .insert({
+          user_id: o.userId,
+          recipe_id: o.recipeId,
+          custom_title: o.recipeId ? null : (o.customTitle ?? null),
+          soort: o.soort ?? null,
+          plan_date: o.datum,
+          meal_type: o.moment,
+          personen: o.personen ?? null,
+          group_id: null,
+        })
+        .select("id")
+        .single(),
+    );
+    if (!data) throw new Error("Inplannen lukte niet");
+    const id = data.id as string;
+    return {
+      id,
+      herstel: async () => {
+        moet(await supabase.from("meal_plan").delete().eq("id", id));
+      },
+      erbij: [{ plan_date: o.datum, recipe_id: o.recipeId }],
+      weg: [],
+    };
+  };
+}
+
+type PlanRij = Record<string, unknown> & {
+  id: string;
+  group_id: string | null;
+  plan_date: string;
+  meal_type: string;
+  recipe_id: string | null;
+  custom_title: string | null;
+};
+
+async function leesPlan(planId: string): Promise<PlanRij | null> {
+  const { data } = moet(await supabase.from("meal_plan").select("*").eq("id", planId).limit(1));
+  return ((data ?? [])[0] as PlanRij | undefined) ?? null;
+}
+
+/** Gerecht uit het weekmenu halen. Al weg (dubbel tikken, ander toestel)? Dan gebeurt er niets. */
+export function planWeg(planId: string): () => Promise<PlanUitvoering> {
+  return async () => {
+    const rij = await leesPlan(planId);
+    if (!rij) return { herstel: async () => undefined, erbij: [], weg: [] };
+    moet(await supabase.from("meal_plan").delete().eq("id", planId));
+    return {
+      id: planId,
+      herstel: async () => {
+        moet(await supabase.from("meal_plan").insert(rij as never));
+      },
+      erbij: [],
+      weg: rij.group_id ? [] : [{ plan_date: rij.plan_date, recipe_id: rij.recipe_id }],
+    };
+  };
+}
+
+/** Ander recept op dezelfde plek (ook: een titel zonder recept koppelen). */
+export function planVervang(planId: string, recipeId: string): () => Promise<PlanUitvoering> {
+  return async () => {
+    const rij = await leesPlan(planId);
+    if (!rij) throw new Error("Deze maaltijd staat niet meer in je weekmenu");
+    moet(
+      await supabase
+        .from("meal_plan")
+        .update({ recipe_id: recipeId, custom_title: null })
+        .eq("id", planId),
+    );
+    return {
+      id: planId,
+      herstel: async () => {
+        moet(
+          await supabase
+            .from("meal_plan")
+            .update({ recipe_id: rij.recipe_id, custom_title: rij.custom_title })
+            .eq("id", planId),
+        );
+      },
+      erbij: rij.group_id ? [] : [{ plan_date: rij.plan_date, recipe_id: recipeId }],
+      weg: rij.group_id ? [] : [{ plan_date: rij.plan_date, recipe_id: rij.recipe_id }],
+    };
+  };
+}
+
+/** Naar een andere dag of ander moment. */
+export function planVerplaats(
+  planId: string,
+  datum: string,
+  moment: string,
+): () => Promise<PlanUitvoering> {
+  return async () => {
+    const rij = await leesPlan(planId);
+    if (!rij) throw new Error("Deze maaltijd staat niet meer in je weekmenu");
+    moet(
+      await supabase
+        .from("meal_plan")
+        .update({ plan_date: datum, meal_type: moment })
+        .eq("id", planId),
+    );
+    return {
+      id: planId,
+      herstel: async () => {
+        moet(
+          await supabase
+            .from("meal_plan")
+            .update({ plan_date: rij.plan_date, meal_type: rij.meal_type })
+            .eq("id", planId),
+        );
+      },
+      erbij: rij.group_id ? [] : [{ plan_date: datum, recipe_id: rij.recipe_id }],
+      weg: rij.group_id ? [] : [{ plan_date: rij.plan_date, recipe_id: rij.recipe_id }],
+    };
+  };
+}
+
+/**
+ * Eén ronde bijsturen: alles vers lezen, rekenen (`lijstBijsturen`), schrijven.
+ * Mislukt een schrijfstap, dan worden de vorige teruggedraaid.
+ */
+async function bijstuurRonde(o: {
+  userId: string;
+  listId: string;
+  vandaag: string;
+  tot: string;
+  toegevoegd: string[];
+  weggehaald: string[];
+}): Promise<{ effect: LijstEffect; herstel: Herstel }> {
+  const [plan, later, voorraad, lijst] = await Promise.all([
+    supabase
+      .from("meal_plan")
+      .select("plan_date, recipe_id, personen, custom_title, soort")
+      .eq("user_id", o.userId)
+      .is("group_id", null)
+      .gte("plan_date", o.vandaag)
+      .lte("plan_date", o.tot),
+    supabase
+      .from("meal_plan")
+      .select("recipe_id")
+      .eq("user_id", o.userId)
+      .is("group_id", null)
+      .gt("plan_date", o.tot),
+    supabase.from("pantry_items").select("id, naam, hoeveelheid, eenheid").eq("user_id", o.userId),
+    supabase.from("shopping_items").select("*").eq("list_id", o.listId),
+  ]);
+  moet(plan);
+  moet(later);
+  moet(voorraad);
+  moet(lijst);
+  const ids = [
+    ...new Set([...(plan.data ?? []).map((p) => p.recipe_id), ...o.toegevoegd, ...o.weggehaald]),
+  ].filter((x): x is string => !!x);
+  const [recepten, ingredienten] = await Promise.all([
+    supabase.from("recipes").select("id, title, servings").in("id", ids),
+    supabase
+      .from("recipe_ingredients")
+      .select("recipe_id, name, quantity, unit")
+      .in("recipe_id", ids),
+  ]);
+  moet(recepten);
+  moet(ingredienten);
+  const rijen = (lijst.data ?? []) as unknown as (LijstRegel & Record<string, unknown>)[];
+  const b = lijstBijsturen({
+    plan: plan.data ?? [],
+    recepten: recepten.data ?? [],
+    ingredienten: ingredienten.data ?? [],
+    voorraad: voorraad.data ?? [],
+    lijst: rijen,
+    vanaf: o.vandaag,
+    toegevoegd: o.toegevoegd,
+    weggehaald: o.weggehaald,
+    nogGepland: new Set((later.data ?? []).map((p) => p.recipe_id).filter((x): x is string => !!x)),
+  });
+
+  const effect: LijstEffect = { ...GEEN_EFFECT };
+  const gedaan: Herstel[] = [];
+  try {
+    for (const w of b.bijwerken) {
+      moet(
+        await supabase
+          .from("shopping_items")
+          .update({ quantity: w.quantity, recipe_id: w.recipe_id })
+          .eq("id", w.id),
+      );
+      gedaan.push(async () => {
+        moet(
+          await supabase
+            .from("shopping_items")
+            .update({ quantity: w.oud.quantity, recipe_id: w.oud.recipe_id })
+            .eq("id", w.id),
+        );
+      });
+      if ((w.quantity ?? 0) < (w.oud.quantity ?? 0)) effect.minder++;
+      else if ((w.quantity ?? 0) > (w.oud.quantity ?? 0)) effect.erbij++;
+    }
+    if (b.nieuw.length) {
+      const { data } = moet(
+        await supabase
+          .from("shopping_items")
+          .insert(
+            b.nieuw.map((r) => ({
+              user_id: o.userId,
+              list_id: o.listId,
+              name: r.naam,
+              quantity: r.quantity,
+              unit: r.unit,
+              recipe_id: r.recipe_id,
+              note: null,
+            })),
+          )
+          .select("id"),
+      );
+      const nieuweIds = (data ?? []).map((r) => r.id as string);
+      gedaan.push(async () => {
+        moet(await supabase.from("shopping_items").delete().in("id", nieuweIds));
+      });
+      effect.erbij += b.nieuw.length;
+    }
+    if (b.weg.length) {
+      const wegIds = b.weg.map((w) => w.id);
+      const volledig = rijen.filter((r) => wegIds.includes(r.id));
+      moet(await supabase.from("shopping_items").delete().in("id", wegIds));
+      gedaan.push(async () => {
+        moet(await supabase.from("shopping_items").insert(volledig as never));
+      });
+      effect.weg += b.weg.length;
+    }
+  } catch (fout) {
+    await draaiTerug(gedaan); // gooit HalfGelukt als terugdraaien niet lukte
+    throw fout;
+  }
+  return { effect, herstel: () => draaiTerug(gedaan) };
+}
+
+/**
+ * Stuurt de lijst bij na een wijziging in het weekmenu. Alleen maaltijden vanaf vandaag tellen;
+ * wat erbij komt telt pas mee binnen de komende 7 dagen (zoals Slim aanvullen).
+ * Daarna een nacontrole: schreef iemand anders tegelijk (tweede venster, gezinslid), dan
+ * worden dubbels meteen samengevoegd.
+ */
+async function stuurLijstBij(
+  userId: string,
+  erbij: PlanStap[],
+  weg: PlanStap[],
+): Promise<{ effect: LijstEffect; herstel: Herstel }> {
+  const vandaag = lokaleDatum();
+  const venster = totDatum(vandaag);
+  const uniek = (l: PlanStap[]) =>
+    [...new Set(l.map((x) => x.recipe_id))].filter((x): x is string => !!x);
+  const toegevoegd = uniek(erbij.filter((e) => e.plan_date >= vandaag && e.plan_date <= venster));
+  const wegRelevant = weg.filter((w) => w.recipe_id && w.plan_date >= vandaag);
+  const weggehaald = uniek(wegRelevant);
+  const niets = { effect: { ...GEEN_EFFECT }, herstel: async () => undefined };
+  if (!toegevoegd.length && !weggehaald.length) return niets;
+  const tot = [venster, ...wegRelevant.map((w) => w.plan_date)].sort().at(-1)!;
+  let listId = await vindLijst(userId);
+  if (!listId) {
+    if (!toegevoegd.length) return niets;
+    listId = await zorgVoorLijst(userId);
+  }
+  const ronde = () => bijstuurRonde({ userId, listId, vandaag, tot, toegevoegd, weggehaald });
+  const eerste = await ronde();
+  let tweede: Awaited<ReturnType<typeof ronde>>;
+  try {
+    tweede = await ronde();
+  } catch (fout) {
+    await draaiTerug([eerste.herstel]);
+    throw fout;
+  }
+  return {
+    effect: {
+      erbij: eerste.effect.erbij + tweede.effect.erbij,
+      minder: eerste.effect.minder + tweede.effect.minder,
+      weg: eerste.effect.weg + tweede.effect.weg,
+    },
+    herstel: () => draaiTerug([eerste.herstel, tweede.herstel]),
+  };
+}
+
+/**
+ * Weekmenu wijzigen én de lijst meteen bijsturen, als één actie:
+ * - lukt de lijst niet, dan wordt de menuwijziging teruggedraaid (niets half);
+ * - "Ongedaan maken" zet menu én lijst terug, en werkt maar één keer.
+ */
+export async function wijzigMenu(
+  userId: string,
+  actie: () => Promise<PlanUitvoering>,
+): Promise<{ id?: string | undefined; effect: LijstEffect; veranderd: boolean; herstel: Herstel }> {
+  const r = await actie();
+  // Niets voor de lijst (bv. gezinsmaaltijd of al weg): wel de menuwijziging zelf terug te draaien.
+  if (!r.erbij.length && !r.weg.length)
+    return {
+      id: r.id,
+      effect: { ...GEEN_EFFECT },
+      veranderd: !!r.id,
+      herstel: eenmalig(() => draaiTerug([r.herstel])),
+    };
+  let lijst: Awaited<ReturnType<typeof stuurLijstBij>>;
+  try {
+    lijst = await stuurLijstBij(userId, r.erbij, r.weg);
+  } catch (fout) {
+    await draaiTerug([r.herstel]); // gooit HalfGelukt als terugdraaien niet lukte
+    throw fout;
+  }
+  return {
+    id: r.id,
+    effect: lijst.effect,
+    veranderd: true,
+    herstel: eenmalig(() => draaiTerug([r.herstel, lijst.herstel])),
+  };
+}
+
+/** Korte uitleg voor de melding: "lijst: 2 erbij, 1 minder". Leeg als de lijst gelijk bleef. */
+export function lijstUitleg(e: LijstEffect): string {
+  const delen = [
+    e.erbij ? `${e.erbij} erbij` : "",
+    e.minder ? `${e.minder} minder` : "",
+    e.weg ? `${e.weg} eraf` : "",
+  ].filter(Boolean);
+  return delen.length ? `lijst: ${delen.join(", ")}` : "";
 }

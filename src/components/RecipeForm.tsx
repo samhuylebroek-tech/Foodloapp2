@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { lijstUitleg, planVervang, wijzigMenu } from "@/lib/kringloop-db";
 import { useNavigate, Link as RouterLink } from "@tanstack/react-router";
 import {
   BookOpen,
@@ -892,11 +893,14 @@ export function RecipeForm({
 
       toast.success("Recept opgeslagen");
       if (koppelMaaltijd) {
-        await supabase
-          .from("meal_plan")
-          .update({ recipe_id: recipeId!, custom_title: null })
-          .eq("id", koppelMaaltijd);
-        toast.success("Gekoppeld aan je weekmenu");
+        // V2 (WP4): koppelen = vervangen; de boodschappenlijst schuift mee.
+        try {
+          const r = await wijzigMenu(user.id, planVervang(koppelMaaltijd, recipeId!));
+          const uitleg = lijstUitleg(r.effect);
+          toast.success(uitleg ? `Gekoppeld aan je weekmenu · ${uitleg}` : "Gekoppeld aan je weekmenu");
+        } catch {
+          toast.error("Het recept is bewaard, maar koppelen aan je weekmenu lukte niet.");
+        }
         navigate({ to: "/planner" });
       } else {
         navigate({ to: "/recepten/$id", params: { id: recipeId! } });

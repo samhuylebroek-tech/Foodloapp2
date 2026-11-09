@@ -37,6 +37,18 @@ import {
   Minus,
 } from "lucide-react";
 import { toast } from "sonner";
+import { meldMetHerstel } from "@/hooks/useAanvulling";
+import {
+  HalfGelukt,
+  lijstUitleg,
+  planErbij,
+  planVerplaats,
+  planVervang,
+  planWeg,
+  wijzigMenu,
+  type Herstel,
+  type PlanUitvoering,
+} from "@/lib/kringloop-db";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ingredientToLine } from "@/lib/ingredienten";
@@ -193,6 +205,7 @@ function PlannerPage() {
     null,
   );
   const [lijstId, setLijstId] = useState<string>("");
+  const [vervangRij, setVervangRij] = useState<PlanRow | null>(null);
   const [vraagLijst, setVraagLijst] = useState<{ recipeId: string; titel: string } | null>(null);
   const [opruimVraag, setOpruimVraag] = useState<{ titel: string; items: { id: string; naam: string }[] } | null>(null);
   const [naVoorstel, setNaVoorstel] = useState<{ recipeId: string; titel: string }[] | null>(null);
@@ -325,7 +338,48 @@ function PlannerPage() {
     },
   });
 
+  // V2 (WP4): in je eigen weekmenu stuurt Foodlo de boodschappenlijst meteen bij — geen vraag,
+  // wel één melding met "Ongedaan maken" die menu én lijst terugzet. Het gezinsweekmenu houdt
+  // voorlopig de vragen (huishouden: WP9).
+  const eigenMenu = weergave === "mij";
+  const menuBezig = useRef(false);
+  function vernieuwMenu() {
+    for (const k of ["meal-plan", "shopping", "aanvulling", "voorraad", "home-dagmenu", "home-week"])
+      void qc.invalidateQueries({ queryKey: [k] });
+  }
+  /** Voert een menuwijziging uit met lijst; geeft het plan-id terug, of null als het mislukte. */
+  async function menuWijziging(
+    actie: () => Promise<PlanUitvoering>,
+    tekst: string,
+  ): Promise<string | undefined | null> {
+    if (!user || menuBezig.current) return null;
+    menuBezig.current = true;
+    try {
+      const r = await wijzigMenu(user.id, actie);
+      vernieuwMenu();
+      if (r.veranderd) {
+        const uitleg = lijstUitleg(r.effect);
+        meldMetHerstel(uitleg ? `${tekst} · ${uitleg}` : tekst, r.herstel, vernieuwMenu);
+      }
+      return r.id;
+    } catch (fout) {
+      vernieuwMenu();
+      toast.error(
+        fout instanceof HalfGelukt
+          ? "Dat lukte maar half. Kijk je weekmenu en lijst even na."
+          : "Dat lukte niet. Er is niets veranderd; probeer het opnieuw.",
+      );
+      return null;
+    } finally {
+      menuBezig.current = false;
+    }
+  }
+
   async function verwijder(id: string, recipeId?: string | null, titel?: string) {
+    if (eigenMenu) {
+      await menuWijziging(planWeg(id), `${titel ?? "Gerecht"} uit je weekmenu`);
+      return;
+    }
     await supabase.from("meal_plan").delete().eq("id", id);
     qc.invalidateQueries({ queryKey: ["meal-plan"] });
     if (!recipeId) return;
@@ -362,6 +416,16 @@ function PlannerPage() {
 
   async function plan_toevoegen(recipeId: string, datum: string, moment: string, titel: string, personen: number) {
     if (!user || planBezig.current) return;
+    if (eigenMenu) {
+      const id = await menuWijziging(
+        planErbij({ userId: user.id, recipeId, datum, moment, personen }),
+        `${titel} staat op ${labelVoor(datum)}`,
+      );
+      if (id === null) return;
+      setKiezen(null);
+      setWeekStart(maandagVan(new Date(`${datum}T12:00:00`)));
+      return;
+    }
     planBezig.current = true;
     let resultaat: { data: { id: string } | null; error: unknown };
     try {
@@ -408,6 +472,8 @@ function PlannerPage() {
     if (!user) return;
     let gelukt = 0;
     const ingepland: { recipeId: string; titel: string }[] = [];
+    const herstellen: Herstel[] = [];
+    const effect = { erbij: 0, minder: 0, weg: 0 };
     for (const rij of rijen) {
       try {
         let recipeId = rij.recept?.id ?? null;
@@ -445,14 +511,25 @@ function PlannerPage() {
           await zorgVoorReceptFoto(data.id, basis.title || rij.idee.title, user.id).catch(() => null);
         }
         if (!recipeId) continue;
-        const { error } = await supabase.from("meal_plan").insert({
-          user_id: user.id,
-          recipe_id: recipeId,
-          plan_date: rij.datum,
-          meal_type: rij.moment,
-          group_id: weergave === "gezin" ? gezin!.id : null,
-        });
-        if (error) throw error;
+        if (eigenMenu) {
+          const w = await wijzigMenu(
+            user.id,
+            planErbij({ userId: user.id, recipeId, datum: rij.datum, moment: rij.moment }),
+          );
+          herstellen.push(w.herstel);
+          effect.erbij += w.effect.erbij;
+          effect.minder += w.effect.minder;
+          effect.weg += w.effect.weg;
+        } else {
+          const { error } = await supabase.from("meal_plan").insert({
+            user_id: user.id,
+            recipe_id: recipeId,
+            plan_date: rij.datum,
+            meal_type: rij.moment,
+            group_id: weergave === "gezin" ? gezin!.id : null,
+          });
+          if (error) throw error;
+        }
         gelukt += 1;
         ingepland.push({ recipeId, titel: rij.recept?.title ?? rij.idee?.title ?? "Gerecht" });
       } catch {
@@ -460,8 +537,31 @@ function PlannerPage() {
       }
     }
     qc.invalidateQueries({ queryKey: ["meal-plan"] });
-    if (gelukt) toast.success(`${gelukt} ${gelukt === 1 ? "dag" : "dagen"} ingepland`);
     setVoorstelOpen(false);
+    if (eigenMenu) {
+      vernieuwMenu();
+      if (gelukt) {
+        const uitleg = lijstUitleg(effect);
+        const tekst = `${gelukt} ${gelukt === 1 ? "dag" : "dagen"} ingepland`;
+        meldMetHerstel(
+          uitleg ? `${tekst} · ${uitleg}` : tekst,
+          async () => {
+            let mislukt = false;
+            for (const h of [...herstellen].reverse()) {
+              try {
+                await h();
+              } catch {
+                mislukt = true;
+              }
+            }
+            if (mislukt) throw new HalfGelukt();
+          },
+          vernieuwMenu,
+        );
+      }
+      return;
+    }
+    if (gelukt) toast.success(`${gelukt} ${gelukt === 1 ? "dag" : "dagen"} ingepland`);
     if (ingepland.length) {
       setNaVoorstel(ingepland);
       setNaGekozen(new Set(ingepland.map((r) => r.recipeId)));
@@ -592,19 +692,38 @@ function PlannerPage() {
       }
     }
 
-    const { data: geplandeRij, error } = await supabase.from("meal_plan").insert({
-      user_id: user.id,
-      recipe_id: recipeId,
-      custom_title: recipeId ? null : naam,
-      soort: extra?.soort ?? null,
-      plan_date: datum,
-      meal_type: moment,
-      personen: personen ?? null,
-      group_id: weergave === "gezin" ? gezin!.id : null,
-    }).select("id").single();
-    if (error) {
-      toast.error("Inplannen lukte niet");
-      return;
+    let geplandeRij: { id: string } | null = null;
+    if (eigenMenu) {
+      const id = await menuWijziging(
+        planErbij({
+          userId: user.id,
+          recipeId,
+          datum,
+          moment,
+          personen: personen ?? null,
+          customTitle: naam,
+          soort: extra?.soort ?? null,
+        }),
+        `${naam} staat op ${labelVoor(datum)}`,
+      );
+      if (id === null) return;
+      geplandeRij = id ? { id } : null;
+    } else {
+      const { data, error } = await supabase.from("meal_plan").insert({
+        user_id: user.id,
+        recipe_id: recipeId,
+        custom_title: recipeId ? null : naam,
+        soort: extra?.soort ?? null,
+        plan_date: datum,
+        meal_type: moment,
+        personen: personen ?? null,
+        group_id: weergave === "gezin" ? gezin!.id : null,
+      }).select("id").single();
+      if (error) {
+        toast.error("Inplannen lukte niet");
+        return;
+      }
+      geplandeRij = data;
     }
     if (extra?.maakRecept && geplandeRij) {
       setKiezen(null);
@@ -613,11 +732,11 @@ function PlannerPage() {
     }
     setKiezen(null);
     setWeekStart(maandagVan(new Date(`${datum}T12:00:00`)));
-    toast.success(basis ? "Ingepland en bewaard bij je recepten" : "In je weekmenu gezet");
+    if (!eigenMenu) toast.success(basis ? "Ingepland en bewaard bij je recepten" : "In je weekmenu gezet");
     qc.invalidateQueries({ queryKey: ["meal-plan"] });
     qc.invalidateQueries({ queryKey: ["recipes"] });
     qc.invalidateQueries({ queryKey: ["alle-ingredienten"] });
-    if (recipeId) setVraagLijst({ recipeId, titel: naam });
+    if (recipeId && !eigenMenu) setVraagLijst({ recipeId, titel: naam });
   }
 
   async function zetOpLijst(recipeId: string, listId: string) {
@@ -644,6 +763,24 @@ function PlannerPage() {
   /** Verplaatst of dupliceert een geplande maaltijd naar een andere dag/moment. */
   async function verplaatsNaar(rij: PlanRow, datum: string, moment: string, kopie: boolean) {
     if (!user) return;
+    if (eigenMenu) {
+      const id = await menuWijziging(
+        kopie
+          ? planErbij({
+              userId: user.id,
+              recipeId: rij.recipe_id,
+              datum,
+              moment,
+              personen: rij.personen ?? null,
+              customTitle: rij.custom_title,
+              soort: rij.soort ?? null,
+            })
+          : planVerplaats(rij.id, datum, moment),
+        kopie ? `Ook ingepland op ${labelVoor(datum)}` : `Verplaatst naar ${labelVoor(datum)}`,
+      );
+      if (id !== null) setVerplaats(null);
+      return;
+    }
     const { error } = kopie
       ? await supabase.from("meal_plan").insert({
           user_id: user.id,
@@ -666,6 +803,11 @@ function PlannerPage() {
   }
 
   async function koppelRecept(rij: PlanRow, recept: Recipe) {
+    if (eigenMenu) {
+      const id = await menuWijziging(planVervang(rij.id, recept.id), `${recept.title} gekoppeld`);
+      if (id !== null) setKoppelRij(null);
+      return;
+    }
     const { error } = await supabase
       .from("meal_plan")
       .update({ recipe_id: recept.id, custom_title: null })
@@ -796,7 +938,15 @@ function PlannerPage() {
             <MoreVertical className="size-5" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-60 p-2">
+        <DropdownMenuContent
+          align="end"
+          className="w-60 p-2"
+          // Opent een menukeuze een venster, dan houdt dat venster de focus (BUG-030):
+          // het menu mag de focus dan niet terugzetten op zijn knop.
+          onCloseAutoFocus={(e) => {
+            if (document.querySelector('[role="dialog"]')) e.preventDefault();
+          }}
+        >
           {p.recipe_id ? (
             <DropdownMenuItem
               onSelect={() =>
@@ -829,6 +979,14 @@ function PlannerPage() {
               className="min-h-12 rounded-lg text-base"
             >
               <Plus className="size-5" /> Recept maken of importeren
+            </DropdownMenuItem>
+          ) : null}
+          {p.recipe_id && eigenMenu ? (
+            <DropdownMenuItem
+              onSelect={() => setVervangRij(p)}
+              className="min-h-12 rounded-lg text-base"
+            >
+              <Repeat className="size-5" /> Ander gerecht
             </DropdownMenuItem>
           ) : null}
           <DropdownMenuItem
@@ -1463,6 +1621,24 @@ function PlannerPage() {
           onSluit={() => setKoppelRij(null)}
           onKies={(r) => void koppelRecept(koppelRij, r)}
           onNieuw={() => navigate({ to: "/recepten/nieuw", search: { title: koppelRij.custom_title ?? "", koppel: koppelRij.id } })}
+        />
+      )}
+
+      {vervangRij && (
+        <KoppelSheet
+          rij={vervangRij}
+          titel="Ander gerecht"
+          uitleg={`In plaats van “${vervangRij.recipes?.title ?? "dit gerecht"}” op ${labelVoor(vervangRij.plan_date)}. Je lijst past zich aan.`}
+          beginZoek=""
+          zonder={vervangRij.recipe_id}
+          onSluit={() => setVervangRij(null)}
+          onKies={async (r) => {
+            const id = await menuWijziging(
+              planVervang(vervangRij.id, r.id),
+              `${r.title} in plaats van ${vervangRij.recipes?.title ?? "het vorige gerecht"}`,
+            );
+            if (id !== null) setVervangRij(null);
+          }}
         />
       )}
 
@@ -2192,12 +2368,20 @@ function LijstVraag({
   // Eén keer bij openen (geen afhankelijkheden), zodat de focus niet verspringt.
   useEffect(() => {
     const vorige = document.activeElement as HTMLElement | null;
-    venster.current?.querySelector<HTMLElement>("button")?.focus();
+    const zetFocus = () => {
+      if (!venster.current?.contains(document.activeElement))
+        venster.current?.querySelector<HTMLElement>("button")?.focus();
+    };
+    zetFocus();
+    // Geopend vanuit een menu? Dat menu houdt de focus vast tot het helemaal dicht is:
+    // daarna nog eens (anders belandt de focus achter het venster).
+    const later = window.setTimeout(zetFocus, 250);
     const opToets = (e: KeyboardEvent) => {
       if (e.key === "Escape") sluitRef.current();
     };
     document.addEventListener("keydown", opToets);
     return () => {
+      window.clearTimeout(later);
       document.removeEventListener("keydown", opToets);
       vorige?.focus?.();
     };
@@ -3140,14 +3324,23 @@ function KoppelSheet({
   onSluit,
   onKies,
   onNieuw,
+  titel = "Recept koppelen",
+  uitleg,
+  beginZoek,
+  zonder,
 }: {
   rij: PlanRow;
   onSluit: () => void;
   onKies: (r: Recipe) => void;
-  onNieuw: () => void;
+  onNieuw?: () => void;
+  titel?: string;
+  uitleg?: string;
+  beginZoek?: string;
+  /** Recept dat niet in de keuze hoort (bij vervangen: het huidige gerecht). */
+  zonder?: string | null;
 }) {
   const naam = rij.custom_title ?? "";
-  const [zoek, setZoek] = useState(naam);
+  const [zoek, setZoek] = useState(beginZoek ?? naam);
   const { data: recepten = [], isLoading } = useQuery({
     queryKey: ["recipes"],
     queryFn: async () => {
@@ -3166,7 +3359,8 @@ function KoppelSheet({
     const t = normaliseerTekst(r.title);
     return woorden.reduce((n, w) => n + (t.includes(w) ? 1 : 0), 0);
   };
-  const lijst = [...recepten]
+  const lijst = recepten
+    .filter((r) => r.id !== zonder)
     .map((r) => ({ r, s: score(r) }))
     .filter((x) => !woorden.length || x.s > 0)
     .sort((a, b) => b.s - a.s)
@@ -3176,8 +3370,8 @@ function KoppelSheet({
     <Sheet open onOpenChange={(o) => { if (!o) onSluit(); }}>
       <SheetContent side="bottom" className="flex max-h-[90dvh] flex-col gap-0 p-0">
         <SheetHeader className="border-b border-border px-4 pb-3 pt-4 text-left">
-          <SheetTitle>Recept koppelen</SheetTitle>
-          <SheetDescription>Welk recept hoort bij “{naam}”?</SheetDescription>
+          <SheetTitle>{titel}</SheetTitle>
+          <SheetDescription>{uitleg ?? `Welk recept hoort bij “${naam}”?`}</SheetDescription>
         </SheetHeader>
         <div className="px-4 pt-3">
           <Input value={zoek} onChange={(e) => setZoek(e.target.value)} placeholder="Zoek in je recepten" aria-label="Zoek in je recepten" className="h-14 text-base" />
@@ -3190,7 +3384,7 @@ function KoppelSheet({
           ) : (
             <ul className="space-y-2">{lijst.map((r) => <li key={r.id}><GerechtKaart recept={r} onKies={() => onKies(r)} /></li>)}</ul>
           )}
-          <Button variant="outline" onClick={onNieuw} className="mt-4 h-14 w-full text-base"><Plus className="size-5" /> Nieuw recept maken of importeren</Button>
+          {onNieuw ? <Button variant="outline" onClick={onNieuw} className="mt-4 h-14 w-full text-base"><Plus className="size-5" /> Nieuw recept maken of importeren</Button> : null}
         </div>
       </SheetContent>
     </Sheet>
