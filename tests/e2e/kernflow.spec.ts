@@ -151,30 +151,35 @@ test.describe("Kernflow", () => {
       user_id: GEBRUIKER,
     });
 
-    // Stap 4 — de lijst: uien stonden er al (1) en worden bijgeteld tot 2 (geen tweede regel);
-    // gekochte bloem telt niet; melk (eigen regel) blijft ongemoeid.
-    await expect
-      .poll(async () => (await rijen("shopping_items")).length, {
-        message: "nieuwe items toegevoegd",
-      })
-      .toBe(3 + 3); // melk, uien, bloem(gekocht) + rundvlees, bloem, laurierblaadjes
-    const items = await rijen("shopping_items");
-    const naam = (n: string) => items.filter((i) => i["name"] === n);
-    expect(naam("melk"), "bestaand item blijft ongemoeid").toEqual([
-      expect.objectContaining({ quantity: 1, unit: "l", checked: false }),
-    ]);
+    // Stap 4 — de lijst. Eigen regels (melk, uien) blijven exact zoals ze waren (WP5); wat er
+    // voor het gerecht nog bij moet, komt op een eigen Foodlo-regel. Gekochte bloem telt niet.
     // Geschaald naar het aantal personen waarvoor gepland werd (de kiezer neemt het huishouden).
     const geplandVoor = (plan[0]!["personen"] as number | null) ?? null;
     const porties = (recept["servings"] as number | null) ?? null;
     const factor = geplandVoor && porties ? geplandVoor / porties : 1;
     const heel = (n: number) => Math.ceil(n - 1e-9);
-    expect(naam("uien"), "uien niet dubbel").toHaveLength(1);
-    // 1 stond er al; het tekort komt erbij, telbare dingen heel (nooit "1,14 uien").
-    expect(naam("uien")[0]).toMatchObject({
-      quantity: Math.max(1, 1 + heel(2 * factor - 1)),
-      checked: false,
-    });
-    expect(Number.isInteger(naam("uien")[0]!["quantity"])).toBe(true);
+    const uienTekort = Math.max(0, heel(2 * factor - 1)); // 1 eigen ui telt mee als dekking
+    await expect
+      .poll(async () => (await rijen("shopping_items")).length, {
+        message: "nieuwe items toegevoegd",
+      })
+      .toBe(3 + 3 + (uienTekort > 0 ? 1 : 0)); // eigen 3 + rundvlees, bloem, laurier (+ uien)
+    const items = await rijen("shopping_items");
+    const naam = (n: string) => items.filter((i) => i["name"] === n);
+    expect(naam("melk"), "bestaand item blijft ongemoeid").toEqual([
+      expect.objectContaining({ quantity: 1, unit: "l", checked: false }),
+    ]);
+    const eigenUien = naam("uien").filter((i) => !i["recipe_id"]);
+    const foodloUien = naam("uien").filter((i) => i["recipe_id"]);
+    expect(eigenUien, "eigen uien ongemoeid").toEqual([
+      expect.objectContaining({ id: "33333333-3333-4333-8333-333333333332", quantity: 1 }),
+    ]);
+    expect(foodloUien, "hooguit één Foodlo-regel voor uien").toHaveLength(uienTekort > 0 ? 1 : 0);
+    if (uienTekort > 0) {
+      // Telbare dingen heel (nooit "1,14 uien").
+      expect(foodloUien[0]).toMatchObject({ quantity: uienTekort, recipe_id: recept["id"] });
+      expect(Number.isInteger(foodloUien[0]!["quantity"])).toBe(true);
+    }
     // Eén recept met kg: de lijst houdt de eenheid van het recept.
     expect(naam("rundvlees")).toEqual([expect.objectContaining({ unit: "kg", checked: false })]);
     expect(naam("rundvlees")[0]!["quantity"]).toBeCloseTo(1 * factor, 2);
@@ -291,6 +296,24 @@ test.describe("Recept toevoegen — fouten en randgevallen", () => {
     await storing({ pad: "/rest/v1/recipes", soort: "fout", keer: 0 }); // storing opheffen
     await bewaarRecept(page);
     expect(definitief(await rijen("recipes"))).toHaveLength(1);
+    void extern;
+  });
+
+  test("BUG-055: mislukt het eerste automatische concept, dan probeert Foodlo opnieuw", async ({
+    page,
+    extern,
+  }) => {
+    // De eerste twee keer dat het concept wordt aangemaakt, valt het netwerk weg.
+    await storing({
+      pad: "/rest/v1/recipes",
+      methode: "POST",
+      soort: "fout",
+      status: 503,
+      keer: 2,
+    });
+    await vulReceptIn(page);
+    await expect.poll(async () => (await rijen("recipes")).length, { timeout: 15_000 }).toBe(1);
+    await expect(page.getByText("Automatisch bewaard als concept")).toBeVisible();
     void extern;
   });
 

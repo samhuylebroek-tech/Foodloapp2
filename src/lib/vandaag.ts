@@ -51,6 +51,8 @@ export type VandaagInvoer = {
   /** Open regels op de lijst. */
   teKopen: number;
   heeftRecepten: boolean;
+  /** Eigen etenstijden ("19:30"), per moment; ontbreekt er een, dan geldt ETENSTIJD. */
+  etenstijden?: Record<string, string> | undefined;
 };
 
 export type Stap =
@@ -79,15 +81,34 @@ export type Signaal =
   | { soort: "week-vrij"; dagen: number }
   | { soort: "lijst"; aantal: number };
 
-/** Wanneer we eten, per moment (lokale tijd). Kan later een instelling worden. */
+/** Standaard etenstijden per moment (lokale tijd). Instelbaar bij Instellingen → Weekmenu. */
 export const ETENSTIJD: Record<string, string> = {
   ontbijt: "08:00",
   middageten: "12:30",
   lunch: "12:30",
   avondeten: "18:30",
+  maaltijd: "18:30",
 };
-/** Vanaf dit uur kijken we naar morgen (tenzij je nog aan het koken bent). */
+/** Vanaf dit uur kijken we naar morgen — of later, als je zelf laat eet (zie `avondGrens`). */
 export const AVOND_GRENS_UUR = 21;
+
+const GELDIG = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** Etenstijd voor een moment: eigen instelling als die geldig is, anders de standaard. */
+export function etenstijd(moment: string, eigen?: Record<string, string>): string | undefined {
+  const t = eigen?.[moment];
+  if (t && GELDIG.test(t)) return t;
+  // "Alles in 1 blok" volgt je avondeten.
+  if (moment === "maaltijd" && eigen?.["avondeten"] && GELDIG.test(eigen["avondeten"]))
+    return eigen["avondeten"];
+  return ETENSTIJD[moment];
+}
+
+/** Minuten na middernacht vanaf wanneer we naar morgen kijken: 21:00, of 2 uur na je avondeten. */
+export function avondGrens(eigen?: Record<string, string>): number {
+  const avond = etenstijd("avondeten", eigen) ?? "18:30";
+  return Math.max(AVOND_GRENS_UUR * 60, minuten(avond) + 120);
+}
 
 const VOLGORDE = ["ontbijt", "middageten", "lunch", "avondeten"];
 
@@ -107,7 +128,11 @@ function kooktijd(r: ReceptVandaag) {
  * De maaltijd die er nú toe doet: de eerstvolgende die nog niet voorbij is, bij voorkeur met
  * recept; anders de laatste van de dag.
  */
-export function huidigeMaaltijd(maaltijden: MaaltijdVandaag[], nu: Date) {
+export function huidigeMaaltijd(
+  maaltijden: MaaltijdVandaag[],
+  nu: Date,
+  eigen?: Record<string, string>,
+) {
   if (!maaltijden.length) return null;
   const nuMin = nu.getHours() * 60 + nu.getMinutes();
   const gesorteerd = [...maaltijden].sort(
@@ -117,7 +142,7 @@ export function huidigeMaaltijd(maaltijden: MaaltijdVandaag[], nu: Date) {
   );
   // Een maaltijd is "voorbij" 1 uur na de etenstijd.
   const komend = gesorteerd.filter((m) => {
-    const tijd = ETENSTIJD[m.meal_type];
+    const tijd = etenstijd(m.meal_type, eigen);
     return !tijd || minuten(tijd) + 60 > nuMin;
   });
   const kandidaten = komend.length ? komend : gesorteerd.slice(-1);
@@ -134,7 +159,7 @@ export function hoofdStap(i: VandaagInvoer): Stap {
   }
 
   const nuMin = i.nu.getHours() * 60 + i.nu.getMinutes();
-  if (i.nu.getHours() >= AVOND_GRENS_UUR) {
+  if (nuMin >= avondGrens(i.etenstijden)) {
     // Voor morgen tonen we het avondeten (met recept), anders wat er is.
     const m =
       i.morgen.find((x) => x.meal_type === "avondeten" && x.recept) ??
@@ -145,7 +170,7 @@ export function hoofdStap(i: VandaagInvoer): Stap {
       return { soort: "morgen", maaltijd: m, ontbreekt: m?.recept ? i.ontbreektMorgen : [] };
   }
 
-  const m = huidigeMaaltijd(i.vandaag, i.nu);
+  const m = huidigeMaaltijd(i.vandaag, i.nu, i.etenstijden);
   if (!m) return i.heeftRecepten ? { soort: "kiezen" } : { soort: "eerste-recept" };
   const r = m.recept;
   if (!r) return { soort: "zonder-recept", maaltijd: m };
@@ -154,7 +179,7 @@ export function hoofdStap(i: VandaagInvoer): Stap {
   if (i.nogKopenVandaag.length)
     return { soort: "winkelen", maaltijd: m, recept: r, nogKopen: i.nogKopenVandaag };
 
-  const tijd = ETENSTIJD[m.meal_type];
+  const tijd = etenstijd(m.meal_type, i.etenstijden);
   const duur = kooktijd(r);
   let beginOm: string | null = null;
   if (tijd && duur > 0) {

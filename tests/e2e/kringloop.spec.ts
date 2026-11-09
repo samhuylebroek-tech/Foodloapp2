@@ -81,8 +81,12 @@ test("dubbel aanvullen (ook vanuit een tweede venster) maakt geen dubbels", asyn
   await tweede.getByRole("button", { name: /^Zet \d+ op mijn lijst$/ }).click();
   await expect(tweede.getByText("Alles staat al op je lijst")).toBeVisible();
   expect((await open()).length).toBe(naEerste);
-  const namen = await open();
-  expect(new Set(namen).size, "geen product twee keer op de lijst").toBe(namen.length);
+  // Geen product twee keer door Foodlo. (Een eigen regel blijft ongemoeid; wat Foodlo extra
+  // nodig heeft, staat dan op een eigen regel "voor <gerecht>" — WP5, eigen boodschappen beschermd.)
+  const foodlo = ((await nepDb()).shopping_items ?? [])
+    .filter((i) => !i["checked"] && i["recipe_id"])
+    .map((i) => String(i["name"]));
+  expect(new Set(foodlo).size, "geen product twee keer van Foodlo op de lijst").toBe(foodlo.length);
   void extern;
 });
 

@@ -56,6 +56,8 @@ export type WeekmenuInstelling = {
   vermijd: string; // wat je liever niet eet
   bron: "eigen" | "ook-extern";
   perDag: Record<string, DagVoorkeur>; // "0".."6" = weekdaggewoontes
+  /** Wanneer je eet, per moment ("19:30"). Leeg = standaard (ontbijt 8:00, middag 12:30, avond 18:30). */
+  etenstijden: Record<string, string>;
 };
 
 export const WEEKMENU_STANDAARD: WeekmenuInstelling = {
@@ -70,6 +72,7 @@ export const WEEKMENU_STANDAARD: WeekmenuInstelling = {
   vermijd: "",
   bron: "eigen",
   perDag: {},
+  etenstijden: {},
 };
 
 type Ctx = {

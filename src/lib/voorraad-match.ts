@@ -2,7 +2,7 @@
  * "Wat kan ik koken met wat ik heb?" — zonder AI, zonder kosten.
  * Rangschikt recepten op hoeveel ingrediënten al in de voorraadkast staan.
  */
-import { canoniekeNaam } from "@/lib/product-herkenning";
+import { canoniekeNaam, vervanging } from "@/lib/product-herkenning";
 
 /** Dingen die (bijna) iedereen in huis heeft; tellen nooit als "ontbreekt". */
 const BASIS = ["zout", "peper", "water", "kraantjeswater"];
@@ -32,10 +32,15 @@ function woorden(naam: string): string[] {
 export function zitInVoorraad(ingredient: string, voorraad: string[]): boolean {
   const ing = woorden(ingredient);
   if (!ing.length) return false;
-  return voorraad.some((v) => {
+  const past = (v: string) => {
     const vw = woorden(v);
     if (!vw.length) return false;
     return vw.every((w) => ing.includes(w)) || ing.every((w) => vw.includes(w));
+  };
+  // WP5: "Diepvriesspinazie (i.p.v. spinazie)" telt ook als spinazie.
+  return voorraad.some((v) => {
+    const voor = vervanging(v).voor;
+    return past(v) || (voor != null && past(voor));
   });
 }
 

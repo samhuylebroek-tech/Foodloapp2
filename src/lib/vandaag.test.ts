@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  avondGrens,
+  etenstijd,
   hoofdStap,
   huidigeMaaltijd,
   opsomming,
@@ -140,5 +142,30 @@ describe("opsomming", () => {
     expect(opsomming(["melk", "ui"])).toBe("melk en ui");
     expect(opsomming(["melk", "ui", "dille"])).toBe("melk, ui en dille");
     expect(opsomming(["melk", "ui", "dille", "peper"])).toBe("melk, ui en 2 andere");
+  });
+});
+
+describe("eigen etenstijden", () => {
+  const laat = { avondeten: "20:00" };
+  it("'begin om' volgt je eigen avondeten", () => {
+    expect(hoofdStap(basis({ nu: om(14), etenstijden: laat }))).toMatchObject({
+      soort: "koken",
+      beginOm: "18:00",
+    });
+  });
+  it("na 21 u nog vandaag als je laat eet; pas 2 uur na je avondeten naar morgen", () => {
+    expect(hoofdStap(basis({ nu: om(21, 30), etenstijden: laat })).soort).toBe("koken");
+    expect(hoofdStap(basis({ nu: om(22, 5), etenstijden: laat })).soort).toBe("morgen");
+    // Vroeg eten verschuift de grens niet naar vóór 21 u.
+    expect(
+      hoofdStap(basis({ nu: om(20, 30), etenstijden: { avondeten: "17:30" } })).soort,
+    ).not.toBe("morgen");
+  });
+  it("ongeldige tijd: standaard; 'alles in 1 blok' volgt je avondeten", () => {
+    expect(etenstijd("avondeten", { avondeten: "25:99" })).toBe("18:30");
+    expect(etenstijd("maaltijd", laat)).toBe("20:00");
+    expect(etenstijd("ontbijt", laat)).toBe("08:00");
+    expect(avondGrens()).toBe(21 * 60);
+    expect(avondGrens({ avondeten: "19:45" })).toBe(21 * 60 + 45);
   });
 });

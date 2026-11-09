@@ -14,7 +14,7 @@ import { laadVandaag } from "@/lib/vandaag-db";
 import { EmptyState } from "@/components/EmptyState";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import type { Recipe } from "@/lib/types";
-import { useT } from "@/lib/voorkeuren";
+import { useT, useVoorkeuren } from "@/lib/voorkeuren";
 import { tijdLabel } from "@/lib/tijd";
 
 export const Route = createFileRoute("/")({
@@ -75,6 +75,8 @@ type WeekRij = {
 function StartPage() {
   const { user } = useAuth();
   const t = useT();
+  const { weekmenu: weekmenuVoorkeur } = useVoorkeuren();
+  const etenstijden = weekmenuVoorkeur.etenstijden;
 
   const { data: profiel } = useQuery({
     queryKey: ["home-profiel", user?.id],
@@ -160,8 +162,14 @@ function StartPage() {
     const voortgang: Record<string, number | null> = {};
     for (const m of stand.vandaag)
       if (m.recept) voortgang[m.recept.id] = leesVoortgang(m.recept.id, m.recept.stappen);
-    return hoofdStap({ ...stand, nu: new Date(), voortgang, heeftRecepten: recipes.length > 0 });
-  }, [stand, recipes.length]);
+    return hoofdStap({
+      ...stand,
+      nu: new Date(),
+      voortgang,
+      heeftRecepten: recipes.length > 0,
+      etenstijden,
+    });
+  }, [stand, recipes.length, etenstijden]);
   const signalen = useMemo(
     () =>
       stand && stap

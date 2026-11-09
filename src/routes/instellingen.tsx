@@ -20,6 +20,7 @@ import {
 import { Groep, KnopRij, LinkRij, Paneel } from "@/components/mobiel/Lijst";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { etenstijd } from "@/lib/vandaag";
 import { marketingUrl } from "@/lib/app-url";
 import { exporteerMijnGegevens } from "@/lib/export.functions";
 import { useQuery } from "@tanstack/react-query";
@@ -64,7 +65,8 @@ export const Route = createFileRoute("/instellingen")({
 });
 
 function InstellingenPage() {
-  const { taal, zetTaal, thema, zetThema, momenten, zetMomenten, t } = useVoorkeuren();
+  const { taal, zetTaal, thema, zetThema, momenten, zetMomenten, weekmenu, zetWeekmenu, t } =
+    useVoorkeuren();
   const creditFn = useServerFn(creditOverzicht);
   const { user: ingelogd } = useAuth();
   const credits = useQuery({
@@ -261,6 +263,32 @@ function InstellingenPage() {
                 </label>
               ))
             : null}
+        </Groep>
+
+        <Groep
+          titel={t("Wanneer eet je?")}
+          voet={t("Foodlo zegt op Vandaag wanneer je moet beginnen met koken, en kijkt na je avondeten naar morgen.")}
+        >
+          {(eenBlok ? ["maaltijd"] : ALLE_MOMENTEN.filter((m) => momenten.includes(m))).map((m) => (
+            <label key={m} className="flex min-h-16 items-center gap-3.5 px-4 py-3">
+              <span className="min-w-0 flex-1 text-[1.05rem] font-semibold capitalize leading-snug">
+                {t(m === "maaltijd" ? "Eten" : m)}
+              </span>
+              <input
+                type="time"
+                step={300}
+                aria-label={`${t("Etenstijd")} ${t(m === "maaltijd" ? "eten" : m)}`}
+                value={etenstijd(m, weekmenu.etenstijden) ?? ""}
+                onChange={(e) => {
+                  const waarde = e.target.value;
+                  if (!/^\d{2}:\d{2}$/.test(waarde)) return;
+                  const sleutel = m === "maaltijd" ? "avondeten" : m;
+                  zetWeekmenu({ etenstijden: { ...weekmenu.etenstijden, [sleutel]: waarde } });
+                }}
+                className="h-12 rounded-xl border border-input bg-background px-3 text-lg tabular-nums"
+              />
+            </label>
+          ))}
         </Groep>
 
         <Groep titel={t("Jouw Foodlo")}>

@@ -194,6 +194,10 @@ export function RecipeForm({
   const [conceptId, setConceptId] = useState<string | null>(null);
   const [autoStatus, setAutoStatus] = useState<"" | "bezig" | "ok">("");
   const conceptBezig = useRef(false);
+  // BUG-055: een autosave die mislukt of tijdens een vorige valt, opnieuw proberen.
+  const [conceptTik, setConceptTik] = useState(0);
+  const conceptOpnieuw = useRef(false);
+  const conceptPogingen = useRef(0);
   // BUG-031: een concept dat nog onderweg is mag bij Bewaren geen tweede recept opleveren.
   const conceptIdRef = useRef<string | null>(null);
   const conceptBelofte = useRef<Promise<void> | null>(null);
@@ -739,22 +743,38 @@ export function RecipeForm({
           recipe_id: id!, name: r.name, quantity: r.quantity, unit: r.unit, position: index,
         }));
         if (rijen.length) await supabase.from("recipe_ingredients").insert(rijen);
+        conceptPogingen.current = 0;
         setAutoStatus("ok");
       } catch {
         setAutoStatus("");
+        // Netwerk of server even weg: een paar keer opnieuw, daarna wachten op de volgende wijziging.
+        if (conceptPogingen.current < 3) {
+          conceptPogingen.current += 1;
+          conceptOpnieuw.current = true;
+        }
       } finally {
         conceptBezig.current = false;
+        if (conceptOpnieuw.current && !bewarenBezig.current && !definitiefBewaard.current) {
+          conceptOpnieuw.current = false;
+          setConceptTik((n) => n + 1);
+        }
       }
     };
     const t = setTimeout(() => {
-      if (conceptBezig.current || bewarenBezig.current || definitiefBewaard.current) return;
+      if (bewarenBezig.current || definitiefBewaard.current) return;
+      // Nog een vorige autosave onderweg: daarna meteen nog eens, met de nieuwste invoer.
+      if (conceptBezig.current) {
+        conceptOpnieuw.current = true;
+        return;
+      }
       conceptBezig.current = true;
       setAutoStatus("bezig");
       conceptBelofte.current = bewaarConcept();
     }, 1500);
     return () => clearTimeout(t);
+    // BUG-055: `user` hoort erbij — laadt de aanmelding pas na het typen, dan toch bewaren.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, description, stappenTekst, ingredientTekst, photoPath, sourceUrl, category]);
+  }, [user?.id, conceptTik, title, description, stappenTekst, ingredientTekst, photoPath, sourceUrl, category]);
 
   /** Gegevens die het venster meteen kan opslaan, zonder op de formulierstate te wachten. */
   type DirecteOpslag = {

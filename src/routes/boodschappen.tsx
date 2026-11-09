@@ -45,7 +45,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { zorgVoorLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
-import { zelfdeProduct } from "@/lib/product-herkenning";
+import { vervangNaam, vervanging, zelfdeProduct } from "@/lib/product-herkenning";
+import { zitInVoorraad } from "@/lib/voorraad-match";
 import { belgischeMaat, parseIngredientLine, toonBelgischeMaat } from "@/lib/ingredienten";
 import { appOrigin } from "@/lib/app-url";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -56,6 +57,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { EmptyState } from "@/components/EmptyState";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WinkelIdeeen } from "@/components/WinkelIdeeen";
+import { ItemNaam, Winkelmodus, type Vervanging } from "@/components/winkel/Winkelmodus";
 import {
   CATEGORIE_LABEL,
   CATEGORIE_VOLGORDE,
@@ -171,9 +173,19 @@ function BoodschappenPage() {
     const lijstId = actief;
     const start = new Date(Date.now() - 2000).toISOString();
     const voor = items.filter((i) => namen.some((n) => zelfdeProduct(i.name, n)));
+    const bestond = new Set(items.map((i) => i.id));
     return async () => {
       if (!lijstId) return;
-      await supabase.from("shopping_items").delete().eq("list_id", lijstId).gte("created_at", start);
+      // Alleen wat deze toevoeging maakte: nooit iets dat intussen (ander toestel) zelf bijkwam.
+      const { data: nieuw } = await supabase
+        .from("shopping_items")
+        .select("id, name")
+        .eq("list_id", lijstId)
+        .gte("created_at", start);
+      const weg = (nieuw ?? [])
+        .filter((r) => !bestond.has(r.id) && namen.some((n) => zelfdeProduct(r.name, n)))
+        .map((r) => r.id);
+      if (weg.length) await supabase.from("shopping_items").delete().in("id", weg);
       await Promise.all(
         voor.map((b) =>
           supabase.from("shopping_items").update({ quantity: b.quantity, unit: b.unit, checked: b.checked }).eq("id", b.id),
@@ -597,36 +609,88 @@ function BoodschappenPage() {
     }
   }
 
+  /** Rijen exact terugzetten (zelfde naam, hoeveelheid, gerecht en notitie). */
+  async function zetRijenTerug(rijen: Item[], lijstId: string) {
+    if (!user || !rijen.length) return;
+    const { error } = await supabase.from("shopping_items").insert(
+      rijen.map((r) => ({
+        user_id: user.id,
+        list_id: lijstId,
+        name: r.name,
+        quantity: r.quantity,
+        unit: r.unit,
+        checked: r.checked,
+        recipe_id: r.recipe_id ?? null,
+        note: r.note ?? null,
+      })),
+    );
+    if (error) throw error;
+  }
+
   /** Verwijderen met "Ongedaan maken": we zetten hetzelfde item dan gewoon terug. */
   async function verwijder(item: Item) {
     if (!user || !actief) return;
-    await supabase.from("shopping_items").delete().eq("id", item.id);
+    const { error } = await supabase.from("shopping_items").delete().eq("id", item.id);
+    if (error) {
+      toast.error(`${item.name} verwijderen lukte niet. Probeer het opnieuw.`);
+      return;
+    }
     refresh();
     const lijstId = actief;
-    onthoud(`${item.name} staat terug op je lijst`, async () => {
-      await supabase.from("shopping_items").insert({
-        user_id: user.id, list_id: lijstId, name: item.name, quantity: item.quantity, unit: item.unit, checked: item.checked, recipe_id: item.recipe_id ?? null, note: item.note ?? null,
-      });
-    });
+    let teruggezet = false;
+    const herstel = async () => {
+      if (teruggezet) return;
+      teruggezet = true;
+      await zetRijenTerug([item], lijstId);
+    };
+    onthoud(`${item.name} staat terug op je lijst`, herstel);
     toast.success(`${item.name} verwijderd`, {
       action: {
         label: "Ongedaan maken",
         onClick: () => {
-          void (async () => {
-            await supabase.from("shopping_items").insert({
-              user_id: user.id,
-              list_id: actief,
-              name: item.name,
-              quantity: item.quantity,
-              unit: item.unit,
-              checked: item.checked,
-              note: item.note ?? null,
-            });
-            refresh();
-          })();
+          void herstel()
+            .catch(() => toast.error("Terugzetten lukte niet."))
+            .finally(refresh);
         },
       },
     });
+  }
+
+  /** WP5: in de winkel vervangen — hoeveelheid, gerecht en notitie blijven, meteen in je kar. */
+  async function vervangInWinkel(item: Item, door: Vervanging): Promise<boolean> {
+    const naam = vervangNaam(door.naam, item.name);
+    const maat = belgischeMaat(door.quantity, door.unit);
+    const { error } = await supabase
+      .from("shopping_items")
+      .update({ name: naam, quantity: maat.quantity, unit: maat.unit, checked: true })
+      .eq("id", item.id);
+    if (error) {
+      toast.error("Vervangen lukte niet. Je lijst blijft zoals hij was.");
+      return false;
+    }
+    void meet("boodschappen.vervangen");
+    setAfvinkTijd((t) => ({ ...t, [item.id]: Date.now() }));
+    const vorig = { name: item.name, quantity: item.quantity, unit: item.unit, checked: item.checked };
+    let teruggezet = false;
+    const herstel = async () => {
+      if (teruggezet) return;
+      teruggezet = true;
+      const { error: e } = await supabase.from("shopping_items").update(vorig).eq("id", item.id);
+      if (e) throw e;
+    };
+    onthoud(`${vervanging(item.name).naam} staat weer op je lijst`, herstel);
+    refresh();
+    toast.success(`${vervanging(naam).naam} in je kar, in plaats van ${vervanging(item.name).naam}`, {
+      action: {
+        label: "Ongedaan maken",
+        onClick: () => {
+          void herstel()
+            .catch(() => toast.error("Terugzetten lukte niet."))
+            .finally(refresh);
+        },
+      },
+    });
+    return true;
   }
 
   async function vinkCategorieAf(lijst: Item[]) {
@@ -657,9 +721,31 @@ function BoodschappenPage() {
   }
 
   async function verwijderGekozen() {
-    if (!gekozen.size) return;
-    await supabase.from("shopping_items").delete().in("id", [...gekozen]);
-    toast.success(`${gekozen.size} verwijderd`);
+    if (!gekozen.size || !actief) return;
+    const weg = items.filter((i) => gekozen.has(i.id));
+    const lijstId = actief;
+    const { error } = await supabase.from("shopping_items").delete().in("id", [...gekozen]);
+    if (error) {
+      toast.error("Verwijderen lukte niet. Je lijst blijft zoals hij was.");
+      return;
+    }
+    let teruggezet = false;
+    const herstel = async () => {
+      if (teruggezet) return;
+      teruggezet = true;
+      await zetRijenTerug(weg, lijstId);
+    };
+    onthoud(`${weg.length} terug op je lijst`, herstel);
+    toast.success(`${weg.length} verwijderd`, {
+      action: {
+        label: "Ongedaan maken",
+        onClick: () => {
+          void herstel()
+            .catch(() => toast.error("Terugzetten lukte niet."))
+            .finally(refresh);
+        },
+      },
+    });
     setGekozen(new Set());
     setKiesModus(false);
     refresh();
@@ -715,15 +801,13 @@ function BoodschappenPage() {
   async function vinkVoorraadAf() {
     if (!user || !actief) return;
     const { data } = await supabase.from("pantry_items").select("naam").eq("user_id", user.id);
-    const thuis = (data ?? []).map((r) => r.naam.trim().toLowerCase()).filter(Boolean);
+    const thuis = (data ?? []).map((r) => r.naam.trim()).filter(Boolean);
     if (thuis.length === 0) {
       toast.info("Je voorraadkast is nog leeg.");
       return;
     }
-    const raak = items.filter((i) => {
-      const n = i.name.trim().toLowerCase();
-      return !i.checked && thuis.some((v) => n.includes(v) || v.includes(n));
-    });
+    // Echt hetzelfde product (vroeger: "ui" vinkte ook "suiker" af).
+    const raak = items.filter((i) => !i.checked && zitInVoorraad(i.name, thuis));
     if (raak.length === 0) {
       toast.info("Niets op deze lijst staat al in je voorraadkast.");
       return;
@@ -735,7 +819,18 @@ function BoodschappenPage() {
         "id",
         raak.map((i) => i.id),
       );
-    toast.success(`${raak.length} afgevinkt — je hebt ze al in huis.`);
+    const ids = raak.map((i) => i.id);
+    onthoud(`${raak.length} terug op je lijst`, async () => {
+      await supabase.from("shopping_items").update({ checked: false }).in("id", ids);
+    });
+    toast.success(`${raak.length} afgevinkt — je hebt ze al in huis.`, {
+      action: {
+        label: "Ongedaan maken",
+        onClick: () => {
+          void supabase.from("shopping_items").update({ checked: false }).in("id", ids).then(refresh);
+        },
+      },
+    });
     refresh();
   }
 
@@ -999,7 +1094,7 @@ function BoodschappenPage() {
             >
               <div className="mx-auto max-w-3xl">
                 {typSuggesties.length > 0 ? (
-                  <div className="scroll-rij -mx-1 mb-2 flex gap-2 px-1" aria-label="Eerder gekocht">
+                  <div className="scroll-rij -mx-1 mb-2 flex gap-2 overflow-x-auto px-1" aria-label="Eerder gekocht">
                     {typSuggesties.map((s) => (
                       <Button
                         key={s}
@@ -1070,7 +1165,7 @@ function BoodschappenPage() {
                 >
                   <Star className="size-4" aria-hidden /> Vaak gekocht — tik om toe te voegen
                 </h2>
-                <div className="scroll-rij -mx-4 flex gap-2 px-4 pb-1">
+                <div className="scroll-rij -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
                   {(vaakAlles ? vaakLosOpen : vaakLosOpen.slice(0, 12)).map((e) => (
                     <Button
                       key={e.name}
@@ -1448,10 +1543,12 @@ function BoodschappenPage() {
 
       {winkel && (
         <Winkelmodus
+          lijstId={actief ?? "geen"}
           groepen={groepen}
           openAantal={openAantal}
           aantalGekocht={klaar.length}
           onVink={(item) => void vink(item)}
+          onVervang={vervangInWinkel}
           onSluit={() => setWinkel(false)}
           onOpruimen={() => { setWinkel(false); void klaarMetWinkelenNu(); }}
         />
@@ -1637,183 +1734,6 @@ function GeheugenRij({ naam, sub, vast, onVast, onPlus }: { naam: string; sub: s
   );
 }
 
-function Winkelmodus({
-  groepen,
-  openAantal,
-  aantalGekocht,
-  onVink,
-  onSluit,
-  onOpruimen,
-}: {
-  groepen: { id: CategorieId; lijst: Item[] }[];
-  openAantal: number;
-  aantalGekocht: number;
-  onVink: (item: Item) => void;
-  onSluit: () => void;
-  onOpruimen: () => void;
-}) {
-  const [stap, setStap] = useState(0);
-
-  // Scherm aan houden zolang je winkelt, waar de telefoon dat toelaat.
-  useEffect(() => {
-    let slot: { release: () => Promise<void> } | null = null;
-    const api = (navigator as unknown as { wakeLock?: { request: (t: "screen") => Promise<{ release: () => Promise<void> }> } }).wakeLock;
-    void api?.request("screen").then((s) => { slot = s; }).catch(() => {});
-    return () => {
-      void slot?.release().catch(() => {});
-    };
-  }, []);
-
-  useEffect(() => {
-    if (stap > groepen.length - 1) setStap(Math.max(0, groepen.length - 1));
-  }, [groepen.length, stap]);
-
-  const huidig = groepen[stap];
-  const totaal = openAantal + aantalGekocht;
-  const procent = totaal ? Math.round((aantalGekocht / totaal) * 100) : 100;
-
-  // Escape sluit de winkelmodus, net als elk ander venster.
-  useEffect(() => {
-    const toets = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onSluit();
-    };
-    window.addEventListener("keydown", toets);
-    return () => window.removeEventListener("keydown", toets);
-  }, [onSluit]);
-
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Winkelmodus"
-      className="fixed inset-0 z-50 flex flex-col bg-background"
-    >
-      <div
-        className="bg-inkt px-4 pb-4 text-inkt-foreground"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}
-      >
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="shrink-0 text-inkt-foreground hover:bg-white/10 hover:text-inkt-foreground"
-            aria-label="Winkelmodus sluiten"
-            onClick={onSluit}
-          >
-            <X className="size-7" />
-          </Button>
-          <div className="min-w-0 flex-1">
-            <p className="text-label text-inkt-zacht">In de winkel</p>
-            <p className="truncate font-display text-2xl font-semibold">
-              {huidig ? CATEGORIE_LABEL[huidig.id] : "Klaar"}
-            </p>
-          </div>
-          <p className="shrink-0 text-right text-base">
-            <span className="block text-2xl font-bold tabular-nums">{openAantal}</span>
-            <span className="text-inkt-zacht">te halen</span>
-          </p>
-        </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/15" aria-hidden>
-          <div
-            className="h-full rounded-full bg-honing transition-all"
-            style={{ width: `${procent}%` }}
-          />
-        </div>
-        {groepen.length > 1 ? (
-          <div className="scroll-rij -mx-4 mt-3 flex gap-2 px-4" aria-label="Afdelingen">
-            {groepen.map((g, i) => (
-              <button
-                key={g.id}
-                type="button"
-                onClick={() => setStap(i)}
-                aria-current={i === stap ? "step" : undefined}
-                className={cn(
-                  "min-h-11 shrink-0 rounded-full px-4 text-[0.95rem] font-semibold transition-colors",
-                  i === stap ? "bg-honing text-honing-foreground" : "bg-white/10 text-inkt-foreground",
-                )}
-              >
-                {CATEGORIE_LABEL[g.id]} · {g.lijst.length}
-              </button>
-            ))}
-          </div>
-        ) : null}
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-4 py-4">
-        {huidig ? (
-          <ul className="space-y-3">
-            {huidig.lijst.map((item) => (
-              <li key={item.id}>
-                <button
-                  type="button"
-                  onClick={() => onVink(item)}
-                  className="paneel flex min-h-24 w-full items-center gap-4 px-4 text-left transition-transform active:scale-[0.98]"
-                >
-                  <span className="flex size-12 shrink-0 items-center justify-center rounded-full border-[3px] border-primary text-primary">
-                    <Check className="size-7 opacity-30" strokeWidth={3} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[1.65rem] font-semibold leading-tight">
-                      {item.name}
-                    </span>
-                    {maatTekst(item) ? (
-                      <span className="mt-0.5 block text-xl text-muted-foreground">
-                        {maatTekst(item)}
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="sr-only">— tik om af te vinken</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-4 px-4 text-center">
-            <span className="flex size-24 items-center justify-center rounded-full bg-secondary text-primary">
-              <CheckCheck className="size-12" />
-            </span>
-            <p className="text-paginatitel">Klaar! Alles gekocht</p>
-            {aantalGekocht > 0 ? (
-              <Button className="h-16 w-full max-w-sm text-lg" onClick={onOpruimen}>
-                <PackageCheck className="size-6" /> Klaar met winkelen
-              </Button>
-            ) : null}
-            <Button variant="outline" className="h-14 w-full max-w-sm text-lg" onClick={onSluit}>
-              Nog iets vergeten
-            </Button>
-            <p className="text-base text-muted-foreground">
-              Wat je kocht, gaat naar je voorraad.
-            </p>
-          </div>
-        )}
-      </div>
-
-      {groepen.length > 0 && (
-        <div
-          className="grid grid-cols-2 gap-2 border-t border-border bg-card px-4 pt-3"
-          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
-        >
-          <Button
-            variant="outline"
-            className="h-16 text-base"
-            disabled={stap === 0}
-            onClick={() => setStap((s) => Math.max(0, s - 1))}
-          >
-            Vorige afdeling
-          </Button>
-          <Button
-            className="h-16 text-base"
-            disabled={stap >= groepen.length - 1}
-            onClick={() => setStap((s) => s + 1)}
-          >
-            Volgende afdeling
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function ItemRij({
   item,
   kiesModus,
@@ -1888,14 +1808,13 @@ function ItemRij({
         className="flex min-h-14 min-w-0 flex-1 cursor-pointer items-center gap-2 py-2 text-left"
       >
         <span className="min-w-0 flex-1">
-          <span
+          <ItemNaam
+            naam={item.name}
             className={cn(
               "block truncate text-lg leading-snug",
               item.checked && "text-muted-foreground line-through",
             )}
-          >
-            {item.name}
-          </span>
+          />
           {item.note ? (
             <span className="block truncate text-[0.95rem] text-muted-foreground">{item.note}</span>
           ) : null}

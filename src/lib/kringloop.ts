@@ -333,6 +333,8 @@ export function lijstWijzigingen(
         : openLijst.find(
             (i) =>
               !i.checked &&
+              // Eigen regels (zelf toegevoegd) past Foodlo nooit aan: tekort komt op een eigen regel.
+              Boolean(i.recipe_id) &&
               zelfdeProduct(i.name, r.naam) &&
               naarMaat(i.quantity ?? null, i.unit)?.familie === familieVan(r.unit),
           );
@@ -373,8 +375,8 @@ export type Bijsturing = {
  *
  * Regels (zie masterplan WP4):
  * - alleen producten van de gerechten die erbij kwamen of weggingen worden bekeken;
- * - regels die de gebruiker zelf toevoegde (`recipe_id` leeg) worden nooit verlaagd of gewist;
- *   ze tellen wel mee als "staat al op je lijst";
+ * - regels die de gebruiker zelf toevoegde (`recipe_id` leeg) worden nooit aangepast, verlaagd
+ *   of gewist; ze tellen wel mee als "staat al op je lijst" (alleen het tekort komt erbij);
  * - per product blijft er hooguit één Foodlo-regel over (dubbels samengevoegd, eenheden omgerekend);
  * - komt er een gerecht bij, dan klopt de Foodlo-regel daarna met wat de komende maaltijden
  *   nodig hebben, min voorraad en eigen regels;
@@ -472,20 +474,8 @@ export function lijstBijsturen(opts: {
       continue;
     }
     if (!b) continue;
-    // Geen Foodlo-regel: tel bij een eigen regel met een gekende hoeveelheid op (één regel
-    // per product), anders een nieuwe regel.
-    const eigenMet = eigen.find((i) => maatVan(i)?.familie === p.familie && !behandeld.has(i.id));
-    if (eigenMet && doel != null) {
-      behandeld.add(eigenMet.id);
-      uit.bijwerken.push({
-        id: eigenMet.id,
-        naam: eigenMet.name,
-        quantity: inEenheid(maatVan(eigenMet)!.waarde + doel, eigenMet.unit),
-        recipe_id: eigenMet.recipe_id ?? null,
-        oud: { quantity: eigenMet.quantity ?? null, recipe_id: eigenMet.recipe_id ?? null },
-      });
-      continue;
-    }
+    // Geen Foodlo-regel: een nieuwe. Een eigen regel past Foodlo nooit aan (ook niet bijtellen):
+    // die telt alleen mee als dekking, zodat er enkel het tekort bij komt.
     const unit = b.eenheden.size === 1 ? [...b.eenheden][0]! : basisEenheid(p.familie);
     uit.nieuw.push({
       naam,

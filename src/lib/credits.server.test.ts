@@ -13,6 +13,8 @@ const staat = {
   afrondenGooit: false,
   upsertGooit: false,
   txn: "txn-1" as string | null,
+  budget: null as number | null,
+  uitgegeven: [] as { kost_eur: number }[],
 };
 
 function tabel(naam: string) {
@@ -23,7 +25,11 @@ function tabel(naam: string) {
       filterHash = waarde;
       return q;
     },
+    gte: () => q,
+    limit: async () => ({ data: naam === "ai_usage" ? staat.uitgegeven : [], error: null }),
     maybeSingle: async () => {
+      if (naam === "platform_settings")
+        return { data: staat.budget == null ? null : { value: staat.budget }, error: null };
       if (naam === "ai_cache" && filterHash)
         return { data: staat.cache.get(filterHash) ?? null, error: null };
       return { data: null, error: null };
@@ -68,7 +74,7 @@ const nepAdmin = {
 
 vi.mock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: nepAdmin }));
 
-const { metCredits, hashInvoer } = await import("./credits.server");
+const { metCredits, hashInvoer, budgetOordeel, schatKost } = await import("./credits.server");
 
 const rpcs = () => log.filter((o) => o.soort === "rpc").map((o) => o.naam);
 const gebruik = () =>
@@ -84,6 +90,8 @@ beforeEach(() => {
   staat.afrondenGooit = false;
   staat.upsertGooit = false;
   staat.txn = "txn-1";
+  staat.budget = null;
+  staat.uitgegeven = [];
 });
 
 describe("hashInvoer", () => {
@@ -193,5 +201,44 @@ describe("metCredits", () => {
     );
     expect(uit.resultaat).toBe("resultaat");
     expect(rpcs()).toEqual(["credits_reserveren", "credits_afronden"]);
+  });
+});
+
+describe("maandbudget (kostenrem)", () => {
+  it("budgetOordeel: waarschuwen vanaf 80 %, blokkeren vanaf 100 %, 0 = geen budget ingesteld", () => {
+    expect(budgetOordeel(10, 25)).toMatchObject({ mag: true, waarschuwen: false });
+    expect(budgetOordeel(20, 25)).toMatchObject({ mag: true, waarschuwen: true });
+    expect(budgetOordeel(25, 25)).toMatchObject({ mag: false, waarschuwen: true });
+    expect(budgetOordeel(999, 0)).toMatchObject({ mag: true });
+  });
+
+  it("schatKost is nooit 0, zodat het budget ook zonder prijslijst meetelt", () => {
+    expect(schatKost({ tokens_in: 0, tokens_out: 0, beelden: 0 })).toBeGreaterThan(0);
+    expect(schatKost({ tokens_in: 1_000_000, tokens_out: 0, beelden: 0 })).toBeCloseTo(1, 5);
+    expect(schatKost({ tokens_in: 0, tokens_out: 0, beelden: 2 })).toBeCloseTo(0.1, 5);
+  });
+
+  it("budget op: geen reservering, geen AI-oproep, duidelijke melding; daarna weer vrij", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-11-20T10:00:00Z")); // eigen maand: verse budgetstand
+      staat.budget = 5;
+      staat.uitgegeven = [{ kost_eur: 3 }, { kost_eur: 2.5 }];
+      const run = vi.fn(async () => "ok");
+      await expect(metCredits({ userId: "u1", feature: "import_url" }, run)).rejects.toThrow(
+        /deze maand even op pauze/,
+      );
+      expect(run).not.toHaveBeenCalled();
+      expect(rpcs()).toEqual([]);
+      expect(log.some((o) => o.naam === "ai_events" && o.actie === "insert")).toBe(true);
+      // Budget verhoogd: na de geheugentijd (5 min) mag het weer.
+      staat.budget = 50;
+      vi.setSystemTime(new Date("2026-11-20T10:06:00Z"));
+      await expect(metCredits({ userId: "u1", feature: "import_url" }, run)).resolves.toMatchObject({
+        resultaat: "ok",
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

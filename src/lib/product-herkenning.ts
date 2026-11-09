@@ -168,10 +168,37 @@ function canoniekWoord(woord: string): string {
   return SYNONIEMEN[w] ?? SYNONIEMEN[woord] ?? w;
 }
 
+/** WP5: "Diepvriesspinazie (i.p.v. spinazie)" — vervangen in de winkel, zie `vervanging`. */
+const IPV = /\s*\((?:i\.?\s?p\.?\s?v\.?|in plaats van)\s+([^)]+)\)\s*$/i;
+
+/**
+ * Een product dat in de winkel vervangen werd, draagt het oorspronkelijke product in de naam
+ * mee. Zo blijft het voor de geplande maaltijd, de voorraad en "wat ontbreekt" hetzelfde product,
+ * zonder extra kolom in de databank.
+ */
+export function vervanging(naam: string): { naam: string; voor: string | null } {
+  const m = IPV.exec(naam);
+  if (!m) return { naam: naam.trim(), voor: null };
+  return { naam: naam.slice(0, m.index).trim(), voor: m[1]!.trim() || null };
+}
+
+/** Naam voor een vervangen product: "Diepvriesspinazie (i.p.v. spinazie)". */
+export function vervangNaam(nieuw: string, oud: string): string {
+  const oorspronkelijk = vervanging(oud);
+  const voor = oorspronkelijk.voor ?? oorspronkelijk.naam;
+  const eigen = vervanging(nieuw).naam;
+  return zelfdeProduct(eigen, voor) ? eigen : `${eigen} (i.p.v. ${voor})`;
+}
+
 /** Canonieke productnaam: synoniemen samengebracht, bijwoorden weg, volgorde geneutraliseerd. */
 export function canoniekeNaam(name: string): string {
-  const alle = normaliseerTekst(name).split(" ").filter(Boolean).map(canoniekWoord).filter(Boolean);
-  const zonderBijwoorden = alle.filter((w) => !BIJWOORDEN.has(w));
+  const ruw = normaliseerTekst(vervanging(name).naam).split(" ").filter(Boolean);
+  const alle = ruw.map(canoniekWoord).filter(Boolean);
+  // Bijwoord herkennen vóór én na de stam ("diepvries" werd anders "diepvrie" en bleef staan).
+  const zonderBijwoorden = ruw
+    .filter((w) => !BIJWOORDEN.has(w))
+    .map(canoniekWoord)
+    .filter((w) => w && !BIJWOORDEN.has(w));
   // Is de naam zélf een bijwoord ("gehakt", "light")? Dan is dat het product: anders
   // werd de sleutel leeg en herkende Foodlo "gehakt" op de lijst nooit (dubbel aanvullen).
   const woorden = zonderBijwoorden.length ? zonderBijwoorden : alle;
@@ -188,7 +215,13 @@ export function canoniekeTitel(name: string): string {
 
 /** Zelfde product? (ongeacht eenheid — "1 bussel look" en "2 teentjes look" = zelfde product) */
 export function zelfdeProduct(a: string, b: string): boolean {
-  const ka = canoniekeNaam(a);
-  const kb = canoniekeNaam(b);
-  return ka !== "" && ka === kb;
+  const gelijk = (x: string, y: string) => {
+    const kx = canoniekeNaam(x);
+    return kx !== "" && kx === canoniekeNaam(y);
+  };
+  if (gelijk(a, b)) return true;
+  // Vervangen in de winkel: telt ook als het oorspronkelijke product.
+  const va = vervanging(a).voor;
+  const vb = vervanging(b).voor;
+  return Boolean((va && gelijk(va, b)) || (vb && gelijk(a, vb)));
 }

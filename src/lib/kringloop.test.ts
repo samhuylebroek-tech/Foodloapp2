@@ -196,12 +196,22 @@ describe("hoeveelheidsbewust aanvullen (randgevallen)", () => {
     expect(b.opLijst.some((r) => r.naam === "melk")).toBe(true);
   });
 
-  it("bijtellen bij een open lijstregel in plaats van een tweede regel", () => {
-    const lijst = [{ id: "l1", name: "melk", checked: false, quantity: 25, unit: "cl" }];
+  it("bijtellen bij een open Foodlo-regel in plaats van een tweede regel", () => {
+    const lijst = [
+      { id: "l1", name: "melk", checked: false, quantity: 25, unit: "cl", recipe_id: "r1" },
+    ];
     const a = berekenAanvulling({ ...basis, voorraad: [], lijst });
     const w = lijstWijzigingen(a.kopen, lijst);
     expect(w.bijtellen).toEqual([{ id: "l1", quantity: 50, oud: 25 }]);
     expect(w.nieuw.map((r) => r.naam).sort()).toEqual(["bloem", "olijfolie"]);
+  });
+
+  it("een eigen regel (zelf toegevoegd) past Foodlo nooit aan: het tekort komt op een nieuwe regel", () => {
+    const lijst = [{ id: "l1", name: "melk", checked: false, quantity: 25, unit: "cl" }];
+    const a = berekenAanvulling({ ...basis, voorraad: [], lijst });
+    const w = lijstWijzigingen(a.kopen, lijst);
+    expect(w.bijtellen).toEqual([]);
+    expect(w.nieuw.find((r) => r.naam === "melk")).toMatchObject({ quantity: 2.5, unit: "dl" });
   });
 
   it("gerecht niet meer gepland: zijn open lijstregels zijn 'niet meer nodig'", () => {

@@ -17,13 +17,15 @@ async function admin() {
   return supabaseAdmin;
 }
 
-export type CreditFout = "ONVOLDOENDE_CREDITS" | "DAGLIMIET" | "FUNCTIE_UIT";
+export type CreditFout = "ONVOLDOENDE_CREDITS" | "DAGLIMIET" | "FUNCTIE_UIT" | "MAANDBUDGET";
 
 const BOODSCHAP: Record<CreditFout, string> = {
   ONVOLDOENDE_CREDITS:
     "Je credits zijn op. Alles in de app blijft gewoon werken; enkel de slimme functies hebben credits nodig.",
   DAGLIMIET: "Je hebt deze slimme functie vandaag al vaak gebruikt. Probeer het morgen opnieuw.",
   FUNCTIE_UIT: "Deze slimme functie staat tijdelijk uit.",
+  MAANDBUDGET:
+    "De slimme functies staan deze maand even op pauze. Alles in de app blijft gewoon werken.",
 };
 
 function vertaalFout(e: unknown): Error {
@@ -53,7 +55,8 @@ export async function berekenKost(model: string, m: AiMeter): Promise<number> {
   try {
     const db = await admin();
     const { data } = await db.from("model_prices").select("*").eq("model", model).maybeSingle();
-    if (!data) return 0;
+    // Geen prijs gekend? Dan een voorzichtige schatting i.p.v. 0, anders werkt het budget niet.
+    if (!data) return schatKost(m);
     const kost =
       (m.tokens_in / 1_000_000) * Number(data.eur_per_1m_in ?? 0) +
       (m.tokens_out / 1_000_000) * Number(data.eur_per_1m_out ?? 0) +
@@ -63,6 +66,59 @@ export async function berekenKost(model: string, m: AiMeter): Promise<number> {
   } catch {
     return 0;
   }
+}
+
+/**
+ * Voorzichtige schatting (euro) als er voor een model nog geen prijs in `model_prices` staat.
+ * Bewust aan de hoge kant (zie masterplan §16): beter te vroeg gewaarschuwd dan te laat.
+ */
+export function schatKost(m: Pick<AiMeter, "tokens_in" | "tokens_out" | "beelden">): number {
+  const kost = (m.tokens_in / 1_000_000) * 1.0 + (m.tokens_out / 1_000_000) * 5.0 + m.beelden * 0.05;
+  return Math.round(Math.max(kost, 0.002) * 1_000_000) / 1_000_000;
+}
+
+/** Standaard maandbudget voor alle AI samen, als er niets is ingesteld (`ai_budget_maand_eur`). */
+export const MAANDBUDGET_STANDAARD_EUR = 25;
+/** Vanaf dit aandeel van het budget komt er een waarschuwing in het Control Center. */
+export const BUDGET_WAARSCHUWING = 0.8;
+
+/** Budgetstand: mag er nog een betaalde AI-oproep bij? Puur, zodat het te testen is. */
+export function budgetOordeel(uitgegeven: number, budget: number) {
+  if (!(budget > 0)) return { mag: true, waarschuwen: false, aandeel: 0 };
+  const aandeel = uitgegeven / budget;
+  return { mag: aandeel < 1, waarschuwen: aandeel >= BUDGET_WAARSCHUWING, aandeel };
+}
+
+let budgetGeheugen: { tot: number; maand: string; uitgegeven: number; budget: number } | null = null;
+const gewaarschuwd = new Set<string>();
+
+/** Hoeveel er deze maand al aan AI is uitgegeven, en wat het budget is (5 min in het geheugen). */
+async function budgetStand(db: Awaited<ReturnType<typeof admin>>) {
+  const nu = new Date();
+  const maand = `${nu.getUTCFullYear()}-${String(nu.getUTCMonth() + 1).padStart(2, "0")}`;
+  if (budgetGeheugen && budgetGeheugen.maand === maand && budgetGeheugen.tot > Date.now())
+    return budgetGeheugen;
+  let budget = MAANDBUDGET_STANDAARD_EUR;
+  let uitgegeven = 0;
+  try {
+    const { data: inst } = await db
+      .from("platform_settings")
+      .select("value")
+      .eq("key", "ai_budget_maand_eur")
+      .maybeSingle();
+    const waarde = Number((inst?.value as unknown) ?? NaN);
+    if (Number.isFinite(waarde) && waarde >= 0) budget = waarde;
+    const { data: rijen } = await db
+      .from("ai_usage")
+      .select("kost_eur")
+      .gte("created_at", `${maand}-01T00:00:00Z`)
+      .limit(200_000);
+    uitgegeven = (rijen ?? []).reduce((som, r) => som + Number(r.kost_eur ?? 0), 0);
+  } catch {
+    // Meting niet bereikbaar: niet blokkeren op een meetfout, wel kort onthouden.
+  }
+  budgetGeheugen = { tot: Date.now() + 5 * 60_000, maand, uitgegeven, budget };
+  return budgetGeheugen;
 }
 
 async function meet(
@@ -147,6 +203,25 @@ export async function metCredits<T>(
     }
   }
 
+  // Noodrem: het maandbudget voor alle AI samen (bovenop credits en daglimieten per gebruiker).
+  const stand = await budgetStand(db);
+  const oordeel = budgetOordeel(stand.uitgegeven, stand.budget);
+  if (oordeel.waarschuwen && !gewaarschuwd.has(stand.maand + (oordeel.mag ? ":80" : ":100"))) {
+    gewaarschuwd.add(stand.maand + (oordeel.mag ? ":80" : ":100"));
+    try {
+      await db.from("ai_events").insert({
+        kind: oordeel.mag ? "budget:waarschuwing" : "budget:op",
+        model,
+        ok: oordeel.mag,
+        duration_ms: 0,
+        error: `€${stand.uitgegeven.toFixed(2)} van €${stand.budget.toFixed(2)} (${Math.round(oordeel.aandeel * 100)}%)`,
+      });
+    } catch {
+      // waarschuwing mag de app niet breken
+    }
+  }
+  if (!oordeel.mag) throw vertaalFout(new Error("MAANDBUDGET"));
+
   let reservering: { txn: string | null; kosten: number; saldo: number };
   try {
     const { data, error } = await db.rpc("credits_reserveren", {
@@ -228,5 +303,6 @@ export async function metCredits<T>(
     },
     meter,
   );
+  if (budgetGeheugen) budgetGeheugen.uitgegeven += await berekenKost(model, meter);
   return { resultaat, credits: reservering.kosten, cache: false, saldo: reservering.saldo };
 }

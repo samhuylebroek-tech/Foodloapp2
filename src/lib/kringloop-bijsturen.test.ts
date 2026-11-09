@@ -117,15 +117,32 @@ describe("lijstBijsturen (WP4)", () => {
     expect(l2.map((i) => i.id).sort()).toEqual(["e1", "e2"]);
   });
 
-  it("eigen regel met hoeveelheid: tekort wordt erbij geteld (één regel); weghalen verkleint die nooit", () => {
+  it("eigen regel met hoeveelheid blijft onaangeroerd: alleen het tekort komt op een Foodlo-regel", () => {
     const eigen: LijstRegel[] = [
       { id: "e1", name: "melk", quantity: 2, unit: "dl", checked: false, recipe_id: null },
     ];
     const b1 = stuur([maal("lasagne")], eigen, ["lasagne"], []);
+    expect(b1.bijwerken.some((w) => w.id === "e1")).toBe(false);
     const l1 = pasToe(eigen, b1);
-    expect(regel(l1, "melk")).toEqual([{ ...eigen[0], quantity: 5, recipe_id: null }]);
+    const melk1 = regel(l1, "melk");
+    expect(melk1).toContainEqual(eigen[0]);
+    expect(melk1.find((i) => i.recipe_id === "lasagne")).toMatchObject({ quantity: 3, unit: "dl" });
+    // Gerecht weer weg: de Foodlo-regel verdwijnt, de eigen regel blijft exact zoals hij was.
     const l2 = pasToe(l1, stuur([], l1, [], ["lasagne"]));
-    expect(regel(l2, "melk")[0]!.quantity).toBe(5);
+    expect(regel(l2, "melk")).toEqual([eigen[0]]);
+  });
+
+  it("WP5: een in de winkel vervangen regel telt als het oorspronkelijke product (geen dubbel)", () => {
+    const l1 = pasToe([], stuur([maal("pasta")], [], ["pasta"], []));
+    const vervangen = l1.map((i) =>
+      i.name === "tomaten" ? { ...i, name: "Tomaten uit blik (i.p.v. tomaten)" } : i,
+    );
+    // Lasagne erbij: de vervangen regel wordt bijgewerkt, er komt geen tweede tomatenregel.
+    const b = stuur([maal("pasta"), maal("lasagne")], vervangen, ["lasagne"], []);
+    const l2 = pasToe(vervangen, b);
+    const tomaten = l2.filter((i) => /tomaten/i.test(i.name));
+    expect(tomaten).toHaveLength(1);
+    expect(tomaten[0]).toMatchObject({ name: "Tomaten uit blik (i.p.v. tomaten)", quantity: 6 });
   });
 
   it("vervangen (pasta → lasagne): oude producten weg, gedeelde aangepast, nieuwe erbij", () => {
