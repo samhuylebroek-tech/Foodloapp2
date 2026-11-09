@@ -232,7 +232,9 @@ export function NuKaart({
                 {uitleg ? <p className="mt-3 max-w-md text-lg text-inkt-zacht">{uitleg}</p> : null}
                 {extra}
                 {acties ? (
-                  <div className="mt-6 flex flex-col gap-3 sm:flex-row md:flex-col lg:flex-row">{acties}</div>
+                  <div className="mt-6 flex flex-col gap-3 sm:flex-row md:flex-col lg:flex-row">
+                    {acties}
+                  </div>
                 ) : null}
               </div>
             )}
