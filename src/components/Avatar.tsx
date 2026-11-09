@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 /** Eenvoudige avatar met initialen — geen foto's nodig. */
 
 const KLEUREN = [
@@ -34,7 +35,11 @@ export function Avatar({
   return (
     <span
       aria-hidden
-      className={`flex size-14 shrink-0 items-center justify-center rounded-2xl text-lg font-bold ${kleur} ${className}`}
+      className={cn(
+        "flex size-14 shrink-0 items-center justify-center rounded-full text-lg font-bold",
+        kleur,
+        className,
+      )}
     >
       {initialen(naam)}
     </span>

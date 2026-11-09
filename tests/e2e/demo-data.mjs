@@ -263,7 +263,78 @@ export function demoSeed() {
     soort: null,
     group_id: null,
   }));
+  // Verzonnen gezinsleden en klantenkaarten, zodat ook die schermen gevuld te zien zijn.
+  const GEZIN = "abababab-0000-4000-8000-000000000001";
+  const JAN = "22222222-2222-4222-8222-222222222222";
+  const LOTTE = "33333333-3333-4333-8333-333333333333";
+  const rechten = {
+    recipes_view: true,
+    recipes_edit: false,
+    planner_view: true,
+    planner_edit: true,
+    shopping_view: true,
+    shopping_edit: true,
+  };
   return {
+    groups: [
+      {
+        id: GEZIN,
+        naam: "Thuis",
+        owner_id: DEMO_USER_ID,
+        token: "demo-gezin-token",
+        created_at: "2026-10-01T10:00:00Z",
+      },
+    ],
+    group_members: [
+      [DEMO_USER_ID, "eigenaar", "actief"],
+      [JAN, "lid", "actief"],
+      [LOTTE, "lid", "uitgenodigd"],
+    ].map(([user_id, rol, status], i) => ({
+      id: `acacacac-0000-4000-8000-00000000000${i}`,
+      group_id: GEZIN,
+      user_id,
+      rol,
+      status,
+      created_at: "2026-10-01T10:00:00Z",
+      ...rechten,
+    })),
+    extraProfielen: [
+      { id: JAN, display_name: "Jan Peeters", handle: "jan", onboarding_klaar: true },
+      { id: LOTTE, display_name: "Lotte Peeters", handle: "lotte", onboarding_klaar: true },
+    ],
+    loyalty_stores: [
+      ["colruyt", "Colruyt", "#e3000f", 1],
+      ["delhaize", "Delhaize", "#c8102e", 2],
+      ["ah", "Albert Heijn", "#00a0e2", 3],
+      ["aldi", "Aldi", "#00205b", 4],
+    ].map(([slug, naam, kleur, volgorde]) => ({
+      slug,
+      naam,
+      kleur,
+      volgorde,
+      actief: true,
+      standaard_formaat: "EAN13",
+    })),
+    loyalty_cards: [
+      ["colruyt", "Colruyt", "Xtra-kaart", "2600012345678", true],
+      ["delhaize", "Delhaize", "SuperPlus", "2700098765432", false],
+      ["ah", "Albert Heijn", "", "2610011122233", false],
+    ].map(([store_slug, winkel_naam, kaartnaam, nummer, favoriet], i) => ({
+      id: `adadadad-0000-4000-8000-00000000000${i}`,
+      user_id: DEMO_USER_ID,
+      store_slug,
+      winkel_naam,
+      kaartnaam,
+      nummer,
+      formaat: "EAN13",
+      favoriet,
+      gedeeld: i === 0,
+    })),
+    credit_costs: [
+      ["recept_link", "Recept van een link inlezen", 1],
+      ["recept_foto", "Recept van een foto inlezen", 2],
+      ["weekmenu_ai", "Laat Foodlo je week kiezen", 3],
+    ].map(([feature, label, credit_cost]) => ({ feature, label, credit_cost, enabled: true })),
     recipes,
     recipe_ingredients,
     meal_plan,

@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Send, Sparkles } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { Groep, LadenRijen, Paneel, Rij } from "@/components/mobiel/Lijst";
 import { Textarea } from "@/components/ui/textarea";
 import { creditOverzicht, mijnCreditAanvraag, vraagCredits } from "@/lib/credits.functions";
 import { useVoorkeuren } from "@/lib/voorkeuren";
@@ -19,7 +20,10 @@ export const Route = createFileRoute("/credits")({
         content: "Bekijk je credits, waarvoor ze dienen en wat je er nog mee kan doen.",
       },
       { property: "og:title", content: "Credits – Foodlo" },
-      { property: "og:description", content: "Slimme functies gebruiken credits. De rest van Foodlo blijft gratis." },
+      {
+        property: "og:description",
+        content: "Slimme functies gebruiken credits. De rest van Foodlo blijft gratis.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -57,55 +61,68 @@ function CreditsPagina() {
   return (
     <AppShell title={t("Credits")}>
       {isLoading || !data ? (
-        <p className="text-base text-muted-foreground">{t("Laden…")}</p>
+        <LadenRijen aantal={4} label={t("Laden…")} />
       ) : (
-        <div className="space-y-6">
-          <section className="rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
-            <Sparkles className="mx-auto size-8 text-primary" aria-hidden />
-            <p className="mt-2 text-5xl font-bold tracking-tight">{saldo}</p>
-            <p className="mt-1 text-base text-muted-foreground">{t("credits")}</p>
+        <div className="space-y-7">
+          {/* Saldo groot en rustig; uitleg meteen eronder. */}
+          <section className="relative overflow-hidden rounded-[1.5rem] bg-inkt p-6 text-inkt-foreground shadow-kaart">
+            <span
+              aria-hidden
+              className="pointer-events-none absolute -right-8 -top-10 size-40 rounded-full bg-honing/25"
+            />
+            <p className="relative text-label text-inkt-zacht">{t("Jouw saldo")}</p>
+            <p className="relative mt-2 flex items-baseline gap-2">
+              <span className="font-sans text-6xl font-bold tabular-nums tracking-tight">
+                {saldo}
+              </span>
+              <span className="text-lg text-inkt-zacht">{t("credits")}</span>
+            </p>
             {saldo === 0 ? (
-              <p className="mt-4 rounded-2xl bg-muted p-3 text-base">
-                {t("Je credits zijn op. Alle gewone functies blijven werken: recepten, weekmenu, boodschappen en kookstand.")}
+              <p className="relative mt-4 rounded-2xl bg-white/10 p-3 text-base">
+                {t(
+                  "Je credits zijn op. Alle gewone functies blijven werken: recepten, weekmenu, boodschappen en kookstand.",
+                )}
               </p>
             ) : laag ? (
-              <p className="mt-4 rounded-2xl bg-muted p-3 text-base">
+              <p className="relative mt-4 rounded-2xl bg-honing p-3 text-base font-semibold text-honing-foreground">
                 {t("Je hebt nog weinig credits over.")}
               </p>
             ) : null}
           </section>
 
-          <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <h2 className="text-xl font-bold tracking-tight">{t("Waarvoor dienen credits?")}</h2>
-            <p className="mt-2 text-base text-muted-foreground">
-              {t("Enkel slimme functies gebruiken credits. Zoeken, koken, plannen en boodschappen zijn altijd gratis.")}
+          <Groep
+            titel={t("Waarvoor dienen credits?")}
+            voet={t(
+              "Hetzelfde recept of dezelfde link opnieuw invoeren kost niets: we onthouden het resultaat.",
+            )}
+          >
+            <p className="p-4 text-base text-muted-foreground">
+              {t(
+                "Enkel slimme functies gebruiken credits. Zoeken, koken, plannen en boodschappen zijn altijd gratis.",
+              )}
             </p>
-            <ul className="mt-4 space-y-2">
-              {data.kosten
-                .filter((k) => k.enabled && k.credit_cost > 0)
-                .map((k) => (
-                  <li
-                    key={k.feature}
-                    className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-muted px-4 text-base"
-                  >
-                    <span>{t(k.label || k.feature)}</span>
-                    <span className="whitespace-nowrap font-semibold">
+            {data.kosten
+              .filter((k) => k.enabled && k.credit_cost > 0)
+              .map((k) => (
+                <Rij
+                  key={k.feature}
+                  icoon={Sparkles}
+                  tint="honing"
+                  titel={t(k.label || k.feature)}
+                  rechts={
+                    <span className="whitespace-nowrap rounded-full bg-muted px-3 py-1 text-[0.95rem] font-semibold">
                       {k.credit_cost} {k.credit_cost === 1 ? t("credit") : t("credits")}
                     </span>
-                  </li>
-                ))}
-            </ul>
-            <p className="mt-3 text-base text-muted-foreground">
-              {t("Hetzelfde recept of dezelfde link opnieuw invoeren kost niets: we onthouden het resultaat.")}
-            </p>
-          </section>
+                  }
+                />
+              ))}
+          </Groep>
 
-          <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <h2 className="text-xl font-bold tracking-tight">{t("Meer credits")}</h2>
+          <Paneel titel={t("Meer credits")}>
             {data.kopenActief ? (
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {data.pakketten.map((p) => (
-                  <div key={p.id} className="rounded-2xl border border-border p-4">
+                  <div key={p.id} className="rounded-2xl bg-muted p-4">
                     <p className="text-lg font-semibold">{p.naam}</p>
                     <p className="text-base">
                       {p.credits + p.bonus} {t("credits")}
@@ -116,29 +133,37 @@ function CreditsPagina() {
                 ))}
               </div>
             ) : (
-              <p className="mt-2 text-base text-muted-foreground">
-                {t("Extra credits kopen kan binnenkort. Heb je er nu al meer nodig? Vraag het gerust.")}
+              <p className="text-base text-muted-foreground">
+                {t(
+                  "Extra credits kopen kan binnenkort. Heb je er nu al meer nodig? Vraag het gerust.",
+                )}
               </p>
             )}
             <ExtraVragen t={t} />
-          </section>
+          </Paneel>
 
-          <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <h2 className="text-xl font-bold tracking-tight">{t("Recent")}</h2>
-            <ul className="mt-3 divide-y divide-border">
-              {data.boekingen.map((b) => (
-                <li key={b.id} className="flex items-center justify-between gap-3 py-3 text-base">
-                  <span>{t(UITLEG[b.type] ?? b.type)}</span>
-                  <span className={b.amount < 0 ? "font-semibold" : "font-semibold text-primary"}>
+          <Groep titel={t("Recent")}>
+            {data.boekingen.map((b) => (
+              <Rij
+                key={b.id}
+                titel={t(UITLEG[b.type] ?? b.type)}
+                rechts={
+                  <span
+                    className={
+                      b.amount < 0
+                        ? "text-lg font-semibold tabular-nums"
+                        : "text-lg font-semibold tabular-nums text-primary"
+                    }
+                  >
                     {b.amount > 0 ? `+${b.amount}` : b.amount}
                   </span>
-                </li>
-              ))}
-              {data.boekingen.length === 0 ? (
-                <li className="py-3 text-base text-muted-foreground">{t("Nog niets gebeurd.")}</li>
-              ) : null}
-            </ul>
-          </section>
+                }
+              />
+            ))}
+            {data.boekingen.length === 0 ? (
+              <p className="p-4 text-base text-muted-foreground">{t("Nog niets gebeurd.")}</p>
+            ) : null}
+          </Groep>
         </div>
       )}
     </AppShell>

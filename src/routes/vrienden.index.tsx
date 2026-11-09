@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
+import { Groep, LinkRij } from "@/components/mobiel/Lijst";
 import { Avatar } from "@/components/Avatar";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -476,12 +477,12 @@ function VriendenPage() {
         </div>
 
         {(voorMij.length > 0 || gezinsuitnodigingen.length > 0) && (
-          <section className="space-y-3 rounded-3xl border-2 border-primary/40 bg-primary/5 p-4">
-            <h2 className="font-display text-xl">
+          <section className="space-y-3 rounded-[1.25rem] bg-honing-zacht p-4 ring-1 ring-honing/40">
+            <h2 className="text-kaarttitel text-honing-foreground">
               Uitnodigingen voor jou ({voorMij.length + gezinsuitnodigingen.length})
             </h2>
             {gezinsuitnodigingen.map((g) => (
-              <div key={g.group_id} className="rounded-2xl border border-border bg-card p-4">
+              <div key={g.group_id} className="paneel p-4">
                 <div className="flex items-center gap-3">
                   <Avatar naam={g.naam} sleutel={g.group_id} />
                   <div className="min-w-0">
@@ -511,7 +512,7 @@ function VriendenPage() {
               </div>
             ))}
             {voorMij.map((s) => (
-              <div key={s.id} className="rounded-2xl border border-border bg-card p-4">
+              <div key={s.id} className="paneel p-4">
                 <div className="flex items-center gap-3">
                   <Avatar naam={namen[s.owner_id] ?? "Iemand"} sleutel={s.owner_id} />
                   <div className="min-w-0">
@@ -551,7 +552,9 @@ function VriendenPage() {
         )}
 
         <section className="space-y-3">
-          <h2 className="font-display text-xl">Mijn mensen</h2>
+          <h2 className="px-1 font-sans text-[0.95rem] font-bold text-muted-foreground">
+            Mijn mensen
+          </h2>
           {vrienden.length === 0 ? (
             <EmptyState title="Nog niemand toegevoegd" description="Zoek iemand of deel een uitnodigingslink." />
           ) : (
@@ -571,20 +574,21 @@ function VriendenPage() {
           )}
         </section>
 
-        <Link
-          to="/gezin"
-          className="flex min-h-16 items-center justify-between gap-3 rounded-2xl border border-border bg-card px-5 py-3"
-        >
-          <span className="flex items-center gap-3">
-            <Home className="size-6 text-primary" aria-hidden />
-            <span className="text-lg font-semibold">
-              {gezinId ? "Mijn gezin" : "Kook samen als gezin"}
-            </span>
-          </span>
-          <span className="text-base text-muted-foreground">{gezinId ? "Bekijken" : "Starten"}</span>
-        </Link>
+        <Groep>
+          <LinkRij
+            to="/gezin"
+            icoon={Home}
+            tint="terracotta"
+            titel={gezinId ? "Mijn gezin" : "Kook samen als gezin"}
+            uitleg={
+              gezinId
+                ? "Leden, uitnodigen en wat je deelt"
+                : "Deel weekmenu en boodschappen met wie thuis woont"
+            }
+          />
+        </Groep>
 
-        <Accordion type="single" collapsible defaultValue={vrienden.length === 0 ? "toevoegen" : ""} className="rounded-2xl bg-card px-4 ring-1 ring-border/60">
+        <Accordion type="single" collapsible defaultValue={vrienden.length === 0 ? "toevoegen" : ""} className="paneel px-4">
           <AccordionItem value="toevoegen" className="border-0">
             <AccordionTrigger className="min-h-16 text-lg no-underline hover:no-underline">Iemand toevoegen</AccordionTrigger>
             <AccordionContent className="space-y-3">
@@ -625,7 +629,7 @@ function VriendenPage() {
                   return (
                     <div
                       key={g.id}
-                      className="flex min-h-16 items-center justify-between gap-3 rounded-xl bg-secondary p-3"
+                      className="flex min-h-16 items-center justify-between gap-3 rounded-2xl bg-muted p-3"
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         <Avatar naam={g.display_name} sleutel={g.id} className="size-12" />
@@ -665,8 +669,8 @@ function VriendenPage() {
         </Accordion>
 
         {nieuwOpen && (
-          <section className="space-y-4 rounded-3xl border border-border bg-card p-5">
-            <h2 className="font-display text-xl">Uitnodiging met een link</h2>
+          <section className="space-y-4 paneel p-5">
+            <h2 className="text-kaarttitel">Uitnodiging met een link</h2>
 
             <p className="text-base text-muted-foreground">
               Kies eerst wat je wil delen. Daarna krijg je een link die je kan doorsturen via
@@ -715,7 +719,7 @@ function VriendenPage() {
               <UserPlus className="size-5" /> Uitnodigingslink maken
             </Button>
 
-            <div className="space-y-3 rounded-2xl bg-secondary p-4">
+            <div className="space-y-3 rounded-2xl bg-muted p-4">
               <p className="text-base font-semibold">Kies iemand uit je telefoon</p>
               <Button variant="secondary" onClick={uitContacten} className="h-14 w-full text-base">
                 <BookUser className="size-5" /> Kies uit je contacten
@@ -726,12 +730,11 @@ function VriendenPage() {
 
         {(gevraagd.length > 0 || linkUitnodigingen.length > 0) && (
           <section className="space-y-3">
-            <h2 className="font-display text-xl">Wacht op antwoord</h2>
+            <h2 className="px-1 font-sans text-[0.95rem] font-bold text-muted-foreground">
+              Wacht op antwoord
+            </h2>
             {gevraagd.map((s) => (
-              <div
-                key={s.id}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4"
-              >
+              <div key={s.id} className="flex items-center justify-between gap-3 paneel p-4">
                 <div className="flex min-w-0 items-center gap-3">
                   <Avatar
                     naam={namen[s.member_id!] ?? "Vriend"}
@@ -820,7 +823,7 @@ function PersoonKaart({
   const ik = persoon.ikDeel;
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4">
+    <div className="paneel p-4">
       <div className="flex items-center gap-3">
         <Avatar naam={naam} sleutel={persoon.id} />
         <div className="min-w-0 flex-1">
@@ -829,8 +832,8 @@ function PersoonKaart({
             <span
               className={
                 persoon.gezin
-                  ? "ml-2 inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-base font-semibold text-primary"
-                  : "ml-2 inline-flex items-center rounded-full bg-secondary px-3 py-1 text-base font-semibold text-muted-foreground"
+                  ? "ml-2 inline-flex items-center rounded-full bg-terracotta-zacht px-2.5 py-0.5 align-middle text-[0.9rem] font-semibold text-terracotta"
+                  : "ml-2 inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 align-middle text-[0.9rem] font-semibold text-secondary-foreground"
               }
             >
               {persoon.gezin ? "Gezin" : "Vriend"}
@@ -849,7 +852,7 @@ function PersoonKaart({
         <Link
           to="/vrienden/$id"
           params={{ id: persoon.id }}
-          className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-base font-semibold text-primary-foreground sm:flex-1"
+          className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-primary px-5 text-base font-semibold text-primary-foreground shadow-zacht sm:flex-1"
         >
           <ChefHat className="size-5" aria-hidden /> Openen
         </Link>
@@ -917,16 +920,27 @@ function RechtenVenster({
   const [kies, setKies] = useState<Rechten>(STANDAARD);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center sm:p-6">
-      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-card p-5 sm:rounded-2xl">
-        <h2 className="font-display text-xl">{titel}</h2>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/45 backdrop-blur-[2px] sm:items-center sm:p-6">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rechten-titel"
+        className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-[1.75rem] bg-background px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-zwevend sm:rounded-[1.75rem] sm:p-7"
+      >
+        <div
+          aria-hidden="true"
+          className="mx-auto mb-4 h-1.5 w-11 rounded-full bg-border sm:hidden"
+        />
+        <h2 id="rechten-titel" className="text-sectietitel">
+          {titel}
+        </h2>
         <p className="mt-1 text-base leading-relaxed text-muted-foreground">{uitleg}</p>
 
         <div className="mt-4 space-y-2">
           {RECHTEN.map((r) => (
             <label
               key={r.key}
-              className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-border px-4 py-2"
+              className="flex min-h-16 items-center justify-between gap-3 rounded-2xl bg-card px-4 py-2 ring-1 ring-border/70"
             >
               <Label className="text-base">{r.label}</Label>
               <Switch
@@ -992,7 +1006,7 @@ function UitnodigingKaart({
   }, [open, link]);
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4">
+    <div className="paneel p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <p className="break-words text-lg font-semibold leading-snug">

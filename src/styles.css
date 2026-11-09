@@ -297,6 +297,16 @@
   text-transform: uppercase;
 }
 
+/* V2 — één paneelvorm voor kaarten, groepen en formulieren. */
+@utility paneel {
+  border-radius: 1.25rem;
+  background-color: var(--color-card);
+  color: var(--color-card-foreground);
+  box-shadow:
+    var(--schaduw-zacht),
+    0 0 0 1px color-mix(in oklab, var(--color-border) 75%, transparent);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);

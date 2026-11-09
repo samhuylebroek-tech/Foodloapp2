@@ -49,7 +49,7 @@ export default defineConfig({
     {
       name: "mobiel-390",
       use: { ...devices["Pixel 7"], viewport: { width: 390, height: 844 } },
-      testMatch: /kernflow|schermen|personas/,
+      testMatch: /kernflow|schermen|personas|schermen-alle/,
     },
     {
       name: "tablet-768",
@@ -76,7 +76,8 @@ export default defineConfig({
         VITE_SUPABASE_PROJECT_ID: "e2e-nep",
         SUPABASE_URL: SUPA_URL,
         SUPABASE_PUBLISHABLE_KEY: "sb_publishable_e2e_nep",
-        SUPABASE_SERVICE_ROLE_KEY: "",
+        // Verzonnen sleutel die alleen de nep-Supabase kent (geen echt geheim).
+        SUPABASE_SERVICE_ROLE_KEY: "sb_secret_nep_alleen_lokaal",
         LOVABLE_API_KEY: "",
         RESEND_API_KEY: "",
         VITE_FOODLO_APP_URL: `http://127.0.0.1:${APP_PORT}`,

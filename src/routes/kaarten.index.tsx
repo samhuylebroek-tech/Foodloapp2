@@ -103,7 +103,9 @@ function KaartenPagina() {
           </ul>
           {vanGezin.length > 0 ? (
             <section>
-              <h2 className="mb-2 text-lg font-bold">Gedeeld door je gezin</h2>
+              <h2 className="mb-2 px-1 text-[0.95rem] font-bold text-muted-foreground">
+                Gedeeld door je gezin
+              </h2>
               <ul className="grid gap-3 sm:grid-cols-2">
                 {vanGezin.map((k) => (
                   <KaartTegel key={k.id} kaart={k} winkels={winkels} />
@@ -133,29 +135,40 @@ function kleurVan(kaart: Kaart, winkels: Winkel[]) {
 }
 
 function KaartTegel({ kaart, winkels }: { kaart: Kaart; winkels: Winkel[] }) {
+  // Ziet eruit als de echte kaart in je portefeuille: winkelkleur, naam, nummer.
   return (
     <li>
       <Link
         to="/kaarten/$id"
         params={{ id: kaart.id }}
-        className="block rounded-2xl border border-border bg-card p-4 shadow-sm transition-transform active:scale-[0.99]"
+        className="relative flex aspect-[1.75] flex-col justify-between overflow-hidden rounded-[1.25rem] p-5 text-white shadow-kaart transition-transform active:scale-[0.98]"
+        style={{ backgroundColor: kleurVan(kaart, winkels) }}
       >
-        <div className="flex items-center gap-3">
-          <span
-            className="flex size-12 shrink-0 items-center justify-center rounded-xl text-base font-bold text-white"
-            style={{ backgroundColor: kleurVan(kaart, winkels) }}
-            aria-hidden
-          >
-            {kaart.winkel_naam.slice(0, 2).toUpperCase()}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -right-10 -top-12 size-44 rounded-full bg-white/10"
+        />
+        <span className="relative flex items-start justify-between gap-3">
+          <span className="min-w-0">
+            <span className="block truncate text-[1.5rem] font-bold leading-tight drop-shadow-sm">
+              {kaart.winkel_naam}
+            </span>
+            {kaart.kaartnaam ? (
+              <span className="block truncate text-base text-white/90">{kaart.kaartnaam}</span>
+            ) : null}
           </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-lg font-bold">{kaart.winkel_naam}</p>
-            <p className="truncate text-base text-muted-foreground">
-              {kaart.kaartnaam || groepeer(kaart.nummer)}
-            </p>
-          </div>
-          {kaart.favoriet ? <Star className="size-5 fill-primary text-primary" aria-label="Favoriet" /> : null}
-        </div>
+          {kaart.favoriet ? (
+            <Star className="size-6 shrink-0 fill-white text-white" aria-label="Favoriet" />
+          ) : null}
+        </span>
+        <span className="relative flex items-end justify-between gap-3">
+          <span className="truncate font-mono text-lg tracking-wider text-white/95">
+            {groepeer(kaart.nummer)}
+          </span>
+          <span className="shrink-0 rounded-full bg-white/20 px-3 py-1 text-[0.9rem] font-semibold">
+            Tonen
+          </span>
+        </span>
       </Link>
     </li>
   );
@@ -242,9 +255,17 @@ function ToevoegVenster({
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-foreground/40 p-0 sm:items-center sm:p-6">
-      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-[2rem] bg-card p-5 sm:rounded-2xl">
-        <h2 className="text-xl font-bold">Kaart toevoegen</h2>
+    <div className="fixed inset-0 z-40 flex items-end justify-center bg-foreground/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-6">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="kaart-toevoegen-titel"
+        className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-[1.75rem] bg-background px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-zwevend sm:rounded-[1.75rem] sm:p-7"
+      >
+        <div aria-hidden="true" className="mx-auto mb-4 h-1.5 w-11 rounded-full bg-border sm:hidden" />
+        <h2 id="kaart-toevoegen-titel" className="text-sectietitel">
+          Kaart toevoegen
+        </h2>
 
         <div className="mt-4 space-y-3">
           <Button onClick={() => setScannen(true)} className="h-14 w-full gap-2 text-base">
@@ -289,7 +310,7 @@ function ToevoegVenster({
 
         <div className="mt-4 space-y-4">
           <div>
-            <label className="text-base font-medium" htmlFor="winkel">
+            <label className="text-base font-semibold" htmlFor="winkel">
               Winkel
             </label>
             <select
@@ -300,7 +321,7 @@ function ToevoegVenster({
                 const w = winkels.find((x) => x.slug === e.target.value);
                 if (w && !nummer) setFormaat(w.standaard_formaat);
               }}
-              className="mt-1 h-14 w-full rounded-xl border border-border bg-background px-3 text-base"
+              className="mt-1 h-14 w-full rounded-2xl border-2 border-input bg-card px-4 text-base"
             >
               <option value="">Kies je winkel…</option>
               {winkels.map((w) => (
@@ -312,7 +333,7 @@ function ToevoegVenster({
           </div>
 
           <div>
-            <label className="text-base font-medium" htmlFor="kaartnummer">
+            <label className="text-base font-semibold" htmlFor="kaartnummer">
               Kaartnummer
             </label>
             <Input
@@ -326,14 +347,14 @@ function ToevoegVenster({
           </div>
 
           <div>
-            <label className="text-base font-medium" htmlFor="formaat">
+            <label className="text-base font-semibold" htmlFor="formaat">
               Soort code
             </label>
             <select
               id="formaat"
               value={formaat}
               onChange={(e) => setFormaat(e.target.value)}
-              className="mt-1 h-14 w-full rounded-xl border border-border bg-background px-3 text-base"
+              className="mt-1 h-14 w-full rounded-2xl border-2 border-input bg-card px-4 text-base"
             >
               {FORMATEN.map((f) => (
                 <option key={f} value={f}>
@@ -344,7 +365,7 @@ function ToevoegVenster({
           </div>
 
           <div>
-            <label className="text-base font-medium" htmlFor="kaartnaam">
+            <label className="text-base font-semibold" htmlFor="kaartnaam">
               Naam (optioneel)
             </label>
             <Input

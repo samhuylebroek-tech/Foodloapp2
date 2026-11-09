@@ -82,21 +82,17 @@ export function QrDeelKaart({ compact = false }: { compact?: boolean }) {
 
       <p className="break-all text-center text-base text-muted-foreground">{url}</p>
 
-      <div className="flex gap-3">
+      <div className="grid grid-cols-2 gap-2">
         <Button
           variant="outline"
           onClick={kopieer}
           disabled={!url}
-          className="h-14 flex-1 rounded-2xl text-base"
+          className="h-14 min-w-0 px-3 text-base"
         >
           {copied ? <Check className="size-5" /> : <Copy className="size-5" />}
           {copied ? t("Gekopieerd") : t("Link kopiëren")}
         </Button>
-        <Button
-          onClick={deel}
-          disabled={!url}
-          className="h-14 flex-1 rounded-2xl text-base shadow-md shadow-primary/15"
-        >
+        <Button onClick={deel} disabled={!url} className="h-14 min-w-0 px-3 text-base">
           <Share2 className="size-5" />
           {t("Delen")}
         </Button>

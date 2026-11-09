@@ -25,7 +25,8 @@ export const TEST_USER = {
   user_metadata: { display_name: "Marie Test", voornaam: "Marie", achternaam: "Test" },
   created_at: "2026-01-01T00:00:00Z",
 };
-export const TEST_TOKEN_PREFIX = "nep-token";
+// Geldige base64url-lengte (veelvoud van 4), anders weigert getClaims() het token op de server.
+export const TEST_TOKEN_PREFIX = "nep-tokn";
 
 function seed() {
   return {
@@ -56,7 +57,12 @@ function seed() {
   };
 }
 
-const metDemo = (aan) => (aan ? { ...seed(), ...demoSeed() } : seed());
+const metDemo = (aan) => {
+  if (!aan) return seed();
+  const { extraProfielen, ...demo } = demoSeed();
+  const basis = seed();
+  return { ...basis, ...demo, profiles: [...basis.profiles, ...extraProfielen] };
+};
 const db = maakDb(metDemo(DEMO));
 const log = [];
 /** Storingen per pad: { pad: { soort: "fout"|"traag"|"netwerk", keer, ms, status } } */
@@ -94,6 +100,9 @@ export function maakToken(sub = TEST_USER.id) {
 }
 const geldigToken = (auth) =>
   (auth ?? "").startsWith("Bearer ") && auth.endsWith(`.${TEST_TOKEN_PREFIX}`);
+
+/** Verzonnen beheersleutel voor tests en demo (geen echt geheim). */
+export const NEP_BEHEERSLEUTEL = "sb_secret_nep_alleen_lokaal";
 
 const RPC_STANDAARD = {
   credits_saldo: { saldo: 50 },
@@ -229,7 +238,9 @@ const server = http.createServer((req, res) => {
     if (url.pathname.startsWith("/rest/v1/")) {
       const tabel = url.pathname.slice("/rest/v1/".length);
       // Zonder geldige sessie geeft PostgREST (RLS) niets terug.
-      if (!geldigToken(auth) && req.method === "GET") return stuur(res, 200, []);
+      // De servercode gebruikt een (nep-)beheersleutel; die mag alles lezen, zoals in het echt.
+      const beheer = req.headers["apikey"] === NEP_BEHEERSLEUTEL;
+      if (!geldigToken(auth) && !beheer && req.method === "GET") return stuur(res, 200, []);
       const params = [...url.searchParams.entries()];
       const p = Object.assign(params, { get: (k) => url.searchParams.get(k) });
       const r = rest(db, { method: req.method, tabel, params: p, body, headers: req.headers });

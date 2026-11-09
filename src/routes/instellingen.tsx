@@ -2,7 +2,24 @@ import { useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/hooks/useAuth";
-import { Bell, Compass, Download, ExternalLink, Loader2, LogOut, QrCode, Smartphone, Sparkles } from "lucide-react";
+import {
+  Bell,
+  Check,
+  ChevronDown,
+  Compass,
+  Download,
+  ExternalLink,
+  Loader2,
+  LogOut,
+  QrCode,
+  ShieldCheck,
+  Smartphone,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
+import { Groep, KnopRij, LinkRij, Paneel } from "@/components/mobiel/Lijst";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 import { marketingUrl } from "@/lib/app-url";
 import { exporteerMijnGegevens } from "@/lib/export.functions";
 import { useQuery } from "@tanstack/react-query";
@@ -19,8 +36,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { QrDeelKaart } from "@/components/QrDeelKaart";
 import { useLimiet } from "@/lib/limiet";
-import { ALLE_MOMENTEN, EEN_BLOK, TALEN, THEMAS, useVoorkeuren, type ThemaId } from "@/lib/voorkeuren";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  ALLE_MOMENTEN,
+  EEN_BLOK,
+  TALEN,
+  THEMAS,
+  useVoorkeuren,
+  type ThemaId,
+} from "@/lib/voorkeuren";
 
 export const Route = createFileRoute("/instellingen")({
   head: () => ({
@@ -87,7 +110,6 @@ function InstellingenPage() {
     }
   }
 
-
   const [wachtwoord, setWachtwoord] = useState("");
   const [herhaal, setHerhaal] = useState("");
   const [wachtwoordBezig, setWachtwoordBezig] = useState(false);
@@ -112,254 +134,245 @@ function InstellingenPage() {
     }
   }
 
+  const eenBlok = momenten.length === 1 && momenten[0] === EEN_BLOK[0];
+
   return (
     <AppShell title={t("Instellingen")}>
-      <div className="space-y-6">
-        <div className="divide-y divide-border overflow-hidden rounded-2xl ring-1 ring-border/60">
-        <Link
-          to="/credits"
-          className="flex min-h-16 items-center justify-between gap-3 bg-card px-5 py-3 transition-colors hover:bg-muted"
-        >
-          <span className="flex items-center gap-3">
-            <Sparkles className="size-5 text-primary" aria-hidden />
-            <span className="text-base font-semibold">
-              {credits.data ? `${credits.data.saldo} ${t("credits")}` : t("Credits")}
-            </span>
-          </span>
-          <span className="text-base text-muted-foreground">{t("Bekijken")}</span>
-        </Link>
-
-        <Link
-          to="/meldingen"
-          className="flex min-h-16 items-center justify-between gap-3 bg-card px-5 py-3 transition-colors hover:bg-muted"
-        >
-          <span className="flex items-center gap-3">
-            <Bell className="size-5 text-primary" aria-hidden />
-            <span className="text-base font-semibold">{t("Meldingen")}</span>
-          </span>
-          <span className="text-base text-muted-foreground">{t("Instellen")}</span>
-        </Link>
-
-        <Link
-          to="/installeren"
-          className="flex min-h-16 items-center justify-between gap-3 bg-card px-5 py-3 transition-colors hover:bg-muted"
-        >
-          <span className="flex items-center gap-3">
-            <Smartphone className="size-5 text-primary" aria-hidden />
-            <span className="text-base font-semibold">{t("Foodlo op je telefoon zetten")}</span>
-          </span>
-          <span className="text-base text-muted-foreground">{t("Tonen")}</span>
-        </Link>
-
-        <Link
-          to="/rondleiding"
-          className="flex min-h-16 items-center justify-between gap-3 bg-card px-5 py-3 transition-colors hover:bg-muted"
-        >
-          <span className="flex items-center gap-3">
-            <Compass className="size-5 text-primary" aria-hidden />
-            <span className="text-base font-semibold">{t("Rondleiding opnieuw bekijken")}</span>
-          </span>
-          <span className="text-base text-muted-foreground">{t("Starten")}</span>
-        </Link>
-        </div>
-
-
-        <Accordion type="multiple" defaultValue={["profiel"]} className="overflow-hidden rounded-2xl bg-card px-5 ring-1 ring-border/60">
-          <AccordionItem value="profiel">
-            <AccordionTrigger className="min-h-16 text-lg no-underline hover:no-underline">{t("Profiel en beveiliging")}</AccordionTrigger>
-            <AccordionContent className="space-y-5">
-        <section>
-          <h2 className="text-xl font-bold tracking-tight">{t("Jouw Foodlo-naam")}</h2>
-          <p className="mt-2 text-base text-muted-foreground">
-            {t("Met deze naam kunnen vrienden je terugvinden. Bijvoorbeeld: marie")}
-          </p>
-          <Label htmlFor="handle" className="mt-4 block text-base font-semibold">
-            {t("Foodlo-naam")}
-          </Label>
-          <Input
-            id="handle"
-            value={handle}
-            onChange={(e) => setHandle(e.target.value)}
-            placeholder="marie"
-            className="mt-2 h-14 text-base"
-          />
-          <Button onClick={bewaarHandle} disabled={handleBezig} className="mt-3 h-14 w-full text-base">
-            {handleBezig ? <Loader2 className="size-5 animate-spin" /> : null} {t("Bewaren")}
-          </Button>
-        </section>
-
-        <section className="border-t border-border pt-5">
-
-
-          <h2 className="text-xl font-bold tracking-tight">{t("Wachtwoord")}</h2>
-          <Label htmlFor="pw" className="mt-4 block text-base font-semibold">
-            {t("Nieuw wachtwoord")}
-          </Label>
-          <Input
-            id="pw"
-            type="password"
-            value={wachtwoord}
-            onChange={(e) => setWachtwoord(e.target.value)}
-            className="mt-2 h-14 rounded-2xl border-input bg-muted px-5 text-base focus-visible:ring-primary/20"
-          />
-          <Label htmlFor="pw2" className="mt-3 block text-base font-semibold">
-            {t("Herhaal het wachtwoord")}
-          </Label>
-          <Input
-            id="pw2"
-            type="password"
-            value={herhaal}
-            onChange={(e) => setHerhaal(e.target.value)}
-            className="mt-2 h-14 rounded-2xl border-input bg-muted px-5 text-base focus-visible:ring-primary/20"
-          />
-          <Button
-            onClick={bewaarWachtwoord}
-            disabled={wachtwoordBezig}
-            className="mt-4 h-14 w-full text-base shadow-md shadow-primary/15"
-          >
-            {wachtwoordBezig ? <Loader2 className="size-5 animate-spin" /> : null}
-            {t("Wachtwoord bewaren")}
-          </Button>
-        </section>
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="voorkeuren">
-            <AccordionTrigger className="min-h-16 text-lg no-underline hover:no-underline">{t("Voorkeuren")}</AccordionTrigger>
-            <AccordionContent className="space-y-5">
-
-        <section>
-          <h2 className="text-xl font-bold tracking-tight">{t("Kleuren")}</h2>
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            {THEMAS.map((k) => (
-              <button
-                key={k.id}
-                type="button"
-                onClick={() => zetThema(k.id as ThemaId)}
-                aria-pressed={thema === k.id}
-                className={
-                  thema === k.id
-                    ? "min-h-16 rounded-2xl bg-primary px-3 text-base font-semibold text-primary-foreground shadow-md shadow-primary/15"
-                    : "min-h-16 rounded-2xl border border-border bg-secondary px-3 text-base font-semibold transition-colors hover:bg-muted"
-                }
-              >
-                {t(k.label)}
-              </button>
-            ))}
+      <div className="space-y-7">
+        <Groep titel={t("Profiel")}>
+          <div className="p-4">
+            <Label htmlFor="handle">{t("Jouw Foodlo-naam")}</Label>
+            <p id="handle-uitleg" className="mt-1 text-[0.95rem] text-muted-foreground">
+              {t("Met deze naam kunnen vrienden je terugvinden. Bijvoorbeeld: marie")}
+            </p>
+            <div className="mt-3 flex gap-2">
+              <div className="relative min-w-0 flex-1">
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"
+                >
+                  @
+                </span>
+                <Input
+                  id="handle"
+                  value={handle}
+                  onChange={(e) => setHandle(e.target.value)}
+                  aria-describedby="handle-uitleg"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  className="pl-9"
+                />
+              </div>
+              <Button onClick={bewaarHandle} disabled={handleBezig} className="shrink-0">
+                {handleBezig ? <Loader2 className="size-5 animate-spin" /> : null}
+                {t("Bewaren")}
+              </Button>
+            </div>
           </div>
-        </section>
+        </Groep>
 
-        <section className="border-t border-border pt-5">
-          <h2 className="text-xl font-bold tracking-tight">{t("Taal")}</h2>
-          <p className="mt-2 text-base text-muted-foreground">
-            {t("De hele app en je recepten worden dan in die taal getoond.")}
-          </p>
-          <select
-            value={taal}
-            onChange={(e) => zetTaal(e.target.value)}
-            aria-label={t("Taal kiezen")}
-            className="mt-4 h-14 w-full rounded-2xl border border-input bg-muted px-4 text-base focus-visible:ring-primary/20"
-          >
-            {TALEN.map((l) => (
-              <option key={l.code} value={l.code}>
-                {l.label}
-              </option>
-            ))}
-          </select>
-        </section>
-
-        <section className="border-t border-border pt-5">
-          <h2 className="text-xl font-bold tracking-tight">{t("Weekmenu")}</h2>
-          <p className="mt-2 text-base text-muted-foreground">
-            {t("Kies welke momenten je per dag wil inplannen.")}
-          </p>
-          <div className="mt-4 space-y-2">
-            <label className="flex min-h-14 items-center gap-3 rounded-2xl border border-border bg-muted px-4 text-base font-semibold">
-              <input
-                type="checkbox"
-                checked={momenten.length === 1 && momenten[0] === EEN_BLOK[0]}
-                onChange={(e) =>
-                  zetMomenten(e.target.checked ? [...EEN_BLOK] : [...ALLE_MOMENTEN])
-                }
-                className="size-6 accent-primary"
+        <Groep titel={t("Weergave")}>
+          <div className="p-4">
+            <h3 className="text-base font-semibold">{t("Kleuren")}</h3>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {THEMAS.map((k) => {
+                const actief = thema === k.id;
+                return (
+                  <button
+                    key={k.id}
+                    type="button"
+                    onClick={() => zetThema(k.id as ThemaId)}
+                    aria-pressed={actief}
+                    className={cn(
+                      "flex min-h-14 items-center gap-3 rounded-2xl border-2 px-3 text-left text-[0.95rem] font-semibold leading-tight transition-colors",
+                      actief
+                        ? "border-primary bg-secondary text-foreground"
+                        : "border-border bg-card hover:bg-muted",
+                    )}
+                  >
+                    <span
+                      aria-hidden
+                      className="size-7 shrink-0 rounded-full ring-2 ring-card"
+                      style={{ background: STAAL[k.id] }}
+                    />
+                    <span className="min-w-0 flex-1">{t(k.label)}</span>
+                    {actief ? <Check className="size-5 shrink-0 text-primary" aria-hidden /> : null}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="p-4">
+            <Label htmlFor="taal">{t("Taal")}</Label>
+            <p id="taal-uitleg" className="mt-1 text-[0.95rem] text-muted-foreground">
+              {t("De hele app en je recepten worden dan in die taal getoond.")}
+            </p>
+            <div className="relative mt-3">
+              <select
+                id="taal"
+                value={taal}
+                onChange={(e) => zetTaal(e.target.value)}
+                aria-describedby="taal-uitleg"
+                className="h-14 w-full appearance-none rounded-2xl border-2 border-input bg-card pl-4 pr-12 text-base font-semibold focus-visible:border-primary"
+              >
+                {TALEN.map((l) => (
+                  <option key={l.code} value={l.code}>
+                    {l.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                aria-hidden
+                className="pointer-events-none absolute right-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
               />
+            </div>
+          </div>
+        </Groep>
+
+        <Groep titel={t("Weekmenu")} voet={t("Kies welke momenten je per dag wil inplannen.")}>
+          <label className="flex min-h-16 cursor-pointer items-center gap-3.5 px-4 py-3">
+            <span className="min-w-0 flex-1 text-[1.05rem] font-semibold leading-snug">
               {t("Alles in 1 blok (geen ontbijt/middag/avond)")}
-            </label>
-            {momenten.length > 1 &&
-              ALLE_MOMENTEN.map((m) => (
+            </span>
+            <Switch
+              checked={eenBlok}
+              onCheckedChange={(aan) => zetMomenten(aan ? [...EEN_BLOK] : [...ALLE_MOMENTEN])}
+            />
+          </label>
+          {!eenBlok
+            ? ALLE_MOMENTEN.map((m) => (
                 <label
                   key={m}
-                  className="flex min-h-14 items-center gap-3 rounded-2xl border border-border bg-muted px-4 text-base font-semibold"
+                  className="flex min-h-16 cursor-pointer items-center gap-3.5 px-4 py-3"
                 >
-                  <input
-                    type="checkbox"
+                  <span className="min-w-0 flex-1 text-[1.05rem] font-semibold capitalize leading-snug">
+                    {t(m)}
+                  </span>
+                  <Switch
                     checked={momenten.includes(m)}
-                    onChange={(e) =>
+                    onCheckedChange={(aan) =>
                       zetMomenten(
-                        e.target.checked
+                        aan
                           ? ALLE_MOMENTEN.filter((x) => x === m || momenten.includes(x))
                           : momenten.filter((x) => x !== m),
                       )
                     }
-                    className="size-6 accent-primary"
                   />
-                  <span className="capitalize">{t(m)}</span>
                 </label>
-              ))}
+              ))
+            : null}
+        </Groep>
+
+        <Groep titel={t("Jouw Foodlo")}>
+          <LinkRij
+            to="/credits"
+            icoon={Sparkles}
+            tint="honing"
+            titel={t("Credits")}
+            rechts={
+              credits.data ? (
+                <span className="text-base font-semibold text-muted-foreground">
+                  {credits.data.saldo}
+                </span>
+              ) : null
+            }
+          />
+          <LinkRij to="/meldingen" icoon={Bell} tint="honing" titel={t("Meldingen")} />
+          <LinkRij
+            to="/installeren"
+            icoon={Smartphone}
+            tint="groen"
+            titel={t("Foodlo op je telefoon zetten")}
+          />
+          <LinkRij
+            to="/rondleiding"
+            icoon={Compass}
+            tint="groen"
+            titel={t("Rondleiding opnieuw bekijken")}
+          />
+        </Groep>
+
+        <Groep titel={t("Beveiliging")}>
+          <div className="space-y-3 p-4">
+            <h3 className="text-base font-semibold">{t("Wachtwoord")}</h3>
+            <div>
+              <Label htmlFor="pw" className="text-[0.95rem]">
+                {t("Nieuw wachtwoord")}
+              </Label>
+              <Input
+                id="pw"
+                type="password"
+                autoComplete="new-password"
+                value={wachtwoord}
+                onChange={(e) => setWachtwoord(e.target.value)}
+                className="mt-1.5"
+              />
+            </div>
+            <div>
+              <Label htmlFor="pw2" className="text-[0.95rem]">
+                {t("Herhaal het wachtwoord")}
+              </Label>
+              <Input
+                id="pw2"
+                type="password"
+                autoComplete="new-password"
+                value={herhaal}
+                onChange={(e) => setHerhaal(e.target.value)}
+                className="mt-1.5"
+              />
+            </div>
+            <Button
+              variant="outline"
+              onClick={bewaarWachtwoord}
+              disabled={wachtwoordBezig}
+              className="w-full"
+            >
+              {wachtwoordBezig ? <Loader2 className="size-5 animate-spin" /> : null}
+              {t("Wachtwoord bewaren")}
+            </Button>
           </div>
-        </section>
-            </AccordionContent>
-          </AccordionItem>
+        </Groep>
 
-          <AccordionItem value="delen">
-            <AccordionTrigger className="min-h-16 text-lg no-underline hover:no-underline">{t("Delen en gegevens")}</AccordionTrigger>
-            <AccordionContent className="space-y-5">
-
-        <section>
-          <h2 className="text-xl font-bold tracking-tight">{t("Deel met vrienden")}</h2>
-          <p className="mt-2 text-base text-muted-foreground">
-            {t("Laat anderen Foodlo openen zonder app store.")}
-          </p>
-          <div className="mt-4">
+        <Groep
+          titel={t("Deel met vrienden")}
+          voet={t("Laat anderen Foodlo openen zonder app store.")}
+        >
+          <div className="p-4">
             <QrDeelKaart compact />
           </div>
-          <Link
-            to="/deel"
-            className="mt-4 flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-border bg-secondary text-base font-semibold transition-colors hover:bg-muted"
-          >
-            <QrCode className="size-5" />
-            {t("Grotere QR-code tonen")}
-          </Link>
-        </section>
+          <LinkRij to="/deel" icoon={QrCode} tint="groen" titel={t("Grotere QR-code tonen")} />
+        </Groep>
 
         <Pakketten t={t} />
 
         <OverFoodlo t={t} />
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
 
         <BeheerLink />
 
-        <Button
-          variant="ghost"
-          onClick={async () => {
-            await beeindigSessie();
-            await supabase.auth.signOut();
-          }}
-          className="h-16 w-full text-lg"
-        >
-          <LogOut className="size-5" /> {t("Afmelden")}
-        </Button>
-
-        <AccountVerwijderen />
-        <Link to="/privacy" className="block py-3 text-center text-lg font-semibold text-primary">
-          Privacybeleid
-        </Link>
+        <Groep titel={t("Account")}>
+          <KnopRij
+            icoon={LogOut}
+            tint="grijs"
+            titel={t("Afmelden")}
+            onClick={async () => {
+              await beeindigSessie();
+              await supabase.auth.signOut();
+            }}
+          />
+          <AccountVerwijderen />
+        </Groep>
       </div>
     </AppShell>
   );
 }
+
+const STAAL: Record<ThemaId, string> = {
+  sage: "linear-gradient(135deg, oklch(0.41 0.07 160) 50%, oklch(0.975 0.011 80) 50%)",
+  warm: "linear-gradient(135deg, oklch(0.55 0.13 38) 50%, oklch(0.96 0.03 70) 50%)",
+  fris: "linear-gradient(135deg, oklch(0.55 0.14 150) 50%, oklch(0.98 0.01 150) 50%)",
+  donker: "linear-gradient(135deg, oklch(0.74 0.12 155) 50%, oklch(0.19 0.01 150) 50%)",
+  contrast: "linear-gradient(135deg, oklch(0.2 0 0) 50%, oklch(1 0 0) 50%)",
+};
 
 function AccountVerwijderen() {
   const [open, setOpen] = useState(false);
@@ -368,19 +381,32 @@ function AccountVerwijderen() {
   const verwijder = useServerFn(verwijderMijnAccount);
   if (!open)
     return (
-      <Button variant="ghost" onClick={() => setOpen(true)} className="h-16 w-full text-lg text-destructive">
-        Account verwijderen
-      </Button>
+      <KnopRij
+        icoon={Trash2}
+        gevaar
+        titel="Account verwijderen"
+        uitleg="Wist al je gegevens definitief"
+        onClick={() => setOpen(true)}
+      />
     );
   return (
-    <div className="space-y-3 rounded-2xl border border-destructive/40 p-4">
+    <div className="space-y-3 bg-[oklch(0.97_0.02_25)] p-4 dark:bg-transparent">
       <p className="text-lg font-semibold">Weet je het zeker?</p>
       <p className="text-base text-muted-foreground">
-        Je account, recepten, weekmenu's, lijsten en foto's worden definitief gewist. Dit kan niet ongedaan gemaakt worden. Typ VERWIJDER om te bevestigen.
+        Je account, recepten, weekmenu's, lijsten en foto's worden definitief gewist. Dit kan niet
+        ongedaan gemaakt worden. Typ VERWIJDER om te bevestigen.
       </p>
-      <Input value={tekst} onChange={(e) => setTekst(e.target.value)} className="h-14 text-lg" aria-label="Typ VERWIJDER" />
+      <Input
+        value={tekst}
+        onChange={(e) => setTekst(e.target.value)}
+        className="h-14 text-lg"
+        aria-label="Typ VERWIJDER"
+        autoCapitalize="characters"
+      />
       <div className="grid grid-cols-2 gap-2">
-        <Button variant="outline" className="h-14 text-base" onClick={() => setOpen(false)}>Annuleren</Button>
+        <Button variant="outline" className="h-14 text-base" onClick={() => setOpen(false)}>
+          Annuleren
+        </Button>
         <Button
           variant="destructive"
           className="h-14 text-base"
@@ -416,9 +442,8 @@ function Pakketten({ t }: { t: (s: string) => string }) {
       : 0;
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-      <h2 className="text-xl font-bold tracking-tight">{t("Pakketten")}</h2>
-      <p className="mt-2 text-base text-muted-foreground">
+    <Paneel titel={t("Pakketten")}>
+      <p className="text-base text-muted-foreground">
         {limiet.gebruikt} {t("van")} {limiet.totaal} {t("gerechten in gebruik")}
       </p>
       <div className="mt-3 h-3 overflow-hidden rounded-full bg-muted">
@@ -427,7 +452,7 @@ function Pakketten({ t }: { t: (s: string) => string }) {
       <Button disabled className="mt-4 h-14 w-full text-base">
         {t("Extra pakket kopen (binnenkort beschikbaar)")}
       </Button>
-    </section>
+    </Paneel>
   );
 }
 
@@ -460,27 +485,30 @@ function OverFoodlo({ t }: { t: (s: string) => string }) {
   };
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-      <h2 className="text-xl font-bold tracking-tight">{t("Over Foodlo")}</h2>
-      <ul className="mt-3 space-y-2">
-        {links.map((l) => (
-          <li key={l.pad}>
-            <a
-              href={marketingUrl(l.pad)}
-              target="_blank"
-              rel="noreferrer"
-              className="flex min-h-14 items-center justify-between rounded-2xl border border-border px-4 text-lg font-semibold"
-            >
-              {t(l.label)}
-              <ExternalLink className="size-5" aria-hidden />
-            </a>
-          </li>
-        ))}
-      </ul>
-      <Button onClick={() => void download()} disabled={bezig} className="mt-4 h-14 w-full text-base">
-        <Download className="size-5" /> {bezig ? t("Bezig…") : t("Mijn gegevens downloaden")}
-      </Button>
-    </section>
+    <Groep titel={t("Gegevens en privacy")}>
+      <KnopRij
+        icoon={Download}
+        tint="groen"
+        titel={bezig ? t("Bezig…") : t("Mijn gegevens downloaden")}
+        uitleg={t("Een bestand met al je recepten en lijsten")}
+        disabled={bezig}
+        onClick={() => void download()}
+      />
+      <LinkRij to="/privacy" icoon={ShieldCheck} tint="grijs" titel={t("Privacybeleid")} />
+      {links.map((l) => (
+        <a
+          key={l.pad}
+          href={marketingUrl(l.pad)}
+          target="_blank"
+          rel="noreferrer"
+          className="flex min-h-14 items-center justify-between gap-3 px-4 py-3 text-[1.05rem] font-semibold hover:bg-muted/70"
+        >
+          {t(l.label)}
+          <ExternalLink className="size-5 text-muted-foreground" aria-hidden />
+          <span className="sr-only">{t("(opent in een nieuw venster)")}</span>
+        </a>
+      ))}
+    </Groep>
   );
 }
 
@@ -488,11 +516,8 @@ function BeheerLink() {
   const { profiel } = useAdmin();
   if (!profiel) return null;
   return (
-    <Link
-      to="/beheer"
-      className="block rounded-2xl border border-border bg-card p-5 text-lg font-medium text-foreground shadow-sm"
-    >
-      Control Center openen
-    </Link>
+    <Groep titel="Beheer">
+      <LinkRij to="/beheer" icoon={ShieldCheck} tint="inkt" titel="Control Center openen" />
+    </Groep>
   );
 }

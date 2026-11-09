@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { meet } from "@/lib/meten";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Star, Trash2, Maximize2 } from "lucide-react";
+import { ArrowLeft, Star, Trash2, Maximize2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
+import { Groep, Icoon, KnopRij } from "@/components/mobiel/Lijst";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -17,7 +19,10 @@ export const Route = createFileRoute("/kaarten/$id")({
   head: () => ({
     meta: [
       { title: "Je klantenkaart – Foodlo" },
-      { name: "description", content: "Toon je klantenkaart aan de kassa, ook zonder internetverbinding." },
+      {
+        name: "description",
+        content: "Toon je klantenkaart aan de kassa, ook zonder internetverbinding.",
+      },
       { property: "og:title", content: "Je klantenkaart – Foodlo" },
       { property: "og:description", content: "Grote streepjescode, klaar voor de kassascanner." },
       { property: "og:type", content: "website" },
@@ -41,7 +46,9 @@ function KaartPagina() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("loyalty_cards")
-        .select("id, user_id, store_slug, winkel_naam, kaartnaam, nummer, formaat, favoriet, gedeeld")
+        .select(
+          "id, user_id, store_slug, winkel_naam, kaartnaam, nummer, formaat, favoriet, gedeeld",
+        )
         .eq("id", id)
         .maybeSingle();
       if (error || !data) return leesLokaal().find((k) => k.id === id) ?? null;
@@ -92,53 +99,58 @@ function KaartPagina() {
 
   return (
     <AppShell title={kaart.winkel_naam}>
-      <div className="space-y-5">
-        <div className="rounded-2xl border border-border bg-white p-5 shadow-sm">
+      <div className="space-y-7">
+        {/* De kaart zelf: wit vlak, zodat elke scanner de code leest. */}
+        <div className="rounded-[1.5rem] bg-white p-5 shadow-kaart ring-1 ring-black/5">
           <Barcode waarde={kaart.nummer} formaat={kaart.formaat} hoogte={110} />
           <p className="mt-3 text-center font-mono text-lg tracking-wide text-slate-800">
             {groepeer(kaart.nummer)}
           </p>
         </div>
 
-        <Button onClick={() => setKassa(true)} className="h-16 w-full gap-2 text-lg">
+        <Button onClick={() => setKassa(true)} size="lg" className="h-16 w-full text-lg">
           <Maximize2 className="size-6" aria-hidden /> Tonen aan de kassa
         </Button>
 
         {vanMij ? (
-          <div className="space-y-4 rounded-2xl border border-border bg-card p-5">
-            <div>
-              <label className="text-base font-medium" htmlFor="naam">
-                Naam van de kaart
+          <>
+            <Groep titel="Over deze kaart">
+              <div className="p-4">
+                <Label htmlFor="naam">Naam van de kaart</Label>
+                <Input
+                  id="naam"
+                  value={kaartnaam}
+                  onChange={(e) => setKaartnaam(e.target.value)}
+                  onBlur={() => {
+                    if (kaartnaam !== kaart.kaartnaam) wijzig({ kaartnaam });
+                  }}
+                  className="mt-2"
+                />
+              </div>
+              <label className="flex min-h-16 cursor-pointer items-center gap-3.5 px-4 py-3">
+                <Icoon icoon={Star} tint="honing" />
+                <span className="min-w-0 flex-1 text-[1.05rem] font-semibold">Favoriet</span>
+                <Switch checked={kaart.favoriet} onCheckedChange={(v) => wijzig({ favoriet: v })} />
               </label>
-              <Input
-                id="naam"
-                value={kaartnaam}
-                onChange={(e) => setKaartnaam(e.target.value)}
-                onBlur={() => {
-                  if (kaartnaam !== kaart.kaartnaam) wijzig({ kaartnaam });
-                }}
-                className="mt-1 h-14 text-base"
-              />
-            </div>
-            <label className="flex items-center justify-between rounded-2xl border border-border p-3">
-              <span className="flex items-center gap-2 text-base">
-                <Star className="size-5" aria-hidden /> Favoriet
-              </span>
-              <Switch checked={kaart.favoriet} onCheckedChange={(v) => wijzig({ favoriet: v })} />
-            </label>
-            <label className="flex items-center justify-between rounded-2xl border border-border p-3">
-              <span className="text-base">
-                Delen met mijn gezin
-                <span className="block text-base text-muted-foreground">Uit = alleen jij ziet deze kaart.</span>
-              </span>
-              <Switch checked={kaart.gedeeld} onCheckedChange={(v) => wijzig({ gedeeld: v })} />
-            </label>
-            <Button variant="destructive" onClick={verwijder} className="h-14 w-full gap-2 text-base">
-              <Trash2 className="size-5" aria-hidden /> Kaart verwijderen
-            </Button>
-          </div>
+              <label className="flex min-h-16 cursor-pointer items-center gap-3.5 px-4 py-3">
+                <Icoon icoon={Users} tint="terracotta" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[1.05rem] font-semibold">Delen met mijn gezin</span>
+                  <span className="block text-[0.95rem] text-muted-foreground">
+                    Uit = alleen jij ziet deze kaart.
+                  </span>
+                </span>
+                <Switch checked={kaart.gedeeld} onCheckedChange={(v) => wijzig({ gedeeld: v })} />
+              </label>
+            </Groep>
+            <Groep>
+              <KnopRij icoon={Trash2} gevaar titel="Kaart verwijderen" onClick={verwijder} />
+            </Groep>
+          </>
         ) : (
-          <p className="text-base text-muted-foreground">Deze kaart wordt gedeeld door je gezin.</p>
+          <p className="paneel p-4 text-base text-muted-foreground">
+            Deze kaart wordt gedeeld door je gezin.
+          </p>
         )}
       </div>
     </AppShell>
@@ -170,11 +182,14 @@ function Kassa({ kaart, onSluiten }: { kaart: Kaart; onSluiten: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white">
-      <div className="flex items-center gap-3 p-4" style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}>
+      <div
+        className="flex items-center gap-3 p-4"
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
+      >
         <button
           type="button"
           onClick={onSluiten}
-          className="flex h-12 items-center gap-2 rounded-2xl border border-slate-200 px-4 text-lg font-semibold text-slate-700"
+          className="flex h-12 items-center gap-2 rounded-full border-2 border-slate-200 px-4 text-lg font-semibold text-slate-700"
         >
           <ArrowLeft className="size-6" aria-hidden /> Sluiten
         </button>
@@ -184,7 +199,9 @@ function Kassa({ kaart, onSluiten }: { kaart: Kaart; onSluiten: () => void }) {
         <div className="w-full max-w-xl">
           <Barcode waarde={kaart.nummer} formaat={kaart.formaat} hoogte={220} />
         </div>
-        <p className="font-mono text-2xl tracking-widest text-slate-900">{groepeer(kaart.nummer)}</p>
+        <p className="font-mono text-2xl tracking-widest text-slate-900">
+          {groepeer(kaart.nummer)}
+        </p>
       </div>
     </div>
   );

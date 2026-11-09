@@ -2,7 +2,19 @@ import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCode from "qrcode";
-import { Check, ChefHat, Copy, Home, LogOut, Search, Share2, Trash2, UserPlus, X } from "lucide-react";
+import {
+  Check,
+  ChefHat,
+  ChevronRight,
+  Copy,
+  Home,
+  LogOut,
+  Search,
+  Share2,
+  Trash2,
+  UserPlus,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,8 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { appOrigin } from "@/lib/app-url";
 import { beantwoordGezinsUitnodiging, nodigUitGezin } from "@/lib/gezin.functions";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { EmptyState } from "@/components/EmptyState";
+import { Groep, KnopRij, Paneel } from "@/components/mobiel/Lijst";
 import { PageSkeleton } from "@/components/PageSkeleton";
 
 export const Route = createFileRoute("/gezin")({
@@ -258,303 +269,351 @@ function GezinPage() {
   const ikBenEigenaar = data?.groep.owner_id === user?.id;
   const mijnRij = data?.leden.find((l) => l.user_id === user?.id);
 
+  const actieveLeden = data?.leden.filter((l) => l.status === "actief") ?? [];
+  const naamVan = (id: string) =>
+    id === user?.id ? (namen[id] ?? "Jij") : (namen[id] ?? "Gezinslid");
+
+  async function deelLink() {
+    try {
+      if (navigator.share) await navigator.share({ title: "Foodlo", url: link });
+      else {
+        await navigator.clipboard.writeText(link);
+        toast.success("Link gekopieerd");
+      }
+    } catch {
+      /* gebruiker annuleerde */
+    }
+  }
+
   return (
     <AppShell title="Mijn gezin">
-      <div className="space-y-6">
+      <div className="space-y-7">
         {isLoading ? (
           <PageSkeleton rows={2} />
         ) : !data ? (
-          <section className="space-y-4">
+          <>
             {uitnodiging && (
-              <div className="space-y-3 rounded-2xl border-2 border-primary/40 bg-primary/5 p-4">
-                <p className="text-lg font-semibold">
+              <div className="rounded-[1.25rem] bg-honing-zacht p-4 ring-1 ring-honing/40">
+                <p className="text-lg font-semibold text-honing-foreground">
                   Je bent uitgenodigd voor gezin “{uitnodiging.naam}”
                 </p>
-                <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="mt-3 grid grid-cols-2 gap-2">
                   <Button
                     onClick={() => gezinAntwoord.mutate({ groupId: uitnodiging.id, ja: true })}
                     disabled={gezinAntwoord.isPending}
-                    className="h-14 w-full text-base sm:flex-1"
                   >
                     <Check className="size-5" /> Aannemen
                   </Button>
                   <Button
-                    variant="secondary"
+                    variant="zacht"
                     onClick={() => gezinAntwoord.mutate({ groupId: uitnodiging.id, ja: false })}
                     disabled={gezinAntwoord.isPending}
-                    className="h-14 w-full text-base sm:flex-1"
                   >
                     Nee, bedankt
                   </Button>
                 </div>
               </div>
             )}
-            <EmptyState icon={<Home className="size-7" />} title="Kook samen als gezin" description="Deel recepten, je weekmenu en boodschappen met de mensen thuis." />
-            <div>
-              <Label htmlFor="gezinnaam" className="text-base">
-                Hoe noem je jullie gezin?
-              </Label>
+            <div className="overflow-hidden rounded-[1.5rem] bg-inkt p-6 text-inkt-foreground shadow-kaart">
+              <span className="flex size-14 items-center justify-center rounded-full bg-honing text-honing-foreground">
+                <Home className="size-7" aria-hidden />
+              </span>
+              <h2 className="mt-4 text-sectietitel">Kook samen als gezin</h2>
+              <p className="mt-2 text-base text-inkt-zacht">
+                Deel recepten, je weekmenu en boodschappen met de mensen thuis.
+              </p>
+            </div>
+            <Paneel>
+              <Label htmlFor="gezinnaam">Hoe noem je jullie gezin?</Label>
               <Input
                 id="gezinnaam"
                 value={naam}
                 onChange={(e) => setNaam(e.target.value)}
-                className="mt-2 h-14 text-base"
+                className="mt-2"
               />
-            </div>
-            <Button
-              onClick={() => maakGezin.mutate()}
-              disabled={maakGezin.isPending}
-              className="h-16 w-full text-lg"
-            >
-              <UserPlus className="size-5" /> Gezin starten
-            </Button>
-          </section>
+              <Button
+                onClick={() => maakGezin.mutate()}
+                disabled={maakGezin.isPending}
+                className="mt-3 w-full"
+              >
+                <UserPlus className="size-5" /> Gezin starten
+              </Button>
+            </Paneel>
+          </>
         ) : (
           <>
-            <section className="space-y-3 rounded-2xl border border-border bg-card p-5">
-              <h2 className="font-display text-xl">{data.groep.naam}</h2>
-              {ikBenEigenaar && (
-                <Input
-                  defaultValue={data.groep.naam}
-                  aria-label="Naam van het gezin"
-                  onBlur={(e) => {
-                    const v = e.target.value.trim();
-                    if (v && v !== data.groep.naam) hernoem.mutate(v);
-                  }}
-                  className="h-14 text-base"
-                />
-              )}
-              <p className="text-base text-muted-foreground">
-                Deel deze link met wie erbij hoort. Wie erop klikt, komt in jullie gezin.
-              </p>
-              {qr ? (
-                <img src={qr} alt="QR-code van de gezinsuitnodiging" className="mx-auto size-48 rounded-xl" />
-              ) : null}
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Button
-                  onClick={async () => {
-                    try {
-                      if (navigator.share) await navigator.share({ title: "Foodlo", url: link });
-                      else {
-                        await navigator.clipboard.writeText(link);
-                        toast.success("Link gekopieerd");
-                      }
-                    } catch {
-                      /* gebruiker annuleerde */
-                    }
-                  }}
-                  className="h-14 w-full text-base sm:flex-1"
-                >
-                  <Share2 className="size-5" /> Uitnodiging delen
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(link);
-                    toast.success("Link gekopieerd");
-                  }}
-                  className="h-14 w-full text-base sm:flex-1"
-                >
-                  <Copy className="size-5" /> Kopiëren
-                </Button>
+            {/* Kop van het gezin: naam en wie erbij hoort, in één oogopslag. */}
+            <div className="rounded-[1.5rem] bg-inkt p-5 text-inkt-foreground shadow-kaart">
+              <p className="text-label text-inkt-zacht">Jullie gezin</p>
+              <h2 className="mt-1 text-sectietitel">{data.groep.naam}</h2>
+              <div className="mt-4 flex items-center gap-3">
+                <div className="flex -space-x-3">
+                  {actieveLeden.slice(0, 5).map((l) => (
+                    <Avatar
+                      key={l.id}
+                      naam={naamVan(l.user_id)}
+                      sleutel={l.user_id}
+                      className="size-11 ring-2 ring-inkt"
+                    />
+                  ))}
+                </div>
+                <p className="text-base text-inkt-zacht">
+                  {actieveLeden.length === 1 ? "1 lid" : `${actieveLeden.length} leden`}
+                </p>
               </div>
-            </section>
+            </div>
 
-            <Accordion type="single" collapsible className="rounded-2xl bg-card px-4 ring-1 ring-border/60">
-              <AccordionItem value="uitnodigen" className="border-0">
-                <AccordionTrigger className="min-h-16 text-lg no-underline hover:no-underline">Iemand uitnodigen</AccordionTrigger>
-                <AccordionContent className="space-y-3">
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Input
-                  value={zoek}
-                  onChange={(e) => setZoek(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && zoek.trim().length >= 2) setGezocht(zoek.trim());
-                  }}
-                  aria-label="Naam, Foodlo-naam of e-mailadres"
-                  placeholder="Bijvoorbeeld Sofie of @sofie"
-                  className="h-14 flex-1 text-base"
-                />
-                <Button
-                  variant="secondary"
-                  onClick={() => setGezocht(zoek.trim())}
-                  disabled={zoek.trim().length < 2}
-                  className="h-14 text-base"
-                >
-                  <Search className="size-5" /> Zoeken
-                </Button>
-              </div>
-              {gezocht.trim().length >= 2 &&
-                (zoekt ? (
-                  <p className="text-base text-muted-foreground">Even zoeken…</p>
-                ) : zoekMislukt ? (
-                  <p className="text-base text-destructive">Zoeken lukte even niet.</p>
-                ) : gevonden.length === 0 ? (
-                  <p className="text-base text-muted-foreground">
-                    Niemand gevonden. Deel anders de link of QR-code hierboven.
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {gevonden.map((g) => {
-                      const lid = data.leden.find((l) => l.user_id === g.id);
-                      return (
-                        <div
-                          key={g.id}
-                          className="flex min-h-16 items-center justify-between gap-3 rounded-xl bg-secondary p-3"
-                        >
-                          <div className="flex min-w-0 items-center gap-3">
-                            <Avatar naam={g.display_name} sleutel={g.id} className="size-12" />
-                            <div className="min-w-0">
-                              <p className="truncate text-base font-semibold">{g.display_name}</p>
-                              {g.handle ? (
-                                <p className="truncate text-base text-muted-foreground">
-                                  @{g.handle}
-                                </p>
-                              ) : null}
-                            </div>
-                          </div>
-                          {lid ? (
-                            <span className="shrink-0 rounded-full bg-card px-3 py-2 text-base font-semibold text-muted-foreground">
-                              {lid.status === "actief" ? "Hoort erbij" : "Uitgenodigd"}
+            <Groep titel="Wie hoort erbij">
+              {actieveLeden.map((l) => {
+                const ik = l.user_id === user?.id;
+                return (
+                  <div key={l.id} className="flex min-h-18 items-center gap-1 pr-2">
+                    {ik ? (
+                      <div className="flex min-w-0 flex-1 items-center gap-3.5 px-4 py-3">
+                        <Avatar naam={naamVan(l.user_id)} sleutel={l.user_id} className="size-11" />
+                        <span className="min-w-0">
+                          <span className="block text-[1.05rem] font-semibold">Jij</span>
+                          {l.rol === "eigenaar" && (
+                            <span className="block text-[0.95rem] text-muted-foreground">
+                              heeft het gezin gestart
                             </span>
-                          ) : (
-                            <Button
-                              onClick={() => nodigUit.mutate(g.id)}
-                              disabled={nodigUit.isPending}
-                              className="h-12 shrink-0 text-base"
-                            >
-                              <UserPlus className="size-5" /> Uitnodigen
-                            </Button>
                           )}
-                        </div>
-                      );
-                    })}
+                        </span>
+                      </div>
+                    ) : (
+                      <Link
+                        to="/vrienden/$id"
+                        params={{ id: l.user_id }}
+                        className="flex min-h-16 min-w-0 flex-1 items-center gap-3.5 rounded-xl px-4 py-3 hover:bg-muted/70"
+                      >
+                        <Avatar naam={naamVan(l.user_id)} sleutel={l.user_id} className="size-11" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[1.05rem] font-semibold">
+                            {naamVan(l.user_id)}
+                          </span>
+                          <span className="flex items-center gap-1 text-[0.95rem] text-primary">
+                            <ChefHat className="size-4" aria-hidden /> Bekijk hun gerechten
+                          </span>
+                        </span>
+                        <ChevronRight
+                          className="size-5 shrink-0 text-muted-foreground"
+                          aria-hidden
+                        />
+                      </Link>
+                    )}
+                    {ikBenEigenaar && !ik && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm("Wil je deze persoon echt uit het gezin halen?"))
+                            verwijderLid.mutate(l.id);
+                        }}
+                        aria-label={`Uit het gezin halen: ${naamVan(l.user_id)}`}
+                        className="flex size-12 shrink-0 items-center justify-center rounded-full text-destructive hover:bg-muted"
+                      >
+                        <Trash2 className="size-5" aria-hidden />
+                      </button>
+                    )}
                   </div>
-                ))}
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+                );
+              })}
+            </Groep>
 
             {data.leden.some((l) => l.status === "uitgenodigd") && (
-              <section className="space-y-3">
-                <h2 className="font-display text-xl">Wacht op antwoord</h2>
+              <Groep titel="Wacht op antwoord">
                 {data.leden
                   .filter((l) => l.status === "uitgenodigd")
                   .map((l) => (
-                    <div
-                      key={l.id}
-                      className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4"
-                    >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <Avatar
-                          naam={namen[l.user_id] ?? "Gezinslid"}
-                          sleutel={l.user_id}
-                          className="size-12"
-                        />
-                        <div className="min-w-0">
-                          <p className="truncate text-lg font-semibold">
-                            {namen[l.user_id] ?? "Gezinslid"}
-                          </p>
-                          <p className="text-base text-muted-foreground">Uitgenodigd</p>
-                        </div>
-                      </div>
+                    <div key={l.id} className="flex min-h-16 items-center gap-3.5 px-4 py-3">
+                      <Avatar
+                        naam={namen[l.user_id] ?? "Gezinslid"}
+                        sleutel={l.user_id}
+                        className="size-11 opacity-70"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[1.05rem] font-semibold">
+                          {namen[l.user_id] ?? "Gezinslid"}
+                        </span>
+                        <span className="block text-[0.95rem] text-muted-foreground">
+                          Uitgenodigd
+                        </span>
+                      </span>
                       {ikBenEigenaar && (
                         <Button
-                          variant="secondary"
+                          variant="zacht"
+                          size="sm"
                           onClick={() => verwijderLid.mutate(l.id)}
-                          className="h-12 shrink-0 text-base"
+                          className="shrink-0"
                         >
                           <X className="size-5" /> Intrekken
                         </Button>
                       )}
                     </div>
                   ))}
-              </section>
+              </Groep>
             )}
 
-            <section className="space-y-3">
-              <h2 className="font-display text-xl">Wie hoort erbij</h2>
-              {data.leden
-                .filter((l) => l.status === "actief")
-                .map((l) => (
-                <div key={l.id} className="rounded-2xl border border-border bg-card p-4">
-                  <div className="flex items-center gap-3">
-                    <Avatar
-                      naam={l.user_id === user?.id ? (namen[l.user_id] ?? "Jij") : (namen[l.user_id] ?? "Gezinslid")}
-                      sleutel={l.user_id}
-                      className="size-12"
+            <Groep
+              titel="Iemand uitnodigen"
+              voet="Deel deze link met wie erbij hoort. Wie erop klikt, komt in jullie gezin."
+            >
+              <div className="space-y-3 p-4">
+                <div className="flex gap-2">
+                  <div className="relative min-w-0 flex-1">
+                    <Search
+                      aria-hidden
+                      className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
                     />
-                    <p className="min-w-0 flex-1 text-lg font-semibold">
-                      {l.user_id === user?.id ? "Jij" : (namen[l.user_id] ?? "Gezinslid")}{" "}
-                      {l.rol === "eigenaar" && (
-                        <span className="mt-0.5 block text-base font-normal text-muted-foreground">
-                          heeft het gezin gestart
-                        </span>
-                      )}
-                    </p>
+                    <Input
+                      type="search"
+                      value={zoek}
+                      onChange={(e) => setZoek(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && zoek.trim().length >= 2) setGezocht(zoek.trim());
+                      }}
+                      aria-label="Naam, Foodlo-naam of e-mailadres"
+                      placeholder="Sofie of @sofie"
+                      className="pl-11"
+                    />
                   </div>
-                  {l.user_id !== user?.id && (
-                    <Link
-                      to="/vrienden/$id"
-                      params={{ id: l.user_id }}
-                      className="mt-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-5 text-base font-semibold hover:bg-muted"
-                    >
-                      <ChefHat className="size-5" aria-hidden /> Bekijk hun gerechten
-                    </Link>
-                  )}
-                  {ikBenEigenaar && l.user_id !== user?.id && (
-                    <Button
-                      variant="ghost"
-                      onClick={() => { if (window.confirm("Wil je deze persoon echt uit het gezin halen?")) verwijderLid.mutate(l.id); }}
-                      className="mt-2 h-14 w-full text-base text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="size-5" /> Uit het gezin halen
-                    </Button>
-                  )}
+                  <Button
+                    variant="secondary"
+                    onClick={() => setGezocht(zoek.trim())}
+                    disabled={zoek.trim().length < 2}
+                    className="shrink-0 px-5"
+                  >
+                    Zoeken
+                  </Button>
                 </div>
-              ))}
-            </section>
+                {gezocht.trim().length >= 2 &&
+                  (zoekt ? (
+                    <p role="status" className="text-base text-muted-foreground">
+                      Even zoeken…
+                    </p>
+                  ) : zoekMislukt ? (
+                    <p role="alert" className="text-base text-destructive">
+                      Zoeken lukte even niet.
+                    </p>
+                  ) : gevonden.length === 0 ? (
+                    <p role="status" className="text-base text-muted-foreground">
+                      Niemand gevonden. Deel anders de link of QR-code hieronder.
+                    </p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {gevonden.map((g) => {
+                        const lid = data.leden.find((l) => l.user_id === g.id);
+                        return (
+                          <li
+                            key={g.id}
+                            className="flex min-h-16 items-center gap-3 rounded-2xl bg-muted p-3"
+                          >
+                            <Avatar naam={g.display_name} sleutel={g.id} className="size-11" />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-base font-semibold">{g.display_name}</p>
+                              {g.handle ? (
+                                <p className="truncate text-[0.95rem] text-muted-foreground">
+                                  @{g.handle}
+                                </p>
+                              ) : null}
+                            </div>
+                            {lid ? (
+                              <span className="shrink-0 rounded-full bg-card px-3 py-1.5 text-[0.95rem] font-semibold text-muted-foreground">
+                                {lid.status === "actief" ? "Hoort erbij" : "Uitgenodigd"}
+                              </span>
+                            ) : (
+                              <Button
+                                size="sm"
+                                onClick={() => nodigUit.mutate(g.id)}
+                                disabled={nodigUit.isPending}
+                                className="shrink-0"
+                              >
+                                <UserPlus className="size-5" /> Uitnodigen
+                              </Button>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ))}
+              </div>
+              <div className="flex flex-col items-center gap-4 p-4 sm:flex-row sm:items-center">
+                {qr ? (
+                  <img
+                    src={qr}
+                    alt="QR-code van de gezinsuitnodiging"
+                    className="size-40 shrink-0 rounded-2xl bg-white p-2 ring-1 ring-border"
+                  />
+                ) : null}
+                <div className="grid w-full gap-2">
+                  <Button onClick={() => void deelLink()} className="w-full">
+                    <Share2 className="size-5" /> Uitnodiging delen
+                  </Button>
+                  <Button
+                    variant="zacht"
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(link);
+                      toast.success("Link gekopieerd");
+                    }}
+                    className="w-full"
+                  >
+                    <Copy className="size-5" /> Kopiëren
+                  </Button>
+                </div>
+              </div>
+            </Groep>
 
             {mijnRij && (
-              <Accordion type="single" collapsible className="rounded-2xl bg-card px-4 ring-1 ring-border/60">
-                <AccordionItem value="rechten" className="border-0">
-                  <AccordionTrigger className="min-h-16 text-lg no-underline hover:no-underline">Wat deel ik?</AccordionTrigger>
-                  <AccordionContent>
-                <ul className="space-y-1">
-                  {RECHTEN.map((r) => (
-                    <li
-                      key={r.key}
-                      className="flex min-h-14 items-center justify-between gap-4 border-b border-border/60 py-2 last:border-b-0"
+              <Groep titel="Wat deel ik met het gezin?">
+                {RECHTEN.map((r) => (
+                  <div key={r.key} className="flex min-h-16 items-center gap-4 px-4 py-3">
+                    <Label
+                      htmlFor={`gezin-${r.key}`}
+                      className="min-w-0 flex-1 text-[1.05rem] font-semibold leading-snug"
                     >
-                      <Label htmlFor={`gezin-${r.key}`} className="text-base font-normal leading-snug">
-                        {r.label}
-                      </Label>
-                      <Switch
-                        id={`gezin-${r.key}`}
-                        checked={mijnRij[r.key]}
-                        onCheckedChange={(v) =>
-                          wijzigRechten.mutate({
-                            id: mijnRij.id,
-                            patch: { [r.key]: v } as Partial<Rechten>,
-                          })
-                        }
-                      />
-                    </li>
-                  ))}
-                </ul>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+                      {r.label}
+                    </Label>
+                    <Switch
+                      id={`gezin-${r.key}`}
+                      checked={mijnRij[r.key]}
+                      onCheckedChange={(v) =>
+                        wijzigRechten.mutate({
+                          id: mijnRij.id,
+                          patch: { [r.key]: v } as Partial<Rechten>,
+                        })
+                      }
+                    />
+                  </div>
+                ))}
+              </Groep>
+            )}
+
+            {ikBenEigenaar && (
+              <Groep titel="Naam van het gezin">
+                <div className="p-4">
+                  <Input
+                    defaultValue={data.groep.naam}
+                    aria-label="Naam van het gezin"
+                    onBlur={(e) => {
+                      const v = e.target.value.trim();
+                      if (v && v !== data.groep.naam) hernoem.mutate(v);
+                    }}
+                  />
+                </div>
+              </Groep>
             )}
 
             {mijnRij && (
-              <Button
-                variant="ghost"
-                onClick={() => { if (window.confirm("Wil je het gezin echt verlaten?")) verwijderLid.mutate(mijnRij.id); }}
-                className="h-14 w-full text-base text-destructive hover:text-destructive"
-              >
-                <LogOut className="size-5" /> Het gezin verlaten
-              </Button>
+              <Groep>
+                <KnopRij
+                  icoon={LogOut}
+                  gevaar
+                  titel="Het gezin verlaten"
+                  onClick={() => {
+                    if (window.confirm("Wil je het gezin echt verlaten?"))
+                      verwijderLid.mutate(mijnRij.id);
+                  }}
+                />
+              </Groep>
             )}
           </>
         )}

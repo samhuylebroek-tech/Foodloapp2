@@ -1,9 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, CalendarDays, Check, ChefHat, Clock, ShoppingCart, X } from "lucide-react";
+import { CalendarDays, Check, ChefHat, Clock, ShoppingCart, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
+import { EmptyState } from "@/components/EmptyState";
+import { Groep, LadenRijen } from "@/components/mobiel/Lijst";
+import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/Avatar";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import type { Recipe } from "@/lib/types";
@@ -61,7 +64,9 @@ function VriendPage() {
       const [{ data: share }, { data: gezin }] = await Promise.all([
         supabase
           .from("shares")
-          .select("recipes_view, recipes_edit, planner_view, planner_edit, shopping_view, shopping_edit")
+          .select(
+            "recipes_view, recipes_edit, planner_view, planner_edit, shopping_view, shopping_edit",
+          )
           .eq("owner_id", id)
           .eq("member_id", user!.id)
           .eq("status", "accepted")
@@ -104,7 +109,11 @@ function VriendPage() {
     enabled: !!user,
     queryFn: async () => {
       const [mijn, hun] = await Promise.all([
-        supabase.from("group_members").select("group_id").eq("user_id", user!.id).eq("status", "actief"),
+        supabase
+          .from("group_members")
+          .select("group_id")
+          .eq("user_id", user!.id)
+          .eq("status", "actief"),
         supabase.from("group_members").select("group_id").eq("user_id", id).eq("status", "actief"),
       ]);
       const mijne = new Set((mijn.data ?? []).map((r) => r.group_id));
@@ -187,7 +196,6 @@ function VriendPage() {
     },
   });
 
-
   const regels = [
     { aan: recht?.recepten, label: "Recepten" },
     { aan: recht?.weekmenu, label: "Weekmenu" },
@@ -197,73 +205,84 @@ function VriendPage() {
 
   return (
     <AppShell title={naam}>
-      <div className="space-y-5">
-        <Link
-          to="/vrienden"
-          className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-border bg-card px-4 text-base font-semibold"
-        >
-          <ArrowLeft className="size-5" aria-hidden /> Terug naar vrienden
-        </Link>
-
-        <section className="rounded-3xl border border-border bg-card p-5">
-          <div className="flex items-center gap-3">
-            <Avatar naam={naam} sleutel={id} />
+      <div className="space-y-7">
+        {/* Kop: wie is dit en wat deelt die persoon met jou. */}
+        <section className="rounded-[1.5rem] bg-inkt p-5 text-inkt-foreground shadow-kaart">
+          <div className="flex items-center gap-4">
+            <Avatar
+              naam={naam}
+              sleutel={id}
+              className="size-16 text-xl ring-2 ring-inkt-zacht/40"
+            />
             <div className="min-w-0">
-              <h2 className="truncate font-display text-xl">{naam}</h2>
-              <p className="text-base text-muted-foreground">Verbonden</p>
+              <p className="text-label text-inkt-zacht">Verbonden</p>
+              <h2 className="truncate text-sectietitel">{naam}</h2>
             </div>
           </div>
-          <p className="mt-4 text-base font-semibold">Wat {naam} met jou deelt</p>
-          <ul className="mt-2 space-y-1">
+          <p className="mt-5 text-base font-semibold">Wat {naam} met jou deelt</p>
+          <ul className="mt-2 flex flex-wrap gap-2">
             {regels.map((r) => (
-              <li key={r.label} className="flex items-center gap-3 text-base">
-                {r.aan ? (
-                  <Check className="size-5 text-primary" aria-hidden />
-                ) : (
-                  <X className="size-5 text-muted-foreground" aria-hidden />
+              <li
+                key={r.label}
+                className={cn(
+                  "inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-[0.95rem] font-semibold",
+                  r.aan ? "bg-honing text-honing-foreground" : "bg-white/10 text-inkt-zacht",
                 )}
-                <span className={r.aan ? "" : "text-muted-foreground"}>{r.label}</span>
+              >
+                {r.aan ? (
+                  <Check className="size-4" aria-hidden />
+                ) : (
+                  <X className="size-4" aria-hidden />
+                )}
+                <span className={r.aan ? "" : "line-through decoration-1"}>{r.label}</span>
+                <span className="sr-only">{r.aan ? "(gedeeld)" : "(niet gedeeld)"}</span>
               </li>
             ))}
           </ul>
         </section>
 
         {nietsGedeeld && (
-          <p className="rounded-2xl border border-dashed border-border p-6 text-center text-lg text-muted-foreground">
-            {naam} deelt op dit moment niets met jou.
-          </p>
+          <EmptyState
+            icon={<X />}
+            title="Nog niets gedeeld"
+            description={`${naam} deelt op dit moment niets met jou.`}
+          />
         )}
 
         {recht?.recepten && (
-          <section className="space-y-3">
-            <h2 className="flex items-center gap-2 font-display text-xl">
-              <ChefHat className="size-5 text-primary" aria-hidden /> Gerechten van {naam}
+          <section aria-labelledby="vriend-recepten" className="space-y-3">
+            <h2 id="vriend-recepten" className="flex items-center gap-2 px-1 text-sectietitel">
+              <ChefHat className="size-6 text-primary" aria-hidden /> Gerechten van {naam}
             </h2>
             {isLoading ? (
-              <p className="text-base text-muted-foreground">Laden…</p>
+              <LadenRijen aantal={3} />
             ) : recepten.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-border p-5 text-base text-muted-foreground">
-                Nog geen gerechten.
-              </p>
+              <p className="paneel p-5 text-base text-muted-foreground">Nog geen gerechten.</p>
             ) : (
-              <ul className="space-y-3">
+              <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {recepten.map((r) => (
                   <li key={r.id}>
                     <Link
                       to="/recepten/$id"
                       params={{ id: r.id }}
-                      className="flex items-center gap-4 rounded-2xl border border-border bg-card p-3 active:bg-secondary"
+                      className="group block overflow-hidden paneel transition-transform active:scale-[0.98]"
                     >
-                      <RecipePhoto path={r.image_url} alt={r.title} className="size-20 rounded-xl" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-display text-xl">{r.title}</p>
-                        <p className="mt-1 flex items-center gap-2 text-base text-muted-foreground">
-                          <Clock className="size-4" aria-hidden />
-                          {[tijdLabel(r.prep_minutes, r.cook_minutes), r.category]
-                            .filter(Boolean)
-                            .join(" · ")}
+                      <RecipePhoto
+                        path={r.image_url}
+                        alt=""
+                        recept={{ title: r.title, category: r.category }}
+                        className="aspect-[4/3] w-full"
+                      />
+                      <div className="p-3">
+                        <p className="line-clamp-2 text-kaarttitel">{r.title}</p>
+                        <p className="mt-1 flex items-center gap-1.5 text-[0.95rem] text-muted-foreground">
+                          <Clock className="size-4 shrink-0" aria-hidden />
+                          <span className="truncate">
+                            {[tijdLabel(r.prep_minutes, r.cook_minutes), r.category]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </span>
                         </p>
-                        <p className="text-base text-muted-foreground">Gedeeld door {naam}</p>
                       </div>
                     </Link>
                   </li>
@@ -274,15 +293,16 @@ function VriendPage() {
         )}
 
         {recht?.weekmenu && (
-          <section className="space-y-3">
-            <h2 className="flex items-center gap-2 font-display text-xl">
-              <CalendarDays className="size-5 text-primary" aria-hidden /> Weekmenu van {naam}
-            </h2>
-            <p className="text-base text-muted-foreground">
-              Alleen bekijken. {gezinId ? "Het gezinsmenu staat er ook bij." : ""}
-            </p>
+          <Groep
+            titel={
+              <span className="flex items-center gap-2">
+                <CalendarDays className="size-5" aria-hidden /> Weekmenu van {naam}
+              </span>
+            }
+            voet={`Alleen bekijken. ${gezinId ? "Het gezinsmenu staat er ook bij." : ""}`}
+          >
             {weekmenu.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-border p-5 text-base text-muted-foreground">
+              <p className="p-4 text-base text-muted-foreground">
                 Er staat nog niets gepland
                 {gezinId ? " in het gezinsmenu of in het eigen menu van " + naam : " door " + naam}.
                 {gezinId
@@ -290,73 +310,75 @@ function VriendPage() {
                   : ""}
               </p>
             ) : (
-              <ul className="space-y-2">
-                {weekmenu.map((m) => (
-                  <li
-                    key={m.id}
-                    className="flex min-h-14 items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4"
-                  >
-                    <span className="text-base capitalize text-muted-foreground">
-                      {dagLabel(m.plan_date)} · {m.meal_type}
+              weekmenu.map((m) => (
+                <div key={m.id} className="flex min-h-16 items-center gap-3 px-4 py-3">
+                  <span className="w-24 shrink-0 text-[0.95rem] capitalize leading-tight text-muted-foreground">
+                    {dagLabel(m.plan_date)}
+                    <span className="block">{m.meal_type}</span>
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-[1.05rem] font-semibold">
+                    {m.recipes?.title ?? m.custom_title ?? "Iets lekkers"}
+                  </span>
+                  {m.group_id ? (
+                    <span className="shrink-0 rounded-full bg-terracotta-zacht px-2.5 py-0.5 text-[0.9rem] font-semibold text-terracotta">
+                      Gezin
                     </span>
-                    <span className="flex min-w-0 items-center gap-2">
-                      {m.group_id ? (
-                        <span className="shrink-0 rounded-full bg-secondary px-2 py-1 text-base font-semibold">
-                          Gezin
-                        </span>
-                      ) : null}
-                      <span className="truncate text-base font-semibold">
-                        {m.recipes?.title ?? m.custom_title ?? "Iets lekkers"}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
+                  ) : null}
+                </div>
+              ))
             )}
-          </section>
+          </Groep>
         )}
 
-
         {recht?.boodschappen && (
-          <section className="space-y-3">
-            <h2 className="flex items-center gap-2 font-display text-xl">
-              <ShoppingCart className="size-5 text-primary" aria-hidden /> Boodschappen van {naam}
-            </h2>
-            <p className="text-base text-muted-foreground">
-              Alleen bekijken. {gezinId ? "De gezinslijst staat er ook bij." : ""}
-            </p>
+          <Groep
+            titel={
+              <span className="flex items-center gap-2">
+                <ShoppingCart className="size-5" aria-hidden /> Boodschappen van {naam}
+              </span>
+            }
+            voet={`Alleen bekijken. ${gezinId ? "De gezinslijst staat er ook bij." : ""}`}
+          >
             {boodschappen.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-border p-5 text-base text-muted-foreground">
+              <p className="p-4 text-base text-muted-foreground">
                 De lijst is leeg.
-                {gezinId
-                  ? " Zet items op de gezinslijst zodat iedereen ze ziet."
-                  : ""}
+                {gezinId ? " Zet items op de gezinslijst zodat iedereen ze ziet." : ""}
               </p>
             ) : (
-              <ul className="space-y-2">
-                {boodschappen.map((b) => (
-                  <li
-                    key={b.id}
-                    className="flex min-h-14 items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4"
+              boodschappen.map((b) => (
+                <div key={b.id} className="flex min-h-14 items-center gap-3 px-4 py-3">
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "flex size-6 shrink-0 items-center justify-center rounded-md border-2",
+                      b.checked
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-input",
+                    )}
                   >
-                    <span className="flex min-w-0 items-center gap-2">
-                      {b.gezin ? (
-                        <span className="shrink-0 rounded-full bg-secondary px-2 py-1 text-base font-semibold">
-                          Gezin
-                        </span>
-                      ) : null}
-                      <span className={`truncate text-base ${b.checked ? "line-through opacity-60" : ""}`}>
-                        {b.name}
-                      </span>
+                    {b.checked ? <Check className="size-4" strokeWidth={3} /> : null}
+                  </span>
+                  <span
+                    className={cn(
+                      "min-w-0 flex-1 truncate text-[1.05rem]",
+                      b.checked && "text-muted-foreground line-through",
+                    )}
+                  >
+                    {b.name}
+                    {b.checked ? <span className="sr-only"> (gekocht)</span> : null}
+                  </span>
+                  {b.gezin ? (
+                    <span className="shrink-0 rounded-full bg-terracotta-zacht px-2.5 py-0.5 text-[0.9rem] font-semibold text-terracotta">
+                      Gezin
                     </span>
-                    <span className="text-base text-muted-foreground">
-                      {toonBelgischeMaat(b.quantity, b.unit)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+                  ) : null}
+                  <span className="shrink-0 text-base text-muted-foreground">
+                    {toonBelgischeMaat(b.quantity, b.unit)}
+                  </span>
+                </div>
+              ))
             )}
-          </section>
+          </Groep>
         )}
       </div>
     </AppShell>
