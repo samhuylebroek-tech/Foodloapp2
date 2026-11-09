@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { AanvulKaart } from "@/components/kringloop/AanvulKaart";
+import { VanavondVoorstellen } from "@/components/kringloop/VanavondVoorstellen";
 import { EmptyState } from "@/components/EmptyState";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { RecipePhoto } from "@/components/RecipePhoto";
@@ -298,6 +299,7 @@ function StartPage() {
                         "Bewaar eerst een recept dat je lekker vindt. Daarna kan je het inplannen.",
                       )}
                 </p>
+                <VanavondVoorstellen recepten={recipes} />
                 <Link
                   to={recipes.length ? "/planner" : "/recepten/nieuw"}
                   className="mt-6 inline-flex min-h-14 items-center gap-2 rounded-2xl bg-inkt-foreground px-6 text-lg font-semibold text-inkt"

@@ -1,10 +1,12 @@
 import { useMemo, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Heart, Search, Clock, RotateCcw, Plus, Trash2, X, SlidersHorizontal } from "lucide-react";
+import { Check, Heart, Search, Clock, RotateCcw, Plus, Trash2, X, SlidersHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
+import { KeukenWissel } from "@/components/KeukenWissel";
+import { useVoorraadStand } from "@/hooks/useVoorraadStand";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -83,6 +85,8 @@ function GerechtenPage() {
       return data as Recipe[];
     },
   });
+  // Keuken als één geheel: per recept zien of je alles in huis hebt.
+  const voorraadStand = useVoorraadStand(recipes.map((r) => r.id));
   const { data: concepten = [] } = useQuery({
     queryKey: ["concepten", user?.id],
     enabled: !!user,
@@ -347,17 +351,7 @@ function GerechtenPage() {
       ondertitel={`${recipes.length} ${t(recipes.length === 1 ? "recept in je kookboek" : "recepten in je kookboek")}`}
     >
       <div className="space-y-4">
-        <nav aria-label={t("Recepten of ideeën")} className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
-          <span aria-current="page" className="flex min-h-12 items-center justify-center rounded-full bg-card text-base font-semibold shadow-zacht">
-            {t("Mijn recepten")}
-          </span>
-          <Link
-            to="/inspiratie"
-            className="flex min-h-12 items-center justify-center rounded-full text-base font-semibold text-muted-foreground hover:text-foreground"
-          >
-            {t("Ideeën om te koken")}
-          </Link>
-        </nav>
+        <KeukenWissel />
         {concepten.length > 0 ? (
           <section aria-label="Concepten" className="paneel p-3">
             <p className="px-1 text-base font-semibold text-muted-foreground">Nog niet klaar</p>
@@ -586,6 +580,7 @@ function GerechtenPage() {
                             {r.servings} {t(r.servings === 1 ? "persoon" : "personen")}
                           </span>
                         </p>
+                        <InHuis ontbreekt={voorraadStand.ontbreekt?.get(r.id)} />
                       </div>
                     </Link>
                     <div className="mt-auto px-1.5 pb-2">
@@ -734,5 +729,22 @@ function FilterSelect({
         </SelectContent>
       </Select>
     </div>
+  );
+}
+
+/** "Alles in huis" of "2 ontbreken": de voorraad spreekt mee op elke receptkaart. */
+function InHuis({ ontbreekt }: { ontbreekt: number | undefined }) {
+  if (ontbreekt === undefined) return null;
+  if (ontbreekt === 0)
+    return (
+      <p className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-[0.9rem] font-semibold text-secondary-foreground">
+        <Check className="size-4" aria-hidden /> Alles in huis
+      </p>
+    );
+  if (ontbreekt > 3) return null;
+  return (
+    <p className="mt-1.5 text-[0.9rem] font-semibold text-muted-foreground">
+      {ontbreekt} {ontbreekt === 1 ? "ontbreekt" : "ontbreken"}
+    </p>
   );
 }

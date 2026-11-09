@@ -11,6 +11,7 @@ import {
   meldAan,
   nepDb,
   resetDemo,
+  storing,
   test,
 } from "./helpers";
 
@@ -150,4 +151,150 @@ test("klaar met winkelen ongedaan maken zet lijst en voorraad terug (K5)", async
     .poll(async () => (await nepDb()).shopping_items?.filter((i) => i["checked"]).length)
     .toBe(2);
   void extern;
+});
+
+test("WP2 wat eten we vanavond: één tik plant het en zet alleen het tekort op de lijst", async ({
+  page,
+  extern,
+}) => {
+  // Niets gepland voor vandaag.
+  const vandaag = new Date().toLocaleDateString("sv-SE");
+  await fetch(`http://127.0.0.1:54439/rest/v1/meal_plan?plan_date=eq.${vandaag}`, {
+    method: "DELETE",
+  });
+  const lijstVoor = (await open()).length;
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Wat eten we vandaag?" })).toBeVisible();
+  const voorstellen = page.getByRole("region", { name: "Met wat je in huis hebt" });
+  const knoppen = voorstellen.getByRole("button", { name: /^Kook .* vanavond$/ });
+  await expect(knoppen.first()).toBeVisible();
+  expect(await knoppen.count()).toBeLessThanOrEqual(3);
+  expect(await axeErnstig(page)).toEqual([]);
+
+  await knoppen.first().click();
+  await expect(page.getByText(/staat op vanavond/)).toBeVisible();
+  await expect
+    .poll(async () => (await nepDb()).meal_plan?.filter((m) => m["plan_date"] === vandaag).length)
+    .toBe(1);
+  // Het menu van vandaag staat nu in de band.
+  await expect(page.getByRole("link", { name: "Start koken" })).toBeVisible();
+  const lijstNa = (await open()).length;
+  expect(lijstNa).toBeGreaterThanOrEqual(lijstVoor);
+
+  // Ongedaan maken: plan weg en lijst zoals voordien.
+  await page.getByRole("button", { name: "Ongedaan maken", exact: true }).click();
+  await expect
+    .poll(async () => (await nepDb()).meal_plan?.filter((m) => m["plan_date"] === vandaag).length)
+    .toBe(0);
+  await expect.poll(async () => (await open()).length).toBe(lijstVoor);
+  void extern;
+});
+
+// ---------------------------------------------------------------- betrouwbaarheid
+// Gesimuleerde databankfouten (nep-Supabase /__storing): nooit half uitgevoerd werk.
+
+test.describe("betrouwbaarheid: fouten, dubbel tikken, alles-of-niets", () => {
+  const vandaag = () => new Date().toLocaleDateString("sv-SE");
+  const planVandaag = async () =>
+    (await nepDb()).meal_plan?.filter((m) => m["plan_date"] === vandaag()).length ?? 0;
+  const lijstSnapshot = async () =>
+    JSON.stringify(
+      ((await nepDb()).shopping_items ?? [])
+        .map((i) => [i["name"], i["quantity"], i["checked"]])
+        .sort(),
+    );
+  const voorraadSnapshot = async () =>
+    JSON.stringify(
+      ((await nepDb()).pantry_items ?? []).map((p) => [p["naam"], p["hoeveelheid"]]).sort(),
+    );
+
+  test.beforeEach(async () => {
+    await fetch(`http://127.0.0.1:54439/rest/v1/meal_plan?plan_date=eq.${vandaag()}`, {
+      method: "DELETE",
+    });
+  });
+
+  test("kook vanavond: lijst opslaan mislukt → planning teruggedraaid, lijst onveranderd", async ({
+    page,
+    extern,
+  }) => {
+    const lijstVoor = await lijstSnapshot();
+    await page.goto("/");
+    const knop = page.getByRole("button", { name: /^Kook .* vanavond$/ }).first();
+    await expect(knop).toBeVisible();
+    await storing({ pad: "/rest/v1/shopping_items", methode: "POST", soort: "fout", keer: 5 });
+    await knop.click();
+    await expect(page.getByText(/Er is niets veranderd/)).toBeVisible();
+    expect(await planVandaag(), "geen halve actie: planning weg").toBe(0);
+    expect(await lijstSnapshot(), "lijst onveranderd").toBe(lijstVoor);
+    void extern;
+  });
+
+  test("kook vanavond: ook terugdraaien mislukt → eerlijke melding, geen 'niets veranderd'", async ({
+    page,
+    extern,
+  }) => {
+    await page.goto("/");
+    const knop = page.getByRole("button", { name: /^Kook .* vanavond$/ }).first();
+    await expect(knop).toBeVisible();
+    await storing({ pad: "/rest/v1/shopping_items", methode: "POST", soort: "fout", keer: 5 });
+    await storing({ pad: "/rest/v1/meal_plan", methode: "DELETE", soort: "fout", keer: 5 });
+    await knop.click();
+    await expect(page.getByText(/lukte maar half/)).toBeVisible();
+    await expect(page.getByText(/Er is niets veranderd/)).toHaveCount(0);
+    // De planning bleef staan (terugdraaien kon niet) — en de app zegt dat ook.
+    expect(await planVandaag()).toBe(1);
+    void extern;
+  });
+
+  test("kook vanavond: dubbel tikken plant maar één keer", async ({ page, extern }) => {
+    await page.goto("/");
+    const knop = page.getByRole("button", { name: /^Kook .* vanavond$/ }).first();
+    await expect(knop).toBeVisible();
+    await knop.dblclick();
+    await expect(page.getByText(/staat (al )?op vanavond/).first()).toBeVisible();
+    await expect.poll(planVandaag).toBe(1);
+    await page.waitForTimeout(800);
+    expect(await planVandaag()).toBe(1);
+    void extern;
+  });
+
+  test("aanvullen: tweede schrijfstap mislukt → bijgetelde regels teruggezet", async ({
+    page,
+    extern,
+  }) => {
+    const lijstVoor = await lijstSnapshot();
+    await page.goto("/aanvullen");
+    await expect(page.getByRole("button", { name: /^Zet \d+ op mijn lijst$/ })).toBeVisible();
+    await storing({ pad: "/rest/v1/shopping_items", methode: "POST", soort: "fout", keer: 5 });
+    await page.getByRole("button", { name: /^Zet \d+ op mijn lijst$/ }).click();
+    await expect(page.getByText(/lukte niet/)).toBeVisible();
+    expect(await lijstSnapshot()).toBe(lijstVoor);
+    void extern;
+  });
+
+  test("klaar met winkelen: opruimen mislukt → voorraad teruggezet, lijst blijft", async ({
+    page,
+    extern,
+  }) => {
+    const lijstVoor = await lijstSnapshot();
+    const voorraadVoor = await voorraadSnapshot();
+    await page.goto("/boodschappen");
+    await storing({ pad: "/rest/v1/shopping_items", methode: "DELETE", soort: "fout", keer: 5 });
+    await page.getByRole("button", { name: "Klaar met winkelen" }).click();
+    await expect(page.getByText(/Je lijst blijft staan/)).toBeVisible();
+    expect(await voorraadSnapshot(), "voorraad teruggezet").toBe(voorraadVoor);
+    expect(await lijstSnapshot(), "lijst onveranderd").toBe(lijstVoor);
+    void extern;
+  });
+
+  test("klaar met winkelen: dubbel tikken verwerkt maar één keer", async ({ page, extern }) => {
+    await page.goto("/boodschappen");
+    await page.getByRole("button", { name: "Klaar met winkelen" }).dblclick();
+    await expect(page.getByText(/in je voorraad gezet/).first()).toBeVisible();
+    await page.waitForTimeout(800);
+    const namen = ((await nepDb()).pantry_items ?? []).map((p) => String(p["naam"]));
+    expect(namen.filter((n) => n === "zalmfilet")).toHaveLength(1);
+    void extern;
+  });
 });

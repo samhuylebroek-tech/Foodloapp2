@@ -5,8 +5,10 @@ import {
   BookOpen,
   CalendarDays,
   CalendarPlus,
+  ChefHat,
   ChevronRight,
   CircleUserRound,
+  Compass,
   Home,
   Plus,
   Refrigerator,
@@ -30,25 +32,51 @@ import {
 } from "@/components/ui/sheet";
 import { meet } from "@/lib/meten";
 
-type Pad = "/" | "/gerechten" | "/planner" | "/boodschappen" | "/voorraad" | "/meer";
+type Pad =
+  "/" | "/gerechten" | "/planner" | "/boodschappen" | "/voorraad" | "/inspiratie" | "/meer";
 
 /**
  * V2-navigatie.
  * Mobiel: 4 bestemmingen + één vaste plek om iets nieuws toe te voegen (midden).
  * Desktop: horizontale topbalk; de voorraadkast is een hoofdbestemming.
  */
-const NAV: readonly { to: Pad; label: string; kort: string; icon: LucideIcon; mobiel: boolean }[] =
-  [
-    { to: "/", label: "Vandaag", kort: "Vandaag", icon: Home, mobiel: true },
-    { to: "/gerechten", label: "Recepten", kort: "Recepten", icon: BookOpen, mobiel: true },
-    { to: "/planner", label: "Weekmenu", kort: "Week", icon: CalendarDays, mobiel: true },
-    { to: "/boodschappen", label: "Boodschappen", kort: "Lijst", icon: ShoppingCart, mobiel: true },
-    { to: "/voorraad", label: "Voorraad", kort: "Voorraad", icon: Refrigerator, mobiel: false },
-  ];
-
+const NAV: readonly {
+  to: Pad;
+  label: string;
+  /** Langere naam voor schermlezers ("Week" → "Weekmenu"). */
+  lang?: string;
+  icon: LucideIcon;
+  /** Andere paden die bij deze plek horen (Keuken = recepten + voorraad). */
+  ook?: string[];
+}[] = [
+  { to: "/", label: "Vandaag", icon: Home },
+  { to: "/planner", label: "Week", lang: "Weekmenu", icon: CalendarDays },
+  {
+    to: "/boodschappen",
+    label: "Lijst",
+    lang: "Boodschappen",
+    icon: ShoppingCart,
+    ook: ["/aanvullen"],
+  },
+  {
+    to: "/gerechten",
+    label: "Keuken",
+    lang: "Recepten en voorraad",
+    icon: ChefHat,
+    ook: ["/recepten", "/voorraad"],
+  },
+  { to: "/inspiratie", label: "Ontdek", lang: "Ideeën en inspiratie", icon: Compass },
+];
 /** Hoofdbestemmingen krijgen geen terugknop; alle andere schermen wel. */
-const HOOFDPADEN = new Set<string>(["/", "/gerechten", "/planner", "/boodschappen", "/meer"]);
-
+const HOOFDPADEN = new Set<string>([
+  "/",
+  "/gerechten",
+  "/planner",
+  "/boodschappen",
+  "/voorraad",
+  "/inspiratie",
+  "/meer",
+]);
 const NIEUW: readonly {
   to: Pad | "/recepten/nieuw";
   titel: string;
@@ -154,8 +182,10 @@ export function AppShell({
     );
   }
 
-  const isActief = (to: string) =>
+  const onder = (to: string) =>
     to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(`${to}/`);
+  const isActief = (to: string) =>
+    onder(to) || (NAV.find((n) => n.to === to)?.ook ?? []).some(onder);
   const breedte = breed ? "max-w-6xl" : "max-w-3xl lg:max-w-4xl";
 
   return (
@@ -189,7 +219,7 @@ export function AppShell({
               aria-label="Foodlo, Vandaag"
             >
               <img src={logo} alt="" width={30} height={30} className="size-8" />
-              <span className="font-display text-[1.6rem] font-semibold leading-none tracking-tight">
+              <span className="hidden font-display text-[1.6rem] font-semibold leading-none tracking-tight min-[400px]:inline">
                 Foodlo
               </span>
             </Link>
@@ -213,6 +243,7 @@ export function AppShell({
                       )}
                     >
                       {t(item.label)}
+                      {item.lang ? <span className="sr-only"> ({t(item.lang)})</span> : null}
                     </Link>
                   </li>
                 );
@@ -224,13 +255,16 @@ export function AppShell({
             <button
               type="button"
               onClick={() => setNieuwOpen(true)}
-              className="hidden min-h-11 items-center gap-2 rounded-full bg-primary px-4 text-base font-semibold text-primary-foreground shadow-zacht hover:bg-primary/90 lg:inline-flex"
+              aria-haspopup="dialog"
+              data-tour="nieuw"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-primary px-3.5 text-base font-semibold text-primary-foreground shadow-zacht hover:bg-primary/90 sm:px-4"
             >
               <Plus className="size-5" aria-hidden />
               {t("Nieuw")}
             </button>
             <Link
               to="/meer"
+              data-tour="meer"
               aria-current={isActief("/meer") ? "page" : undefined}
               className={cn(
                 "flex min-h-11 items-center gap-2 rounded-full px-3 text-base font-semibold transition-colors",
@@ -277,28 +311,11 @@ export function AppShell({
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <ul className="mx-auto grid max-w-lg grid-cols-5 items-end pt-1">
-          {[NAV[0]!, NAV[1]!, null, NAV[2]!, NAV[3]!].map((item, i) => {
-            if (!item) {
-              return (
-                <li key="nieuw" className="flex justify-center">
-                  <button
-                    type="button"
-                    onClick={() => setNieuwOpen(true)}
-                    aria-haspopup="dialog"
-                    className="flex min-h-18 flex-col items-center justify-end gap-1 pb-2 text-[0.84rem] font-semibold text-foreground"
-                  >
-                    <span className="-mt-5 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-kaart ring-4 ring-background">
-                      <Plus className="size-7" strokeWidth={2.5} aria-hidden />
-                    </span>
-                    {t("Nieuw")}
-                  </button>
-                </li>
-              );
-            }
+          {NAV.map((item) => {
             const actief = isActief(item.to);
             const Icon = item.icon;
             return (
-              <li key={`${item.to}-${i}`} className="min-w-0">
+              <li key={item.to} className="min-w-0">
                 <Link
                   to={item.to}
                   data-tour={`tab-${item.to}`}
@@ -317,10 +334,8 @@ export function AppShell({
                     <Icon className="size-6" strokeWidth={actief ? 2.4 : 2} aria-hidden />
                   </span>
                   <span className="max-w-full truncate whitespace-nowrap">
-                    {t(item.kort)}
-                    {item.kort !== item.label ? (
-                      <span className="sr-only"> ({t(item.label)})</span>
-                    ) : null}
+                    {t(item.label)}
+                    {item.lang ? <span className="sr-only"> ({t(item.lang)})</span> : null}
                   </span>
                 </Link>
               </li>

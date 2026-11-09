@@ -49,7 +49,9 @@ import { Copy, Users } from "lucide-react";
 import { KookTimers } from "@/components/KookTimers";
 import { bewaarVoortgang, leesVoortgang, vindTimers, wisVoortgang } from "@/lib/kookstand";
 import { meldMetHerstel, useKringloopVernieuw } from "@/hooks/useAanvulling";
-import { verwerkKoken } from "@/lib/kringloop-db";
+import { HalfGelukt, verwerkKoken } from "@/lib/kringloop-db";
+import { useVoorraadNamen } from "@/hooks/useVoorraadStand";
+import { isBasis, zitInVoorraad } from "@/lib/voorraad-match";
 import { soortLabel } from "@/lib/recept-keuzes";
 import { tijdLabel } from "@/lib/tijd";
 import { Voedingswaarden } from "@/components/Voedingswaarden";
@@ -179,6 +181,8 @@ function ReceptPage() {
   // Niet per ongeluk wegnavigeren tijdens het koken (terugknop, link, veeggebaar).
   const [stopVraag, setStopVraag] = useState(false);
   const vernieuwKringloop = useKringloopVernieuw();
+  // Keuken als één geheel: het recept weet wat er in huis is.
+  const { data: voorraadNamen = [] } = useVoorraadNamen();
   useBlocker({
     shouldBlockFn: () => !window.confirm(t("Stoppen met koken? Je stap blijft bewaard.")),
     disabled: !kookstand,
@@ -576,8 +580,13 @@ function ReceptPage() {
         r.herstel,
         vernieuwKringloop,
       );
-    } catch {
-      /* voorraad bijwerken is een extraatje; koken is gelukt */
+    } catch (fout) {
+      // Koken is gelukt; alleen de voorraad bijwerken niet. Dat zeggen we eerlijk.
+      toast.error(
+        fout instanceof HalfGelukt
+          ? "Je voorraad is maar gedeeltelijk bijgewerkt. Kijk ze even na."
+          : "Je voorraad is niet bijgewerkt. Er is niets veranderd.",
+      );
     }
   }
 
@@ -1043,15 +1052,39 @@ function ReceptPage() {
               </div>
             </div>
 
-            <ul className="mt-4 space-y-2 text-lg">
-              {ingredients.map((i) => (
-                <li key={i.id} className="flex justify-between gap-3 border-b border-border py-2">
-                  <span>{t(i.name)}</span>
-                  <span className="shrink-0 font-semibold">
-                    {i.quantity === null ? "" : toonBelgischeMaat(i.quantity * factor, i.unit)}
-                  </span>
-                </li>
-              ))}
+            {voorraadNamen.length && ingredients.length ? (
+              <p className="mt-4 text-base font-semibold text-muted-foreground">
+                {
+                  ingredients.filter(
+                    (i) => !isBasis(i.name) && zitInVoorraad(i.name, voorraadNamen),
+                  ).length
+                }{" "}
+                {t("van")} {ingredients.filter((i) => !isBasis(i.name)).length} {t("in huis")}
+              </p>
+            ) : null}
+            <ul className="mt-2 space-y-2 text-lg">
+              {ingredients.map((i) => {
+                const inHuis = !isBasis(i.name) && zitInVoorraad(i.name, voorraadNamen);
+                return (
+                  <li
+                    key={i.id}
+                    className="flex items-center justify-between gap-3 border-b border-border py-2"
+                  >
+                    <span className="min-w-0">
+                      {t(i.name)}
+                      {inHuis ? (
+                        <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 align-middle text-[0.85rem] font-semibold text-secondary-foreground">
+                          <Check className="size-3.5" aria-hidden />
+                          {t("in huis")}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="shrink-0 font-semibold">
+                      {i.quantity === null ? "" : toonBelgischeMaat(i.quantity * factor, i.unit)}
+                    </span>
+                  </li>
+                );
+              })}
               {ingredients.length === 0 && (
                 <li className="py-2 text-muted-foreground">{t("Nog geen ingrediënten.")}</li>
               )}

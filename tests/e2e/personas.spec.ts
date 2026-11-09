@@ -35,7 +35,8 @@ test.describe("Persona A — moeder van 70, telefoon", () => {
   test("A1+A2: recept vinden en als favoriet bewaren", async ({ page, extern }) => {
     const s = teller(page);
     await page.goto("/");
-    await s.tik(page.getByRole("link", { name: /^Recepten/ }));
+    // V2: recepten zitten in "Keuken" (onderbalk).
+    await s.tik(page.getByRole("link", { name: /^Keuken/ }));
     await s.typ(page.getByLabel("Zoeken"), "zalm");
     await s.tik(page.getByRole("link", { name: /Zalm met citroen en dille/ }).first());
     await expect(
@@ -144,7 +145,7 @@ test.describe("Persona B — foodcreator van 20, desktop", () => {
   test("B2: collecties gebruiken om recepten te ordenen", async ({ page, extern }) => {
     const s = teller(page);
     await page.goto("/");
-    await s.tik(page.getByRole("link", { name: "Recepten", exact: true }));
+    await s.tik(page.getByRole("link", { name: /^Keuken/ }).first());
     await s.tik(page.getByRole("button", { name: /^Snel klaar/ }));
     await expect(page.getByRole("button", { name: /^Snel klaar/ })).toHaveAttribute(
       "aria-pressed",
@@ -168,7 +169,7 @@ test.describe("Persona B — foodcreator van 20, desktop", () => {
   test("B5: weekmenu opbouwen in het weekraster", async ({ page, extern }) => {
     const s = teller(page);
     await page.goto("/");
-    await s.tik(page.getByRole("link", { name: "Weekmenu", exact: true }).first());
+    await s.tik(page.getByRole("link", { name: /^Week \(Weekmenu\)/ }).first());
     const raster = page.getByRole("region", { name: "Weekoverzicht" });
     await expect(raster).toBeVisible();
     await s.tik(raster.getByRole("button", { name: /Gerecht toevoegen: ontbijt/ }).first());

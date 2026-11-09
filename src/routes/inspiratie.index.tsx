@@ -125,25 +125,10 @@ function InspiratiePage() {
 
   return (
     <AppShell
-      title="Ideeën om te koken"
-      action={
-        <Button asChild className="h-12 shrink-0 px-4">
-          <Link to="/recepten/nieuw"><Plus /> Toevoegen</Link>
-        </Button>
-      }
+      title="Ontdek"
+      ondertitel="Ideeën om te koken"
     >
       <div className="space-y-4">
-        <nav aria-label="Recepten of ideeën" className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
-          <Link
-            to="/gerechten"
-            className="flex min-h-12 items-center justify-center rounded-full text-base font-semibold text-muted-foreground hover:text-foreground"
-          >
-            Mijn recepten
-          </Link>
-          <span aria-current="page" className="flex min-h-12 items-center justify-center rounded-full bg-card text-base font-semibold shadow-zacht">
-            Ideeën om te koken
-          </span>
-        </nav>
         <div>
           <p className="text-muted-foreground">
             Ontdek recepten die Foodlo al kent en voeg ze met één tik toe aan je eigen recepten.

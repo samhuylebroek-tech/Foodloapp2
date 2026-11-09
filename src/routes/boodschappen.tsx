@@ -40,7 +40,7 @@ import { Klantenkaarten } from "@/components/Klantenkaarten";
 import { Groep, Icoon } from "@/components/mobiel/Lijst";
 import { AanvulKaart } from "@/components/kringloop/AanvulKaart";
 import { meldMetHerstel, useKringloopVernieuw } from "@/hooks/useAanvulling";
-import { klaarMetWinkelen } from "@/lib/kringloop-db";
+import { HalfGelukt, klaarMetWinkelen } from "@/lib/kringloop-db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -776,8 +776,12 @@ function BoodschappenPage() {
         },
         vernieuwKringloop,
       );
-    } catch {
-      toast.error("Dat lukte niet. Je lijst blijft staan.");
+    } catch (fout) {
+      toast.error(
+        fout instanceof HalfGelukt
+          ? "Dat lukte maar half. Kijk je lijst en voorraad even na."
+          : "Dat lukte niet. Je lijst blijft staan.",
+      );
     } finally {
       setWinkelKlaarBezig(false);
     }

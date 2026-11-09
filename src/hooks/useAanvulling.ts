@@ -2,7 +2,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { haalVanLijst, laadAanvulling, vulAan, type Herstel } from "@/lib/kringloop-db";
+import { HalfGelukt, haalVanLijst, laadAanvulling, vulAan, type Herstel } from "@/lib/kringloop-db";
 import { meet } from "@/lib/meten";
 
 export function useKringloopVernieuw() {
@@ -21,9 +21,14 @@ export function meldMetHerstel(tekst: string, herstel: Herstel, vernieuw: () => 
     action: {
       label: "Ongedaan maken",
       onClick: async () => {
-        await herstel();
-        vernieuw();
-        toast("Teruggezet");
+        try {
+          await herstel();
+          toast("Teruggezet");
+        } catch {
+          toast.error("Terugzetten lukte niet helemaal. Kijk je lijst en voorraad even na.");
+        } finally {
+          vernieuw();
+        }
       },
     },
   });
@@ -55,8 +60,12 @@ export function useAanvulling() {
         vernieuw,
       );
       return aantal;
-    } catch {
-      toast.error("Op je lijst zetten lukte niet. Probeer het opnieuw.");
+    } catch (fout) {
+      toast.error(
+        fout instanceof HalfGelukt
+          ? "Dat lukte maar half. Kijk je lijst even na."
+          : "Op je lijst zetten lukte niet. Er is niets veranderd.",
+      );
       return 0;
     }
   }

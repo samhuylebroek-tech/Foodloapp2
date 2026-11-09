@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
+import { KeukenWissel } from "@/components/KeukenWissel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RecipePhoto } from "@/components/RecipePhoto";
@@ -245,6 +246,9 @@ function VoorraadPage() {
       title={t("Voorraadkast")}
       ondertitel={t("Wat heb je al in huis? Dan zie je meteen wat je ermee kan koken.")}
     >
+      <div className="mb-8 max-w-md">
+        <KeukenWissel />
+      </div>
       <div className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-12">
         <section aria-labelledby="in-huis-titel" className="min-w-0">
           <h2 id="in-huis-titel" className="text-sectietitel">

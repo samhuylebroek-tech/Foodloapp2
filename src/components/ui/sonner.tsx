@@ -11,11 +11,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:rounded-2xl group-[.toaster]:border group-[.toaster]:border-border group-[.toaster]:bg-card group-[.toaster]:p-4 group-[.toaster]:text-base group-[.toaster]:text-foreground group-[.toaster]:shadow-zwevend",
+            "group toast group-[.toaster]:flex-wrap group-[.toaster]:rounded-2xl group-[.toaster]:border group-[.toaster]:border-border group-[.toaster]:bg-card group-[.toaster]:p-4 group-[.toaster]:text-base group-[.toaster]:text-foreground group-[.toaster]:shadow-zwevend",
+          // Tekst krijgt minstens 11 rem; anders gaat de knop (bv. "Ongedaan maken") eronder
+          // in plaats van woorden middenin te breken ("Chocoladem-ousse").
+          content: "group-[.toast]:min-w-44 group-[.toast]:flex-1",
           title: "group-[.toast]:text-base group-[.toast]:font-semibold",
           description: "group-[.toast]:text-base group-[.toast]:text-muted-foreground",
           actionButton:
-            "group-[.toast]:!min-h-10 group-[.toast]:!rounded-xl group-[.toast]:!bg-primary group-[.toast]:!px-3 group-[.toast]:!text-base group-[.toast]:!text-primary-foreground",
+            "group-[.toast]:!ml-auto group-[.toast]:!min-h-10 group-[.toast]:!rounded-xl group-[.toast]:!bg-primary group-[.toast]:!px-3 group-[.toast]:!text-base group-[.toast]:!text-primary-foreground",
           cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
           success: "group-[.toaster]:!border-l-[6px] group-[.toaster]:!border-l-success",
           error: "group-[.toaster]:!border-l-[6px] group-[.toaster]:!border-l-destructive",
