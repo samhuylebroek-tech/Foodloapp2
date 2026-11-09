@@ -77,3 +77,14 @@ describe("WP5 — vervangen in de winkel", () => {
     expect(a.kopen).toHaveLength(0);
   });
 });
+
+describe("vervangVoorstellen", () => {
+  it("alleen voorstellen die kloppen", async () => {
+    const { vervangVoorstellen } = await import("./vervangen");
+    expect(vervangVoorstellen("verse spinazie")).toEqual(["Diepvries spinazie"]);
+    expect(vervangVoorstellen("tomaten")).toEqual(["Tomaten uit blik"]);
+    expect(vervangVoorstellen("erwten")).toEqual(["Diepvries erwten", "Erwten uit blik"]);
+    expect(vervangVoorstellen("citroen")).toEqual([]);
+    expect(vervangVoorstellen("Margarine (i.p.v. boter)")).toEqual([]);
+  });
+});

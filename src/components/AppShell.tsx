@@ -186,7 +186,8 @@ export function AppShell({
     to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(`${to}/`);
   const isActief = (to: string) =>
     onder(to) || (NAV.find((n) => n.to === to)?.ook ?? []).some(onder);
-  const breedte = breed ? "max-w-6xl" : "max-w-3xl lg:max-w-4xl";
+  // Tablet: de zijbalk neemt links 6 rem; de inhoud krijgt de rest (tot 5xl), desktop zoals voorheen.
+  const breedte = breed ? "max-w-6xl" : "max-w-3xl md:max-w-5xl lg:max-w-4xl";
 
   return (
     <div className="min-h-screen bg-background">
@@ -283,7 +284,7 @@ export function AppShell({
       <main
         id="inhoud"
         className={cn(
-          "mx-auto w-full overflow-x-hidden px-4 pb-36 pt-6 sm:px-6 lg:pb-16 lg:pt-10",
+          "mx-auto w-full overflow-x-hidden px-4 pb-36 pt-6 sm:px-6 md:pb-16 md:pl-32 md:pr-8 lg:px-6 lg:pb-16 lg:pt-10",
           breedte,
         )}
       >
@@ -304,10 +305,51 @@ export function AppShell({
         <MeldingVraag actief={pathname === "/"} />
       </main>
 
-      {/* Mobiel: altijd dezelfde vijf plekken, met tekst. "Nieuw" staat in het midden. */}
+      {/* Tablet (768–1023 px): dezelfde vijf plekken als zijbalk — duimbereik links, meer ruimte
+          voor de inhoud dan een onderbalk, en geen telefoonweergave die uitgerekt wordt. */}
+      <nav
+        aria-label="Zijmenu"
+        className="fixed bottom-0 left-0 z-20 hidden w-24 border-r border-border/60 bg-card/95 backdrop-blur-md md:block lg:hidden"
+        style={{ top: "calc(4rem + env(safe-area-inset-top))" }}
+      >
+        <ul className="flex flex-col items-stretch gap-1 px-2 pt-4">
+          {NAV.map((item) => {
+            const actief = isActief(item.to);
+            const Icon = item.icon;
+            return (
+              <li key={item.to}>
+                <Link
+                  to={item.to}
+                  data-tour={`zij-${item.to}`}
+                  aria-current={actief ? "page" : undefined}
+                  className={cn(
+                    "flex min-h-20 flex-col items-center justify-center gap-1 rounded-2xl text-[0.9rem] font-semibold transition-colors",
+                    actief ? "text-foreground" : "text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex h-9 w-14 items-center justify-center rounded-full transition-colors",
+                      actief ? "bg-inkt text-inkt-foreground" : "",
+                    )}
+                  >
+                    <Icon className="size-6" strokeWidth={actief ? 2.4 : 2} aria-hidden />
+                  </span>
+                  <span className="max-w-full truncate">
+                    {t(item.label)}
+                    {item.lang ? <span className="sr-only"> ({t(item.lang)})</span> : null}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      {/* Telefoon: altijd dezelfde vijf plekken, met tekst. */}
       <nav
         aria-label="Snelmenu"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-border/70 bg-card/95 shadow-[0_-8px_24px_-12px_oklch(0.3_0.02_60/0.18)] backdrop-blur-md lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-border/70 bg-card/95 shadow-[0_-8px_24px_-12px_oklch(0.3_0.02_60/0.18)] backdrop-blur-md md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <ul className="mx-auto grid max-w-lg grid-cols-5 items-end pt-1">

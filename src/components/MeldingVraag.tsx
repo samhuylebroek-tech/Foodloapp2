@@ -104,7 +104,7 @@ export function MeldingVraag({ actief = true }: { actief?: boolean }) {
   };
 
   return (
-    <div className="fixed inset-x-3 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-40 flex justify-center lg:bottom-5">
+    <div className="fixed inset-x-3 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-40 flex justify-center md:bottom-5 md:left-28 lg:left-3">
       <div
         role="region"
         aria-label={t("Wil je een seintje krijgen?")}

@@ -251,7 +251,7 @@ function AanvullenPagina() {
           ) : null}
 
           {/* Eén hoofdactie, altijd binnen bereik van de duim. */}
-          <div className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 border-t border-border/70 bg-background/95 px-4 py-3 backdrop-blur-md lg:bottom-0">
+          <div className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 border-t border-border/70 bg-background/95 px-4 py-3 backdrop-blur-md md:bottom-0 md:left-24 lg:left-0">
             <div className="mx-auto max-w-3xl">
               <Button
                 onClick={async () => {

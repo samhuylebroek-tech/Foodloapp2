@@ -206,7 +206,7 @@ export function NuKaart({
       aria-labelledby="vandaag-groet"
       className="relative mb-8 overflow-hidden rounded-[2rem] bg-inkt text-inkt-foreground shadow-kaart"
     >
-      <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
         <div className="flex flex-col p-6 sm:p-8 lg:p-10">
           <p className="flex items-center gap-2 text-base font-medium text-inkt-zacht">
             <CalendarDays className="size-5" aria-hidden />
@@ -216,7 +216,7 @@ export function NuKaart({
             {groet}
           </h1>
 
-          <div className="mt-6 lg:mt-auto lg:pt-8" aria-live="polite">
+          <div className="mt-6 md:mt-auto md:pt-8" aria-live="polite">
             {laden || !stap ? (
               <p className="text-lg text-inkt-zacht">
                 {t("Even kijken wat er op het menu staat…")}
@@ -232,7 +232,7 @@ export function NuKaart({
                 {uitleg ? <p className="mt-3 max-w-md text-lg text-inkt-zacht">{uitleg}</p> : null}
                 {extra}
                 {acties ? (
-                  <div className="mt-6 flex flex-col gap-3 sm:flex-row">{acties}</div>
+                  <div className="mt-6 flex flex-col gap-3 sm:flex-row md:flex-col lg:flex-row">{acties}</div>
                 ) : null}
               </div>
             )}
@@ -245,7 +245,7 @@ export function NuKaart({
             params={{ id: recept.id }}
             tabIndex={-1}
             aria-hidden
-            className="relative block min-h-48 overflow-hidden lg:min-h-full"
+            className="relative block min-h-48 overflow-hidden md:min-h-full"
           >
             <RecipePhoto
               path={recept.image_url ?? null}
@@ -256,7 +256,7 @@ export function NuKaart({
             />
           </Link>
         ) : (
-          <div className="omslag omslag-groen hidden min-h-56 lg:block" aria-hidden />
+          <div className="omslag omslag-groen hidden min-h-56 md:block" aria-hidden />
         )}
       </div>
     </section>

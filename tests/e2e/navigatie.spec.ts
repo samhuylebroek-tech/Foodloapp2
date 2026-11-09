@@ -2,7 +2,7 @@
  * WP1 — vijf vaste plekken (Vandaag · Week · Lijst · Keuken · Ontdek).
  * Per route: precies één actieve plek (of geen, bij Meer-schermen), terugknop alleen
  * op onderliggende schermen, en de rondleiding wijst elk onderdeel zichtbaar aan.
- * Draait op telefoon (390) en desktop (1280).
+ * Draait op telefoon (390), tablet (768) en desktop (1280).
  */
 import { axeErnstig, expect, meldAan, resetDemo, test } from "./helpers";
 
@@ -31,8 +31,10 @@ test.beforeEach(async ({ page }) => {
 
 test("elke route: juiste plek actief en terugknop alleen waar nodig", async ({ page, extern }) => {
   test.setTimeout(120_000);
-  const mobiel = (page.viewportSize()?.width ?? 0) < 1000;
-  const menu = page.getByRole("navigation", { name: mobiel ? "Snelmenu" : "Hoofdmenu" });
+  // Telefoon: onderbalk; tablet (768–1023): zijbalk (WP6); desktop: hoofdmenu bovenaan.
+  const breedte = page.viewportSize()?.width ?? 0;
+  const naam = breedte < 768 ? "Snelmenu" : breedte < 1024 ? "Zijmenu" : "Hoofdmenu";
+  const menu = page.getByRole("navigation", { name: naam });
   for (const [pad, plek, terug] of VERWACHT) {
     await page.goto(pad);
     await expect(menu).toBeVisible();

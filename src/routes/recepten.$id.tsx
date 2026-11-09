@@ -880,7 +880,7 @@ function ReceptPage() {
     >
       <div className="space-y-10">
         {/* V2: kop met foto en acties naast elkaar op desktop. */}
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-10">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:gap-8 lg:gap-10">
           <div className="space-y-3">
             <div className="relative">
               <RecipePhoto

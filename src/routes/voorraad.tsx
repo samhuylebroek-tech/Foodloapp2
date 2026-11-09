@@ -249,7 +249,7 @@ function VoorraadPage() {
       <div className="mb-8 max-w-md">
         <KeukenWissel />
       </div>
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-12">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] md:gap-8 lg:gap-12">
         <section aria-labelledby="in-huis-titel" className="min-w-0">
           <h2 id="in-huis-titel" className="text-sectietitel">
             {t("In huis")}

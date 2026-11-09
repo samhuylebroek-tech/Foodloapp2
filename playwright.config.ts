@@ -35,14 +35,14 @@ export default defineConfig({
       name: "telefoon",
       use: { ...devices["Pixel 7"] },
       testIgnore:
-        /kernflow|schermen|kookstand|voorraad|personas|mobiel-breedtes|kringloop|navigatie|weekmenu-lijst|vandaag|winkelmodus/,
+        /kernflow|schermen|kookstand|voorraad|personas|mobiel-breedtes|kringloop|navigatie|weekmenu-lijst|vandaag|winkelmodus|tablet/,
     },
     // Creator op desktop.
     {
       name: "desktop",
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
       // De telefoonbreedtes hebben hun eigen project hieronder.
-      testIgnore: /mobiel-breedtes/,
+      testIgnore: /mobiel-breedtes|tablet/,
     },
     // Kernflow op de gevraagde breedtes (de desktop-run hierboven dekt 1280 px).
     {
@@ -59,7 +59,7 @@ export default defineConfig({
     {
       name: "tablet-768",
       use: { ...devices["Desktop Chrome"], viewport: { width: 768, height: 1024 }, hasTouch: true },
-      testMatch: /kernflow/,
+      testMatch: /kernflow|tablet|navigatie|winkelmodus|vandaag|schermen-review/,
     },
   ],
   webServer: [

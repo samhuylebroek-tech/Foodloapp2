@@ -83,6 +83,8 @@ import { LijstVraag } from "@/components/planner/LijstVraag";
 import { WeekmenuInstellingen } from "@/components/planner/WeekmenuInstellingen";
 import { ReceptFoto, WeekmenuVoorstel } from "@/components/planner/WeekmenuVoorstel";
 import { VerplaatsSheet, KoppelSheet } from "@/components/planner/PlanSheets";
+import { useTablet } from "@/hooks/useTablet";
+import { TabletWeek } from "@/components/planner/TabletWeek";
 
 export const Route = createFileRoute("/planner")({
   head: () => ({
@@ -161,6 +163,7 @@ function PlannerPage() {
   // In de huidige week beginnen we bij vandaag; verleden dagen zie je alleen
   // als je bewust naar een vorige week bladert.
   const getoondeDagen = weekVerschil === 0 ? zichtbareDagen.filter((dag) => dag >= vandaag) : zichtbareDagen;
+  const tablet = useTablet();
   const gekozenDag = dagKeuze && week.includes(dagKeuze) ? dagKeuze : week.includes(vandaag) ? vandaag : (zichtbareDagen[0] ?? week[0] ?? vandaag);
   const snelleWeken = [0, 1, 2, 3].map((stap) => {
     const start = new Date(huidigeWeek);
@@ -1188,7 +1191,7 @@ function PlannerPage() {
             </button>
           ) : null}
           {/* Keuze: één dag of de hele week met alle planning */}
-          <div className="mt-3 grid grid-cols-2 gap-1 rounded-full bg-muted p-1 lg:hidden" role="tablist" aria-label="Weergave kiezen">
+          <div className="mt-3 grid grid-cols-2 gap-1 rounded-full bg-muted p-1 md:hidden" role="tablist" aria-label="Weergave kiezen">
             <button
               type="button"
               role="tab"
@@ -1208,7 +1211,7 @@ function PlannerPage() {
               Hele week
             </button>
           </div>
-          <div className="mt-3 grid grid-cols-7 gap-1.5 lg:hidden" role="tablist" aria-label="Dag kiezen">
+          <div className="mt-3 grid grid-cols-7 gap-1.5 md:hidden" role="tablist" aria-label="Dag kiezen">
             {week.map((dag) => {
               const d = new Date(`${dag}T12:00:00`);
               const actief = !heleWeek && dag === gekozenDag;
@@ -1269,7 +1272,21 @@ function PlannerPage() {
         </section>
 
         {weekRaster()}
-        {heleWeek ? (
+        {tablet ? (
+          <TabletWeek
+            week={week}
+            gekozen={gekozenDag}
+            vandaag={vandaag}
+            plan={plan}
+            zichtbaar={zichtbareDagen}
+            onKies={(dag) => {
+              setDagKeuze(dag);
+              setHeleWeek(false);
+            }}
+          >
+            {toonDag(gekozenDag, true)}
+          </TabletWeek>
+        ) : heleWeek ? (
           <section aria-label="Hele week" className="space-y-6 lg:hidden">
             <h2 className="text-sectietitel">De hele week</h2>
             {zichtbareDagen.map((dag) => <div key={dag}>{toonDag(dag, false)}</div>)}

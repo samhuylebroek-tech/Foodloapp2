@@ -238,52 +238,62 @@ function StartPage() {
   return (
     <AppShell breed title={groetTekst} kop={kop}>
       <div className="space-y-12">
-        {/* Daarna: hooguit drie signalen, nooit wat de Nu-kaart al zegt. */}
-        <Daarna signalen={signalen} bezig={zetBezig} onAanvullen={() => void zetOpLijst("alles")} />
-        {overige.length ? (
-          <section aria-labelledby="ook-vandaag">
-            <h2 id="ook-vandaag" className="text-sectietitel">
-              {t("Ook vandaag")}
-            </h2>
-            <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {overige.map((m) => (
-                <li key={m.id}>
-                  {m.recipes ? (
-                    <Link
-                      to="/recepten/$id"
-                      params={{ id: m.recipes.id }}
-                      className="flex min-h-20 items-center gap-4 rounded-2xl bg-card p-3 shadow-zacht hover:shadow-kaart"
-                    >
-                      <RecipePhoto
-                        path={m.recipes.image_url}
-                        alt=""
-                        recept={m.recipes}
-                        className="size-16 shrink-0 rounded-xl"
-                        icoonClassName="size-8"
+        {/* Tablet en groter: "Daarna" en "Ook vandaag" naast elkaar; alleen één? Dan volle breedte. */}
+        <div className="grid gap-12 md:grid-cols-2 md:gap-8 md:[&>*:only-child]:col-span-2">
+          {/* Daarna: hooguit drie signalen, nooit wat de Nu-kaart al zegt. */}
+          <Daarna
+            signalen={signalen}
+            bezig={zetBezig}
+            onAanvullen={() => void zetOpLijst("alles")}
+          />
+          {overige.length ? (
+            <section aria-labelledby="ook-vandaag">
+              <h2 id="ook-vandaag" className="text-sectietitel">
+                {t("Ook vandaag")}
+              </h2>
+              <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-1">
+                {overige.map((m) => (
+                  <li key={m.id}>
+                    {m.recipes ? (
+                      <Link
+                        to="/recepten/$id"
+                        params={{ id: m.recipes.id }}
+                        className="flex min-h-20 items-center gap-4 rounded-2xl bg-card p-3 shadow-zacht hover:shadow-kaart"
+                      >
+                        <RecipePhoto
+                          path={m.recipes.image_url}
+                          alt=""
+                          recept={m.recipes}
+                          className="size-16 shrink-0 rounded-xl"
+                          icoonClassName="size-8"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-base capitalize text-muted-foreground">
+                            {t(m.meal_type)}
+                          </span>
+                          <span className="block truncate text-lg font-semibold">
+                            {t(m.recipes.title)}
+                          </span>
+                        </span>
+                        <ChevronRight
+                          className="size-6 shrink-0 text-muted-foreground"
+                          aria-hidden
+                        />
+                      </Link>
+                    ) : (
+                      <MaaltijdRij
+                        to="/planner"
+                        moment={m.meal_type}
+                        titel={m.custom_title ?? "Maaltijd"}
+                        t={t}
                       />
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-base capitalize text-muted-foreground">
-                          {t(m.meal_type)}
-                        </span>
-                        <span className="block truncate text-lg font-semibold">
-                          {t(m.recipes.title)}
-                        </span>
-                      </span>
-                      <ChevronRight className="size-6 shrink-0 text-muted-foreground" aria-hidden />
-                    </Link>
-                  ) : (
-                    <MaaltijdRij
-                      to="/planner"
-                      moment={m.meal_type}
-                      titel={m.custom_title ?? "Maaltijd"}
-                      t={t}
-                    />
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+        </div>
 
         <section aria-labelledby="week-titel">
           <div className="flex items-end justify-between gap-4">

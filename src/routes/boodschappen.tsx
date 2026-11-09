@@ -1090,7 +1090,7 @@ function BoodschappenPage() {
             {/* Snel toevoegen: op de telefoon vast onderaan, binnen bereik van de duim. */}
             <section
               aria-label="Iets toevoegen"
-              className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 border-t border-border/70 bg-background/95 px-4 pb-3 pt-2 backdrop-blur-md lg:static lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none"
+              className="fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 border-t border-border/70 bg-background/95 px-4 pb-3 pt-2 backdrop-blur-md md:static md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none"
             >
               <div className="mx-auto max-w-3xl">
                 {typSuggesties.length > 0 ? (
@@ -1252,62 +1252,65 @@ function BoodschappenPage() {
                   </div>
                 )}
 
-                {groepen.map(({ id, lijst }) => {
-                  const open = !dicht[id];
-                  return (
-                    <section
-                      key={id}
-                      aria-label={CATEGORIE_LABEL[id]}
-                      className="paneel overflow-hidden"
-                    >
-                      <div className="flex items-center gap-1 border-b border-border/70 bg-muted/40 py-1 pl-2 pr-1">
-                        <button
-                          type="button"
-                          onClick={() => setDicht((d) => ({ ...d, [id]: open }))}
-                          aria-expanded={open}
-                          className="flex min-h-12 flex-1 items-center gap-2 px-2 text-left"
-                        >
-                          <span className="text-[1.05rem] font-bold">{CATEGORIE_LABEL[id]}</span>
-                          <span className="rounded-full bg-card px-2.5 py-0.5 text-[0.95rem] font-semibold text-muted-foreground ring-1 ring-border">
-                            {lijst.length}
-                          </span>
-                          <span className="flex-1" />
-                          {open ? (
-                            <ChevronDown className="size-5 text-muted-foreground" />
-                          ) : (
-                            <ChevronRight className="size-5 text-muted-foreground" />
-                          )}
-                        </button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Alles in ${CATEGORIE_LABEL[id]} afvinken`}
-                          onClick={() => void vinkCategorieAf(lijst)}
-                        >
-                          <CheckCheck />
-                        </Button>
-                      </div>
-                      {open ? (
-                        <ul className="divide-y divide-border/70">
-                          {lijst.map((item) => (
-                            <li key={item.id}>
-                              <ItemRij
-                                item={item}
-                                kiesModus={kiesModus}
-                                gekozen={gekozen.has(item.id)}
-                                onKies={() => kies(item.id)}
-                                onVink={() => vink(item)}
-                                onBewerk={() => openBewerken(item)}
-                                onVerwijder={() => verwijder(item)}
-                                onCategorie={(c) => zetCategorie(item.name, c)}
-                              />
-                            </li>
-                          ))}
-                        </ul>
-                      ) : null}
-                    </section>
-                  );
-                })}
+                {/* Desktop: afdelingen in twee kolommen, zoals een winkelbriefje (tablet: één brede kolom, namen blijven leesbaar). */}
+                <div className="space-y-4 lg:block lg:columns-2 lg:gap-4 lg:space-y-0 lg:[&>section]:mb-4 lg:[&>section]:break-inside-avoid">
+                  {groepen.map(({ id, lijst }) => {
+                    const open = !dicht[id];
+                    return (
+                      <section
+                        key={id}
+                        aria-label={CATEGORIE_LABEL[id]}
+                        className="paneel overflow-hidden"
+                      >
+                        <div className="flex items-center gap-1 border-b border-border/70 bg-muted/40 py-1 pl-2 pr-1">
+                          <button
+                            type="button"
+                            onClick={() => setDicht((d) => ({ ...d, [id]: open }))}
+                            aria-expanded={open}
+                            className="flex min-h-12 flex-1 items-center gap-2 px-2 text-left"
+                          >
+                            <span className="text-[1.05rem] font-bold">{CATEGORIE_LABEL[id]}</span>
+                            <span className="rounded-full bg-card px-2.5 py-0.5 text-[0.95rem] font-semibold text-muted-foreground ring-1 ring-border">
+                              {lijst.length}
+                            </span>
+                            <span className="flex-1" />
+                            {open ? (
+                              <ChevronDown className="size-5 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="size-5 text-muted-foreground" />
+                            )}
+                          </button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Alles in ${CATEGORIE_LABEL[id]} afvinken`}
+                            onClick={() => void vinkCategorieAf(lijst)}
+                          >
+                            <CheckCheck />
+                          </Button>
+                        </div>
+                        {open ? (
+                          <ul className="divide-y divide-border/70">
+                            {lijst.map((item) => (
+                              <li key={item.id}>
+                                <ItemRij
+                                  item={item}
+                                  kiesModus={kiesModus}
+                                  gekozen={gekozen.has(item.id)}
+                                  onKies={() => kies(item.id)}
+                                  onVink={() => vink(item)}
+                                  onBewerk={() => openBewerken(item)}
+                                  onVerwijder={() => verwijder(item)}
+                                  onCategorie={(c) => zetCategorie(item.name, c)}
+                                />
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                      </section>
+                    );
+                  })}
+                </div>
                 {klaar.length > 0 ? (
                   <Accordion
                     type="single"
@@ -1372,7 +1375,7 @@ function BoodschappenPage() {
               </AccordionItem>
             </Accordion>
             {/* Ruimte voor de vaste invoerbalk onderaan (alleen telefoon). */}
-            <div aria-hidden className="h-20 lg:hidden" />
+            <div aria-hidden className="h-20 md:hidden" />
           </>
         ) : (
           <div className="space-y-5">

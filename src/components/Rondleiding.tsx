@@ -10,31 +10,31 @@ const STAPPEN: Stap[] = [
   // V2: de vijf vaste plekken, dan "Nieuw" en "Meer". Kort: één zin per stap.
   {
     route: "/",
-    doel: '[data-tour="nav-/"],[data-tour="tab-/"]',
+    doel: '[data-tour="nav-/"],[data-tour="tab-/"],[data-tour="zij-/"]',
     titel: "Vandaag",
     tekst: "Wat je vandaag eet en wat er nog moet gebeuren. Altijd één duidelijke knop.",
   },
   {
     route: "/planner",
-    doel: '[data-tour="nav-/planner"],[data-tour="tab-/planner"]',
+    doel: '[data-tour="nav-/planner"],[data-tour="tab-/planner"],[data-tour="zij-/planner"]',
     titel: "Week",
     tekst: "Plan wat je deze week eet. Foodlo rekent uit wat je nodig hebt.",
   },
   {
     route: "/boodschappen",
-    doel: '[data-tour="nav-/boodschappen"],[data-tour="tab-/boodschappen"]',
+    doel: '[data-tour="nav-/boodschappen"],[data-tour="tab-/boodschappen"],[data-tour="zij-/boodschappen"]',
     titel: "Lijst",
     tekst: "Eén tik zet wat ontbreekt op je lijst. Wat je al hebt, laat Foodlo weg.",
   },
   {
     route: "/gerechten",
-    doel: '[data-tour="nav-/gerechten"],[data-tour="tab-/gerechten"]',
+    doel: '[data-tour="nav-/gerechten"],[data-tour="tab-/gerechten"],[data-tour="zij-/gerechten"]',
     titel: "Keuken",
     tekst: "Je recepten en je voorraad. Gekocht en gekookt wordt vanzelf bijgewerkt.",
   },
   {
     route: "/inspiratie",
-    doel: '[data-tour="nav-/inspiratie"],[data-tour="tab-/inspiratie"]',
+    doel: '[data-tour="nav-/inspiratie"],[data-tour="tab-/inspiratie"],[data-tour="zij-/inspiratie"]',
     titel: "Ontdek",
     tekst: "Nieuwe ideeën om te koken. Eén tik bewaart een recept bij de jouwe.",
   },
