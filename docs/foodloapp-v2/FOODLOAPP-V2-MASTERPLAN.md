@@ -1,14 +1,26 @@
 # Foodloapp V2 — Masterplan
 
 **Centrale bron.** Stand: 2026-11-09, branch `v2/dev` (lokaal, niet gepusht). Eigenaar van beslissingen: Sam.
-Detaildocumenten (gelinkt, niet herhaald): [PRODUCT-HERONTWERP](PRODUCT-HERONTWERP.md) · [HUISHOUDEN-ONTWERP](HUISHOUDEN-ONTWERP.md) · [FUNCTIE-INVENTARIS](FUNCTIE-INVENTARIS.md) · [BUG-REGISTER](BUG-REGISTER.md) · [SECURITY-RELEASE](SECURITY-RELEASE.md) · [MOBIEL-REDESIGN-MATRIX](MOBIEL-REDESIGN-MATRIX.md) · [STAGING-VOORSTELLEN](STAGING-VOORSTELLEN.md) · [ZOD4-MIGRATIE](ZOD4-MIGRATIE.md)
+Detaildocumenten (gelinkt, niet herhaald): [MODULE-AUDIT](MODULE-AUDIT-2026-11.md) · [PRODUCT-HERONTWERP](PRODUCT-HERONTWERP.md) · [HUISHOUDEN-ONTWERP](HUISHOUDEN-ONTWERP.md) · [FUNCTIE-INVENTARIS](FUNCTIE-INVENTARIS.md) · [BUG-REGISTER](BUG-REGISTER.md) · [SECURITY-RELEASE](SECURITY-RELEASE.md) · [MOBIEL-REDESIGN-MATRIX](MOBIEL-REDESIGN-MATRIX.md) · [STAGING-VOORSTELLEN](STAGING-VOORSTELLEN.md) · [ZOD4-MIGRATIE](ZOD4-MIGRATIE.md)
 
 Statuslabels in dit document:
 - ✅ **bestaand en gecontroleerd**: geautomatiseerd getest.
 - 🟨 **bestaand maar onvoldoende**.
 - 🟧 **gedeeltelijk**.
 - ⬜ **nog te bouwen**.
-- ⛔ **geblokkeerd**: door een beslissing of afhankelijkheid, met poort G1–G8.
+- ⛔ **geblokkeerd**: door een beslissing of afhankelijkheid, met poort G1–G9.
+
+> **Permanente kwaliteitsnorm (sinds 2026-11-09).** Een module is pas *klaar* als ze aan alle acht punten van [MODULE-AUDIT §0](MODULE-AUDIT-2026-11.md#0-de-kwaliteitsnorm-wanneer-is-een-module-klaar) voldoet:
+> 1. taak in seconden, het belangrijkste bovenaan;
+> 2. voor 70 én 20 jaar;
+> 3. volledig tegenover de beste gespecialiseerde app (voor boodschappen: Bring!);
+> 4. zichtbare Foodlo-meerwaarde;
+> 5. betrouwbaar en ongedaan te maken;
+> 6. alle toestanden ontworpen;
+> 7. telefoon, tablet en desktop volwaardig;
+> 8. gemeten.
+>
+> Werkende basisfunctionaliteit is **niet** genoeg. Liever minder functies die uitzonderlijk goed zijn dan veel middelmatige. Elke statusmelding in dit plan zegt expliciet of iets *gebouwd*, *gedeeltelijk*, *ontworpen*, *getest* of *niet getest* is, en of het van jouw akkoord afhangt.
 
 ---
 
@@ -63,6 +75,7 @@ Volledige lijst per route: [FUNCTIE-INVENTARIS](FUNCTIE-INVENTARIS.md). Hieronde
 | | Agenda en beschikbare tijd | ⬜ | Fase 3 (koppeling met een kalender = externe verplichting) |
 | **Lijst** | Afdelingen, winkelmodus, eerder gekocht, vaste items, delen, realtime | ✅/🟨 | Behouden |
 | | Overslaan/vervangen in de winkel (hoeveelheid en gerecht blijven) | ✅ (WP5) | Vervangen product telt voor maaltijd, voorraad en aanvullen als het origineel |
+| | Lijst eerst (B1), vaak gekocht in het invoerveld (B2), waarom op mijn lijst (B3), winkelvolgorde per toestel (B4) | ✅ (C1) | Zie §18. De module is **nog niet klaar** volgens de kwaliteitsnorm: catalogus met tegels, "toegevoegd door", sjablonen, merk/variant/foto en winkels ontbreken (MODULE-AUDIT §1) |
 | | Eigen boodschappen beschermd (Foodlo past ze nooit aan; elk verwijderen terug te zetten) | ✅ (WP5) | Tekort komt op een eigen Foodlo-regel "voor <gerecht>" |
 | | "Jan is aan het winkelen" (presence) | ⬜ | Fase 2 (geen schema) |
 | **Keuken: recepten** | Link, foto, scan, tekst, zoeken (AI); concept-autosave; versies; foto's | ✅/🟨 | Behouden. Bewaren is eenmalig (dubbele ingrediënten hersteld) |
@@ -453,7 +466,7 @@ Er staan geen kritieke of hoge bugs open op `v2/dev`. Live V1 heeft er nog twee 
 3. **B5/G5:** de keuze van betaalprovider (niets activeren).
 4. Pushen van `v2/dev` (lokaal voor op de remote; niets gepusht).
 5. **G7:** "Alles van deze week op de lijst" samenvoegen met Slim aanvullen (§9b).
-6. **G9 (kosten, nieuw):** zie §16.6. Spend caps controleren, maandbudget kiezen (standaard €25), beslissen over het dure zoekmodel en over automatische AI-foto's.
+6. **G9 (kosten, nieuw):** zie §16.6. Spend caps controleren, het maandbudget kiezen (€25 is een voorstel, niet actief), beslissen over het dure zoekmodel en over automatische AI-foto's.
 7. **BUG-061** (vertalen zonder limiet) zit ook in live V1. De fix kan mee in de beveiligingsrelease (G3/G4).
 
 ## 16. Kostenbeheersing (bindend sinds 2026-11-09)
@@ -524,7 +537,7 @@ Hoe die bandbreedte kleiner wordt:
 | Per gebruiker | 50 gratis credits bij registratie; credits per AI-actie; daglimiet per functie (`credit_costs.max_per_dag`) | ✅ bestond |
 | Per functie | Aan/uit-schakelaar (`credit_costs.enabled`) en creditsysteem aan/uit (`credits_actief`) | ✅ bestond |
 | Cache | Zelfde invoer = 0 credits en geen nieuwe oproep (`ai_cache`) | ✅ bestond |
-| **Maandbudget alle AI** | `ai_budget_maand_eur` in `platform_settings` (standaard **€25** als niets is ingesteld). Waarschuwing vanaf **80 %** en blokkade op **100 %** worden gelogd in `ai_events` (`budget:waarschuwing`, `budget:op`). Op 100 % pauzeren alleen de slimme functies, met een duidelijke melding; de rest van de app blijft werken. | ✅ **nieuw (code, getest met nep-Supabase)** |
+| **Maandbudget alle AI** | `ai_budget_maand_eur` in `platform_settings`. Als niets is ingesteld, gebruikt de code **€25**. Dat is een **ontwerpvoorstel**, geen bevestigde uitgave en geen actief budget: het geldt pas na een merge en deploy, met jouw akkoord. Waarschuwing vanaf **80 %** en blokkade op **100 %** worden gelogd in `ai_events` (`budget:waarschuwing`, `budget:op`). Op 100 % pauzeren alleen de slimme functies, met een duidelijke melding; de rest van de app blijft werken. | ✅ **nieuw (code, getest met nep-Supabase)** |
 | Kost zonder prijslijst | Ontbreekt een model in `model_prices`, dan rekent Foodlo met een hoge schatting (€1 per miljoen tokens in, €5 uit, €0,05 per beeld, minimum €0,002), niet met 0 | ✅ nieuw |
 | **Vertalen** | Gedeelde cache plus limiet per bezoeker en per uur (zie 16.3) | ✅ nieuw |
 | Hosting/databank | Spend cap van het Lovable-plan en Lovable Cloud: **nakijken in je Lovable-instellingen** (Plans & credit usage). Ik kan dat niet zien. | ⚠ jij |
@@ -537,7 +550,7 @@ Wat het maandbudget **niet** dekt:
 
 ### 16.6 Wat dit vraagt van jou (G9)
 1. Je Lovable-plan en de spend caps controleren (Plans & credit usage). Zo weet je wat vast is en waar je automatisch geblokkeerd wordt.
-2. Het maandbudget kiezen: `ai_budget_maand_eur` (standaard €25). Wordt het na een merge en deploy van V2 actief, dan pauzeert AI bij €25 per maand totdat jij het verhoogt.
+2. Het maandbudget kiezen: `ai_budget_maand_eur`. €25 is alleen een ontwerpvoorstel en standaardwaarde in de code. Het is niet actief en er is niets uitgegeven. Pas na een merge en deploy van V2 zou AI bij dat bedrag per maand pauzeren, tot jij het aanpast.
 3. Beslissen over het dure zoekmodel (Astra → Flash, of meer credits) en over automatische foto's (aan/uit). Dat zijn de twee grootste onzekerheden.
 4. Staging (B6) en een betaalprovider (B5) kosten geld en wachten op jou.
 
@@ -587,3 +600,54 @@ Op tablet is het nu een eigen ervaring, geen uitgerekte telefoon.
   - lege desktopdagen krijgen één vak "Plan iets".
 - **WP7c, ritme:** dezelfde maximale breedte en kopstructuur per schermtype. Op Recept wordt "Start koken" de enige vulde knop.
 - Daarna de geplande WP7: ingrediënt vervangen en persoonlijke notitie.
+
+## 18. Gefaseerde uitvoering na de module-audit (2026-11-09)
+Bron: [MODULE-AUDIT-2026-11](MODULE-AUDIT-2026-11.md) (audit per module, kwaliteitsnorm, referentie-apps met bronnen).
+
+| Fase | Inhoud | DB? | Status |
+|---|---|---|---|
+| **C1** | Boodschappen B1–B4 | nee | ✅ **gebouwd en getest** (zie hieronder) |
+| C2 | B5 "toegevoegd door" (gezinslijst), B6 productcatalogus met tegels, boodschappen.tsx opsplitsen | nee | ⬜ volgende |
+| D1 | Ontdek: lege toestand, terugval op eigen recepten en seizoen; collecties zonder foto | nee | ⬜ |
+| D2 | Weekmenu: telefoon compacter, voorstellen met de voorraad, lege desktopdagen | nee | ⬜ |
+| D3 | Recept: één hoofdknop, eenheden omrekenen, ingrediënt vervangen (eigen tabel) | nee | ⬜ |
+| D4 | Voorraad: label, categorieën, dubbels samenvoegen | nee | ⬜ |
+| E | Staging → huishouden, voorraadvelden, transacties, collecties, B7/B8; creatorontwerp | **ja** | ⛔ G1/G2/G5/G9 |
+
+### C1: wat er gebouwd is
+- **B1, lijst eerst.**
+  - De lijst staat direct onder één statusregel ("6 te kopen · 2 in je kar") met **Ik ga winkelen**.
+  - Uit de kop weg: de tabs "Mijn lijst / Uit gerechten", drie tegels en de grote aanvulkaart.
+  - Ná de lijst staan "Toevoegen uit…" (je weekmenu, eerder gekocht, winkelideeën), een compacte aanvulregel, vaak gekocht en klantenkaarten. Dezelfde ingangen staan ook in het menu "…".
+  - Desktop: de lijst links in twee kolommen; rechts toevoegen, aanvullen en "Toevoegen uit…". De pagina heeft nu dezelfde breedte als Vandaag en Week.
+  - Telefoon (390): de eerste boodschap staat op ±45 % van de schermhoogte. Voorheen stond ze onder de vouw.
+- **B2.** Raak je het lege invoerveld aan, dan verschijnt "vaak gekocht" als tikdoelen. Eén tik zet het product op de lijst. Tijdens het typen blijven de bestaande suggesties werken.
+- **B3.** Tik op "voor <gerecht>" onder een product en je ziet "Waarom staat dit op je lijst?":
+  - elk gepland gerecht van vandaag tot over 6 dagen, met dag en geschaalde hoeveelheid;
+  - het totaal;
+  - wat er al in huis is;
+  - andere regels op je lijst ("zelf toegevoegd" of "door Foodlo"), met de zin "Wat je zelf toevoegde, past Foodlo nooit aan".
+
+  Dit paneel leest alleen en schrijft niets. Vervangen producten tellen mee.
+- **B4.** In "…" → **Volgorde van je winkel** zet je afdelingen hoger of lager met knoppen, zonder slepen. De lijst én de winkelmodus volgen die volgorde. Voorlopig geldt ze **per toestel**: per account of per winkel vraagt een databankveld (G1).
+- **Fout gevonden en opgelost.** De groep "Heb je waarschijnlijk al" gebruikte nog een deeltekstvergelijking: voorraad "ui" zette "suiker" in die groep. Dat is nu echte productherkenning (BUG-062).
+
+### C1: tests
+| Run | Resultaat | Exitcode |
+|---|---|---|
+| Unittests (nieuw: `waaromNodig`, winkelvolgorde) | 470/470 | 0 |
+| `lijst.spec` op 390, 768 en 1280, eerste poging | 6 geslaagd, 6 mislukt: twee dubbelzinnige locators in de test, geen appfout | **1** |
+| `lijst.spec` na de testcorrectie | 12/12 | 0 |
+| Schermafdrukken op 390, 768 en 1280 (`schermen-review`) | 3/3; daarna nog twee lay-outcorrecties (statusregel, lege ruimte op desktop) | 0 |
+| Lint-ratchet | | 0 |
+| Volledige regressie op `96db023` (gestart 21:15) | tsc 0, vitest 470/470, build 0. Playwright: 246 geslaagd, **8 mislukt**, 77 overgeslagen. Daarvan 6 tijdsafhankelijke tests zonder vaste klok (BUG-065), 1 echte UI-fout: een "Klaar!"-flits in de winkelmodus (BUG-064), 1 sporadische rondleidingstest (BUG-063, open) | **1** |
+| Winkelmodus-spec na de herstelling, 3 breedtes ×2 | 42/42 | 0 |
+| Navigatie op 390, 768 en 1280 na de testaanpassing | geslaagd | 0 |
+| **Volledige regressie op `ef7c8e5`** (gedraaid na 21 u, dus de klokfix is echt getest) | tsc 0 · vitest 470/470 · build 0 · Playwright **257 geslaagd, 0 mislukt**, 77 bewust overgeslagen | **0** |
+
+### C1: wat nog ontbreekt in de boodschappenmodule (eerlijk)
+- Productcatalogus met tegels (B6), "toegevoegd door" (B5), sjablonen (B7, ⛔), merk/variant/foto/prijs/winkels (B8, ⛔).
+- Winkelvolgorde per winkel en per account (⛔ G1).
+- Realtime samenwerken is **niet getest**: niet nagebootst in de nep-Supabase.
+- Niet getest op een echt toestel of met een schermlezer.
+- BUG-063 (rondleidingstest, sporadisch op 390 px) is **niet** sluitend verklaard; de test wacht nu tot het kader stilstaat.
