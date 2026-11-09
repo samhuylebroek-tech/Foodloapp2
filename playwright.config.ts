@@ -53,7 +53,8 @@ export default defineConfig({
     {
       name: "mobiel-390",
       use: { ...devices["Pixel 7"], viewport: { width: 390, height: 844 } },
-      testMatch: /kernflow|schermen|personas|schermen-alle|mobiel-breedtes|kringloop|navigatie|weekmenu-lijst/,
+      testMatch:
+        /kernflow|schermen|personas|schermen-alle|mobiel-breedtes|kringloop|navigatie|weekmenu-lijst/,
     },
     {
       name: "tablet-768",
