@@ -36,7 +36,10 @@ export const Route = createFileRoute("/kaarten/")({
           "Bewaar je klantenkaarten van Carrefour, Delhaize, Colruyt en andere winkels en toon ze aan de kassa, ook zonder internet.",
       },
       { property: "og:title", content: "Klantenkaarten – Foodlo" },
-      { property: "og:description", content: "Al je klantenkaarten op je telefoon, klaar voor de kassa." },
+      {
+        property: "og:description",
+        content: "Al je klantenkaarten op je telefoon, klaar voor de kassa.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -70,7 +73,9 @@ function KaartenPagina() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("loyalty_cards")
-        .select("id, user_id, store_slug, winkel_naam, kaartnaam, nummer, formaat, favoriet, gedeeld")
+        .select(
+          "id, user_id, store_slug, winkel_naam, kaartnaam, nummer, formaat, favoriet, gedeeld",
+        )
         .order("favoriet", { ascending: false })
         .order("winkel_naam");
       if (error) return leesLokaal();
@@ -93,7 +98,12 @@ function KaartenPagina() {
       }
     >
       {kaarten.length === 0 ? (
-        <EmptyState icon={<CreditCard className="size-7" />} title="Nog geen kaarten" description="Bewaar je klantenkaart één keer en toon ze daarna ook zonder internet." action={<Button onClick={() => setToevoegen(true)}>Kaart toevoegen</Button>} />
+        <EmptyState
+          icon={<CreditCard className="size-7" />}
+          title="Nog geen kaarten"
+          description="Bewaar je klantenkaart één keer en toon ze daarna ook zonder internet."
+          action={<Button onClick={() => setToevoegen(true)}>Kaart toevoegen</Button>}
+        />
       ) : (
         <div className="space-y-6">
           <ul className="grid gap-3 sm:grid-cols-2">
@@ -144,6 +154,8 @@ function KaartTegel({ kaart, winkels }: { kaart: Kaart; winkels: Winkel[] }) {
         className="relative flex aspect-[1.75] flex-col justify-between overflow-hidden rounded-[1.25rem] p-5 text-white shadow-kaart transition-transform active:scale-[0.98]"
         style={{ backgroundColor: kleurVan(kaart, winkels) }}
       >
+        {/* Donkere laag: witte tekst blijft leesbaar op elke winkelkleur (≥ 4.5:1). */}
+        <span aria-hidden className="pointer-events-none absolute inset-0 bg-black/35" />
         <span
           aria-hidden
           className="pointer-events-none absolute -right-10 -top-12 size-44 rounded-full bg-white/10"
@@ -165,7 +177,7 @@ function KaartTegel({ kaart, winkels }: { kaart: Kaart; winkels: Winkel[] }) {
           <span className="truncate font-mono text-lg tracking-wider text-white/95">
             {groepeer(kaart.nummer)}
           </span>
-          <span className="shrink-0 rounded-full bg-white/20 px-3 py-1 text-[0.9rem] font-semibold">
+          <span className="shrink-0 rounded-full bg-black/30 px-3 py-1 text-[0.9rem] font-semibold">
             Tonen
           </span>
         </span>
@@ -203,7 +215,9 @@ function ToevoegVenster({
     const gelezen = await leesCodeUitBestand(file);
     setFotoBezig(false);
     if (!gelezen) {
-      toast.error("We zien geen code op die foto. Probeer dichterbij en recht van boven, of typ het nummer zelf in.");
+      toast.error(
+        "We zien geen code op die foto. Probeer dichterbij en recht van boven, of typ het nummer zelf in.",
+      );
       logScan(user?.id, "foto", null, null, false);
       return;
     }
@@ -262,7 +276,10 @@ function ToevoegVenster({
         aria-labelledby="kaart-toevoegen-titel"
         className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-[1.75rem] bg-background px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-zwevend sm:rounded-[1.75rem] sm:p-7"
       >
-        <div aria-hidden="true" className="mx-auto mb-4 h-1.5 w-11 rounded-full bg-border sm:hidden" />
+        <div
+          aria-hidden="true"
+          className="mx-auto mb-4 h-1.5 w-11 rounded-full bg-border sm:hidden"
+        />
         <h2 id="kaart-toevoegen-titel" className="text-sectietitel">
           Kaart toevoegen
         </h2>
@@ -273,21 +290,22 @@ function ToevoegVenster({
           </Button>
           <p className="text-center text-base text-muted-foreground">of</p>
           <div className="grid grid-cols-2 gap-3">
-          <Button
-            variant="secondary"
-            disabled={fotoBezig}
-            onClick={() => fotoRef.current?.click()}
-            className="h-14 gap-2 text-base"
-          >
-            <ImageIcon className="size-5" aria-hidden /> {fotoBezig ? "Even kijken…" : "Foto kiezen"}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => document.getElementById("kaartnummer")?.focus()}
-            className="h-14 gap-2 text-base"
-          >
-            <Keyboard className="size-5" aria-hidden /> Zelf invullen
-          </Button>
+            <Button
+              variant="secondary"
+              disabled={fotoBezig}
+              onClick={() => fotoRef.current?.click()}
+              className="h-14 gap-2 text-base"
+            >
+              <ImageIcon className="size-5" aria-hidden />{" "}
+              {fotoBezig ? "Even kijken…" : "Foto kiezen"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => document.getElementById("kaartnummer")?.focus()}
+              className="h-14 gap-2 text-base"
+            >
+              <Keyboard className="size-5" aria-hidden /> Zelf invullen
+            </Button>
           </div>
           <input
             ref={fotoRef}
@@ -384,7 +402,9 @@ function ToevoegVenster({
           <label className="flex items-center justify-between rounded-2xl border border-border p-3">
             <span className="text-base">
               Delen met mijn gezin
-              <span className="block text-base text-muted-foreground">Standaard blijft je kaart privé.</span>
+              <span className="block text-base text-muted-foreground">
+                Standaard blijft je kaart privé.
+              </span>
             </span>
             <Switch checked={gedeeld} onCheckedChange={setGedeeld} />
           </label>

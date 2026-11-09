@@ -100,7 +100,7 @@
   --honing: oklch(0.77 0.14 72);
   --honing-foreground: oklch(0.25 0.04 60);
   --honing-zacht: oklch(0.95 0.045 80);
-  --terracotta: oklch(0.55 0.13 38);
+  --terracotta: oklch(0.51 0.13 38); /* donkerder: ook als tekst op terracotta-zacht ≥ 4.5:1 */
   --terracotta-foreground: oklch(0.99 0.005 85);
   --terracotta-zacht: oklch(0.95 0.03 50);
   /* V2 "redactioneel": diep inktgroen voor banden en de actieve navigatie. */

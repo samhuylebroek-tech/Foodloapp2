@@ -1565,7 +1565,7 @@ export function RecipeForm({
                     setFotoGeweigerd(false);
                     void maakVoorstelFoto();
                   }}
-                  className="block text-base font-semibold text-primary"
+                  className="flex min-h-11 items-center text-base font-semibold text-primary"
                 >
                   Stel een foto voor
                 </button>

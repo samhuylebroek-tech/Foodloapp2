@@ -17,8 +17,9 @@ export default defineConfig({
   workers: 1,
   retries: process.env["CI"] ? 1 : 0,
   timeout: 45_000,
-  // Ruimer dan de standaard 5 s: een koude dev-server optimaliseert soms eerst afhankelijkheden.
-  expect: { timeout: 10_000 },
+  // Ruimer dan de standaard 5 s: een koude dev-server compileert de eerste pagina's
+  // (en optimaliseert afhankelijkheden) soms pas na 10+ s.
+  expect: { timeout: 20_000 },
   reporter: process.env["CI"]
     ? [["github"], ["list"], ["html", { outputFolder: "tests/e2e/.rapport", open: "never" }]]
     : [["list"]],
@@ -33,12 +34,14 @@ export default defineConfig({
     {
       name: "telefoon",
       use: { ...devices["Pixel 7"] },
-      testIgnore: /kernflow|schermen|kookstand|voorraad|personas/,
+      testIgnore: /kernflow|schermen|kookstand|voorraad|personas|mobiel-breedtes/,
     },
     // Creator op desktop.
     {
       name: "desktop",
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
+      // De telefoonbreedtes hebben hun eigen project hieronder.
+      testIgnore: /mobiel-breedtes/,
     },
     // Kernflow op de gevraagde breedtes (de desktop-run hierboven dekt 1280 px).
     {
@@ -49,7 +52,7 @@ export default defineConfig({
     {
       name: "mobiel-390",
       use: { ...devices["Pixel 7"], viewport: { width: 390, height: 844 } },
-      testMatch: /kernflow|schermen|personas|schermen-alle/,
+      testMatch: /kernflow|schermen|personas|schermen-alle|mobiel-breedtes/,
     },
     {
       name: "tablet-768",

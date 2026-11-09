@@ -270,9 +270,10 @@ function VoorraadPage() {
               aria-describedby="voorraad-hulp"
               className="h-14 text-lg"
             />
-            <Button type="submit" className="h-14 shrink-0 px-5 text-lg">
-              <Plus aria-hidden />
-              {t("Toevoegen")}
+            <Button type="submit" className="size-14 shrink-0 px-0 text-lg sm:w-auto sm:px-5">
+              <Plus className="size-6" aria-hidden />
+              {/* Op de telefoon alleen het plusteken; de naam blijft voor schermlezers. */}
+              <span className="sr-only sm:not-sr-only">{t("Toevoegen")}</span>
             </Button>
           </form>
           <p id="voorraad-hulp" className="mt-1 text-[0.9rem] text-muted-foreground">
