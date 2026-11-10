@@ -28,9 +28,9 @@ Aantallen over alle 17 schermen. "Afgekapt (ellips)" is vaak bewust en wordt apa
 
 | Soort | 320 voor | 320 na | 390 voor | 390 na | 768 voor | 768 na | 1024 voor | 1024 na | 320@130 % voor | 320@130 % na |
 |---|---|---|---|---|---|---|---|---|---|---|
-| Horizontaal scrollen | 9 | 0 ¹ | 0 | niet gemeten | 0 | 0 ¹ | 0 | 0 | 16 | 0 |
-| Tekst loopt over zijn kader | 21 | 2 ¹ | 0 | niet gemeten | 2 | 0 ¹ | 5 | 0 | 54 | 7 |
-| Weggeknipt zonder ellips | 0 | 0 ¹ | 0 | niet gemeten | 0 | 0 ¹ | 6 | 0 | 0 | 0 |
+| Horizontaal scrollen | 9 | **0** | 0 | 0 | 0 | 0 | 0 | 0 | 16 | **0** |
+| Tekst loopt over zijn kader | 21 | **2** | 0 | 0 | 2 | **0** | 5 | **0** | 54 | **7** |
+| Weggeknipt zonder ellips | 0 | 0 | 0 | 0 | 0 | 0 | 6 | **0** | 0 | 0 |
 
 Concreet gevonden en hersteld in ronde 1:
 - **Kop 348 px breed op 320 px**, op alle subschermen. Onder 400 px tonen "Nieuw" en "Meer" alleen hun pictogram, met een volwaardige `aria-label` en een doel van 48 px.
@@ -45,7 +45,7 @@ Concreet gevonden en hersteld in ronde 1:
 - **Aanvulregel onder de lijst:** de tekst werd op 320 px tot 13 px samengeperst. Ze breekt nu om.
 - **Titels:** `text-wrap: balance` dwong samen met woordafbreking onnodige afbrekingen af ("Goeiemid-dag"). Dat is nu `text-wrap: pretty`.
 
-¹ Uit de tussenmeting `na1` (na de herstellingen aan de kop, de knoppen en de typografie, maar vóór de herstellingen aan Vandaag, Aanvullen en `text-wrap`). Bij de meting `na2` liepen de varianten 320, 390, 412, 430 en 768 vast door de systeembelasting (load tot 70). Die zijn dus **niet** opnieuw gemeten op de laatste stand. "Niet gemeten" betekent: geen geldige meting, niet "0".
+Alle "na"-cijfers zijn gemeten op commit `47748ec`, de eindstand van ronde 1. Vijf varianten liepen eerst vast door de systeembelasting (load tot 70) en zijn daarna opnieuw gemeten (5/5, exitcode 0). Daarnaast verdween in alle varianten de valse melding "doel < 24 px" voor de verborgen link "Naar de inhoud": het instrument is verfijnd, de app is daar niet veranderd.
 
 Nog open na ronde 1: zie §6.
 

@@ -1,7 +1,7 @@
 # Foodloapp V2 — Masterplan
 
 **Centrale bron.** Stand: 2026-11-09, branch `v2/dev` (lokaal, niet gepusht). Eigenaar van beslissingen: Sam.
-Detaildocumenten (gelinkt, niet herhaald): [MODULE-AUDIT](MODULE-AUDIT-2026-11.md) · [PRODUCT-HERONTWERP](PRODUCT-HERONTWERP.md) · [HUISHOUDEN-ONTWERP](HUISHOUDEN-ONTWERP.md) · [FUNCTIE-INVENTARIS](FUNCTIE-INVENTARIS.md) · [BUG-REGISTER](BUG-REGISTER.md) · [SECURITY-RELEASE](SECURITY-RELEASE.md) · [MOBIEL-REDESIGN-MATRIX](MOBIEL-REDESIGN-MATRIX.md) · [STAGING-VOORSTELLEN](STAGING-VOORSTELLEN.md) · [ZOD4-MIGRATIE](ZOD4-MIGRATIE.md)
+Detaildocumenten (gelinkt, niet herhaald): [MOBIEL-AUDIT](MOBIEL-AUDIT-2026-11.md) · [DESIGNSYSTEEM](DESIGNSYSTEEM.md) · [MODULE-AUDIT](MODULE-AUDIT-2026-11.md) · [PRODUCT-HERONTWERP](PRODUCT-HERONTWERP.md) · [HUISHOUDEN-ONTWERP](HUISHOUDEN-ONTWERP.md) · [FUNCTIE-INVENTARIS](FUNCTIE-INVENTARIS.md) · [BUG-REGISTER](BUG-REGISTER.md) · [SECURITY-RELEASE](SECURITY-RELEASE.md) · [MOBIEL-REDESIGN-MATRIX](MOBIEL-REDESIGN-MATRIX.md) · [STAGING-VOORSTELLEN](STAGING-VOORSTELLEN.md) · [ZOD4-MIGRATIE](ZOD4-MIGRATIE.md)
 
 Statuslabels in dit document:
 - ✅ **bestaand en gecontroleerd**: geautomatiseerd getest.
@@ -651,3 +651,25 @@ Bron: [MODULE-AUDIT-2026-11](MODULE-AUDIT-2026-11.md) (audit per module, kwalite
 - Realtime samenwerken is **niet getest**: niet nagebootst in de nep-Supabase.
 - Niet getest op een echt toestel of met een schermlezer.
 - BUG-063 (rondleidingstest, sporadisch op 390 px) is **niet** sluitend verklaard; de test wacht nu tot het kader stilstaat.
+
+## 19. Mobiel-eerst (vanaf 2026-11-10, bindend)
+**Mobile-first is de primaire ontwerp- en ontwikkelstrategie** voor alle modules. Telefoon (320–430 px) eerst; tablet en desktop krijgen daarna een eigen indeling. Regels: [DESIGNSYSTEEM](DESIGNSYSTEEM.md). Audit en meetresultaten: [MOBIEL-AUDIT](MOBIEL-AUDIT-2026-11.md).
+
+| Fase | Inhoud | Status |
+|---|---|---|
+| 1. Mobiele UX-audit | Meetinstrument (17 schermen × 9 breedtes + 130 % tekst, lange inhoud), schermafdrukken, inventaris (MOBIEL-AUDIT §1–§6) | ✅ gebouwd en gedraaid (deels opnieuw te meten, zie onder) |
+| 2. Design- en componentsysteem | DESIGNSYSTEEM.md; globaal: afbreken in plaats van overlopen, knoppen die meegroeien, compacte kop, rasters pas vanaf 1280 px | ✅ ronde 1 gebouwd · 🟨 afstandsschaal en beweging nog te doen |
+| 3. Hoofdschermen | Vandaag (foto bovenaan op de telefoon) · Week ("Opties" in de titelregel; week\|dag tot 1280 px) · Lijst (C1) | 🟨 gedeeltelijk: Week (compacte weekband), Keuken en Ontdek staan nog open |
+| 4. Overige schermen | Recept, kookmodus, voorraad, instellingen, profielen, huishouden | ⬜ (Aanvullen en Instellingen-rijen deels hersteld) |
+| 5. Boodschappen verder (catalogus, "toegevoegd door") | | ⬜ |
+| 6. Volledige visuele en functionele controle | | ⬜ na fasen 3–5 |
+
+**Gemeten effect van ronde 1** (MOBIEL-AUDIT §2): horizontaal scrollen op 320 px van 9 naar 0, en op 320 px bij 130 % tekst van 16 naar 0. Tekst over het kader op 320 px bij 130 % van 54 naar 7. Weggeknipte tekst op 1024 px van 6 naar 0.
+
+Alle 11 varianten zijn gemeten op `47748ec`. Vijf liepen eerst vast door de systeembelasting (load tot 70) en zijn opnieuw gemeten (exitcode 0).
+
+**Volledige regressie op `47748ec`:** tsc 0 · vitest 470/470 · build 0 · Playwright 257 geslaagd, 0 mislukt, 88 overgeslagen (77 bekend + 11 auditvarianten die alleen met `AUDIT=1` draaien) → **exitcode 0**. Onderweg faalde `mobiel-breedtes` op 412 px (BUG-071, door mij ingevoerd), daarna hersteld: 22/22.
+
+**Web tegenover native:** zie DESIGNSYSTEEM §7. Native overgangen, haptiek, widgets, betrouwbare achtergrondsynchronisatie en rijke meldingen vragen een native app. Alles in deze fase is web/PWA.
+
+**Niet getest:** echte iPhone of Android, iOS Safari met toetsenbord en adresbalk, schermlezers, systeemlettergrootte op een toestel (alleen gesimuleerd met 130 % rootgrootte).
