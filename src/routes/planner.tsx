@@ -1064,16 +1064,27 @@ function PlannerPage() {
     );
     return (
       <div className="space-y-4">
-        <div>
+        <div className="flex items-end gap-3">
+          <div className="min-w-0 flex-1">
+            {groot ? (
+              <p className="text-base font-semibold text-muted-foreground">
+                {dag === vandaag ? "Vandaag" : voorbij ? "Voorbij" : dag === datumTekst(new Date(Date.now() + 86400000)) ? "Morgen" : "Gepland"}
+              </p>
+            ) : null}
+            <h2 id={`dag-${dag}`} className="text-sectietitel first-letter:uppercase">
+              {titel}
+              {!groot && dag === vandaag ? <span className="ml-2 align-middle text-base font-semibold text-honing-foreground"> · vandaag</span> : null}
+            </h2>
+          </div>
           {groot ? (
-            <p className="text-base font-semibold text-muted-foreground">
-              {dag === vandaag ? "Vandaag" : voorbij ? "Voorbij" : dag === datumTekst(new Date(Date.now() + 86400000)) ? "Morgen" : "Gepland"}
-            </p>
+            <Button
+              variant="ghost"
+              onClick={() => setHeleWeek(true)}
+              className="h-11 min-h-11 shrink-0 px-3 text-base md:hidden"
+            >
+              Hele week
+            </Button>
           ) : null}
-          <h2 id={`dag-${dag}`} className={groot ? "text-paginatitel first-letter:uppercase" : "text-sectietitel first-letter:uppercase"}>
-            {titel}
-            {!groot && dag === vandaag ? <span className="ml-2 align-middle text-base font-semibold text-honing-foreground"> · vandaag</span> : null}
-          </h2>
         </div>
         {alleMomenten.map((m) => {
           const bij = items.filter((p) => p.meal_type === m);
@@ -1140,7 +1151,8 @@ function PlannerPage() {
         ) : null}
 
         {/* Week kiezen: duidelijke titel met datums, grote pijlen, rustige dagkeuze */}
-        <section aria-label="Week kiezen" className="paneel p-3 lg:col-start-1 lg:row-start-1 lg:w-full lg:max-w-lg lg:p-4">
+        {/* Mobiel: één compacte weekband die bovenaan blijft staan (dag wisselen kan altijd). */}
+        <section aria-label="Week kiezen" className="paneel sticky top-[calc(4rem+env(safe-area-inset-top))] z-20 p-2.5 shadow-kaart md:static md:p-3 md:shadow-none lg:col-start-1 lg:row-start-1 lg:w-full lg:max-w-lg lg:p-4">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -1154,13 +1166,13 @@ function PlannerPage() {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="flex h-14 min-w-0 flex-1 flex-col items-center justify-center rounded-xl px-2 text-center transition-colors hover:bg-muted"
+                  className="flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center rounded-xl px-2 text-center transition-colors hover:bg-muted md:min-h-14"
                 >
                   {/* Zichtbare tekst blijft deel van de naam (WCAG 2.5.3); de uitleg komt erbij. */}
-                  <span className="font-display text-xl font-semibold leading-tight">
+                  <span className="font-display text-lg font-semibold leading-tight md:text-xl">
                     {weekVerschil === 0 ? "Deze week" : weekVerschil === 1 ? "Volgende week" : weekVerschil === -1 ? "Vorige week" : "Week"}
                   </span>
-                  <span className="text-base text-muted-foreground">
+                  <span className="text-[0.95rem] text-muted-foreground md:text-base">
                     {new Date(`${week[0]}T12:00:00`).toLocaleDateString("nl-BE", { day: "numeric", month: "short" })}
                     {" – "}
                     {new Date(`${week[6]}T12:00:00`).toLocaleDateString("nl-BE", { day: "numeric", month: "short" })}
@@ -1200,28 +1212,7 @@ function PlannerPage() {
               Terug naar vandaag
             </button>
           ) : null}
-          {/* Keuze: één dag of de hele week met alle planning */}
-          <div className="mt-3 grid grid-cols-2 gap-1 rounded-full bg-muted p-1 md:hidden" role="tablist" aria-label="Weergave kiezen">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={!heleWeek}
-              onClick={() => setHeleWeek(false)}
-              className={`flex h-12 items-center justify-center rounded-full text-base font-semibold transition-colors ${!heleWeek ? "bg-card text-foreground shadow-zacht" : "text-muted-foreground"}`}
-            >
-              Per dag
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={heleWeek}
-              onClick={() => setHeleWeek(true)}
-              className={`flex h-12 items-center justify-center rounded-full text-base font-semibold transition-colors ${heleWeek ? "bg-card text-foreground shadow-zacht" : "text-muted-foreground"}`}
-            >
-              Hele week
-            </button>
-          </div>
-          <div className="mt-3 grid grid-cols-7 gap-1.5 md:hidden" role="tablist" aria-label="Dag kiezen">
+          <div className="mt-2 grid grid-cols-7 gap-1 md:hidden" role="tablist" aria-label="Dag kiezen">
             {week.map((dag) => {
               const d = new Date(`${dag}T12:00:00`);
               const actief = !heleWeek && dag === gekozenDag;
@@ -1236,7 +1227,7 @@ function PlannerPage() {
                   aria-selected={actief}
                   onClick={() => { setDagKeuze(dag); setHeleWeek(false); }}
                   className={[
-                    "flex min-h-[5.25rem] flex-col items-center justify-center gap-1 rounded-2xl transition-colors",
+                    "flex min-h-[4.25rem] flex-col items-center justify-center gap-0.5 rounded-2xl transition-colors",
                     actief
                       ? "bg-inkt text-inkt-foreground shadow-zacht"
                       : isVandaag
@@ -1298,7 +1289,16 @@ function PlannerPage() {
           </TabletWeek>
         ) : heleWeek ? (
           <section aria-label="Hele week" className="space-y-6 lg:hidden">
-            <h2 className="text-sectietitel">De hele week</h2>
+            <div className="flex items-end gap-3">
+              <h2 className="min-w-0 flex-1 text-sectietitel">De hele week</h2>
+              <Button
+                variant="ghost"
+                onClick={() => setHeleWeek(false)}
+                className="h-11 min-h-11 shrink-0 px-3 text-base"
+              >
+                Per dag
+              </Button>
+            </div>
             {zichtbareDagen.map((dag) => <div key={dag}>{toonDag(dag, false)}</div>)}
           </section>
         ) : (

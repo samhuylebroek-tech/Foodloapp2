@@ -212,6 +212,33 @@ const RECEPTEN = [
   },
 ];
 
+/** Ontdek-catalogus voor de demo (verzonnen, geen productiedata). Foto's: alleen de twee CC0-demofoto's. */
+const INSPIRATIE = [
+  ["Vlaamse stoverij met frietjes", "hoofdgerecht", 30, 150, ["vlees", "stoof"], "demo/stoofvlees.jpg"],
+  ["Romige pompoensoep met gember", "soep", 15, 25, ["vegetarisch", "soep"], "demo/pompoensoep.jpg"],
+  ["Stoemp met spinazie en spek", "hoofdgerecht", 15, 25, ["vlees", "stoemp"], null],
+  ["Witloofgratin met hesp en kaas", "hoofdgerecht", 20, 40, ["vlees", "ovenschotel", "witloof"], null],
+  ["Pasta met pesto en geroosterde groenten", "hoofdgerecht", 10, 20, ["vegetarisch"], null],
+  ["Linzensoep met komijn", "soep", 10, 30, ["vegetarisch", "soep"], null],
+  ["Zalm uit de oven met citroen", "hoofdgerecht", 10, 20, ["vis"], null],
+  ["Shakshuka met feta", "hoofdgerecht", 10, 20, ["vegetarisch"], null],
+  ["Konijn met pruimen", "hoofdgerecht", 30, 120, ["vlees", "stoof"], null],
+  ["Appeltaart van oma", "nagerecht", 30, 60, ["vegetarisch"], null],
+].map(([title, category, prep, cook, tags, foto], i) => ({
+  id: `eeeeeeee-0000-4000-8000-0000000000${String(i + 10)}`,
+  title,
+  description: "Een idee uit de Foodlo-keuken (demo).",
+  image_url: foto,
+  servings: 4,
+  prep_minutes: prep,
+  cook_minutes: cook,
+  difficulty: "makkelijk",
+  category,
+  tags,
+  instructions: ["Zie het volledige recept."],
+  created_at: `2026-10-${String(10 + i).padStart(2, "0")}T10:00:00Z`,
+}));
+
 export function demoSeed() {
   // Twee demofoto's (CC0, zie demo-fotos/LICENTIES.md); de rest toont bewust de omslag.
   const FOTO = { 1: "demo/stoofvlees.jpg", 2: "demo/pompoensoep.jpg" };
@@ -276,6 +303,7 @@ export function demoSeed() {
     shopping_edit: true,
   };
   return {
+    inspiration_recipes: INSPIRATIE,
     groups: [
       {
         id: GEZIN,

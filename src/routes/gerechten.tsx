@@ -8,6 +8,7 @@ import { AppShell } from "@/components/AppShell";
 import { KeukenWissel } from "@/components/KeukenWissel";
 import { useVoorraadStand } from "@/hooks/useVoorraadStand";
 import { RecipePhoto } from "@/components/RecipePhoto";
+import { CollectieOmslag } from "@/components/ontdek/CollectieOmslag";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -268,7 +269,7 @@ function GerechtenPage() {
     (alleenFavorieten ? 1 : 0);
 
   // V2: collecties als visuele ingangen (afgeleid van bestaande gegevens, geen nieuwe tabel).
-  type Collectie = { id: string; titel: string; aantal: number; voorbeeld: Recipe | undefined; actief: boolean; kies: () => void };
+  type Collectie = { id: string; titel: string; aantal: number; voorbeeld: Recipe | undefined; recepten: Recipe[]; actief: boolean; kies: () => void };
   const collecties: Collectie[] = useMemo(() => {
     const eigen = recipes;
     const uit: Collectie[] = [];
@@ -278,6 +279,7 @@ function GerechtenPage() {
       titel: "Favorieten",
       aantal: fav.length,
       voorbeeld: fav[0],
+      recepten: fav,
       actief: alleenFavorieten,
       kies: () => setAlleenFavorieten(!alleenFavorieten),
     });
@@ -287,6 +289,7 @@ function GerechtenPage() {
       titel: "Snel klaar",
       aantal: snel.length,
       voorbeeld: snel[0],
+      recepten: snel,
       actief: maxTijd === 30,
       kies: () => setMaxTijd(maxTijd === 30 ? 0 : 30),
     });
@@ -297,6 +300,7 @@ function GerechtenPage() {
         titel: d.charAt(0).toUpperCase() + d.slice(1),
         aantal: lijst.length,
         voorbeeld: lijst[0],
+        recepten: lijst,
         actief: dieet === d,
         kies: () => setDieet(dieet === d ? null : d),
       });
@@ -310,6 +314,7 @@ function GerechtenPage() {
         titel: soortLabel(c),
         aantal: lijst.length,
         voorbeeld: lijst[0],
+        recepten: lijst,
         actief: categorie === c,
         kies: () => setCategorie(categorie === c ? null : c),
       });
@@ -389,7 +394,12 @@ function GerechtenPage() {
           <section aria-labelledby="collecties-titel">
             <h2 id="collecties-titel" className="text-sectietitel">{t("Collecties")}</h2>
             {/* Tik op een collectie om ze te tonen; nog eens tikken zet ze uit. */}
-            <ul className="scroll-rij relative -mx-4 mt-3 flex gap-3 overflow-x-auto px-4 pb-2 lg:mx-0 lg:grid lg:grid-cols-4 lg:overflow-visible lg:px-0 xl:grid-cols-6">
+            {/* key: komt er vooraan een collectie bij (favorieten laden later), dan begint de rij
+                opnieuw vooraan; anders hield scroll-snap het oude element vast (rij 176 px opgeschoven). */}
+            <ul
+              key={collecties.map((c) => c.id).join("|")}
+              className="scroll-rij relative -mx-4 mt-3 flex gap-3 overflow-x-auto px-4 pb-2 lg:mx-0 lg:grid lg:grid-cols-4 lg:overflow-visible lg:px-0 xl:grid-cols-6"
+            >
               {collecties.map((c) => (
                 <li key={c.id} className="w-36 shrink-0 lg:w-auto">
                   <button
@@ -401,12 +411,10 @@ function GerechtenPage() {
                       c.actief ? "ring-4 ring-primary" : "",
                     )}
                   >
-                    <RecipePhoto
-                      path={c.voorbeeld?.image_url ?? null}
-                      alt=""
-                      recept={c.voorbeeld ?? { title: c.titel }}
+                    <CollectieOmslag
+                      titel={t(c.titel)}
+                      recepten={c.recepten}
                       className="aspect-[4/5] w-full transition-transform duration-500 group-hover:scale-[1.04]"
-                      icoonClassName="size-12"
                     />
                     {/* Donker verloop onderaan: witte tekst haalt voldoende contrast. */}
                     <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" aria-hidden />

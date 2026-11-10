@@ -18,6 +18,9 @@ import {
   type InspiratieRecept,
 } from "@/lib/inspiratie";
 import { useSignedUrl } from "@/lib/photos";
+import { themas as maakThemas, type Thema } from "@/lib/themas";
+import { ThemaRij } from "@/components/ontdek/ThemaRij";
+import { OntdekLeeg } from "@/components/ontdek/OntdekLeeg";
 import { soortLabel } from "@/lib/recept-keuzes";
 
 export const Route = createFileRoute("/inspiratie/")({
@@ -101,7 +104,15 @@ function InspiratiePage() {
   }, [alleRecepten, eigenRecepten]);
 
   const categorieen = useMemo(() => inspiratieCategorieen(recepten), [recepten]);
-  const resultaten = useMemo(() => filterInspiratie(recepten, filters), [recepten, filters]);
+  // Fase 3: thema's (seizoen, snel, vegetarisch, weekend) als ingang; een thema werkt als filter.
+  const themaLijst = useMemo(() => maakThemas(recepten), [recepten]);
+  const [thema, setThema] = useState<Thema | null>(null);
+  const resultaten = useMemo(() => {
+    const gefilterd = filterInspiratie(recepten, filters);
+    if (!thema) return gefilterd;
+    const ids = new Set(thema.recepten.map((x) => x.id));
+    return gefilterd.filter((x) => ids.has(x.id));
+  }, [recepten, filters, thema]);
 
   const actieveFilters =
     (filters.categorie ? 1 : 0) +
@@ -129,12 +140,6 @@ function InspiratiePage() {
       ondertitel="Ideeën om te koken"
     >
       <div className="space-y-4">
-        <div>
-          <p className="text-muted-foreground">
-            Ontdek recepten die Foodlo al kent en voeg ze met één tik toe aan je eigen recepten.
-          </p>
-        </div>
-
         <div className="relative">
           <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -168,7 +173,23 @@ function InspiratiePage() {
           </Button>
         </div>
 
-        {isLoading ? (
+        {thema ? (
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-base text-muted-foreground">Thema</p>
+              <h2 className="text-sectietitel">{thema.titel}</h2>
+            </div>
+            <Button variant="outline" onClick={() => setThema(null)} className="shrink-0">
+              <X /> Alle ideeën
+            </Button>
+          </div>
+        ) : !isLoading && !isError && !actieveFilters && !filters.zoek && recepten.length ? (
+          <ThemaRij themas={themaLijst} onKies={setThema} />
+        ) : null}
+
+        {!isLoading && !isError && !recepten.length ? (
+          <OntdekLeeg />
+        ) : isLoading ? (
           <div className="grid grid-cols-2 gap-3" aria-label="Laden">
             {[0, 1, 2, 3].map((i) => (
               <div key={i} className="h-52 animate-pulse rounded-[1.25rem] bg-muted" />
@@ -190,7 +211,10 @@ function InspiratiePage() {
             </Button>
           </div>
         ) : (
-          <ul className="grid grid-cols-2 gap-3">
+          <ul
+            className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4"
+            aria-label={thema ? thema.titel : "Alle ideeën"}
+          >
             {resultaten.map((r) => (
               <li key={r.id}>
                 <Link
@@ -200,7 +224,9 @@ function InspiratiePage() {
                 >
                   <ReceptFoto pad={r.image_url} titel={r.title} />
                   <div className="space-y-1 p-3">
-                    <p className="line-clamp-2 text-base font-semibold leading-tight">{r.title}</p>
+                    <p className="text-base font-semibold leading-tight">{r.title}</p>
+                    {/* Bron: later de food creator (naam en profiel), nu de Foodlo-keuken. */}
+                    <p className="text-[0.9rem] text-muted-foreground">Foodlo-keuken</p>
                     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base text-muted-foreground">
                       {r.category ? <span>{soortLabel(r.category)}</span> : null}
                       {tijdLabel(r) ? (

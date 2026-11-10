@@ -324,14 +324,14 @@ export function AppShell({
       <main
         id="inhoud"
         className={cn(
-          "mx-auto w-full overflow-x-hidden px-4 pb-36 pt-6 sm:px-6 md:pb-16 md:pl-32 md:pr-8 lg:px-6 lg:pb-16 lg:pt-10",
+          "mx-auto w-full overflow-x-clip px-4 pb-36 pt-6 sm:px-6 md:pb-16 md:pl-32 md:pr-8 lg:px-6 lg:pb-16 lg:pt-10",
           breedte,
         )}
       >
         {kop ?? (
           <div className="mb-6 flex flex-wrap items-start justify-between gap-x-4 gap-y-3 lg:mb-8">
             {/* Titel breekt nooit midden in een woord; knoppen springen desnoods eronder. */}
-            <div className="min-w-[min(100%,14rem)] flex-1">
+            <div className="min-w-[min(100%,10rem)] flex-1">
               <h1 className="text-paginatitel">{title}</h1>
               {ondertitel ? (
                 <div className="mt-1.5 text-base text-muted-foreground">{ondertitel}</div>
