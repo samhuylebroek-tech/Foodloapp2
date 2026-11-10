@@ -26,7 +26,16 @@ export function seizoen(maand: number): {
       id: "winter",
       titel: "Soep en stoofpot",
       uitleg: "Warm en vullend voor koude dagen",
-      woorden: ["soep", "stoof", "stoverij", "ovenschotel", "stamppot", "stoemp", "witloof", "pompoen"],
+      woorden: [
+        "soep",
+        "stoof",
+        "stoverij",
+        "ovenschotel",
+        "stamppot",
+        "stoemp",
+        "witloof",
+        "pompoen",
+      ],
     };
   if (maand <= 4)
     return {

@@ -214,10 +214,31 @@ const RECEPTEN = [
 
 /** Ontdek-catalogus voor de demo (verzonnen, geen productiedata). Foto's: alleen de twee CC0-demofoto's. */
 const INSPIRATIE = [
-  ["Vlaamse stoverij met frietjes", "hoofdgerecht", 30, 150, ["vlees", "stoof"], "demo/stoofvlees.jpg"],
-  ["Romige pompoensoep met gember", "soep", 15, 25, ["vegetarisch", "soep"], "demo/pompoensoep.jpg"],
+  [
+    "Vlaamse stoverij met frietjes",
+    "hoofdgerecht",
+    30,
+    150,
+    ["vlees", "stoof"],
+    "demo/stoofvlees.jpg",
+  ],
+  [
+    "Romige pompoensoep met gember",
+    "soep",
+    15,
+    25,
+    ["vegetarisch", "soep"],
+    "demo/pompoensoep.jpg",
+  ],
   ["Stoemp met spinazie en spek", "hoofdgerecht", 15, 25, ["vlees", "stoemp"], null],
-  ["Witloofgratin met hesp en kaas", "hoofdgerecht", 20, 40, ["vlees", "ovenschotel", "witloof"], null],
+  [
+    "Witloofgratin met hesp en kaas",
+    "hoofdgerecht",
+    20,
+    40,
+    ["vlees", "ovenschotel", "witloof"],
+    null,
+  ],
   ["Pasta met pesto en geroosterde groenten", "hoofdgerecht", 10, 20, ["vegetarisch"], null],
   ["Linzensoep met komijn", "soep", 10, 30, ["vegetarisch", "soep"], null],
   ["Zalm uit de oven met citroen", "hoofdgerecht", 10, 20, ["vis"], null],
