@@ -117,7 +117,7 @@ export function Kruimels({ items }: { items: { label: string; to?: string; param
   return (
     <nav className="mb-3 flex flex-wrap items-center gap-1 text-xs text-slate-400">
       {items.map((i, n) => (
-        <span key={n} className="flex items-center gap-1">
+        <span key={n} className="flex items-center gap-1 whitespace-nowrap">
           {n > 0 ? <ChevronRight className="size-3" /> : null}
           {i.to ? (
             <Link to={i.to} params={i.params} search={i.search} className="hover:text-emerald-300 hover:underline">

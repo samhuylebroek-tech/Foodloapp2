@@ -446,6 +446,10 @@
 .beheer :is(.grid, .flex) > :not(button, a) {
   min-width: 0;
 }
+/* Kolommen nooit tegen elkaar ("BEHEERDERIP"): minimaal 0,75rem rechts. */
+.beheer :is(th, td):not(:last-child) {
+  padding-right: 0.75rem;
+}
 .beheer th {
   white-space: nowrap;
 }
@@ -454,7 +458,7 @@
     min-height: 2.75rem;
   }
   /* min-height werkt niet op inline elementen: links in tabellen en lopende tekst. */
-  .beheer :is(td, p, li) > a[href] {
+  .beheer :is(td, p, li, span) > a[href] {
     display: inline-flex;
     align-items: center;
   }

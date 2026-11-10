@@ -13,7 +13,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import type { Page } from "@playwright/test";
 import { meldAan, resetDemo, seedDb, storing, test, zetKlok } from "./helpers";
-import { klaar, meet, type Bevinding } from "./audit-meten";
+import { klaar, meet, type Bevinding } from "./meetinstrument";
 
 test.skip(!process.env["AUDIT"], "alleen met AUDIT=1");
 

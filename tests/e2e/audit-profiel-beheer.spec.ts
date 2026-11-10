@@ -7,7 +7,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { axeErnstig, meldAan, resetDemo, test, zetKlok } from "./helpers";
 import { BEHEER_PADEN, EIGENAAR, seedEigenaar } from "./beheer-paden";
-import { klaar, meet, type Bevinding } from "./audit-meten";
+import { klaar, meet, type Bevinding } from "./meetinstrument";
 
 test.skip(!process.env["AUDIT"], "alleen met AUDIT=1");
 

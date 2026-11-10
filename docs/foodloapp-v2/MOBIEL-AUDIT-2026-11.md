@@ -160,3 +160,66 @@ Alle andere bestanden staan in `docs/foodloapp-v2/audit/f5/`; die zijn automatis
 - de lettergrootte van het besturingssysteem (alleen gesimuleerd met 130 % rootgrootte);
 - meertalige teksten, want de vertaalfunctie vraagt een betaalde AI-sleutel die in tests bewust ontbreekt;
 - liggende stand op een telefoon.
+
+---
+
+## 9. Afronding: profiel, beheer, toegankelijkheid en samenhang (2026-11-10)
+**Meetinstrument.**
+- `tests/e2e/audit-profiel-beheer.spec.ts` (`AUDIT=1`): 12 profielschermen en 29 beheerschermen op 320, 390, 768 en 1280 px, plus 390 px bij 130 % tekst.
+- Zelfde metingen als §8, plus axe op 390 px.
+- Beheer draait als **verzonnen eigenaar** in de nep-Supabase (`/__token?sub=`). Er wordt nooit een echte account of productie gebruikt.
+
+**Voor en na** (som over alle schermen per variant; "doel < 44" gemeten met aanraakscherm):
+
+| Variant | Horizontaal scrollen | Tekst buiten scherm | Doel < 24 px | Doel < 44 px | axe ernstig/kritiek |
+|---|---|---|---|---|---|
+| Beheer 320 px | 6 → **0** | 18 → **0** | 36 → **1** | 449 → **4** | — |
+| Beheer 390 px | 2 → **0** | 6 → **0** | 36 → **1** | 451 → **4** | 50 → **0** |
+| Beheer 390 px bij 130 % | 5 → **0** | 12 → **0** | 32 → **1** | 418 → **0** | — |
+| Beheer 768 px | 0 → 0 | 0 → 0 | 37 → **1** | 453 → **4** | — |
+| Profiel 320 px | 1 → **0** | 1 → **0** | 0 → 0 | 9 → 8 | — |
+| Profiel 390 px | 0 → 0 | 0 → 0 | 0 → 0 | 9 → 8 | 0 → 0 |
+
+Bron: `docs/foodloapp-v2/audit/pb/` (voor) en `pb4/` (na; lokaal, niet in git).
+
+**Wat er overblijft, met beoordeling:**
+- **Profiel, 8 doelen < 44 px.** Allemaal schakelaars: zichtbaar 56 × 32 px, raakvlak 72 × 48 px. In orde, zie DESIGNSYSTEEM §5.2.
+- **Beheer, 1 doel < 24 px** (kolomkop "AI"). De sorteerknoppen kregen daarna `min-w-11`; dat wordt opnieuw gemeten in de eindmeting hieronder.
+- **Beheer, 4 doelen < 44 px op 320 px:** "Details", "Status", "Acties" en "bekijk". Dat zijn tabelkoppen en links in compacte tabellen. Ze voldoen aan 2.5.8 (≥ 24 px).
+- **Afgekapt met ellips:** de user agent in "Aanmeldingen" en de namen in compacte rijen. Bewust; de volledige tekst staat in de detailweergave.
+
+**Nieuwe harde poorten in de regressie:**
+- `a11y-volledig.spec.ts`:
+  - beheer zonder horizontaal scrollen op 320 en 390 px;
+  - axe 0 op 390 px;
+  - axe 0 in de catalogus, het lijstmenu, de winkelmodus, het formulier "Zelf typen", privacy en installeren.
+- `reis-modules.spec.ts`, de gebruikersreis door alle vijf de modules op 390, 412, 768 en 1280 px. De stappen:
+  1. voorraad aanvullen;
+  2. Vandaag stelt een gerecht voor dat kan met wat in huis is;
+  3. dat gerecht plannen;
+  4. Week toont het;
+  5. Lijst bevat **alleen het tekort**;
+  6. winkelmodus, dan "Klaar met winkelen";
+  7. voorraad;
+  8. Vandaag springt naar "koken";
+  9. koken, waarna de voorraad verbruikt is;
+  10. Keuken en Ontdek.
+
+  Bij elke stap wordt gecontroleerd dat Vandaag de juiste volgende stap toont (`kiezen → winkelen → koken`) en dat geen scherm opzij scrolt.
+
+**Samenhang tussen de modules: bevindingen.**
+- Bevestigd door de reis:
+  - het plan staat meteen in Vandaag, in Week en in de weekband van Vandaag;
+  - de lijst houdt rekening met de voorraad;
+  - de Nu-kaart volgt de toestand van lijst en voorraad;
+  - koken werkt de voorraad bij.
+- **Niet gevonden: inconsistenties.** Er waren geen tegenstrijdige aantallen of toestanden in deze reis.
+- **Kanttekening.** De reis gebruikt één gerecht en één persoon. Gezinsrechten, twee toestellen tegelijk en realtime zijn niet in deze reis getest. Dubbel tikken en twee vensters zitten in `kringloop.spec` en `weekmenu-lijst.spec`.
+- **Testtechnische vondst** (geen fout in de app): de toegankelijke naam van de navigatielinks is "Week (Weekmenu)", korte tekst plus de lange tekst voor schermlezers. Dat is bedoeld.
+
+**Schermafdrukken die ik zelf bekeek:** beveiliging op 320 px (vóór de fix: kaart 479 px breed, tabel liep uit beeld, subtabbladen braken over 3 regels). De overige schermafdrukken zijn automatisch gemeten, niet allemaal met het oog nagekeken.
+
+**Niet getest:**
+- echte toestellen en schermlezers. Er zijn plannen voor: `PRAKTIJKTEST-TOESTELLEN.md` en `TOEGANKELIJKHEID-PROTOCOL.md`. Netwerktoegang voor de demo vraagt jouw toestemming;
+- WebKit/Safari-engine;
+- beheer met echte gegevensvolumes (de nep-Supabase heeft een handvol rijen).

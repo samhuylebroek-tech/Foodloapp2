@@ -11,7 +11,7 @@ Stand 2026-11-10.
 
 axe vindt naar schatting 30–50 % van de WCAG-problemen. Volgorde van voorlezen, begrijpelijkheid van labels, focus na een actie en gebaren vragen een mens met een echte schermlezer.
 
-## 2. Automatische stand (commit `03a425a`, gemeten 2026-11-10)
+## 2. Automatische stand (gemeten 2026-11-10, zie MOBIEL-AUDIT §9 voor de commit)
 | Onderdeel | Hoe | Resultaat |
 |---|---|---|
 | 19 gebruikersschermen | `mobiel-breedtes.spec.ts`: axe op 390 px, geen zijscroll op 360–430 px, doelen ≥ 24 px | Groen in de vorige regressie; zie de nieuwe regressie in het auditrapport |

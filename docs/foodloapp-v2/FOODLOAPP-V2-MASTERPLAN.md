@@ -1,7 +1,7 @@
 # Foodloapp V2 — Masterplan
 
-**Centrale bron.** Stand: 2026-11-09, branch `v2/dev` (lokaal, niet gepusht). Eigenaar van beslissingen: Sam.
-Detaildocumenten (gelinkt, niet herhaald): [MOBIEL-AUDIT](MOBIEL-AUDIT-2026-11.md) · [DESIGNSYSTEEM](DESIGNSYSTEEM.md) · [MODULE-AUDIT](MODULE-AUDIT-2026-11.md) · [PRODUCT-HERONTWERP](PRODUCT-HERONTWERP.md) · [HUISHOUDEN-ONTWERP](HUISHOUDEN-ONTWERP.md) · [FUNCTIE-INVENTARIS](FUNCTIE-INVENTARIS.md) · [BUG-REGISTER](BUG-REGISTER.md) · [SECURITY-RELEASE](SECURITY-RELEASE.md) · [MOBIEL-REDESIGN-MATRIX](MOBIEL-REDESIGN-MATRIX.md) · [STAGING-VOORSTELLEN](STAGING-VOORSTELLEN.md) · [ZOD4-MIGRATIE](ZOD4-MIGRATIE.md)
+**Centrale bron.** Stand: 2026-11-10, branch `v2/dev` (lokaal, niet gepusht). Eigenaar van beslissingen: Sam.
+Detaildocumenten (gelinkt, niet herhaald): [MOBIEL-AUDIT](MOBIEL-AUDIT-2026-11.md) · [DESIGNSYSTEEM](DESIGNSYSTEEM.md) · [MODULE-AUDIT](MODULE-AUDIT-2026-11.md) · [PRODUCT-HERONTWERP](PRODUCT-HERONTWERP.md) · [HUISHOUDEN-ONTWERP](HUISHOUDEN-ONTWERP.md) · [FUNCTIE-INVENTARIS](FUNCTIE-INVENTARIS.md) · [BUG-REGISTER](BUG-REGISTER.md) · [SECURITY-RELEASE](SECURITY-RELEASE.md) · [MOBIEL-REDESIGN-MATRIX](MOBIEL-REDESIGN-MATRIX.md) · [STAGING-VOORSTELLEN](STAGING-VOORSTELLEN.md) · [MIGRATIE-VOORSTEL-BOODSCHAPPEN](MIGRATIE-VOORSTEL-BOODSCHAPPEN.md) · [PRAKTIJKTEST-TOESTELLEN](PRAKTIJKTEST-TOESTELLEN.md) · [TOEGANKELIJKHEID-PROTOCOL](TOEGANKELIJKHEID-PROTOCOL.md) · [ZOD4-MIGRATIE](ZOD4-MIGRATIE.md)
 
 Statuslabels in dit document:
 - ✅ **bestaand en gecontroleerd**: geautomatiseerd getest.
@@ -423,6 +423,8 @@ Alles hierboven draait in **Chromium-emulatie**. Er zijn **geen** tests op een e
 | BUG-035 | Medium | zod 3 advisory (gemitigeerd) |
 | BUG-011 | Medium | Twee migratiemappen; `inspiration_*` ontbreekt in de migraties |
 | BUG-037/038/026/016/014/013 | Laag | Zie register |
+| BUG-086 | Medium | Geen test op echte toestellen of met een schermlezer (wacht op toestemming voor netwerktoegang) |
+| BUG-087 | Laag | Afdelingsvolgorde per toestel, niet gedeeld (G1) |
 
 Er staan geen kritieke of hoge bugs open op `v2/dev`. Live V1 heeft er nog twee (TanStack/seroval, BUG-061) zolang de beveiligingsrelease niet is uitgerold.
 
@@ -468,6 +470,9 @@ Er staan geen kritieke of hoge bugs open op `v2/dev`. Live V1 heeft er nog twee 
 5. **G7:** "Alles van deze week op de lijst" samenvoegen met Slim aanvullen (§9b).
 6. **G9 (kosten, nieuw):** zie §16.6. Spend caps controleren, het maandbudget kiezen (€25 is een voorstel, niet actief), beslissen over het dure zoekmodel en over automatische AI-foto's.
 7. **BUG-061** (vertalen zonder limiet) zit ook in live V1. De fix kan mee in de beveiligingsrelease (G3/G4).
+8. **Netwerktoegang voor de demo** (`DEMO_LAN=1`) voor de praktijktest op echte toestellen. Staat klaar, maar is niet geactiveerd (PRAKTIJKTEST-TOESTELLEN §1).
+9. **Migratie boodschappen V2** (sjablonen, winkels, merk/variant, foto's): voorstel klaar, niet uitgevoerd. Eerst G1/B6 (MIGRATIE-VOORSTEL-BOODSCHAPPEN §5).
+10. Optioneel en gratis: de WebKit-browser voor Playwright installeren (`npx playwright install webkit`, ± 100 MB download), zodat de Safari-engine mee getest wordt.
 
 ## 16. Kostenbeheersing (bindend sinds 2026-11-09)
 
@@ -660,7 +665,7 @@ Bron: [MODULE-AUDIT-2026-11](MODULE-AUDIT-2026-11.md) (audit per module, kwalite
 | 1. Mobiele UX-audit | Meetinstrument (17 schermen × 9 breedtes + 130 % tekst, lange inhoud), schermafdrukken, inventaris (MOBIEL-AUDIT §1–§6) | ✅ gebouwd en gedraaid (deels opnieuw te meten, zie onder) |
 | 2. Design- en componentsysteem | DESIGNSYSTEEM.md; globaal: afbreken in plaats van overlopen, knoppen die meegroeien, compacte kop, rasters pas vanaf 1280 px | ✅ ronde 1 gebouwd · 🟨 afstandsschaal en beweging nog te doen |
 | 3. Hoofdschermen | Vandaag · Week (kleverige weekband) · Lijst · Keuken (collecties met fotocollage) · Ontdek (thema's, ontworpen terugval, plek voor de creator) | ✅ gebouwd, getest en gecontroleerd op schermafdrukken |
-| 4. Overige schermen | Recept (één hoofdknop), kookmodus (grote tekst), voorraad (per afdeling), gezin, vrienden, instellingen, klantenkaarten | ✅ gebouwd; 🟨 profielpagina's en beheer niet herontworpen |
+| 4. Overige schermen | Recept (één hoofdknop), kookmodus (grote tekst), voorraad (per afdeling), gezin, vrienden, instellingen, klantenkaarten; profiel en beheer (§20) | ✅ gebouwd en getest; beheer: toegankelijk en bruikbaar op de telefoon, maar nog tabellen in plaats van kaarten (🟧) |
 | 5. Boodschappen verder | Catalogus met tegels, favorieten en vaak gekocht, "toegevoegd door", meervouden in de afdelingsindeling | ✅ gebouwd en getest. Volgens de kwaliteitsnorm nog niet "klaar": sjablonen, winkels en merk/variant/foto vragen G1 |
 | 6. Volledige visuele en functionele controle | Audit op 9 breedtes en 130 %, met vensters en een fouttoestand: **0 overlopen, 0 horizontaal scrollen, 0 weggeknipt**; volledige regressie | ✅ (zie MOBIEL-AUDIT §8) |
 
@@ -680,3 +685,23 @@ Alle 11 varianten zijn gemeten op `47748ec`. Vijf liepen eerst vast door de syst
   - een toegankelijkheidsfout door mijzelf: het voorleeslabel van "Op mijn lijst" week af van de zichtbare tekst (WCAG 2.5.3), opgelost;
   - 2 catalogustests: de devserver herstartte onder systeembelasting; bij herhaling geslaagd.
 - **`54dd7e7` (eindstand): tsc 0 · vitest 477/477 · build 0 · Playwright 268 geslaagd, 0 mislukt, 88 overgeslagen → exitcode 0.**
+
+## 20. Afronding V2 (2026-11-10)
+Labels in deze paragraaf:
+- **opgelost en getest**: een geautomatiseerde test faalt bij een terugval;
+- **opgelost, gedeeltelijk getest**: gemeten met de audit, of slechts een deel zit in een harde test;
+- **niet getest**: gebouwd of beschreven, maar niet gecontroleerd.
+
+Alle tests draaien in Chromium-emulatie, niet op een echt toestel.
+
+| Onderdeel | Wat | Status |
+|---|---|---|
+| Profielschermen (12) | Audit op 320–1280 px en bij 130 %. Privacylink 44 px, knoppen op Installeren stapelen | Opgelost, gedeeltelijk getest: audit, en axe in `mobiel-breedtes` en `a11y-volledig` |
+| Beheer (29 schermen) | Toegankelijke namen, contrast, tabellen in een eigen scrollkader, ≥ 44 px op aanraakschermen, geen zijscroll | Opgelost en getest: `a11y-volledig` (axe 0, zijscroll 0 op 320/390). 44 px: gedeeltelijk (audit) |
+| Beheer als premium mobiele ervaring | Drie navigatieniveaus en brede tabellen op de telefoon | **Niet opgelost.** Bruikbaar en toegankelijk, maar geen kaartweergave per rij. Dat vraagt ontwerpwerk per scherm |
+| Toegankelijkheid hele app | axe op 19 gebruikersschermen, 29 beheerschermen, vensters en onderbladen | Opgelost en getest (automatisch). **Schermlezer: niet getest** (protocol klaar) |
+| Samenhang Vandaag–Week–Lijst–Keuken–Ontdek | Reis voorraad → plan → lijst → winkel → koken → voorraad | Getest: `reis-modules` op 390, 412, 768 en 1280 px. Gezin en twee toestellen: niet in deze reis |
+| Praktijktest echte toestellen | Plan, testscript, LAN-demo achter `DEMO_LAN=1` | **Niet getest.** Wacht op toestemming voor netwerktoegang |
+| Migratie sjablonen, winkels, merken, varianten, foto's | Voorstel met SQL heen/terug, RLS, impact, kosten | **Niet uitgevoerd** (G1/B6 en jouw akkoord) |
+
+REGRESSIE_PLACEHOLDER

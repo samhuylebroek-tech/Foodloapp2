@@ -1,6 +1,6 @@
 # Foodloapp V2 — Designsysteem (mobile-first)
 
-Stand 2026-11-09. Dit document is bindend voor elk nieuw of herwerkt scherm. Regels die in code afgedwongen worden, staan erbij met hun bestand.
+Stand 2026-11-10. Dit document is bindend voor elk nieuw of herwerkt scherm. Regels die in code afgedwongen worden, staan erbij met hun bestand.
 
 ## 1. Principes
 1. **Telefoon eerst.** Elk scherm wordt ontworpen op 390 px en gecontroleerd op 320 px. Tablet en desktop krijgen daarna een eigen indeling; ze zijn geen vergrote telefoon.
@@ -70,6 +70,17 @@ Rasters met veel kolommen (weekraster, collecties, weekstrook) pas vanaf `xl` (1
 
   Nooit een generiek pictogram op een grote kaart. Kleine miniaturen (< 80 px) mogen het pictogram van de soort houden.
 - **Bron op kaarten:** elke ideekaart in Ontdek heeft een bronregel. Nu staat er "Foodlo-keuken"; later komen daar de naam en het profiel van de creator.
+
+### 5.2 Profiel en beheer (2026-11-10)
+- **Elk formulierveld heeft een naam**: zichtbaar label, of `aria-label` als het label al als tekst ernaast staat (schakelaars in een rij, selects in een filterbalk). Poort: `a11y-volledig.spec.ts`.
+- **Beheer** (`.beheer`, eigen donkere laag in `styles.css`):
+  - grijze tekst minimaal `slate-400` (contrast ≥ 4.5:1 op slate-950);
+  - tabellen scrollen in hun eigen kader, nooit de pagina; `AdminShell` maakt dat kader een gelabelde regio die met het toetsenbord bereikbaar is;
+  - kinderen van rasters en flexrijen mogen krimpen (`min-width: 0`), knoppen en links niet;
+  - op aanraakschermen (`pointer: coarse`) zijn knoppen, links en velden ≥ 44 px hoog, ook links in tabellen (`inline-flex`).
+- **Grafieken** zijn beeld (`role="img"` met een samenvattend label). De cijfers en de tikbare ingangen staan in een tabel of lijst ernaast, nooit alleen in smalle balken.
+- **Schakelaar:** 56 × 32 px zichtbaar, raakvlak 72 × 48 px via `::before`. De audit telt het zichtbare kader en meldt hem dus als < 44 px. Dat is bekend en in orde.
+- **Losse knoppenparen** (bv. "Link kopiëren" en "Delen") stapelen onder 400 px.
 
 ## 6. Ruimte en kleur
 - **Ruimte:** schaal van 4 px. Binnen een kaart 16 px, tussen kaarten 12–20 px, tussen secties 40–48 px. Zijmarge 16 px op de telefoon, 24 px vanaf `sm`.
