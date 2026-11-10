@@ -284,6 +284,8 @@ const server = http.createServer((req, res) => {
   };
 });
 
-server.listen(PORT, "127.0.0.1", () => {
-  console.log(`nep-supabase luistert op http://127.0.0.1:${PORT}`);
+// Standaard alleen op deze computer. Alleen de demo met DEMO_LAN=1 zet dit op 0.0.0.0.
+const HOST = process.env["FAKE_SUPABASE_HOST"] ?? "127.0.0.1";
+server.listen(PORT, HOST, () => {
+  console.log(`nep-supabase luistert op http://${HOST}:${PORT}`);
 });

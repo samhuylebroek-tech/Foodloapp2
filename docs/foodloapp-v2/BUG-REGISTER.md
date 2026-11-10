@@ -2,10 +2,13 @@
 
 Levend register. Elke bevinding: reproduceren → prioriteren → oplossen → opnieuw testen.
 Ernst: **Kritiek** (dataverlies/inbraak), **Hoog** (beveiliging/geld/kernflow), **Medium**, **Laag**.
-Status: `Open` · `Bezig` · `Opgelost en getest` · `Goedkeuring nodig` (gate G1–G8) · `Geaccepteerd risico`.
+Status: `Open` · `Bezig` · `Opgelost en getest` · `Opgelost, gedeeltelijk getest` · `Opgelost, niet getest` · `Goedkeuring nodig` (gate G1–G8) · `Geaccepteerd risico`.
+- **Getest** betekent een geautomatiseerde test die bij een terugval faalt.
+- **Gemeten** betekent: gecontroleerd met de audit (`AUDIT=1`), zonder harde poort.
+- Alles draait in Chromium-emulatie, niet op een echt toestel, tenzij het er uitdrukkelijk bij staat.
 Bewijs: testnaam/commando. "Op oude code bewezen" = de test faalde vóór de fix en slaagt erna.
 
-Laatste update: 2026-11-08 — branch `v2/dev`.
+Laatste update: 2026-11-10 — branch `v2/dev` (lokaal, niet gepusht).
 
 | ID | Ernst | Onderdeel | Probleem | Reproductie | Status | Fix / test |
 |----|-------|-----------|----------|-------------|--------|-----------|
@@ -85,6 +88,16 @@ Laatste update: 2026-11-08 — branch `v2/dev`.
 | BUG-075 | Medium | Meldingen | "Ongedaan maken" in een melding was niet aan te tikken terwijl een onderblad of venster open was (Radix zet `pointer-events: none` op `body`). | E2E catalogus (B6). | Opgelost en getest | De meldingen blijven klikbaar (`pointer-events: auto`). |
 | BUG-076 | Medium (grote tekst) | Winkelmodus | Bij 130 % tekst op 320 px brak de productnaam per letter ("citr-oe-n") naast de kolom "Niet gevonden", en werd de afdelingsnaam afgekapt. | Audit plus schermafdruk. | Opgelost en gemeten | Onder 400 px staat "Niet gevonden" onder het product; de kop loopt om. |
 | BUG-077 | Medium (grote tekst) | Onderbalk | Bij 130 % tekst werden tablabels afgekapt ("Vanda…"). | Schermafdruk 320 px bij 130 %. | Opgelost | Labels krijgen een bovengrens van 15 px (zoals iOS-tabbalken). |
+| BUG-078 | **Hoog** (a11y) | Beheer (29 schermen) | 50 ernstige of kritieke axe-meldingen op 390 px:<br>• selects, schakelaars en invoervelden zonder naam;<br>• te weinig contrast bij `text-slate-500/600` op donker;<br>• scrollbare tabellen niet met het toetsenbord bereikbaar;<br>• doelen < 24 px. | `audit-profiel-beheer` (AUDIT=1, als verzonnen eigenaar in de nep-Supabase). | Opgelost en getest | • `aria-label` op alle velden;<br>• grijs in beheer → slate-400;<br>• tabelcontainers als gelabelde regio met `tabIndex=0`.<br>Getest met `a11y-volledig.spec.ts` (poort: 0 meldingen). |
+| BUG-079 | Medium | Beheer | 6 schermen scrolden opzij op 320 px (tot 479 px breed): rasteritems groeiden mee met de breedste tabel (`min-width: auto`), en subtabbladen braken over 3 regels. | Audit 320 px. | Opgelost en getest | `.beheer :is(.grid, .flex) > :not(button, a) { min-width: 0 }`, tabellen scrollen in hun eigen kader en subtabs staan op één regel. Getest met `a11y-volledig` (320 en 390 px). |
+| BUG-080 | Medium | Beheer | ~450 aanraakdoelen < 44 px op de telefoon. | Audit. | Opgelost, gedeeltelijk getest | Op aanraakschermen `min-height: 2.75rem`; links in tabellen en tekst `inline-flex`. Gemeten op 390 px: 451 → 4. Geen harde poort voor 44 px (streefwaarde). |
+| BUG-081 | Laag | Beheer, UI-overzicht | 30 grafiekbalken als links van < 24 px breed. De 24 uurbalken gingen allemaal naar dezelfde pagina. | Audit, axe `target-size`. | Opgelost en getest | De balken zijn nu alleen beeld (`role="img"` met een label). Het dagoverzicht heeft tikbare datums van ≥ 44 px, plus een link "Alle gebeurtenissen". |
+| BUG-082 | Medium (door mij ingevoerd, nooit gecommit) | Beheer | De eerste versie van de fix voor BUG-079 kneep ook de navigatiepillen en de knoppen. Gevolg: 174 keer tekst over het kader, en "Bewaar" over 3 regels op 768 px. | Audit pb3 en pb4. | Opgelost en gemeten | Pillen `shrink-0`; knoppen en links uitgezonderd van de krimpregel. |
+| BUG-083 | Laag | Beheer, UI-fouten en UI-sessies | De pagineringsrij was 8 px te breed op 320 px. De audit zag het niet (marge), de nieuwe poort wel. | `a11y-volledig` (exitcode 1). | Opgelost en getest | De rij loopt om (`flex-wrap`). |
+| BUG-084 | Laag | Profiel | Op Privacy was "← Naar Foodlo" maar 24 px hoog. Op Installeren scrolden de twee knoppen opzij op 320 px. | Audit profiel 320 px. | Opgelost en gemeten | Link `min-h-11`; de knoppen stapelen onder 400 px. Audit profiel: horizontaal scrollen 1 → 0. |
+| BUG-085 | Medium (a11y) | Beheer, UI-gebeurtenissen | Select "Resultaat" zonder toegankelijke naam (axe kritiek). | Audit pb2. | Opgelost en getest | `aria-label="Resultaat"`. |
+| BUG-086 | Medium | Proces | Er is nog niet op echte iPhone- of Android-toestellen getest, en niet met een echte schermlezer. | — | Goedkeuring nodig | `PRAKTIJKTEST-TOESTELLEN.md` en `TOEGANKELIJKHEID-PROTOCOL.md`. Demo op het thuisnetwerk (`DEMO_LAN=1`) staat klaar maar is **niet geactiveerd**. |
+| BUG-087 | Laag | Lijst | De afdelingsvolgorde per winkel staat per toestel (`localStorage`) en wordt niet gedeeld met het huishouden. | Code-inspectie. | Goedkeuring nodig (G1) | `MIGRATIE-VOORSTEL-BOODSCHAPPEN.md` (tabel `stores`). |
 
 ## Autorisatie-audit (2026-11-08)
 - Alle 76 beheer-serverfuncties (`admin`, `monitoring`, `user-intelligence`, `finance`) roepen `bewaker()` aan (vaste eigenaar-ID + actieve rol + recht + alleen-lezen + rate limit); `meldingen-admin` gebruikt `moetAdminZijn()`.
