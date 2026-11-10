@@ -5,7 +5,6 @@ import QRCode from "qrcode";
 import {
   Check,
   ChefHat,
-  ChevronRight,
   Copy,
   Home,
   LogOut,
@@ -386,9 +385,9 @@ function GezinPage() {
                         params={{ id: l.user_id }}
                         className="flex min-h-16 min-w-0 flex-1 items-center gap-3.5 rounded-xl px-4 py-3 hover:bg-muted/70"
                       >
-                        <Avatar naam={naamVan(l.user_id)} sleutel={l.user_id} className="size-11" />
+                        <Avatar naam={naamVan(l.user_id)} sleutel={l.user_id} className="size-10 shrink-0" />
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[1.05rem] font-semibold">
+                          <span className="block text-[1.05rem] font-semibold">
                             {naamVan(l.user_id)}
                           </span>
                           <span className="flex items-start gap-1 text-[0.95rem] text-primary">
@@ -396,10 +395,6 @@ function GezinPage() {
                             <span className="min-w-0">Bekijk hun gerechten</span>
                           </span>
                         </span>
-                        <ChevronRight
-                          className="size-5 shrink-0 text-muted-foreground"
-                          aria-hidden
-                        />
                       </Link>
                     )}
                     {ikBenEigenaar && !ik && (

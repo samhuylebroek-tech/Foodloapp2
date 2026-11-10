@@ -118,23 +118,26 @@ function bronNaam(url: string) {
 
 function PersonenKiezer({ aantal, onZet }: { aantal: number; onZet: (n: number) => void }) {
   return (
-    <div className="flex items-center justify-between gap-2 rounded-2xl bg-secondary p-1">
+    <div className="flex items-center justify-between gap-1 rounded-2xl bg-secondary p-1">
       <Button
         variant="secondary"
         onClick={() => onZet(Math.max(1, aantal - 1))}
         aria-label="Minder personen"
-        className="size-14 shrink-0 bg-card"
+        className="size-12 shrink-0 bg-card"
       >
         <Minus className="size-5" />
       </Button>
-      <span className="flex-1 text-center text-lg font-semibold">
-        Koken voor {aantal} {aantal === 1 ? "persoon" : "personen"}
+      <span className="min-w-0 flex-1 text-center leading-tight">
+        <span className="block text-[min(1rem,17px)] text-muted-foreground">Koken voor</span>
+        <span className="block text-xl font-bold tabular-nums">
+          {aantal} {aantal === 1 ? "persoon" : "personen"}
+        </span>
       </span>
       <Button
         variant="secondary"
         onClick={() => onZet(aantal + 1)}
         aria-label="Meer personen"
-        className="size-14 shrink-0 bg-card"
+        className="size-12 shrink-0 bg-card"
       >
         <Plus className="size-5" />
       </Button>
@@ -162,6 +165,7 @@ function ReceptPage() {
   const [aanvullen, setAanvullen] = useState(false);
   const [fotoBezig, setFotoBezig] = useState(false);
   const [boodschappenOpen, setBoodschappenOpen] = useState(false);
+  const [schermTip, setSchermTip] = useState(false);
   const [gekozenLijst, setGekozenLijst] = useState("");
 
   // Kookstand: scherm van gsm/tablet blijft aan.
@@ -170,8 +174,8 @@ function ReceptPage() {
     let actief = true;
     const vraag = async () => (actief ? houdSchermAan() : false);
     void vraag().then((ok) => {
-      if (!ok && actief)
-        toast.info(t("Zet de automatische schermvergrendeling tijdelijk uit tijdens het koken."));
+      // Inline tip in de kookstand (geen melding die bovenaan de titel bedekt).
+      if (actief) setSchermTip(!ok);
     });
     const zichtbaar = () => {
       if (document.visibilityState === "visible") void vraag();
@@ -679,8 +683,14 @@ function ReceptPage() {
                 )}
               </p>
             </div>
-            <Button variant="zacht" onClick={() => setStopVraag(true)} className="h-14 shrink-0">
-              <X className="size-6" /> {t("Stoppen")}
+            <Button
+              variant="zacht"
+              onClick={() => setStopVraag(true)}
+              aria-label={t("Stoppen")}
+              className="h-14 min-w-14 shrink-0 px-4"
+            >
+              <X className="size-6" />{" "}
+              <span className="hidden min-[360px]:inline">{t("Stoppen")}</span>
             </Button>
           </div>
           {/* Voortgang: één blokje per stap, zichtbaar én voor schermlezers. */}
@@ -712,6 +722,11 @@ function ReceptPage() {
               <h2 className="text-paginatitel">{recipe.title}</h2>
               <p className="mt-3 text-xl leading-relaxed text-muted-foreground">
                 {t("Neem eerst alles wat je nodig hebt. Daarna koken we stap voor stap.")}
+                {schermTip ? (
+                  <span className="mt-2 block text-base">
+                    {t("Tip: zet de automatische schermvergrendeling even uit tijdens het koken.")}
+                  </span>
+                ) : null}
               </p>
               <div className="mt-5">
                 <PersonenKiezer aantal={aantal} onZet={setPersonen} />
@@ -988,23 +1003,25 @@ function ReceptPage() {
               </Button>
             ) : null}
 
-            {/* Gestapeld op smalle schermen: lange labels lopen nooit buiten de knop. */}
-            <div className="grid grid-cols-1 gap-3">
+            {/* Eén hoofdactie ("Start koken"); inplannen en lijst als twee rustige knoppen naast
+                elkaar met korte labels (eerder drie even zware knoppen onder elkaar). */}
+            <div className="grid grid-cols-2 gap-3">
               <Button
                 variant="outline"
                 onClick={() => setPlanOpen(true)}
-                className="h-16 whitespace-normal px-3 text-lg leading-snug"
+                className="h-auto min-h-14 whitespace-normal px-3 text-base leading-snug"
               >
                 <CalendarPlus />
                 {t("Inplannen")}
               </Button>
               <Button
-                variant="secondary"
+                variant="outline"
                 onClick={() => setBoodschappenOpen(true)}
                 disabled={!ingredients.length}
-                className="h-16 gap-2 whitespace-normal px-3 text-lg leading-snug"
+                aria-label={t("Op mijn boodschappenlijst")}
+                className="h-auto min-h-14 gap-2 whitespace-normal px-3 text-base leading-snug"
               >
-                <ShoppingCart className="size-5 shrink-0" /> {t("Voeg toe aan boodschappenlijst")}
+                <ShoppingCart className="size-5 shrink-0" /> {t("Op mijn lijst")}
               </Button>
             </div>
 

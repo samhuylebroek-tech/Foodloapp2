@@ -403,7 +403,7 @@ export function AppShell({
                   data-tour={`tab-${item.to}`}
                   aria-current={actief ? "page" : undefined}
                   className={cn(
-                    "flex min-h-18 flex-col items-center justify-center gap-1 px-0 pb-2 pt-1 text-[0.84rem] font-semibold tracking-tight transition-colors",
+                    "flex min-h-18 flex-col items-center justify-center gap-1 px-0 pb-2 pt-1 text-[min(0.84rem,15px)] font-semibold tracking-tight transition-colors",
                     actief ? "text-foreground" : "text-muted-foreground",
                   )}
                 >

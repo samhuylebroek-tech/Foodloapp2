@@ -18,6 +18,7 @@ import { PageSkeleton } from "@/components/PageSkeleton";
 import { watKanIkKoken, zitInVoorraad } from "@/lib/voorraad-match";
 import { vindDubbels, voegToeAlsNieuw, zorgVoorLijst } from "@/lib/boodschappen";
 import type { Recipe } from "@/lib/types";
+import { CATEGORIE_LABEL, CATEGORIE_VOLGORDE, categorieVan } from "@/lib/categorie";
 
 export const Route = createFileRoute("/voorraad")({
   head: () => ({
@@ -133,6 +134,19 @@ function VoorraadPage() {
   });
 
   const voorraadNamen = useMemo(() => items.map((i) => i.naam), [items]);
+  // Mobiel-eerst: voorraad per afdeling (zelfde indeling als de boodschappenlijst).
+  const perAfdeling = useMemo(() => {
+    const per = new Map<string, typeof items>();
+    for (const item of items) {
+      const c = categorieVan(item.naam, {});
+      per.set(c, [...(per.get(c) ?? []), item]);
+    }
+    return CATEGORIE_VOLGORDE.filter((c) => per.has(c)).map((c) => ({
+      id: c,
+      label: c === "voorraadkast" ? "Kast en houdbaar" : CATEGORIE_LABEL[c],
+      lijst: per.get(c)!,
+    }));
+  }, [items]);
   const suggesties = useMemo(() => {
     const perRecept = new Map<string, { name: string }[]>();
     for (const ing of ingredienten) {
@@ -272,6 +286,7 @@ function VoorraadPage() {
               onChange={(e) => setNieuw(e.target.value)}
               aria-label={t("Nieuw product")}
               aria-describedby="voorraad-hulp"
+              placeholder={t("Wat heb je in huis?")}
               className="h-14 text-lg"
             />
             <Button type="submit" className="size-14 shrink-0 px-0 text-lg sm:w-auto sm:px-5">
@@ -319,51 +334,63 @@ function VoorraadPage() {
               />
             </div>
           ) : (
-            <ul
-              className="paneel mt-6 divide-y divide-border/80 overflow-hidden"
-              aria-label={t("In huis")}
-            >
-              {items.map((item) => (
-                <li
-                  key={item.id}
-                  className="flex min-h-[4.25rem] items-center gap-2 py-2 pl-4 pr-1"
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-lg font-semibold leading-snug">
-                      {item.naam}
-                    </span>
-                    <span className="block text-[0.95rem] tabular-nums text-muted-foreground">
-                      {item.hoeveelheid
-                        ? toonBelgischeMaat(item.hoeveelheid, item.eenheid)
-                        : t("in huis")}
-                    </span>
-                  </span>
-                  <span className="flex shrink-0 items-center rounded-full bg-muted p-0.5">
-                    <button
-                      type="button"
-                      onClick={() => void wijzigAantal(item, -1)}
-                      aria-label={`${t("Minder")}: ${item.naam}`}
-                      className="flex size-11 items-center justify-center rounded-full hover:bg-card active:bg-card"
-                    >
-                      <Minus className="size-5" aria-hidden />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void wijzigAantal(item, 1)}
-                      aria-label={`${t("Meer")}: ${item.naam}`}
-                      className="flex size-11 items-center justify-center rounded-full hover:bg-card active:bg-card"
-                    >
-                      <Plus className="size-5" aria-hidden />
-                    </button>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => void verwijder(item)}
-                    aria-label={`${t("Verwijderen")}: ${item.naam}`}
-                    className="flex size-12 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-destructive"
+            <ul className="mt-6 space-y-5" aria-label={t("In huis")}>
+              {perAfdeling.map((g) => (
+                <li key={g.id}>
+                  <h3
+                    id={`voorraad-${g.id}`}
+                    className="mb-2 px-1 text-[0.95rem] font-bold text-muted-foreground"
                   >
-                    <Trash2 className="size-5" aria-hidden />
-                  </button>
+                    {t(g.label)} · {g.lijst.length}
+                  </h3>
+                  <ul
+                    className="paneel divide-y divide-border/80 overflow-hidden"
+                    aria-label={t(g.label)}
+                  >
+                    {g.lijst.map((item) => (
+                      <li
+                        key={item.id}
+                        className="flex min-h-[4.25rem] items-center gap-2 py-2 pl-4 pr-1"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-lg font-semibold leading-snug">
+                            {item.naam}
+                          </span>
+                          <span className="block text-[0.95rem] tabular-nums text-muted-foreground">
+                            {item.hoeveelheid
+                              ? toonBelgischeMaat(item.hoeveelheid, item.eenheid)
+                              : t("in huis")}
+                          </span>
+                        </span>
+                        <span className="flex shrink-0 items-center rounded-full bg-muted p-0.5">
+                          <button
+                            type="button"
+                            onClick={() => void wijzigAantal(item, -1)}
+                            aria-label={`${t("Minder")}: ${item.naam}`}
+                            className="flex size-11 items-center justify-center rounded-full hover:bg-card active:bg-card"
+                          >
+                            <Minus className="size-5" aria-hidden />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void wijzigAantal(item, 1)}
+                            aria-label={`${t("Meer")}: ${item.naam}`}
+                            className="flex size-11 items-center justify-center rounded-full hover:bg-card active:bg-card"
+                          >
+                            <Plus className="size-5" aria-hidden />
+                          </button>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => void verwijder(item)}
+                          aria-label={`${t("Verwijderen")}: ${item.naam}`}
+                          className="flex size-12 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-destructive"
+                        >
+                          <Trash2 className="size-5" aria-hidden />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 </li>
               ))}
             </ul>
