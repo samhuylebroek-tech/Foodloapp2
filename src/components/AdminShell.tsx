@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Activity,
@@ -125,8 +125,33 @@ export function AdminShell({
   const pad = useRouterState({ select: (s) => s.location.pathname });
   const huidig = actieveSub(pad);
 
+  // Toegankelijkheid: een tabel die horizontaal scrolt, moet met het toetsenbord te bereiken zijn
+  // (WCAG 2.1.1) en een naam hebben. De beheerschermen bouwen tabellen los; dit regelt het centraal.
+  useEffect(() => {
+    const markeer = () => {
+      document.querySelectorAll<HTMLElement>(".beheer div:has(> table)").forEach((el) => {
+        if (el.scrollWidth <= el.clientWidth + 1 && el.scrollHeight <= el.clientHeight + 1) return;
+        if (!el.hasAttribute("tabindex")) el.tabIndex = 0;
+        if (!el.hasAttribute("role")) el.setAttribute("role", "region");
+        if (!el.hasAttribute("aria-label")) {
+          const kop = el.closest("section, div.rounded-xl")?.querySelector("h2, h3, p.font-medium");
+          const naam = kop?.textContent?.trim();
+          el.setAttribute("aria-label", naam ? `Tabel: ${naam}` : "Tabel");
+        }
+      });
+    };
+    markeer();
+    const obs = new MutationObserver(() => window.requestAnimationFrame(markeer));
+    obs.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener("resize", markeer);
+    return () => {
+      obs.disconnect();
+      window.removeEventListener("resize", markeer);
+    };
+  }, [pad]);
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="beheer min-h-screen bg-slate-950 text-slate-100">
       <div className="mx-auto flex max-w-[1600px]">
         <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-white/10 bg-slate-900/60 p-4 lg:flex">
           <div className="mb-6 flex items-center gap-2 px-2">
@@ -160,7 +185,10 @@ export function AdminShell({
           <div className="mt-4 rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-slate-400">
             <p className="font-medium text-slate-200">{profiel?.role.replace("_", " ")}</p>
             <p className="mt-1">Elke actie wordt gelogd.</p>
-            <Link to="/" className="mt-2 inline-block text-emerald-400 hover:underline">
+            <Link
+              to="/"
+              className="mt-2 inline-flex min-h-11 items-center text-emerald-400 hover:underline"
+            >
               Terug naar de app
             </Link>
           </div>
@@ -176,7 +204,7 @@ export function AdminShell({
                   <Link
                     key={s.label}
                     to={subs[0]!.pad}
-                    className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm ${
+                    className={`flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-lg px-3 text-sm ${
                       huidig?.sectie === s ? "bg-emerald-500/15 text-emerald-300" : "border border-white/10 text-slate-300"
                     }`}
                   >
@@ -203,7 +231,7 @@ export function AdminShell({
                     <Link
                       key={x.pad}
                       to={x.pad}
-                      className={`whitespace-nowrap border-b-2 pb-2 text-sm ${
+                      className={`flex min-h-11 shrink-0 items-center whitespace-nowrap border-b-2 text-sm ${
                         huidig.sub === x ? "border-emerald-400 text-emerald-300" : "border-transparent text-slate-400 hover:text-slate-200"
                       }`}
                     >

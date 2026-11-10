@@ -202,7 +202,7 @@ export function FilterBalk({
   return (
     <div className="sticky top-[76px] z-10 mb-4 rounded-xl border border-white/10 bg-slate-900/90 p-3 backdrop-blur">
       <div className="flex flex-wrap items-center gap-2">
-        <select className={sel} value={zoek.bereik} onChange={(e) => zet({ bereik: e.target.value as any })}>
+        <select aria-label="Periode" className={sel} value={zoek.bereik} onChange={(e) => zet({ bereik: e.target.value as any })}>
           {Object.entries(BEREIK_LABEL).map(([w, l]) => (
             <option key={w} value={w}>
               {l}
@@ -240,7 +240,7 @@ export function FilterBalk({
         ) : null}
 
         {velden.includes("status") ? (
-          <select className={sel} value={zoek.status} onChange={(e) => zet({ status: e.target.value as any })}>
+          <select aria-label="Status" className={sel} value={zoek.status} onChange={(e) => zet({ status: e.target.value as any })}>
             {["alles", "nieuw", "actief", "terugkerend", "weinig", "inactief", "nooit"].map((s) => (
               <option key={s} value={s}>
                 {s === "alles" ? "Alle statussen" : s}
@@ -250,7 +250,7 @@ export function FilterBalk({
         ) : null}
 
         {velden.includes("feature") ? (
-          <select className={sel} value={zoek.feature} onChange={(e) => zet({ feature: e.target.value })}>
+          <select aria-label="Functie" className={sel} value={zoek.feature} onChange={(e) => zet({ feature: e.target.value })}>
             <option value="">Alle onderdelen</option>
             {[...new Set(Object.values(FEATURES))].map((f) => (
               <option key={f} value={f}>
@@ -261,7 +261,7 @@ export function FilterBalk({
         ) : null}
 
         {velden.includes("event") ? (
-          <select className={sel} value={zoek.event} onChange={(e) => zet({ event: e.target.value })}>
+          <select aria-label="Gebeurtenis" className={sel} value={zoek.event} onChange={(e) => zet({ event: e.target.value })}>
             <option value="">Alle gebeurtenissen</option>
             {GEBEURTENISSEN.map((e) => (
               <option key={e} value={e}>
@@ -272,7 +272,7 @@ export function FilterBalk({
         ) : null}
 
         {velden.includes("device") ? (
-          <select className={sel} value={zoek.device} onChange={(e) => zet({ device: e.target.value })}>
+          <select aria-label="Toestel" className={sel} value={zoek.device} onChange={(e) => zet({ device: e.target.value })}>
             <option value="">Alle toestellen</option>
             {["Telefoon", "Tablet", "Computer"].map((d) => (
               <option key={d} value={d}>
@@ -283,7 +283,7 @@ export function FilterBalk({
         ) : null}
 
         {velden.includes("resultaat") ? (
-          <select className={sel} value={zoek.resultaat} onChange={(e) => zet({ resultaat: e.target.value as any })}>
+          <select aria-label="Resultaat" className={sel} value={zoek.resultaat} onChange={(e) => zet({ resultaat: e.target.value as any })}>
             <option value="alles">Alle resultaten</option>
             <option value="gelukt">Gelukt</option>
             <option value="mislukt">Mislukt</option>
@@ -391,7 +391,7 @@ export function Tabel({
               <th key={k.label} className="whitespace-nowrap px-3 py-2 font-medium">
                 {sorteerbaar && k.sleutel ? (
                   <button
-                    className="hover:text-emerald-300"
+                    className="min-w-11 text-left hover:text-emerald-300"
                     onClick={() =>
                       navigate({
                         to: ".",
@@ -445,7 +445,7 @@ export function Paginering({ totaal, pagina, perPagina }: { totaal: number; pagi
   const navigate = useNavigate();
   const laatste = Math.max(1, Math.ceil(totaal / perPagina));
   return (
-    <div className="mt-3 flex items-center justify-between text-sm text-slate-400">
+    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-slate-400">
       <span>
         {totaal === 0 ? "Geen resultaten" : `${(pagina - 1) * perPagina + 1}–${Math.min(pagina * perPagina, totaal)} van ${totaal}`}
       </span>

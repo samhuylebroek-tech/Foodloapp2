@@ -68,6 +68,7 @@ function CreditsBeheer() {
                         <Input
                           type="number"
                           min={0}
+                          aria-label={`Credits per gebruik: ${k.label || k.feature}`}
                           defaultValue={k.credit_cost}
                           disabled={!mag("settings.manage")}
                           className="h-8 w-20 border-white/10 bg-slate-950 text-slate-100"
@@ -82,6 +83,7 @@ function CreditsBeheer() {
                         <Input
                           type="number"
                           min={1}
+                          aria-label={`Maximum per dag: ${k.label || k.feature}`}
                           defaultValue={k.max_per_dag}
                           disabled={!mag("settings.manage")}
                           className="h-8 w-20 border-white/10 bg-slate-950 text-slate-100"
@@ -94,6 +96,7 @@ function CreditsBeheer() {
                       </td>
                       <td>
                         <Switch
+                          aria-label={`${k.label || k.feature} aan of uit`}
                           checked={k.enabled}
                           disabled={!mag("settings.manage")}
                           onCheckedChange={(v) => zet.mutate({ feature: k.feature, enabled: v })}
@@ -171,6 +174,7 @@ function Aanvragen({ magBeheren }: { magBeheren: boolean }) {
                   <Input
                     type="number"
                     min={0}
+                    aria-label="Aantal credits om toe te kennen"
                     placeholder="50"
                     value={bedrag[a.id] ?? 50}
                     onChange={(e) => setBedrag((b) => ({ ...b, [a.id]: Number(e.target.value) }))}

@@ -68,6 +68,7 @@ function Instellingen() {
                   <li key={k} className="flex items-center justify-between gap-3 text-sm">
                     <span>{LABELS[k]}</span>
                     <Switch
+                      aria-label={LABELS[k]}
                       checked={vlaggen[k] !== false}
                       disabled={!mag("settings.manage")}
                       onCheckedChange={(v) => zet.mutate({ key: `flag:${k}`, value: v })}
@@ -82,12 +83,14 @@ function Instellingen() {
             <div className="flex items-center justify-between gap-3 text-sm">
               <span>{LABELS["onderhoud"]}</span>
               <Switch
+                aria-label={LABELS["onderhoud"]}
                 checked={vlaggen["onderhoud"] === true}
                 disabled={!mag("settings.manage")}
                 onCheckedChange={(v) => zet.mutate({ key: "flag:onderhoud", value: v })}
               />
             </div>
             <Input
+              aria-label="Bericht voor gebruikers tijdens onderhoud"
               className="mt-3 border-white/10 bg-slate-950 text-slate-100"
               placeholder="Bericht voor gebruikers tijdens onderhoud"
               value={bericht ?? onderhoudsbericht}
@@ -111,6 +114,7 @@ function Instellingen() {
             <div className="flex items-center justify-between gap-3 text-sm">
               <span>Betalingen actief</span>
               <Switch
+                aria-label="Betalingen actief"
                 checked={betalenActief}
                 disabled={!mag("settings.manage")}
                 onCheckedChange={(v) => zet.mutate({ key: "betalen_actief", value: v })}
@@ -118,6 +122,7 @@ function Instellingen() {
             </div>
             <label className="mt-4 block text-xs text-slate-400">Gratis gerechten per gebruiker</label>
             <Input
+              aria-label="Gratis gerechten per gebruiker"
               type="number"
               min={0}
               className="mt-1 border-white/10 bg-slate-950 text-slate-100"
@@ -131,6 +136,7 @@ function Instellingen() {
             />
             <label className="mt-3 block text-xs text-slate-400">Gerechten per pakket</label>
             <Input
+              aria-label="Gerechten per pakket"
               type="number"
               min={1}
               className="mt-1 border-white/10 bg-slate-950 text-slate-100"
@@ -144,6 +150,7 @@ function Instellingen() {
             />
             <label className="mt-3 block text-xs text-slate-400">Prijs per pakket (eurocent)</label>
             <Input
+              aria-label="Prijs per pakket (eurocent)"
               type="number"
               min={0}
               className="mt-1 border-white/10 bg-slate-950 text-slate-100"

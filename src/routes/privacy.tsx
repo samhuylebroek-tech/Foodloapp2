@@ -26,7 +26,7 @@ function Blok({ titel, children }: { titel: string; children: React.ReactNode })
 function Privacy() {
   return (
     <main className="mx-auto max-w-2xl space-y-8 px-5 py-10 pt-[max(2.5rem,env(safe-area-inset-top))]">
-      <Link to="/" className="text-lg font-semibold text-primary">← Naar Foodlo</Link>
+      <Link to="/" className="inline-flex min-h-11 items-center text-lg font-semibold text-primary">← Naar Foodlo</Link>
       <h1 className="font-display text-4xl font-bold">Privacybeleid</h1>
       <p className="text-lg text-muted-foreground">Laatst bijgewerkt: 28 september 2026</p>
 

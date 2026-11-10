@@ -76,18 +76,28 @@ function Overzicht() {
             <Kaart>
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-sm font-semibold">Per dag</h2>
-                <span className="text-xs text-slate-500">klik een dag om te filteren</span>
+                <span className="text-xs text-slate-500">
+                  filteren: tik een dag in het dagoverzicht
+                </span>
               </div>
-              <div className="flex h-40 items-end gap-1">
+              {/* Alleen beeld: 30 balken zijn op een telefoon te smal om te tikken (< 24 px).
+                  Het dagoverzicht hieronder heeft per dag een tikbare link en de cijfers. */}
+              <div
+                className="flex h-40 items-end gap-1"
+                role="img"
+                aria-label="Gebeurtenissen per dag; de cijfers staan in het dagoverzicht"
+              >
                 {d.dagen.map((dag: any) => (
-                  <Link
+                  <span
                     key={dag.dag}
-                    to="/beheer/ui/activiteit"
-                    search={{ bereik: "eigen", van: dag.dag, tot: dag.dag, pagina: 1 } as any}
                     title={`${dag.dag}: ${dag.events} gebeurtenissen, ${dag.gebruikers} gebruikers`}
-                    className="flex-1 rounded-t bg-emerald-500/50 hover:bg-emerald-400"
-                    style={{ height: `${Math.max(3, (dag.events / maxDag) * 100)}%` }}
-                  />
+                    className="group flex h-full flex-1 items-end"
+                  >
+                    <span
+                      className="block w-full rounded-t bg-emerald-500/50 group-hover:bg-emerald-400"
+                      style={{ height: `${Math.max(3, (dag.events / maxDag) * 100)}%` }}
+                    />
+                  </span>
                 ))}
               </div>
             </Kaart>
@@ -95,18 +105,31 @@ function Overzicht() {
             <Kaart>
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-sm font-semibold">Per uur</h2>
-                <span className="text-xs text-slate-500">klik een uur om te filteren</span>
+                <Link
+                  to="/beheer/ui/gebeurtenissen"
+                  search={{ ...zoek, pagina: 1 } as any}
+                  className="text-xs text-emerald-300 underline underline-offset-2"
+                >
+                  Alle gebeurtenissen
+                </Link>
               </div>
-              <div className="flex h-40 items-end gap-1">
+              {/* Alleen beeld (24 smalle balken); de link "Alle gebeurtenissen" deed hetzelfde als elke balk. */}
+              <div
+                className="flex h-40 items-end gap-1"
+                role="img"
+                aria-label="Gebeurtenissen per uur van de dag"
+              >
                 {d.uren.map((u: any) => (
-                  <Link
+                  <span
                     key={u.uur}
-                    to="/beheer/ui/gebeurtenissen"
-                    search={{ ...zoek, pagina: 1 } as any}
                     title={`${String(u.uur).padStart(2, "0")}:00 — ${u.events} gebeurtenissen`}
-                    className="flex-1 rounded-t bg-sky-500/50 hover:bg-sky-400"
-                    style={{ height: `${Math.max(3, (u.events / maxUur) * 100)}%` }}
-                  />
+                    className="group flex h-full flex-1 items-end"
+                  >
+                    <span
+                      className="block w-full rounded-t bg-sky-500/50 group-hover:bg-sky-400"
+                      style={{ height: `${Math.max(3, (u.events / maxUur) * 100)}%` }}
+                    />
+                  </span>
                 ))}
               </div>
             </Kaart>
@@ -132,7 +155,7 @@ function Overzicht() {
                         <Link
                           to="/beheer/ui/activiteit"
                           search={{ bereik: "eigen", van: dag.dag, tot: dag.dag, pagina: 1 } as any}
-                          className="text-emerald-300 hover:underline"
+                          className="inline-flex min-h-11 items-center text-emerald-300 underline underline-offset-2"
                         >
                           {dag.dag}
                         </Link>

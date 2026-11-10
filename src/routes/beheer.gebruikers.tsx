@@ -101,6 +101,7 @@ function Gebruikers() {
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <p className="text-sm font-medium">Vergelijken</p>
           <select
+            aria-label="Vergelijken op"
             value={sorteer}
             onChange={(e) => setSorteer(e.target.value as any)}
             className="rounded-md border border-white/10 bg-slate-900 px-2 py-1 text-sm"
@@ -113,6 +114,7 @@ function Gebruikers() {
             <option value="stil">Langst stil</option>
           </select>
           <select
+            aria-label="Segment"
             value={segment}
             onChange={(e) => setSegment(e.target.value)}
             className="rounded-md border border-white/10 bg-slate-900 px-2 py-1 text-sm"

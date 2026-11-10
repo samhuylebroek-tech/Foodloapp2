@@ -85,8 +85,10 @@ export async function heeftHorizontaleScroll(page: Page) {
 const SESSIE_SLEUTEL = "sb-127-auth-token";
 
 /** Zet een (nep)sessie klaar vóór de app laadt: de gebruiker is ingelogd. */
-export async function meldAan(page: Page) {
-  const { token, user } = (await (await fetch(`${NEP_SUPABASE}/__token`)).json()) as {
+export async function meldAan(page: Page, sub?: string) {
+  const { token, user } = (await (
+    await fetch(`${NEP_SUPABASE}/__token${sub ? `?sub=${sub}` : ""}`)
+  ).json()) as {
     token: string;
     user: Record<string, unknown>;
   };

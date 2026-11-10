@@ -139,6 +139,7 @@ function Activiteit() {
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <p className="text-sm font-medium">Gebeurtenissen</p>
             <select
+              aria-label="Soort gebeurtenis"
               value={soort}
               onChange={(e) => setSoort(e.target.value as typeof soort)}
               className="rounded-md border border-white/10 bg-slate-900 px-2 py-1 text-sm"
@@ -148,6 +149,7 @@ function Activiteit() {
               <option value="fouten">Alleen fouten</option>
             </select>
             <select
+              aria-label="Functie"
               value={event}
               onChange={(e) => setEvent(e.target.value)}
               className="rounded-md border border-white/10 bg-slate-900 px-2 py-1 text-sm"

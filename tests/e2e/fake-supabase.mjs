@@ -137,8 +137,11 @@ const server = http.createServer((req, res) => {
       return stuur(res, 200, { ok: true });
     }
     if (url.pathname === "/__db") return stuur(res, 200, Object.fromEntries(db.tabellen));
-    if (url.pathname === "/__token")
-      return stuur(res, 200, { token: maakToken(), user: TEST_USER });
+    if (url.pathname === "/__token") {
+      // ?sub=<id>: sessie voor een andere (verzonnen) gebruiker, bv. de beheerder in de audit.
+      const sub = url.searchParams.get("sub") || TEST_USER.id;
+      return stuur(res, 200, { token: maakToken(sub), user: { ...TEST_USER, id: sub } });
+    }
     if (url.pathname === "/__storing" && req.method === "POST") {
       const s = JSON.parse(data || "{}");
       storingen.set(s.pad, { keer: 1, ...s });
@@ -224,7 +227,17 @@ const server = http.createServer((req, res) => {
     }
     if (url.pathname === "/auth/v1/recover") return stuur(res, 200, {});
     if (url.pathname === "/auth/v1/user") {
-      if (geldigToken(auth)) return stuur(res, 200, TEST_USER);
+      if (geldigToken(auth)) {
+        let sub = TEST_USER.id;
+        try {
+          sub =
+            JSON.parse(Buffer.from(auth.split(" ")[1].split(".")[1], "base64url").toString()).sub ??
+            sub;
+        } catch {
+          /* standaardgebruiker */
+        }
+        return stuur(res, 200, { ...TEST_USER, id: sub });
+      }
       return stuur(res, 401, { code: 401, error_code: "bad_jwt", msg: "invalid JWT" });
     }
     if (url.pathname === "/auth/v1/logout") return stuur(res, 204, null);

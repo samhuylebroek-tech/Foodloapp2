@@ -105,6 +105,7 @@ function Team() {
                 <div className="mt-2 flex items-center justify-between text-xs">
                   <span>Mag privé-inhoud van gebruikers bekijken</span>
                   <Switch
+                    aria-label="Mag privé-inhoud van gebruikers bekijken"
                     checked={b.can_view_private_content}
                     onCheckedChange={(v) => zet.mutate({ user_id: b.user_id, role: b.role, active: b.active, can_view_private_content: v })}
                   />
@@ -112,6 +113,7 @@ function Team() {
                 <div className="mt-2 flex items-center justify-between text-xs">
                   <span>Actief</span>
                   <Switch
+                    aria-label="Actief"
                     checked={b.active}
                     onCheckedChange={(v) => zet.mutate({ user_id: b.user_id, role: b.role, active: v, can_view_private_content: b.can_view_private_content })}
                   />

@@ -427,3 +427,35 @@
 [data-sonner-toaster] {
   pointer-events: auto;
 }
+
+/* ------------------------------------------------------------------ Control Center (beheer)
+   Eén laag voor alle beheerschermen (uit Lovable, eigen donkere stijl):
+   - contrast: grijze hulptekst op de donkere achtergrond haalt 4,5:1 (WCAG 1.4.3);
+   - tabellen scrollen in hun eigen kader i.p.v. de hele pagina, koppen breken niet af;
+   - aanraakschermen: bedieningselementen minstens 44 px hoog. */
+.beheer .text-slate-500,
+.beheer .text-slate-600 {
+  color: rgb(148 163 184);
+}
+.beheer div:has(> table) {
+  overflow-x: auto;
+  max-width: 100%;
+}
+/* Rasteritems en flexkinderen krimpen mee met het scherm; anders groeit een kaart mee met de
+   breedste tabel en scrolt de hele pagina horizontaal (audit pb, 320 px). */
+.beheer :is(.grid, .flex) > :not(button, a) {
+  min-width: 0;
+}
+.beheer th {
+  white-space: nowrap;
+}
+@media (pointer: coarse) {
+  .beheer :is(button, a[href], select, input:not([type="checkbox"]):not([type="radio"])) {
+    min-height: 2.75rem;
+  }
+  /* min-height werkt niet op inline elementen: links in tabellen en lopende tekst. */
+  .beheer :is(td, p, li) > a[href] {
+    display: inline-flex;
+    align-items: center;
+  }
+}

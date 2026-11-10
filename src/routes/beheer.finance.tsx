@@ -83,7 +83,7 @@ function Finance() {
                 </div>
               ))}
             </div>
-            <p className="mt-3 text-xs text-slate-500">Omzet, abonnementen, uitbetalingen en refunds verschijnen hier automatisch zodra een betaalkanaal gekoppeld is. Zie <Link to="/beheer/integraties" className="text-emerald-400 hover:underline">Integraties</Link>.</p>
+            <p className="mt-3 text-xs text-slate-500">Omzet, abonnementen, uitbetalingen en refunds verschijnen hier automatisch zodra een betaalkanaal gekoppeld is. Zie <Link to="/beheer/integraties" className="text-emerald-400 underline underline-offset-2">Integraties</Link>.</p>
           </Kaart>
 
           <Kaart>

@@ -137,7 +137,7 @@ function InstallerenPage() {
 
           <p className="mt-4 break-all text-base text-muted-foreground">{link}</p>
 
-          <div className="mt-5 flex gap-3">
+          <div className="mt-5 flex flex-col gap-3 min-[400px]:flex-row">
             <Button
               variant="outline"
               onClick={kopieer}

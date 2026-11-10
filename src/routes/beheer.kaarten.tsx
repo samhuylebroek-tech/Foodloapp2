@@ -62,6 +62,7 @@ function LoyaltyBeheer() {
                         <td className="py-2">{w.naam}</td>
                         <td>
                           <select
+                            aria-label={`Barcodeformaat voor ${w.naam}`}
                             defaultValue={w.standaard_formaat}
                             onChange={(e) =>
                               bewaar.mutate({ ...w, standaard_formaat: e.target.value })
@@ -78,6 +79,7 @@ function LoyaltyBeheer() {
                         <td>
                           <input
                             type="number"
+                            aria-label={`Volgorde van ${w.naam}`}
                             defaultValue={w.volgorde}
                             onBlur={(e) =>
                               bewaar.mutate({ ...w, volgorde: Number(e.target.value) || 100 })
@@ -106,12 +108,14 @@ function LoyaltyBeheer() {
 
               <div className="mt-4 flex flex-wrap items-end gap-2">
                 <Input
+                  aria-label="Slug van de nieuwe winkel"
                   placeholder="slug (bv. spar-express)"
                   value={nieuw.slug}
                   onChange={(e) => setNieuw({ ...nieuw, slug: e.target.value.toLowerCase() })}
                   className="max-w-[180px] border-white/10 bg-slate-950 text-slate-100"
                 />
                 <Input
+                  aria-label="Naam van de nieuwe winkel"
                   placeholder="Naam"
                   value={nieuw.naam}
                   onChange={(e) => setNieuw({ ...nieuw, naam: e.target.value })}
@@ -119,6 +123,7 @@ function LoyaltyBeheer() {
                 />
                 <input
                   type="color"
+                  aria-label="Kleur van de nieuwe winkel"
                   value={nieuw.kleur}
                   onChange={(e) => setNieuw({ ...nieuw, kleur: e.target.value })}
                   className="h-10 w-12 rounded bg-slate-950"
