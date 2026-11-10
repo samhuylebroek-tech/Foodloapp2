@@ -780,17 +780,19 @@ function ReceptPage() {
           style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
         >
           <div className="mx-auto flex max-w-2xl gap-3">
-            <Button
-              variant="zacht"
-              disabled={voorbereiding}
-              onClick={() => setStap(stap - 1)}
-              className="h-20 flex-1 text-lg"
-            >
-              Vorige
-            </Button>
+            {/* Voorbereiding: geen (uitgeschakelde) "Vorige" — de hoofdknop krijgt de volle breedte. */}
+            {voorbereiding ? null : (
+              <Button
+                variant="zacht"
+                onClick={() => setStap(stap - 1)}
+                className="h-20 flex-1 px-4 text-lg"
+              >
+                Vorige
+              </Button>
+            )}
             <Button
               onClick={() => (laatste && !voorbereiding ? setKlaarVragen(true) : setStap(stap + 1))}
-              className="h-20 flex-[2] text-xl"
+              className="h-20 flex-[2] px-4 text-xl"
             >
               {voorbereiding ? t("Begin met koken") : laatste ? t("Klaar met koken") : "Volgende"}
             </Button>

@@ -27,7 +27,7 @@ export const CATEGORIE_LABEL: Record<CategorieId, string> = {
   diepvries: "Diepvries",
   dranken: "Dranken",
   "non-food": "Non-food",
-  voorraadkast: "Heb je waarschijnlijk al",
+  voorraadkast: "Al in huis?",
   overige: "Overige",
 };
 

@@ -84,6 +84,9 @@ export function Rondleiding() {
     let stop = false;
     let pogingen = 0;
     let id = 0;
+    // BUG-063: de eerste meting viel soms vóór de lay-out stond (onderbalk nog bovenaan).
+    // Pas tonen als twee metingen na elkaar gelijk zijn; anders even later opnieuw meten.
+    let vorige: { top: number; left: number; width: number; height: number } | null = null;
     // Op een trage telefoon staat het aangewezen onderdeel er soms nog niet na 250 ms.
     // Dan meten we opnieuw, tot het verschijnt (hooguit ~5 s).
     function meet() {
@@ -92,7 +95,16 @@ export function Rondleiding() {
       const el = kandidaten.find((k) => k.getBoundingClientRect().width > 0);
       if (el) {
         const r = el.getBoundingClientRect();
-        setKader({ top: r.top, left: r.left, width: r.width, height: r.height });
+        const nu = { top: r.top, left: r.left, width: r.width, height: r.height };
+        const stabiel =
+          vorige !== null &&
+          Math.abs(vorige.top - nu.top) < 1 &&
+          Math.abs(vorige.left - nu.left) < 1 &&
+          Math.abs(vorige.width - nu.width) < 1 &&
+          Math.abs(vorige.height - nu.height) < 1;
+        vorige = nu;
+        if (stabiel) setKader(nu);
+        else if (pogingen++ < 40) id = window.setTimeout(meet, 80);
       } else {
         setKader(null);
         if (stap?.doel && pogingen++ < 20) id = window.setTimeout(meet, 250);
@@ -132,7 +144,7 @@ export function Rondleiding() {
         <div
           aria-hidden
           data-rondleiding-kader
-          className="absolute rounded-2xl ring-4 ring-primary transition-all"
+          className="absolute rounded-2xl ring-4 ring-primary"
           style={{
             top: kader.top - 6,
             left: kader.left - 6,

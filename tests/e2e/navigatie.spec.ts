@@ -91,18 +91,11 @@ test("rondleiding: zeven stappen, elk onderdeel zichtbaar aangewezen en niet bed
     await expect(venster.getByText(`Stap ${stap} van 7`)).toBeVisible();
     const kader = page.locator("[data-rondleiding-kader]");
     await expect(kader, `stap ${stap} wijst iets aan`).toBeVisible();
-    // Het kader beweegt met een overgang naar zijn plek (en meet opnieuw bij scrollen):
-    // wacht tot het stilstaat (BUG-063, sporadisch op 390 px).
-    await expect
-      .poll(
-        async () => {
-          const k = (await kader.boundingBox())!;
-          const c = (await page.locator("[data-rondleiding-kaart]").boundingBox())!;
-          return !(k.y + k.height <= c.y || c.y + c.height <= k.y);
-        },
-        { message: `stap ${stap}: uitleg bedekt het aangewezen onderdeel`, timeout: 5000 },
-      )
-      .toBe(false);
+    // Streng, zonder wachten (BUG-063): het kader verschijnt pas op zijn definitieve plek.
+    const k = (await kader.boundingBox())!;
+    const c = (await page.locator("[data-rondleiding-kaart]").boundingBox())!;
+    const overlapt = !(k.y + k.height <= c.y || c.y + c.height <= k.y);
+    expect(overlapt, `stap ${stap}: uitleg bedekt het aangewezen onderdeel`).toBe(false);
     if (stap === 1) expect(await axeErnstig(page)).toEqual([]);
     await venster.getByRole("button", { name: stap === 7 ? "Klaar" : "Volgende" }).click();
   }

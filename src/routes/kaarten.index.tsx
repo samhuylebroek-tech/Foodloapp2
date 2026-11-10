@@ -174,7 +174,7 @@ function KaartTegel({ kaart, winkels }: { kaart: Kaart; winkels: Winkel[] }) {
           ) : null}
         </span>
         <span className="relative flex items-end justify-between gap-3">
-          <span className="truncate font-mono text-lg tracking-wider text-white/95">
+          <span className="min-w-0 truncate font-mono text-lg tracking-wider text-white/95">
             {groepeer(kaart.nummer)}
           </span>
           <span className="shrink-0 rounded-full bg-black/30 px-3 py-1 text-[0.9rem] font-semibold">

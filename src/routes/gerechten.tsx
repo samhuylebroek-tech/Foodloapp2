@@ -430,7 +430,7 @@ function GerechtenPage() {
               [
                 ["alles", "Alles"],
                 ["mij", "Van mij"],
-                ["vrienden", "Van vrienden"],
+                ["vrienden", "Vrienden"],
               ] as const
             ).map(([waarde, label]) => (
               <button
@@ -439,7 +439,7 @@ function GerechtenPage() {
                 onClick={() => setEigenaar(waarde)}
                 aria-pressed={eigenaar === waarde}
                 className={cn(
-                  "min-h-12 whitespace-nowrap rounded-full px-1 text-[0.94rem] font-semibold transition-colors",
+                  "min-h-12 rounded-full px-1 text-[0.94rem] font-semibold leading-tight transition-colors",
                   eigenaar === waarde
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground",

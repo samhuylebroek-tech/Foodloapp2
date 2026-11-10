@@ -391,8 +391,9 @@ function GezinPage() {
                           <span className="block truncate text-[1.05rem] font-semibold">
                             {naamVan(l.user_id)}
                           </span>
-                          <span className="flex items-center gap-1 text-[0.95rem] text-primary">
-                            <ChefHat className="size-4" aria-hidden /> Bekijk hun gerechten
+                          <span className="flex items-start gap-1 text-[0.95rem] text-primary">
+                            <ChefHat className="mt-1 size-4 shrink-0" aria-hidden />
+                            <span className="min-w-0">Bekijk hun gerechten</span>
                           </span>
                         </span>
                         <ChevronRight
