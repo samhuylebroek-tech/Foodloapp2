@@ -659,10 +659,10 @@ Bron: [MODULE-AUDIT-2026-11](MODULE-AUDIT-2026-11.md) (audit per module, kwalite
 |---|---|---|
 | 1. Mobiele UX-audit | Meetinstrument (17 schermen × 9 breedtes + 130 % tekst, lange inhoud), schermafdrukken, inventaris (MOBIEL-AUDIT §1–§6) | ✅ gebouwd en gedraaid (deels opnieuw te meten, zie onder) |
 | 2. Design- en componentsysteem | DESIGNSYSTEEM.md; globaal: afbreken in plaats van overlopen, knoppen die meegroeien, compacte kop, rasters pas vanaf 1280 px | ✅ ronde 1 gebouwd · 🟨 afstandsschaal en beweging nog te doen |
-| 3. Hoofdschermen | Vandaag (foto bovenaan op de telefoon) · Week ("Opties" in de titelregel; week\|dag tot 1280 px) · Lijst (C1) | 🟨 gedeeltelijk: Week (compacte weekband), Keuken en Ontdek staan nog open |
-| 4. Overige schermen | Recept, kookmodus, voorraad, instellingen, profielen, huishouden | ⬜ (Aanvullen en Instellingen-rijen deels hersteld) |
-| 5. Boodschappen verder (catalogus, "toegevoegd door") | | ⬜ |
-| 6. Volledige visuele en functionele controle | | ⬜ na fasen 3–5 |
+| 3. Hoofdschermen | Vandaag · Week (kleverige weekband) · Lijst · Keuken (collecties met fotocollage) · Ontdek (thema's, ontworpen terugval, plek voor de creator) | ✅ gebouwd, getest en gecontroleerd op schermafdrukken |
+| 4. Overige schermen | Recept (één hoofdknop), kookmodus (grote tekst), voorraad (per afdeling), gezin, vrienden, instellingen, klantenkaarten | ✅ gebouwd; 🟨 profielpagina's en beheer niet herontworpen |
+| 5. Boodschappen verder | Catalogus met tegels, favorieten en vaak gekocht, "toegevoegd door", meervouden in de afdelingsindeling | ✅ gebouwd en getest. Volgens de kwaliteitsnorm nog niet "klaar": sjablonen, winkels en merk/variant/foto vragen G1 |
+| 6. Volledige visuele en functionele controle | Audit op 9 breedtes en 130 %, met vensters en een fouttoestand: **0 overlopen, 0 horizontaal scrollen, 0 weggeknipt**; volledige regressie | ✅ (zie MOBIEL-AUDIT §8) |
 
 **Gemeten effect van ronde 1** (MOBIEL-AUDIT §2): horizontaal scrollen op 320 px van 9 naar 0, en op 320 px bij 130 % tekst van 16 naar 0. Tekst over het kader op 320 px bij 130 % van 54 naar 7. Weggeknipte tekst op 1024 px van 6 naar 0.
 

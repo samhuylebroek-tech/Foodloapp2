@@ -1018,7 +1018,6 @@ function ReceptPage() {
                 variant="outline"
                 onClick={() => setBoodschappenOpen(true)}
                 disabled={!ingredients.length}
-                aria-label={t("Op mijn boodschappenlijst")}
                 className="h-auto min-h-14 gap-2 whitespace-normal px-3 text-base leading-snug"
               >
                 <ShoppingCart className="size-5 shrink-0" /> {t("Op mijn lijst")}

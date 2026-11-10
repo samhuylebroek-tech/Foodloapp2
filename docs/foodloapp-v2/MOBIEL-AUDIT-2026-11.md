@@ -111,3 +111,52 @@ Nog open na ronde 1: zie §6.
 - **Collecties:** fotocollage of typografische omslag (CollectieOmslag), niet langer een pictogram op een kleurverloop.
 - **Gecontroleerd op schermafdruk:** Week op 320 en 390 px (met en zonder scrollen), Ontdek en Keuken op 390 en 768 px.
 - **Nog niet gecontroleerd:** de volledige audit (11 varianten) na fase 3. Die volgt na fase 4, samen met de uitbreiding van het meetinstrument met onderbladen, formulieren en meldingen.
+
+## 8. Fasen 4 en 5 en de eindmeting (2026-11-10)
+**Het meetinstrument** is uitgebreid met onderbladen (de catalogus en "Meer"), de winkelmodus, het formulier "Zelf typen" en een fouttoestand (recepten laden mislukt).
+
+**Eindmeting** op commit `f9cc1e5`, met alle schermen en die toestanden:
+
+| Variant | Horizontaal scrollen | Tekst loopt over kader | Weggeknipt zonder ellips |
+|---|---|---|---|
+| 320, 360, 375, 390, 412, 430, 768, 1024, 1280 px | **0** | **0** | **0** |
+| 390 px bij 130 % tekst | **0** | **0** | **0** |
+| 320 px bij 130 % tekst | **0** | **0** | **0** |
+
+Ter vergelijking, de nulmeting: op 320 px 9 schermen met horizontaal scrollen en 21 overlopen; op 320 px bij 130 % 16 en 54.
+
+**Wat de meting nog aangeeft, met beoordeling:**
+- **Knoptekst over meer dan 2 regels** (1–7 per variant): rijen met een omschrijving of een lange productnaam (Aanvullen, "Toevoegen uit…", Instellingen) en "Op mijn lijst" bij 130 %. Bewust: die tekst loopt om in plaats van te worden afgekapt.
+- **Afgekapt met ellips** (12–37 per variant): productnamen in lijstrijen en notities, met de volledige tekst één tik verder (DESIGNSYSTEEM §4). De compacte titel in de bovenbalk valt daar ook onder.
+- **Doel < 24 px** (5, alleen op 320 px): de compacte sterren op receptkaarten (24 × 50 px; bij 130 % 23 × 57 px). Bewuste uitzondering: de volwaardige beoordeling staat op de receptpagina.
+- **Doel < 44 px** (52–69): vooral kleine links en kleine knoppen in rijen met een groter tikvlak. Dit is onze streefwaarde, geen harde norm (WCAG 2.2 AA vraagt 24 px). Nog op te volgen in een volgende ronde.
+
+**Fase 4, gebouwd:**
+- **Receptpagina:** één hoofdknop; de andere twee acties staan rustig naast elkaar.
+- **Kookmodus:** geen melding die de titel bedekt; leesbaar op 320 px bij 130 %.
+- **Voorraad:** ingedeeld per afdeling, met een zichtbare voorbeeldtekst.
+- **Gezin, vrienden, instellingen en klantenkaarten:** rijen lopen netjes om.
+- **Onderbalk:** labels krijgen een bovengrens van 15 px, zoals iOS.
+
+**Fase 5, gebouwd:**
+- productcatalogus met tegels;
+- "toegevoegd door";
+- favorieten en vaak gekocht in de catalogus;
+- afdelingsindeling die meervouden herkent.
+
+**Schermafdrukken die ik zelf bekeek in deze ronde:**
+- Week op 320 en 390 px, met en zonder scrollen;
+- Ontdek en Keuken op 390 en 768 px;
+- recept op 390 px;
+- kookmodus en gezin op 320 px bij 130 %;
+- de catalogus op 390 px;
+- de winkelmodus op 320 px bij 130 %.
+
+Alle andere bestanden staan in `docs/foodloapp-v2/audit/f5/`; die zijn automatisch gemeten, niet allemaal met het oog nagekeken.
+
+**Niet getest:**
+- echte iPhone of Android, iOS Safari met toetsenbord en adresbalk;
+- schermlezers;
+- de lettergrootte van het besturingssysteem (alleen gesimuleerd met 130 % rootgrootte);
+- meertalige teksten, want de vertaalfunctie vraagt een betaalde AI-sleutel die in tests bewust ontbreekt;
+- liggende stand op een telefoon.
