@@ -4,6 +4,7 @@
  */
 
 import { normaliseerTekst } from "@/lib/zoeken";
+import { stam } from "@/lib/stap-ingredienten";
 
 export const CATEGORIE_VOLGORDE = [
   "groenten-fruit",
@@ -77,9 +78,27 @@ const WOORDEN: Record<Exclude<CategorieId, "overige" | "voorraadkast">, string[]
   ],
 };
 
+/**
+ * Fase 5: aanvullingen (meervouden en ontbrekende producten). Apart gehouden zodat de lijsten
+ * hierboven ongewijzigd blijven; getest via de productcatalogus (catalogus.test.ts).
+ */
+const EXTRA: Partial<Record<keyof typeof WOORDEN, string[]>> = {
+  "groenten-fruit": ["citroenen", "limoenen", "peren", "bananen", "appels", "sinaasappels"],
+  "vlees-vis": ["kipfilet"],
+  diepvries: ["friet", "frietjes", "pizza"],
+  dranken: ["water", "fruitsap"],
+};
+/** "water" om te kopen is een drank, niet iets uit de voorraadkast. */
+const NIET_VOORRAADKAST = new Set(["water"]);
+
 function raakt(naam: string, woord: string): boolean {
   const n = ` ${naam} `;
-  return n.includes(` ${woord} `) || naam === woord;
+  if (n.includes(` ${woord} `) || naam === woord) return true;
+  // Meervoud en verkleinwoord: "appels" = "appel", "pistolets" = "pistolet" (zelfde stam
+  // als de productherkenning). Alleen voor woorden van één woord.
+  if (woord.includes(" ")) return false;
+  const s = stam(woord);
+  return naam.split(" ").some((w) => w === woord || stam(w) === s);
 }
 
 /** Bepaalt de categorie van een boodschap op basis van de naam. */
@@ -88,10 +107,11 @@ export function raadCategorie(naam: string): CategorieId {
   if (!n) return "overige";
 
   for (const woord of VOORRAADKAST) {
+    if (NIET_VOORRAADKAST.has(woord)) continue;
     if (raakt(n, normaliseerTekst(woord))) return "voorraadkast";
   }
   for (const id of Object.keys(WOORDEN) as (keyof typeof WOORDEN)[]) {
-    for (const woord of WOORDEN[id]) {
+    for (const woord of [...(EXTRA[id] ?? []), ...WOORDEN[id]]) {
       if (raakt(n, normaliseerTekst(woord))) return id;
     }
   }

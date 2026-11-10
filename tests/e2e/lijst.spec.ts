@@ -10,6 +10,7 @@ const IK = "11111111-1111-4111-8111-111111111111";
 const LIJST = "22222222-2222-4222-8222-222222222222";
 const PASTA = "aaaa0000-0000-4000-8000-000000000011";
 const SOEP = "aaaa0000-0000-4000-8000-000000000012";
+const JAN = "33333333-3333-4333-8333-333333333333";
 
 const dag = (plus: number) => {
   const d = new Date();
@@ -108,7 +109,9 @@ test.beforeEach(async ({ page }) => {
       regel("melk", 1, "l", null),
       regel("wc-papier", 1, "", null),
       regel("appelsap", 1, "l", null),
+      { ...regel("chocomelk", 1, "l", null), user_id: JAN },
     ],
+    profiles: [{ id: JAN, display_name: "Jan" }],
     shopping_history: [
       gekocht("koffie", 20),
       gekocht("koffie", 13),
@@ -180,7 +183,7 @@ test("B3: 'waarom op mijn lijst?' toont gerechten met dag en hoeveelheid, voorra
   await expect(paneel.getByText("Al in huis")).toBeVisible();
   await expect(paneel.getByText(/zelf toegevoegd/)).toBeVisible();
   // Alleen lezen: de lijst is niet veranderd.
-  expect(((await nepDb()).shopping_items ?? []).length).toBe(6);
+  expect(((await nepDb()).shopping_items ?? []).length).toBe(7);
   await page.keyboard.press("Escape");
   await expect(paneel).toBeHidden();
   void extern;
@@ -212,5 +215,61 @@ test("B4: winkelvolgorde aanpassen — lijst en winkelmodus volgen, blijft na he
   await page.getByRole("button", { name: "Ik ga winkelen" }).click();
   const winkel = page.getByRole("dialog", { name: "Winkelmodus" });
   await expect(winkel.locator('[aria-label="Afdelingen"] button').first()).toContainText("Dranken");
+  void extern;
+});
+
+test("B6: productcatalogus — tegel toevoegen, nog eens tikken haalt weg, ongedaan maken zet terug", async ({
+  page,
+  extern,
+}) => {
+  await lijstOpen(page);
+  await page.getByRole("button", { name: "Producten kiezen" }).first().click();
+  const blad = page.getByRole("dialog", { name: "Producten kiezen" });
+  await expect(blad).toBeVisible();
+  // Wat al op de lijst staat, is aangeduid.
+  await expect(blad.getByRole("button", { name: /^tomaten: staat op je lijst/ })).toBeVisible();
+  await blad.getByRole("button", { name: "bananen toevoegen" }).click();
+  await expect
+    .poll(async () => ((await nepDb()).shopping_items ?? []).some((i) => i["name"] === "bananen"))
+    .toBe(true);
+  await expect(blad.getByRole("button", { name: /^bananen: staat op je lijst/ })).toBeVisible();
+  await blad.getByRole("button", { name: /^bananen: staat op je lijst/ }).click();
+  await expect
+    .poll(async () => ((await nepDb()).shopping_items ?? []).some((i) => i["name"] === "bananen"))
+    .toBe(false);
+  await page.waitForTimeout(600);
+  // Meldingen schuiven even bij het verschijnen (en de stapel klapt open onder de muis).
+  // De bovenste melding (de laatste actie), ook terwijl het onderblad open is.
+  await page
+    .locator('[data-sonner-toast][data-front="true"]')
+    .getByRole("button", { name: "Ongedaan maken", exact: true })
+    .click();
+  await expect
+    .poll(async () => ((await nepDb()).shopping_items ?? []).some((i) => i["name"] === "bananen"))
+    .toBe(true);
+  // Zoeken in de catalogus.
+  await blad.getByLabel("Zoek in de producten").fill("koff");
+  await expect(blad.getByRole("button", { name: /^koffie/ }).first()).toBeVisible();
+  await expect(blad.getByRole("button", { name: "melk toevoegen" })).toHaveCount(0);
+  void extern;
+});
+
+test("B6: bananen komen in Groenten & fruit terecht (afdelingsindeling met meervouden)", async ({
+  page,
+  extern,
+}) => {
+  await lijstOpen(page);
+  await page.getByRole("textbox", { name: "Iets toevoegen" }).fill("bananen");
+  await page.getByRole("textbox", { name: "Iets toevoegen" }).press("Enter");
+  const groenten = page.locator("main section[aria-label='Groenten & fruit']");
+  await expect(groenten.getByText("bananen", { exact: true })).toBeVisible();
+  void extern;
+});
+
+test("B5: wat een ander toevoegde, toont wie het was", async ({ page, extern }) => {
+  await lijstOpen(page);
+  await expect(page.getByText("toegevoegd door Jan")).toBeVisible();
+  // Eigen boodschappen tonen geen naam.
+  await expect(page.getByText(/toegevoegd door/)).toHaveCount(1);
   void extern;
 });

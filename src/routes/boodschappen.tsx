@@ -31,6 +31,7 @@ import {
   PackageCheck,
   WalletCards,
   ArrowUpDown,
+  LayoutGrid,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,6 +62,7 @@ import { WinkelIdeeen } from "@/components/WinkelIdeeen";
 import { ItemNaam, Winkelmodus, type Vervanging } from "@/components/winkel/Winkelmodus";
 import { WaaromSheet, type WaaromRegel } from "@/components/lijst/WaaromSheet";
 import { WinkelvolgordeSheet } from "@/components/lijst/WinkelvolgordeSheet";
+import { CatalogusSheet } from "@/components/lijst/CatalogusSheet";
 import { bewaarVolgorde, leesVolgorde } from "@/lib/winkelvolgorde";
 import {
   CATEGORIE_LABEL,
@@ -109,6 +111,8 @@ type Item = {
   recipe_id?: string | null;
   recept?: string | null;
   note?: string | null;
+  /** Wie het toevoegde (gezinslijst). */
+  user_id?: string;
 };
 
 function itemTekst(item: Item) {
@@ -239,7 +243,7 @@ function BoodschappenPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shopping_items")
-        .select("id, name, quantity, unit, checked, recipe_id, note, recipes(title)")
+        .select("id, name, quantity, unit, checked, recipe_id, note, user_id, recipes(title)")
         .eq("list_id", actief!)
         .order("checked")
         .order("name");
@@ -252,10 +256,34 @@ function BoodschappenPage() {
         checked: r.checked,
         recipe_id: r.recipe_id,
         note: r.note,
+        user_id: r.user_id,
         recept: (r.recipes as { title?: string } | null)?.title ?? null,
       })) as Item[];
     },
   });
+
+  // Fase 5: "toegevoegd door" op een gezinslijst (namen van de anderen; lukt het niet, dan
+  // tonen we gewoon niets).
+  const anderen = [
+    ...new Set(items.map((i) => i.user_id).filter((u): u is string => !!u && u !== user?.id)),
+  ];
+  const { data: namen = {} } = useQuery({
+    queryKey: ["lijst-namen", anderen.join(",")],
+    enabled: anderen.length > 0,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", anderen);
+      if (error) return {};
+      return Object.fromEntries(
+        (data ?? []).map((p) => [p.id, (p.display_name as string) || "Iemand"]),
+      ) as Record<string, string>;
+    },
+  });
+  const doorWie = (item: Item) =>
+    item.user_id && item.user_id !== user?.id ? (namen[item.user_id] ?? null) : null;
 
   const [geheugenOpen, setGeheugenOpen] = useState(false);
   const [meerOpen, setMeerOpen] = useState(false);
@@ -385,6 +413,8 @@ function BoodschappenPage() {
   const [waarom, setWaarom] = useState<WaaromRegel | null>(null);
   // B2: in het lege invoerveld meteen "vaak gekocht" tonen.
   const [invoerFocus, setInvoerFocus] = useState(false);
+  // Fase 5: productcatalogus met tegels.
+  const [catalogusOpen, setCatalogusOpen] = useState(false);
 
   const groepen = useMemo(() => {
     const per = new Map<CategorieId, Item[]>();
@@ -1149,6 +1179,15 @@ function BoodschappenPage() {
                   Iets toevoegen
                 </label>
                 <div className="flex gap-2">
+                  <Button
+                    variant="zacht"
+                    size="icon"
+                    className="size-14"
+                    aria-label="Producten kiezen"
+                    onClick={() => setCatalogusOpen(true)}
+                  >
+                    <LayoutGrid className="size-6" />
+                  </Button>
                   <Input
                     id="toevoegen"
                     value={nieuw}
@@ -1281,6 +1320,7 @@ function BoodschappenPage() {
                                     onBewerk={() => openBewerken(item)}
                                     onVerwijder={() => verwijder(item)}
                                     onWaarom={() => setWaarom(item)}
+                                    door={doorWie(item)}
                                     onCategorie={(c) => zetCategorie(item.name, c)}
                                   />
                                 </li>
@@ -1364,6 +1404,12 @@ function BoodschappenPage() {
                 </h2>
                 <ul className="divide-y divide-border/70">
                   {[
+                    {
+                      label: "Producten",
+                      uitleg: "Kies uit tegels per afdeling",
+                      icoon: LayoutGrid,
+                      doe: () => setCatalogusOpen(true),
+                    },
                     {
                       label: "Je weekmenu",
                       uitleg: "Per gepland gerecht",
@@ -1547,6 +1593,24 @@ function BoodschappenPage() {
           onSluit={() => setWaarom(null)}
         />
       ) : null}
+      <CatalogusSheet
+        open={catalogusOpen}
+        onSluit={() => setCatalogusOpen(false)}
+        opLijst={(naam) => items.some((i) => !i.checked && zelfdeProduct(i.name, naam))}
+        favorieten={[...vaste.map((v) => v.name), ...vaakLos.map((e) => e.name)].filter(
+          (n, i, a) => a.findIndex((x) => zelfdeProduct(x, n)) === i,
+        )}
+        onKies={(naam, staatErOp) => {
+          if (!staatErOp) {
+            void voegTekstToe(naam);
+            return;
+          }
+          // Weghalen is een bewuste keuze van de gebruiker; verwijder() biedt "Ongedaan maken".
+          const open = items.filter((i) => !i.checked && zelfdeProduct(i.name, naam));
+          const eerst = open.find((i) => !i.recipe_id) ?? open[0];
+          if (eerst) void verwijder(eerst);
+        }}
+      />
       <WinkelvolgordeSheet
         open={volgordeOpen}
         volgorde={volgorde}
@@ -1893,6 +1957,7 @@ function ItemRij({
   onVerwijder,
   onCategorie,
   onWaarom,
+  door,
 }: {
   item: Item;
   kiesModus: boolean;
@@ -1904,6 +1969,8 @@ function ItemRij({
   onCategorie: (categorie: CategorieId) => void;
   /** B3: uitleg waarom dit op de lijst staat. */
   onWaarom?: () => void;
+  /** Fase 5: naam van wie het toevoegde (alleen als dat iemand anders was). */
+  door?: string | null;
 }) {
   const start = useRef<number | null>(null);
 
@@ -1969,6 +2036,11 @@ function ItemRij({
           />
           {item.note ? (
             <span className="block truncate text-[0.95rem] text-muted-foreground">{item.note}</span>
+          ) : null}
+          {door ? (
+            <span className="block truncate text-[0.95rem] text-muted-foreground">
+              toegevoegd door {door}
+            </span>
           ) : null}
           {item.recept && onWaarom ? (
             <button

@@ -421,3 +421,9 @@
   scroll-snap-align: start;
 }
 
+
+/* Meldingen (sonner) blijven klikbaar boven een open venster of onderblad: Radix zet
+   pointer-events: none op body, waardoor "Ongedaan maken" anders niet aan te tikken was. */
+[data-sonner-toaster] {
+  pointer-events: auto;
+}
