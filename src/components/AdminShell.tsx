@@ -205,7 +205,9 @@ export function AdminShell({
                     key={s.label}
                     to={subs[0]!.pad}
                     className={`flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-lg px-3 text-sm ${
-                      huidig?.sectie === s ? "bg-emerald-500/15 text-emerald-300" : "border border-white/10 text-slate-300"
+                      huidig?.sectie === s
+                        ? "bg-emerald-500/15 text-emerald-300"
+                        : "border border-white/10 text-slate-300"
                     }`}
                   >
                     {s.label}
@@ -232,7 +234,9 @@ export function AdminShell({
                       key={x.pad}
                       to={x.pad}
                       className={`flex min-h-11 shrink-0 items-center whitespace-nowrap border-b-2 text-sm ${
-                        huidig.sub === x ? "border-emerald-400 text-emerald-300" : "border-transparent text-slate-400 hover:text-slate-200"
+                        huidig.sub === x
+                          ? "border-emerald-400 text-emerald-300"
+                          : "border-transparent text-slate-400 hover:text-slate-200"
                       }`}
                     >
                       {x.label}
