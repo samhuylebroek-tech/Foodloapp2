@@ -61,6 +61,16 @@ Rasters met veel kolommen (weekraster, collecties, weekstrook) pas vanaf `xl` (1
 | Lege toestand | Pictogram, één zin, één actie. Nooit "Geen resultaten" zonder vervolgstap | `EmptyState` |
 | Laden | Skeletten in de vorm van de inhoud, geen schermvullende spinner | `PageSkeleton` |
 
+### 5.1 Regels uit fase 3
+- **Kleven (`sticky`)** werkt alleen zonder scrollcontainer erboven. Gebruik daarom `overflow-x: clip` en nooit `overflow-x: hidden` op paginacontainers. De weekband op de telefoon kleeft onder de bovenbalk (`top: 4rem + veilige zone`).
+- **Horizontale rijen** (`scroll-rij`): komen er vooraan elementen bij nadat de rij al getoond is, laat de rij dan opnieuw beginnen (een `key` op de set). Anders houdt scroll-snap het oude element vast.
+- **Omslag zonder foto:**
+  - receptkaarten: een warm kleurverloop van de soort;
+  - collecties en thema's: een **collage** van echte foto's (drie of meer: één grote foto en twee kleine; twee: naast elkaar), of anders een **typografische omslag** met een grote serif-beginletter.
+
+  Nooit een generiek pictogram op een grote kaart. Kleine miniaturen (< 80 px) mogen het pictogram van de soort houden.
+- **Bron op kaarten:** elke ideekaart in Ontdek heeft een bronregel. Nu staat er "Foodlo-keuken"; later komen daar de naam en het profiel van de creator.
+
 ## 6. Ruimte en kleur
 - **Ruimte:** schaal van 4 px. Binnen een kaart 16 px, tussen kaarten 12–20 px, tussen secties 40–48 px. Zijmarge 16 px op de telefoon, 24 px vanaf `sm`.
 - **Kleur:** inkt (donkergroen) voor hoofdkaarten, honing als accent en voor "nu", primair groen voor acties. Een kleur betekent nooit iets alleen: er staat altijd tekst of een pictogram bij.

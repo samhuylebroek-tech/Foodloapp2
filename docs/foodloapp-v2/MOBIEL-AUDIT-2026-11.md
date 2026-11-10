@@ -96,3 +96,18 @@ Nog open na ronde 1: zie §6.
    - De keuzekaarten op "Nieuw recept" krijgen op 768 px 3–4 regels in een smalle kolom.
    - Compacte sterren op receptkaarten zijn 24 px breed. Dat voldoet aan WCAG 2.5.8 (min. 24 px), maar niet aan onze streefwaarde van 44 px. Dat is een bewuste uitzondering, omdat de volwaardige beoordeling op de receptpagina staat.
 5. **BUG-063** (rondleidingtest): nog niet sluitend verklaard.
+
+## 7. Fase 3 (2026-11-10)
+- **Resterende meetpunten** opgelost:
+  - "Van vrienden" heet nu "Vrienden" en mag omlopen;
+  - "Bekijk hun gerechten" loopt om in plaats van over de rand;
+  - de klantenkaart toont "Tonen" weer in beeld;
+  - "Nieuw recept" heeft één kolom onder 400 px;
+  - de kookmodus toont geen uitgeschakelde "Vorige" meer bij de voorbereiding;
+  - de afdeling heet "Al in huis?".
+- **BUG-063:** de oorzaak is aangetoond en opgelost (zie het bugregister).
+- **Week (telefoon):** weekkeuze en dagenstrook vormen één compacte band die blijft kleven. Dat werkt nu de algemene fout BUG-072 (`overflow-x: hidden`) is opgelost. Ook bij het scrollen door de maaltijden wissel je met één tik van dag.
+- **Ontdek:** thema's (seizoen, 30 minuten, vegetarisch, weekend) als fotokaarten. Zonder catalogus toont het scherm een ontworpen terugval (je eigen keuken plus twee acties), geen leeg sjabloon.
+- **Collecties:** fotocollage of typografische omslag (CollectieOmslag), niet langer een pictogram op een kleurverloop.
+- **Gecontroleerd op schermafdruk:** Week op 320 en 390 px (met en zonder scrollen), Ontdek en Keuken op 390 en 768 px.
+- **Nog niet gecontroleerd:** de volledige audit (11 varianten) na fase 3. Die volgt na fase 4, samen met de uitbreiding van het meetinstrument met onderbladen, formulieren en meldingen.
