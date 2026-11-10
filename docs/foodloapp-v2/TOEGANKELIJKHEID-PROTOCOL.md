@@ -17,8 +17,8 @@ axe vindt naar schatting 30–50 % van de WCAG-problemen. Volgorde van voorlezen
 | 19 gebruikersschermen | `mobiel-breedtes.spec.ts`: axe op 390 px, geen zijscroll op 360–430 px, doelen ≥ 24 px | Groen in de vorige regressie; zie de nieuwe regressie in het auditrapport |
 | 29 beheerschermen | `a11y-volledig.spec.ts`: axe op 390 px, geen zijscroll op 320 en 390 px | 0 ernstige meldingen (vóór de fixes: 50) |
 | Onderbladen en vensters (catalogus, lijstmenu, winkelmodus, receptformulier) en de schermen privacy en installeren | `a11y-volledig.spec.ts` | 0 ernstige meldingen |
-| Tikdoelen ≥ 44 px (streefwaarde) | `audit-profiel-beheer` (AUDIT=1) | Beheer op aanraakschermen 390 px: ~450 → 4 doelen onder 44 px.<br>Profiel: 8, die op de meting na wel in orde zijn: de schakelaars zijn 56×32 px, maar hun raakvlak via `::before` is 72×48 px |
-| Doelen ≥ 24 px (WCAG 2.5.8) | Idem | Gebruiker: 0. Beheer: 1 ("AI", een kolomkop van 22 px breed) |
+| Tikdoelen ≥ 44 px (streefwaarde) | `audit-profiel-beheer` (AUDIT=1) | Beheer op aanraakschermen 390 px: ~450 → 2 doelen onder 44 px.<br>Profiel: 8, die op de meting na wel in orde zijn: de schakelaars zijn 56×32 px, maar hun raakvlak via `::before` is 72×48 px |
+| Doelen ≥ 24 px (WCAG 2.5.8) | Idem | Gebruiker: 0. Beheer: 0 |
 
 ## 3. Protocol voor VoiceOver (iPhone) en TalkBack (Android)
 Duur: ± 30 minuten per toestel. Voorwaarde: de demo is bereikbaar op het toestel (zie PRAKTIJKTEST-TOESTELLEN.md, manier A; vraagt toestemming).
@@ -54,4 +54,3 @@ Duur: ± 30 minuten per toestel. Voorwaarde: de demo is bereikbaar op het toeste
 - **Beheer:**
   - tabellen zijn op de telefoon horizontaal scrollbaar binnen een gelabelde regio. Dat is bruikbaar, maar niet comfortabel. Een kaartweergave per rij zou beter zijn; dat is ontwerpwerk.
   - de grafiekbalken op "UI-overzicht" zijn nu alleen beeld. De cijfers staan in het dagoverzicht eronder.
-- **Kolomkop "AI"** in beheer is 22 px breed op aanraakschermen. Dat voldoet aan 2.5.8 dankzij de uitzondering voor ruimte rond het doel, maar ligt onder de streefwaarde.

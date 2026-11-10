@@ -173,19 +173,19 @@ Alle andere bestanden staan in `docs/foodloapp-v2/audit/f5/`; die zijn automatis
 
 | Variant | Horizontaal scrollen | Tekst buiten scherm | Doel < 24 px | Doel < 44 px | axe ernstig/kritiek |
 |---|---|---|---|---|---|
-| Beheer 320 px | 6 → **0** | 18 → **0** | 36 → **1** | 449 → **4** | — |
-| Beheer 390 px | 2 → **0** | 6 → **0** | 36 → **1** | 451 → **4** | 50 → **0** |
-| Beheer 390 px bij 130 % | 5 → **0** | 12 → **0** | 32 → **1** | 418 → **0** | — |
-| Beheer 768 px | 0 → 0 | 0 → 0 | 37 → **1** | 453 → **4** | — |
+| Beheer 320 px | 6 → **0** | 18 → **0** | 36 → **0** | 449 → **2** | — |
+| Beheer 390 px | 2 → **0** | 6 → **0** | 36 → **0** | 451 → **2** | 50 → **0** |
+| Beheer 390 px bij 130 % | 5 → **0** | 12 → **0** | 32 → **0** | 418 → **0** | — |
+| Beheer 768 px | 0 → 0 | 0 → 0 | 37 → **0** | 453 → **2** | — |
 | Profiel 320 px | 1 → **0** | 1 → **0** | 0 → 0 | 9 → 8 | — |
 | Profiel 390 px | 0 → 0 | 0 → 0 | 0 → 0 | 9 → 8 | 0 → 0 |
 
-Bron: `docs/foodloapp-v2/audit/pb/` (voor) en `pb4/` (na; lokaal, niet in git).
+Bron: `docs/foodloapp-v2/audit/pb/` (voor) en `pb5/` (na, op de code van `17967f3`; lokaal, niet in git). Op alle varianten is tekst over het kader, weggeknipte tekst en knoptekst over meer dan 2 regels **0**.
 
 **Wat er overblijft, met beoordeling:**
 - **Profiel, 8 doelen < 44 px.** Allemaal schakelaars: zichtbaar 56 × 32 px, raakvlak 72 × 48 px. In orde, zie DESIGNSYSTEEM §5.2.
-- **Beheer, 1 doel < 24 px** (kolomkop "AI"). De sorteerknoppen kregen daarna `min-w-11`; dat wordt opnieuw gemeten in de eindmeting hieronder.
-- **Beheer, 4 doelen < 44 px op 320 px:** "Details", "Status", "Acties" en "bekijk". Dat zijn tabelkoppen en links in compacte tabellen. Ze voldoen aan 2.5.8 (≥ 24 px).
+- **Beheer, 0 doelen < 24 px.** De sorteerknoppen in de tabelkoppen zijn minstens 44 px breed.
+- **Beheer, 2 doelen < 44 px:** de links "Details" (Finance) en "bekijk" (UI-gebeurtenissen), elk in een tabelrij. Ze voldoen aan 2.5.8 (≥ 24 px).
 - **Afgekapt met ellips:** de user agent in "Aanmeldingen" en de namen in compacte rijen. Bewust; de volledige tekst staat in de detailweergave.
 
 **Nieuwe harde poorten in de regressie:**
@@ -217,7 +217,13 @@ Bron: `docs/foodloapp-v2/audit/pb/` (voor) en `pb4/` (na; lokaal, niet in git).
 - **Kanttekening.** De reis gebruikt één gerecht en één persoon. Gezinsrechten, twee toestellen tegelijk en realtime zijn niet in deze reis getest. Dubbel tikken en twee vensters zitten in `kringloop.spec` en `weekmenu-lijst.spec`.
 - **Testtechnische vondst** (geen fout in de app): de toegankelijke naam van de navigatielinks is "Week (Weekmenu)", korte tekst plus de lange tekst voor schermlezers. Dat is bedoeld.
 
-**Schermafdrukken die ik zelf bekeek:** beveiliging op 320 px (vóór de fix: kaart 479 px breed, tabel liep uit beeld, subtabbladen braken over 3 regels). De overige schermafdrukken zijn automatisch gemeten, niet allemaal met het oog nagekeken.
+**Schermafdrukken die ik zelf bekeek:**
+- Beveiliging op 320 px, voor en na. Vóór de fix: kaart 479 px breed, tabel liep uit beeld, subtabbladen braken over 3 regels. Erna: de tabel scrolt in de kaart.
+- UI-overzicht op 390 px, voor en na. Daar vond ik zelf nog twee punten, opgelost in `17967f3`:
+  - het kruimelpad stond scheef (de link van 44 px had de tekst bovenaan);
+  - tabelkoppen kleefden tegen elkaar ("BEHEERDERIP").
+
+Wat ik ook zag en **niet** heb opgelost: beheer heeft op de telefoon drie navigatieniveaus boven elkaar (secties, subtabs, en in User Intelligence nog een derde rij) en brede tabellen. Het is bruikbaar en toegankelijk, maar niet het premium niveau van de gebruikersmodules. De overige schermafdrukken zijn automatisch gemeten, niet allemaal met het oog nagekeken.
 
 **Niet getest:**
 - echte toestellen en schermlezers. Er zijn plannen voor: `PRAKTIJKTEST-TOESTELLEN.md` en `TOEGANKELIJKHEID-PROTOCOL.md`. Netwerktoegang voor de demo vraagt jouw toestemming;
