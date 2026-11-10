@@ -704,4 +704,19 @@ Alle tests draaien in Chromium-emulatie, niet op een echt toestel.
 | Praktijktest echte toestellen | Plan, testscript, LAN-demo achter `DEMO_LAN=1` | **Niet getest.** Wacht op toestemming voor netwerktoegang |
 | Migratie sjablonen, winkels, merken, varianten, foto's | Voorstel met SQL heen/terug, RLS, impact, kosten | **Niet uitgevoerd** (G1/B6 en jouw akkoord) |
 
-REGRESSIE_PLACEHOLDER
+**Volledige regressie** (verse clone, `CI=true`, echte exitcodes):
+
+| Commit | install | tsc | vitest | lint-ratchet | build | Playwright |
+|---|---|---|---|---|---|---|
+| `215f434` | 0 | 0 | 0 (477/477) | 0 | 0 | **1**. Er draaide **geen enkele E2E-test**: het hulpbestand werd als testbestand gezien (BUG-088) |
+| `17967f3` | 0 | 0 | 0 (477/477) | **1** | 0 | **1**: 274 geslaagd, 1 mislukt. Een tijdelijk testbestand was per ongeluk mee gecommit |
+| **`a30c702`** | **0** | **0** | **0 (477/477)** | **0** | **0** | **0**: 273 geslaagd, 1 flaky, 0 mislukt, 98 overgeslagen |
+
+**Flaky:** `mobiel-breedtes: /instellingen` (390 px), "Execution context was destroyed": een navigatie tijdens de meting. Bij de herhaling geslaagd. Niet verder onderzocht; risico laag (testtechnisch), maar het blijft op de lijst.
+
+**Overgeslagen (98), allemaal bewust:**
+- 21 auditvarianten die alleen met `AUDIT=1` draaien (11 `audit-mobiel`, 10 `audit-profiel-beheer`);
+- 67 schermafdruk-specs (`schermen*`), die alleen met `SCHERMEN=1` draaien;
+- 10 `personas` op een schermbreedte waarvoor ze niet bedoeld zijn ("alleen op telefoon" of "alleen op desktop").
+
+**Na deze regressie** zijn alleen documenten gewijzigd, geen code.
