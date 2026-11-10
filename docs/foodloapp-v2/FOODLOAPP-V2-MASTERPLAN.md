@@ -673,3 +673,10 @@ Alle 11 varianten zijn gemeten op `47748ec`. Vijf liepen eerst vast door de syst
 **Web tegenover native:** zie DESIGNSYSTEEM §7. Native overgangen, haptiek, widgets, betrouwbare achtergrondsynchronisatie en rijke meldingen vragen een native app. Alles in deze fase is web/PWA.
 
 **Niet getest:** echte iPhone of Android, iOS Safari met toetsenbord en adresbalk, schermlezers, systeemlettergrootte op een toestel (alleen gesimuleerd met 130 % rootgrootte).
+
+**Regressies fasen 3–5 (echte exitcodes):**
+- `1caf2f1` (na fase 3): alle vier exitcode 0.
+- `f9cc1e5`: Playwright exitcode **1**, 3 mislukt:
+  - een toegankelijkheidsfout door mijzelf: het voorleeslabel van "Op mijn lijst" week af van de zichtbare tekst (WCAG 2.5.3), opgelost;
+  - 2 catalogustests: de devserver herstartte onder systeembelasting; bij herhaling geslaagd.
+- **`54dd7e7` (eindstand): tsc 0 · vitest 477/477 · build 0 · Playwright 268 geslaagd, 0 mislukt, 88 overgeslagen → exitcode 0.**
