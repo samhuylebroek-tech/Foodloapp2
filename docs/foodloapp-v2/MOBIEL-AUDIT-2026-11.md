@@ -1,0 +1,98 @@
+# Mobiele audit Foodloapp V2 (2026-11-10)
+
+**Opdracht:** de app beoordelen alsof we een premium mobiele food-app moeten afleveren, en daarna meteen herwerken.
+
+**Methode:**
+- `tests/e2e/audit-mobiel.spec.ts` (`AUDIT=1`): 17 schermen op 320, 360, 375, 390, 412, 430, 768, 1024 en 1280 px, plus 390 en 320 px met tekst op 130 %.
+- Bovenop de demodata een **lange-inhoud-dataset**: recepttitel van 92 tekens, productnaam van 37 tekens zonder spatie, notitie van 90 tekens, lange voorraadnaam.
+- Per scherm meet de audit automatisch: horizontaal scrollen, tekst over een kader, weggeknipte tekst, bewust afgekapte tekst, tekst buiten het scherm, knoptekst over meer dan 2 regels en aanraakdoelen. Daarnaast heb ik de schermafdrukken zelf bekeken (`docs/foodloapp-v2/audit/<label>/`, lokaal, niet in git).
+
+**Beperking:** alles draait in Chromium-emulatie. Het is geen test op een echte iPhone of Android-telefoon: iOS Safari heeft eigen gedrag rond veilige zones, het toetsenbord en de adresbalk. De machine was tijdens een deel van de metingen zwaar belast door macOS-systeemprocessen (load tot 43), waardoor enkele auditruns liepen vast. Die heb ik opnieuw gedraaid; niets is als geslaagd geteld dat niet gedraaid is.
+
+---
+
+## 1. Belangrijkste problemen met het mobiele ontwerp
+| # | Probleem | Waar | Ernst |
+|---|---|---|---|
+| M1 | Dubbele kop: bovenbalk plus een grote paginatitel plus een eigen actierij. De taak begint pas halverwege het scherm | Week, Lijst, alle subschermen | Hoog |
+| M2 | Op 320 px past de kop niet ("Terug" + "Nieuw" + "Meer" = 348 px), waardoor **9 schermen horizontaal scrollen** | Alle subschermen | Hoog |
+| M3 | Vandaag: op de telefoon komt de foto pas ná de knoppen; het eerste beeld is een donker tekstvlak | Vandaag | Middel |
+| M4 | Week op de telefoon: titel, planningkeuze, "Opties"-rij, weekkaart, schakelaar en dagstrook staan boven de eerste maaltijd (±60 % van het scherm) | Week | Hoog |
+| M5 | Lijst: grote panelen boven de lijst | Lijst | Hoog, **opgelost in C1** |
+| M6 | Rasters met 6–7 kolommen op 1024 px (weekraster, collecties, weekstrook) kappen dagnamen en titels af | Week, Keuken, Vandaag | Middel |
+| M7 | Ontdek is leeg zonder catalogus; lege collecties tonen een generiek pictogram | Ontdek, Keuken | Middel (fase 3) |
+| M8 | Recept: drie even zware knoppen; de bereiding staat ver onder de kop | Recept | Middel (fase 4) |
+
+## 2. Tekst- en lay-outfouten (nulmeting → na ronde 1)
+Aantallen over alle 17 schermen. "Afgekapt (ellips)" is vaak bewust en wordt apart beoordeeld.
+
+| Soort | 320 voor | 320 na | 390 voor | 390 na | 768 voor | 768 na | 1024 voor | 1024 na | 320@130 % voor | 320@130 % na |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Horizontaal scrollen | 9 | 0 ¹ | 0 | niet gemeten | 0 | 0 ¹ | 0 | 0 | 16 | 0 |
+| Tekst loopt over zijn kader | 21 | 2 ¹ | 0 | niet gemeten | 2 | 0 ¹ | 5 | 0 | 54 | 7 |
+| Weggeknipt zonder ellips | 0 | 0 ¹ | 0 | niet gemeten | 0 | 0 ¹ | 6 | 0 | 0 | 0 |
+
+Concreet gevonden en hersteld in ronde 1:
+- **Kop 348 px breed op 320 px**, op alle subschermen. Onder 400 px tonen "Nieuw" en "Meer" alleen hun pictogram, met een volwaardige `aria-label` en een doel van 48 px.
+- **Knoppen** met `white-space: nowrap`: de tekst liep eruit ("Wis afgevinkte boodschappen", "Link kopiëren"). Knoppen breken nu naar twee regels en groeien mee (`min-h`).
+- **Lange woorden** liepen uit hun kader ("ongezoutenroomboterbereiding", "Afwasmiddelnavulverpakkingextragroot", recepttitels in het weekraster). Nu geldt globaal `overflow-wrap: break-word`, en titels breken af met een koppelteken.
+- **Vandaag:** "Daarna" en "Ook vandaag" liepen rechts uit beeld. Het raster miste `minmax(0,1fr)`; die fout had ik in WP6 zelf gemaakt.
+- **Slim aanvullen:** de productnaam kreeg op 320 px maar ±105 px en brak per lettergreep af ("rundergehak-t"). Op de telefoon staat de hoeveelheid nu onder de naam.
+- **Weekraster op 1024 px:** "donderdag" paste niet en titels werden zonder ellips weggeknipt. Het raster komt nu pas vanaf 1280 px; tot dan geldt week|dag.
+- **Collecties** (6 kolommen) en **weekstrook** (7 kolommen) op 1024 px: zoveel kolommen pas vanaf 1280 px.
+- **Pictogramknoppen werden platgedrukt** ("Alles in … afvinken" was 23 px breed). Ze krimpen nu nooit.
+- **Instellingen op 320 px:** de namen van de eetmomenten werden door het tijdveld tot 60 px platgedrukt. De rij breekt nu om.
+- **Aanvulregel onder de lijst:** de tekst werd op 320 px tot 13 px samengeperst. Ze breekt nu om.
+- **Titels:** `text-wrap: balance` dwong samen met woordafbreking onnodige afbrekingen af ("Goeiemid-dag"). Dat is nu `text-wrap: pretty`.
+
+¹ Uit de tussenmeting `na1` (na de herstellingen aan de kop, de knoppen en de typografie, maar vóór de herstellingen aan Vandaag, Aanvullen en `text-wrap`). Bij de meting `na2` liepen de varianten 320, 390, 412, 430 en 768 vast door de systeembelasting (load tot 70). Die zijn dus **niet** opnieuw gemeten op de laatste stand. "Niet gemeten" betekent: geen geldige meting, niet "0".
+
+Nog open na ronde 1: zie §6.
+
+## 3. Navigatie en interactie
+- **Vijf plekken (Vandaag · Week · Lijst · Keuken · Ontdek):** behouden. Ze dekken de kringloop, zijn op elke breedte zichtbaar met tekst, en de navigatietest bevestigt per route één actieve plek. Overwogen alternatief: "Keuken" opsplitsen in Recepten en Voorraad. Dat maakt zes plekken en kleinere labels, dus niet gedaan.
+- **Waar ben ik?** Op de telefoon verdween de paginatitel bij het scrollen. Nu verschijnt hij compact in de bovenbalk zodra de grote titel uit beeld is, zoals een "large title" in native apps.
+- **Hoe start ik iets nieuws?** Via "Nieuw" (+) in de kop, op elk scherm.
+- **Hoe keer ik terug?** Via "Terug" links in de kop op subschermen, met tekst. Op iOS werkt de terugveeg van Safari zelf; een native overgangsanimatie is pas mogelijk in een native app.
+- **Acties per scherm:** in ronde 1 verhuisde "Opties" in Week naar de titelregel, zodat er een rij wegvalt. Op Lijst staat "Ik ga winkelen" in de statusregel (C1).
+- **Bediening met één hand:** de onderbalk, de invoer van de lijst (onderaan) en de knoppen in de winkel- en kookmodus zitten binnen duimbereik. "Nieuw" en "Meer" staan bovenaan, en zijn dus moeilijk bereikbaar op grote telefoons (zie §6).
+
+## 4. Componenten die structureel verbeterd zijn of moeten worden
+| Component | Status |
+|---|---|
+| Knop (`ui/button`) | ✅ Breekt om en groeit mee; pictogramknop krimpt nooit |
+| Kop (AppShell) | ✅ Compact onder 400 px; titel in de bovenbalk na het scrollen |
+| Typografie (paginatitel, sectietitel) | ✅ Vloeiend en met afbreking; `text-wrap: pretty` |
+| Rasters met veel kolommen | ✅ Pas vanaf 1280 px |
+| Lijstrij (boodschappen, aanvullen) | 🟨 Aanvullen hersteld. De lijstrij gebruikt bewust een ellips voor lange namen; de volledige naam staat in "aanpassen" en in de winkelmodus |
+| Onderblad (sheet) | 🟨 Werkt; bij een open toetsenbord in iOS Safari **niet getest** |
+| Lege toestanden | ⬜ Ontdek en collecties (fase 3) |
+| Kaarten met vaste hoogte | ⬜ Nalopen per scherm (fase 4) |
+
+## 5. Huidige stand tegenover de gewenste premium ervaring
+| Aspect | Nu | Premium-doel |
+|---|---|---|
+| Eerste schermvulling | Lijst ✅; Vandaag 🟨 (foto bovenaan in ronde 1); Week 🟨 | De taak is meteen zichtbaar en tikbaar |
+| Kop | Compact met scrolltitel ✅ | Plus een native overgang (pas in een native app) |
+| Typografie | Consequent, groeit mee ✅ | Plus een vaste afstandsschaal per component (fase 2) |
+| Beweging | Beperkt (overgangen op knoppen en voortgang) | Subtiele overgangen tussen schermen en onderbladen; respecteer `prefers-reduced-motion` |
+| Lege en laadtoestanden | Wisselend | Overal skeletten en lege toestanden met een vervolgstap |
+| Grote tekst (130 %) | Zie §2 | Geen overlopen, geen horizontaal scrollen |
+
+## 6. Prioriteiten
+1. **Gedaan in ronde 1:** M2, M3, M6, de knoppen, de typografie, de lange woorden, Aanvullen, Instellingen en Vandaag (§2).
+2. **Volgende (fase 3):**
+   - Week op de telefoon: de weekkaart met de dagstrook als één compacte, kleverige band (M4).
+   - Ontdek: een lege toestand met eigen recepten en seizoen (M7).
+   - Keuken: collecties zonder generiek pictogram.
+3. **Fase 4:**
+   - Recept: één hoofdknop, ingrediënten en stappen dichter bij de kop (M8).
+   - Kookmodus: nalopen op 320 px en bij 130 % tekst.
+   - Voorraad: categorieën.
+   - Instellingen en Gezin: rijen met lange labels.
+4. **Open bevindingen uit de meting, nog te herstellen:**
+   - "Van vrienden" (filterchip) en "Bekijk hun gerechten" (Gezin) lopen op 320 px over hun kader.
+   - Op 320 px staat "Tonen" (Kaarten) buiten beeld.
+   - De keuzekaarten op "Nieuw recept" krijgen op 768 px 3–4 regels in een smalle kolom.
+   - Compacte sterren op receptkaarten zijn 24 px breed. Dat voldoet aan WCAG 2.5.8 (min. 24 px), maar niet aan onze streefwaarde van 44 px. Dat is een bewuste uitzondering, omdat de volwaardige beoordeling op de receptpagina staat.
+5. **BUG-063** (rondleidingtest): nog niet sluitend verklaard.

@@ -241,23 +241,28 @@ export function AppShell({
               aria-label="Foodlo, Vandaag"
             >
               <img src={logo} alt="" width={30} height={30} className="size-8" />
-              <span className="hidden font-display text-[1.6rem] font-semibold leading-none tracking-tight min-[400px]:inline">
+              <span
+                className={cn(
+                  "hidden font-display text-[1.6rem] font-semibold leading-none tracking-tight min-[400px]:inline",
+                  titelWeg && "min-[400px]:hidden lg:inline",
+                )}
+              >
                 Foodlo
               </span>
             </Link>
           )}
 
           {/* Compacte titel na het scrollen (telefoon en tablet); bewust één regel met ellips:
-              de volledige titel staat bovenaan de pagina. */}
-          <p
-            aria-hidden
-            className={cn(
-              "min-w-0 flex-1 truncate text-center font-display text-lg font-semibold transition-opacity duration-200 lg:hidden",
-              titelWeg ? "opacity-100" : "opacity-0",
-            )}
-          >
-            {title}
-          </p>
+              de volledige titel staat bovenaan de pagina. Alleen getekend als hij nodig is, en
+              dan zonder woordmerk ernaast, zodat de kop nooit breder wordt (412 px-regressie). */}
+          {titelWeg ? (
+            <p
+              aria-hidden
+              className="min-w-0 flex-1 truncate font-display text-lg font-semibold lg:hidden"
+            >
+              {title}
+            </p>
+          ) : null}
           <nav aria-label="Hoofdmenu" className="hidden flex-1 justify-center lg:flex">
             <ul className="flex items-center gap-1">
               {NAV.map((item) => {
@@ -291,7 +296,7 @@ export function AppShell({
               aria-haspopup="dialog"
               aria-label={t("Nieuw")}
               data-tour="nieuw"
-              className="inline-flex min-h-12 min-w-12 items-center justify-center gap-1.5 rounded-full bg-primary px-3 text-base font-semibold text-primary-foreground shadow-zacht hover:bg-primary/90 min-[400px]:px-4"
+              className="inline-flex min-h-12 min-w-12 items-center justify-center gap-1.5 rounded-full bg-primary px-3 text-base font-semibold text-primary-foreground shadow-zacht hover:bg-primary/90 min-[400px]:px-3.5 sm:px-4"
             >
               <Plus className="size-6 min-[400px]:size-5" aria-hidden />
               {/* Smalle telefoon (< 400 px): alleen het plusteken, anders past de kop niet. */}
