@@ -827,13 +827,13 @@ function PersoonKaart({
       <div className="flex items-center gap-3">
         <Avatar naam={naam} sleutel={persoon.id} />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-lg font-semibold">
-            {naam}
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-lg font-semibold">
+            <span className="min-w-0 break-words">{naam}</span>
             <span
               className={
                 persoon.gezin
-                  ? "ml-2 inline-flex items-center rounded-full bg-terracotta-zacht px-2.5 py-0.5 align-middle text-[0.9rem] font-semibold text-terracotta"
-                  : "ml-2 inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 align-middle text-[0.9rem] font-semibold text-secondary-foreground"
+                  ? "inline-flex items-center rounded-full bg-terracotta-zacht px-2.5 py-0.5 align-middle text-[0.9rem] font-semibold text-terracotta"
+                  : "inline-flex items-center rounded-full bg-secondary px-2.5 py-0.5 align-middle text-[0.9rem] font-semibold text-secondary-foreground"
               }
             >
               {persoon.gezin ? "Gezin" : "Vriend"}

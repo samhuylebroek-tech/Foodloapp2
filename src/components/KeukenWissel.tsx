@@ -23,7 +23,7 @@ export function KeukenWissel() {
             to={i.to}
             aria-current={actief ? "page" : undefined}
             className={cn(
-              "flex min-h-12 items-center justify-center gap-2 rounded-full text-base font-semibold transition-colors",
+              "flex min-h-12 flex-wrap items-center justify-center gap-x-2 gap-y-0.5 rounded-full px-2 py-1 text-center text-base font-semibold leading-tight transition-colors",
               actief
                 ? "bg-card text-foreground shadow-zacht"
                 : "text-muted-foreground hover:text-foreground",

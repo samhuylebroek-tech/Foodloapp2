@@ -195,7 +195,7 @@ export function Winkelmodus({
           </Button>
           <div className="min-w-0 flex-1">
             <p className="text-label text-inkt-zacht">In de winkel</p>
-            <p className="truncate font-display text-2xl font-semibold">
+            <p className="font-display text-2xl font-semibold leading-tight">
               {huidig ? CATEGORIE_LABEL[huidig.id] : "Klaar"}
             </p>
           </div>
@@ -245,7 +245,10 @@ export function Winkelmodus({
           {huidig ? (
             <ul className="grid gap-3 md:grid-cols-2">
               {huidig.lijst.map((item) => (
-                <li key={item.id} className="paneel flex min-h-24 items-stretch overflow-hidden">
+                <li
+                  key={item.id}
+                  className="paneel flex min-h-24 flex-col items-stretch overflow-hidden min-[400px]:flex-row"
+                >
                   <button
                     type="button"
                     onClick={() => vink(item)}
@@ -257,7 +260,7 @@ export function Winkelmodus({
                     <span className="min-w-0 flex-1">
                       <ItemNaam
                         naam={item.name}
-                        className="block text-[1.65rem] font-semibold leading-tight"
+                        className="block text-[min(1.65rem,30px)] font-semibold leading-tight"
                       />
                       {maatVan(item) ? (
                         <span className="mt-0.5 block text-xl text-muted-foreground">
@@ -271,7 +274,7 @@ export function Winkelmodus({
                     type="button"
                     onClick={() => setNietGevonden(item)}
                     aria-label={`${vervanging(item.name).naam} niet gevonden`}
-                    className="flex w-20 shrink-0 flex-col items-center justify-center gap-1 border-l border-border/70 px-1 text-sm font-semibold text-muted-foreground hover:bg-muted/60"
+                    className="flex min-h-12 shrink-0 items-center justify-center gap-2 border-t border-border/70 px-3 text-base font-semibold text-muted-foreground hover:bg-muted/60 min-[400px]:w-20 min-[400px]:flex-col min-[400px]:gap-1 min-[400px]:border-l min-[400px]:border-t-0 min-[400px]:px-1 min-[400px]:text-sm"
                   >
                     <SearchX className="size-6" aria-hidden />
                     Niet gevonden

@@ -12,7 +12,7 @@
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import type { Page } from "@playwright/test";
-import { meldAan, resetDemo, seedDb, test, zetKlok } from "./helpers";
+import { meldAan, resetDemo, seedDb, storing, test, zetKlok } from "./helpers";
 
 test.skip(!process.env["AUDIT"], "alleen met AUDIT=1");
 
@@ -265,6 +265,53 @@ for (const v of VARIANTEN) {
       resultaat[naam] = await meet(page);
       if (FOTO.has(v.breedte) || v.schaal !== 100)
         await page.screenshot({ path: `${map}/${v.naam}-${naam}.png`, fullPage: v.breedte < 768 });
+    }
+    // Toestanden en vensters: onderbladen, winkelmodus, formulier, fouttoestand.
+    const SCENARIOS: [string, string, (() => Promise<unknown>) | null][] = [
+      [
+        "lijst-catalogus",
+        "/boodschappen",
+        () => page.getByRole("button", { name: "Producten kiezen" }).first().click(),
+      ],
+      [
+        "lijst-meer",
+        "/boodschappen",
+        () => page.getByRole("button", { name: "Meer opties voor deze lijst" }).click(),
+      ],
+      [
+        "winkelmodus",
+        "/boodschappen",
+        () => page.getByRole("button", { name: "Ik ga winkelen" }).click(),
+      ],
+      [
+        "recept-zelf-typen",
+        "/recepten/nieuw",
+        () => page.getByRole("button", { name: /Zelf typen/ }).click(),
+      ],
+      ["fout-recepten", "/gerechten", null],
+    ];
+    for (const [naam, pad, actie] of SCENARIOS) {
+      if (naam === "fout-recepten")
+        await storing({
+          pad: "/rest/v1/recipes",
+          methode: "GET",
+          soort: "fout",
+          status: 503,
+          keer: 20,
+        });
+      await page.goto(pad);
+      await klaar(page);
+      if (v.schaal !== 100)
+        await page.evaluate((s) => {
+          document.documentElement.style.fontSize = `${s}%`;
+        }, v.schaal);
+      if (actie) await actie().catch(() => undefined);
+      await page.waitForTimeout(700);
+      resultaat[naam] = await meet(page);
+      if (FOTO.has(v.breedte) || v.schaal !== 100)
+        await page.screenshot({ path: `${map}/${v.naam}-${naam}.png` });
+      if (naam === "fout-recepten")
+        await storing({ pad: "/rest/v1/recipes", soort: "fout", keer: 0 });
     }
     writeFileSync(`${map}/resultaat-${v.naam}.json`, JSON.stringify(resultaat, null, 1));
   });

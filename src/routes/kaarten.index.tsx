@@ -173,7 +173,7 @@ function KaartTegel({ kaart, winkels }: { kaart: Kaart; winkels: Winkel[] }) {
             <Star className="size-6 shrink-0 fill-white text-white" aria-label="Favoriet" />
           ) : null}
         </span>
-        <span className="relative flex items-end justify-between gap-3">
+        <span className="relative flex flex-wrap items-end justify-between gap-x-3 gap-y-1">
           <span className="min-w-0 truncate font-mono text-lg tracking-wider text-white/95">
             {groepeer(kaart.nummer)}
           </span>

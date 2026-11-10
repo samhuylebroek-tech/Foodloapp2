@@ -1005,7 +1005,7 @@ function ReceptPage() {
 
             {/* Eén hoofdactie ("Start koken"); inplannen en lijst als twee rustige knoppen naast
                 elkaar met korte labels (eerder drie even zware knoppen onder elkaar). */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-1 lg:grid-cols-2">
               <Button
                 variant="outline"
                 onClick={() => setPlanOpen(true)}

@@ -19,10 +19,10 @@ export function FotoKiezer({
   extra?: boolean;
 }) {
   const knop =
-    "flex min-h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-3 text-center text-base font-semibold leading-tight transition-colors hover:bg-muted focus-within:outline focus-within:outline-3 focus-within:outline-ring";
+    "flex min-h-14 w-full cursor-pointer flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-xl py-2 border border-border bg-secondary px-3 text-center text-base font-semibold leading-tight transition-colors hover:bg-muted focus-within:outline focus-within:outline-3 focus-within:outline-ring";
 
   return (
-    <div className={`grid grid-cols-2 gap-2 ${className}`}>
+    <div className={`grid grid-cols-1 gap-2 min-[400px]:grid-cols-2 ${className}`}>
       <label className={knop}>
         {bezig ? (
           <Loader2 className="size-5 animate-spin" aria-hidden />

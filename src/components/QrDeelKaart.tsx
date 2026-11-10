@@ -82,7 +82,7 @@ export function QrDeelKaart({ compact = false }: { compact?: boolean }) {
 
       <p className="break-all text-center text-base text-muted-foreground">{url}</p>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
         <Button
           variant="outline"
           onClick={kopieer}
