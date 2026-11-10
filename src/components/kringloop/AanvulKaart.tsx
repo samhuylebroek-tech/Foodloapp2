@@ -100,7 +100,7 @@ export function AanvulRegel() {
       aria-label="Boodschappen voor je komende maaltijden"
       className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[1.25rem] bg-honing-zacht px-4 py-3"
     >
-      <p className="min-w-0 flex-1 text-base">
+      <p className="min-w-0 flex-1 basis-[12rem] text-base">
         <strong className="font-semibold">
           {aantal} {aantal === 1 ? "ding ontbreekt" : "dingen ontbreken"}
         </strong>{" "}

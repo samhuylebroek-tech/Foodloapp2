@@ -946,7 +946,7 @@ function PlannerPage() {
   function weekRaster() {
     const alleMomenten = [...new Set([...momenten, ...plan.map((p) => p.meal_type)])];
     return (
-      <section aria-label="Weekoverzicht" className="hidden lg:col-span-2 lg:block">
+      <section aria-label="Weekoverzicht" className="hidden lg:col-span-2 xl:block">
         <div className="grid grid-cols-7 gap-3">
           {week.map((dag) => {
             const d = new Date(`${dag}T12:00:00`);
@@ -1099,11 +1099,24 @@ function PlannerPage() {
   }
 
   return (
-    <AppShell title="Weekmenu" breed>
+    <AppShell
+      title="Weekmenu"
+      breed
+      action={
+        // Mobiel-eerst: "Opties" in de titelregel, geen eigen rij boven de week.
+        <Button
+          variant="ghost"
+          onClick={() => setInstellingenOpen(true)}
+          className="h-12 shrink-0 gap-2 px-3 text-base"
+        >
+          <Settings className="size-5" /> Opties
+        </Button>
+      }
+    >
       <div className="space-y-6 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-x-6 lg:gap-y-6 lg:space-y-0">
         {/* Kopregel: welke planning en opties (desktop: rechts naast de weekkeuze) */}
-        <div className="flex items-center gap-2 lg:col-start-2 lg:row-start-1 lg:self-center">
-          {gezin ? (
+        {gezin ? (
+          <div className="flex items-center gap-2 lg:col-start-2 lg:row-start-1 lg:self-center">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="h-12 min-w-0 flex-1 justify-start gap-2 px-2 text-base font-semibold">
@@ -1123,11 +1136,8 @@ function PlannerPage() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : <div className="flex-1" />}
-          <Button variant="ghost" onClick={() => setInstellingenOpen(true)} className="h-12 shrink-0 gap-2 px-3 text-base">
-            <Settings className="size-5" /> Opties
-          </Button>
-        </div>
+          </div>
+        ) : null}
 
         {/* Week kiezen: duidelijke titel met datums, grote pijlen, rustige dagkeuze */}
         <section aria-label="Week kiezen" className="paneel p-3 lg:col-start-1 lg:row-start-1 lg:w-full lg:max-w-lg lg:p-4">

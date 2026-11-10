@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 
-/** WP6 — tabletbreedte (768–1023 px), gelijk aan Tailwinds `md` tot `lg`. */
-const VRAAG = "(min-width: 768px) and (max-width: 1023.98px)";
+/** WP6 — tablet en kleine laptop (768–1279 px): week|dag i.p.v. het 7-koloms raster (dat pas vanaf 1280 px leesbaar is). */
+const VRAAG = "(min-width: 768px) and (max-width: 1279.98px)";
 
 function abonneer(melding: () => void) {
   if (typeof window === "undefined" || !window.matchMedia) return () => {};

@@ -239,7 +239,7 @@ function StartPage() {
     <AppShell breed title={groetTekst} kop={kop}>
       <div className="space-y-12">
         {/* Tablet en groter: "Daarna" en "Ook vandaag" naast elkaar; alleen één? Dan volle breedte. */}
-        <div className="grid gap-12 md:grid-cols-2 md:gap-8 md:[&>*:only-child]:col-span-2">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-12 md:grid-cols-2 md:gap-8 md:[&>*:only-child]:col-span-2">
           {/* Daarna: hooguit drie signalen, nooit wat de Nu-kaart al zegt. */}
           <Daarna
             signalen={signalen}
@@ -316,7 +316,7 @@ function StartPage() {
             </Link>
           </div>
           {/* `relative`: verborgen schermlezertekst (sr-only) blijft binnen de scrollstrook. */}
-          <ul className="scroll-rij relative -mx-4 mt-4 flex gap-3 overflow-x-auto px-4 pb-3 pt-1 lg:mx-0 lg:grid lg:grid-cols-7 lg:overflow-visible lg:px-0">
+          <ul className="scroll-rij relative -mx-4 mt-4 flex gap-3 overflow-x-auto px-4 pb-3 pt-1 xl:mx-0 xl:grid xl:grid-cols-7 xl:overflow-visible xl:px-0">
             {weekPerDag.map(({ datum: d, rijen }) => {
               const dag = new Date(`${d}T12:00:00`);
               const isVandaag = d === vandaagIso;

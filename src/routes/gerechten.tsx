@@ -389,7 +389,7 @@ function GerechtenPage() {
           <section aria-labelledby="collecties-titel">
             <h2 id="collecties-titel" className="text-sectietitel">{t("Collecties")}</h2>
             {/* Tik op een collectie om ze te tonen; nog eens tikken zet ze uit. */}
-            <ul className="scroll-rij relative -mx-4 mt-3 flex gap-3 overflow-x-auto px-4 pb-2 lg:mx-0 lg:grid lg:grid-cols-6 lg:overflow-visible lg:px-0">
+            <ul className="scroll-rij relative -mx-4 mt-3 flex gap-3 overflow-x-auto px-4 pb-2 lg:mx-0 lg:grid lg:grid-cols-4 lg:overflow-visible lg:px-0 xl:grid-cols-6">
               {collecties.map((c) => (
                 <li key={c.id} className="w-36 shrink-0 lg:w-auto">
                   <button

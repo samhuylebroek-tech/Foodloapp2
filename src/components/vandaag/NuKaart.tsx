@@ -247,7 +247,7 @@ export function NuKaart({
             params={{ id: recept.id }}
             tabIndex={-1}
             aria-hidden
-            className="relative block min-h-48 overflow-hidden md:min-h-full"
+            className="relative order-first block aspect-[16/9] overflow-hidden md:order-none md:aspect-auto md:min-h-full"
           >
             <RecipePhoto
               path={recept.image_url ?? null}

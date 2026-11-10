@@ -138,6 +138,27 @@ export function AppShell({
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const toonTerug = !HOOFDPADEN.has(pathname);
 
+  // Mobiel-eerst: grote titel in de pagina; scrol je eraan voorbij, dan verschijnt hij compact
+  // in de bovenbalk (zoals in native apps), zodat je altijd weet waar je bent.
+  const [titelWeg, setTitelWeg] = useState(false);
+  useEffect(() => {
+    setTitelWeg(false);
+    if (typeof IntersectionObserver === "undefined") return;
+    let obs: IntersectionObserver | null = null;
+    const id = window.setTimeout(() => {
+      const h1 = document.querySelector("#inhoud h1");
+      if (!h1) return;
+      obs = new IntersectionObserver(([e]) => setTitelWeg(!(e?.isIntersecting ?? true)), {
+        rootMargin: "-72px 0px 0px 0px",
+      });
+      obs.observe(h1);
+    }, 300);
+    return () => {
+      window.clearTimeout(id);
+      obs?.disconnect();
+    };
+  }, [pathname, loading]);
+
   function gaTerug() {
     if (typeof window !== "undefined" && window.history.length > 1) router.history.back();
     else navigate({ to: "/" });
@@ -226,6 +247,17 @@ export function AppShell({
             </Link>
           )}
 
+          {/* Compacte titel na het scrollen (telefoon en tablet); bewust één regel met ellips:
+              de volledige titel staat bovenaan de pagina. */}
+          <p
+            aria-hidden
+            className={cn(
+              "min-w-0 flex-1 truncate text-center font-display text-lg font-semibold transition-opacity duration-200 lg:hidden",
+              titelWeg ? "opacity-100" : "opacity-0",
+            )}
+          >
+            {title}
+          </p>
           <nav aria-label="Hoofdmenu" className="hidden flex-1 justify-center lg:flex">
             <ul className="flex items-center gap-1">
               {NAV.map((item) => {
@@ -257,25 +289,28 @@ export function AppShell({
               type="button"
               onClick={() => setNieuwOpen(true)}
               aria-haspopup="dialog"
+              aria-label={t("Nieuw")}
               data-tour="nieuw"
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-primary px-3.5 text-base font-semibold text-primary-foreground shadow-zacht hover:bg-primary/90 sm:px-4"
+              className="inline-flex min-h-12 min-w-12 items-center justify-center gap-1.5 rounded-full bg-primary px-3 text-base font-semibold text-primary-foreground shadow-zacht hover:bg-primary/90 min-[400px]:px-4"
             >
-              <Plus className="size-5" aria-hidden />
-              {t("Nieuw")}
+              <Plus className="size-6 min-[400px]:size-5" aria-hidden />
+              {/* Smalle telefoon (< 400 px): alleen het plusteken, anders past de kop niet. */}
+              <span className="hidden min-[400px]:inline">{t("Nieuw")}</span>
             </button>
             <Link
               to="/meer"
               data-tour="meer"
+              aria-label={t("Meer")}
               aria-current={isActief("/meer") ? "page" : undefined}
               className={cn(
-                "flex min-h-11 items-center gap-2 rounded-full px-3 text-base font-semibold transition-colors",
+                "flex min-h-12 min-w-12 items-center justify-center gap-2 rounded-full px-3 text-base font-semibold transition-colors",
                 isActief("/meer")
                   ? "bg-inkt text-inkt-foreground"
                   : "text-foreground hover:bg-muted",
               )}
             >
               <CircleUserRound className="size-6" aria-hidden />
-              {t("Meer")}
+              <span className="hidden min-[400px]:inline">{t("Meer")}</span>
             </Link>
           </div>
         </div>

@@ -184,6 +184,12 @@ function AanvullenPagina() {
                               {r.naam}
                             </span>
                             <span className="block truncate text-[0.9rem] text-muted-foreground">
+                              {/* Telefoon: hoeveelheid hier, zodat de naam de volle breedte krijgt. */}
+                              {maat ? (
+                                <span className="font-semibold text-foreground sm:hidden">
+                                  {maat} ·{" "}
+                                </span>
+                              ) : null}
                               {r.inHuisDeels
                                 ? `je hebt al ${r.inHuisDeels}`
                                 : r.opLijstDeels
@@ -192,7 +198,7 @@ function AanvullenPagina() {
                             </span>
                           </span>
                           {maat ? (
-                            <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-[0.95rem] font-semibold tabular-nums">
+                            <span className="hidden shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-[0.95rem] font-semibold tabular-nums sm:inline">
                               {maat}
                             </span>
                           ) : null}

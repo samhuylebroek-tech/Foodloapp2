@@ -270,8 +270,8 @@ function InstellingenPage() {
           voet={t("Foodlo zegt op Vandaag wanneer je moet beginnen met koken, en kijkt na je avondeten naar morgen.")}
         >
           {(eenBlok ? ["maaltijd"] : ALLE_MOMENTEN.filter((m) => momenten.includes(m))).map((m) => (
-            <label key={m} className="flex min-h-16 items-center gap-3.5 px-4 py-3">
-              <span className="min-w-0 flex-1 text-[1.05rem] font-semibold capitalize leading-snug">
+            <label key={m} className="flex min-h-16 flex-wrap items-center gap-x-3.5 gap-y-2 px-4 py-3">
+              <span className="min-w-[7rem] flex-1 text-[1.05rem] font-semibold capitalize leading-snug">
                 {t(m === "maaltijd" ? "Eten" : m)}
               </span>
               <input
