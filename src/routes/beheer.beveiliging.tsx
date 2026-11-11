@@ -9,6 +9,15 @@ import { AdminShell, Kaart } from "@/components/AdminShell";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  codeGeldig,
+  factorStatusTekst,
+  mfaFoutTekst,
+  reserveTip,
+  schoonCode,
+  verwijderWaarschuwing,
+  type Factor,
+} from "@/lib/tweede-stap";
 
 export const Route = createFileRoute("/beheer/beveiliging")({ component: Beveiliging });
 
@@ -17,7 +26,8 @@ function Beveiliging() {
   const sessieFn = useServerFn(adminSessies);
   const { data: sessies } = useQuery({ queryKey: ["admin-sessies"], queryFn: () => sessieFn() });
 
-  const [factoren, setFactoren] = useState<any[]>([]);
+  const [factoren, setFactoren] = useState<Factor[]>([]);
+  const [teVerwijderen, setTeVerwijderen] = useState<string | null>(null);
   const [qr, setQr] = useState<{ id: string; svg: string; secret: string } | null>(null);
   const [code, setCode] = useState("");
   const [bezig, setBezig] = useState(false);
@@ -35,7 +45,7 @@ function Beveiliging() {
     const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: `Foodlo ${Date.now()}` });
     setBezig(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(mfaFoutTekst(error));
       return;
     }
     setQr({ id: data.id, svg: data.totp.qr_code, secret: data.totp.secret });
@@ -43,21 +53,25 @@ function Beveiliging() {
 
   const bevestig = async () => {
     if (!qr) return;
+    if (!codeGeldig(code)) {
+      toast.error("Typ de 6 cijfers uit je authenticator-app.");
+      return;
+    }
     setBezig(true);
     const { data: uitdaging, error: e1 } = await supabase.auth.mfa.challenge({ factorId: qr.id });
     if (e1 || !uitdaging) {
       setBezig(false);
-      toast.error(e1?.message ?? "Kon niet starten");
+      toast.error(mfaFoutTekst(e1));
       return;
     }
     const { error } = await supabase.auth.mfa.verify({
       factorId: qr.id,
       challengeId: uitdaging.id,
-      code: code.trim(),
+      code: schoonCode(code),
     });
     setBezig(false);
     if (error) {
-      toast.error(error.message);
+      toast.error(mfaFoutTekst(error));
       return;
     }
     toast.success("2-staps verificatie staat aan");
@@ -81,23 +95,13 @@ function Beveiliging() {
               {factoren.map((f) => (
                 <li key={f.id} className="flex items-center justify-between rounded border border-white/10 p-2">
                   <span>
-                    {f.friendly_name || "Authenticator"} · {f.status}
+                    {f.friendly_name || "Authenticator"} · {factorStatusTekst(f.status)}
                   </span>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={async () => {
-                      const { error } = await supabase.auth.mfa.unenroll({ factorId: f.id });
-                      if (error) {
-                        toast.error(error.message);
-                        return;
-                      }
-                      toast.success("Verwijderd");
-                      laadFactoren();
-                    }}
-                  >
-                    Verwijderen
-                  </Button>
+                  {teVerwijderen === f.id ? null : (
+                    <Button size="sm" variant="destructive" onClick={() => setTeVerwijderen(f.id)}>
+                      Verwijderen
+                    </Button>
+                  )}
                 </li>
               ))}
             </ul>
@@ -105,17 +109,57 @@ function Beveiliging() {
             <p className="mt-3 text-sm text-slate-400">Nog geen authenticator gekoppeld.</p>
           )}
 
+          {teVerwijderen ? (
+            <div role="alertdialog" aria-labelledby="verwijder-titel" className="mt-3 rounded border border-red-500/40 bg-red-500/10 p-3 text-sm">
+              <p id="verwijder-titel" className="font-medium">Authenticator verwijderen?</p>
+              <p className="mt-1 text-red-100">
+                {verwijderWaarschuwing(factoren, teVerwijderen, Boolean(profiel?.mfa_required))}
+              </p>
+              <div className="mt-2 flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => setTeVerwijderen(null)}>
+                  Annuleren
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={async () => {
+                    const { error } = await supabase.auth.mfa.unenroll({ factorId: teVerwijderen });
+                    setTeVerwijderen(null);
+                    if (error) {
+                      toast.error(mfaFoutTekst(error));
+                      return;
+                    }
+                    toast.success("Verwijderd");
+                    laadFactoren();
+                  }}
+                >
+                  Ja, verwijderen
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          {reserveTip(factoren) ? (
+            <p className="mt-3 text-xs text-amber-200">{reserveTip(factoren)}</p>
+          ) : null}
+
           {qr ? (
             <div className="mt-4 space-y-3">
-              <div
+              {/* Als afbeelding, niet als HTML: geen innerHTML, en een data-URL met
+                  aanhalingstekens erin breekt zo niet. */}
+              <img
+                src={qr.svg.startsWith("<") ? `data:image/svg+xml;utf8,${encodeURIComponent(qr.svg)}` : qr.svg}
+                alt="QR-code om te scannen met je authenticator-app"
                 className="w-40 rounded bg-white p-2"
-                dangerouslySetInnerHTML={{ __html: qr.svg.startsWith("<") ? qr.svg : `<img src="${qr.svg}" />` }}
               />
               <p className="text-xs text-slate-400">Of typ deze sleutel in je app: {qr.secret}</p>
               <div className="flex gap-2">
                 <Input
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
+                  aria-label="6-cijferige code uit je app"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
                   placeholder="6-cijferige code"
                   className="max-w-[160px] border-white/10 bg-slate-950 text-slate-100"
                 />

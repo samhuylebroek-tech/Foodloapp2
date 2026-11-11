@@ -21,6 +21,7 @@ import {
   Users,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/useAdmin";
+import { TweedeStap } from "@/components/TweedeStap";
 import type { Rechten } from "@/lib/admin.functions";
 
 /**
@@ -286,14 +287,7 @@ export function AdminShell({
               Alleen-lezen modus: je kunt meekijken maar niets wijzigen. Elke inzage wordt gelogd.
             </div>
           ) : null}
-          {!mfaOk ? (
-            <div className="border-b border-red-500/30 bg-red-500/10 px-6 py-2 text-sm text-red-200">
-              2-staps verificatie is verplicht voor jouw rol.{" "}
-              <Link to="/beheer/beveiliging" className="underline">
-                Nu instellen
-              </Link>
-            </div>
-          ) : null}
+          {!mfaOk ? <TweedeStap /> : null}
           {IS_DEMO ? (
             <div
               role="note"
