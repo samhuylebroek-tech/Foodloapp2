@@ -80,15 +80,16 @@ test("Keuken: recepten en voorraad één tik van elkaar, voorraad stuurt naar re
   void extern;
 });
 
-test("rondleiding: zeven stappen, elk onderdeel zichtbaar aangewezen en niet bedekt", async ({
+test("rondleiding: alle modules (10 stappen), elk onderdeel zichtbaar aangewezen en niet bedekt", async ({
   page,
   extern,
 }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   await page.goto("/rondleiding");
   const venster = page.getByRole("dialog", { name: "Rondleiding" });
-  for (let stap = 1; stap <= 7; stap++) {
-    await expect(venster.getByText(`Stap ${stap} van 7`)).toBeVisible();
+  const N = 10;
+  for (let stap = 1; stap <= N; stap++) {
+    await expect(venster.getByText(`Stap ${stap} van ${N}`)).toBeVisible();
     const kader = page.locator("[data-rondleiding-kader]");
     await expect(kader, `stap ${stap} wijst iets aan`).toBeVisible();
     // Streng, zonder wachten (BUG-063): het kader verschijnt pas op zijn definitieve plek.
@@ -97,7 +98,7 @@ test("rondleiding: zeven stappen, elk onderdeel zichtbaar aangewezen en niet bed
     const overlapt = !(k.y + k.height <= c.y || c.y + c.height <= k.y);
     expect(overlapt, `stap ${stap}: uitleg bedekt het aangewezen onderdeel`).toBe(false);
     if (stap === 1) expect(await axeErnstig(page)).toEqual([]);
-    await venster.getByRole("button", { name: stap === 7 ? "Klaar" : "Volgende" }).click();
+    await venster.getByRole("button", { name: stap === N ? "Klaar" : "Volgende" }).click();
   }
   await expect(venster).toHaveCount(0);
   void extern;

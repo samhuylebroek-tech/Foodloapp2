@@ -16,13 +16,16 @@ import { Route as BeheerRouteImport } from './routes/beheer'
 import { Route as BoodschappenRouteImport } from './routes/boodschappen'
 import { Route as CreditsRouteImport } from './routes/credits'
 import { Route as DeelRouteImport } from './routes/deel'
+import { Route as EersteStappenRouteImport } from './routes/eerste-stappen'
 import { Route as FeedbackRouteImport } from './routes/feedback'
 import { Route as GerechtenRouteImport } from './routes/gerechten'
 import { Route as GezinRouteImport } from './routes/gezin'
+import { Route as HulpRouteImport } from './routes/hulp'
 import { Route as InfoRouteImport } from './routes/info'
 import { Route as InspiratieRouteImport } from './routes/inspiratie'
 import { Route as InstallerenRouteImport } from './routes/installeren'
 import { Route as InstellingenRouteImport } from './routes/instellingen'
+import { Route as KennismakingRouteImport } from './routes/kennismaking'
 import { Route as MeerRouteImport } from './routes/meer'
 import { Route as MeldingenRouteImport } from './routes/meldingen'
 import { Route as PlannerRouteImport } from './routes/planner'
@@ -56,6 +59,9 @@ import { Route as BeheerSysteemRouteImport } from './routes/beheer.systeem'
 import { Route as BeheerTeamRouteImport } from './routes/beheer.team'
 import { Route as BeheerTekstenRouteImport } from './routes/beheer.teksten'
 import { Route as BeheerUiRouteImport } from './routes/beheer.ui'
+import { Route as HulpIndexRouteImport } from './routes/hulp.index'
+import { Route as HulpSlugRouteImport } from './routes/hulp.$slug'
+import { Route as HulpTutorialsRouteImport } from './routes/hulp.tutorials'
 import { Route as InspiratieIndexRouteImport } from './routes/inspiratie.index'
 import { Route as InspiratieIdRouteImport } from './routes/inspiratie.$id'
 import { Route as KaartenIndexRouteImport } from './routes/kaarten.index'
@@ -121,6 +127,11 @@ const DeelRoute = DeelRouteImport.update({
   path: '/deel',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EersteStappenRoute = EersteStappenRouteImport.update({
+  id: '/eerste-stappen',
+  path: '/eerste-stappen',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FeedbackRoute = FeedbackRouteImport.update({
   id: '/feedback',
   path: '/feedback',
@@ -134,6 +145,11 @@ const GerechtenRoute = GerechtenRouteImport.update({
 const GezinRoute = GezinRouteImport.update({
   id: '/gezin',
   path: '/gezin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HulpRoute = HulpRouteImport.update({
+  id: '/hulp',
+  path: '/hulp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InfoRoute = InfoRouteImport.update({
@@ -154,6 +170,11 @@ const InstallerenRoute = InstallerenRouteImport.update({
 const InstellingenRoute = InstellingenRouteImport.update({
   id: '/instellingen',
   path: '/instellingen',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KennismakingRoute = KennismakingRouteImport.update({
+  id: '/kennismaking',
+  path: '/kennismaking',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MeerRoute = MeerRouteImport.update({
@@ -321,6 +342,21 @@ const BeheerUiRoute = BeheerUiRouteImport.update({
   path: '/ui',
   getParentRoute: () => BeheerRoute,
 } as any)
+const HulpIndexRoute = HulpIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => HulpRoute,
+} as any)
+const HulpSlugRoute = HulpSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => HulpRoute,
+} as any)
+const HulpTutorialsRoute = HulpTutorialsRouteImport.update({
+  id: '/tutorials',
+  path: '/tutorials',
+  getParentRoute: () => HulpRoute,
+} as any)
 const InspiratieIndexRoute = InspiratieIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -476,13 +512,16 @@ export interface FileRoutesByFullPath {
   '/boodschappen': typeof BoodschappenRoute
   '/credits': typeof CreditsRoute
   '/deel': typeof DeelRoute
+  '/eerste-stappen': typeof EersteStappenRoute
   '/feedback': typeof FeedbackRoute
   '/gerechten': typeof GerechtenRoute
   '/gezin': typeof GezinRoute
+  '/hulp': typeof HulpRouteWithChildren
   '/info': typeof InfoRoute
   '/inspiratie': typeof InspiratieRouteWithChildren
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
+  '/kennismaking': typeof KennismakingRoute
   '/meer': typeof MeerRoute
   '/meldingen': typeof MeldingenRoute
   '/planner': typeof PlannerRoute
@@ -515,12 +554,15 @@ export interface FileRoutesByFullPath {
   '/beheer/team': typeof BeheerTeamRoute
   '/beheer/teksten': typeof BeheerTekstenRoute
   '/beheer/ui': typeof BeheerUiRouteWithChildren
+  '/hulp/$slug': typeof HulpSlugRoute
+  '/hulp/tutorials': typeof HulpTutorialsRoute
   '/inspiratie/$id': typeof InspiratieIdRoute
   '/kaarten/$id': typeof KaartenIdRoute
   '/recepten/$id': typeof ReceptenIdRoute
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/vrienden/$id': typeof VriendenIdRoute
   '/beheer/': typeof BeheerIndexRoute
+  '/hulp/': typeof HulpIndexRoute
   '/inspiratie/': typeof InspiratieIndexRoute
   '/kaarten/': typeof KaartenIndexRoute
   '/vrienden/': typeof VriendenIndexRoute
@@ -553,12 +595,14 @@ export interface FileRoutesByTo {
   '/boodschappen': typeof BoodschappenRoute
   '/credits': typeof CreditsRoute
   '/deel': typeof DeelRoute
+  '/eerste-stappen': typeof EersteStappenRoute
   '/feedback': typeof FeedbackRoute
   '/gerechten': typeof GerechtenRoute
   '/gezin': typeof GezinRoute
   '/info': typeof InfoRoute
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
+  '/kennismaking': typeof KennismakingRoute
   '/meer': typeof MeerRoute
   '/meldingen': typeof MeldingenRoute
   '/planner': typeof PlannerRoute
@@ -590,12 +634,15 @@ export interface FileRoutesByTo {
   '/beheer/systeem': typeof BeheerSysteemRoute
   '/beheer/team': typeof BeheerTeamRoute
   '/beheer/teksten': typeof BeheerTekstenRoute
+  '/hulp/$slug': typeof HulpSlugRoute
+  '/hulp/tutorials': typeof HulpTutorialsRoute
   '/inspiratie/$id': typeof InspiratieIdRoute
   '/kaarten/$id': typeof KaartenIdRoute
   '/recepten/$id': typeof ReceptenIdRoute
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/vrienden/$id': typeof VriendenIdRoute
   '/beheer': typeof BeheerIndexRoute
+  '/hulp': typeof HulpIndexRoute
   '/inspiratie': typeof InspiratieIndexRoute
   '/kaarten': typeof KaartenIndexRoute
   '/vrienden': typeof VriendenIndexRoute
@@ -630,13 +677,16 @@ export interface FileRoutesById {
   '/boodschappen': typeof BoodschappenRoute
   '/credits': typeof CreditsRoute
   '/deel': typeof DeelRoute
+  '/eerste-stappen': typeof EersteStappenRoute
   '/feedback': typeof FeedbackRoute
   '/gerechten': typeof GerechtenRoute
   '/gezin': typeof GezinRoute
+  '/hulp': typeof HulpRouteWithChildren
   '/info': typeof InfoRoute
   '/inspiratie': typeof InspiratieRouteWithChildren
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
+  '/kennismaking': typeof KennismakingRoute
   '/meer': typeof MeerRoute
   '/meldingen': typeof MeldingenRoute
   '/planner': typeof PlannerRoute
@@ -669,12 +719,15 @@ export interface FileRoutesById {
   '/beheer/team': typeof BeheerTeamRoute
   '/beheer/teksten': typeof BeheerTekstenRoute
   '/beheer/ui': typeof BeheerUiRouteWithChildren
+  '/hulp/$slug': typeof HulpSlugRoute
+  '/hulp/tutorials': typeof HulpTutorialsRoute
   '/inspiratie/$id': typeof InspiratieIdRoute
   '/kaarten/$id': typeof KaartenIdRoute
   '/recepten/$id': typeof ReceptenIdRoute
   '/recepten/nieuw': typeof ReceptenNieuwRoute
   '/vrienden/$id': typeof VriendenIdRoute
   '/beheer/': typeof BeheerIndexRoute
+  '/hulp/': typeof HulpIndexRoute
   '/inspiratie/': typeof InspiratieIndexRoute
   '/kaarten/': typeof KaartenIndexRoute
   '/vrienden/': typeof VriendenIndexRoute
@@ -710,13 +763,16 @@ export interface FileRouteTypes {
     | '/boodschappen'
     | '/credits'
     | '/deel'
+    | '/eerste-stappen'
     | '/feedback'
     | '/gerechten'
     | '/gezin'
+    | '/hulp'
     | '/info'
     | '/inspiratie'
     | '/installeren'
     | '/instellingen'
+    | '/kennismaking'
     | '/meer'
     | '/meldingen'
     | '/planner'
@@ -749,12 +805,15 @@ export interface FileRouteTypes {
     | '/beheer/team'
     | '/beheer/teksten'
     | '/beheer/ui'
+    | '/hulp/$slug'
+    | '/hulp/tutorials'
     | '/inspiratie/$id'
     | '/kaarten/$id'
     | '/recepten/$id'
     | '/recepten/nieuw'
     | '/vrienden/$id'
     | '/beheer/'
+    | '/hulp/'
     | '/inspiratie/'
     | '/kaarten/'
     | '/vrienden/'
@@ -787,12 +846,14 @@ export interface FileRouteTypes {
     | '/boodschappen'
     | '/credits'
     | '/deel'
+    | '/eerste-stappen'
     | '/feedback'
     | '/gerechten'
     | '/gezin'
     | '/info'
     | '/installeren'
     | '/instellingen'
+    | '/kennismaking'
     | '/meer'
     | '/meldingen'
     | '/planner'
@@ -824,12 +885,15 @@ export interface FileRouteTypes {
     | '/beheer/systeem'
     | '/beheer/team'
     | '/beheer/teksten'
+    | '/hulp/$slug'
+    | '/hulp/tutorials'
     | '/inspiratie/$id'
     | '/kaarten/$id'
     | '/recepten/$id'
     | '/recepten/nieuw'
     | '/vrienden/$id'
     | '/beheer'
+    | '/hulp'
     | '/inspiratie'
     | '/kaarten'
     | '/vrienden'
@@ -863,13 +927,16 @@ export interface FileRouteTypes {
     | '/boodschappen'
     | '/credits'
     | '/deel'
+    | '/eerste-stappen'
     | '/feedback'
     | '/gerechten'
     | '/gezin'
+    | '/hulp'
     | '/info'
     | '/inspiratie'
     | '/installeren'
     | '/instellingen'
+    | '/kennismaking'
     | '/meer'
     | '/meldingen'
     | '/planner'
@@ -902,12 +969,15 @@ export interface FileRouteTypes {
     | '/beheer/team'
     | '/beheer/teksten'
     | '/beheer/ui'
+    | '/hulp/$slug'
+    | '/hulp/tutorials'
     | '/inspiratie/$id'
     | '/kaarten/$id'
     | '/recepten/$id'
     | '/recepten/nieuw'
     | '/vrienden/$id'
     | '/beheer/'
+    | '/hulp/'
     | '/inspiratie/'
     | '/kaarten/'
     | '/vrienden/'
@@ -942,13 +1012,16 @@ export interface RootRouteChildren {
   BoodschappenRoute: typeof BoodschappenRoute
   CreditsRoute: typeof CreditsRoute
   DeelRoute: typeof DeelRoute
+  EersteStappenRoute: typeof EersteStappenRoute
   FeedbackRoute: typeof FeedbackRoute
   GerechtenRoute: typeof GerechtenRoute
   GezinRoute: typeof GezinRoute
+  HulpRoute: typeof HulpRouteWithChildren
   InfoRoute: typeof InfoRoute
   InspiratieRoute: typeof InspiratieRouteWithChildren
   InstallerenRoute: typeof InstallerenRoute
   InstellingenRoute: typeof InstellingenRoute
+  KennismakingRoute: typeof KennismakingRoute
   MeerRoute: typeof MeerRoute
   MeldingenRoute: typeof MeldingenRoute
   PlannerRoute: typeof PlannerRoute
@@ -1020,6 +1093,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DeelRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/eerste-stappen': {
+      id: '/eerste-stappen'
+      path: '/eerste-stappen'
+      fullPath: '/eerste-stappen'
+      preLoaderRoute: typeof EersteStappenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/feedback': {
       id: '/feedback'
       path: '/feedback'
@@ -1039,6 +1119,13 @@ declare module '@tanstack/react-router' {
       path: '/gezin'
       fullPath: '/gezin'
       preLoaderRoute: typeof GezinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hulp': {
+      id: '/hulp'
+      path: '/hulp'
+      fullPath: '/hulp'
+      preLoaderRoute: typeof HulpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/info': {
@@ -1067,6 +1154,13 @@ declare module '@tanstack/react-router' {
       path: '/instellingen'
       fullPath: '/instellingen'
       preLoaderRoute: typeof InstellingenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kennismaking': {
+      id: '/kennismaking'
+      path: '/kennismaking'
+      fullPath: '/kennismaking'
+      preLoaderRoute: typeof KennismakingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/meer': {
@@ -1299,6 +1393,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/beheer/ui'
       preLoaderRoute: typeof BeheerUiRouteImport
       parentRoute: typeof BeheerRoute
+    }
+    '/hulp/': {
+      id: '/hulp/'
+      path: '/'
+      fullPath: '/hulp/'
+      preLoaderRoute: typeof HulpIndexRouteImport
+      parentRoute: typeof HulpRoute
+    }
+    '/hulp/$slug': {
+      id: '/hulp/$slug'
+      path: '/$slug'
+      fullPath: '/hulp/$slug'
+      preLoaderRoute: typeof HulpSlugRouteImport
+      parentRoute: typeof HulpRoute
+    }
+    '/hulp/tutorials': {
+      id: '/hulp/tutorials'
+      path: '/tutorials'
+      fullPath: '/hulp/tutorials'
+      preLoaderRoute: typeof HulpTutorialsRouteImport
+      parentRoute: typeof HulpRoute
     }
     '/inspiratie/': {
       id: '/inspiratie/'
@@ -1609,6 +1724,20 @@ const BeheerRouteChildren: BeheerRouteChildren = {
 const BeheerRouteWithChildren =
   BeheerRoute._addFileChildren(BeheerRouteChildren)
 
+interface HulpRouteChildren {
+  HulpSlugRoute: typeof HulpSlugRoute
+  HulpTutorialsRoute: typeof HulpTutorialsRoute
+  HulpIndexRoute: typeof HulpIndexRoute
+}
+
+const HulpRouteChildren: HulpRouteChildren = {
+  HulpSlugRoute: HulpSlugRoute,
+  HulpTutorialsRoute: HulpTutorialsRoute,
+  HulpIndexRoute: HulpIndexRoute,
+}
+
+const HulpRouteWithChildren = HulpRoute._addFileChildren(HulpRouteChildren)
+
 interface InspiratieRouteChildren {
   InspiratieIdRoute: typeof InspiratieIdRoute
   InspiratieIndexRoute: typeof InspiratieIndexRoute
@@ -1631,13 +1760,16 @@ const rootRouteChildren: RootRouteChildren = {
   BoodschappenRoute: BoodschappenRoute,
   CreditsRoute: CreditsRoute,
   DeelRoute: DeelRoute,
+  EersteStappenRoute: EersteStappenRoute,
   FeedbackRoute: FeedbackRoute,
   GerechtenRoute: GerechtenRoute,
   GezinRoute: GezinRoute,
+  HulpRoute: HulpRouteWithChildren,
   InfoRoute: InfoRoute,
   InspiratieRoute: InspiratieRouteWithChildren,
   InstallerenRoute: InstallerenRoute,
   InstellingenRoute: InstellingenRoute,
+  KennismakingRoute: KennismakingRoute,
   MeerRoute: MeerRoute,
   MeldingenRoute: MeldingenRoute,
   PlannerRoute: PlannerRoute,

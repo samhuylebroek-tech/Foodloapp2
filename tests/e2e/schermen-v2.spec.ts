@@ -83,12 +83,12 @@ test("rondleiding", async ({ page }, info) => {
   const p = info.project.name;
   await page.goto("/rondleiding");
   const venster = page.getByRole("dialog", { name: "Rondleiding" });
-  for (let stap = 1; stap <= 7; stap++) {
-    await venster.getByText(`Stap ${stap} van 7`).waitFor();
+  for (let stap = 1; stap <= 10; stap++) {
+    await venster.getByText(`Stap ${stap} van 10`).waitFor();
     await page.locator("[data-rondleiding-kader]").waitFor();
     await page.waitForTimeout(400);
     await foto(page, p, `10-rondleiding-${stap}`);
-    await venster.getByRole("button", { name: stap === 7 ? "Klaar" : "Volgende" }).click();
+    await venster.getByRole("button", { name: stap === 10 ? "Klaar" : "Volgende" }).click();
   }
 });
 

@@ -7,6 +7,7 @@ import {
   CalendarPlus,
   ChefHat,
   ChevronRight,
+  CircleHelp,
   CircleUserRound,
   Compass,
   Home,
@@ -20,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/lib/voorkeuren";
 import { cn } from "@/lib/utils";
+import { moduleVoorPad } from "@/lib/functies";
 import logo from "@/assets/logo.png";
 import { Aankondigingen } from "@/components/Aankondigingen";
 import { MeldingVraag, telAanmelding } from "@/components/MeldingVraag";
@@ -137,6 +139,7 @@ export function AppShell({
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const toonTerug = !HOOFDPADEN.has(pathname);
+  const hulpModule = moduleVoorPad(pathname);
 
   // Mobiel-eerst: grote titel in de pagina; scrol je eraan voorbij, dan verschijnt hij compact
   // in de bovenbalk (zoals in native apps), zodat je altijd weet waar je bent.
@@ -344,6 +347,19 @@ export function AppShell({
         )}
         <Aankondigingen />
         {children}
+        {/* Contextuele hulp: onderaan elke pagina (in de kop is geen plek bij grote tekst). */}
+        {hulpModule ? (
+          <p className="mt-12 flex justify-center">
+            <Link
+              to="/hulp"
+              search={{ module: hulpModule }}
+              className="inline-flex min-h-11 max-w-full items-center gap-2 rounded-full px-4 text-base font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <CircleHelp className="size-5 shrink-0" aria-hidden />
+              {t("Hulp bij dit scherm")}
+            </Link>
+          </p>
+        ) : null}
         <MeldingVraag actief={pathname === "/"} />
       </main>
 

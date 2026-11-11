@@ -49,7 +49,7 @@ function Welkom() {
 
   const eenBlok = momenten.length === 1 && momenten[0] === EEN_BLOK[0];
 
-  async function klaar() {
+  async function klaar(naar: "/" | "/kennismaking" = "/kennismaking") {
     setBezig(true);
     if (user) {
       await supabase
@@ -61,7 +61,7 @@ function Welkom() {
       await queryClient.invalidateQueries({ queryKey: ["onboarding", user.id] });
     }
     window.localStorage.setItem("onboarding_klaar", "ja");
-    navigate({ to: "/" });
+    navigate({ to: naar });
   }
 
   return (
@@ -74,7 +74,7 @@ function Welkom() {
           <p className="text-2xl font-bold tracking-tight">Foodlo</p>
           <button
             type="button"
-            onClick={() => void klaar()}
+            onClick={() => void klaar("/")}
             disabled={bezig}
             aria-label={t("Overslaan")}
             className="ml-auto flex size-12 items-center justify-center rounded-2xl border border-border bg-card"
@@ -85,7 +85,7 @@ function Welkom() {
 
         <h1 className="mt-6 text-3xl font-bold tracking-tight">{t("Even snel instellen")}</h1>
         <p className="mt-2 text-base text-muted-foreground">
-          {t("Drie kleine keuzes. Je kan alles later aanpassen in je instellingen.")}
+          {t("Drie kleine keuzes. Daarna maken we even kennis. Je kan alles later aanpassen in je instellingen.")}
         </p>
 
         <section className="mt-7">

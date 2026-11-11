@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
+  LifeBuoy,
+  ListChecks,
   Bell,
   ChevronRight,
   CircleHelp,
@@ -148,6 +150,20 @@ function MeerPage() {
         </Groep>
 
         <Groep titel={t("Hulp")}>
+          <LinkRij
+            to="/hulp"
+            icoon={LifeBuoy}
+            tint="groen"
+            titel={t("Help Center")}
+            uitleg={t("Uitleg, tutorials en antwoorden")}
+          />
+          <LinkRij
+            to="/eerste-stappen"
+            icoon={ListChecks}
+            tint="groen"
+            titel={t("Eerste stappen")}
+            uitleg={t("Zes korte oefeningen in de echte app")}
+          />
           <LinkRij
             to="/installeren"
             icoon={Smartphone}

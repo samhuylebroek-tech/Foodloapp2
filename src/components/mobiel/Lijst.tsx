@@ -128,15 +128,18 @@ const tikbaar = "cursor-pointer hover:bg-muted/70 active:bg-muted focus-visible:
 export function LinkRij({
   to,
   params,
+  search,
   ...rest
 }: RijBasis & {
   to: NonNullable<LinkProps["to"]>;
   /** Routeparameters, bv. { id } voor /kaarten/$id. */
   params?: Record<string, string>;
+  /** Zoekparameters, bv. { terug: "instellingen" }. */
+  search?: Record<string, string>;
 }) {
   return (
     <Link
-      {...({ to, ...(params ? { params } : {}) } as LinkProps)}
+      {...({ to, ...(params ? { params } : {}), ...(search ? { search } : {}) } as LinkProps)}
       className={cn(rijKlasse, tikbaar, rest.className)}
     >
       <RijInhoud {...rest} pijl={!rest.gevaar} />

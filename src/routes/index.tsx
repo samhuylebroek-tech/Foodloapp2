@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { NuKaart } from "@/components/vandaag/NuKaart";
 import { Daarna } from "@/components/vandaag/Daarna";
+import { WegwijsKaart } from "@/components/vandaag/WegwijsKaart";
 import { haalGedeeldeAanvulling, useAanvulling } from "@/hooks/useAanvulling";
 import { leesVoortgang } from "@/lib/kookstand";
 import { hoofdStap, signalen as signalenVan } from "@/lib/vandaag";
@@ -248,6 +249,7 @@ function StartPage() {
   return (
     <AppShell breed title={groetTekst} kop={kop}>
       <div className="space-y-12">
+        <WegwijsKaart />
         {/* Tablet en groter: "Daarna" en "Ook vandaag" naast elkaar; alleen één? Dan volle breedte. */}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-12 md:grid-cols-2 md:gap-8 md:[&>*:only-child]:col-span-2">
           {/* Daarna: hooguit drie signalen, nooit wat de Nu-kaart al zegt. */}

@@ -318,6 +318,15 @@ function InstellingenPage() {
             tint="groen"
             titel={t("Rondleiding opnieuw bekijken")}
           />
+          <LinkRij
+            to="/kennismaking"
+            search={{ terug: "instellingen" }}
+            icoon={Compass}
+            tint="groen"
+            titel={t("Kennismaking aanpassen")}
+            uitleg={t("Kookervaring, kooktijd, dieet en allergieën")}
+          />
+          <LinkRij to="/hulp" icoon={Compass} tint="groen" titel={t("Help Center")} />
         </Groep>
 
         <Groep titel={t("Beveiliging")}>
