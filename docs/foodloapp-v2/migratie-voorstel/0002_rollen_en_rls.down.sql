@@ -5,11 +5,6 @@
 -- onschadelijk zolang geen rij die rol heeft. Zet zulke rijen eerst terug naar een andere rol.
 
 BEGIN;
-DROP POLICY IF EXISTS recipes_select ON public.recipes;
-DROP POLICY IF EXISTS "Zichtbare receptfotos lezen" ON public.recipe_photos;
-DROP POLICY IF EXISTS recipe_photos_read_zichtbaar ON storage.objects;
-DROP INDEX IF EXISTS public.recipes_image_url_idx;
-DROP INDEX IF EXISTS public.recipe_photos_path_idx;
 DROP POLICY IF EXISTS "aankopen_select_own" ON public.aankopen;
 DROP POLICY IF EXISTS "app_errors_eigen_of_admin_select" ON public.app_errors;
 DROP POLICY IF EXISTS "credit_transactions_own" ON public.credit_transactions;
@@ -70,14 +65,8 @@ CREATE POLICY "model_prices_admin_select" ON public.model_prices AS PERMISSIVE F
   USING (is_admin(auth.uid()));
 CREATE POLICY "eigen meldingen lezen" ON public.notification_log AS PERMISSIVE FOR SELECT TO authenticated
   USING (((auth.uid() = user_id) OR is_admin(auth.uid())));
-CREATE POLICY "recipe_photos_read" ON storage.objects AS PERMISSIVE FOR SELECT TO authenticated
-  USING ((bucket_id = 'recipe-photos'::text));
 CREATE POLICY "platform_settings_read_public_keys" ON public.platform_settings AS PERMISSIVE FOR SELECT TO authenticated
   USING (((key = ANY (ARRAY['betalen_actief'::text, 'gratis_gerechten'::text, 'pakket_gerechten'::text, 'pakket_prijs_cent'::text, 'betaalmodel'::text])) OR is_admin(auth.uid())));
-CREATE POLICY "Zichtbare receptfotos lezen" ON public.recipe_photos AS PERMISSIVE FOR SELECT TO authenticated
-  USING ((EXISTS ( SELECT 1 FROM recipes WHERE (recipes.id = recipe_photos.recipe_id))));
-CREATE POLICY "recipes_select" ON public.recipes AS PERMISSIVE FOR SELECT TO authenticated
-  USING ((deleted_at IS NULL));
 CREATE POLICY "everyone reads published content" ON public.site_content AS PERMISSIVE FOR SELECT TO anon, authenticated
   USING ((published OR is_admin(auth.uid())));
 CREATE POLICY "admins read usage" ON public.usage_events AS PERMISSIVE FOR SELECT TO authenticated

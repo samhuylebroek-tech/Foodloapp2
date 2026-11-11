@@ -17,25 +17,46 @@ import { fileURLToPath } from "node:url";
 
 const HIER = path.dirname(fileURLToPath(import.meta.url));
 const VOORSTEL = path.resolve(HIER, "../../docs/foodloapp-v2/migratie-voorstel");
-const UP = path.join(VOORSTEL, "0002_rollen_en_rls.up.sql");
-const HEEN_TERUG = path.join(mkdtempSync(path.join(tmpdir(), "rls-")), "heen-terug.sql");
-writeFileSync(
-  HEEN_TERUG,
-  readFileSync(UP, "utf8") +
-    "\n" +
-    readFileSync(path.join(VOORSTEL, "0002_rollen_en_rls.down.sql"), "utf8"),
-);
+const lees = (n) => readFileSync(path.join(VOORSTEL, n), "utf8");
+const MAP = mkdtempSync(path.join(tmpdir(), "rls-"));
+const schrijf = (naam, delen) => {
+  const p = path.join(MAP, naam);
+  writeFileSync(p, delen.map(lees).join("\n"));
+  return p;
+};
+// 0002a: basislijn recepten/foto's (alleen nieuwe omgevingen; productie heeft dit al).
+// 0002: beheerdersrechten, feedback, is_admin, claim_first_admin.
+const BASIS = schrijf("basis.sql", ["0002a_basislijn_recepten_fotos.up.sql"]);
+const BEHEER = schrijf("beheer.sql", ["0002_rollen_en_rls.up.sql"]);
+const SAMEN = schrijf("samen.sql", [
+  "0002a_basislijn_recepten_fotos.up.sql",
+  "0002_rollen_en_rls.up.sql",
+]);
+const HEEN_TERUG = schrijf("heen-terug.sql", [
+  "0002a_basislijn_recepten_fotos.up.sql",
+  "0002_rollen_en_rls.up.sql",
+  "0002_rollen_en_rls.down.sql",
+  "0002a_basislijn_recepten_fotos.down.sql",
+]);
 
 const gevallen = [
-  ["rls-recepten.mjs", null, 1, "huidig: BUG-105/106 aanwezig"],
-  ["rls-beheer.mjs", null, 1, "huidig: BUG-097/S7/S8 aanwezig (toekomstscenario teamleden)"],
-  ["rls-gezin.mjs", null, 0, "huidig: gezinsrechten correct"],
-  ["rls-recepten.mjs", UP, 0, "voorstel: recepten en foto's veilig"],
-  ["rls-beheer.mjs", UP, 0, "voorstel: beheer, feedback, is_admin veilig"],
-  ["rls-gezin.mjs", UP, 0, "voorstel: gezinsrechten ongewijzigd"],
-  ["rls-recepten.mjs", HEEN_TERUG, 1, "heen+terug: zelfde stand als nu"],
-  ["rls-beheer.mjs", HEEN_TERUG, 1, "heen+terug: zelfde stand als nu"],
-  ["rls-gezin.mjs", HEEN_TERUG, 0, "heen+terug: zelfde stand als nu"],
+  ["rls-recepten.mjs", null, 1, "repo-migraties: BUG-105/106 aanwezig (productie heeft dit NIET)"],
+  [
+    "rls-beheer.mjs",
+    null,
+    1,
+    "repo-migraties: BUG-097/S7/S8 aanwezig (toekomstscenario teamleden)",
+  ],
+  ["rls-gezin.mjs", null, 0, "repo-migraties: gezinsrechten correct"],
+  ["rls-recepten.mjs", BASIS, 0, "0002a basislijn: recepten en foto's veilig"],
+  ["rls-recepten.mjs", BEHEER, 1, "0002 alleen: raakt recepten/foto's niet (bewust)"],
+  ["rls-beheer.mjs", BEHEER, 0, "0002: beheer, feedback, is_admin veilig"],
+  ["rls-recepten.mjs", SAMEN, 0, "0002a + 0002: recepten en foto's veilig"],
+  ["rls-beheer.mjs", SAMEN, 0, "0002a + 0002: beheer veilig"],
+  ["rls-gezin.mjs", SAMEN, 0, "0002a + 0002: gezinsrechten ongewijzigd"],
+  ["rls-recepten.mjs", HEEN_TERUG, 1, "heen+terug: zelfde stand als de repo"],
+  ["rls-beheer.mjs", HEEN_TERUG, 1, "heen+terug: zelfde stand als de repo"],
+  ["rls-gezin.mjs", HEEN_TERUG, 0, "heen+terug: zelfde stand als de repo"],
   ["bewaartermijnen.mjs", null, 0, "voorstel 0003: opruiming, rechten, heen+terug"],
   ["verwijder-gezinseigenaar.mjs", null, 0, "verslag BUG-110/025 (rapporteert, faalt niet)"],
 ];
