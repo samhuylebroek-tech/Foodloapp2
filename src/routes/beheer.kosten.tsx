@@ -52,7 +52,9 @@ function KostenPagina() {
               key={b.waarde}
               onClick={() => setBereik(b.waarde)}
               className={`rounded-md px-3 py-1.5 text-sm ${
-                bereik === b.waarde ? "bg-emerald-500/20 text-emerald-300" : "text-slate-300 hover:bg-white/5"
+                bereik === b.waarde
+                  ? "bg-emerald-500/20 text-emerald-300"
+                  : "text-slate-300 hover:bg-white/5"
               }`}
             >
               {b.label}
@@ -67,41 +69,53 @@ function KostenPagina() {
         <div className="space-y-4">
           {data.alarm ? (
             <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-200">
-              De AI-kost van vandaag ({eur(data.alarm.kostVandaag, 4)}) ligt boven je grens van {eur(data.alarm.grens)}.
+              De AI-kost van vandaag ({eur(data.alarm.kostVandaag, 4)}) ligt boven je grens van{" "}
+              {eur(data.alarm.grens)}.
             </div>
           ) : null}
 
           <div className="grid gap-4 md:grid-cols-4">
             <Kaart>
-              <p className="text-xs uppercase tracking-wide text-slate-400">Totale kost ({data.dagen} d)</p>
+              <p className="text-xs uppercase tracking-wide text-slate-400">
+                Totale kost ({data.dagen} d)
+              </p>
               <p className="mt-1 text-2xl font-semibold">{eur(data.totaal.alles, 4)}</p>
               <p className="text-xs text-slate-400">{eur(data.totaal.perDag, 4)} per dag</p>
             </Kaart>
             <Kaart>
-              <p className="text-xs uppercase tracking-wide text-slate-400">AI (verbruik gemeten, prijs volgens prijslijst)</p>
+              <p className="text-xs uppercase tracking-wide text-slate-400">
+                AI (verbruik gemeten, prijs volgens prijslijst)
+              </p>
               <p className="mt-1 text-2xl font-semibold">{eur(data.totaal.ai, 4)}</p>
               <p className="text-xs text-slate-400">
                 {data.totaal.aiOproepen} oproepen · {data.totaal.cacheTreffers} uit cache
               </p>
             </Kaart>
             <Kaart>
-              <p className="text-xs uppercase tracking-wide text-slate-400">Hosting (handmatig ingesteld, geen factuur)</p>
+              <p className="text-xs uppercase tracking-wide text-slate-400">
+                Hosting (handmatig ingesteld, geen factuur)
+              </p>
               <p className="mt-1 text-2xl font-semibold">{eur(data.totaal.hosting, 4)}</p>
               <p className="text-xs text-slate-400">
-                {data.totaal.hostingCredits} credits · {data.instellingen.gratisCloud} gratis per maand
+                {data.totaal.hostingCredits} credits · {data.instellingen.gratisCloud} gratis per
+                maand
               </p>
             </Kaart>
             <Kaart>
-              <p className="text-xs uppercase tracking-wide text-slate-400">Per actieve gebruiker</p>
+              <p className="text-xs uppercase tracking-wide text-slate-400">
+                Per actieve gebruiker
+              </p>
               <p className="mt-1 text-2xl font-semibold">{eur(data.totaal.perGebruiker, 4)}</p>
-              <p className="text-xs text-slate-400">{data.totaal.actieveGebruikers} gebruikers met AI</p>
+              <p className="text-xs text-slate-400">
+                {data.totaal.actieveGebruikers} gebruikers met AI
+              </p>
             </Kaart>
           </div>
 
           {data.totaal.nietGemeten > 0 ? (
             <p className="text-xs text-slate-400">
-              {data.totaal.nietGemeten} AI-oproepen hebben geen token- of beeldtelling en tellen dus niet mee in de kost
-              (niet gemeten, niet gratis).
+              {data.totaal.nietGemeten} AI-oproepen hebben geen token- of beeldtelling en tellen dus
+              niet mee in de kost (niet gemeten, niet gratis).
             </p>
           ) : null}
 
@@ -126,7 +140,13 @@ function KostenPagina() {
                       <td className="py-2">{a.label}</td>
                       <td>{a.aantal}</td>
                       <td className="text-slate-400">{a.cache}</td>
-                      <td>{a.gemiddeld === null ? <span className="text-slate-500">niet gemeten</span> : eur(a.gemiddeld, 4)}</td>
+                      <td>
+                        {a.gemiddeld === null ? (
+                          <span className="text-slate-500">niet gemeten</span>
+                        ) : (
+                          eur(a.gemiddeld, 4)
+                        )}
+                      </td>
                       <td>{eur(a.kost, 4)}</td>
                       <td className="text-slate-400">{a.credits}</td>
                       <td className="text-slate-400">{a.creditPrijs ?? "—"}</td>
@@ -149,14 +169,19 @@ function KostenPagina() {
               <p className="mb-3 text-sm font-medium">Kost per gebruiker</p>
               <ul className="space-y-1 text-sm">
                 {data.gebruikers.map((u: any) => (
-                  <li key={u.user_id} className="flex justify-between gap-3 border-b border-white/5 py-1">
+                  <li
+                    key={u.user_id}
+                    className="flex justify-between gap-3 border-b border-white/5 py-1"
+                  >
                     <span>{u.naam}</span>
                     <span className="text-slate-400">
                       {u.aantal} acties · {u.credits} credits · {eur(u.kost, 4)}
                     </span>
                   </li>
                 ))}
-                {data.gebruikers.length === 0 ? <li className="text-slate-400">Nog niemand.</li> : null}
+                {data.gebruikers.length === 0 ? (
+                  <li className="text-slate-400">Nog niemand.</li>
+                ) : null}
               </ul>
             </Kaart>
 
@@ -197,8 +222,8 @@ function KostenPagina() {
               />
             </div>
             <p className="mt-3 text-xs text-slate-400">
-              Hosting is een ingestelde schatting, geen meting. AI-kosten komen uit de prijslijst hieronder en de
-              werkelijk verbruikte tokens en beelden.
+              Hosting is een ingestelde schatting, geen meting. AI-kosten komen uit de prijslijst
+              hieronder en de werkelijk verbruikte tokens en beelden.
             </p>
           </Kaart>
 
@@ -248,7 +273,15 @@ function Grafiek({ reeks }: { reeks: { dag: string; kost: number }[] }) {
   );
 }
 
-function Veld({ label, waarde, onBewaar }: { label: string; waarde: number; onBewaar: (v: number) => void }) {
+function Veld({
+  label,
+  waarde,
+  onBewaar,
+}: {
+  label: string;
+  waarde: number;
+  onBewaar: (v: number) => void;
+}) {
   const [v, setV] = useState(String(waarde));
   return (
     <label className="text-xs text-slate-400">
@@ -328,7 +361,9 @@ function Simulator({
         </div>
         <div>
           <p className="text-xs uppercase text-slate-400">In credits/maand</p>
-          <p className="text-xl font-semibold">{creditEur ? Math.round(perMaand / creditEur) : 0}</p>
+          <p className="text-xl font-semibold">
+            {creditEur ? Math.round(perMaand / creditEur) : 0}
+          </p>
         </div>
       </div>
       <p className="mt-3 text-xs text-slate-400">
@@ -340,7 +375,15 @@ function Simulator({
   );
 }
 
-function Getal({ label, waarde, zet }: { label: string; waarde: number; zet: (n: number) => void }) {
+function Getal({
+  label,
+  waarde,
+  zet,
+}: {
+  label: string;
+  waarde: number;
+  zet: (n: number) => void;
+}) {
   return (
     <label className="text-xs text-slate-400">
       {label}
