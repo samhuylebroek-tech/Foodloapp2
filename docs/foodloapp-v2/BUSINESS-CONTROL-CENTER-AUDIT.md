@@ -200,7 +200,7 @@ Getest in de demo (de nep-Supabase kent geen RLS, dus alleen de serverlaag is ge
 | BUG-094 | Hoog | "Betalingen actief" zonder provider blokkeert gebruikers | Opgelost en getest |
 | BUG-095 | Hoog* | Verplichte 2FA niet afgedwongen op de server | Goedkeuring nodig |
 | BUG-096 | Medium | Rollen onbruikbaar door de vaste eigenaar-ID; geen financiële rol | Productbeslissing |
-| BUG-097 | Hoog* | RLS: elke actieve beheerdersrij leest rechtstreeks `ai_usage`, `credit_transactions`, `user_credits`, `user_sessions`, … (ook analyst of alleen-lezen). `claim_first_admin()` laat de eerste gebruiker beheerder worden als de tabel leeg is | Goedkeuring nodig (migratie, G1) |
+| BUG-097 | Hoog* | RLS: elke actieve beheerdersrij leest rechtstreeks `ai_usage`, `credit_transactions`, `user_credits`, `user_sessions`, … (ook analyst of alleen-lezen). `claim_first_admin()`: correctie, volgens de repo niet aanroepbaar door gebruikers (SECURITY-AUDIT S6) | Goedkeuring nodig (migratie, G1) |
 | BUG-098 | Laag | Geen recht wordt getoond als een lege lijst | Open |
 | BUG-099 | Medium | "Resultaat" telt alleen AI-kosten; valuta worden opgeteld | Open |
 

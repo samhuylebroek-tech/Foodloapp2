@@ -58,7 +58,7 @@ Stand 2026-11-10. **Voorstel, niet uitgevoerd.** Er is niets gewijzigd aan een d
   - schrijven en wissen alleen in je eigen map.
 
   Er zitten bewust twee keuzes in:
-  - Geen `samen_in_groep`, omdat die de status negeert: ook openstaande uitnodigingen zouden dan kunnen lezen.
+  - Geen `samen_in_groep`. *Correctie 2026-11-11:* die controleert sinds migratie 0024 wél dat beide leden `actief` zijn (SECURITY-AUDIT §1). De expliciete join blijft bruikbaar, maar `samen_in_groep` zou ook volstaan.
   - Geen `::uuid`-cast op de mapnaam, omdat één ongeldige naam de hele query laat falen.
 - **Eerst op staging controleren (G1, schema-drift BUG-011):**
   1. Welke versie van `in_groep` draait in productie? Er bestaan twee definities in `drizzle/migrations`; controleer of die van productie op `status = 'actief'` test.
