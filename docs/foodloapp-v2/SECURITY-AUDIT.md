@@ -151,3 +151,23 @@ Commando: `PGLITE_DIR=<map> node tests/rls/alles.mjs` geeft 11/11 zoals verwacht
 - **RLS blijft de grens:** dit vangt alleen een te ruime regel op.
 
 **Rollenmatrix en team:** MIGRATIE-VOORSTEL-ROLLEN-RLS §5. **2FA:** 2FA-HERSTELPLAN.md.
+
+## 8. Live controle door de eigenaar (2026-11-11, alleen-lezen, Lovable Cloud → Database → Policies)
+| Onderdeel | Live (productie) | Repo-migraties (lokaal) |
+|---|---|---|
+| `recipes_select` | `(deleted_at IS NULL) AND has_share(user_id, auth.uid(), 'recipes_view')`: **in orde** | `deleted_at IS NULL`: te ruim |
+| Storage SELECT `recipe_photos_read` | eigen map OF gedeeld recept via `has_share`: **in orde** | hele bucket: te ruim |
+| Storage SELECT `recipe_photos_read_inspiratie` | actieve gebruiker + inspiratiefoto | idem |
+| Bucket `recipe-photos` | **Private** | n.v.t. |
+
+**Gevolgen:**
+- BUG-105 en BUG-106 bestaan live **niet**.
+- De repo beschrijft productie **niet** volledig (BUG-011 bevestigd).
+- Voorstel 0002 is gesplitst. `0002a` brengt alleen **nieuwe** omgevingen op het live niveau (nooit op productie). `0002` raakt recepten en foto's niet meer.
+- **Nog niet live gecontroleerd:**
+  - de 24 policies met `is_admin`;
+  - `feedback`;
+  - de rechten op `claim_first_admin`;
+  - de trigger `admin_users_only_owner`.
+
+  Dezelfde alleen-lezen weg kan dat tonen (Policies, filter Tables).
