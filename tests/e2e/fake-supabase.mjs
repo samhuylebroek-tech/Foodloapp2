@@ -293,6 +293,30 @@ const server = http.createServer((req, res) => {
       });
       return res.end(readFileSync(bestand));
     }
+    // Opslag (nep): bestanden staan als rijen { bucket_id, name } in de tabel "__opslag".
+    // list = de bestanden direct in een map; remove = wissen (zoals de Storage-API).
+    const lijst = url.pathname.match(/^\/storage\/v1\/object\/list\/([a-z-]+)$/);
+    if (lijst && req.method === "POST") {
+      const map = String(body?.prefix ?? "").replace(/\/$/, "");
+      const alle = db.t("__opslag").filter((o) => o.bucket_id === lijst[1]);
+      const hier = alle
+        .filter((o) => o.name.startsWith(`${map}/`) && !o.name.slice(map.length + 1).includes("/"))
+        .map((o) => ({ name: o.name.slice(map.length + 1), id: o.name, metadata: {} }));
+      const van = Number(body?.offset ?? 0);
+      return stuur(res, 200, hier.slice(van, van + Number(body?.limit ?? 100)));
+    }
+    const wis = url.pathname.match(/^\/storage\/v1\/object\/([a-z-]+)$/);
+    if (wis && req.method === "DELETE") {
+      const paden = new Set(body?.prefixes ?? []);
+      const t = db.t("__opslag");
+      const weg = t.filter((o) => o.bucket_id === wis[1] && paden.has(o.name));
+      for (const o of weg) t.splice(t.indexOf(o), 1);
+      return stuur(
+        res,
+        200,
+        weg.map((o) => ({ name: o.name })),
+      );
+    }
     if (url.pathname.startsWith("/storage/v1/"))
       return stuur(res, 400, { error: "niet in nep-Supabase" });
     if (url.pathname.startsWith("/functions/v1/"))
