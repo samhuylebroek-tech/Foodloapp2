@@ -154,3 +154,7 @@ Laatste update: 2026-11-11 (release-readiness: fixes BUG-037/038/093/104/113–1
   - Playwright 0 (**354 geslaagd**, 107 bewust overgeslagen, 0 flaky, 0 mislukt);
   - RLS **18/18**.
   - De eerste run op `db2384b` faalde: `reis-modules` in alle 4 projecten, door een oude aanvulstand na "Kook vanavond". Opgelost in `1220dbb`.
+- 2026-11-11 (productronde): verse clone van `73e1e9d`, `CI=true`:
+  - install, typecheck, unittests **560/560**, lint-ratchet en build: alle 0;
+  - Playwright 0 (**377 geslaagd**, 0 mislukt, 0 flaky, 135 overgeslagen: 107 zoals vroeger + 28 tutorialopnames die alleen met `OPNAME=1` draaien);
+  - RLS **19/19**.
