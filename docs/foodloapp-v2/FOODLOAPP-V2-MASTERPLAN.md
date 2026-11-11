@@ -776,3 +776,39 @@ Alle tests draaien in Chromium-emulatie, niet op een echt toestel.
   - echte toestellen, schermlezer en WebKit;
   - RLS en realtime (staging);
   - of productie de foutmelding "Je rol heeft dit recht niet." ongewijzigd doorgeeft (de dev-server doet dat wel).
+
+## 22. Security- en AVG-verificatie, fase 1 (2026-11-11)
+**Documenten:**
+- SECURITY-AUDIT §7;
+- AVG-AUDIT §7–§10;
+- MIGRATIE-VOORSTEL-ROLLEN-RLS.md (inclusief rollenmatrix);
+- 2FA-HERSTELPLAN.md;
+- bugregister BUG-025/026/095/097/103/105–112.
+
+**Gedaan zonder databankwijziging of productieverbinding:**
+- **Lokale PostgreSQL (PGlite) uit alle 64 migraties.**
+  - BUG-105 (recepten) en BUG-106 (foto's) zijn **lokaal bewezen**.
+  - Voorstel 0002 dicht ze, en heen + terug geeft een volledig identieke stand.
+  - Productie zelf is **niet** gecontroleerd; daarvoor bestaat een alleen-lezen query in SECURITY-AUDIT §6.
+- **Tweede verdedigingslaag in de app** voor recepten (9 queries + detailpagina), volledige AVG-export, zelf gehoste lettertypen en afgeronde locatie.
+- **Nieuwe tests:**
+  - databank: `tests/rls/*`, 11 varianten;
+  - E2E: directe API, accountverwijdering, export, zichtbaarheid en privacy;
+  - unit: export, eigenaars, locatie.
+- **Bewust nog open, en vastgelegd als `test.fail`:** 2FA (BUG-095) en de foto-opruiming (BUG-025).
+
+**Volledige regressie** (verse clone van `d2bbcb0`, `CI=true`):
+
+| install | tsc | vitest | lint-ratchet (t.o.v. `77ca00d`) | build | Playwright | RLS (`tests/rls/alles.mjs`) |
+|---|---|---|---|---|---|---|
+| 0 | 0 | 0 (496/496) | 0 | 0 | **0**: 306 geslaagd (waarvan 4 bewust "verwacht falend"), 0 flaky, 0 mislukt, 107 overgeslagen | **0**: 11/11 zoals verwacht |
+
+- **Overgeslagen (107), allemaal bewust:** 30 auditvarianten (`AUDIT=1`), 67 schermafdruk-specs (`SCHERMEN=1`), 10 persona's op een niet-bedoelde breedte.
+- **Tussenstap:** commit `aa00982` faalde op de lint-ratchet (opmaak in `recepten.$id.tsx`). Hersteld in `ed7b453`, zonder gedragswijziging.
+
+**Toestemming nodig:** zie §15 en het rapport bij deze fase. Kort:
+- alleen-lezen controle van productie;
+- staging;
+- migraties 0002 en 0003;
+- het 2FA-herstelplan en daarna de afdwinging;
+- beslissingen over BUG-110, BUG-112, de foto-opruiming, wat er wel of niet in de export komt, en de bewaartermijnen.
