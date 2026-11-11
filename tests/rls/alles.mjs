@@ -72,6 +72,7 @@ const gevallen = [
   ["rls-gezin-privacy.mjs", BASIS, 1, "0002a: alleen voorraad + weekmenu (BUG-119) open"],
   ["rls-gezin-privacy.mjs", PRIVE, 0, "0002a + 0004: alleen de gedeelde voorraad (BUG-112)"],
   ["rls-gezin-privacy.mjs", PRIVE_HT, 1, "0004 heen+terug: weekmenu weer leesbaar"],
+  ["bewaartermijnen-inhoud.mjs", null, 0, "voorstel 0003b: inhoud en contact, heen+terug"],
   ["bewaartermijnen.mjs", null, 0, "voorstel 0003: opruiming, rechten, heen+terug"],
   ["verwijder-gezinseigenaar.mjs", null, 0, "verslag BUG-110/025 (rapporteert, faalt niet)"],
 ];
