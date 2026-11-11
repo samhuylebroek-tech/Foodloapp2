@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { begrensdeLijst } from "@/lib/zod-hulp";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { alleRijen } from "@/lib/pagineer";
 
 // ============================================================
 // Admin API — aparte autorisatielaag boven dezelfde backend.
@@ -382,11 +383,9 @@ export const adminDashboard = createServerFn({ method: "GET" })
       tel("ai_events", (q) => q.gte("created_at", sinds).eq("ok", false)),
     ]);
 
-    const { data: aiRijen } = await db
-      .from("ai_events")
-      .select("created_at, ok, duration_ms")
-      .gte("created_at", sinds)
-      .limit(5000);
+    const { data: aiRijen } = await alleRijen(
+      db.from("ai_events").select("created_at, ok, duration_ms").gte("created_at", sinds).order("id"),
+    );
 
     const gem =
       aiRijen && aiRijen.length
@@ -394,21 +393,17 @@ export const adminDashboard = createServerFn({ method: "GET" })
         : 0;
 
     const buckets = maakBuckets(periode);
-    const { data: groei } = await pasWie(
-      db.from("recipes").select("created_at").gte("created_at", sinds).order("created_at").limit(20000),
-      "user_id",
-      wie,
+    const { data: groei } = await alleRijen(
+      pasWie(db.from("recipes").select("created_at").gte("created_at", sinds).order("id"), "user_id", wie),
     );
-    const { data: nieuweLeden } = await pasWie(
-      db.from("profiles").select("created_at").gte("created_at", sinds).limit(20000),
-      "id",
-      wie,
+    const { data: nieuweLeden } = await alleRijen(
+      pasWie(db.from("profiles").select("created_at").gte("created_at", sinds).order("id"), "id", wie),
     );
 
     const receptPer = new Map(buckets.map((b) => [b.key, 0]));
     const gebruikerPer = new Map(buckets.map((b) => [b.key, 0]));
     for (const r of groei ?? []) {
-      const k = bucketKey(periode, String(r.created_at));
+      const k = bucketKey(periode, String((r as { created_at: string }).created_at));
       if (receptPer.has(k)) receptPer.set(k, (receptPer.get(k) ?? 0) + 1);
     }
     for (const r of nieuweLeden ?? []) {
@@ -685,7 +680,9 @@ export const adminTaxonomie = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { db } = await bewaker(context as Ctx, "content.manage");
-    const { data: rijen } = await db.from("recipes").select("category, tags").is("deleted_at", null).limit(5000);
+    const { data: rijen } = await alleRijen(
+      db.from("recipes").select("category, tags").is("deleted_at", null).order("id"),
+    );
     const cats = new Map<string, number>();
     const tags = new Map<string, number>();
     for (const r of rijen ?? []) {
@@ -999,11 +996,13 @@ export const adminAnalytics = createServerFn({ method: "GET" })
     const sinds = new Date(nu - duur).toISOString();
     const sindsVorig = new Date(nu - 2 * duur).toISOString();
 
-    const { data: events } = await db
-      .from("usage_events")
-      .select("event, path, user_id, created_at")
-      .gte("created_at", sindsVorig)
-      .limit(40000);
+    const { data: events } = await alleRijen(
+      db
+        .from("usage_events")
+        .select("event, path, user_id, created_at")
+        .gte("created_at", sindsVorig)
+        .order("id"),
+    );
     const alle = (events ?? []) as any[];
     const rijen = alle.filter((r) => String(r.created_at) >= sinds);
     const vorige = alle.filter((r) => String(r.created_at) < sinds);
@@ -1039,7 +1038,9 @@ export const adminAnalytics = createServerFn({ method: "GET" })
       [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([naam, aantal]) => ({ naam, aantal }));
 
     const { count: gebruikers } = await db.from("profiles").select("*", { count: "exact", head: true });
-    const { data: recepten } = await db.from("recipes").select("user_id").is("deleted_at", null).limit(20000);
+    const { data: recepten } = await alleRijen(
+      db.from("recipes").select("user_id").is("deleted_at", null).order("id"),
+    );
     const makers = new Set((recepten ?? []).map((r: any) => r.user_id));
 
     return {

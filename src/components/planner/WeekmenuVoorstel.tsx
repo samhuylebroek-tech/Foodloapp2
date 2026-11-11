@@ -27,6 +27,7 @@ import { type WeekmenuInstelling, type DagVoorkeur } from "@/lib/voorkeuren";
 import { kiesUitEigen, type DagRegel, type Soortkeuze } from "@/lib/weekmenu-voorstel";
 import { datumTekst, labelVoor, kortLabel } from "./gedeeld";
 import { GerechtKaart } from "./ReceptKiezer";
+import { alleRijen } from "@/lib/pagineer";
 
 export function ReceptFoto({
   url,
@@ -151,11 +152,11 @@ export function WeekmenuVoorstel({
   const { data: ingredienten = {} } = useQuery({
     queryKey: ["voorstel-ingredienten"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("recipe_ingredients")
-        .select("recipe_id, name")
-        .limit(5000);
-      if (error) throw error;
+      // Gepagineerd: wie 100 recepten heeft, zit al snel boven de 1000 ingrediënten.
+      const { data } = await alleRijen(
+        supabase.from("recipe_ingredients").select("recipe_id, name").order("id"),
+        20_000,
+      );
       const map: Record<string, string[]> = {};
       for (const i of data) {
         const id = i.recipe_id as string;

@@ -127,12 +127,12 @@ export const adminIntegraties = createServerFn({ method: "GET" })
         .order("created_at", { ascending: false })
         .limit(1),
     ]);
-    const { data: aiFouten } = await db
+    // Tellen in de databank, niet de rijen ophalen (die stoppen bij 1000).
+    const { count: aiFouten } = await db
       .from("ai_usage")
-      .select("id", { count: "exact", head: false })
+      .select("id", { count: "exact", head: true })
       .eq("ok", false)
-      .gte("created_at", new Date(Date.now() - 86400_000).toISOString())
-      .limit(1000);
+      .gte("created_at", new Date(Date.now() - 86400_000).toISOString());
     return [
       {
         naam: "AI (tekst & foto's)",
@@ -140,7 +140,7 @@ export const adminIntegraties = createServerFn({ method: "GET" })
         gekoppeld: env("LOVABLE_API_KEY"),
         laatste: laatsteAi?.[0]?.created_at ?? null,
         data: "AI-oproepen, tokens, kosten",
-        fouten: (aiFouten ?? []).length,
+        fouten: aiFouten ?? 0,
       },
       {
         naam: "E-mail (notify.foodloapp.com)",

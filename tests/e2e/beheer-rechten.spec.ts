@@ -4,7 +4,7 @@
  * - Meldingenbeheer loopt via dezelfde bewaker als de rest (BUG-090).
  * - "Betalingen actief" kan niet aan zonder betaalprovider (BUG-094).
  */
-import { expect, meldAan, resetDemo, seedDb, test, zetKlok } from "./helpers";
+import { expect, meldAan, nepDb, resetDemo, seedDb, test, zetKlok } from "./helpers";
 import { EIGENAAR } from "./beheer-paden";
 
 async function alsRol(role: string) {
@@ -114,5 +114,29 @@ test("CSV-export Gebruikers: volledig gepagineerd en veilig tegen formules", asy
   const inhoud = readFileSync(await bestand.path(), "utf8");
   expect(inhoud).toContain("id;naam;lid_sinds;geblokkeerd");
   expect(inhoud).toContain(`"'=HYPERLINK(""x"")"`);
+  void extern;
+});
+
+test("BUG-093: een melding aan iedereen telt alle gebruikers, ook boven 1000", async ({
+  page,
+  extern,
+}) => {
+  await alsRol("super_admin");
+  // 1500 verzonnen profielen. Echte Supabase (en sinds nu ook de nep) geeft max. 1000 rijen
+  // per verzoek: zonder paginering zou "Ontvangers" op 1000 blijven steken.
+  await seedDb({
+    profiles: Array.from({ length: 1500 }, (_, i) => ({
+      id: `cccccccc-0000-4000-8000-${String(i).padStart(12, "0")}`,
+      display_name: `Testgebruiker ${i}`,
+      created_at: "2026-10-01T10:00:00Z",
+      blocked_at: null,
+    })),
+  });
+  const verwacht = ((await nepDb())["profiles"] ?? []).filter((p) => p["blocked_at"] == null).length;
+  expect(verwacht).toBeGreaterThan(1500);
+  await zetKlok(page, 14);
+  await meldAan(page, EIGENAAR);
+  await page.goto("/beheer/communicatie");
+  await expect(page.getByText(`Ontvangers: ${verwacht}`)).toBeVisible();
   void extern;
 });

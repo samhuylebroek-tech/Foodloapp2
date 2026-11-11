@@ -18,3 +18,18 @@ export async function pagineer<T = unknown>(
   }
   return { data: uit, afgekapt: true };
 }
+
+/**
+ * Zelfde als `pagineer`, maar voor een al opgebouwde (gefilterde, geordende) Supabase-query:
+ * `alleRijen(db.from("x").select("a").gte("dag", van).order("id"))`. Geeft `{ data, error }`
+ * terug zoals een gewone query, zodat bestaande code ongewijzigd blijft. De query moet een
+ * vaste volgorde hebben (`.order(...)` op een unieke kolom), anders kan een rij op de grens
+ * van twee pagina's dubbel of niet meetellen.
+ */
+export async function alleRijen<R>(
+  q: { range: (van: number, tot: number) => PromiseLike<{ data: R[] | null; error: unknown }> },
+  max = 200_000,
+): Promise<{ data: R[]; error: null; afgekapt: boolean }> {
+  const { data, afgekapt } = await pagineer<R>((van, tot) => q.range(van, tot), max);
+  return { data, error: null, afgekapt };
+}
