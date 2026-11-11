@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { EIGENAAR_NIET_VERWIJDEREN, isEigenaar } from "@/lib/eigenaar";
 
 /**
  * Verwijdert het eigen account en alle eigen gegevens (verplicht door Apple en Google).
@@ -18,6 +19,7 @@ export const verwijderMijnAccount = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { draagGezinnenOver, ruimFotosOp } = await import("@/lib/account-opruimen.server");
     const mislukt = "Je account kon niet verwijderd worden. Probeer later opnieuw.";
+    if (isEigenaar(context.userId)) throw new Error(EIGENAAR_NIET_VERWIJDEREN);
 
     try {
       await draagGezinnenOver(supabaseAdmin, context.userId);

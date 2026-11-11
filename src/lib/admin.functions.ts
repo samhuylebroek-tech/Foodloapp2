@@ -3,6 +3,7 @@ import { z } from "zod";
 import { begrensdeLijst } from "@/lib/zod-hulp";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { alleRijen } from "@/lib/pagineer";
+import { EIGENAAR_ID, EIGENAAR_NIET_VERWIJDEREN, isEigenaar } from "@/lib/eigenaar";
 
 // ============================================================
 // Admin API — aparte autorisatielaag boven dezelfde backend.
@@ -89,10 +90,8 @@ export function heeftRecht(profiel: AdminProfiel | null, recht: Rechten): boolea
 
 type Ctx = { supabase: any; userId: string; claims?: any };
 
-// Het Control Center is uitsluitend voor de eigenaar van het platform.
-// Deze vaste controle staat los van de database: zelfs als er iemand in
-// admin_users zou belanden, krijgt die geen toegang.
-export const EIGENAAR_ID = "e11454f4-8b82-4b7a-81a4-4c161b3b222d";
+// Vaste eigenaar-ID: zie lib/eigenaar.ts (ook gebruikt door accountverwijdering).
+export { EIGENAAR_ID };
 
 const SCHRIJFRECHTEN: Rechten[] = [
   "users.manage",
@@ -613,9 +612,19 @@ export const adminVerwijderGebruiker = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { db, profiel } = await bewaker(context as Ctx, "users.delete");
     if (data.bevestiging !== "VERWIJDER") throw new Error("Bevestiging klopt niet.");
+    if (isEigenaar(data.id)) throw new Error(EIGENAAR_NIET_VERWIJDEREN);
+    // Zelfde volgorde als zelf verwijderen (BUG-110/025): eerst gezinnen overdragen, dan het
+    // account, dan foto's die niemand anders nog gebruikt.
+    const { draagGezinnenOver, ruimFotosOp } = await import("@/lib/account-opruimen.server");
+    await draagGezinnenOver(db, data.id);
     await logboek(db, profiel, "privacy.delete_account", "user", data.id);
     const { error } = await db.auth.admin.deleteUser(data.id);
     if (error) throw new Error(error.message);
+    try {
+      await ruimFotosOp(db, data.id);
+    } catch (e) {
+      console.error("foto-opruiming na verwijdering door beheer mislukt", e instanceof Error ? e.message : "onbekend");
+    }
     return { ok: true };
   });
 

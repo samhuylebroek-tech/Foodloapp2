@@ -202,7 +202,19 @@ function Gebruikers() {
                       gekozen === r.id ? "bg-emerald-500/10" : ""
                     }`}
                   >
-                    <td className="py-2">{r.display_name || "(geen naam)"}</td>
+                    <td className="py-2">
+                      <button
+                        type="button"
+                        aria-pressed={gekozen === r.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setGekozen(r.id);
+                        }}
+                        className="rounded text-left hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+                      >
+                        {r.display_name || "(geen naam)"}
+                      </button>
+                    </td>
                     <td className="text-slate-400">{new Date(r.created_at).toLocaleDateString("nl-BE")}</td>
                     <td>
                       {r.blocked_at ? (
@@ -456,6 +468,7 @@ function Gebruikers() {
                     value={bevestig}
                     onChange={(e) => setBevestig(e.target.value)}
                     placeholder="VERWIJDER"
+                    aria-label="Typ VERWIJDER om het account te verwijderen"
                     className="border-white/10 bg-slate-950 text-slate-100"
                   />
                   <Button
