@@ -1,6 +1,6 @@
 /**
  * Mobiele kwaliteit, aanvullend op mobiel-breedtes.spec.ts:
- * - 320 px (kleinste gangbare breedte, iPhone SE 1e gen. / smalle Android) en 430 px;
+ * - 320 px (kleinste gangbare breedte, iPhone SE 1e gen. / smalle Android), 375 px en 430 px;
  * - grotere tekst (150 % en 200 %, zoals "Tekstgrootte" in Android-Chrome of tekstzoom);
  * - toetsenbord: zichtbare focus, dialoog sluit met Escape en focus keert terug.
  *
@@ -24,7 +24,16 @@ const KERN = [
   "/meer",
   "/instellingen",
   "/gezin",
+  // Onboarding en Help Center (2026-11-11)
+  "/hulp",
+  "/hulp/slim-aanvullen",
+  "/hulp/tutorials",
+  "/kennismaking",
+  "/eerste-stappen",
 ];
+
+// 16 schermen per test: ruimer dan de standaard 45 s.
+test.describe.configure({ timeout: 240_000 });
 
 test.beforeEach(async ({ page }) => {
   await resetDemo();
@@ -61,7 +70,7 @@ async function buitenBeeld(page: Page) {
   });
 }
 
-for (const breedte of [320, 430]) {
+for (const breedte of [320, 375, 430]) {
   test(`${breedte} px: kernschermen zonder horizontaal scrollen of afgesneden knoppen`, async ({
     page,
     extern,
