@@ -29,6 +29,7 @@ Stand 2026-11-11, branch `v2/dev` (lokaal, **niet gepusht, niet uitgerold**). Ge
 4. **De nieuwe privacycode** (gezin overdragen, foto's opruimen, export) is alleen lokaal getest, niet tegen de echte opslag.
 
 ## 3. Veilige stagingtest (voorbereid, niet uitgevoerd)
+> **Bijgewerkt 2026-11-11:** Lovable heeft Test en Live stopgezet en drafts delen de live-databank. Staging = een apart Lovable-project. Het actuele plan staat in [STAGING-PLAN-LOVABLE-CLOUD.md](STAGING-PLAN-LOVABLE-CLOUD.md).
 **Wat je zelf moet doen** (alleen jij kan dit):
 1. Een apart stagingproject aanmaken, **zonder echte gebruikersgegevens**.
 2. Het schema van live overnemen (alleen de structuur, geen inhoud).

@@ -28,7 +28,7 @@ Twee omgevingen, nooit verwarren:
 **Nu:**
 - geen voorkeuren per lid;
 - geen "wie kookt";
-- de voorraad blijft zichtbaar voor actieve leden, los van het deelrecht. Dat is BUG-112, een beslissing voor jou.
+- de voorraad blijft zichtbaar voor actieve leden, los van het deelrecht (BUG-112, beslist: zo laten; gecontroleerd dat er verder niets privé zichtbaar is, behalve BUG-119 → voorstel 0004).
 
 **Voorstel (migratie 0005):**
 - `member_preferences` (group_id, user_id, allergieen text[], lust_niet text[], dieet text null).
@@ -74,10 +74,16 @@ Twee omgevingen, nooit verwarren:
 - **Gedaan (BUG-093):** Finance, budgetrem, dagaggregatie, CSV-exports en de AVG-export pagineren voorbij 1 000 rijen.
 - **Gedaan (2026-11-11):** de ±27 dashboardqueries, de ontvangers van meldingen en het weekvoorstel halen nu alle rijen op (`alleRijen`, vaste volgorde). Ze zijn dus volledig.
 - **Nog open (kosten en snelheid):** sommige dashboards lezen ruwe rijen. Bij veel gebruikers worden dat veel verzoeken van 1 000 rijen. Voorstel: uit `daily_platform_stats` en `daily_user_stats` lezen (al per dag samengevat). Goedkoper en sneller.
-- **Dubbele verzoeken (BUG-118):** Vandaag haalt voorraad, lijst en weekmenu 2–3× op (Vandaag, aanvulkaart, kringloop). Voorstel: één gedeelde query voor die basisgegevens.
+- **Dubbele verzoeken (BUG-118, gedaan 2026-11-11):** Vandaag deelt de stand van Slim aanvullen via dezelfde cache: 35 → 24 verzoeken, 0 dubbel.
 - **Indexen (voorstel, op staging meten met `EXPLAIN`):**
   - `ai_usage(created_at)`, `usage_events(created_at)`, `user_sessions(last_seen_at)` (opruiming en dashboards);
   - `recipes(user_id, deleted_at)` (lijsten).
   - Basislijn 0002a voegt `recipes(image_url)` en `recipe_photos(path)` toe.
 - **Afbeeldingen:** foto's worden in de browser verkleind vóór upload (`photos.ts`). Voorstel: miniaturen (bv. 400 px) voor lijsten, via Supabase-transformaties (betaald op Pro, dus jouw beslissing) of een tweede kleine versie bij upload (gratis).
 - **AI-kosten:** maandbudget met rem (nu ook correct bij > 1 000 oproepen), cache per invoer, limieten per gebruiker in Beheer → Kosten.
+
+## 6. Smart Onboarding, Help Center en AI Content Manager (vaste vereiste)
+Volledig ontwerp en roadmap: [ONBOARDING-HELPCENTER-ONTWERP.md](ONBOARDING-HELPCENTER-ONTWERP.md).
+- **Bron van waarheid:** een functieregister in de code. Artikels verwijzen naar functies, zodat ontbrekende en verouderde uitleg automatisch opvalt.
+- **AI maakt alleen concepten.** Publiceren kan alleen een mens (`content.manage`). Gelogd en afgedwongen door de server.
+- **Eerst zonder databank:** H0–H3 (register, Help Center in de repo, oefeningen, automatische video's met Playwright). Tabellen (voorstel `0005`) pas na staging.

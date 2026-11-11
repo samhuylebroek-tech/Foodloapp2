@@ -852,3 +852,28 @@ Alles lokaal, niet gepusht, niet uitgerold. Overzicht voor de eigenaar: `RELEASE
 | 0 | 0 | 0 (527/527) | 0 | 0 | **0**: 339 geslaagd (waarvan 2 bewust "verwacht falend": 2FA), 0 flaky, 0 mislukt, 107 overgeslagen | **0**: 14/14 |
 
 - **Tussenstap:** de eerste ratchet-run na de functionele commits faalde (exit 1, alleen opmaak). Hersteld in 2 opmaakcommits, alleen op de gewijzigde regels.
+
+## 25. Beslissingen eigenaar en ontwikkelronde (2026-11-11)
+**Beslissingen:**
+- BUG-112: voorraad blijft zichtbaar voor het gezin.
+- BUG-118 en kleine UX-problemen: mogen opgelost worden.
+- 2FA, bewaartermijnen en staging: eerst onderzoeken, niets activeren.
+- Niet pushen.
+
+**Uitgevoerd (lokaal, `v2/dev`):**
+- BUG-112 gecontroleerd (alle 28 tabellen);
+- BUG-118 (35 → 24 verzoeken);
+- BUG-119 (voorstel 0004 en een compatibele app);
+- BUG-120;
+- BUG-121 (buitensluiten);
+- BUG-122;
+- BUG-123;
+- BUG-124.
+
+**Nieuwe documenten:**
+- [2FA-STAPPENPLAN-EIGENAAR.md](2FA-STAPPENPLAN-EIGENAAR.md);
+- [AVG-BEWAARTERMIJNEN-VOORSTEL.md](AVG-BEWAARTERMIJNEN-VOORSTEL.md);
+- [STAGING-PLAN-LOVABLE-CLOUD.md](STAGING-PLAN-LOVABLE-CLOUD.md);
+- [ONBOARDING-HELPCENTER-ONTWERP.md](ONBOARDING-HELPCENTER-ONTWERP.md).
+
+**Roadmap:** Smart Onboarding, Help Center en AI Content Manager (H0–H7) zijn een vaste productvereiste. Zie ARCHITECTUUR-VOORSTELLEN §6.
