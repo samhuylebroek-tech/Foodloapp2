@@ -9,8 +9,6 @@ import {
   Coins,
   CreditCard,
   Link2,
-
-
   FileClock,
   LifeBuoy,
   LineChart,
@@ -30,12 +28,21 @@ type Sectie = { label: string; icoon: typeof Users; subs: Sub[] };
 
 /** Zes hoofdsecties; alle bestaande schermen hangen eronder als tabbladen. */
 const SECTIES: Sectie[] = [
-  { label: "Overzicht", icoon: BarChart3, subs: [{ pad: "/beheer", label: "Overzicht", recht: "dashboard.view" }] },
+  {
+    label: "Overzicht",
+    icoon: BarChart3,
+    subs: [{ pad: "/beheer", label: "Overzicht", recht: "dashboard.view" }],
+  },
   {
     label: "Gebruikers",
     icoon: Users,
     subs: [
-      { pad: "/beheer/gebruikers", label: "Alle gebruikers", recht: "users.view", ook: ["/beheer/gebruiker/", "/beheer/ui/gebruiker"] },
+      {
+        pad: "/beheer/gebruikers",
+        label: "Alle gebruikers",
+        recht: "users.view",
+        ook: ["/beheer/gebruiker/", "/beheer/ui/gebruiker"],
+      },
       { pad: "/beheer/groepen", label: "Gezinnen", recht: "users.view", ook: ["/beheer/ui/groep"] },
       { pad: "/beheer/ui/segmenten", label: "Segmenten", recht: "dashboard.view" },
       { pad: "/beheer/support", label: "Support", recht: "support.view" },
@@ -92,7 +99,10 @@ function scoor(pad: string, s: Sub): number {
   const kand = [s.pad, ...(s.ook ?? [])];
   let best = 0;
   for (const k of kand) {
-    const past = pad === k || pad.startsWith(k.endsWith("/") ? k : `${k}/`) || (k.endsWith("/") ? false : pad.startsWith(k) && k.includes("/ui/"));
+    const past =
+      pad === k ||
+      pad.startsWith(k.endsWith("/") ? k : `${k}/`) ||
+      (k.endsWith("/") ? false : pad.startsWith(k) && k.includes("/ui/"));
     if (past && k.length > best) best = k.length;
   }
   return best;
@@ -108,7 +118,19 @@ function actieveSub(pad: string): { sectie: Sectie; sub: Sub } | null {
   return best;
 }
 // ongebruikte iconen behouden voor compatibiliteit
-void [Bell, BookOpen, CreditCard, Link2, FileClock, LifeBuoy, LineChart, Lock, ShieldCheck, Sparkles, Tags];
+void [
+  Bell,
+  BookOpen,
+  CreditCard,
+  Link2,
+  FileClock,
+  LifeBuoy,
+  LineChart,
+  Lock,
+  ShieldCheck,
+  Sparkles,
+  Tags,
+];
 
 export function AdminShell({
   titel,
@@ -173,7 +195,9 @@ export function AdminShell({
                   key={s.label}
                   to={subs[0]!.pad}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] transition ${
-                    actief ? "bg-emerald-500/15 font-medium text-emerald-300" : "text-slate-300 hover:bg-white/5"
+                    actief
+                      ? "bg-emerald-500/15 font-medium text-emerald-300"
+                      : "text-slate-300 hover:bg-white/5"
                   }`}
                 >
                   <s.icoon className="size-4" />
@@ -218,7 +242,9 @@ export function AdminShell({
             <div className="flex flex-wrap items-center justify-between gap-3 pb-3">
               <div>
                 {huidig && huidig.sectie.label !== "Overzicht" ? (
-                  <p className="text-xs uppercase tracking-wide text-slate-500">{huidig.sectie.label}</p>
+                  <p className="text-xs uppercase tracking-wide text-slate-500">
+                    {huidig.sectie.label}
+                  </p>
                 ) : null}
                 <h1 className="text-xl font-semibold tracking-tight">{titel}</h1>
                 {omschrijving ? <p className="text-sm text-slate-400">{omschrijving}</p> : null}
@@ -267,7 +293,9 @@ export function AdminShell({
 
 export function Kaart({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`rounded-xl border border-white/10 bg-slate-900/60 p-4 ${className}`}>{children}</div>
+    <div className={`rounded-xl border border-white/10 bg-slate-900/60 p-4 ${className}`}>
+      {children}
+    </div>
   );
 }
 
@@ -325,7 +353,11 @@ export function PeriodeKiezer({
   onKies: (p: Periode) => void;
 }) {
   return (
-    <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1" role="group" aria-label="Tijdsperiode">
+    <div
+      className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1"
+      role="group"
+      aria-label="Tijdsperiode"
+    >
       {PERIODES.map((p) => (
         <button
           key={p.waarde}
@@ -333,7 +365,9 @@ export function PeriodeKiezer({
           onClick={() => onKies(p.waarde)}
           aria-pressed={waarde === p.waarde}
           className={`rounded-full px-3 py-1.5 text-sm transition ${
-            waarde === p.waarde ? "bg-emerald-500/20 text-emerald-300" : "text-slate-300 hover:bg-white/5"
+            waarde === p.waarde
+              ? "bg-emerald-500/20 text-emerald-300"
+              : "text-slate-300 hover:bg-white/5"
           }`}
         >
           {p.label}
@@ -396,7 +430,9 @@ export function WieKiezer({
               <button
                 key={m.k}
                 type="button"
-                onClick={() => onKies({ wieModus: m.k, wieIds: m.k === "alles" ? [] : waarde.wieIds })}
+                onClick={() =>
+                  onKies({ wieModus: m.k, wieIds: m.k === "alles" ? [] : waarde.wieIds })
+                }
                 className={`flex-1 rounded-full px-2 py-1 text-xs ${
                   waarde.wieModus === m.k ? "bg-emerald-500/20 text-emerald-300" : "text-slate-300"
                 }`}
@@ -425,5 +461,3 @@ export function WieKiezer({
     </div>
   );
 }
-
-

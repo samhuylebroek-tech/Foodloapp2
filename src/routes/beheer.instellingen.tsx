@@ -27,7 +27,10 @@ function Instellingen() {
   const qc = useQueryClient();
   const lezenFn = useServerFn(adminInstellingen);
   const zetFn = useServerFn(adminInstellingZetten);
-  const { data, isLoading } = useQuery({ queryKey: ["admin-instellingen"], queryFn: () => lezenFn() });
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-instellingen"],
+    queryFn: () => lezenFn(),
+  });
   const [bericht, setBericht] = useState<string | null>(null);
 
   const zet = useMutation({
@@ -41,9 +44,12 @@ function Instellingen() {
 
   const rijen = (data ?? []) as { key: string; value: any }[];
   const vlaggen: Record<string, boolean> = Object.fromEntries(
-    rijen.filter((r) => r.key.startsWith("flag:")).map((r) => [r.key.slice(5), r.value === true || r.value === "true"]),
+    rijen
+      .filter((r) => r.key.startsWith("flag:"))
+      .map((r) => [r.key.slice(5), r.value === true || r.value === "true"]),
   );
-  const onderhoudsbericht = (rijen.find((r) => r.key === "onderhoudsbericht")?.value as string) ?? "";
+  const onderhoudsbericht =
+    (rijen.find((r) => r.key === "onderhoudsbericht")?.value as string) ?? "";
   const getal = (key: string, standaard: number) => {
     const v = rijen.find((r) => r.key === key)?.value;
     const n = typeof v === "number" ? v : Number(v);
@@ -126,11 +132,13 @@ function Instellingen() {
             </div>
             {!BETAALPROVIDER_GEKOPPELD ? (
               <p id="betalen-uitleg" className="mt-2 text-xs text-amber-200">
-                Kan pas aan als er een betaalprovider gekoppeld is. Anders kunnen gebruikers boven de
-                limiet geen recepten meer bewaren en ook geen pakket kopen.
+                Kan pas aan als er een betaalprovider gekoppeld is. Anders kunnen gebruikers boven
+                de limiet geen recepten meer bewaren en ook geen pakket kopen.
               </p>
             ) : null}
-            <label className="mt-4 block text-xs text-slate-400">Gratis gerechten per gebruiker</label>
+            <label className="mt-4 block text-xs text-slate-400">
+              Gratis gerechten per gebruiker
+            </label>
             <Input
               aria-label="Gratis gerechten per gebruiker"
               type="number"
