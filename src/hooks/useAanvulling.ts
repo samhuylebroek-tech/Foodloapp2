@@ -36,6 +36,14 @@ export function meldMetHerstel(tekst: string, herstel: Herstel, vernieuw: () => 
   });
 }
 
+/** Eén cachesleutel voor Slim aanvullen: de aanvulkaart en Vandaag delen zo dezelfde stand (BUG-118). */
+export function aanvullingQuery(userId: string) {
+  return {
+    queryKey: ["aanvulling", userId] as const,
+    queryFn: () => laadAanvulling(userId),
+  };
+}
+
 export function useAanvulling() {
   const { user } = useAuth();
   const vernieuw = useKringloopVernieuw();
@@ -43,7 +51,7 @@ export function useAanvulling() {
     queryKey: ["aanvulling", user?.id],
     enabled: !!user,
     staleTime: 20_000,
-    queryFn: () => laadAanvulling(user!.id),
+    queryFn: () => aanvullingQuery(user!.id).queryFn(),
   });
 
   async function zetOpLijst(gekozen: Set<string> | "alles") {

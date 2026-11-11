@@ -96,10 +96,26 @@ async function vindLijst(userId: string): Promise<string | null> {
   return data?.id ?? null;
 }
 
+/** Ruwe rijen die Slim aanvullen al las; Vandaag hergebruikt ze (BUG-118, geen dubbele verzoeken). */
+export type AanvullingRuw = {
+  voorraad: { id: string; naam: string; hoeveelheid: number | null; eenheid: string }[];
+  lijst: {
+    id: string;
+    name: string;
+    checked: boolean;
+    quantity: number | null;
+    unit: string | null;
+    recipe_id: string | null;
+  }[];
+  /** Recepten waarvan de ingrediënten gelezen zijn (ook als een recept er geen heeft). */
+  receptIds: string[];
+  ingredienten: { recipe_id: string; name: string; quantity: number | null; unit: string | null }[];
+};
+
 export async function laadAanvulling(
   userId: string,
   vandaag = lokaleDatum(),
-): Promise<{ listId: string | null; aanvulling: Aanvulling }> {
+): Promise<{ listId: string | null; aanvulling: Aanvulling; ruw: AanvullingRuw }> {
   // Alleen lezen: bekijken mag niets aanmaken. De lijst komt er pas bij het aanvullen.
   const listId = await vindLijst(userId);
   const [plan, later, voorraad, lijst] = await Promise.all([
@@ -140,6 +156,12 @@ export async function laadAanvulling(
     : [{ data: [] }, { data: [] }];
   return {
     listId,
+    ruw: {
+      voorraad: (voorraad.data ?? []) as AanvullingRuw["voorraad"],
+      lijst: (lijst.data ?? []) as AanvullingRuw["lijst"],
+      receptIds: ids,
+      ingredienten: (ingredienten.data ?? []) as AanvullingRuw["ingredienten"],
+    },
     aanvulling: berekenAanvulling({
       plan: plan.data ?? [],
       recepten: recepten.data ?? [],

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookOpen, CalendarDays, ChevronRight, Clock, Heart, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { zichtbareEigenaren } from "@/lib/zichtbare-eigenaren";
@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { NuKaart } from "@/components/vandaag/NuKaart";
 import { Daarna } from "@/components/vandaag/Daarna";
-import { useAanvulling } from "@/hooks/useAanvulling";
+import { aanvullingQuery, useAanvulling } from "@/hooks/useAanvulling";
 import { leesVoortgang } from "@/lib/kookstand";
 import { hoofdStap, signalen as signalenVan } from "@/lib/vandaag";
 import { laadVandaag } from "@/lib/vandaag-db";
@@ -154,11 +154,16 @@ function StartPage() {
   });
   // WP3: alles wat Vandaag moet weten (alleen lezen). Sleutel begint met "home-dagmenu",
   // zodat elke menu- of lijstwijziging (die dat ververst) ook deze stand ververst.
+  const qc = useQueryClient();
   const { data: stand, isLoading: standLaden } = useQuery({
     queryKey: ["home-dagmenu", "stand", user?.id, vandaag()],
     enabled: !!user,
     staleTime: 15_000,
-    queryFn: () => laadVandaag(user!.id, vandaag()),
+    queryFn: () =>
+      laadVandaag(user!.id, vandaag(), {
+        // Zelfde cache als de aanvulkaart: gelijktijdig = één verzoek; net ververst = hergebruikt.
+        aanvulling: () => qc.fetchQuery({ ...aanvullingQuery(user!.id), staleTime: 2_000 }),
+      }),
   });
   const aanvulling = useAanvulling();
   const [zetBezig, setZetBezig] = useState(false);

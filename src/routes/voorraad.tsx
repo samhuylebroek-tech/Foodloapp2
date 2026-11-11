@@ -161,7 +161,12 @@ function VoorraadPage() {
     );
   }, [recepten, ingredienten, voorraadNamen]);
 
-  const vernieuw = () => void qc.invalidateQueries({ queryKey: ["voorraad", user?.id] });
+  // Voorraad telt mee in Vandaag en Slim aanvullen: die mee verversen (anders tot 20 s verouderd).
+  const vernieuw = () => {
+    void qc.invalidateQueries({ queryKey: ["voorraad", user?.id] });
+    void qc.invalidateQueries({ queryKey: ["aanvulling"] });
+    void qc.invalidateQueries({ queryKey: ["home-dagmenu"] });
+  };
 
   const voegToe = async (regel = nieuw.trim()) => {
     if (!regel || !user) return;
@@ -243,6 +248,8 @@ function VoorraadPage() {
       const nieuwe = rijen.filter((_, i) => !dubbels.has(i));
       await voegToeAlsNieuw(user.id, listId, nieuwe);
       void qc.invalidateQueries({ queryKey: ["shopping"] });
+      void qc.invalidateQueries({ queryKey: ["aanvulling"] });
+      void qc.invalidateQueries({ queryKey: ["home-dagmenu"] });
       toast.success(
         nieuwe.length
           ? `${nieuwe.length} ${t(nieuwe.length === 1 ? "ding op je lijst gezet" : "dingen op je lijst gezet")}${
