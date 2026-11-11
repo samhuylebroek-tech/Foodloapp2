@@ -289,3 +289,29 @@ test("Control Center → Hulpinhoud: concepten zichtbaar als concept, supportvra
   await expect(page.locator('[data-groep="zonder-artikel"]')).toContainText("bitcoin");
   void extern;
 });
+
+test("afmelden wist dieet en allergieën van het toestel (gedeelde toestellen)", async ({
+  page,
+  extern,
+}) => {
+  await meldAan(page);
+  await page.addInitScript((id) => {
+    if (!window.sessionStorage.getItem("kennis-gezet")) {
+      window.sessionStorage.setItem("kennis-gezet", "1");
+      window.localStorage.setItem(
+        `foodlo:kennismaking:${id}`,
+        JSON.stringify({ allergieen: ["noten"] }),
+      );
+    }
+  }, MARIE);
+  await page.goto("/instellingen");
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("button", { name: "Afmelden" }).click();
+  await expect(page).toHaveURL(/\/aanmelden/);
+  await expect
+    .poll(() =>
+      page.evaluate((id) => window.localStorage.getItem(`foodlo:kennismaking:${id}`), MARIE),
+    )
+    .toBeNull();
+  void extern;
+});

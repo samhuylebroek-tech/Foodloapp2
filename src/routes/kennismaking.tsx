@@ -166,7 +166,7 @@ function KennismakingPagina() {
           <legend className="text-lg font-bold">Allergieën</legend>
           <p className="text-[0.95rem] text-muted-foreground">
             <Lock className="mr-1 inline size-4 align-[-2px]" aria-hidden />
-            Blijft alleen op dit toestel. Op een recept waarschuwt Foodlo als een ingrediënt
+            Blijft alleen op dit toestel en wordt gewist als je je afmeldt. Op een recept waarschuwt Foodlo als een ingrediënt
             mogelijk een allergeen bevat. Dat is een hulp, geen garantie: lees altijd het etiket.
           </p>
           <div className="flex flex-wrap gap-2">

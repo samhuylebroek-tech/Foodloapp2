@@ -81,3 +81,20 @@ export function naarWeekmenu(k: Kennismaking): Partial<WeekmenuInstelling> {
 export function korteRondleiding(k: Kennismaking): boolean {
   return k.ervaring === "graag";
 }
+
+/**
+ * Bij afmelden of verwijderen: alle kennismakingen van dit toestel wissen. Dieet en allergieën
+ * zijn gezondheidsgegevens; op een gedeeld toestel mogen ze niet blijven staan.
+ */
+export function wisAlleKennismakingen() {
+  try {
+    const weg: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (k?.startsWith("foodlo:kennismaking:")) weg.push(k);
+    }
+    for (const k of weg) window.localStorage.removeItem(k);
+  } catch {
+    /* niets */
+  }
+}

@@ -487,7 +487,7 @@ export const ARTIKELS: Artikel[] = [
     samenvatting:
       "Je kan bij de kennismaking allergieën aanduiden. Foodlo waarschuwt dan bij een recept als een ingrediënt mogelijk een allergeen bevat. Dat is een hulp, geen garantie.",
     stappen: [
-      "Je allergieën blijven alleen op dit toestel. Ze gaan niet naar je gezin of naar Foodlo.",
+      "Je allergieën blijven alleen op dit toestel. Ze gaan niet naar je gezin of naar Foodlo, en worden gewist als je je afmeldt.",
       "Op een recept zie je een waarschuwing als een ingrediënt mogelijk een allergeen bevat.",
       "Lees altijd zelf het etiket van een product. Foodlo kent niet elke samenstelling.",
     ],
