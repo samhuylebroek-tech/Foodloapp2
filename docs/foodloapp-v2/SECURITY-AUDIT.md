@@ -1,6 +1,6 @@
 # Security-audit Foodloapp V2: toegang, rollen en RLS
 
-Stand 2026-11-11, branch `v2/dev`, vanaf commit `01f85e0`. **Fase 1: inventaris en analyse.** Dit document wijzigt niets.
+Stand 2026-11-11, branch `v2/dev`. Fase 1 (inventaris) vanaf `01f85e0`; **fase 2 (verificatie, §7)** daarna. Er is geen databank gewijzigd en geen productieverbinding gemaakt.
 
 ## 0. Methode en grenzen
 - **Serverlaag:**
@@ -118,3 +118,36 @@ where schemaname in ('public','storage')
 order by tablename, policyname;
 ```
 Toont `recipes_select` alleen `(deleted_at IS NULL)`? Dan is S1 **live** en verdient het voorrang op al het andere.
+
+## 7. Fase 2: verificatie op een lokale PostgreSQL (2026-11-11)
+Testomgeving: PGlite 0.5.12 (PostgreSQL in WebAssembly, buiten de repo), opgebouwd uit **alle 64 migraties** (0 fouten), met een minimale Supabase-nabootsing (`tests/rls/supabase-nabootsing.sql`: rollen, `auth.uid()`, `storage.objects`, `storage.foldername`, `pgcrypto`, stubs voor cron en net, en de twee inspiratietabellen zonder `CREATE TABLE`, BUG-011).
+
+Commando: `PGLITE_DIR=<map> node tests/rls/alles.mjs` geeft 11/11 zoals verwacht.
+
+| Bevinding | Migraties tonen | Lokale PostgreSQL toont | Alleen productie kan bevestigen |
+|---|---|---|---|
+| **S1 / BUG-105** | `recipes_select` wordt `deleted_at IS NULL` | **Bewezen:** een gebruiker zonder band en een niet-actief uitgenodigde lezen het recept (titel, bereiding, bron) en de fotorij van een ander. Ingrediënten niet (eigen regel met `has_share`). Ook via de app: zonder het nieuwe filter toonden Keuken, Vandaag, de kiezer en de detailpagina zo'n recept (`recepten-zichtbaarheid.spec.ts` faalt op de oude code) | of productie dezelfde regel heeft |
+| **S2 / BUG-106** | `recipe_photos_read` = hele bucket | **Bewezen:** iedereen leest en somt alle objecten op, ook losse foto's. De beperking van 0046 wordt opgeheven door de OR met de brede regel | idem; plus of de bucket privé is |
+| **S4 / BUG-097** | 24 policies met `is_admin` (niet 15) | **Latent:** de trigger `admin_users_only_owner` (0008) weigert elke tweede beheerder, dus vandaag is alleen de eigenaar `is_admin`. Bewezen in het toekomstscenario (trigger uit, analist met alleen-lezen): die leest rechtstreeks AI-gebruik, credits, aankopen, sessies, gebeurtenissen, fouten, dagstatistieken, meldingen en het auditlog van anderen | of productie de trigger heeft |
+| S6 `claim_first_admin` | ingetrokken voor gebruikers | **Bewezen:** alleen `postgres` en `service_role`; geen afhankelijkheden | of productie dezelfde rechten heeft |
+| S7 `is_admin` | aanroepbaar door `authenticated` | **Bewezen** | – |
+| S8 `feedback` | FOR ALL eigen rij | **Bewezen:** een klant zet zijn eigen ticket op "opgelost" | – |
+| Gezinsrechten | `in_groep`, `samen_in_groep`, `groep_recht` controleren `actief` | **Correct:** uitgenodigd ziet niets; actief lid volgens de rechten per lid; rechten uitzetten werkt. **Ontwerpkeuze:** de voorraad (en het profiel) blijven zichtbaar voor actieve gezinsleden, ook als het deelrecht uit staat (`samen_in_groep`, niet per recht) | – |
+
+**Migratievoorstel 0002** (MIGRATIE-VOORSTEL-ROLLEN-RLS.md):
+- dicht S1, S2, S4, S6, S7 en S8;
+- 0 afwijkingen in alle drie de tests;
+- gezinsrechten ongewijzigd;
+- heen + terug geeft een stand die **volledig identiek** is aan nu (policies, functie- en tabelrechten).
+
+**Directe API (serverlaag, demo):** een opgenomen Finance-aanroep, opnieuw afgespeeld:
+- zonder token, als gewone gebruiker, met een verlopen token en met een vervalst token: **geweigerd**;
+- met een eigenaarstoken en `aal2`: **toegelaten**;
+- met `aal1` terwijl 2FA verplicht is: **toegelaten**. Dat is BUG-095, vastgelegd als `test.fail`.
+
+**Tweede verdedigingslaag (app):**
+- `zichtbare-eigenaren.ts` past dezelfde regel als `has_share` toe in Keuken, Vandaag, Week (kiezer, plan, voorstel), Ontdek, de duplicaatcontrole en de detailpagina;
+- de detailpagina toont "Dit recept is niet beschikbaar" in plaats van eindeloos te laden.
+- **RLS blijft de grens:** dit vangt alleen een te ruime regel op.
+
+**Rollenmatrix en team:** MIGRATIE-VOORSTEL-ROLLEN-RLS §5. **2FA:** 2FA-HERSTELPLAN.md.

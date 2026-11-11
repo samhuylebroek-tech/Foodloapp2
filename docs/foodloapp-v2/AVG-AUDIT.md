@@ -1,6 +1,6 @@
 # AVG-audit Foodloapp V2: inventaris van persoonsgegevens
 
-Stand 2026-11-11, branch `v2/dev`. **Fase 1: inventaris.** Er is niets gewijzigd.
+Stand 2026-11-11, branch `v2/dev`. Fase 1 (inventaris) en **fase 2 (verbeteringen en tests, §7–§10)**. Er is geen databank gewijzigd.
 
 **Bron:**
 - `src/integrations/supabase/types.ts` (50 tabellen);
@@ -68,3 +68,68 @@ Stand 2026-11-11, branch `v2/dev`. **Fase 1: inventaris.** Er is niets gewijzigd
 | Gezinsgegevens na verwijdering | 🟡 logica | ✓ cascade |
 | Toegangsrechten (RLS) | ✓ PGlite (databank) | ✓ incl. Storage |
 | Auditlog wordt geschreven | ✓ | ✓ trigger `block_audit_mutation` |
+
+## 7. Fase 2: uitgevoerd en getest (lokaal)
+| Onderwerp | Wat | Bewijs |
+|---|---|---|
+| Export (BUG-026/103) | Eén gedeelde, volledige export voor gebruiker en beheer (`avg-export.server.ts`): 32 secties (profiel, recepten, ingrediënten, foto's als paden, versies, beoordelingen, favorieten, imports, weekmenu, lijsten, historiek, vaste boodschappen, voorraad, gezinnen, lidmaatschappen, deelrechten, kaarten, scans, meldingen, toestellen, credits, boekingen, aanvragen, aankopen, AI-gebruik, feedback, sessies, gebeurtenissen, dagstatistieken, fouten). Elke query filtert op de gebruiker of op diens eigen recept-id's, alles gepagineerd | `avg-export.test.ts` (5: secties, filter op elke query, niets van een ander, geheimen weg, 1 205 recepten volledig); `avg-export.spec.ts` (download via Instellingen, niets van een vreemde) |
+| Bewust **niet** in de export (beslissing eigenaar) | kaartnummer, push-sleutels en endpoint (geheimen in een gedownload bestand); `admin_note`; interne kostprijs `kost_eur` | Ook als een laag de kolomkeuze negeert, worden ze eruit gefilterd (getest) |
+| Google Fonts (BUG-107) | Fraunces en Figtree zelf gehost (`@fontsource-variable` 5.3.0); Outfit was ongebruikt en is weg | `privacy.spec.ts`: 0 verzoeken naar Google, beide lettertypen geladen |
+| Locatie (BUG-108) | Afgerond op 2 decimalen (±1 km), ook een eerder bewaarde exacte positie | `weer-privacy.test.ts`. **Opgelet:** `haalWeer` wordt in V2 nergens aangeroepen; er gaat nu dus geen locatie naar Open-Meteo |
+| Accountverwijdering | De server wist alleen het eigen account (`/auth/v1/admin/users/<eigen id>`) | `account-verwijderen.spec.ts`; foto-opruiming als `test.fail` (BUG-025 open) |
+
+## 8. Bewaartermijnen (BUG-109): voorstel 0003, uitvoerbaar maar niet uitgevoerd
+| Gegevens | Termijn (voorstel) | Na de termijn |
+|---|---|---|
+| `usage_events`, `user_sessions`, `ai_events` | 13 maanden | wissen |
+| `app_errors`, `notification_log` | 6 maanden | wissen |
+| `daily_user_stats` | 25 maanden (jaarvergelijking) | wissen |
+| `admin_rate_limits` | 1 dag | wissen |
+| `ai_usage`, `recipe_import_jobs`, `loyalty_scan_events` | 13 maanden | **pseudonimiseren** (`user_id` leeg); kostentotalen blijven kloppen |
+| `admin_audit_log` | niet automatisch (gerechtvaardigd belang, onwijzigbaar) | termijn vastleggen in het privacybeleid (voorstel: 3 jaar, dan handmatig archiveren) |
+
+- **SQL:** `migratie-voorstel/0003_bewaartermijnen.{up,down}.sql`, met de functie `ruim_telemetrie_op()` (alleen `service_role`) en een wekelijkse pg_cron-taak.
+- **Test:** `tests/rls/bewaartermijnen.mjs`:
+  - alleen de oude rijen verdwijnen;
+  - de AI-kosten blijven € 0,03;
+  - een gewone gebruiker wordt geweigerd;
+  - terugdraaien verwijdert de functie.
+- **De termijnen zijn een voorstel; jij kiest.**
+
+## 9. Gezinseigenaar verwijdert zijn account (BUG-110): gemeten
+`tests/rls/verwijder-gezinseigenaar.mjs` (echte cascades, lokale PostgreSQL):
+
+| Onderdeel | Voor | Na | Gevolg |
+|---|---|---|---|
+| Gezin (`groups`) | 1 | 1 | Blijft bestaan, **zonder eigenaar** (`owner_id` heeft geen foreign key) |
+| Lidmaatschap van een ander lid | 1 | 1 | Lid zit in een gezin dat niemand nog kan beheren |
+| Gezinslijst | 1 | **0** | Verdwijnt (staat op naam van de eigenaar) |
+| Items die **een ander lid** op de gezinslijst zette | 1 | **0** | **Dataverlies voor een ander gezinslid** |
+| Gezinsweekmenu door een ander lid | 1 | 1 | Blijft (hangt aan een gezin zonder eigenaar) |
+| Deelrecht naar een vriend | 1 | 0 | Correct weg |
+| Recepten van de eigenaar | 1 | 0 | Correct weg |
+
+**Voorstel (ontwerpbeslissing, niet gebouwd):** vóór `deleteUser` in `verwijderMijnAccount`:
+1. is er een ander actief lid? Dan wordt het langst actieve lid eigenaar van het gezin en van de gezinslijst (`groups.owner_id`, `shopping_lists.user_id`). Beide krijgen een melding.
+2. Is er geen ander lid? Dan wordt het gezin gewist.
+
+Daarnaast een foreign key `groups.owner_id → auth.users` met `ON DELETE RESTRICT`, zodat het nooit meer stil gebeurt. Migratie, dus staging. **Vraagt jouw beslissing.**
+
+## 10. Foto's wissen zonder gedeelde inspiratiefoto's te breken (BUG-025): analyse
+**Gemeten:** na het verwijderen van de eigenaar
+- verwijzen `inspiration_recipes.image_url` en het recept van een ander gezinslid (bewaard uit Inspiratie) nog naar `{eigenaar}/lasagne.jpg`;
+- het bestand blijft staan.
+
+Een opruiming die blind `{eigenaar}/` wist, breekt dus de foto's van anderen.
+
+**Voorstel (twee fasen, zoals STAGING-VOORSTELLEN §3, nu met bewijs):**
+1. **Geen gedeelde paden meer:**
+   - bij "Bewaren uit Inspiratie" de foto server-side **kopiëren** naar `{eigen id}/…` (`storage.copy`);
+   - bestaande gedeelde verwijzingen eenmalig omzetten (script op staging).
+2. **Bij accountverwijdering**, per object in `{id}/`:
+   - wordt het nog gebruikt door `recipes.image_url` of `recipe_photos.path` van **iemand anders**, of door `inspiration_recipes.image_url`? Dan eerst kopiëren naar die eigenaar (of een `inspiratie/`-map) en de verwijzing bijwerken;
+   - daarna wissen via de Storage-API.
+   - Een log zonder persoonsgegevens (aantal gewist, aantal gekopieerd).
+3. **Test:** lokaal kan de referentieregel (welke paden in gebruik zijn) met PGlite getest worden; echt kopiëren en wissen kan alleen op staging.
+
+Fase 2 wist gegevens en vraagt **expliciet akkoord**. Er is niets gebouwd.

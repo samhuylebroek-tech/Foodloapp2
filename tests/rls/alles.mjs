@@ -36,6 +36,8 @@ const gevallen = [
   ["rls-recepten.mjs", HEEN_TERUG, 1, "heen+terug: zelfde stand als nu"],
   ["rls-beheer.mjs", HEEN_TERUG, 1, "heen+terug: zelfde stand als nu"],
   ["rls-gezin.mjs", HEEN_TERUG, 0, "heen+terug: zelfde stand als nu"],
+  ["bewaartermijnen.mjs", null, 0, "voorstel 0003: opruiming, rechten, heen+terug"],
+  ["verwijder-gezinseigenaar.mjs", null, 0, "verslag BUG-110/025 (rapporteert, faalt niet)"],
 ];
 
 let fout = 0;
