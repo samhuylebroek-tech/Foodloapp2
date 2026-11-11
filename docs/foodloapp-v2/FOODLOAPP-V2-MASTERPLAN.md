@@ -877,3 +877,14 @@ Alles lokaal, niet gepusht, niet uitgerold. Overzicht voor de eigenaar: `RELEASE
 - [ONBOARDING-HELPCENTER-ONTWERP.md](ONBOARDING-HELPCENTER-ONTWERP.md).
 
 **Roadmap:** Smart Onboarding, Help Center en AI Content Manager (H0–H7) zijn een vaste productvereiste. Zie ARCHITECTUUR-VOORSTELLEN §6.
+
+## 26. Productontwikkelingsronde (2026-11-11, vervolg)
+Stand per werkstroom (A–J) met labels: [PRODUCTRONDE-2026-11-11.md](PRODUCTRONDE-2026-11-11.md).
+
+**Gebouwd:**
+- Smart Onboarding: kennismaking, rondleiding van 10 stappen met hervatten, eerste stappen, Wegwijs-kaart en allergiewaarschuwing;
+- Help Center: zoeken, assistent op basis van de artikels, categorieën, veelgestelde vragen, probleemoplossing, contextuele hulp en support;
+- tutorials: script, storyboard, WebVTT en opnames;
+- Content Manager: controle tegen de code en Control Center → Hulpinhoud.
+
+**Voorgesteld:** 0003b (bewaartermijnen voor inhoud).

@@ -1,6 +1,6 @@
 # Smart Onboarding, Foodloapp Help Center en AI Content Manager: ontwerp
 
-Stand 2026-11-11. **Ontwerp en roadmap. Er is niets gebouwd** dat een nieuwe tabel of een externe dienst vraagt. Dit is een vaste productvereiste (beslissing eigenaar, 2026-11-11).
+Stand 2026-11-11 (bijgewerkt). **H0–H3 zijn gebouwd en lokaal getest** (zie PRODUCTRONDE-2026-11-11 §B–§C), zonder nieuwe tabel of externe dienst. H4–H7 zijn nog alleen voorgesteld. Dit is een vaste productvereiste (beslissing eigenaar, 2026-11-11).
 
 **Harde regel:** AI publiceert **nooit** zelf iets als officiële uitleg. Alles wat AI maakt, is een **concept** tot een mens het controleert en publiceert. Elke publicatie komt in het beheerderslogboek.
 
@@ -124,10 +124,10 @@ Er is geen knop "AI publiceert". De server weigert een publicatie zonder menseli
 ## 7. Roadmap
 | Fase | Wat | Afhankelijk van | Inspanning |
 |---|---|---|---|
-| H0 | Functieregister in de code + test "elke route staat erin" | geen | ½ dag |
-| H1 | Help Center met artikels **in de code** (Markdown in de repo), zoeken, categorieën, "?" per scherm, "Doe het nu", support | H0 | 2–3 dagen |
-| H2 | Onboarding: niveauvraag, oefeningen, voortgang (eerst lokaal op het toestel), "Ga verder"-kaart | H0 | 3 dagen |
-| H3 | Automatische video's en ondertitels met Playwright (lokaal), 5 kernartikels | H1 | 2 dagen |
+| H0 ✅ gebouwd | Functieregister in de code + test "elke route staat erin" | geen | ½ dag |
+| H1 ✅ gebouwd | Help Center met artikels **in de code** (Markdown in de repo), zoeken, categorieën, "?" per scherm, "Doe het nu", support | H0 | 2–3 dagen |
+| H2 ✅ gebouwd | Onboarding: niveauvraag, oefeningen, voortgang (eerst lokaal op het toestel), "Ga verder"-kaart | H0 | 3 dagen |
+| H3 ✅ gebouwd (opnames: proef) | Automatische video's en ondertitels met Playwright (lokaal), 5 kernartikels | H1 | 2 dagen |
 | H4 | Tabellen `0005` op staging: artikels in de databank, voortgang per account, workflow concept → gepubliceerd | staging, jouw akkoord | 3 dagen |
 | H5 | AI Content Manager: signaleren (zonder AI) → concepten (met AI, binnen budget) | H4 | 3–4 dagen |
 | H6 | Contextuele AI-assistent op gepubliceerde artikels | H4, budget | 2–3 dagen |
