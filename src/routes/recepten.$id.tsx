@@ -864,7 +864,7 @@ function ReceptPage() {
     <AppShell
       title={t(recipe.title)}
       action={
-        <div className="flex items-center">
+        <div className="flex flex-wrap items-center">
           <Button variant="ghost" size="icon" onClick={toggleFavorite} aria-label={t("Favoriet")}>
             <Heart className={isFavorite ? "fill-primary text-primary" : ""} />
           </Button>

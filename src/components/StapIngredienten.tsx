@@ -26,14 +26,15 @@ export function StapIngredienten({ ingredienten, factor, groot }: Props) {
             key={`${i.name}-${idx}`}
             className={
               groot
-                ? "inline-flex min-h-14 items-center gap-2 rounded-2xl bg-secondary px-4 py-2 text-xl"
-                : "inline-flex min-h-11 items-center gap-2 rounded-xl bg-secondary px-3 py-1.5 text-base"
+                ? "inline-flex min-h-14 max-w-full items-center gap-2 rounded-2xl bg-secondary px-4 py-2 text-xl"
+                : "inline-flex min-h-11 max-w-full items-center gap-2 rounded-xl bg-secondary px-3 py-1.5 text-base"
             }
           >
             {!i.herhaling && hoeveelheid && (
               <span className="font-semibold text-primary">{hoeveelheid}</span>
             )}
-            <span>{t(i.name)}</span>
+            {/* Lange woorden (bv. "peperkoek") mogen breken bij grote tekst. */}
+            <span className="min-w-0 [overflow-wrap:anywhere]">{t(i.name)}</span>
             {i.herhaling && (
               <span className={groot ? "text-lg text-muted-foreground" : "text-base text-muted-foreground"}>
                 ({t("rest")})

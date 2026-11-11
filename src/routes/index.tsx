@@ -394,7 +394,7 @@ function StartPage() {
 
         {uitgelicht ? (
           <section aria-labelledby="favorieten-titel">
-            <div className="flex items-end justify-between gap-4">
+            <div className="flex flex-wrap items-end justify-between gap-x-4">
               <h2 id="favorieten-titel" className="text-sectietitel">
                 {t(favorites.length ? "Je favorieten" : "Laatst toegevoegd")}
               </h2>

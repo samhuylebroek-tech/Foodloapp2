@@ -30,7 +30,7 @@ export function SterrenKiezer({
   return (
     <div>
       <p className="mb-2 text-base font-semibold">{label}</p>
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         {[1, 2, 3, 4, 5].map((n) => (
           <button
             key={n}

@@ -106,7 +106,7 @@ export function AanvulRegel() {
         </strong>{" "}
         voor je komende maaltijden
       </p>
-      <div className="flex shrink-0 items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         <Button asChild variant="ghost" size="sm" className="h-11">
           <Link to="/aanvullen">Bekijk</Link>
         </Button>

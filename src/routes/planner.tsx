@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useFocusTerug } from "@/hooks/useFocusTerug";
 import { meet } from "@/lib/meten";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -124,6 +125,8 @@ function PlannerPage() {
     null,
   );
   const [lijstId, setLijstId] = useState<string>("");
+  useFocusTerug(Boolean(kiezen));
+  useFocusTerug(Boolean(verplaats));
   const [vervangRij, setVervangRij] = useState<PlanRow | null>(null);
   const [vraagLijst, setVraagLijst] = useState<{ recipeId: string; titel: string } | null>(null);
   const [opruimVraag, setOpruimVraag] = useState<{ titel: string; items: { id: string; naam: string }[] } | null>(null);

@@ -229,10 +229,11 @@ export function AppShell({
             <button
               type="button"
               onClick={gaTerug}
-              className="-ml-2 flex min-h-12 shrink-0 items-center gap-1.5 rounded-xl px-2 text-base font-semibold text-primary hover:bg-muted"
+              className="-ml-2 flex min-h-12 min-w-12 items-center gap-1.5 rounded-xl px-2 text-base font-semibold text-primary hover:bg-muted"
             >
-              <ArrowLeft className="size-6" aria-hidden />
-              {t("Terug")}
+              <ArrowLeft className="size-6 shrink-0" aria-hidden />
+              {/* Mag inkorten bij grote tekst, zodat de kop nooit breder wordt dan het scherm. */}
+              <span className="min-w-0 truncate">{t("Terug")}</span>
             </button>
           ) : (
             <Link
@@ -337,7 +338,8 @@ export function AppShell({
                 <div className="mt-1.5 text-base text-muted-foreground">{ondertitel}</div>
               ) : null}
             </div>
-            {action ? <div className="shrink-0">{action}</div> : null}
+            {/* max-w-full: bij grote tekst mag de knoppenrij binnen het scherm doorlopen. */}
+            {action ? <div className="max-w-full shrink-0">{action}</div> : null}
           </div>
         )}
         <Aankondigingen />
@@ -409,7 +411,7 @@ export function AppShell({
                 >
                   <span
                     className={cn(
-                      "flex h-8 w-14 items-center justify-center rounded-full transition-colors",
+                      "flex h-8 w-14 max-w-full items-center justify-center rounded-full transition-colors",
                       actief ? "bg-inkt text-inkt-foreground" : "",
                     )}
                   >

@@ -420,13 +420,13 @@ function GezinPage() {
                 {data.leden
                   .filter((l) => l.status === "uitgenodigd")
                   .map((l) => (
-                    <div key={l.id} className="flex min-h-16 items-center gap-3.5 px-4 py-3">
+                    <div key={l.id} className="flex min-h-16 flex-wrap items-center gap-3.5 px-4 py-3">
                       <Avatar
                         naam={namen[l.user_id] ?? "Gezinslid"}
                         sleutel={l.user_id}
                         className="size-11 opacity-70"
                       />
-                      <span className="min-w-0 flex-1">
+                      <span className="min-w-0 flex-1 basis-32">
                         <span className="block truncate text-[1.05rem] font-semibold">
                           {namen[l.user_id] ?? "Gezinslid"}
                         </span>
