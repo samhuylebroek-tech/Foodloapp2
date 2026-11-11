@@ -623,7 +623,10 @@ export const adminVerwijderGebruiker = createServerFn({ method: "POST" })
     try {
       await ruimFotosOp(db, data.id);
     } catch (e) {
-      console.error("foto-opruiming na verwijdering door beheer mislukt", e instanceof Error ? e.message : "onbekend");
+      console.error(
+        "foto-opruiming na verwijdering door beheer mislukt",
+        e instanceof Error ? e.message : "onbekend",
+      );
     }
     return { ok: true };
   });
