@@ -51,6 +51,11 @@ const metGroep = new Set(
   ).rows.map((r) => r.table_name),
 );
 
+// Kolommen met een vaste lijst van toegelaten waarden (CHECK), bv. voorstel 0006.
+const VASTE_WAARDEN = { signaal: "'niet_nu'" };
+// Optionele kolommen die een tabelregel (CHECK) toch vraagt.
+const EXTRA_KOLOMMEN = { aanbeveling_feedback: { onderwerp: "'curry'" } };
+
 function waarde(type) {
   if (type === "uuid") return "gen_random_uuid()";
   if (/int|numeric|double|real/.test(type)) return "1";
@@ -76,7 +81,14 @@ for (const t of tabellen) {
     )
   ).rows;
   const namen = ["user_id", ...kol.map((k) => k.column_name)];
-  const waarden = [`'${A}'`, ...kol.map((k) => waarde(k.data_type))];
+  const waarden = [
+    `'${A}'`,
+    ...kol.map((k) => VASTE_WAARDEN[k.column_name] ?? waarde(k.data_type)),
+  ];
+  for (const [k, w] of Object.entries(EXTRA_KOLOMMEN[t] ?? {})) {
+    namen.push(k);
+    waarden.push(w);
+  }
   try {
     // ON CONFLICT: sommige rijen bestaan al via een trigger (bv. user_credits bij een nieuw account).
     await db.exec(

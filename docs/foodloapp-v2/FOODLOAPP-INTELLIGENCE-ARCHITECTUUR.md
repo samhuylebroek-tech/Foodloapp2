@@ -108,7 +108,7 @@ Elke kandidaat krijgt een score als som van gewogen factoren, en elke factor lev
 
 ### 2.6 Feedback Engine
 - **Bij elk voorstel:** "Ja, plan dit", "Niet nu", "Niet voor mij" met een optionele reden ("te lang", "lust ik niet", "te duur").
-- **Opslag:** nieuwe tabel `aanbeveling_feedback` (user_id, recept_id, signaal, reden, dag). RLS alleen eigen rijen; 12 maanden. Voorstel **0006**, niet geschreven.
+- **Opslag:** nieuwe tabel `aanbeveling_feedback` (user_id, recept_id of onderwerpcode, signaal, redencode, datum). Geen vrije tekst. RLS alleen eigen rijen, ook niet voor het gezin. "Niet nu" en "Gekozen" 12 maanden; "Niet voor mij" tot je het terugzet. Voorstel **0006** geschreven en lokaal getest (`tests/rls/intelligentie-voorstellen.mjs`), **niet uitgevoerd**. Houdbaarheid: voorstel **0007** (kolom `houdbaar_tot`), idem.
 - **Effect:** "Niet voor mij" sluit uit tot je het terugzet; "Niet nu" verlaagt de score 7 dagen.
 
 ## 3. Waar draait wat (privacy en kosten)

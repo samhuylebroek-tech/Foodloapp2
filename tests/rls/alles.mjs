@@ -49,6 +49,14 @@ const PRIVE_HT = schrijf("prive-ht.sql", [
   "0004_profielinstellingen_prive.up.sql",
   "0004_profielinstellingen_prive.down.sql",
 ]);
+// 0006/0007: Foodloapp Intelligence (feedback, houdbaarheid), samen met alle andere voorstellen.
+const ALLE_VOORSTELLEN = schrijf("alle-voorstellen.sql", [
+  "0002a_basislijn_recepten_fotos.up.sql",
+  "0002_rollen_en_rls.up.sql",
+  "0004_profielinstellingen_prive.up.sql",
+  "0006_aanbeveling_feedback.up.sql",
+  "0007_voorraad_houdbaarheid.up.sql",
+]);
 
 const gevallen = [
   ["rls-recepten.mjs", null, 1, "repo-migraties: BUG-105/106 aanwezig (productie heeft dit NIET)"],
@@ -74,6 +82,18 @@ const gevallen = [
   ["rls-gezin-privacy.mjs", PRIVE_HT, 1, "0004 heen+terug: weekmenu weer leesbaar"],
   ["bewaartermijnen-inhoud.mjs", null, 0, "voorstel 0003b: inhoud en contact, heen+terug"],
   ["bewaartermijnen.mjs", null, 0, "voorstel 0003: opruiming, rechten, heen+terug"],
+  [
+    "intelligentie-voorstellen.mjs",
+    null,
+    0,
+    "voorstellen 0006 + 0007: rechten, opruiming, heen+terug",
+  ],
+  [
+    "rls-gezin-privacy.mjs",
+    ALLE_VOORSTELLEN,
+    0,
+    "0002a + 0002 + 0004 + 0006 + 0007: alleen de voorraad",
+  ],
   ["verwijder-gezinseigenaar.mjs", null, 0, "verslag BUG-110/025 (rapporteert, faalt niet)"],
 ];
 

@@ -50,13 +50,13 @@ Stand 2026-11-11. **Alleen een voorstel. Er is niets uitgevoerd of vastgelegd.**
   - prullenbak 30 dagen;
   - versies maximum 20;
   - weekmenu 12 maanden;
-  - `shopping_history` 24 maanden;
+  - `shopping_history` ~~24~~ **12 maanden** (herzien);
   - uitnodigingen 30 dagen;
-  - `ai_cache` 90 dagen;
-  - feedback 24 maanden;
+  - `ai_cache` ~~90 dagen~~ **30 dagen voor invoer van gebruikers, 90 dagen voor algemene resultaten** (herzien);
+  - feedback ~~24~~ **12 maanden** na afhandeling (herzien);
   - inactieve accounts.
 
-  Dat wordt één uitbreiding van `0003`, met een test per regel.
+  Uitgewerkt als voorstel `0003b` (lokaal getest, niet uitgevoerd), behalve inactieve accounts. Test: `tests/rls/bewaartermijnen-inhoud.mjs`.
 - **Volgorde:** jij kiest → privacybeleid aanpassen → testen op staging → live.
 
 ## 6. Jouw keuzes

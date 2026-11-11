@@ -34,14 +34,18 @@ await db.exec(`
   INSERT INTO public.meal_plan (user_id, plan_date, custom_title) VALUES
     ('${U}', (current_date - interval '13 months')::date, 'oud'), ('${U}', current_date, 'nu');
   INSERT INTO public.shopping_history (user_id, name, gekocht_op) VALUES
-    ('${U}','oud', now() - interval '25 months'), ('${U}','nieuw', now() - interval '1 month');
+    ('${U}','oud', now() - interval '13 months'), ('${U}','nieuw', now() - interval '11 months');
   INSERT INTO public.shares (owner_id, member_id, status, created_at) VALUES
     ('${U}','${V}','pending', now() - interval '31 days'), ('${V}','${U}','pending', now() - interval '2 days');
   INSERT INTO public.ai_cache (input_hash, feature, model, prompt_version, result, created_at) VALUES
-    ('oud','import','m','1','{}', now() - interval '91 days'), ('nieuw','import','m','1','{}', now());
+    ('invoer-oud','import_tekst','m','1','{}', now() - interval '31 days'),
+    ('invoer-nieuw','import_tekst','m','1','{}', now() - interval '29 days'),
+    ('foto-oud','foto_maken','m','1','{}', now() - interval '91 days'),
+    ('foto-60d','foto_maken','m','1','{}', now() - interval '60 days');
   INSERT INTO public.feedback (user_id, kind, message, status, created_at, updated_at) VALUES
-    ('${U}','vraag','oud afgehandeld','opgelost', now() - interval '25 months', now() - interval '25 months'),
+    ('${U}','vraag','oud afgehandeld','opgelost', now() - interval '13 months', now() - interval '13 months'),
     ('${U}','vraag','oud maar open','nieuw', now() - interval '25 months', now() - interval '25 months'),
+    ('${U}','vraag','afgehandeld 11 mnd','gesloten', now() - interval '11 months', now() - interval '11 months'),
     ('${U}','vraag','recent afgehandeld','opgelost', now(), now());
   INSERT INTO public.push_subscriptions (user_id, endpoint, p256dh, auth, actief, last_ok_at) VALUES
     ('${U}','https://push.voorbeeld.test/1','p','a', true, now() - interval '14 months'),
@@ -84,20 +88,20 @@ check(
   "nu",
 );
 check(
-  "aankoophistoriek: > 24 maanden weg",
+  "aankoophistoriek: > 12 maanden weg, 11 maanden blijft",
   await n(`SELECT string_agg(name, ',') n FROM public.shopping_history`),
   "nieuw",
 );
 check("open uitnodiging > 30 dagen weg", await n(`SELECT count(*)::int n FROM public.shares`), 1);
 check(
-  "AI-cache > 90 dagen weg",
-  await n(`SELECT string_agg(input_hash, ',') n FROM public.ai_cache`),
-  "nieuw",
+  "AI-cache: invoer > 30 dagen weg, algemene foto > 90 dagen weg",
+  await n(`SELECT string_agg(input_hash, ',' ORDER BY input_hash) n FROM public.ai_cache`),
+  "foto-60d,invoer-nieuw",
 );
 check(
-  "feedback: alleen oud én afgehandeld weg",
+  "feedback: alleen > 12 maanden afgehandeld weg; open blijft altijd",
   await n(`SELECT string_agg(message, ',' ORDER BY message) n FROM public.feedback`),
-  "oud maar open,recent afgehandeld",
+  "afgehandeld 11 mnd,oud maar open,recent afgehandeld",
 );
 check(
   "push: inactief of > 13 maanden zonder succes weg",

@@ -1,5 +1,8 @@
 -- VOORSTEL — NIET UITGEVOERD. Aanvulling op 0003: bewaartermijnen voor inhoud en contact
 -- (AVG-BEWAARTERMIJNEN-VOORSTEL.md §1–§3). Termijnen zijn een voorstel; de eigenaar kiest.
+-- Herzien 2026-11-11 volgens BESLISSINGEN-EIGENAAR §G (strenger): aankoophistoriek 12 maanden,
+-- AI-cache 30 dagen voor invoer van gebruikers en 90 dagen voor algemene resultaten,
+-- afgehandelde feedback 12 maanden na afhandeling.
 -- Lokaal getest met tests/rls/bewaartermijnen-inhoud.mjs (PGlite).
 -- NIET in dit voorstel: inactieve accounts (beslissing eigenaar open) en het wissen van
 -- foto-bestanden in de opslag bij definitief verwijderde recepten (dat vraagt een serverjob met
@@ -26,17 +29,20 @@ BEGIN
   DELETE FROM public.meal_plan WHERE plan_date < (current_date - interval '12 months')::date;
   GET DIAGNOSTICS n = ROW_COUNT; tabel := 'meal_plan (> 12 maanden, gewist)'; aantal := n; RETURN NEXT;
 
-  DELETE FROM public.shopping_history WHERE gekocht_op < now() - interval '24 months';
+  DELETE FROM public.shopping_history WHERE gekocht_op < now() - interval '12 months';
   GET DIAGNOSTICS n = ROW_COUNT; tabel := 'shopping_history (gewist)'; aantal := n; RETURN NEXT;
 
   DELETE FROM public.shares WHERE status = 'pending' AND created_at < now() - interval '30 days';
   GET DIAGNOSTICS n = ROW_COUNT; tabel := 'shares open uitnodiging (gewist)'; aantal := n; RETURN NEXT;
 
-  DELETE FROM public.ai_cache WHERE created_at < now() - interval '90 days';
+  -- Algemene resultaten (een foto bij een gerechtnaam) bevatten geen invoer van een gebruiker: 90 dagen.
+  -- Al de rest (geplakte tekst, links, foto's, zoekvragen, voorraad) kan persoonlijke invoer bevatten: 30 dagen.
+  DELETE FROM public.ai_cache
+   WHERE created_at < now() - CASE WHEN feature IN ('foto_maken') THEN interval '90 days' ELSE interval '30 days' END;
   GET DIAGNOSTICS n = ROW_COUNT; tabel := 'ai_cache (gewist)'; aantal := n; RETURN NEXT;
 
   DELETE FROM public.feedback
-   WHERE status IN ('opgelost', 'gesloten') AND coalesce(updated_at, created_at) < now() - interval '24 months';
+   WHERE status IN ('opgelost', 'gesloten') AND coalesce(updated_at, created_at) < now() - interval '12 months';
   GET DIAGNOSTICS n = ROW_COUNT; tabel := 'feedback afgehandeld (gewist)'; aantal := n; RETURN NEXT;
 
   DELETE FROM public.push_subscriptions
