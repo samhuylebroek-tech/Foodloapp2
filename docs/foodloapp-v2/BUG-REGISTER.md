@@ -148,3 +148,8 @@ Laatste update: 2026-11-11 (release-readiness: fixes BUG-037/038/093/104/113–1
 - Niet getest: echte productie, echte Supabase/RLS, realtime (websocket niet nagebootst), echte schermlezer op toestel (VoiceOver/TalkBack), iOS Safari/WebKit.
 - 2026-11-08 (V2-ontwerp): na elke batch `tsc`, `vitest` (eindstand **363/363**), Playwright volledig in een verse clone met CI=true (**116 geslaagd**, 2 schermafbeelding-specs bewust overgeslagen; 5 viewports: 360, 390, 412, 768, 1280), lint-ratchet, build. Nieuwe permanente controles: geen horizontale overloop op 5 kernpagina's × 4 viewports; axe op kookstand.
 - Tijdens het ontwerp gevonden en vóór commit opgelost (nooit uitgeleverd): horizontale overloop door een `sr-only`-label in een scrollstrook (layout-viewport 1116 px op 390 px) — nu permanent getest.
+- 2026-11-11 (beslissingsronde): verse clone van `1220dbb`, `CI=true`:
+  - install, typecheck, unittests **531/531**, lint-ratchet en build: alle 0;
+  - Playwright 0 (**354 geslaagd**, 107 bewust overgeslagen, 0 flaky, 0 mislukt);
+  - RLS **18/18**.
+  - De eerste run op `db2384b` faalde: `reis-modules` in alle 4 projecten, door een oude aanvulstand na "Kook vanavond". Opgelost in `1220dbb`.
