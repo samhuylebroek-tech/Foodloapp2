@@ -444,8 +444,8 @@ function AccountVerwijderen() {
             try {
               await verwijder({ data: { bevestiging: "VERWIJDER" } });
               await supabase.auth.signOut();
-              toast.success("Je account is verwijderd.");
-              window.location.href = "/";
+              // Volledige herlaadbeurt (alle caches weg); de bevestiging staat op de aanmeldpagina.
+              window.location.href = "/aanmelden?verwijderd=1";
             } catch (e) {
               toast.error((e as Error).message);
               setBezig(false);

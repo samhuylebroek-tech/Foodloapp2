@@ -100,9 +100,13 @@ export function maakSuggesties(rijen: HistoriekRij[], opLijst: string[], max = 4
 
 /* ---------- Offline: toevoegen en afvinken bewaren tot je weer online bent ---------- */
 
-type Actie =
+type Actie = (
   | { soort: "toevoegen"; userId: string; listId: string; tekst: string }
-  | { soort: "vink"; id: string; checked: boolean };
+  | { soort: "vink"; id: string; checked: boolean }
+) & { pogingen?: number };
+
+/** Na zoveel mislukte pogingen geven we het op (anders blijft een blijvende fout eeuwig terugkomen). */
+export const MAX_POGINGEN = 5;
 
 const SLEUTEL = "foodlo-boodschappen-wachtrij";
 

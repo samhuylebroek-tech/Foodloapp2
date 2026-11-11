@@ -17,6 +17,15 @@ async function verwijderViaUi(page: import("@playwright/test").Page) {
   await expect(page).toHaveURL(/\/aanmelden/);
 }
 
+test("BUG-104: na het verwijderen ziet de gebruiker een bevestiging", async ({ page, extern }) => {
+  await resetDemo();
+  await zetKlok(page, 14);
+  await meldAan(page);
+  await verwijderViaUi(page);
+  await expect(page.getByRole("status")).toContainText("Je account en je gegevens zijn verwijderd.");
+  void extern;
+});
+
 test("verwijdert alleen het eigen account en meldt je af", async ({ page, extern }) => {
   await resetDemo();
   await zetKlok(page, 14);

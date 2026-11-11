@@ -183,10 +183,12 @@ export async function voegToeAanLijst(
 ): Promise<void> {
   if (!items.length) return;
 
-  const { data: bestaand } = await supabase
+  const { data: bestaand, error: leesFout } = await supabase
     .from("shopping_items")
     .select("id, name, quantity, unit")
     .eq("list_id", listId);
+  // Zonder de bestaande regels zouden we dubbele regels toevoegen (BUG-037).
+  if (leesFout) throw leesFout;
 
   const bestaande = new Map<string, { id: string; quantity: number | null; unit: string }>();
   for (const rij of bestaand ?? []) {
@@ -249,5 +251,9 @@ export async function voegToeAanLijst(
         .update({ quantity: rij.quantity, unit: rij.unit, checked: false })
         .eq("id", rij.id),
     );
-  await Promise.all(updates);
+  // Elke aanpassing controleren: anders lijkt het gelukt terwijl de hoeveelheid niet
+  // veranderd is (BUG-037).
+  const resultaten = await Promise.all(updates);
+  const fout = resultaten.find((r) => r.error)?.error;
+  if (fout) throw fout;
 }

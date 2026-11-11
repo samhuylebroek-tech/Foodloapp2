@@ -985,7 +985,7 @@ export function RecipeForm({
   return (
     <div className="space-y-6">
       {!recipe && (
-        <div className="flex items-center gap-2 rounded-2xl bg-card p-2 shadow-zacht">
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-card p-2 shadow-zacht">
           {/* Niet plakkend: de paginakop is hoger dan 4,25 rem, waardoor deze balk bij het
               scrollen onder de kop verdween en inhoud bedekte. "Klaar" staat ook onderaan. */}
           <p className="flex-1 px-2 text-base font-medium">
@@ -1703,9 +1703,13 @@ export function RecipeForm({
                   id="tags"
                   value={tags}
                   onChange={(e) => setTags(e.target.value)}
-                  placeholder="vegetarisch, snel"
+                  aria-describedby="tags-hulp"
                   className="mt-2 h-14 text-base"
                 />
+                {/* Zoals bij de ingrediënten: voorbeeld als hulptekst, niet als grijze tekst in het veld (BUG-038). */}
+                <p id="tags-hulp" className="mt-1 text-[0.9rem] text-muted-foreground">
+                  Bijvoorbeeld: vegetarisch, snel
+                </p>
               </div>
             </div>
           </div>

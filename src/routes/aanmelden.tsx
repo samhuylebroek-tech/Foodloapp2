@@ -47,6 +47,12 @@ function AanmeldenPage() {
   // getypte tekst wissen (trage telefoons). Daarom pas daarna inschakelen.
   const [klaar, setKlaar] = useState(false);
   useEffect(() => setKlaar(true), []);
+  // Na "Account verwijderen" (BUG-104): een melding overleeft de herlaadbeurt niet, dus
+  // bevestigen we het hier via ?verwijderd=1.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("verwijderd") === "1")
+      setMelding("Je account en je gegevens zijn verwijderd.");
+  }, []);
 
   useEffect(() => {
     if (loading || !session) return;

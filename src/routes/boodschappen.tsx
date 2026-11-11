@@ -83,6 +83,7 @@ import {
   vaakGekocht,
   vaakLosGekocht,
   zetInWachtrij,
+  MAX_POGINGEN,
   type Vast,
 } from "@/lib/boodschappen-geheugen";
 
@@ -341,15 +342,34 @@ function BoodschappenPage() {
       const acties = leesWachtrij();
       if (!acties.length) return;
       leegWachtrij();
+      // Wat mislukt, gaat terug in de wachtrij: nooit "bewaard" melden als het niet zo is.
+      let mislukt = 0;
+      let opgegeven = 0;
       for (const a of acties) {
-        if (a.soort === "vink") await supabase.from("shopping_items").update({ checked: a.checked }).eq("id", a.id);
-        else {
+        let ok = true;
+        if (a.soort === "vink") {
+          const { error } = await supabase.from("shopping_items").update({ checked: a.checked }).eq("id", a.id);
+          ok = !error;
+        } else {
           const p = parseIngredientLine(a.tekst);
-          if (p) await voegToeAanLijst(a.userId, a.listId, [p]).catch(() => {});
+          if (p) ok = await voegToeAanLijst(a.userId, a.listId, [p]).then(() => true, () => false);
         }
+        if (ok) continue;
+        const pogingen = (a.pogingen ?? 0) + 1;
+        if (pogingen < MAX_POGINGEN) {
+          mislukt++;
+          zetInWachtrij({ ...a, pogingen });
+        } else opgegeven++;
       }
       qc.invalidateQueries({ queryKey: ["shopping"] });
-      toast.success("Je wijzigingen zijn bewaard");
+      const meervoud = (n: number) => (n === 1 ? "1 wijziging is" : `${n} wijzigingen zijn`);
+      if (opgegeven)
+        toast.error(`${meervoud(opgegeven)} niet bewaard. Kijk je lijst even na.`);
+      if (mislukt)
+        toast.error(
+          `${meervoud(mislukt)} nog niet bewaard. We proberen het opnieuw zodra de verbinding beter is.`,
+        );
+      if (!mislukt && !opgegeven) toast.success("Je wijzigingen zijn bewaard");
     }
     const aan = () => { zet(); void verwerk(); };
     window.addEventListener("online", aan);
@@ -1073,7 +1093,7 @@ function BoodschappenPage() {
             <div className="mt-2">{lijstKiezer}</div>
           ) : null}
           {/* B1: status en "winkelen" op één regel — daaronder meteen de lijst. */}
-          <div className="mt-1 flex items-center justify-between gap-3">
+          <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
             <p className="text-lg text-muted-foreground">
               {openAantal === 0
                 ? items.length
@@ -1494,7 +1514,7 @@ function BoodschappenPage() {
               <Accordion type="single" collapsible className="paneel px-4">
                 <AccordionItem value="kaarten" className="border-0">
                   <AccordionTrigger>
-                    <span className="flex items-center gap-3">
+                    <span className="flex min-w-0 items-center gap-3 [overflow-wrap:anywhere]">
                       <Icoon icoon={WalletCards} tint="blauw" /> Klantenkaarten
                     </span>
                   </AccordionTrigger>
