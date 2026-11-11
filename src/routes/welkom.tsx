@@ -85,7 +85,9 @@ function Welkom() {
 
         <h1 className="mt-6 text-3xl font-bold tracking-tight">{t("Even snel instellen")}</h1>
         <p className="mt-2 text-base text-muted-foreground">
-          {t("Drie kleine keuzes. Daarna maken we even kennis. Je kan alles later aanpassen in je instellingen.")}
+          {t(
+            "Drie kleine keuzes. Daarna maken we even kennis. Je kan alles later aanpassen in je instellingen.",
+          )}
         </p>
 
         <section className="mt-7">

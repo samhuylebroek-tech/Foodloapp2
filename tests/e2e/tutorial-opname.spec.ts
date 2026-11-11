@@ -49,15 +49,22 @@ for (const a of ARTIKELS) {
           band.setAttribute("data-opname", "");
           band.textContent = tekst;
           Object.assign(band.style, {
-            position: "fixed", left: "12px", right: "12px", bottom: "24px", zIndex: "99999",
-            background: "rgba(15,23,42,.88)", color: "#fff", padding: "12px 14px",
-            borderRadius: "14px", font: "600 17px/1.4 system-ui, sans-serif",
+            position: "fixed",
+            left: "12px",
+            right: "12px",
+            bottom: "24px",
+            zIndex: "99999",
+            background: "rgba(15,23,42,.88)",
+            color: "#fff",
+            padding: "12px 14px",
+            borderRadius: "14px",
+            font: "600 17px/1.4 system-ui, sans-serif",
           });
           document.body.appendChild(band);
           for (const k of knoppen) {
-            const el = [...document.querySelectorAll<HTMLElement>("button, a, label, h1, h2, input")].find(
-              (e) => (e.getAttribute("aria-label") ?? e.textContent ?? "").includes(k),
-            );
+            const el = [
+              ...document.querySelectorAll<HTMLElement>("button, a, label, h1, h2, input"),
+            ].find((e) => (e.getAttribute("aria-label") ?? e.textContent ?? "").includes(k));
             if (el) {
               el.setAttribute("data-opname-doel", "");
               el.style.outline = "4px solid #f59e0b";
