@@ -107,6 +107,25 @@ const SCHRIJFRECHTEN: Rechten[] = [
 // Max aantal beheeracties per minuut per beheerder.
 const LIMIET_PER_MINUUT = 120;
 
+/**
+ * BUG-095: 2FA op de server. Staat UIT tot de eigenaar het herstelplan (2FA-HERSTELPLAN.md) heeft
+ * goedgekeurd en twee factoren heeft ingesteld. Aanzetten = deze waarde op `true` en daarna
+ * `mfa_required` voor de eigenaar aanzetten in Beheer → Team.
+ */
+export const MFA_AFDWINGEN = false;
+
+export const MFA_MELDING =
+  "Bevestig eerst met je tweede stap (2FA) om het Control Center te gebruiken.";
+
+/** Zuivere regel (getest): weigeren als 2FA verplicht is en de sessie geen tweede stap heeft. */
+export function mfaOntbreekt(
+  profiel: Pick<AdminProfiel, "mfa_required">,
+  aal: string | null | undefined,
+  afdwingen: boolean = MFA_AFDWINGEN,
+): boolean {
+  return afdwingen && profiel.mfa_required === true && aal !== "aal2";
+}
+
 export async function bewaker(context: Ctx, recht: Rechten, opties: { schrijft?: boolean } = {}) {
   if (context.userId !== EIGENAAR_ID) throw new Error("Geen toegang tot het Control Center.");
   const { data, error } = await context.supabase
@@ -117,6 +136,15 @@ export async function bewaker(context: Ctx, recht: Rechten, opties: { schrijft?:
   if (error || !data || !data.active) throw new Error("Geen toegang tot het Control Center.");
   const profiel = data as AdminProfiel;
   if (!heeftRecht(profiel, recht)) throw new Error("Je rol heeft dit recht niet.");
+  if (mfaOntbreekt(profiel, context.claims?.aal as string | undefined)) {
+    try {
+      const { supabaseAdmin: logDb } = await import("@/integrations/supabase/client.server");
+      await logboek(logDb, profiel, "mfa.geweigerd", "admin", profiel.user_id, { recht });
+    } catch {
+      /* loggen mag de weigering nooit tegenhouden */
+    }
+    throw new Error(MFA_MELDING);
+  }
 
   const schrijft = opties.schrijft ?? SCHRIJFRECHTEN.includes(recht);
   if (schrijft && profiel.read_only) {
