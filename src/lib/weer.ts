@@ -19,6 +19,14 @@ const LOC_SLEUTEL = "foodlo_locatie";
 const LOC_VRAAG_SLEUTEL = "foodlo_locatie_gevraagd";
 const LOC_GELDIG = 7 * 24 * 60 * 60 * 1000; // een week
 
+/**
+ * Dataminimalisatie (BUG-108): voor het weer volstaat ±1 km. Twee decimalen gaan naar de
+ * weerdienst en in localStorage, nooit de exacte GPS-positie.
+ */
+export function rondAf(loc: { lat: number; lon: number }) {
+  return { lat: Math.round(loc.lat * 100) / 100, lon: Math.round(loc.lon * 100) / 100 };
+}
+
 function opgeslagenLocatie(): { lat: number; lon: number } | null {
   try {
     const raw = localStorage.getItem(LOC_SLEUTEL);
@@ -32,7 +40,8 @@ function opgeslagenLocatie(): { lat: number; lon: number } | null {
     ) {
       return null;
     }
-    return { lat: data.lat, lon: data.lon };
+    // Ook een vroeger bewaarde, exacte positie wordt afgerond.
+    return rondAf({ lat: data.lat, lon: data.lon });
   } catch {
     return null;
   }
@@ -44,7 +53,7 @@ function vraagLocatie(): Promise<{ lat: number; lon: number }> {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         clearTimeout(fallback);
-        const loc = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+        const loc = rondAf({ lat: pos.coords.latitude, lon: pos.coords.longitude });
         try {
           localStorage.setItem(LOC_SLEUTEL, JSON.stringify({ ...loc, tijd: Date.now() }));
         } catch {

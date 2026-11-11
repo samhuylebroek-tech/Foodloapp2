@@ -114,13 +114,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", type: "image/png", href: "/favicon.png" },
       { rel: "apple-touch-icon", href: "/app-icon-512.png" },
       { rel: "manifest", href: "/manifest.webmanifest" },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        // Fraunces (V2): warme, redactionele titels. Outfit blijft geladen voor bestaande stijlen.
-        href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Outfit:wght@500;600;700&family=Figtree:wght@400;500;600;700;800&display=swap",
-      },
+      // Lettertypen komen uit de eigen bundel (styles.css, @fontsource-variable): BUG-107.
     ],
   }),
   shellComponent: RootShell,

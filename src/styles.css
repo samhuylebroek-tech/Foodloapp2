@@ -1,6 +1,10 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+/* Lettertypen zelf gehost (BUG-107): geen verzoek meer naar Google Fonts, dus geen IP-adres van
+   bezoekers naar Google. Variabele versies: Fraunces behoudt de as voor optische grootte. */
+@import "@fontsource-variable/fraunces/opsz.css";
+@import "@fontsource-variable/figtree/index.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -228,8 +232,8 @@
 }
 
 @theme inline {
-  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-sans: "Figtree Variable", "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces Variable", "Fraunces", Georgia, "Times New Roman", serif;
   --color-terracotta: var(--terracotta);
   --color-terracotta-foreground: var(--terracotta-foreground);
   --color-terracotta-zacht: var(--terracotta-zacht);
@@ -254,7 +258,7 @@
   hyphenate-limit-chars: 9 4 4;
   overflow-wrap: break-word;
   text-wrap: pretty;
-  font-family: "Fraunces", Georgia, serif;
+  font-family: "Fraunces Variable", "Fraunces", Georgia, serif;
   /* Vloeiend: 2,15rem vanaf ±400 px, iets kleiner op 320 px (ontwerpkeuze, geen noodgreep). */
   font-size: clamp(1.8rem, 1.05rem + 3.4vw, 2.15rem);
   line-height: 1.12;
@@ -267,7 +271,7 @@
   hyphenate-limit-chars: 9 4 4;
   overflow-wrap: break-word;
   text-wrap: pretty;
-  font-family: "Fraunces", Georgia, serif;
+  font-family: "Fraunces Variable", "Fraunces", Georgia, serif;
   font-size: 1.4rem;
   line-height: 1.22;
   font-weight: 600;
@@ -279,7 +283,7 @@
   hyphens: auto;
   hyphenate-limit-chars: 9 4 4;
   overflow-wrap: break-word;
-  font-family: "Fraunces", Georgia, serif;
+  font-family: "Fraunces Variable", "Fraunces", Georgia, serif;
   font-size: clamp(1.75rem, 1.2rem + 2.4vw, 2.6rem);
   line-height: 1.08;
   font-weight: 600;
@@ -292,7 +296,7 @@
   /* Alleen lange woorden afbreken ("Chocolade-mousse"), niet "ci-troen". */
   hyphenate-limit-chars: 9 4 4;
   overflow-wrap: break-word;
-  font-family: "Fraunces", Georgia, serif;
+  font-family: "Fraunces Variable", "Fraunces", Georgia, serif;
   font-size: 1.15rem;
   line-height: 1.22;
   font-weight: 600;
@@ -328,7 +332,7 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: "Figtree", ui-sans-serif, system-ui, sans-serif;
+    font-family: "Figtree Variable", "Figtree", ui-sans-serif, system-ui, sans-serif;
     line-height: 1.5;
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior-y: none;
@@ -340,14 +344,14 @@
 
   h1,
   h2 {
-    font-family: "Fraunces", Georgia, serif;
+    font-family: "Fraunces Variable", "Fraunces", Georgia, serif;
     font-weight: 600;
     letter-spacing: -0.01em;
   }
 
 
   h3 {
-    font-family: "Figtree", ui-sans-serif, system-ui, sans-serif;
+    font-family: "Figtree Variable", "Figtree", ui-sans-serif, system-ui, sans-serif;
     font-weight: 700;
     letter-spacing: -0.005em;
   }

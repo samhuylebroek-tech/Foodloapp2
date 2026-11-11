@@ -84,16 +84,18 @@ function b64url(o) {
   return Buffer.from(JSON.stringify(o)).toString("base64url");
 }
 /** HS256-vormige JWT: supabase-js kan die niet lokaal verifiëren en vraagt /auth/v1/user. */
-export function maakToken(sub = TEST_USER.id) {
+export function maakToken(sub = TEST_USER.id, opties = {}) {
   const kop = b64url({ alg: "HS256", typ: "JWT" });
+  const nu = Math.floor(Date.now() / 1000);
   const inhoud = b64url({
     sub,
     aud: "authenticated",
     role: "authenticated",
     email: TEST_USER.email,
-    exp: Math.floor(Date.now() / 1000) + 3600 * 24,
-    iat: Math.floor(Date.now() / 1000),
-    aal: "aal1",
+    // `vervalt` (seconden vanaf nu) en `aal` zijn instelbaar voor beveiligingstests.
+    exp: nu + (opties.vervalt ?? 3600 * 24),
+    iat: nu,
+    aal: opties.aal ?? "aal1",
     session_id: "nep-sessie",
   });
   return `${kop}.${inhoud}.${TEST_TOKEN_PREFIX}`;
@@ -140,7 +142,12 @@ const server = http.createServer((req, res) => {
     if (url.pathname === "/__token") {
       // ?sub=<id>: sessie voor een andere (verzonnen) gebruiker, bv. de beheerder in de audit.
       const sub = url.searchParams.get("sub") || TEST_USER.id;
-      return stuur(res, 200, { token: maakToken(sub), user: { ...TEST_USER, id: sub } });
+      const vervalt = url.searchParams.get("vervalt");
+      const token = maakToken(sub, {
+        vervalt: vervalt === null ? undefined : Number(vervalt),
+        aal: url.searchParams.get("aal") ?? undefined,
+      });
+      return stuur(res, 200, { token, user: { ...TEST_USER, id: sub } });
     }
     if (url.pathname === "/__storing" && req.method === "POST") {
       const s = JSON.parse(data || "{}");
@@ -227,7 +234,17 @@ const server = http.createServer((req, res) => {
     }
     if (url.pathname === "/auth/v1/recover") return stuur(res, 200, {});
     if (url.pathname === "/auth/v1/user") {
-      if (geldigToken(auth)) {
+      // Zoals echte Supabase: een verlopen token wordt geweigerd.
+      let verlopen = false;
+      try {
+        const exp = JSON.parse(
+          Buffer.from((auth ?? "").split(" ")[1].split(".")[1], "base64url").toString(),
+        ).exp;
+        verlopen = typeof exp === "number" && exp < Math.floor(Date.now() / 1000);
+      } catch {
+        /* geen leesbaar token: geldigToken beslist */
+      }
+      if (geldigToken(auth) && !verlopen) {
         let sub = TEST_USER.id;
         try {
           sub =
