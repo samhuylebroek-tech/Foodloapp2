@@ -93,7 +93,10 @@ function Beveiliging() {
           {factoren.length > 0 ? (
             <ul className="mt-3 space-y-2 text-sm">
               {factoren.map((f) => (
-                <li key={f.id} className="flex items-center justify-between rounded border border-white/10 p-2">
+                <li
+                  key={f.id}
+                  className="flex items-center justify-between rounded border border-white/10 p-2"
+                >
                   <span>
                     {f.friendly_name || "Authenticator"} · {factorStatusTekst(f.status)}
                   </span>
@@ -110,8 +113,14 @@ function Beveiliging() {
           )}
 
           {teVerwijderen ? (
-            <div role="alertdialog" aria-labelledby="verwijder-titel" className="mt-3 rounded border border-red-500/40 bg-red-500/10 p-3 text-sm">
-              <p id="verwijder-titel" className="font-medium">Authenticator verwijderen?</p>
+            <div
+              role="alertdialog"
+              aria-labelledby="verwijder-titel"
+              className="mt-3 rounded border border-red-500/40 bg-red-500/10 p-3 text-sm"
+            >
+              <p id="verwijder-titel" className="font-medium">
+                Authenticator verwijderen?
+              </p>
               <p className="mt-1 text-red-100">
                 {verwijderWaarschuwing(factoren, teVerwijderen, Boolean(profiel?.mfa_required))}
               </p>
@@ -148,7 +157,11 @@ function Beveiliging() {
               {/* Als afbeelding, niet als HTML: geen innerHTML, en een data-URL met
                   aanhalingstekens erin breekt zo niet. */}
               <img
-                src={qr.svg.startsWith("<") ? `data:image/svg+xml;utf8,${encodeURIComponent(qr.svg)}` : qr.svg}
+                src={
+                  qr.svg.startsWith("<")
+                    ? `data:image/svg+xml;utf8,${encodeURIComponent(qr.svg)}`
+                    : qr.svg
+                }
                 alt="QR-code om te scannen met je authenticator-app"
                 className="w-40 rounded bg-white p-2"
               />

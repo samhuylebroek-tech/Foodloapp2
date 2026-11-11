@@ -132,7 +132,9 @@ test("BUG-093: een melding aan iedereen telt alle gebruikers, ook boven 1000", a
       blocked_at: null,
     })),
   });
-  const verwacht = ((await nepDb())["profiles"] ?? []).filter((p) => p["blocked_at"] == null).length;
+  const verwacht = ((await nepDb())["profiles"] ?? []).filter(
+    (p) => p["blocked_at"] == null,
+  ).length;
   expect(verwacht).toBeGreaterThan(1500);
   await zetKlok(page, 14);
   await meldAan(page, EIGENAAR);

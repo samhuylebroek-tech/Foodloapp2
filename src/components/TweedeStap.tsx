@@ -37,7 +37,10 @@ export function TweedeStap() {
       return;
     }
     setBezig(true);
-    const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code: schoonCode(code) });
+    const { error } = await supabase.auth.mfa.challengeAndVerify({
+      factorId,
+      code: schoonCode(code),
+    });
     setBezig(false);
     if (error) {
       setFout(mfaFoutTekst(error));

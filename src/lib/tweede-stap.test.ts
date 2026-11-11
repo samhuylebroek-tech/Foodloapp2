@@ -22,16 +22,18 @@ describe("code invoeren", () => {
 
 describe("mfaFoutTekst", () => {
   it("vertaalt een foute code naar begrijpelijke uitleg", () => {
-    expect(mfaFoutTekst({ code: "mfa_verification_failed", message: "Invalid TOTP code entered" })).toMatch(
-      /klopt niet/,
-    );
+    expect(
+      mfaFoutTekst({ code: "mfa_verification_failed", message: "Invalid TOTP code entered" }),
+    ).toMatch(/klopt niet/);
   });
   it("te veel pogingen en verlopen uitdaging", () => {
     expect(mfaFoutTekst({ code: "over_request_rate_limit" })).toMatch(/Te veel pogingen/);
     expect(mfaFoutTekst({ message: "MFA challenge expired" })).toMatch(/te lang/);
   });
   it("toont nooit de Engelse ruwe fout", () => {
-    expect(mfaFoutTekst({ message: "Something internal xyz" })).toBe("Dat lukte niet. Probeer het opnieuw.");
+    expect(mfaFoutTekst({ message: "Something internal xyz" })).toBe(
+      "Dat lukte niet. Probeer het opnieuw.",
+    );
     expect(mfaFoutTekst(null)).toBe("Dat lukte niet. Probeer het opnieuw.");
   });
 });

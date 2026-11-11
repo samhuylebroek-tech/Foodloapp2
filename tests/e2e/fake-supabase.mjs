@@ -272,7 +272,12 @@ const server = http.createServer((req, res) => {
         return stuur(res, 401, { code: 401, error_code: "bad_jwt", msg: "invalid JWT" });
       }
       const bekend = db.t("__factoren").some((f) => f.id === factor[1] && f.user_id === sub);
-      if (!bekend) return stuur(res, 404, { code: 404, error_code: "mfa_factor_not_found", msg: "Factor not found" });
+      if (!bekend)
+        return stuur(res, 404, {
+          code: 404,
+          error_code: "mfa_factor_not_found",
+          msg: "Factor not found",
+        });
       if (factor[2] === "challenge")
         return stuur(res, 200, {
           id: `uitdaging-${factor[1]}`,

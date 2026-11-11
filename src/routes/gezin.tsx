@@ -385,7 +385,11 @@ function GezinPage() {
                         params={{ id: l.user_id }}
                         className="flex min-h-16 min-w-0 flex-1 items-center gap-3.5 rounded-xl px-4 py-3 hover:bg-muted/70"
                       >
-                        <Avatar naam={naamVan(l.user_id)} sleutel={l.user_id} className="size-10 shrink-0" />
+                        <Avatar
+                          naam={naamVan(l.user_id)}
+                          sleutel={l.user_id}
+                          className="size-10 shrink-0"
+                        />
                         <span className="min-w-0 flex-1">
                           <span className="block text-[1.05rem] font-semibold">
                             {naamVan(l.user_id)}
@@ -420,7 +424,10 @@ function GezinPage() {
                 {data.leden
                   .filter((l) => l.status === "uitgenodigd")
                   .map((l) => (
-                    <div key={l.id} className="flex min-h-16 flex-wrap items-center gap-3.5 px-4 py-3">
+                    <div
+                      key={l.id}
+                      className="flex min-h-16 flex-wrap items-center gap-3.5 px-4 py-3"
+                    >
                       <Avatar
                         naam={namen[l.user_id] ?? "Gezinslid"}
                         sleutel={l.user_id}

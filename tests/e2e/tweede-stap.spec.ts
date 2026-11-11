@@ -7,7 +7,9 @@
 import { EIGENAAR } from "./beheer-paden";
 import { expect, meldAan, nepLog, resetDemo, seedDb, test, zetKlok } from "./helpers";
 
-async function beheerderMetFactoren(factoren: { id: string; status: string; friendly_name: string }[]) {
+async function beheerderMetFactoren(
+  factoren: { id: string; status: string; friendly_name: string }[],
+) {
   await resetDemo();
   await seedDb({
     admin_users: [
@@ -32,7 +34,9 @@ test("met authenticator: foute code geeft uitleg, juiste code geeft aal2", async
   page,
   extern,
 }) => {
-  await beheerderMetFactoren([{ id: "factor-telefoon", status: "verified", friendly_name: "Telefoon" }]);
+  await beheerderMetFactoren([
+    { id: "factor-telefoon", status: "verified", friendly_name: "Telefoon" },
+  ]);
   await zetKlok(page, 14);
   await meldAan(page, EIGENAAR);
   await page.goto("/beheer/finance");
@@ -78,7 +82,9 @@ test("laatste authenticator verwijderen vraagt eerst bevestiging met duidelijke 
   page,
   extern,
 }) => {
-  await beheerderMetFactoren([{ id: "factor-telefoon", status: "verified", friendly_name: "Telefoon" }]);
+  await beheerderMetFactoren([
+    { id: "factor-telefoon", status: "verified", friendly_name: "Telefoon" },
+  ]);
   await zetKlok(page, 14);
   await meldAan(page, EIGENAAR);
   await page.goto("/beheer/beveiliging");
@@ -90,6 +96,8 @@ test("laatste authenticator verwijderen vraagt eerst bevestiging met duidelijke 
   await vraag.getByRole("button", { name: "Annuleren" }).click();
   await expect(vraag).toHaveCount(0);
   // Er is niets verwijderd.
-  expect((await nepLog()).some((l) => l.method === "DELETE" && l.path.includes("/factors/"))).toBe(false);
+  expect((await nepLog()).some((l) => l.method === "DELETE" && l.path.includes("/factors/"))).toBe(
+    false,
+  );
   void extern;
 });

@@ -22,7 +22,9 @@ test("BUG-104: na het verwijderen ziet de gebruiker een bevestiging", async ({ p
   await zetKlok(page, 14);
   await meldAan(page);
   await verwijderViaUi(page);
-  await expect(page.getByRole("status")).toContainText("Je account en je gegevens zijn verwijderd.");
+  await expect(page.getByRole("status")).toContainText(
+    "Je account en je gegevens zijn verwijderd.",
+  );
   void extern;
 });
 

@@ -22,7 +22,11 @@ export function mfaFoutTekst(
     return "Die code klopt niet of is net verlopen. Typ de nieuwe code uit je app. Klopt hij nog altijd niet? Kijk of de tijd op je telefoon automatisch ingesteld staat.";
   if (code === "mfa_challenge_expired" || tekst.includes("expired"))
     return "Dat duurde te lang. Typ de nieuwe code uit je app.";
-  if (code === "over_request_rate_limit" || code === "too_many_requests" || tekst.includes("rate limit"))
+  if (
+    code === "over_request_rate_limit" ||
+    code === "too_many_requests" ||
+    tekst.includes("rate limit")
+  )
     return "Te veel pogingen. Wacht een paar minuten en probeer opnieuw.";
   if (code === "insufficient_aal" || tekst.includes("aal2"))
     return "Bevestig eerst met je huidige code voor je dit wijzigt.";
@@ -39,15 +43,12 @@ export function factorStatusTekst(status: string): string {
  * Waarschuwing vóór het verwijderen van een factor. De laatste actieve factor verwijderen
  * terwijl 2FA verplicht is, sluit je buiten (dan rest alleen herstel via het dashboard).
  */
-export function verwijderWaarschuwing(
-  factoren: Factor[],
-  id: string,
-  verplicht: boolean,
-): string {
+export function verwijderWaarschuwing(factoren: Factor[], id: string, verplicht: boolean): string {
   const doel = factoren.find((f) => f.id === id);
   if (!doel || doel.status !== "verified") return "Deze onafgewerkte koppeling wordt verwijderd.";
   const overige = factoren.filter((f) => f.status === "verified" && f.id !== id).length;
-  if (overige > 0) return `Je houdt daarna nog ${overige} actieve authenticator${overige > 1 ? "s" : ""}.`;
+  if (overige > 0)
+    return `Je houdt daarna nog ${overige} actieve authenticator${overige > 1 ? "s" : ""}.`;
   return verplicht
     ? "Dit is je laatste authenticator en 2-staps verificatie is verplicht voor jouw rol. Zonder authenticator kom je niet meer in het Control Center tot je een nieuwe koppelt."
     : "Dit is je laatste authenticator. Daarna meld je aan met alleen je wachtwoord.";

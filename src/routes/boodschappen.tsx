@@ -348,11 +348,18 @@ function BoodschappenPage() {
       for (const a of acties) {
         let ok = true;
         if (a.soort === "vink") {
-          const { error } = await supabase.from("shopping_items").update({ checked: a.checked }).eq("id", a.id);
+          const { error } = await supabase
+            .from("shopping_items")
+            .update({ checked: a.checked })
+            .eq("id", a.id);
           ok = !error;
         } else {
           const p = parseIngredientLine(a.tekst);
-          if (p) ok = await voegToeAanLijst(a.userId, a.listId, [p]).then(() => true, () => false);
+          if (p)
+            ok = await voegToeAanLijst(a.userId, a.listId, [p]).then(
+              () => true,
+              () => false,
+            );
         }
         if (ok) continue;
         const pogingen = (a.pogingen ?? 0) + 1;
@@ -363,8 +370,7 @@ function BoodschappenPage() {
       }
       qc.invalidateQueries({ queryKey: ["shopping"] });
       const meervoud = (n: number) => (n === 1 ? "1 wijziging is" : `${n} wijzigingen zijn`);
-      if (opgegeven)
-        toast.error(`${meervoud(opgegeven)} niet bewaard. Kijk je lijst even na.`);
+      if (opgegeven) toast.error(`${meervoud(opgegeven)} niet bewaard. Kijk je lijst even na.`);
       if (mislukt)
         toast.error(
           `${meervoud(mislukt)} nog niet bewaard. We proberen het opnieuw zodra de verbinding beter is.`,

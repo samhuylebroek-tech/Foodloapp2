@@ -42,7 +42,9 @@ async function laad(page: Page, pad: string) {
 async function buitenBeeld(page: Page) {
   return page.evaluate(() => {
     const b = document.documentElement.clientWidth;
-    return [...document.querySelectorAll<HTMLElement>("main button, main a[href], main h1, main h2")]
+    return [
+      ...document.querySelectorAll<HTMLElement>("main button, main a[href], main h1, main h2"),
+    ]
       .filter((el) => {
         const r = el.getBoundingClientRect();
         if (r.width === 0 || r.height === 0) return false;
@@ -106,7 +108,11 @@ for (const schaal of [150, 200]) {
   });
 }
 
-test("toetsenbord: elke focusstap is zichtbaar op Vandaag", async ({ page, extern, browserName }) => {
+test("toetsenbord: elke focusstap is zichtbaar op Vandaag", async ({
+  page,
+  extern,
+  browserName,
+}) => {
   // WebKit (Safari) slaat links standaard over bij Tab (instelling "Tab markeert alle
   // onderdelen"); Alt+Tab doet dat wel.
   const tab = browserName === "webkit" ? "Alt+Tab" : "Tab";
@@ -151,7 +157,9 @@ test("toetsenbord: dialoog sluit met Escape en de focus keert terug", async ({ p
   await page.keyboard.press("Escape");
   await expect(dialoog).toBeHidden();
   expect(
-    await opener.evaluate((el) => el === document.activeElement || el.contains(document.activeElement)),
+    await opener.evaluate(
+      (el) => el === document.activeElement || el.contains(document.activeElement),
+    ),
   ).toBe(true);
   void extern;
 });
@@ -163,7 +171,11 @@ test("formulier Recept toevoegen: elk invoerveld heeft een naam voor de schermle
   await laad(page, "/recepten/nieuw");
   // Elk zichtbaar invoerveld heeft een toegankelijke naam (label of aria-label).
   const naamloos = await page.evaluate(() =>
-    [...document.querySelectorAll<HTMLElement>("main input:not([type=hidden]), main textarea, main select")]
+    [
+      ...document.querySelectorAll<HTMLElement>(
+        "main input:not([type=hidden]), main textarea, main select",
+      ),
+    ]
       .filter((el) => el.getBoundingClientRect().width > 0)
       .filter((el) => {
         const id = el.id;
@@ -175,7 +187,10 @@ test("formulier Recept toevoegen: elk invoerveld heeft een naam voor de schermle
           el.closest("label")
         );
       })
-      .map((el) => `${el.tagName.toLowerCase()}[${el.getAttribute("type") ?? ""}] ${el.getAttribute("placeholder") ?? ""}`),
+      .map(
+        (el) =>
+          `${el.tagName.toLowerCase()}[${el.getAttribute("type") ?? ""}] ${el.getAttribute("placeholder") ?? ""}`,
+      ),
   );
   expect(naamloos).toEqual([]);
   void extern;
