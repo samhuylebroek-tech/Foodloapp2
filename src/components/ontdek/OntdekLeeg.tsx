@@ -8,14 +8,19 @@ import { Plus, Search } from "lucide-react";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { eigenId } from "@/lib/zichtbare-eigenaren";
 
 export function OntdekLeeg() {
   const { data: eigen = [] } = useQuery({
     queryKey: ["ontdek-eigen"],
     queryFn: async () => {
+      // "Je eigen keuken herontdekken": alleen eigen recepten (BUG-105, tweede laag).
+      const ik = await eigenId();
+      if (!ik) return [];
       const { data, error } = await supabase
         .from("recipes")
         .select("id, title, image_url, category, tags, prep_minutes, cook_minutes")
+        .eq("user_id", ik)
         .is("deleted_at", null)
         .eq("is_concept", false)
         .order("created_at", { ascending: false })

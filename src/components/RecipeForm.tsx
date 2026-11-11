@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { eigenId } from "@/lib/zichtbare-eigenaren";
 import { useAuth } from "@/hooks/useAuth";
 import { uploadRecipePhoto, uploadDataUrl, fileToDataUrl, isAfbeelding, zorgVoorReceptFoto } from "@/lib/photos";
 import { FotoKiezer } from "@/components/FotoKiezer";
@@ -329,9 +330,13 @@ export function RecipeForm({
     queryKey: ["gerecht-zoeken", zoekTerm.trim().toLowerCase()],
     enabled: zoekTerm.trim().length > 2,
     queryFn: async () => {
+      // Alleen eigen recepten: anders zou deze controle titels van anderen tonen (BUG-105).
+      const ik = await eigenId();
+      if (!ik) return [];
       const { data } = await supabase
         .from("recipes")
         .select("id, title, image_url, user_id")
+        .eq("user_id", ik)
         .is("deleted_at", null)
         .ilike("title", `%${zoekTerm.trim()}%`)
         .limit(5);

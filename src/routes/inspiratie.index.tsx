@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Search, SlidersHorizontal, Shuffle, Clock3, X, Plus } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
+import { eigenId } from "@/lib/zichtbare-eigenaren";
 import { normaliseerTekst } from "@/lib/zoeken";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,9 +87,12 @@ function InspiratiePage() {
   const { data: eigenRecepten = [] } = useQuery({
     queryKey: ["eigen-recept-titels"],
     queryFn: async () => {
+      const ik = await eigenId();
+      if (!ik) return [];
       const { data, error } = await supabase
         .from("recipes")
         .select("title, inspiration_id")
+        .eq("user_id", ik)
         .is("deleted_at", null);
       if (error) throw error;
       return data ?? [];

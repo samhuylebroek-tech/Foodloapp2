@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Heart, Search, Clock, RotateCcw, Plus, Trash2, X, SlidersHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { zichtbareEigenaren } from "@/lib/zichtbare-eigenaren";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { KeukenWissel } from "@/components/KeukenWissel";
@@ -76,9 +77,13 @@ function GerechtenPage() {
   const { data: recipes = [], isLoading } = useQuery({
     queryKey: ["recipes"],
     queryFn: async () => {
+      // Tweede laag naast RLS (BUG-105): nooit recepten van onbekenden.
+      const eigenaren = await zichtbareEigenaren();
+      if (!eigenaren.length) return [];
       const { data, error } = await supabase
         .from("recipes")
         .select("*")
+        .in("user_id", eigenaren)
         .is("deleted_at", null)
         .eq("is_concept", false)
         .order("created_at", { ascending: false });

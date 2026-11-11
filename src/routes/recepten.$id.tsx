@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { zichtbareEigenaren } from "@/lib/zichtbare-eigenaren";
 import { zorgVoorLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
 import { useAuth } from "@/hooks/useAuth";
 import { SterrenKiezer } from "@/components/Sterren";
@@ -256,8 +257,11 @@ function ReceptPage() {
     void meet("recept.bekeken", undefined, { id });
   }, [id]);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["recipe", id],
+    // Niet zichtbaar of niet gevonden: opnieuw proberen helpt niet; meteen de melding tonen.
+    retry: (keer, fout) =>
+      !(fout instanceof Error && /niet-zichtbaar|PGRST116|0 rows/.test(fout.message)) && keer < 2,
     queryFn: async () => {
       const [recipeRes, ingRes] = await Promise.all([
         supabase.from("recipes").select("*").eq("id", id).single(),
@@ -269,6 +273,9 @@ function ReceptPage() {
       ]);
       if (recipeRes.error) throw recipeRes.error;
       if (ingRes.error) throw ingRes.error;
+      // Tweede laag naast RLS (BUG-105): een recept van een onbekende nooit tonen.
+      const eigenaren = await zichtbareEigenaren();
+      if (!eigenaren.includes((recipeRes.data as Recipe).user_id)) throw new Error("niet-zichtbaar");
       return { recipe: recipeRes.data as Recipe, ingredients: ingRes.data as Ingredient[] };
     },
   });
@@ -387,6 +394,25 @@ function ReceptPage() {
     }
     qc.invalidateQueries({ queryKey: ["rating", id] });
     qc.invalidateQueries({ queryKey: ["ratings"] });
+  }
+
+  if (isError) {
+    return (
+      <AppShell title="Recept">
+        <div className="rounded-2xl border border-border bg-card p-6 text-center">
+          <h1 className="text-lg font-semibold">Dit recept is niet beschikbaar</h1>
+          <p className="mt-2 text-base text-muted-foreground">
+            Het bestaat niet meer, of het is niet met jou gedeeld.
+          </p>
+          <Link
+            to="/gerechten"
+            className="mt-4 inline-flex min-h-11 items-center justify-center rounded-2xl bg-primary px-5 text-base font-semibold text-primary-foreground"
+          >
+            Naar je recepten
+          </Link>
+        </div>
+      </AppShell>
+    );
   }
 
   if (isLoading || !data) {

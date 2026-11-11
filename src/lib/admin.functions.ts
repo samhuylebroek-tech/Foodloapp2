@@ -577,13 +577,9 @@ export const adminExportGebruiker = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
     const { db, profiel } = await bewaker(context as Ctx, "privacy.manage");
-    const tabellen = ["profiles", "recipes", "favorites", "meal_plan", "shopping_lists", "shopping_items", "feedback"];
-    const bundel: Record<string, any[]> = {};
-    for (const t of tabellen) {
-      const kolom = t === "profiles" ? "id" : "user_id";
-      const { data: rijen } = await (db as any).from(t).select("*").eq(kolom, data.id);
-      bundel[t] = (rijen ?? []) as any[];
-    }
+    // Zelfde volledige lijst als de eigen export (BUG-103).
+    const { verzamelPersoonsgegevens } = await import("@/lib/avg-export.server");
+    const bundel = await verzamelPersoonsgegevens(db, data.id);
     await logboek(db, profiel, "privacy.export", "user", data.id);
     return bundel;
   });
