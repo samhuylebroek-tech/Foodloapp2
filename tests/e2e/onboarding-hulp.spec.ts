@@ -243,3 +243,49 @@ test("welkom → kennismaking; bestaande gebruikers zien geen Wegwijs-kaart", as
   await expect(page.getByRole("region", { name: "Wegwijs in Foodlo" })).toBeVisible();
   void extern;
 });
+
+test("Control Center → Hulpinhoud: concepten zichtbaar als concept, supportvragen gegroepeerd per artikel", async ({
+  page,
+  extern,
+}) => {
+  const { seedEigenaar, EIGENAAR } = await import("./beheer-paden");
+  const { seedDb } = await import("./helpers");
+  await seedEigenaar();
+  await seedDb({
+    feedback: [
+      {
+        id: "fb000000-0000-4000-8000-000000000001",
+        user_id: MARIE,
+        kind: "vraag",
+        message: "Hoe nodig ik mijn vrouw uit in het gezin?",
+        status: "nieuw",
+        created_at: "2026-11-10T10:00:00Z",
+      },
+      {
+        id: "fb000000-0000-4000-8000-000000000002",
+        user_id: MARIE,
+        kind: "vraag",
+        message: "Gezin uitnodigen lukt niet",
+        status: "nieuw",
+        created_at: "2026-11-10T11:00:00Z",
+      },
+      {
+        id: "fb000000-0000-4000-8000-000000000003",
+        user_id: MARIE,
+        kind: "idee",
+        message: "Kunnen jullie bitcoin toevoegen?",
+        status: "nieuw",
+        created_at: "2026-11-10T12:00:00Z",
+      },
+    ],
+  });
+  await meldAan(page, EIGENAAR);
+  await page.goto("/beheer/hulp");
+  await expect(page.getByRole("heading", { name: "Hulpinhoud" })).toBeVisible();
+  await expect(page.getByText("Concept (niet nagelezen)")).toBeVisible();
+  await expect(page.locator('[data-groep="gezin-uitnodigen"]')).toContainText(
+    "Je gezin uitnodigen · 2",
+  );
+  await expect(page.locator('[data-groep="zonder-artikel"]')).toContainText("bitcoin");
+  void extern;
+});

@@ -85,6 +85,7 @@ const SECTIES: Sectie[] = [
       { pad: "/beheer/communicatie", label: "Berichten", recht: "users.view" },
       { pad: "/beheer/meldingen", label: "Pushmeldingen", recht: "dashboard.view" },
       { pad: "/beheer/teksten", label: "Teksten & aankondigingen", recht: "content.manage" },
+      { pad: "/beheer/hulp", label: "Hulpinhoud", recht: "content.manage" },
     ],
   },
   {

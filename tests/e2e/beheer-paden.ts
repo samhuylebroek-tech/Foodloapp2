@@ -10,6 +10,7 @@ export const BEHEER_PADEN: [string, string][] = [
   "recepten",
   "inhoud",
   "teksten",
+  "hulp",
   "ai",
   "kosten",
   "credits",
