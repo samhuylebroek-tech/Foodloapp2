@@ -107,20 +107,38 @@ export function telSessies(tijden: string[]): number {
   return blokken.size;
 }
 
-async function alles(db: any, tabel: string, kolommen: string, van: string, tot: string, tijdkolom = "created_at") {
-  const { data } = await db
-    .from(tabel)
-    .select(kolommen)
-    .gte(tijdkolom, van)
-    .lt(tijdkolom, tot)
-    .limit(50_000);
-  return (data ?? []) as any[];
+async function alles(
+  db: any,
+  tabel: string,
+  kolommen: string,
+  van: string,
+  tot: string,
+  tijdkolom = "created_at",
+) {
+  // In stukken (max. 1000 rijen per verzoek bij PostgREST), anders kloppen de dagcijfers stil
+  // niet meer bij drukte (BUG-093). Vaste volgorde: tijd, dan id.
+  const { pagineer } = await import("@/lib/pagineer");
+  const { data } = await pagineer(
+    (a: number, b: number) =>
+      db
+        .from(tabel)
+        .select(kolommen)
+        .gte(tijdkolom, van)
+        .lt(tijdkolom, tot)
+        .order(tijdkolom)
+        .order("id")
+        .range(a, b),
+    50_000,
+  );
+  return data as any[];
 }
 
 /** Vult de dagcijfers aan voor de laatste X dagen (inclusief vandaag). */
 export async function aggregeerDagen(db: any, dagen = 2) {
   const nu = new Date();
-  const start = new Date(Date.UTC(nu.getUTCFullYear(), nu.getUTCMonth(), nu.getUTCDate() - (dagen - 1)));
+  const start = new Date(
+    Date.UTC(nu.getUTCFullYear(), nu.getUTCMonth(), nu.getUTCDate() - (dagen - 1)),
+  );
   const eind = new Date(Date.UTC(nu.getUTCFullYear(), nu.getUTCMonth(), nu.getUTCDate() + 1));
   const van = start.toISOString();
   const tot = eind.toISOString();
@@ -244,7 +262,8 @@ export async function aggregeerDagen(db: any, dagen = 2) {
       bijgewerkt: new Date().toISOString(),
     };
   });
-  if (platform.length) await db.from("daily_platform_stats").upsert(platform, { onConflict: "dag" });
+  if (platform.length)
+    await db.from("daily_platform_stats").upsert(platform, { onConflict: "dag" });
 
   return { dagen: dagen_.length, gebruikers: userRijen.length };
 }

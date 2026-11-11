@@ -47,7 +47,14 @@ export type AiMeter = {
 };
 
 export function nieuweMeter(): AiMeter {
-  return { tokens_in: 0, tokens_out: 0, beelden: 0, provider: "lovable", error_code: null, group_id: null };
+  return {
+    tokens_in: 0,
+    tokens_out: 0,
+    beelden: 0,
+    provider: "lovable",
+    error_code: null,
+    group_id: null,
+  };
 }
 
 /** Werkelijke kost in euro op basis van de prijslijst in het Control Center. */
@@ -73,7 +80,8 @@ export async function berekenKost(model: string, m: AiMeter): Promise<number> {
  * Bewust aan de hoge kant (zie masterplan §16): beter te vroeg gewaarschuwd dan te laat.
  */
 export function schatKost(m: Pick<AiMeter, "tokens_in" | "tokens_out" | "beelden">): number {
-  const kost = (m.tokens_in / 1_000_000) * 1.0 + (m.tokens_out / 1_000_000) * 5.0 + m.beelden * 0.05;
+  const kost =
+    (m.tokens_in / 1_000_000) * 1.0 + (m.tokens_out / 1_000_000) * 5.0 + m.beelden * 0.05;
   return Math.round(Math.max(kost, 0.002) * 1_000_000) / 1_000_000;
 }
 
@@ -89,7 +97,8 @@ export function budgetOordeel(uitgegeven: number, budget: number) {
   return { mag: aandeel < 1, waarschuwen: aandeel >= BUDGET_WAARSCHUWING, aandeel };
 }
 
-let budgetGeheugen: { tot: number; maand: string; uitgegeven: number; budget: number } | null = null;
+let budgetGeheugen: { tot: number; maand: string; uitgegeven: number; budget: number } | null =
+  null;
 const gewaarschuwd = new Set<string>();
 
 /** Hoeveel er deze maand al aan AI is uitgegeven, en wat het budget is (5 min in het geheugen). */
@@ -108,12 +117,21 @@ async function budgetStand(db: Awaited<ReturnType<typeof admin>>) {
       .maybeSingle();
     const waarde = Number((inst?.value as unknown) ?? NaN);
     if (Number.isFinite(waarde) && waarde >= 0) budget = waarde;
-    const { data: rijen } = await db
-      .from("ai_usage")
-      .select("kost_eur")
-      .gte("created_at", `${maand}-01T00:00:00Z`)
-      .limit(200_000);
-    uitgegeven = (rijen ?? []).reduce((som, r) => som + Number(r.kost_eur ?? 0), 0);
+    // In stukken: PostgREST geeft max. 1000 rijen per verzoek. Zonder paginering zou de budgetrem
+    // het verbruik te laag schatten zodra er meer dan 1000 AI-oproepen per maand zijn (BUG-093).
+    const { pagineer } = await import("@/lib/pagineer");
+    const { data: rijen } = await pagineer<{ kost_eur: number | null }>(
+      (van, tot) =>
+        db
+          .from("ai_usage")
+          .select("kost_eur")
+          .gte("created_at", `${maand}-01T00:00:00Z`)
+          .order("created_at")
+          .order("id")
+          .range(van, tot),
+      200_000,
+    );
+    uitgegeven = rijen.reduce((som, r) => som + Number(r.kost_eur ?? 0), 0);
   } catch {
     // Meting niet bereikbaar: niet blokkeren op een meetfout, wel kort onthouden.
   }
@@ -152,7 +170,6 @@ async function meet(
   }
 }
 
-
 /**
  * Voert een dure AI-taak uit met cache en credits.
  * - Zelfde invoer (hash) = cachetreffer = 0 credits.
@@ -190,15 +207,18 @@ export async function metCredits<T>(
         .from("ai_cache")
         .update({ hits: (data.hits ?? 0) + 1 })
         .eq("input_hash", hash);
-      await meet({
-        user_id: opts.userId,
-        feature: opts.feature,
-        model,
-        cache_hit: true,
-        credits: 0,
-        duration_ms: Date.now() - start,
-        ok: true,
-      }, meter);
+      await meet(
+        {
+          user_id: opts.userId,
+          feature: opts.feature,
+          model,
+          cache_hit: true,
+          credits: 0,
+          duration_ms: Date.now() - start,
+          ok: true,
+        },
+        meter,
+      );
       return { resultaat: data.result as T, credits: 0, cache: true, saldo: null };
     }
   }
@@ -272,7 +292,11 @@ export async function metCredits<T>(
     try {
       await db.rpc("credits_afronden", { _txn: reservering.txn });
     } catch (e) {
-      console.error("credits_afronden mislukt", opts.feature, e instanceof Error ? e.message : "onbekend");
+      console.error(
+        "credits_afronden mislukt",
+        opts.feature,
+        e instanceof Error ? e.message : "onbekend",
+      );
     }
   }
   if (hash) {

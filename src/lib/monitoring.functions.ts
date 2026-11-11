@@ -4,6 +4,7 @@ import { begrensdeLijst } from "@/lib/zod-hulp";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { bewaker, heeftRecht, logboek, pasWie, type WieKeuze } from "@/lib/admin.functions";
 import { naarCsv } from "@/lib/csv-veilig";
+import { pagineer } from "@/lib/pagineer";
 
 // ============================================================
 // Monitoring — alles server-side, alleen voor het Control Center.
@@ -28,7 +29,11 @@ function dagString(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
-function bereikNaarDagen(b: { bereik: (typeof BEREIKEN)[number]; van?: string | undefined; tot?: string | undefined }) {
+function bereikNaarDagen(b: {
+  bereik: (typeof BEREIKEN)[number];
+  van?: string | undefined;
+  tot?: string | undefined;
+}) {
   const nu = new Date();
   const vandaag = dagString(nu);
   if (b.bereik === "eigen" && b.van && b.tot) return { van: b.van, tot: b.tot };
@@ -36,9 +41,12 @@ function bereikNaarDagen(b: { bereik: (typeof BEREIKEN)[number]; van?: string | 
     const g = dagString(new Date(nu.getTime() - 86400_000));
     return { van: g, tot: g };
   }
-  if (b.bereik === "zeven") return { van: dagString(new Date(nu.getTime() - 6 * 86400_000)), tot: vandaag };
-  if (b.bereik === "dertig") return { van: dagString(new Date(nu.getTime() - 29 * 86400_000)), tot: vandaag };
-  if (b.bereik === "jaar") return { van: dagString(new Date(nu.getTime() - 364 * 86400_000)), tot: vandaag };
+  if (b.bereik === "zeven")
+    return { van: dagString(new Date(nu.getTime() - 6 * 86400_000)), tot: vandaag };
+  if (b.bereik === "dertig")
+    return { van: dagString(new Date(nu.getTime() - 29 * 86400_000)), tot: vandaag };
+  if (b.bereik === "jaar")
+    return { van: dagString(new Date(nu.getTime() - 364 * 86400_000)), tot: vandaag };
   return { van: vandaag, tot: vandaag };
 }
 
@@ -63,20 +71,20 @@ export const adminActiviteit = createServerFn({ method: "POST" })
     // Gaat het over bepaalde personen, dan tellen we hun eigen dagcijfers op.
     if (perPersoon) {
       const { data: eigen } = await pasWie(
-        db
-          .from("daily_user_stats")
-          .select("*")
-          .gte("dag", van)
-          .lte("dag", tot)
-          .limit(50_000),
+        db.from("daily_user_stats").select("*").gte("dag", van).lte("dag", tot).limit(50_000),
         "user_id",
         wie,
       );
       const rijenP = (eigen ?? []) as any[];
       const somP = (v: string) => rijenP.reduce((s, r) => s + Number(r[v] ?? 0), 0);
-      const actief = new Set(rijenP.filter((r) => Number(r.handelingen ?? 0) > 0).map((r) => r.user_id)).size;
+      const actief = new Set(
+        rijenP.filter((r) => Number(r.handelingen ?? 0) > 0).map((r) => r.user_id),
+      ).size;
       const kostP = euro(somP("kost_eur"));
-      const perDag = new Map<string, { dag: string; actief: number; recepten: number; ai: number; kost: number }>();
+      const perDag = new Map<
+        string,
+        { dag: string; actief: number; recepten: number; ai: number; kost: number }
+      >();
       for (const r of rijenP) {
         const x = perDag.get(r.dag) ?? { dag: r.dag, actief: 0, recepten: 0, ai: 0, kost: 0 };
         if (Number(r.handelingen ?? 0) > 0) x.actief += 1;
@@ -180,7 +188,10 @@ export const adminGebeurtenissen = createServerFn({ method: "POST" })
 
     let leden: string[] | null = null;
     if (data.groupId) {
-      const { data: m } = await db.from("group_members").select("user_id").eq("group_id", data.groupId);
+      const { data: m } = await db
+        .from("group_members")
+        .select("user_id")
+        .eq("group_id", data.groupId);
       leden = (m ?? []).map((r: any) => r.user_id);
     }
 
@@ -204,7 +215,8 @@ export const adminGebeurtenissen = createServerFn({ method: "POST" })
         .limit(data.limiet);
       if (data.event) q = q.eq("event", data.event);
       if (data.userId) q = q.eq("user_id", data.userId);
-      if (leden) q = q.in("user_id", leden.length ? leden : ["00000000-0000-0000-0000-000000000000"]);
+      if (leden)
+        q = q.in("user_id", leden.length ? leden : ["00000000-0000-0000-0000-000000000000"]);
       const { data: ev } = await q;
       for (const e of (ev ?? []) as any[]) {
         rijen.push({
@@ -226,7 +238,8 @@ export const adminGebeurtenissen = createServerFn({ method: "POST" })
         .order("created_at", { ascending: false })
         .limit(data.limiet);
       if (data.userId) q = q.eq("user_id", data.userId);
-      if (leden) q = q.in("user_id", leden.length ? leden : ["00000000-0000-0000-0000-000000000000"]);
+      if (leden)
+        q = q.in("user_id", leden.length ? leden : ["00000000-0000-0000-0000-000000000000"]);
       const { data: ai } = await q;
       for (const a of (ai ?? []) as any[]) {
         rijen.push({
@@ -250,7 +263,8 @@ export const adminGebeurtenissen = createServerFn({ method: "POST" })
         .order("created_at", { ascending: false })
         .limit(data.limiet);
       if (data.userId) q = q.eq("user_id", data.userId);
-      if (leden) q = q.in("user_id", leden.length ? leden : ["00000000-0000-0000-0000-000000000000"]);
+      if (leden)
+        q = q.in("user_id", leden.length ? leden : ["00000000-0000-0000-0000-000000000000"]);
       const { data: f } = await q;
       for (const e of (f ?? []) as any[]) {
         rijen.push({
@@ -265,7 +279,10 @@ export const adminGebeurtenissen = createServerFn({ method: "POST" })
 
     rijen.sort((a, b) => (a.tijd < b.tijd ? 1 : -1));
     const beperkt = rijen.slice(0, data.limiet);
-    const namen = await naamKaart(db, beperkt.map((r) => r.user_id));
+    const namen = await naamKaart(
+      db,
+      beperkt.map((r) => r.user_id),
+    );
     return beperkt.map((r) => ({ ...r, naam: (r.user_id && namen.get(r.user_id)) || "onbekend" }));
   });
 
@@ -273,7 +290,9 @@ async function naamKaart(db: any, ids: (string | null)[]) {
   const uniek = [...new Set(ids.filter(Boolean))] as string[];
   if (!uniek.length) return new Map<string, string>();
   const { data } = await db.from("profiles").select("id, display_name").in("id", uniek);
-  return new Map<string, string>(((data ?? []) as any[]).map((p) => [p.id as string, (p.display_name ?? "") as string]));
+  return new Map<string, string>(
+    ((data ?? []) as any[]).map((p) => [p.id as string, (p.display_name ?? "") as string]),
+  );
 }
 
 // ---------------- gebruikers: vergelijkingstabel ----------------
@@ -282,9 +301,7 @@ const tabelSchema = z
   .object({
     zoek: z.string().default(""),
     segment: z.string().default(""),
-    sorteer: z
-      .enum(["kost", "activiteit", "laag", "ai", "login", "stil"])
-      .default("kost"),
+    sorteer: z.enum(["kost", "activiteit", "laag", "ai", "login", "stil"]).default("kost"),
   })
   .default({ zoek: "", segment: "", sorteer: "kost" });
 
@@ -293,7 +310,8 @@ export const adminGebruikersTabel = createServerFn({ method: "POST" })
   .inputValidator((d) => tabelSchema.parse(d ?? {}))
   .handler(async ({ context, data }) => {
     const { db } = await bewaker(context as Ctx, "users.view");
-    const { aggregeerDagen, haalDrempels, bepaalSegmenten } = await import("@/lib/monitoring.server");
+    const { aggregeerDagen, haalDrempels, bepaalSegmenten } =
+      await import("@/lib/monitoring.server");
     await aggregeerDagen(db, 2);
     const drempels = await haalDrempels(db);
 
@@ -320,14 +338,21 @@ export const adminGebruikersTabel = createServerFn({ method: "POST" })
     }
 
     const sinds30 = dagString(new Date(Date.now() - 29 * 86400_000));
-    const [{ data: stats }, { data: credits }, { data: aankopen }, { data: recepten }, { data: plan }] =
-      await Promise.all([
-        db.from("daily_user_stats").select("*").gte("dag", sinds30).limit(50_000),
-        db.from("user_credits").select("user_id, balance, gebruikt_totaal, gekocht_totaal, gratis_totaal"),
-        db.from("aankopen").select("user_id, bedrag_cent, status").eq("status", "betaald"),
-        db.from("recipes").select("user_id").is("deleted_at", null).limit(50_000),
-        db.from("meal_plan").select("user_id").limit(50_000),
-      ]);
+    const [
+      { data: stats },
+      { data: credits },
+      { data: aankopen },
+      { data: recepten },
+      { data: plan },
+    ] = await Promise.all([
+      db.from("daily_user_stats").select("*").gte("dag", sinds30).limit(50_000),
+      db
+        .from("user_credits")
+        .select("user_id, balance, gebruikt_totaal, gekocht_totaal, gratis_totaal"),
+      db.from("aankopen").select("user_id, bedrag_cent, status").eq("status", "betaald"),
+      db.from("recipes").select("user_id").is("deleted_at", null).limit(50_000),
+      db.from("meal_plan").select("user_id").limit(50_000),
+    ]);
 
     const perUser = new Map<string, any>();
     for (const s of (stats ?? []) as any[]) {
@@ -363,7 +388,15 @@ export const adminGebruikersTabel = createServerFn({ method: "POST" })
     const planMap = tel((plan ?? []) as any[]);
 
     const rijen = ((profielen ?? []) as any[]).map((p) => {
-      const s = perUser.get(p.id) ?? { handelingen: 0, sessies: 0, ai: 0, credits: 0, kost: 0, fouten: 0, laatste: null };
+      const s = perUser.get(p.id) ?? {
+        handelingen: 0,
+        sessies: 0,
+        ai: 0,
+        credits: 0,
+        kost: 0,
+        fouten: 0,
+        laatste: null,
+      };
       const c = creditMap.get(p.id);
       const betaald = (omzet.get(p.id) ?? 0) > 0;
       const segmenten = bepaalSegmenten(
@@ -402,19 +435,24 @@ export const adminGebruikersTabel = createServerFn({ method: "POST" })
     const gezocht = zoekterm
       ? rijen.filter(
           (r) =>
-            r.naam.toLowerCase().includes(zoekterm) || (r.email ?? "").toLowerCase().includes(zoekterm),
+            r.naam.toLowerCase().includes(zoekterm) ||
+            (r.email ?? "").toLowerCase().includes(zoekterm),
         )
       : rijen;
-    const gefilterd = data.segment ? gezocht.filter((r) => r.segmenten.includes(data.segment as any)) : gezocht;
+    const gefilterd = data.segment
+      ? gezocht.filter((r) => r.segmenten.includes(data.segment as any))
+      : gezocht;
     const sorters: Record<string, (a: any, b: any) => number> = {
       kost: (a, b) => b.kostEur - a.kostEur,
       activiteit: (a, b) => b.handelingen - a.handelingen,
       laag: (a, b) => a.handelingen - b.handelingen,
       ai: (a, b) => b.aiCalls - a.aiCalls,
-      login: (a, b) => String(b.laatsteActiviteit ?? "").localeCompare(String(a.laatsteActiviteit ?? "")),
+      login: (a, b) =>
+        String(b.laatsteActiviteit ?? "").localeCompare(String(a.laatsteActiviteit ?? "")),
       stil: (a, b) =>
-        String(a.laatsteActiviteit ?? "0000").localeCompare(String(b.laatsteActiviteit ?? "0000")) ||
-        String(a.lidSinds).localeCompare(String(b.lidSinds)),
+        String(a.laatsteActiviteit ?? "0000").localeCompare(
+          String(b.laatsteActiviteit ?? "0000"),
+        ) || String(a.lidSinds).localeCompare(String(b.lidSinds)),
     };
     gefilterd.sort(sorters[data.sorteer] ?? sorters["kost"]!);
     return { rijen: gefilterd.slice(0, 300), totaal: gefilterd.length, drempels };
@@ -431,14 +469,18 @@ export const adminAandacht = createServerFn({ method: "GET" })
     const sinds30 = dagString(new Date(Date.now() - 29 * 86400_000));
     const sinds7 = dagString(new Date(Date.now() - 6 * 86400_000));
 
-    const [{ data: profielen }, { data: stats }, { data: credits }, { data: tickets }] = await Promise.all([
-      db.from("profiles").select("id, display_name, created_at").limit(2000),
-      db.from("daily_user_stats").select("*").gte("dag", sinds30).limit(50_000),
-      db.from("user_credits").select("user_id, balance"),
-      db.from("feedback").select("user_id, status").neq("status", "gesloten"),
-    ]);
+    const [{ data: profielen }, { data: stats }, { data: credits }, { data: tickets }] =
+      await Promise.all([
+        db.from("profiles").select("id, display_name, created_at").limit(2000),
+        db.from("daily_user_stats").select("*").gte("dag", sinds30).limit(50_000),
+        db.from("user_credits").select("user_id, balance"),
+        db.from("feedback").select("user_id, status").neq("status", "gesloten"),
+      ]);
 
-    const per = new Map<string, { ai: number; kost: number; fouten7: number; handelingen: number; laatste: string | null }>();
+    const per = new Map<
+      string,
+      { ai: number; kost: number; fouten7: number; handelingen: number; laatste: string | null }
+    >();
     for (const s of (stats ?? []) as any[]) {
       const r = per.get(s.user_id) ?? { ai: 0, kost: 0, fouten7: 0, handelingen: 0, laatste: null };
       r.ai += s.ai_calls;
@@ -451,12 +493,15 @@ export const adminAandacht = createServerFn({ method: "GET" })
     const saldo = new Map(((credits ?? []) as any[]).map((c) => [c.user_id, c.balance as number]));
     const open = new Set(((tickets ?? []) as any[]).map((t) => t.user_id));
 
-    const items: { id: string; naam: string; reden: string; ernst: "hoog" | "midden" | "laag" }[] = [];
+    const items: { id: string; naam: string; reden: string; ernst: "hoog" | "midden" | "laag" }[] =
+      [];
     const nu = Date.now();
-    for (const p of ((profielen ?? []) as any[])) {
+    for (const p of (profielen ?? []) as any[]) {
       const s = per.get(p.id) ?? { ai: 0, kost: 0, fouten7: 0, handelingen: 0, laatste: null };
       const naam = p.display_name || "(geen naam)";
-      const stilDagen = s.laatste ? Math.floor((nu - new Date(`${s.laatste}T12:00:00Z`).getTime()) / 86400_000) : null;
+      const stilDagen = s.laatste
+        ? Math.floor((nu - new Date(`${s.laatste}T12:00:00Z`).getTime()) / 86400_000)
+        : null;
       const leeftijd = Math.floor((nu - new Date(p.created_at).getTime()) / 86400_000);
 
       if (s.handelingen === 0 && leeftijd <= d.nieuwDagen)
@@ -470,12 +515,24 @@ export const adminAandacht = createServerFn({ method: "GET" })
         });
       if (s.fouten7 >= d.veelFouten)
         items.push({ id: p.id, naam, reden: `${s.fouten7} fouten deze week`, ernst: "hoog" });
-      if (s.ai >= d.hoogAi) items.push({ id: p.id, naam, reden: `Veel AI-gebruik (${s.ai} oproepen)`, ernst: "midden" });
+      if (s.ai >= d.hoogAi)
+        items.push({
+          id: p.id,
+          naam,
+          reden: `Veel AI-gebruik (${s.ai} oproepen)`,
+          ernst: "midden",
+        });
       if (s.kost >= d.hogeKost)
-        items.push({ id: p.id, naam, reden: `Hoge kost (€ ${euro(s.kost).toFixed(3)})`, ernst: "midden" });
+        items.push({
+          id: p.id,
+          naam,
+          reden: `Hoge kost (€ ${euro(s.kost).toFixed(3)})`,
+          ernst: "midden",
+        });
       if ((saldo.get(p.id) ?? 0) >= 100 && s.handelingen < 5)
         items.push({ id: p.id, naam, reden: "Veel credits, weinig activiteit", ernst: "laag" });
-      if (open.has(p.id)) items.push({ id: p.id, naam, reden: "Openstaande supportvraag", ernst: "hoog" });
+      if (open.has(p.id))
+        items.push({ id: p.id, naam, reden: "Openstaande supportvraag", ernst: "hoog" });
     }
     const orde = { hoog: 0, midden: 1, laag: 2 } as const;
     items.sort((a, b) => orde[a.ernst] - orde[b.ernst]);
@@ -522,7 +579,10 @@ export const adminKosten = createServerFn({ method: "GET" })
     const inPeriode = rijen.filter((r) => String(r.created_at).slice(0, 10) >= sindsPeriode);
 
     const groepeer = (veld: string) => {
-      const m = new Map<string, { sleutel: string; aantal: number; credits: number; kost: number }>();
+      const m = new Map<
+        string,
+        { sleutel: string; aantal: number; credits: number; kost: number }
+      >();
       for (const r of inPeriode) {
         const k = r[veld] || "(onbekend)";
         const x = m.get(k) ?? { sleutel: k, aantal: 0, credits: 0, kost: 0 };
@@ -531,7 +591,9 @@ export const adminKosten = createServerFn({ method: "GET" })
         x.kost += Number(r.kost_eur ?? 0);
         m.set(k, x);
       }
-      return [...m.values()].map((x) => ({ ...x, kost: euro(x.kost) })).sort((a, b) => b.kost - a.kost);
+      return [...m.values()]
+        .map((x) => ({ ...x, kost: euro(x.kost) }))
+        .sort((a, b) => b.kost - a.kost);
     };
 
     const { data: prijzen } = await db.from("model_prices").select("*").order("model");
@@ -568,7 +630,9 @@ export const adminPrijsZetten = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { db, profiel } = await bewaker(context as Ctx, "settings.manage");
-    await db.from("model_prices").upsert({ ...data, updated_at: new Date().toISOString() }, { onConflict: "model" });
+    await db
+      .from("model_prices")
+      .upsert({ ...data, updated_at: new Date().toISOString() }, { onConflict: "model" });
     await logboek(db, profiel, "cost.price_set", "model_price", data.model, data as any);
     return { ok: true };
   });
@@ -589,8 +653,11 @@ export const adminGroepen = createServerFn({ method: "GET" })
         db.from("shopping_lists").select("group_id").not("group_id", "is", null).limit(5000),
       ]);
 
-    const per = new Map<string, { ai: number; credits: number; kost: number; handelingen: number; laatste: string | null }>();
-    for (const s of ((stats ?? []) as any[])) {
+    const per = new Map<
+      string,
+      { ai: number; credits: number; kost: number; handelingen: number; laatste: string | null }
+    >();
+    for (const s of (stats ?? []) as any[]) {
       const r = per.get(s.user_id) ?? { ai: 0, credits: 0, kost: 0, handelingen: 0, laatste: null };
       r.ai += s.ai_calls;
       r.credits += s.credits;
@@ -600,32 +667,47 @@ export const adminGroepen = createServerFn({ method: "GET" })
       per.set(s.user_id, r);
     }
     const planTel = new Map<string, number>();
-    for (const p of ((plan ?? []) as any[])) planTel.set(p.group_id, (planTel.get(p.group_id) ?? 0) + 1);
+    for (const p of (plan ?? []) as any[])
+      planTel.set(p.group_id, (planTel.get(p.group_id) ?? 0) + 1);
     const lijstTel = new Map<string, number>();
-    for (const l of ((lijsten ?? []) as any[])) lijstTel.set(l.group_id, (lijstTel.get(l.group_id) ?? 0) + 1);
+    for (const l of (lijsten ?? []) as any[])
+      lijstTel.set(l.group_id, (lijstTel.get(l.group_id) ?? 0) + 1);
 
     const ledenPer = new Map<string, any[]>();
-    for (const m of ((leden ?? []) as any[])) {
+    for (const m of (leden ?? []) as any[]) {
       ledenPer.set(m.group_id, [...(ledenPer.get(m.group_id) ?? []), m]);
     }
 
     const ids = [...new Set(((leden ?? []) as any[]).map((m) => m.user_id))];
     const { data: recepten } = ids.length
-      ? await db.from("recipes").select("user_id").in("user_id", ids).is("deleted_at", null).limit(50_000)
+      ? await db
+          .from("recipes")
+          .select("user_id")
+          .in("user_id", ids)
+          .is("deleted_at", null)
+          .limit(50_000)
       : { data: [] as any[] };
     const receptTel = new Map<string, number>();
-    for (const r of ((recepten ?? []) as any[])) receptTel.set(r.user_id, (receptTel.get(r.user_id) ?? 0) + 1);
+    for (const r of (recepten ?? []) as any[])
+      receptTel.set(r.user_id, (receptTel.get(r.user_id) ?? 0) + 1);
 
     return ((groepen ?? []) as any[]).map((g) => {
       const m = ledenPer.get(g.id) ?? [];
       const actief = m.filter((x) => x.status === "actief");
-      const cijfers = actief.map((x) => per.get(x.user_id) ?? { ai: 0, credits: 0, kost: 0, handelingen: 0, laatste: null });
+      const cijfers = actief.map(
+        (x) => per.get(x.user_id) ?? { ai: 0, credits: 0, kost: 0, handelingen: 0, laatste: null },
+      );
       return {
         id: g.id,
         naam: g.naam,
         leden: m.length,
         actieveLeden: cijfers.filter((c) => c.handelingen > 0).length,
-        laatsteActiviteit: cijfers.map((c) => c.laatste).filter(Boolean).sort().pop() ?? null,
+        laatsteActiviteit:
+          cijfers
+            .map((c) => c.laatste)
+            .filter(Boolean)
+            .sort()
+            .pop() ?? null,
         recepten: actief.reduce((s, x) => s + (receptTel.get(x.user_id) ?? 0), 0),
         weekmenuItems: planTel.get(g.id) ?? 0,
         lijsten: lijstTel.get(g.id) ?? 0,
@@ -671,7 +753,9 @@ export const adminGebruikerMonitoring = createServerFn({ method: "POST" })
         .limit(200),
       db
         .from("ai_usage")
-        .select("feature, model, provider, credits, kost_eur, cache_hit, ok, tokens_in, tokens_out, created_at")
+        .select(
+          "feature, model, provider, credits, kost_eur, cache_hit, ok, tokens_in, tokens_out, created_at",
+        )
         .eq("user_id", id)
         .order("created_at", { ascending: false })
         .limit(200),
@@ -687,13 +771,21 @@ export const adminGebruikerMonitoring = createServerFn({ method: "POST" })
         .eq("user_id", id)
         .order("created_at", { ascending: false })
         .limit(50),
-      db.from("feedback").select("id, kind, message, status, created_at").eq("user_id", id).limit(25),
+      db
+        .from("feedback")
+        .select("id, kind, message, status, created_at")
+        .eq("user_id", id)
+        .limit(25),
       db
         .from("shares")
         .select("owner_id, member_id, status, recipes_view, planner_view, shopping_view")
         .or(`owner_id.eq.${id},member_id.eq.${id}`),
       db.from("group_members").select("group_id, status, rol").eq("user_id", id),
-      db.from("aankopen").select("bedrag_cent, status, created_at").eq("user_id", id).eq("status", "betaald"),
+      db
+        .from("aankopen")
+        .select("bedrag_cent, status, created_at")
+        .eq("user_id", id)
+        .eq("status", "betaald"),
       db
         .from("admin_message_recipients")
         .select("message_id, kanaal, status, created_at")
@@ -721,10 +813,19 @@ export const adminGebruikerMonitoring = createServerFn({ method: "POST" })
     const sessies7 = telSessies(tijden.filter((t) => nu - new Date(t).getTime() < 7 * 86400_000));
 
     // kosten over de volledige levensduur
-    const { data: alleAi } = await db.from("ai_usage").select("credits, kost_eur, feature").eq("user_id", id).limit(20_000);
-    const lifetimeKost = euro(((alleAi ?? []) as any[]).reduce((t, r) => t + Number(r.kost_eur ?? 0), 0));
-    const perFeature = new Map<string, { feature: string; aantal: number; credits: number; kost: number }>();
-    for (const r of ((alleAi ?? []) as any[])) {
+    const { data: alleAi } = await db
+      .from("ai_usage")
+      .select("credits, kost_eur, feature")
+      .eq("user_id", id)
+      .limit(20_000);
+    const lifetimeKost = euro(
+      ((alleAi ?? []) as any[]).reduce((t, r) => t + Number(r.kost_eur ?? 0), 0),
+    );
+    const perFeature = new Map<
+      string,
+      { feature: string; aantal: number; credits: number; kost: number }
+    >();
+    for (const r of (alleAi ?? []) as any[]) {
       const x = perFeature.get(r.feature) ?? { feature: r.feature, aantal: 0, credits: 0, kost: 0 };
       x.aantal += 1;
       x.credits += r.credits ?? 0;
@@ -734,7 +835,12 @@ export const adminGebruikerMonitoring = createServerFn({ method: "POST" })
 
     const omzet = ((aankopen ?? []) as any[]).reduce((t, a) => t + (a.bedrag_cent ?? 0) / 100, 0);
     const { data: p } = await db.from("profiles").select("created_at").eq("id", id).maybeSingle();
-    const laatsteDag = ((stats ?? []) as any[]).filter((r) => r.handelingen > 0).map((r) => r.dag).sort().pop() ?? null;
+    const laatsteDag =
+      ((stats ?? []) as any[])
+        .filter((r) => r.handelingen > 0)
+        .map((r) => r.dag)
+        .sort()
+        .pop() ?? null;
 
     const tijdlijn = [
       ...((events ?? []) as any[]).map((e) => ({
@@ -798,7 +904,9 @@ export const adminGebruikerMonitoring = createServerFn({ method: "POST" })
       lifetimeKost,
       omzetEur: omzet,
       credits: creditsRij,
-      aiPerFeature: [...perFeature.values()].map((x) => ({ ...x, kost: euro(x.kost) })).sort((a, b) => b.kost - a.kost),
+      aiPerFeature: [...perFeature.values()]
+        .map((x) => ({ ...x, kost: euro(x.kost) }))
+        .sort((a, b) => b.kost - a.kost),
       tijdlijn: tijdlijn.slice(0, 150),
       fouten: (fouten ?? []) as any[],
       meldingen: (meldingen ?? []) as any[],
@@ -847,19 +955,31 @@ async function ontvangerIds(
 ): Promise<string[]> {
   if (data.doelgroep === "gebruiker") return data.doelId ? [data.doelId] : [];
   if (data.doelgroep === "groep") {
-    const { data: m } = await db.from("group_members").select("user_id").eq("group_id", data.doelId).eq("status", "actief");
+    const { data: m } = await db
+      .from("group_members")
+      .select("user_id")
+      .eq("group_id", data.doelId)
+      .eq("status", "actief");
     return ((m ?? []) as any[]).map((x) => x.user_id);
   }
-  const { data: profielen } = await db.from("profiles").select("id, created_at").is("blocked_at", null).limit(5000);
+  const { data: profielen } = await db
+    .from("profiles")
+    .select("id, created_at")
+    .is("blocked_at", null)
+    .limit(5000);
   const alle = ((profielen ?? []) as any[]).map((p) => p.id as string);
   if (data.doelgroep === "iedereen" || !data.segment) return alle;
 
   const { haalDrempels, bepaalSegmenten } = await import("@/lib/monitoring.server");
   const drempels = await haalDrempels(db);
   const sinds30 = dagString(new Date(Date.now() - 29 * 86400_000));
-  const { data: stats } = await db.from("daily_user_stats").select("*").gte("dag", sinds30).limit(50_000);
+  const { data: stats } = await db
+    .from("daily_user_stats")
+    .select("*")
+    .gte("dag", sinds30)
+    .limit(50_000);
   const per = new Map<string, { ai: number; kost: number; laatste: string | null }>();
-  for (const s of ((stats ?? []) as any[])) {
+  for (const s of (stats ?? []) as any[]) {
     const r = per.get(s.user_id) ?? { ai: 0, kost: 0, laatste: null };
     r.ai += s.ai_calls;
     r.kost += Number(s.kost_eur ?? 0);
@@ -912,9 +1032,7 @@ export const adminBerichtVersturen = createServerFn({ method: "POST" })
     const namen = await naamKaart(db, ids);
     const persoonlijk = (tekst: string, naam: string) => {
       const voornaam = naam.trim().split(/\s+/)[0] ?? "";
-      return tekst
-        .replace(/\{voornaam\}/gi, voornaam)
-        .replace(/\{naam\}/gi, naam);
+      return tekst.replace(/\{voornaam\}/gi, voornaam).replace(/\{naam\}/gi, naam);
     };
 
     let ok = 0;
@@ -974,7 +1092,9 @@ const csv = (rijen: Record<string, unknown>[]) => naarCsv(rijen, ";");
 export const adminExportCsv = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ soort: z.enum(["gebruikers", "activiteit", "ai", "credits", "kosten", "groepen"]) }).parse(d),
+    z
+      .object({ soort: z.enum(["gebruikers", "activiteit", "ai", "credits", "kosten", "groepen"]) })
+      .parse(d),
   )
   .handler(async ({ context, data }) => {
     const { db, profiel } = await bewaker(context as Ctx, "users.view");
@@ -983,9 +1103,18 @@ export const adminExportCsv = createServerFn({ method: "POST" })
       throw new Error("Je rol heeft dit recht niet.");
     const sinds30 = dagString(new Date(Date.now() - 29 * 86400_000));
     let rijen: Record<string, unknown>[] = [];
+    // Volledige export: in stukken van 1000 (PostgREST-grens), anders stil onvolledig (BUG-093).
+    const alles = (bouw: (a: number, b: number) => any) =>
+      pagineer<Record<string, unknown>>(bouw, 200_000);
 
     if (data.soort === "gebruikers") {
-      const { data: p } = await db.from("profiles").select("id, display_name, created_at, blocked_at").limit(5000);
+      const { data: p } = await alles((a, b) =>
+        db
+          .from("profiles")
+          .select("id, display_name, created_at, blocked_at")
+          .order("id")
+          .range(a, b),
+      );
       rijen = ((p ?? []) as any[]).map((r) => ({
         id: r.id,
         naam: r.display_name,
@@ -993,23 +1122,40 @@ export const adminExportCsv = createServerFn({ method: "POST" })
         geblokkeerd: r.blocked_at ? "ja" : "nee",
       }));
     } else if (data.soort === "activiteit") {
-      const { data: s } = await db.from("daily_user_stats").select("*").gte("dag", sinds30).limit(50_000);
+      const { data: s } = await alles((a, b) =>
+        db
+          .from("daily_user_stats")
+          .select("*")
+          .gte("dag", sinds30)
+          .order("dag")
+          .order("user_id")
+          .range(a, b),
+      );
       rijen = (s ?? []) as any[];
     } else if (data.soort === "ai") {
-      const { data: a } = await db
+      const a = db
         .from("ai_usage")
-        .select("created_at, user_id, feature, model, provider, tokens_in, tokens_out, credits, kost_eur, ok, cache_hit")
+        .select(
+          "created_at, user_id, feature, model, provider, tokens_in, tokens_out, credits, kost_eur, ok, cache_hit",
+        )
         .gte("created_at", `${sinds30}T00:00:00Z`)
-        .limit(50_000);
-      rijen = (a ?? []) as any[];
+        .order("created_at")
+        .order("id");
+      rijen = (await alles((van, tot) => a.range(van, tot))).data;
     } else if (data.soort === "credits") {
-      const { data: c } = await db.from("user_credits").select("*").limit(5000);
+      const { data: c } = await alles((a, b) =>
+        db.from("user_credits").select("*").order("user_id").range(a, b),
+      );
       rijen = (c ?? []) as any[];
     } else if (data.soort === "kosten") {
-      const { data: d2 } = await db.from("daily_platform_stats").select("*").order("dag").limit(2000);
+      const { data: d2 } = await alles((a, b) =>
+        db.from("daily_platform_stats").select("*").order("dag").range(a, b),
+      );
       rijen = (d2 ?? []) as any[];
     } else {
-      const { data: g } = await db.from("groups").select("id, naam, owner_id, created_at").limit(2000);
+      const { data: g } = await alles((a, b) =>
+        db.from("groups").select("id, naam, owner_id, created_at").order("id").range(a, b),
+      );
       rijen = (g ?? []) as any[];
     }
 
@@ -1021,7 +1167,9 @@ export const adminExportCsv = createServerFn({ method: "POST" })
 
 export const adminAggregeerNu = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d) => z.object({ dagen: z.number().int().min(1).max(90).default(30) }).parse(d ?? {}))
+  .inputValidator((d) =>
+    z.object({ dagen: z.number().int().min(1).max(90).default(30) }).parse(d ?? {}),
+  )
   .handler(async ({ context, data }) => {
     const { db, profiel } = await bewaker(context as Ctx, "settings.manage");
     const { aggregeerDagen } = await import("@/lib/monitoring.server");
@@ -1063,7 +1211,9 @@ export const adminKostenOverzicht = createServerFn({ method: "POST" })
     const { data: ai } = await pasWie(
       db
         .from("ai_usage")
-        .select("user_id, feature, model, credits, kost_eur, cache_hit, ok, tokens_in, tokens_out, beelden, created_at")
+        .select(
+          "user_id, feature, model, credits, kost_eur, cache_hit, ok, tokens_in, tokens_out, beelden, created_at",
+        )
         .gte("created_at", `${van}T00:00:00Z`)
         .lte("created_at", `${tot}T23:59:59Z`)
         .limit(50_000),
@@ -1071,15 +1221,30 @@ export const adminKostenOverzicht = createServerFn({ method: "POST" })
       { wieModus: data.wieModus, wieIds: data.wieIds },
     );
     const rijen = (ai ?? []) as any[];
-    const gemeten = (r: any) => !r.cache_hit && (r.tokens_in > 0 || r.tokens_out > 0 || r.beelden > 0);
+    const gemeten = (r: any) =>
+      !r.cache_hit && (r.tokens_in > 0 || r.tokens_out > 0 || r.beelden > 0);
 
     const labels = new Map((kosten ?? []).map((c: any) => [c.feature, c]));
     const perFeature = new Map<
       string,
-      { feature: string; label: string; aantal: number; gemeten: number; cache: number; credits: number; kost: number }
+      {
+        feature: string;
+        label: string;
+        aantal: number;
+        gemeten: number;
+        cache: number;
+        credits: number;
+        kost: number;
+      }
     >();
-    const perDag = new Map<string, { dag: string; kost: number; aantal: number; credits: number }>();
-    const perGebruiker = new Map<string, { user_id: string; aantal: number; credits: number; kost: number }>();
+    const perDag = new Map<
+      string,
+      { dag: string; kost: number; aantal: number; credits: number }
+    >();
+    const perGebruiker = new Map<
+      string,
+      { user_id: string; aantal: number; credits: number; kost: number }
+    >();
 
     for (const r of rijen) {
       const c: any = labels.get(r.feature);
@@ -1107,7 +1272,12 @@ export const adminKostenOverzicht = createServerFn({ method: "POST" })
       perDag.set(dag, d);
 
       if (r.user_id) {
-        const u = perGebruiker.get(r.user_id) ?? { user_id: r.user_id, aantal: 0, credits: 0, kost: 0 };
+        const u = perGebruiker.get(r.user_id) ?? {
+          user_id: r.user_id,
+          aantal: 0,
+          credits: 0,
+          kost: 0,
+        };
         u.aantal += 1;
         u.credits += r.credits ?? 0;
         u.kost += Number(r.kost_eur ?? 0);
@@ -1126,26 +1296,45 @@ export const adminKostenOverzicht = createServerFn({ method: "POST" })
 
     const topIds = [...perGebruiker.values()].sort((a, b) => b.kost - a.kost).slice(0, 20);
     const { data: profielen } = topIds.length
-      ? await db.from("profiles").select("id, display_name").in("id", topIds.map((u) => u.user_id))
+      ? await db
+          .from("profiles")
+          .select("id, display_name")
+          .in(
+            "id",
+            topIds.map((u) => u.user_id),
+          )
       : { data: [] };
     const naam = new Map((profielen ?? []).map((p: any) => [p.id, p.display_name]));
-    const gebruikers = topIds.map((u) => ({ ...u, kost: euro(u.kost), naam: naam.get(u.user_id) ?? "onbekend" }));
+    const gebruikers = topIds.map((u) => ({
+      ...u,
+      kost: euro(u.kost),
+      naam: naam.get(u.user_id) ?? "onbekend",
+    }));
 
     const reeks: { dag: string; kost: number; aantal: number; credits: number }[] = [];
     for (let i = 0; i < dagen && i < 400; i++) {
       const dag = dagString(new Date(Date.parse(van) + i * 86400_000));
       const d = perDag.get(dag);
-      reeks.push({ dag, kost: euro(d?.kost ?? 0), aantal: d?.aantal ?? 0, credits: d?.credits ?? 0 });
+      reeks.push({
+        dag,
+        kost: euro(d?.kost ?? 0),
+        aantal: d?.aantal ?? 0,
+        credits: d?.credits ?? 0,
+      });
     }
 
     const aiKost = euro(rijen.reduce((s, r) => s + Number(r.kost_eur ?? 0), 0));
     const nietGemeten = rijen.filter((r) => !r.cache_hit && !gemeten(r)).length;
     const hostingCredits = euro(hostingPerDag * dagen);
-    const hostingKost = euro(Math.max(0, hostingPerDag * 30 - gratisCloud) * (dagen / 30) * creditEur);
+    const hostingKost = euro(
+      Math.max(0, hostingPerDag * 30 - gratisCloud) * (dagen / 30) * creditEur,
+    );
 
     const vandaag = dagString(new Date());
     const kostVandaag = euro(
-      rijen.filter((r) => String(r.created_at).slice(0, 10) === vandaag).reduce((s, r) => s + Number(r.kost_eur ?? 0), 0),
+      rijen
+        .filter((r) => String(r.created_at).slice(0, 10) === vandaag)
+        .reduce((s, r) => s + Number(r.kost_eur ?? 0), 0),
     );
 
     return {

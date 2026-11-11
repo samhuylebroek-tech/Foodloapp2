@@ -88,3 +88,31 @@ test("betalingen kunnen niet aan zonder betaalprovider", async ({ page, extern }
   await expect(page.getByText(/Kan pas aan als er een betaalprovider gekoppeld is/)).toBeVisible();
   void extern;
 });
+
+test("CSV-export Gebruikers: volledig gepagineerd en veilig tegen formules", async ({
+  page,
+  extern,
+}) => {
+  await alsRol("super_admin");
+  await seedDb({
+    profiles: [
+      {
+        id: "77777777-7777-4777-8777-777777777771",
+        display_name: '=HYPERLINK("x")',
+        created_at: "2026-11-01T10:00:00Z",
+      },
+    ],
+  });
+  await zetKlok(page, 14);
+  await meldAan(page, EIGENAAR);
+  await page.goto("/beheer/gebruikers");
+  const [bestand] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Exporteer CSV" }).click(),
+  ]);
+  const { readFileSync } = await import("node:fs");
+  const inhoud = readFileSync(await bestand.path(), "utf8");
+  expect(inhoud).toContain("id;naam;lid_sinds;geblokkeerd");
+  expect(inhoud).toContain(`"'=HYPERLINK(""x"")"`);
+  void extern;
+});

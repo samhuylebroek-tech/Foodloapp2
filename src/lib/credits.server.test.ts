@@ -26,7 +26,17 @@ function tabel(naam: string) {
       return q;
     },
     gte: () => q,
-    limit: async () => ({ data: naam === "ai_usage" ? staat.uitgegeven : [], error: null }),
+    order: () => q,
+    // Zoals PostgREST (max-rows): hoogstens 1000 rijen, ook als je meer vraagt.
+    limit: async () => ({
+      data: naam === "ai_usage" ? staat.uitgegeven.slice(0, 1000) : [],
+      error: null,
+    }),
+    // Zoals PostgREST: per verzoek een bereik (de budgetrem pagineert, BUG-093).
+    range: async (van: number, tot: number) => ({
+      data: naam === "ai_usage" ? staat.uitgegeven.slice(van, tot + 1) : [],
+      error: null,
+    }),
     maybeSingle: async () => {
       if (naam === "platform_settings")
         return { data: staat.budget == null ? null : { value: staat.budget }, error: null };
@@ -216,6 +226,25 @@ describe("maandbudget (kostenrem)", () => {
     expect(schatKost({ tokens_in: 0, tokens_out: 0, beelden: 0 })).toBeGreaterThan(0);
     expect(schatKost({ tokens_in: 1_000_000, tokens_out: 0, beelden: 0 })).toBeCloseTo(1, 5);
     expect(schatKost({ tokens_in: 0, tokens_out: 0, beelden: 2 })).toBeCloseTo(0.1, 5);
+  });
+
+  it("budget telt ook voorbij 1000 AI-oproepen per maand (BUG-093)", async () => {
+    vi.useFakeTimers();
+    try {
+      // Andere maand dan de andere tests: verse budgetstand in het geheugen.
+      vi.setSystemTime(new Date("2026-09-15T10:00:00Z"));
+      staat.budget = 20;
+      // 2500 oproepen van € 0,01 = € 25: boven het budget. Met alleen de eerste 1000 rijen
+      // (zonder paginering) zou de rem € 10 zien en ten onrechte doorlaten.
+      staat.uitgegeven = Array.from({ length: 2500 }, () => ({ kost_eur: 0.01 }));
+      const run = vi.fn(async () => "ok");
+      await expect(metCredits({ userId: "u1", feature: "import_url" }, run)).rejects.toThrow(
+        /deze maand even op pauze/,
+      );
+      expect(run).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("budget op: geen reservering, geen AI-oproep, duidelijke melding; daarna weer vrij", async () => {
