@@ -72,7 +72,9 @@ Twee omgevingen, nooit verwarren:
 
 ## 5. Performance en schaal (G)
 - **Gedaan (BUG-093):** Finance, budgetrem, dagaggregatie, CSV-exports en de AVG-export pagineren voorbij 1 000 rijen.
-- **Nog open:** ±25 dashboardqueries in `monitoring.functions.ts` en `admin.functions.ts` met `.limit(>1000)`. Die tonen bij groei onvolledige grafieken. Voorstel: de dashboards uit `daily_platform_stats` en `daily_user_stats` lezen (die zijn al per dag samengevat) in plaats van uit ruwe rijen. Goedkoper en sneller.
+- **Gedaan (2026-11-11):** de ±27 dashboardqueries, de ontvangers van meldingen en het weekvoorstel halen nu alle rijen op (`alleRijen`, vaste volgorde). Ze zijn dus volledig.
+- **Nog open (kosten en snelheid):** sommige dashboards lezen ruwe rijen. Bij veel gebruikers worden dat veel verzoeken van 1 000 rijen. Voorstel: uit `daily_platform_stats` en `daily_user_stats` lezen (al per dag samengevat). Goedkoper en sneller.
+- **Dubbele verzoeken (BUG-118):** Vandaag haalt voorraad, lijst en weekmenu 2–3× op (Vandaag, aanvulkaart, kringloop). Voorstel: één gedeelde query voor die basisgegevens.
 - **Indexen (voorstel, op staging meten met `EXPLAIN`):**
   - `ai_usage(created_at)`, `usage_events(created_at)`, `user_sessions(last_seen_at)` (opruiming en dashboards);
   - `recipes(user_id, deleted_at)` (lijsten).

@@ -833,3 +833,22 @@ Alle tests draaien in Chromium-emulatie, niet op een echt toestel.
 
 - **Overgeslagen (107), allemaal bewust:** 30 auditvarianten, 67 schermafdruk-specs, 10 persona's op een niet-bedoelde breedte.
 - **Tussenstap:** commit `d745358` faalde op de lint-ratchet (opmaak). Hersteld in `40b1b09`, zonder gedragswijziging.
+
+## 24. Release-readiness-missie (2026-11-11)
+Alles lokaal, niet gepusht, niet uitgerold. Overzicht voor de eigenaar: `RELEASE-READINESS-2026-11.md`.
+
+| Onderdeel | Status |
+|---|---|
+| BUG-113 tweede stap (2FA-code) bij een volgende aanmelding; BUG-114 QR zonder innerHTML, bevestiging bij verwijderen | Lokaal getest; proef met afdwingen aan geslaagd; afdwingen blijft **uit** |
+| BUG-093 dashboards, meldingsontvangers, weekvoorstel voorbij 1 000 rijen; nep-PostgREST met `max-rows` 1 000 | Lokaal getest (faalt op oude code) |
+| BUG-037 eerlijke fouten op de lijst en in de offline wachtrij; BUG-104 bevestiging na verwijderen; BUG-038 afgerond | Lokaal getest (falen op oude code) |
+| BUG-115 200 % tekst; BUG-116 focus terug na sluiten; spec `mobiel-kwaliteit` | Simulatie (Chromium) |
+| BUG-117 WebKit op macOS 14 niet te draaien; BUG-118 dubbele verzoeken op Vandaag | Open |
+
+**Volledige regressie** (verse clone van `cab1506`, `CI=true`):
+
+| install | tsc | vitest | lint-ratchet (t.o.v. `be5cc69`) | build | Playwright | RLS |
+|---|---|---|---|---|---|---|
+| 0 | 0 | 0 (527/527) | 0 | 0 | **0**: 339 geslaagd (waarvan 2 bewust "verwacht falend": 2FA), 0 flaky, 0 mislukt, 107 overgeslagen | **0**: 14/14 |
+
+- **Tussenstap:** de eerste ratchet-run na de functionele commits faalde (exit 1, alleen opmaak). Hersteld in 2 opmaakcommits, alleen op de gewijzigde regels.

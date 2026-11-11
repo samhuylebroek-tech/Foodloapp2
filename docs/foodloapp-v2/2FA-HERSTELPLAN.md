@@ -1,6 +1,6 @@
 # 2FA voor het Control Center: herstelplan en voorstel tot afdwingen (BUG-095)
 
-Stand 2026-11-11. **Nog niet afgedwongen.** Dit plan ligt ter goedkeuring voor. Na akkoord volgt de server-side afdwinging uit §6.
+Stand 2026-11-11 (aangevuld met §2b). **Nog niet afgedwongen.** Dit plan ligt ter goedkeuring voor. Na akkoord volgt de server-side afdwinging uit §6.
 
 ## 1. Vandaag
 - `admin_users.mfa_required` bestaat. `mijnAdminProfiel` berekent `mfaOk` en de UI toont een rode banner.
@@ -17,6 +17,22 @@ Stand 2026-11-11. **Nog niet afgedwongen.** Dit plan ligt ter goedkeuring voor. 
 2. Tot dan staat `mfa_required` voor de eigenaar op `false`. Dat is de huidige stand en blijft die.
 3. Bij het afdwingen blijft **één** route met alleen `aal1` open: het instellen van 2FA (`supabase.auth.mfa.enroll`, `challenge`, `verify`). Dat zijn functies van Supabase Auth zelf, geen serverfuncties van het Control Center, dus `bewaker()` hoeft niets door te laten.
 4. Het scherm Beveiliging toont bij `aal1` alleen de 2FA-instelling, geen gegevens.
+
+## 2b. Tweede stap bij een volgende aanmelding (gebouwd 2026-11-11, BUG-113)
+**Gevonden gat:** de app kon de code alleen vragen tijdens het *koppelen*. Bij een gewone aanmelding (wachtwoord → `aal1`) was er nergens een veld om de 6 cijfers in te geven. Met afdwingen aan zou de eigenaar zich dus bij de volgende aanmelding buitensluiten, en dan blijft alleen scenario C over.
+
+**Nu:**
+- In het Control Center staat bij `mfa_required` en `aal1` een blok **"2-staps verificatie is verplicht voor jouw rol"** met een codeveld (`autocomplete="one-time-code"`, cijfertoetsenbord). Na de juiste code wordt de sessie `aal2` en laadt alles opnieuw.
+- Bij meerdere authenticators kies je welke (reserve, scenario B).
+- Zonder gekoppelde authenticator: een link "Nu instellen" (scenario A).
+- Foutmeldingen in gewone taal ("Die code klopt niet of is net verlopen …"), nooit de Engelse ruwe fout.
+- Beveiliging → een authenticator verwijderen vraagt eerst bevestiging; bij de laatste volgt een duidelijke waarschuwing. Met één actieve authenticator verschijnt een tip om een reserve te koppelen.
+- De QR-code wordt als afbeelding getoond (geen HTML-injectie meer).
+
+**Getest (lokaal, nep-Supabase):**
+- `tests/e2e/tweede-stap.spec.ts`: te korte code, foute code, juiste code → `aal2`; zonder authenticator; verwijderen met bevestiging. Alle tests falen op de oude code.
+- **Proef met afdwingen tijdelijk aan** (`MFA_AFDWINGEN = true`, daarna teruggezet): een `aal1`-sessie kreeg geen Finance-cijfers; na de code wel. De beheerder raakt dus niet buitengesloten.
+- **Niet getest:** echte Supabase Auth (echte TOTP-app, echte QR-code, tijdsafwijking). Dat gebeurt op staging (§5).
 
 ## 3. Scenario B: authenticator verloren (nieuwe telefoon, gewist)
 1. **Voorkomen:**
@@ -38,6 +54,7 @@ Supabase Auth heeft geen ingebouwde herstelcodes voor TOTP. Daarom:
 - [ ] 2FA voor het **Supabase-dashboardaccount** aan; herstelcodes offline bewaard.
 - [ ] 2FA voor de **Foodlo-eigenaar** ingesteld met **twee** factoren; `aal2`-aanmelding getest.
 - [ ] Scenario C één keer geoefend op **staging** (factor wissen in het dashboard, opnieuw instellen).
+- [ ] Op **staging**: aanmelden met wachtwoord → tweede stap met de echte authenticator-app → Control Center werkt (§2b).
 - [ ] Lovable-dashboardaccount met 2FA (daar kan ook code gewijzigd worden).
 
 ## 6. Voorgestelde afdwinging (na akkoord)
