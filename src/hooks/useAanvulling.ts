@@ -1,5 +1,10 @@
 /** Gedeelde toegang tot "wat ontbreekt er voor je komende maaltijden?" + acties met ongedaan maken. */
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  isCancelledError,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { HalfGelukt, haalVanLijst, laadAanvulling, vulAan, type Herstel } from "@/lib/kringloop-db";
@@ -42,6 +47,22 @@ export function aanvullingQuery(userId: string) {
     queryKey: ["aanvulling", userId] as const,
     queryFn: () => laadAanvulling(userId),
   };
+}
+
+/**
+ * Slim aanvullen voor Vandaag: altijd vers (staleTime 0), maar een verzoek dat al loopt wordt
+ * gedeeld (BUG-118). Wordt dat verzoek afgebroken omdat er net iets wijzigde (invalidatie),
+ * dan wachten we op het nieuwe in plaats van een oude stand te gebruiken.
+ */
+export async function haalGedeeldeAanvulling(qc: QueryClient, userId: string) {
+  for (let poging = 0; poging < 3; poging++) {
+    try {
+      return await qc.fetchQuery({ ...aanvullingQuery(userId), staleTime: 0 });
+    } catch (e) {
+      if (!isCancelledError(e)) throw e;
+    }
+  }
+  return laadAanvulling(userId);
 }
 
 export function useAanvulling() {

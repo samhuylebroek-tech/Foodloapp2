@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { NuKaart } from "@/components/vandaag/NuKaart";
 import { Daarna } from "@/components/vandaag/Daarna";
-import { aanvullingQuery, useAanvulling } from "@/hooks/useAanvulling";
+import { haalGedeeldeAanvulling, useAanvulling } from "@/hooks/useAanvulling";
 import { leesVoortgang } from "@/lib/kookstand";
 import { hoofdStap, signalen as signalenVan } from "@/lib/vandaag";
 import { laadVandaag } from "@/lib/vandaag-db";
@@ -161,8 +161,8 @@ function StartPage() {
     staleTime: 15_000,
     queryFn: () =>
       laadVandaag(user!.id, vandaag(), {
-        // Zelfde cache als de aanvulkaart: gelijktijdig = één verzoek; net ververst = hergebruikt.
-        aanvulling: () => qc.fetchQuery({ ...aanvullingQuery(user!.id), staleTime: 2_000 }),
+        // Zelfde cache als de aanvulkaart: gelijktijdig = één verzoek, nooit een oude stand.
+        aanvulling: () => haalGedeeldeAanvulling(qc, user!.id),
       }),
   });
   const aanvulling = useAanvulling();
