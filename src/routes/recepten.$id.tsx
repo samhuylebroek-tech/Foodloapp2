@@ -50,13 +50,7 @@ import { Copy, Users } from "lucide-react";
 import { KookTimers } from "@/components/KookTimers";
 import { bewaarVoortgang, leesVoortgang, vindTimers, wisVoortgang } from "@/lib/kookstand";
 import { meldMetHerstel, useKringloopVernieuw } from "@/hooks/useAanvulling";
-import {
-  HalfGelukt,
-  lijstUitleg,
-  planErbij,
-  verwerkKoken,
-  wijzigMenu,
-} from "@/lib/kringloop-db";
+import { HalfGelukt, lijstUitleg, planErbij, verwerkKoken, wijzigMenu } from "@/lib/kringloop-db";
 import { useVoorraadNamen } from "@/hooks/useVoorraadStand";
 import { isBasis, zitInVoorraad } from "@/lib/voorraad-match";
 import { soortLabel } from "@/lib/recept-keuzes";
@@ -275,7 +269,8 @@ function ReceptPage() {
       if (ingRes.error) throw ingRes.error;
       // Tweede laag naast RLS (BUG-105): een recept van een onbekende nooit tonen.
       const eigenaren = await zichtbareEigenaren();
-      if (!eigenaren.includes((recipeRes.data as Recipe).user_id)) throw new Error("niet-zichtbaar");
+      if (!eigenaren.includes((recipeRes.data as Recipe).user_id))
+        throw new Error("niet-zichtbaar");
       return { recipe: recipeRes.data as Recipe, ingredients: ingRes.data as Ingredient[] };
     },
   });
