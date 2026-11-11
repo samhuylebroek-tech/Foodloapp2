@@ -720,3 +720,59 @@ Alle tests draaien in Chromium-emulatie, niet op een echt toestel.
 - 10 `personas` op een schermbreedte waarvoor ze niet bedoeld zijn ("alleen op telefoon" of "alleen op desktop").
 
 **Na deze regressie** zijn alleen documenten gewijzigd, geen code.
+
+## 21. A-tot-Z productaudit en Business Control Center (2026-11-11)
+**Documenten:**
+- `PERSONA-TESTVERSLAG-2026-11.md` (zes persona's, scores per persona en per module);
+- `CREATOR-GAP-ANALYSE.md`;
+- `BUSINESS-CONTROL-CENTER-AUDIT.md` (functiematrix, financiële matrix, rollen, betaalarchitectuur voor België en de EU, fasering);
+- bugregister BUG-090 t/m 104;
+- module-audit §13;
+- designsysteem §5.3.
+
+**Eerlijk:**
+- Persona's zijn **gesimuleerd** (Chromium, nep-Supabase met fictieve gegevens).
+- Niet testbaar in de lokale demo: RLS, realtime, AI, opslag, e-mail en push, en betalingen (die bestaan niet).
+- De LAN-demo is **niet** geactiveerd.
+
+**Belangrijkste conclusies**
+1. **De kern werkt en hangt samen:** plannen, lijst, winkelen, koken en voorraad. Visueel verzorgd en toegankelijk volgens axe.
+2. **Creators, sociale functies, abonnementen en een financieel controlecentrum bestaan niet.** Het "Finance"-scherm is een kostenscherm.
+3. **Het beheer is goed voor een gratis app met één eigenaar.**
+   - Vier rechtenlekken zijn lokaal gedicht (BUG-090/091/092/094), plus één fout in financiële totalen (BUG-093).
+   - Twee latente beveiligingsproblemen vragen een akkoord: 2FA op de server (BUG-095) en RLS met `is_admin` (BUG-097).
+4. **Klaar voor een kleine, begeleide gebruikerstest** van de kern, op staging, na de praktijktest op toestellen. **Niet** voor creators of betalende gebruikers.
+
+**Lokaal uitgevoerde verbeteringen**
+
+| Wat | Status |
+|---|---|
+| `finance.view`-recht voor schermen, serverfuncties, menu en financiële CSV-soorten | Opgelost en getest (`beheer-rechten.spec.ts` faalt op de oude code; `admin-rechten.test.ts`) |
+| Meldingenbeheer via `bewaker()` + auditlog | Opgelost en getest |
+| CSV-injectie | Opgelost en getest (`csv-veilig.test.ts`) |
+| Finance pagineert voorbij 1 000 rijen | Opgelost, gedeeltelijk getest (unit; andere beheerqueries nog open) |
+| "Betalingen actief" vergrendeld zonder betaalprovider | Opgelost en getest |
+
+**Toestemming nodig** (bovenop §15):
+- fase 1-migratie (rollen, RLS, `claim_first_admin` intrekken, 2FA op de server, met een noodprocedure);
+- keuze van betaalmodel en betaalprovider (B5) met juridisch advies (btw-rol van het platform, DAC7, herroepingsknop);
+- elke betaalde dienst;
+- push.
+
+**Volledige regressie** (verse clone van `70781e5`, `CI=true`, echte exitcodes):
+
+| install | tsc | vitest | lint-ratchet (t.o.v. `f5bc8dd`) | build | Playwright |
+|---|---|---|---|---|---|
+| 0 | 0 | 0 (487/487) | 0 | 0 | **0**: 286 geslaagd, 0 flaky, 0 mislukt, 107 overgeslagen |
+
+- **Overgeslagen (107), allemaal bewust:**
+  - 30 auditvarianten die alleen met `AUDIT=1` draaien: 11 `audit-mobiel`, 10 `audit-profiel-beheer`, 9 `audit-persona-az`;
+  - 67 schermafdruk-specs (`schermen*`);
+  - 10 `personas` op een niet-bedoelde breedte.
+- **De flaky `/instellingen`-test van §20** kwam deze keer niet terug. Niet onderzocht, dus het risico blijft staan.
+- **Eerdere tussenstap:** de eerste commit (`1d9d742`) faalde op de lint-ratchet (exit 1: prettier-opmaak in drie gewijzigde bestanden). Hersteld in `70781e5`, zonder gedragswijziging.
+- **Persona-audit apart:** `AUDIT=1 … audit-persona-az.spec.ts --project=mobiel-390` gaf exitcode 0 (9 tests, 70 stappen; bevindingen in het verslag).
+- **Niet gedekt:**
+  - echte toestellen, schermlezer en WebKit;
+  - RLS en realtime (staging);
+  - of productie de foutmelding "Je rol heeft dit recht niet." ongewijzigd doorgeeft (de dev-server doet dat wel).
