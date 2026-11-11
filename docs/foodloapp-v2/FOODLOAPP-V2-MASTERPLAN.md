@@ -812,3 +812,24 @@ Alle tests draaien in Chromium-emulatie, niet op een echt toestel.
 - migraties 0002 en 0003;
 - het 2FA-herstelplan en daarna de afdwinging;
 - beslissingen over BUG-110, BUG-112, de foto-opruiming, wat er wel of niet in de export komt, en de bewaartermijnen.
+
+## 23. Master-missie: veiligheid, AVG, kern-UX, Control Center (2026-11-11)
+**Live gecontroleerd door de eigenaar** (alleen-lezen, Lovable Cloud): recepten- en fotorechten in orde, bucket Private, dus BUG-105 en BUG-106 bestaan live niet. Live en repo zijn twee verschillende omgevingen (BUG-011). Zie SECURITY-AUDIT §8.
+
+| Onderdeel | Status |
+|---|---|
+| Voorstel 0002 gesplitst in `0002a` (basislijn, alleen nieuwe omgevingen) en `0002` (beheer, feedback, `is_admin`, `claim_first_admin`) | Lokaal getest (14/14), niet uitgevoerd |
+| BUG-095 2FA op de server | Gebouwd, staat **uit**; goedkeuring van het herstelplan nodig |
+| BUG-110 gezin overdragen; BUG-025 foto's veilig wissen | Lokaal getest (unit + E2E, falen op oude code); niet live |
+| BUG-098, 099, 100, 101, 102 | Lokaal getest |
+| BUG-093 paginering: budgetrem, aggregatie, CSV | Lokaal getest; ±25 dashboardqueries open |
+| Collecties, gezinsvoorkeuren en allergieën, creators, budget | Alleen voorgesteld (ARCHITECTUUR-VOORSTELLEN.md) |
+
+**Volledige regressie** (verse clone van `493ee05`, `CI=true`):
+
+| install | tsc | vitest | lint-ratchet (t.o.v. `a277e63`) | build | Playwright | RLS (`tests/rls/alles.mjs`) |
+|---|---|---|---|---|---|---|
+| 0 | 0 | 0 (515/515) | 0 | 0 | **0**: 318 geslaagd (waarvan 2 bewust "verwacht falend": 2FA), 0 flaky, 0 mislukt, 107 overgeslagen | **0**: 14/14 zoals verwacht |
+
+- **Overgeslagen (107), allemaal bewust:** 30 auditvarianten, 67 schermafdruk-specs, 10 persona's op een niet-bedoelde breedte.
+- **Tussenstap:** commit `d745358` faalde op de lint-ratchet (opmaak). Hersteld in `40b1b09`, zonder gedragswijziging.
