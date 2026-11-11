@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { bewaker } from "@/lib/admin.functions";
+import { pagineer } from "@/lib/pagineer";
 
 type Ctx = { supabase: any; userId: string; claims?: any };
 
@@ -13,15 +14,17 @@ export const adminFinance = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ dagen: z.number().int().min(1).max(366).default(30) }).parse(d ?? {}))
   .handler(async ({ context, data }) => {
-    const { db } = await bewaker(context as Ctx, "dashboard.view");
+    const { db } = await bewaker(context as Ctx, "finance.view");
     const sinds = new Date(Date.now() - data.dagen * 86400_000).toISOString();
     const vorigSinds = new Date(Date.now() - 2 * data.dagen * 86400_000).toISOString();
 
+    // In stukken ophalen: PostgREST geeft max. 1000 rijen per verzoek (BUG-093). Vaste
+    // volgorde (created_at, id) zodat geen rij dubbel of niet meegeteld wordt.
     const [aankopen, ai, tx, saldo] = await Promise.all([
-      db.from("aankopen").select("id, user_id, soort, bedrag_cent, valuta, status, provider, created_at").gte("created_at", vorigSinds).order("created_at", { ascending: false }).limit(5000),
-      db.from("ai_usage").select("feature, kost_eur, credits, created_at").gte("created_at", vorigSinds).limit(50000),
-      db.from("credit_transactions").select("type, amount, created_at").gte("created_at", vorigSinds).limit(50000),
-      db.from("user_credits").select("balance"),
+      pagineer((van, tot) => db.from("aankopen").select("id, user_id, soort, bedrag_cent, valuta, status, provider, created_at").gte("created_at", vorigSinds).order("created_at", { ascending: false }).order("id").range(van, tot)),
+      pagineer((van, tot) => db.from("ai_usage").select("feature, kost_eur, credits, created_at").gte("created_at", vorigSinds).order("created_at").order("id").range(van, tot)),
+      pagineer((van, tot) => db.from("credit_transactions").select("type, amount, created_at").gte("created_at", vorigSinds).order("created_at").order("id").range(van, tot)),
+      pagineer((van, tot) => db.from("user_credits").select("balance").order("user_id").range(van, tot)),
     ]);
 
     const inPeriode = (d: string) => d >= sinds;

@@ -82,6 +82,13 @@ Rasters met veel kolommen (weekraster, collecties, weekstrook) pas vanaf `xl` (1
 - **Schakelaar:** 56 × 32 px zichtbaar, raakvlak 72 × 48 px via `::before`. De audit telt het zichtbare kader en meldt hem dus als < 44 px. Dat is bekend en in orde.
 - **Losse knoppenparen** (bv. "Link kopiëren" en "Delen") stapelen onder 400 px.
 
+### 5.3 Control Center: rechten, demo en geld (2026-11-11)
+- **Geen recht ≠ leeg.** Een scherm waarvoor je rol geen recht heeft, toont de melding van de server ("Je rol heeft dit recht niet."), nooit een lege tabel (BUG-098, nog open voor Gebruikers).
+- **Menu volgt rechten.** Een tab verschijnt alleen als de rol het recht heeft. Een hoofdsectie wijst naar het eerste toegelaten tabblad (bv. "Finance" → AI-gebruik voor analyst).
+- **Demogegevens** (voorstel): bij `DEMO=1` een vaste band "Demogegevens, geen echte cijfers" bovenaan elk beheerscherm.
+- **Geldbedragen:** altijd met valuta en periode ("€ 0,00 · 30 dagen"). Een KPI die niet gekoppeld is, zegt dat ("Betalingen niet gekoppeld"), nooit "€ 0" zonder uitleg. Een label noemt precies wat er geteld wordt ("Omzet min AI-kosten", niet "Resultaat").
+- **Gevaarlijke schakelaars** die gebruikers kunnen blokkeren (bv. "Betalingen actief") zijn uitgeschakeld zolang de voorwaarde ontbreekt, met de reden eronder (`aria-describedby`).
+
 ## 6. Ruimte en kleur
 - **Ruimte:** schaal van 4 px. Binnen een kaart 16 px, tussen kaarten 12–20 px, tussen secties 40–48 px. Zijmarge 16 px op de telefoon, 24 px vanaf `sm`.
 - **Kleur:** inkt (donkergroen) voor hoofdkaarten, honing als accent en voor "nu", primair groen voor acties. Een kleur betekent nooit iets alleen: er staat altijd tekst of een pictogram bij.

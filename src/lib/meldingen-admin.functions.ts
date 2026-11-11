@@ -1,6 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { bewaker, logboek } from "@/lib/admin.functions";
+
+type Ctx = Parameters<typeof bewaker>[0];
 
 export type MeldingStats = {
   gebruikersMetToestel: number;
@@ -16,31 +19,32 @@ export type MeldingStats = {
   standaarden: { key: string; value: string; omschrijving: string }[];
 };
 
-async function moetAdminZijn(supabase: ReturnType<typeof Object> extends never ? never : any, userId: string) {
-  const { data } = await supabase.rpc("is_admin", { _user_id: userId });
-  if (!data) throw new Error("Geen toegang");
-}
-
+// Zelfde autorisatie als de rest van het Control Center (BUG-090): vaste eigenaar, rol,
+// alleen-lezen, snelheidslimiet en auditlog. Vroeger alleen `is_admin` (= elke actieve
+// beheerdersrij, ongeacht rol of alleen-lezen).
 export const meldingStatistieken = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<MeldingStats> => {
-    const { supabase, userId } = context;
-    await moetAdminZijn(supabase, userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { db: supabaseAdmin } = await bewaker(context as Ctx, "dashboard.view");
 
-    const [{ data: abos }, { count: gebruikersTotaal }, { data: log }, { data: prefs }, { data: standaarden }] =
-      await Promise.all([
-        supabaseAdmin.from("push_subscriptions").select("user_id").eq("actief", true),
-        supabaseAdmin.from("profiles").select("id", { count: "exact", head: true }),
-        supabaseAdmin.from("notification_log").select("soort, status").gte(
-          "created_at",
-          new Date(Date.now() - 30 * 864e5).toISOString(),
-        ),
-        supabaseAdmin
-          .from("notification_preferences")
-          .select("daily_menu_on, weekly_on, meal_on, shopping_on, cooking_on"),
-        supabaseAdmin.from("notification_defaults").select("key, value, omschrijving").order("key"),
-      ]);
+    const [
+      { data: abos },
+      { count: gebruikersTotaal },
+      { data: log },
+      { data: prefs },
+      { data: standaarden },
+    ] = await Promise.all([
+      supabaseAdmin.from("push_subscriptions").select("user_id").eq("actief", true),
+      supabaseAdmin.from("profiles").select("id", { count: "exact", head: true }),
+      supabaseAdmin
+        .from("notification_log")
+        .select("soort, status")
+        .gte("created_at", new Date(Date.now() - 30 * 864e5).toISOString()),
+      supabaseAdmin
+        .from("notification_preferences")
+        .select("daily_menu_on, weekly_on, meal_on, shopping_on, cooking_on"),
+      supabaseAdmin.from("notification_defaults").select("key, value, omschrijving").order("key"),
+    ]);
 
     const metToestel = new Set((abos ?? []).map((a) => a.user_id)).size;
     const totaal = gebruikersTotaal ?? 0;
@@ -76,7 +80,8 @@ export const meldingStatistieken = createServerFn({ method: "GET" })
       verstuurd,
       mislukt,
       aangetikt,
-      afleverPercentage: verstuurd + mislukt ? Math.round((verstuurd / (verstuurd + mislukt)) * 100) : 0,
+      afleverPercentage:
+        verstuurd + mislukt ? Math.round((verstuurd / (verstuurd + mislukt)) * 100) : 0,
       engagementPercentage: verstuurd ? Math.round((aangetikt / verstuurd) * 100) : 0,
       perSoort,
       aanPerSoort,
@@ -107,12 +112,21 @@ export const bewaarMeldingStandaard = createServerFn({ method: "POST" })
     return { key, value };
   })
   .handler(async ({ data, context }) => {
-    await moetAdminZijn(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { db: supabaseAdmin, profiel } = await bewaker(context as Ctx, "settings.manage");
     const { error } = await supabaseAdmin
       .from("notification_defaults")
       .update({ value: JSON.parse(data.value) as never, updated_at: new Date().toISOString() })
       .eq("key", data.key);
     if (error) throw new Error(error.message);
+    await logboek(
+      supabaseAdmin,
+      profiel,
+      "meldingen.standaard_gewijzigd",
+      "notification_defaults",
+      null,
+      {
+        key: data.key,
+      },
+    );
     return { ok: true };
   });

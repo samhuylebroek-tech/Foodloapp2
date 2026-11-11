@@ -185,6 +185,7 @@ Elke module krijgt hieronder een score per punt (✅ voldoet · 🟨 deels · �
 - **Status:** architectuur ontworpen (masterplan §7); credits en pakketten bestaan, maar staan uit.
 - **Nog niets gebouwd voor eindgebruikers**; betalen ⛔ G5.
 - **Volgende stap** zonder akkoord: alleen ontwerpen (profielpagina, collectie, toegangsregels). Geen betaling.
+- **Herzien 2026-11-11 (A-Z-audit):** getest als persona C. Bestaat: recept invoeren en delen. Bestaat niet: bio, publiek profiel, publiceren, volgen, eigen collecties, statistieken, betaalde content. Score voor creators: 1/10. Volledige gap-analyse en volgorde: `CREATOR-GAP-ANALYSE.md`. Beheer en financieel: `BUSINESS-CONTROL-CENTER-AUDIT.md`.
 
 ## 10. Profiel, instellingen en ondersteuning
 - **Gebouwd:** thema, taal, eetmomenten (WP5), export, account verwijderen en meldingen.
@@ -227,6 +228,22 @@ Elke module krijgt hieronder een score per punt (✅ voldoet · 🟨 deels · �
 | D3 | Recept: één hoofdknop, eenheden omrekenen, ingrediënt vervangen (eigen tabel) | nee | Recepten |
 | D4 | Voorraad: label, categorieën, samenvoegen van dubbels | nee | Voorraad |
 | E | Staging (B6/G1) → huishouden, voorraadvelden, transacties, collecties, B7/B8; creatorontwerp | **ja** | Wacht op jouw akkoord |
+
+## 13. A-tot-Z productaudit per persona (2026-11-11)
+Volledig verslag: `PERSONA-TESTVERSLAG-2026-11.md` (zes gesimuleerde persona's, echte klikken in Chromium tegen de nep-Supabase; geen echte gebruikers of toestellen).
+
+**Scores (1–10):**
+- per persona: A jong 5,5 · B 70 jaar 7 · C creator 2,5 · D gezin 5 (onzeker: realtime en RLS niet testbaar) · E beginner 6 · F hobbykok 6,5;
+- per module: Lijst/winkelmodus 8 · Vandaag 7,5 · Kookmodus 7,5 · Week 7 · Keuken 7 · Voorraad 6,5 · Profiel 6,5 · Control Center 6 · Onboarding 5,5 · Ontdek 5 · Gezin 5 · Financieel 3 · Creator 1.
+
+**Waarom een echte gebruiker zou afhaken (kritisch):**
+1. **Jongeren en creators:** niets sociaals, geen creators, geen eigen collecties. Ontdek is een kleine, samengestelde bibliotheek.
+2. **Gezin:** geen taken ("wie kookt, wie winkelt") en geen voorkeuren per gezinslid. Samenwerking niet aantoonbaar zonder staging.
+3. **70 jaar:** zoeken vergeeft geen tikfout (BUG-100). Op 200 % tekst duwt de foto op Vandaag de actie onder de vouw.
+4. **Beginner:** de onboarding vraagt geen kookniveau of budget. Geen prijsinformatie. Lege Ontdek zegt "komt hier".
+5. **Hobbykok:** bewerken zit verstopt in "…" (BUG-102); geen eigen mappen.
+
+**Wat volledig werkt** (in Chromium, nep-Supabase): de reis voorraad → Vandaag → Week → Lijst (alleen het tekort) → winkelmodus → koken → voorraad bijgewerkt; porties herschalen; ongedaan maken; lege staten; lange titels; dubbel tikken zonder dubbele items; een verwijderd recept verdwijnt ook uit het weekmenu.
 
 ## Bronnen (referentie-apps; grotendeels leveranciers en app-stores)
 - [Bring! features](https://getbring.com/en/features), [Bring! organized](https://www.getbring.com/en/features/organized), [Bring! personalized](https://getbring.com/en/features/personalized), [Bring! App Store](https://apps.apple.com/nl/app/bring-boodschappenlijst/id580669177)

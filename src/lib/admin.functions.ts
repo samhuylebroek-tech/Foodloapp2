@@ -22,6 +22,7 @@ export type AdminProfiel = {
 
 export type Rechten =
   | "dashboard.view"
+  | "finance.view"
   | "users.view"
   | "users.manage"
   | "users.delete"
@@ -41,6 +42,7 @@ export type Rechten =
 const MATRIX: Record<AdminRol, Rechten[]> = {
   super_admin: [
     "dashboard.view",
+    "finance.view",
     "users.view",
     "users.manage",
     "users.delete",
@@ -59,6 +61,7 @@ const MATRIX: Record<AdminRol, Rechten[]> = {
   ],
   admin: [
     "dashboard.view",
+    "finance.view",
     "users.view",
     "users.manage",
     "recipes.view",
@@ -1125,7 +1128,7 @@ export const adminAankondigingVerwijderen = createServerFn({ method: "POST" })
 export const adminCredits = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { db } = await bewaker(context as Ctx, "dashboard.view");
+    const { db } = await bewaker(context as Ctx, "finance.view");
     const sinds = new Date(Date.now() - 30 * 86400_000).toISOString();
 
     const [kosten, pakketten, saldi, boekingen, gebruik] = await Promise.all([

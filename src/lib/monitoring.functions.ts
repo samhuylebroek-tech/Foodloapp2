@@ -2,7 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { begrensdeLijst } from "@/lib/zod-hulp";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { bewaker, logboek, pasWie, type WieKeuze } from "@/lib/admin.functions";
+import { bewaker, heeftRecht, logboek, pasWie, type WieKeuze } from "@/lib/admin.functions";
+import { naarCsv } from "@/lib/csv-veilig";
 
 // ============================================================
 // Monitoring — alles server-side, alleen voor het Control Center.
@@ -496,7 +497,7 @@ export const adminKosten = createServerFn({ method: "GET" })
       .parse(d ?? {}),
   )
   .handler(async ({ context, data }) => {
-    const { db } = await bewaker(context as Ctx, "dashboard.view");
+    const { db } = await bewaker(context as Ctx, "finance.view");
     const dagen = data.dagen;
     const venster = Math.max(30, dagen);
     const sinds = new Date(Date.now() - venster * 86400_000).toISOString();
@@ -968,15 +969,7 @@ export const adminBerichten = createServerFn({ method: "GET" })
 
 // ---------------- export ----------------
 
-function csv(rijen: Record<string, unknown>[]): string {
-  if (!rijen.length) return "";
-  const kolommen = Object.keys(rijen[0]!);
-  const veld = (v: unknown) => {
-    const t = v == null ? "" : Array.isArray(v) ? v.join(" ") : String(v);
-    return /[";\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
-  };
-  return [kolommen.join(";"), ...rijen.map((r) => kolommen.map((k) => veld(r[k])).join(";"))].join("\n");
-}
+const csv = (rijen: Record<string, unknown>[]) => naarCsv(rijen, ";");
 
 export const adminExportCsv = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -985,6 +978,9 @@ export const adminExportCsv = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const { db, profiel } = await bewaker(context as Ctx, "users.view");
+    // Kosten, credits en AI-verbruik zijn financiële gegevens (BUG-091).
+    if (["ai", "credits", "kosten"].includes(data.soort) && !heeftRecht(profiel, "finance.view"))
+      throw new Error("Je rol heeft dit recht niet.");
     const sinds30 = dagString(new Date(Date.now() - 29 * 86400_000));
     let rijen: Record<string, unknown>[] = [];
 
@@ -1044,7 +1040,7 @@ export const adminKostenOverzicht = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => bereikSchema.parse(d ?? {}))
   .handler(async ({ context, data }) => {
-    const { db } = await bewaker(context as Ctx, "dashboard.view");
+    const { db } = await bewaker(context as Ctx, "finance.view");
     const { van, tot } = bereikNaarDagen(data);
     const dagen = Math.max(1, Math.round((Date.parse(tot) - Date.parse(van)) / 86400_000) + 1);
 

@@ -9,6 +9,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { BETAALPROVIDER_GEKOPPELD } from "@/lib/limiet";
 
 export const Route = createFileRoute("/beheer/instellingen")({ component: Instellingen });
 
@@ -113,13 +114,22 @@ function Instellingen() {
             </p>
             <div className="flex items-center justify-between gap-3 text-sm">
               <span>Betalingen actief</span>
+              {/* BUG-094: zonder betaalprovider kan niemand een pakket kopen. Aanzetten zou
+                  gebruikers boven de limiet blokkeren zonder uitweg. Uitzetten blijft altijd kan. */}
               <Switch
                 aria-label="Betalingen actief"
+                aria-describedby="betalen-uitleg"
                 checked={betalenActief}
-                disabled={!mag("settings.manage")}
+                disabled={!mag("settings.manage") || (!betalenActief && !BETAALPROVIDER_GEKOPPELD)}
                 onCheckedChange={(v) => zet.mutate({ key: "betalen_actief", value: v })}
               />
             </div>
+            {!BETAALPROVIDER_GEKOPPELD ? (
+              <p id="betalen-uitleg" className="mt-2 text-xs text-amber-200">
+                Kan pas aan als er een betaalprovider gekoppeld is. Anders kunnen gebruikers boven de
+                limiet geen recepten meer bewaren en ook geen pakket kopen.
+              </p>
+            ) : null}
             <label className="mt-4 block text-xs text-slate-400">Gratis gerechten per gebruiker</label>
             <Input
               aria-label="Gratis gerechten per gebruiker"

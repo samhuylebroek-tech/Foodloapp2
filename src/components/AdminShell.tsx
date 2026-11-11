@@ -56,9 +56,9 @@ const SECTIES: Sectie[] = [
     label: "Finance",
     icoon: Coins,
     subs: [
-      { pad: "/beheer/finance", label: "Overzicht", recht: "dashboard.view" },
-      { pad: "/beheer/credits", label: "Credits", recht: "dashboard.view" },
-      { pad: "/beheer/kosten", label: "Kosten", recht: "dashboard.view" },
+      { pad: "/beheer/finance", label: "Overzicht", recht: "finance.view" },
+      { pad: "/beheer/credits", label: "Credits", recht: "finance.view" },
+      { pad: "/beheer/kosten", label: "Kosten", recht: "finance.view" },
       { pad: "/beheer/ai", label: "AI-gebruik", recht: "ai.view" },
     ],
   },

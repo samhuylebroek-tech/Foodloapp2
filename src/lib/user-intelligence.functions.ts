@@ -3,6 +3,7 @@ import { z } from "zod";
 import { begrensdeLijst } from "@/lib/zod-hulp";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { bewaker, logboek } from "@/lib/admin.functions";
+import { naarCsv } from "@/lib/csv-veilig";
 
 /**
  * User Intelligence — server-side onderzoek naar gebruik van Foodlo.
@@ -112,12 +113,7 @@ async function profielMap(db: any, ids: string[]) {
   return new Map<string, { naam: string }>(((data ?? []) as any[]).map((r) => [r.id, { naam: r.display_name }]));
 }
 
-function csv(rijen: Record<string, unknown>[]) {
-  if (!rijen.length) return "";
-  const kolommen = Object.keys(rijen[0]!);
-  const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  return [kolommen.join(","), ...rijen.map((r) => kolommen.map((k) => esc(r[k])).join(","))].join("\n");
-}
+const csv = (rijen: Record<string, unknown>[]) => naarCsv(rijen, ",");
 
 // ============================================================
 // Overzicht

@@ -6,6 +6,12 @@ import { supabase } from "@/integrations/supabase/client";
  * is alles gratis en onbeperkt. Zet die aan in het beheercentrum om de
  * gratis limiet en bijgekochte pakketten te laten meetellen.
  */
+
+/**
+ * Er is nog geen betaalprovider gekoppeld (zie BUSINESS-CONTROL-CENTER-AUDIT.md). Pas op `true`
+ * zetten wanneer kopen werkelijk kan; tot dan kan het beheer betalen niet aanzetten (BUG-094).
+ */
+export const BETAALPROVIDER_GEKOPPELD = false;
 export type Limiet = {
   betalenActief: boolean;
   gratis: number;
