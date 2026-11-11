@@ -78,14 +78,14 @@ function KostenPagina() {
               <p className="text-xs text-slate-400">{eur(data.totaal.perDag, 4)} per dag</p>
             </Kaart>
             <Kaart>
-              <p className="text-xs uppercase tracking-wide text-slate-400">AI (gemeten)</p>
+              <p className="text-xs uppercase tracking-wide text-slate-400">AI (verbruik gemeten, prijs volgens prijslijst)</p>
               <p className="mt-1 text-2xl font-semibold">{eur(data.totaal.ai, 4)}</p>
               <p className="text-xs text-slate-400">
                 {data.totaal.aiOproepen} oproepen · {data.totaal.cacheTreffers} uit cache
               </p>
             </Kaart>
             <Kaart>
-              <p className="text-xs uppercase tracking-wide text-slate-400">Online houden (ingesteld)</p>
+              <p className="text-xs uppercase tracking-wide text-slate-400">Hosting (handmatig ingesteld, geen factuur)</p>
               <p className="mt-1 text-2xl font-semibold">{eur(data.totaal.hosting, 4)}</p>
               <p className="text-xs text-slate-400">
                 {data.totaal.hostingCredits} credits · {data.instellingen.gratisCloud} gratis per maand

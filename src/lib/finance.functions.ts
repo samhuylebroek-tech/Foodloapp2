@@ -6,9 +6,6 @@ import { pagineer } from "@/lib/pagineer";
 
 type Ctx = { supabase: any; userId: string; claims?: any };
 
-const BETAALD = ["betaald", "voltooid", "paid", "completed", "succeeded"];
-const TERUG = ["terugbetaald", "refunded"];
-
 /** Finance-overzicht: alleen echte cijfers. Zonder betaalkoppeling blijft omzet 0 en "Niet gekoppeld". */
 export const adminFinance = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -57,12 +54,11 @@ export const adminFinance = createServerFn({ method: "POST" })
 
     const inPeriode = (d: string) => d >= sinds;
     const a = (aankopen.data ?? []) as any[];
-    const betaald = a.filter((x) => BETAALD.includes(x.status));
-    const omzet =
-      betaald.filter((x) => inPeriode(x.created_at)).reduce((s, x) => s + x.bedrag_cent, 0) / 100;
-    const omzetVorig =
-      betaald.filter((x) => !inPeriode(x.created_at)).reduce((s, x) => s + x.bedrag_cent, 0) / 100;
-    const refunds = a.filter((x) => TERUG.includes(x.status) && inPeriode(x.created_at));
+    // Reproduceerbaar uit de brontransacties; alleen euro opgeteld (BUG-099).
+    const { berekenOmzet } = await import("@/lib/finance-rekenen");
+    const o = berekenOmzet(a, sinds);
+    const omzet = o.omzetEur;
+    const omzetVorig = o.omzetVorigEur;
 
     const u = (ai.data ?? []) as any[];
     const kost = u
@@ -90,13 +86,9 @@ export const adminFinance = createServerFn({ method: "POST" })
       kost,
       kostVorig,
       marge: omzet - kost,
-      betalendeKlanten: new Set(
-        betaald.filter((x) => inPeriode(x.created_at)).map((x) => x.user_id),
-      ).size,
-      refunds: {
-        aantal: refunds.length,
-        bedrag: refunds.reduce((s, x) => s + x.bedrag_cent, 0) / 100,
-      },
+      andereValuta: o.andereValuta,
+      betalendeKlanten: o.betalendeKlanten,
+      refunds: { aantal: o.terugbetaald.aantal, bedrag: o.terugbetaald.bedragEur },
       credits: {
         verbruikt: somType(["usage"]),
         gekocht: somType(["purchase"]),

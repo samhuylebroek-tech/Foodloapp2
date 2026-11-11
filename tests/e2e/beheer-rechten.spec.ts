@@ -33,6 +33,19 @@ test("super_admin ziet de financiële cijfers", async ({ page, extern }) => {
   await meldAan(page, EIGENAAR);
   await page.goto("/beheer/finance");
   await expect(page.getByText("Betalingen niet gekoppeld")).toBeVisible();
+  // BUG-099: eerlijke labels; demo-band zodat demogetallen nooit voor echt doorgaan.
+  await expect(page.getByText("Omzet min AI-kosten").first()).toBeVisible();
+  await expect(page.getByText(/Demogegevens: verzonnen testgegevens/)).toBeVisible();
+  void extern;
+});
+
+test("BUG-098: zonder recht een duidelijke melding, geen lege tabel", async ({ page, extern }) => {
+  await alsRol("analyst");
+  await zetKlok(page, 14);
+  await meldAan(page, EIGENAAR);
+  await page.goto("/beheer/gebruikers");
+  await expect(page.getByText("Je rol heeft dit recht niet.")).toBeVisible();
+  await expect(page.getByText(/0 gebruikers/)).toHaveCount(0);
   void extern;
 });
 

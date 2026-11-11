@@ -23,6 +23,14 @@ import {
 import { useAdmin } from "@/hooks/useAdmin";
 import type { Rechten } from "@/lib/admin.functions";
 
+/**
+ * Demo en tests draaien tegen een nep-Supabase met een verzonnen project-id. Dan toont het
+ * Control Center een vaste band, zodat demogetallen nooit voor echte cijfers doorgaan.
+ */
+const IS_DEMO = ["demo", "e2e-nep"].includes(
+  String(import.meta.env["VITE_SUPABASE_PROJECT_ID"] ?? ""),
+);
+
 type Sub = { pad: string; label: string; recht: Rechten; ook?: string[] };
 type Sectie = { label: string; icoon: typeof Users; subs: Sub[] };
 
@@ -146,6 +154,8 @@ export function AdminShell({
   const { profiel, mag, alleenLezen, mfaOk } = useAdmin();
   const pad = useRouterState({ select: (s) => s.location.pathname });
   const huidig = actieveSub(pad);
+  // BUG-098: zonder recht nooit een lege tabel tonen ("0 gebruikers"), maar zeggen waarom.
+  const geenRecht = Boolean(profiel && huidig && !mag(huidig.sub.recht));
 
   // Toegankelijkheid: een tabel die horizontaal scrolt, moet met het toetsenbord te bereiken zijn
   // (WCAG 2.1.1) en een naam hebben. De beheerschermen bouwen tabellen los; dit regelt het centraal.
@@ -284,7 +294,27 @@ export function AdminShell({
               </Link>
             </div>
           ) : null}
-          <div className="p-6">{children}</div>
+          {IS_DEMO ? (
+            <div
+              role="note"
+              className="border-b border-sky-500/30 bg-sky-500/10 px-6 py-2 text-sm text-sky-100"
+            >
+              Demogegevens: verzonnen testgegevens, geen echte cijfers van Foodlo.
+            </div>
+          ) : null}
+          <div className="p-6">
+            {geenRecht ? (
+              <Kaart>
+                <p className="font-medium">Je rol heeft dit recht niet.</p>
+                <p className="mt-1 text-sm text-slate-300">
+                  Dit scherm is voorbehouden aan andere beheerrollen. Vraag de eigenaar om toegang
+                  als je het nodig hebt.
+                </p>
+              </Kaart>
+            ) : (
+              children
+            )}
+          </div>
         </main>
       </div>
     </div>

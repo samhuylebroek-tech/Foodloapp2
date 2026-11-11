@@ -36,10 +36,10 @@ function Finance() {
       ) : (
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Kpi label="Omzet" waarde={euro(d.omzet)} evolutie={pct(d.omzet, d.omzetVorig)} extra={d.omzet === 0 ? "Betalingen niet gekoppeld" : `${d.betalendeKlanten} betalende klanten`} />
-            <Kpi label="Kosten (AI)" waarde={euro(d.kost)} evolutie={pct(d.kost, d.kostVorig)} extra="Hosting: zie Kosten" />
-            <Kpi label="Resultaat" waarde={euro(d.marge)} extra="Omzet min AI-kosten" />
-            <Kpi label="Refunds" waarde={d.refunds.aantal} extra={euro(d.refunds.bedrag)} />
+            <Kpi label="Omzet (euro)" waarde={euro(d.omzet)} evolutie={pct(d.omzet, d.omzetVorig)} extra={d.andereValuta.aantal ? `${d.andereValuta.aantal} betaling(en) in ${d.andereValuta.munten.join(", ")} niet meegeteld` : d.omzet === 0 ? "Betalingen niet gekoppeld" : `${d.betalendeKlanten} betalende klanten`} />
+            <Kpi label="AI-kosten (schatting)" waarde={euro(d.kost)} evolutie={pct(d.kost, d.kostVorig)} extra="Volgens de prijslijst; hosting en andere kosten: zie Kosten" />
+            <Kpi label="Omzet min AI-kosten" waarde={euro(d.marge)} extra="Geen winst: hosting, e-mail en betaalkosten zitten er niet in" />
+            <Kpi label="Terugbetalingen" waarde={d.refunds.aantal} extra={euro(d.refunds.bedrag)} />
           </div>
 
           <div className="grid gap-4 xl:grid-cols-2">
