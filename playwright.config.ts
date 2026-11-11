@@ -10,6 +10,21 @@ const APP_PORT = 4339;
 const SUPA_PORT = 54439;
 const SUPA_URL = `http://127.0.0.1:${SUPA_PORT}`;
 
+// Safari-engine (WebKit) op een gesimuleerde iPhone, alleen met WEBKIT=1. Op macOS 14 levert
+// Playwright 1.64 een bevroren WebKit-build die niet compatibel is ("Unknown setting:
+// PushAPIEnabled"); op Linux of macOS 15+ werkt het wel. Geen echt toestel: geen echte
+// iOS-toetsenbordhoogte, geen VoiceOver, geen echte Dynamic Type.
+const webkitProject = process.env["WEBKIT"]
+  ? [
+      {
+        name: "iphone-webkit",
+        use: { ...devices["iPhone 13"] },
+        testMatch:
+          /kernflow|navigatie|\/lijst\.spec|vandaag|winkelmodus|kern-ux|kookstand|voorraad|aanmelden|account-verwijderen|wachtwoord-herstellen|weekmenu-lijst|mobiel-kwaliteit/,
+      },
+    ]
+  : [];
+
 export default defineConfig({
   testDir: "tests/e2e",
   outputDir: "tests/e2e/.resultaten",
@@ -35,14 +50,14 @@ export default defineConfig({
       name: "telefoon",
       use: { ...devices["Pixel 7"] },
       testIgnore:
-        /kernflow|schermen|kookstand|voorraad|personas|mobiel-breedtes|kringloop|navigatie|weekmenu-lijst|vandaag|winkelmodus|tablet|\/lijst\.spec|audit-|a11y-/,
+        /kernflow|schermen|kookstand|voorraad|personas|mobiel-breedtes|mobiel-kwaliteit|kringloop|navigatie|weekmenu-lijst|vandaag|winkelmodus|tablet|\/lijst\.spec|audit-|a11y-/,
     },
     // Creator op desktop.
     {
       name: "desktop",
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
       // De telefoonbreedtes hebben hun eigen project hieronder.
-      testIgnore: /mobiel-breedtes|tablet|audit-/,
+      testIgnore: /mobiel-breedtes|mobiel-kwaliteit|tablet|audit-/,
     },
     // Kernflow op de gevraagde breedtes (de desktop-run hierboven dekt 1280 px).
     {
@@ -54,8 +69,9 @@ export default defineConfig({
       name: "mobiel-390",
       use: { ...devices["Pixel 7"], viewport: { width: 390, height: 844 } },
       testMatch:
-        /kernflow|schermen|personas|schermen-alle|mobiel-breedtes|kringloop|navigatie|weekmenu-lijst|vandaag|winkelmodus|\/lijst\.spec|audit-|a11y-|reis-/,
+        /kernflow|schermen|personas|schermen-alle|mobiel-breedtes|mobiel-kwaliteit|kringloop|navigatie|weekmenu-lijst|vandaag|winkelmodus|\/lijst\.spec|audit-|a11y-|reis-/,
     },
+    ...webkitProject,
     {
       name: "tablet-768",
       use: { ...devices["Desktop Chrome"], viewport: { width: 768, height: 1024 }, hasTouch: true },

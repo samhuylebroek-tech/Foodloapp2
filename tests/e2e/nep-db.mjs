@@ -4,6 +4,9 @@
 // order, limit/range, single/maybeSingle, count, insert, upsert, update, delete.
 import { randomUUID } from "node:crypto";
 
+/** Standaard `max-rows` van Supabase. */
+const MAX_RIJEN = 1000;
+
 /** Kolomstandaarden zoals in de echte tabellen (anders ontbreken ze na een insert). */
 const STANDAARD = {
   shopping_items: { checked: false, note: null, recipe_id: null },
@@ -169,8 +172,10 @@ export function rest(db, { method, tabel, params, body, headers }) {
     let uit = sorteer(pasFilter(rijen, params), params.get("order"));
     const totaal = uit.length;
     const offset = Number(params.get("offset") ?? 0);
-    const limit = params.get("limit") ? Number(params.get("limit")) : undefined;
-    uit = uit.slice(offset, limit === undefined ? undefined : offset + limit);
+    // Zoals echte Supabase (PostgREST `max-rows` = 1000): nooit meer dan 1000 rijen per
+    // verzoek, ook niet bij `.limit(50000)`. Zo vallen ongepagineerde queries op (BUG-093).
+    const gevraagd = params.get("limit") ? Number(params.get("limit")) : Infinity;
+    uit = uit.slice(offset, offset + Math.min(gevraagd, MAX_RIJEN));
     if (prefer.includes("count="))
       kop["content-range"] = `${offset}-${offset + uit.length - 1}/${totaal}`;
     if (method === "HEAD") return { status: 200, body: null, kop };

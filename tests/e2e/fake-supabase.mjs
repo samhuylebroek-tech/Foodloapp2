@@ -253,9 +253,46 @@ const server = http.createServer((req, res) => {
         } catch {
           /* standaardgebruiker */
         }
-        return stuur(res, 200, { ...TEST_USER, id: sub });
+        // MFA (nep): factoren staan als rijen in "__factoren" (via /__seed).
+        const factors = db
+          .t("__factoren")
+          .filter((f) => f.user_id === sub)
+          .map(({ user_id: _u, ...f }) => f);
+        return stuur(res, 200, { ...TEST_USER, id: sub, factors });
       }
       return stuur(res, 401, { code: 401, error_code: "bad_jwt", msg: "invalid JWT" });
+    }
+    // MFA (nep): challenge en verify. Code 123456 is juist; verify geeft een aal2-sessie.
+    const factor = url.pathname.match(/^\/auth\/v1\/factors\/([^/]+)\/(challenge|verify)$/);
+    if (factor && req.method === "POST") {
+      let sub = TEST_USER.id;
+      try {
+        sub = JSON.parse(Buffer.from(auth.split(" ")[1].split(".")[1], "base64url").toString()).sub;
+      } catch {
+        return stuur(res, 401, { code: 401, error_code: "bad_jwt", msg: "invalid JWT" });
+      }
+      const bekend = db.t("__factoren").some((f) => f.id === factor[1] && f.user_id === sub);
+      if (!bekend) return stuur(res, 404, { code: 404, error_code: "mfa_factor_not_found", msg: "Factor not found" });
+      if (factor[2] === "challenge")
+        return stuur(res, 200, {
+          id: `uitdaging-${factor[1]}`,
+          type: "totp",
+          expires_at: Math.floor(Date.now() / 1000) + 300,
+        });
+      if (body?.code !== "123456")
+        return stuur(res, 422, {
+          code: 422,
+          error_code: "mfa_verification_failed",
+          msg: "Invalid TOTP code entered",
+        });
+      return stuur(res, 200, {
+        access_token: maakToken(sub, { aal: "aal2" }),
+        refresh_token: "nep-refresh",
+        token_type: "bearer",
+        expires_in: 86400,
+        expires_at: Math.floor(Date.now() / 1000) + 86400,
+        user: { ...TEST_USER, id: sub },
+      });
     }
     if (url.pathname === "/auth/v1/logout") return stuur(res, 204, null);
     if (url.pathname.startsWith("/auth/v1/")) return stuur(res, 200, {});
