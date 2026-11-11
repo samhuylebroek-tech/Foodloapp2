@@ -129,7 +129,10 @@ function PlannerPage() {
   useFocusTerug(Boolean(verplaats));
   const [vervangRij, setVervangRij] = useState<PlanRow | null>(null);
   const [vraagLijst, setVraagLijst] = useState<{ recipeId: string; titel: string } | null>(null);
-  const [opruimVraag, setOpruimVraag] = useState<{ titel: string; items: { id: string; naam: string }[] } | null>(null);
+  const [opruimVraag, setOpruimVraag] = useState<{
+    titel: string;
+    items: { id: string; naam: string }[];
+  } | null>(null);
   const [naVoorstel, setNaVoorstel] = useState<{ recipeId: string; titel: string }[] | null>(null);
   const [naGekozen, setNaGekozen] = useState<Set<string>>(new Set());
   const [dubbelVraag, setDubbelVraag] = useState<{
