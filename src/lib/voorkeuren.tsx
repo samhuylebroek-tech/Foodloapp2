@@ -9,6 +9,7 @@ import {
 } from "react";
 import { translateTexts } from "@/lib/vertaal.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { haalAccountVoorkeuren, type VoorkeurClient } from "@/lib/account-voorkeuren";
 
 export const TALEN = [
   { code: "nl", label: "Nederlands" },
@@ -168,11 +169,7 @@ export function VoorkeurenProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let actief = true;
     async function haal(userId: string) {
-      const { data } = await supabase
-        .from("profiles")
-        .select("taal, thema, momenten, weekmenu")
-        .eq("id", userId)
-        .maybeSingle();
+      const data = await haalAccountVoorkeuren(supabase as unknown as VoorkeurClient, userId);
       if (!actief || !data) return;
       if (data.taal) {
         setTaal(data.taal);

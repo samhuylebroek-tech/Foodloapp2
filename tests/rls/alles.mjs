@@ -39,6 +39,17 @@ const HEEN_TERUG = schrijf("heen-terug.sql", [
   "0002a_basislijn_recepten_fotos.down.sql",
 ]);
 
+// 0004: weekmenuvoorkeuren niet meer leesbaar voor gezinsleden/uitnodigers (BUG-119).
+const PRIVE = schrijf("prive.sql", [
+  "0002a_basislijn_recepten_fotos.up.sql",
+  "0004_profielinstellingen_prive.up.sql",
+]);
+const PRIVE_HT = schrijf("prive-ht.sql", [
+  "0002a_basislijn_recepten_fotos.up.sql",
+  "0004_profielinstellingen_prive.up.sql",
+  "0004_profielinstellingen_prive.down.sql",
+]);
+
 const gevallen = [
   ["rls-recepten.mjs", null, 1, "repo-migraties: BUG-105/106 aanwezig (productie heeft dit NIET)"],
   [
@@ -57,6 +68,10 @@ const gevallen = [
   ["rls-recepten.mjs", HEEN_TERUG, 1, "heen+terug: zelfde stand als de repo"],
   ["rls-beheer.mjs", HEEN_TERUG, 1, "heen+terug: zelfde stand als de repo"],
   ["rls-gezin.mjs", HEEN_TERUG, 0, "heen+terug: zelfde stand als de repo"],
+  ["rls-gezin-privacy.mjs", null, 1, "repo: recepten (BUG-105) + weekmenu (BUG-119) leesbaar"],
+  ["rls-gezin-privacy.mjs", BASIS, 1, "0002a: alleen voorraad + weekmenu (BUG-119) open"],
+  ["rls-gezin-privacy.mjs", PRIVE, 0, "0002a + 0004: alleen de gedeelde voorraad (BUG-112)"],
+  ["rls-gezin-privacy.mjs", PRIVE_HT, 1, "0004 heen+terug: weekmenu weer leesbaar"],
   ["bewaartermijnen.mjs", null, 0, "voorstel 0003: opruiming, rechten, heen+terug"],
   ["verwijder-gezinseigenaar.mjs", null, 0, "verslag BUG-110/025 (rapporteert, faalt niet)"],
 ];
