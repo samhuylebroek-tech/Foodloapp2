@@ -102,3 +102,16 @@ test("rondleiding: zeven stappen, elk onderdeel zichtbaar aangewezen en niet bed
   await expect(venster).toHaveCount(0);
   void extern;
 });
+
+test("onbekende pagina: duidelijke uitleg, hoofdgebied en weg terug naar Vandaag", async ({
+  page,
+  extern,
+}) => {
+  await page.goto("/bestaat-niet");
+  await expect(page.getByRole("main")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Pagina niet gevonden" })).toBeVisible();
+  const terug = page.getByRole("link", { name: "Naar Vandaag" });
+  expect((await terug.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  expect(await axeErnstig(page)).toEqual([]);
+  void extern;
+});

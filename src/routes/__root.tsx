@@ -21,23 +21,25 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Pagina niet gevonden</h2>
+        <p className="text-7xl font-bold text-foreground" aria-hidden="true">
+          404
+        </p>
+        <h1 className="mt-4 text-xl font-semibold text-foreground">Pagina niet gevonden</h1>
         <p className="mt-2 text-base text-muted-foreground">
           Deze pagina bestaat niet meer of is verplaatst.
         </p>
         <div className="mt-6">
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-base font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-4 py-2 text-base font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Naar Start
+            Naar Vandaag
           </Link>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -50,13 +52,13 @@ function ErrorComponent({ error, reset }: { error: unknown; reset: () => void })
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
           Deze pagina kon niet laden
         </h1>
         <p className="mt-2 text-base text-muted-foreground">
-          Dit lukte niet. Probeer opnieuw of ga terug naar Start.
+          Dit lukte niet. Probeer opnieuw of ga terug naar Vandaag.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -64,19 +66,20 @@ function ErrorComponent({ error, reset }: { error: unknown; reset: () => void })
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-base font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            type="button"
+            className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-4 py-2 text-base font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             Opnieuw proberen
           </button>
           <a
             href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-base font-medium text-foreground transition-colors hover:bg-accent"
+            className="inline-flex min-h-11 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-base font-medium text-foreground transition-colors hover:bg-accent"
           >
-            Naar Start
+            Naar Vandaag
           </a>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
