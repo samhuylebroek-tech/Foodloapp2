@@ -876,6 +876,18 @@ function ReceptPage() {
           >
             <Share2 />
           </Button>
+          {/* BUG-102: aanpassen was alleen te vinden in "…". Zichtbaar voor eigen recepten. */}
+          {isOwner ? (
+            <Button variant="ghost" size="icon" asChild>
+              <Link
+                to="/recepten/$id/bewerken"
+                params={{ id: recipe.id }}
+                aria-label={t("Aanpassen")}
+              >
+                <Pencil />
+              </Link>
+            </Button>
+          ) : null}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" aria-label={t("Meer")}>

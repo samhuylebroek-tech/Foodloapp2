@@ -165,6 +165,11 @@ function VoorraadPage() {
 
   const voegToe = async (regel = nieuw.trim()) => {
     if (!regel || !user) return;
+    // BUG-101: "-5 kg rijst" werd stil 5 kg. Een minteken tegen een getal is geen opsomming.
+    if (/^-\d/.test(regel)) {
+      toast.error(t("Een hoeveelheid kan niet negatief zijn. Typ bijvoorbeeld: 5 kg rijst."));
+      return;
+    }
     const ontleed = parseIngredientLine(regel);
     const { error } = await supabase.from("pantry_items").insert({
       user_id: user.id,
