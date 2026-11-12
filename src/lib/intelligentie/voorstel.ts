@@ -11,7 +11,7 @@
  *
  * Allergieën en dieet komen van het toestel en blijven daar: deze functie draait in de app.
  */
-import { allergenenIn } from "@/lib/allergenen";
+import { magVoorstellen } from "@/lib/veiligheid";
 import type { Dieet } from "@/lib/kennismaking";
 import { opsomming } from "@/lib/vandaag";
 import { isBasis, zitInVoorraad } from "@/lib/voorraad-match";
@@ -115,16 +115,12 @@ export function toegelaten(
 ) {
   if (k.category && !MAALTIJD_SOORTEN.includes(k.category)) return false;
   if (invoer.nietNu?.includes(k.id)) return false;
-  if (allergenenIn(k.ingredienten, invoer.allergieen ?? []).length) return false;
+  // Allergie (ook: geen ingrediënten = niet te controleren) en dieet: één regel voor heel Foodlo.
+  if (!magVoorstellen(k, { allergieen: invoer.allergieen, dieet: invoer.voorkeur.dieet }))
+    return false;
   const tekst = tekstVan(k);
   if (vermijdWoorden(invoer.voorkeur.vermijd).some((w) => tekst.includes(normaliseerTekst(w))))
     return false;
-  const dieet = invoer.voorkeur.dieet;
-  if (dieet === "vegetarisch" || dieet === "veganistisch" || dieet === "pescotarisch") {
-    const soort = soortVanKandidaat(k);
-    if (soort === "vlees") return false;
-    if (soort === "vis" && dieet !== "pescotarisch") return false;
-  }
   return true;
 }
 

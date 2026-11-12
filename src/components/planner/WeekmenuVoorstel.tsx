@@ -33,6 +33,7 @@ import { bepaalContext } from "@/lib/intelligentie/context";
 import { beoordeel, toegelaten, type Kandidaat } from "@/lib/intelligentie/voorstel";
 import { leesKennismaking } from "@/lib/kennismaking";
 import { weekmenuIdeeen, type WeekmenuIdee } from "@/lib/ai.functions";
+import { ideeTitelToegelaten } from "@/lib/veiligheid";
 import { type WeekmenuInstelling, type DagVoorkeur } from "@/lib/voorkeuren";
 import { kiesUitEigen, type DagRegel, type Soortkeuze } from "@/lib/weekmenu-voorstel";
 import { datumTekst, labelVoor, kortLabel } from "./gedeeld";
@@ -311,7 +312,7 @@ export function WeekmenuVoorstel({
       const gaten = nieuw.filter((r) => !r.recept && !r.bezet && !regelVoor(r.datum).over);
       if (bron === "ook-extern" && gaten.length) {
         setBezigMet("Foodlo zoekt nieuwe ideeën…");
-        const ideeen = await weekmenuIdeeen({
+        const ruweIdeeen = await weekmenuIdeeen({
           data: {
             aantal: gaten.length,
             wensen: `${instelling.vlees}x vlees, ${instelling.vis}x vis, ${instelling.vega}x vegetarisch`,
@@ -320,13 +321,19 @@ export function WeekmenuVoorstel({
             bekend: [...recepten.slice(0, 60).map((r) => r.title), ...getoondeIdeeen.current],
           },
         });
+        const ideeen = (ruweIdeeen as WeekmenuIdee[]).filter((idee) =>
+          ideeTitelToegelaten(idee.title, kennis),
+        );
         let i = 0;
         nieuw = nieuw.map((r) => {
           if (r.recept || r.bezet || regelVoor(r.datum).over) return r;
           const idee = ideeen[i++] ?? null;
           return idee ? { ...r, idee, aan: false } : r;
         });
-        getoondeIdeeen.current = [...getoondeIdeeen.current, ...ideeen.map((idee) => idee.title)];
+        getoondeIdeeen.current = [
+          ...getoondeIdeeen.current,
+          ...ruweIdeeen.map((idee) => idee.title),
+        ];
       }
       const nogTePlannen = nieuw.filter((rij) => !rij.bezet && !regelVoor(rij.datum).over);
       if (!nogTePlannen.length) {
@@ -443,7 +450,7 @@ export function WeekmenuVoorstel({
           ],
         },
       });
-      const idee = ideeen[0];
+      const idee = ideeen.find((x) => ideeTitelToegelaten(x.title, kennis));
       if (!idee) {
         toast("Geen ander passend idee gevonden");
         return;
@@ -707,7 +714,10 @@ export function WeekmenuVoorstel({
                 ) : null}
                 {actieveRecept ? (
                   <div className="mt-3">
-                    <AllergieWaarschuwing ingredienten={ingredienten[actieveRecept.id] ?? []} />
+                    <AllergieWaarschuwing
+                      ingredienten={ingredienten[actieveRecept.id] ?? []}
+                      titel={actieveRecept.title}
+                    />
                   </div>
                 ) : null}
               </div>

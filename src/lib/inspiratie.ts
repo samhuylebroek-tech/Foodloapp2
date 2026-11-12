@@ -80,6 +80,25 @@ export async function haalInspiratieIngredienten(id: string): Promise<Inspiratie
   return (data ?? []) as unknown as InspiratieIngredient[];
 }
 
+/**
+ * Alleen de ingrediëntnamen van een reeks ideeën (voor de allergie- en dieetregel op het toestel).
+ * In blokken van 100, zodat de URL nooit te lang wordt.
+ */
+export async function haalInspiratieIngredientNamen(ids: string[]): Promise<Map<string, string[]>> {
+  const uit = new Map<string, string[]>(ids.map((id) => [id, []]));
+  for (let i = 0; i < ids.length; i += 100) {
+    const { data, error } = await supabase
+      .from("inspiration_ingredients")
+      .select("inspiration_id, name")
+      .in("inspiration_id", ids.slice(i, i + 100))
+      .limit(5000);
+    if (error) throw error;
+    for (const r of (data ?? []) as { inspiration_id: string; name: string }[])
+      uit.get(r.inspiration_id)?.push(r.name);
+  }
+  return uit;
+}
+
 /** Filtert en zoekt lokaal over de compacte lijst — geen server-, laat staan AI-kosten. */
 export function filterInspiratie(recepten: InspiratieRecept[], filters: InspiratieFilters): InspiratieRecept[] {
   const woorden = normaliseerTekst(filters.zoek).split(" ").filter(Boolean);

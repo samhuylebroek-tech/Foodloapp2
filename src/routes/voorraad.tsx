@@ -16,6 +16,8 @@ import { parseIngredientLine, toonBelgischeMaat } from "@/lib/ingredienten";
 import { EmptyState } from "@/components/EmptyState";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { watKanIkKoken, zitInVoorraad } from "@/lib/voorraad-match";
+import { leesKennismaking } from "@/lib/kennismaking";
+import { magVoorstellen } from "@/lib/veiligheid";
 import { vindDubbels, voegToeAlsNieuw, zorgVoorLijst } from "@/lib/boodschappen";
 import type { Recipe } from "@/lib/types";
 import { CATEGORIE_LABEL, CATEGORIE_VOLGORDE, categorieVan } from "@/lib/categorie";
@@ -154,12 +156,25 @@ function VoorraadPage() {
       lijst.push({ name: ing.name });
       perRecept.set(ing.recipe_id, lijst);
     }
+    // Zelfde harde regel als Vandaag en Week: nooit een gekozen allergeen of iets buiten je dieet,
+    // en met allergieën nooit een recept zonder ingrediënten (dat kan Foodlo niet nakijken).
+    const kennis = leesKennismaking(user?.id);
+    const veilig = recepten.filter((r) =>
+      magVoorstellen(
+        {
+          title: r.title,
+          tags: r.tags ?? [],
+          ingredienten: (perRecept.get(r.id) ?? []).map((i) => i.name),
+        },
+        { allergieen: kennis.allergieen, dieet: kennis.dieet },
+      ),
+    );
     return watKanIkKoken(
-      recepten.map((r) => ({ id: r.id, title: r.title, ingredienten: perRecept.get(r.id) ?? [] })),
+      veilig.map((r) => ({ id: r.id, title: r.title, ingredienten: perRecept.get(r.id) ?? [] })),
       voorraadNamen,
       { minAanwezig: 1, max: 6 },
     );
-  }, [recepten, ingredienten, voorraadNamen]);
+  }, [recepten, ingredienten, voorraadNamen, user?.id]);
 
   // Voorraad telt mee in Vandaag en Slim aanvullen: die mee verversen (anders tot 20 s verouderd).
   const vernieuw = () => {

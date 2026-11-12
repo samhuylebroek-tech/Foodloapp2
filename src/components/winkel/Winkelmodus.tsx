@@ -16,6 +16,7 @@ import {
   PackageCheck,
   Repeat,
   SearchX,
+  TriangleAlert,
   Undo2,
   X,
 } from "lucide-react";
@@ -25,6 +26,9 @@ import { CATEGORIE_LABEL, type CategorieId } from "@/lib/categorie";
 import { toonBelgischeMaat } from "@/lib/ingredienten";
 import { vervanging } from "@/lib/product-herkenning";
 import { vervangVoorstellen } from "@/lib/vervangen";
+import { allergenenIn } from "@/lib/allergenen";
+import { leesKennismaking } from "@/lib/kennismaking";
+import { useAuth } from "@/hooks/useAuth";
 import type { VoorMorgen } from "@/lib/intelligentie/voor-morgen";
 import { cn } from "@/lib/utils";
 import { opsomming } from "@/lib/vandaag";
@@ -447,6 +451,11 @@ function NietGevonden({
 }) {
   const naam = vervanging(item.name).naam;
   const [door, setDoor] = useState("");
+  // Een vervanging opnieuw nakijken op je allergieën (alleen op dit toestel).
+  const { user } = useAuth();
+  const vervangAllergenen = door.trim()
+    ? allergenenIn([door.trim()], leesKennismaking(user?.id).allergieen)
+    : [];
   const [aantal, setAantal] = useState(item.quantity == null ? "" : String(item.quantity));
   const [eenheid, setEenheid] = useState(item.unit ?? "");
   const [bezig, setBezig] = useState(false);
@@ -578,6 +587,17 @@ function NietGevonden({
                 className="mt-1 h-14 text-lg"
               />
             </div>
+          </div>
+          <div role="status" aria-live="polite">
+            {vervangAllergenen.length ? (
+              <p className="mt-3 flex gap-2 rounded-xl bg-[oklch(0.95_0.04_70)] p-3 text-base text-[oklch(0.32_0.07_60)] dark:bg-[oklch(0.3_0.05_70)] dark:text-[oklch(0.93_0.04_80)]">
+                <TriangleAlert className="mt-0.5 size-5 shrink-0" aria-hidden />
+                <span className="min-w-0 [overflow-wrap:anywhere]">
+                  Let op: {door.trim()} bevat mogelijk{" "}
+                  {vervangAllergenen.map((a) => a.naam.toLowerCase()).join(", ")}. Lees het etiket.
+                </span>
+              </p>
+            ) : null}
           </div>
           {fout ? (
             <p role="alert" className="mt-2 text-base text-destructive">

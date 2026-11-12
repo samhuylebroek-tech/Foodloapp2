@@ -514,7 +514,13 @@ export const ARTIKELS: Artikel[] = [
     stappen: [
       "Je allergieën blijven alleen op dit toestel. Ze gaan niet naar je gezin of naar Foodlo, en worden gewist als je je afmeldt.",
       "Op een recept zie je een waarschuwing als een ingrediënt mogelijk een allergeen bevat.",
+      'Foodlo stelt nooit vanzelf een gerecht voor met een allergeen dat je koos: niet op Vandaag, niet in je weekmenu, niet bij "Wat kan ik koken?" en niet bij "Verras mij".',
+      'Staan er geen ingrediënten bij een gerecht, dan kan Foodlo het niet nakijken. Je ziet dan "Niet gecontroleerd op allergieën", en Foodlo stelt het niet vanzelf voor.',
+      "Vervang je in de winkel een product, dan kijkt Foodlo ook dat opnieuw na.",
       "Lees altijd zelf het etiket van een product. Foodlo kent niet elke samenstelling.",
+    ],
+    tips: [
+      "Ideeën van de AI zijn nog niet nagekeken. Pas als het recept met ingrediënten gemaakt is, kijkt Foodlo het na. Je allergieën gaan nooit naar de AI.",
     ],
     functies: ["keuken.recept"],
     trefwoorden: ["allergie", "allergieën", "noten", "gluten", "lactose", "dieet", "intolerantie"],

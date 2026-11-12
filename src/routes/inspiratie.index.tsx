@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Search, SlidersHorizontal, Shuffle, Clock3, X, Plus } from "lucide-react";
+import { Search, SlidersHorizontal, Shuffle, Clock3, X, Plus, TriangleAlert } from "lucide-react";
+import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { eigenId } from "@/lib/zichtbare-eigenaren";
@@ -10,7 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useAuth } from "@/hooks/useAuth";
+import { leesKennismaking } from "@/lib/kennismaking";
+import { allergieOordeel, magVoorstellen, type AllergieOordeel } from "@/lib/veiligheid";
 import {
+  haalInspiratieIngredientNamen,
   haalInspiratieLijst,
   filterInspiratie,
   inspiratieCategorieen,
@@ -72,6 +77,21 @@ function ReceptFoto({ pad, titel }: { pad: string | null; titel: string }) {
   );
 }
 
+/** Kort label op een kaartje: mogelijk allergeen, of niet te controleren (geen ingrediënten). */
+function AllergieLabel({ oordeel }: { oordeel: AllergieOordeel | null }) {
+  if (!oordeel || (oordeel.status !== "allergeen" && oordeel.status !== "onbekend")) return null;
+  const tekst =
+    oordeel.status === "allergeen"
+      ? `Mogelijk ${oordeel.treffers.map((t) => t.naam.toLowerCase()).join(", ")}`
+      : "Niet gecontroleerd op allergieën";
+  return (
+    <p className="flex items-start gap-1 text-[0.9rem] font-semibold text-[oklch(0.42_0.1_55)] dark:text-[oklch(0.85_0.09_75)]">
+      <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+      <span className="min-w-0 [overflow-wrap:anywhere]">{tekst}</span>
+    </p>
+  );
+}
+
 function InspiratiePage() {
   const navigate = useNavigate();
   const [filters, setFilters] = useState<InspiratieFilters>(LEGE_FILTERS);
@@ -123,15 +143,54 @@ function InspiratiePage() {
     (filters.maxTijd !== null ? 1 : 0) +
     (filters.eetstijl ? 1 : 0);
 
+  // Allergieën en dieet (alleen op dit toestel): dezelfde harde regel als Vandaag en Week.
+  const { user } = useAuth();
+  const kennis = leesKennismaking(user?.id);
+  const beperkt =
+    kennis.allergieen.length > 0 ||
+    kennis.dieet === "vegetarisch" ||
+    kennis.dieet === "veganistisch" ||
+    kennis.dieet === "pescotarisch";
+  const ideeIds = alleRecepten.map((r) => r.id);
+  const { data: namenPerIdee, isSuccess: namenKlaar } = useQuery({
+    queryKey: ["inspiratie-ingredient-namen", ideeIds.join(",")],
+    enabled: beperkt && ideeIds.length > 0,
+    queryFn: () => haalInspiratieIngredientNamen(ideeIds),
+    staleTime: 5 * 60 * 1000,
+  });
+  const gerechtVan = (r: InspiratieRecept) => ({
+    title: r.title,
+    tags: r.tags ?? [],
+    ingredienten: namenPerIdee?.get(r.id) ?? [],
+  });
+  const oordeelVan = (r: InspiratieRecept): AllergieOordeel | null =>
+    kennis.allergieen.length && namenKlaar ? allergieOordeel(gerechtVan(r), kennis.allergieen) : null;
+  // Verras mij stelt iets voor: dat mag pas als de controle kan gebeuren.
+  const verrasKlaar = !beperkt || namenKlaar;
+  const verrasbaar = useMemo(
+    () =>
+      beperkt
+        ? resultaten.filter((r) =>
+            magVoorstellen(gerechtVan(r), { allergieen: kennis.allergieen, dieet: kennis.dieet }),
+          )
+        : resultaten,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [resultaten, beperkt, namenPerIdee, user?.id],
+  );
+
   // Verras mij: toont steeds een nieuw, onbekend gerecht in een venster.
   // Al getoonde suggesties komen niet meteen terug; je blijft gewoon op dit scherm.
   const [verrassing, setVerrassing] = useState<InspiratieRecept | null>(null);
   const [getoond, setGetoond] = useState<string[]>([]);
 
   function kiesVerrassing() {
-    if (!resultaten.length) return;
-    const vers = resultaten.filter((r) => !getoond.includes(r.id));
-    const pool = vers.length ? vers : resultaten;
+    if (!resultaten.length || !verrasKlaar) return;
+    if (!verrasbaar.length) {
+      toast("Geen idee gevonden dat past bij je allergieën of dieet. Probeer andere filters.");
+      return;
+    }
+    const vers = verrasbaar.filter((r) => !getoond.includes(r.id));
+    const pool = vers.length ? vers : verrasbaar;
     const keuze = pool[Math.floor(Math.random() * pool.length)];
     if (!keuze) return;
     setVerrassing(keuze);
@@ -172,7 +231,13 @@ function InspiratiePage() {
           >
             ≤ 30 min
           </Button>
-          <Button variant="outline" onClick={kiesVerrassing} disabled={!resultaten.length} className="h-12 shrink-0 px-5 text-base">
+          <Button
+            variant="outline"
+            onClick={kiesVerrassing}
+            disabled={!resultaten.length || !verrasKlaar}
+            aria-busy={!verrasKlaar}
+            className="h-12 shrink-0 px-5 text-base"
+          >
             <Shuffle className="size-4" /> Verras mij
           </Button>
         </div>
@@ -216,7 +281,7 @@ function InspiratiePage() {
           </div>
         ) : (
           <ul
-            className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4"
+            className="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-3 md:grid-cols-3 xl:grid-cols-4"
             aria-label={thema ? thema.titel : "Alle ideeën"}
           >
             {resultaten.map((r) => (
@@ -231,6 +296,7 @@ function InspiratiePage() {
                     <p className="text-base font-semibold leading-tight">{r.title}</p>
                     {/* Bron: later de food creator (naam en profiel), nu de Foodlo-keuken. */}
                     <p className="text-[0.9rem] text-muted-foreground">Foodlo-keuken</p>
+                    <AllergieLabel oordeel={oordeelVan(r)} />
                     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base text-muted-foreground">
                       {r.category ? <span>{soortLabel(r.category)}</span> : null}
                       {tijdLabel(r) ? (

@@ -17,6 +17,7 @@ import {
   voegToeAanMijnRecepten,
 } from "@/lib/inspiratie";
 import { toonBelgischeMaat } from "@/lib/ingredienten";
+import { AllergieWaarschuwing } from "@/components/AllergieWaarschuwing";
 import { useAuth } from "@/hooks/useAuth";
 import { useSignedUrl } from "@/lib/photos";
 
@@ -57,7 +58,7 @@ function InspiratieDetailPage() {
     queryKey: ["inspiratie", id],
     queryFn: () => haalInspiratieRecept(id),
   });
-  const { data: ingredienten = [] } = useQuery({
+  const { data: ingredienten = [], isSuccess: ingredientenGeladen } = useQuery({
     queryKey: ["inspiratie-ingredienten", id],
     queryFn: () => haalInspiratieIngredienten(id),
     enabled: !!recept,
@@ -176,6 +177,11 @@ function InspiratieDetailPage() {
           </div>
         </div>
 
+        <AllergieWaarschuwing
+          ingredienten={ingredienten.map((i) => i.name)}
+          titel={recept.title}
+          geladen={ingredientenGeladen}
+        />
         {ingredienten.length ? (
           <section aria-label="Ingrediënten" className="rounded-xl border border-border bg-card p-4">
             <h2 className="font-display text-lg">Ingrediënten</h2>

@@ -1090,7 +1090,7 @@ function ReceptPage() {
 
         {/* V2: geen tabbladen meer — ingrediënten en bereiding in één oogopslag.
             Desktop: ingrediënten blijven in beeld terwijl je de stappen leest. */}
-        <AllergieWaarschuwing ingredienten={ingredients.map((i) => i.name)} />
+        <AllergieWaarschuwing ingredienten={ingredients.map((i) => i.name)} titel={recipe.title} />
         <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,23rem)_minmax(0,1fr)] lg:gap-12">
           <section
             aria-labelledby="ingredienten-titel"

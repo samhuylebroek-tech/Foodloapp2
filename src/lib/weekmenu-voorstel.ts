@@ -35,8 +35,11 @@ const VLEES = [
   "kip", "rund", "rundvlees", "gehakt", "varken", "varkens", "spek", "ham", "worst", "chorizo",
   "salami", "lam", "kalkoen", "eend", "kalfs", "biefstuk", "steak", "ribbetjes", "bacon",
   "braadworst", "shoarma", "kebab", "kipfilet", "vleesbrood", "burger", "balletjes", "konijn",
-  "hesp", "pancetta", "prosciutto",
+  "hesp", "pancetta", "prosciutto", "vlees", "stoofvlees", "stoverij", "carbonade", "vol-au-vent",
+  "frikandel", "boulet", "gyros",
 ];
+/** Wat wél "vlees" zegt, maar het niet is. */
+const GEEN_VLEES = /vleesvervang\w*|vleesloos|zonder vlees|vegetarisch gehakt|vegagehakt|veggie gehakt/g;
 
 const VEGA_WOORDEN = ["vegetarisch", "vega", "veganistisch", "vegan", "plantaardig", "meatless"];
 
@@ -50,7 +53,7 @@ function bevat(tekst: string, woorden: string[]) {
 
 /** Wat voor soort maaltijd is dit? Puur op woorden, geen AI. */
 export function soortVan(r: Recipe, ingredienten: string[] = []): "vlees" | "vis" | "vega" {
-  const tekst = tekstVan(r, ingredienten);
+  const tekst = tekstVan(r, ingredienten).replace(GEEN_VLEES, " ");
   if (bevat(tekst, VIS)) return "vis";
   if (bevat(tekst, VLEES)) return "vlees";
   if (bevat(tekst, VEGA_WOORDEN)) return "vega";

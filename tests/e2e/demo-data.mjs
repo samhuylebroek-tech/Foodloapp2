@@ -260,6 +260,25 @@ const INSPIRATIE = [
   created_at: `2026-10-${String(10 + i).padStart(2, "0")}T10:00:00Z`,
 }));
 
+// Ingrediënten bij een deel van de ideeën: zo zijn in Ontdek zowel "mogelijk allergeen" als
+// "niet gecontroleerd" (geen ingrediënten) te zien en te testen.
+const IDEE = (i) => `eeeeeeee-0000-4000-8000-0000000000${String(i + 10)}`;
+const INSPIRATIE_INGREDIENTEN = [
+  [1, ["pompoen", "ui", "gember", "room", "groentebouillon"]],
+  [4, ["pasta", "pesto", "courgette", "paprika", "parmezaan"]],
+  [5, ["rode linzen", "ui", "komijn", "wortel", "groentebouillon"]],
+  [7, ["eieren", "tomaten", "paprika", "feta", "komijn"]],
+].flatMap(([i, namen]) =>
+  namen.map((name, position) => ({
+    id: `efefefef-00${String(i).padStart(2, "0")}-4000-8000-0000000000${String(position).padStart(2, "0")}`,
+    inspiration_id: IDEE(i),
+    name,
+    quantity: null,
+    unit: "",
+    position,
+  })),
+);
+
 export function demoSeed() {
   // Twee demofoto's (CC0, zie demo-fotos/LICENTIES.md); de rest toont bewust de omslag.
   const FOTO = { 1: "demo/stoofvlees.jpg", 2: "demo/pompoensoep.jpg" };
@@ -325,6 +344,7 @@ export function demoSeed() {
   };
   return {
     inspiration_recipes: INSPIRATIE,
+    inspiration_ingredients: INSPIRATIE_INGREDIENTEN,
     groups: [
       {
         id: GEZIN,

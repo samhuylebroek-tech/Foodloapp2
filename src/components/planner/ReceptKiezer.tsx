@@ -27,6 +27,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { zichtbareEigenaren } from "@/lib/zichtbare-eigenaren";
 import { useAuth } from "@/hooks/useAuth";
 import { ingredientToLine } from "@/lib/ingredienten";
+import { ideeTitelToegelaten } from "@/lib/veiligheid";
+import { leesKennismaking } from "@/lib/kennismaking";
+import { AllergieWaarschuwing } from "@/components/AllergieWaarschuwing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
@@ -137,6 +140,8 @@ export function ReceptKiezer({
   const [voorstel, setVoorstel] = useState<Basis | null>(null);
   const [voorstelNaam, setVoorstelNaam] = useState("");
   const [ideeen, setIdeeen] = useState<WeekmenuIdee[] | null>(null);
+  const kennis = leesKennismaking(user?.id);
+  const allergieen = kennis.allergieen;
   const [ideeenBezig, setIdeeenBezig] = useState(false);
   const [webTerm, setWebTerm] = useState("");
   const [webBezig, setWebBezig] = useState(false);
@@ -209,8 +214,12 @@ export function ReceptKiezer({
           bekend: recipes.map((r) => r.title).slice(0, 60),
         },
       });
-      setIdeeen(res);
-      if (!res.length) toast.error("De AI vond nu geen ideeën. Probeer later opnieuw.");
+      // Je allergieën en dieet gaan nooit naar de AI. Wat al in de titel een allergeen of iets
+      // buiten je dieet noemt, valt hier af;
+      // de rest wordt nagekeken zodra het recept met ingrediënten gemaakt is.
+      const veilig = res.filter((i) => ideeTitelToegelaten(i.title, kennis));
+      setIdeeen(veilig);
+      if (!veilig.length) toast.error("De AI vond nu geen ideeën. Probeer later opnieuw.");
     } catch {
       toast.error("Ideeën ophalen lukte niet");
     } finally {
@@ -423,6 +432,10 @@ export function ReceptKiezer({
                 .filter(Boolean)
                 .join(" · ")}
             </p>
+            <AllergieWaarschuwing
+              ingredienten={voorstel.ingredienten.map((i) => i.name)}
+              titel={voorstel.title}
+            />
             {voorstel.ingredienten.length > 0 && (
               <div>
                 <h3 className="text-base font-semibold">Ingrediënten</h3>
@@ -879,6 +892,12 @@ export function ReceptKiezer({
                     </li>
                   ))}
                 </ul>
+              ) : null}
+              {ideeen && ideeen.length > 0 && allergieen.length > 0 ? (
+                <p className="mt-3 text-base text-muted-foreground">
+                  Deze ideeën zijn nog niet nagekeken op je allergieën. Kies je er een, dan kijkt
+                  Foodlo de ingrediënten na voor je het bewaart.
+                </p>
               ) : null}
             </div>
 
