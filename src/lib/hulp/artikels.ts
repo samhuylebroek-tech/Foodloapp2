@@ -259,8 +259,9 @@ export const ARTIKELS: Artikel[] = [
     soort: "handleiding",
     niveau: "beginner",
     samenvatting:
-      "Je voorraad helpt Foodlo om niet te kopen wat je al hebt, en toont wat je ermee kan koken.",
+      "Je voorraad bijhouden is niet nodig. Doe je het wel, dan helpt het Foodlo om niet te kopen wat je al hebt, en toont het wat je ermee kan koken.",
     stappen: [
+      'Houd je je voorraad niet bij, dan gaat Foodlo er niet van uit dat iets nog in huis is. Zet je zelf iets in je voorraad, dan staat "Ik houd mijn voorraad bij" aan. Je kan dat altijd uitzetten, ook in Instellingen.',
       'Open Keuken en kies Voorraad, of tik op "Nieuw" en kies "Iets in de voorraad".',
       'Typ bij "Nieuw product" wat je hebt, bijvoorbeeld ‘500 g rijst’, en tik op "Toevoegen".',
       "Met de plus- en minknoppen pas je de hoeveelheid aan.",

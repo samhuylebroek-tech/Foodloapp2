@@ -19,6 +19,7 @@ import { watKanIkKoken, zitInVoorraad } from "@/lib/voorraad-match";
 import { leesKennismaking } from "@/lib/kennismaking";
 import { magVoorstellen } from "@/lib/veiligheid";
 import { gebruikEerst } from "@/lib/intelligentie/gebruik-eerst";
+import { merkVoorraadGebruik, useVoorraadBijhouden } from "@/lib/intelligentie/voorraad-modus";
 import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
 import { opsomming } from "@/lib/vandaag";
 import { RestjesLijst } from "@/components/kringloop/RestjesLijst";
@@ -143,7 +144,12 @@ function VoorraadPage() {
 
   const voorraadNamen = useMemo(() => items.map((i) => i.naam), [items]);
   // Minder verspilling: verse producten die al even in huis zijn (datum van aankoop of toevoegen).
-  const oudInHuis = useMemo(() => gebruikEerst(items, Date.now(), 50), [items]);
+  // Alleen als je je voorraad bijhoudt: anders weet Foodlo niet of het er nog is.
+  const [bijgehouden, zetBijgehouden] = useVoorraadBijhouden();
+  const oudInHuis = useMemo(
+    () => (bijgehouden ? gebruikEerst(items, Date.now(), 50) : []),
+    [items, bijgehouden],
+  );
   const oudPerNaam = useMemo(() => new Map(oudInHuis.map((o) => [o.naam, o.dagen])), [oudInHuis]);
   const [slim] = useSlimmeVoorstellen();
   // Mobiel-eerst: voorraad per afdeling (zelfde indeling als de boodschappenlijst).
@@ -201,6 +207,7 @@ function VoorraadPage() {
 
   const voegToe = async (regel = nieuw.trim()) => {
     if (!regel || !user) return;
+    merkVoorraadGebruik(user.id);
     // BUG-101: "-5 kg rijst" werd stil 5 kg. Een minteken tegen een getal is geen opsomming.
     if (/^-\d/.test(regel)) {
       toast.error(t("Een hoeveelheid kan niet negatief zijn. Typ bijvoorbeeld: 5 kg rijst."));
@@ -222,6 +229,7 @@ function VoorraadPage() {
   };
 
   const verwijder = async (item: Item) => {
+    if (user) merkVoorraadGebruik(user.id);
     const { error } = await supabase.from("pantry_items").delete().eq("id", item.id);
     if (error) {
       toast.error(t("Verwijderen lukte niet."));
@@ -251,6 +259,7 @@ function VoorraadPage() {
 
   // Hoeveelheid met één tik aanpassen; naar nul = uit de voorraad (met ongedaan maken).
   const wijzigAantal = async (item: Item, richting: 1 | -1) => {
+    if (user) merkVoorraadGebruik(user.id);
     const stap = stapVoor(item.eenheid);
     const huidig = item.hoeveelheid ?? 1;
     const volgende = Math.round((huidig + richting * stap) * 100) / 100;
@@ -324,6 +333,25 @@ function VoorraadPage() {
               </span>
             ) : null}
           </h2>
+
+          <div className="mt-3 rounded-2xl bg-muted px-4 py-3 text-base">
+            <p>
+              {bijgehouden
+                ? t(
+                    "Je houdt je voorraad bij. Foodlo gebruikt ze voor voorstellen en Gebruik eerst.",
+                  )
+                : t(
+                    "Je voorraad bijhouden is niet nodig. Foodlo gebruikt ze nu niet voor voorstellen, en gaat er niet van uit dat iets nog in huis is.",
+                  )}
+            </p>
+            <button
+              type="button"
+              onClick={() => zetBijgehouden(!bijgehouden)}
+              className="mt-1 inline-flex min-h-12 items-center text-base font-semibold underline underline-offset-4"
+            >
+              {bijgehouden ? t("Ik houd mijn voorraad niet bij") : t("Ik houd mijn voorraad bij")}
+            </button>
+          </div>
 
           <form
             className="mt-4 flex gap-2"

@@ -50,7 +50,8 @@ export type RedenSoort =
   | "sterren"
   | "lang-niet"
   | "favoriet"
-  | "soort";
+  | "soort"
+  | "eigen";
 
 export type Reden = { soort: RedenSoort; tekst: string; gewicht: number };
 
@@ -78,6 +79,8 @@ export type Invoer = {
   nietNu?: string[];
   /** Verse producten die al even in huis zijn (gebruik-eerst.ts). */
   oudInHuis?: OudInHuis[];
+  /** Voorraad niet bijgehouden: recent gekocht, maar niet verondersteld aanwezig. */
+  onlangsGekocht?: string[];
   max?: number;
 };
 
@@ -161,6 +164,19 @@ export function beoordeel(k: Kandidaat, i: Invoer): Aanbeveling {
             2,
           )}`,
     );
+  }
+  // Voorraad niet bijgehouden (situatie 2): een recente aankoop is een hint, geen "in huis".
+  if (!aanwezig.length && i.onlangsGekocht?.length) {
+    const gekocht = telt.filter((n) => zitInVoorraad(n, i.onlangsGekocht!));
+    if (gekocht.length)
+      plus(
+        "voorraad",
+        2 + Math.min(gekocht.length, 3),
+        `Je kocht onlangs ${opsomming(
+          gekocht.map((n) => n.toLowerCase()),
+          2,
+        )}`,
+      );
   }
   score -= Math.min(ontbreekt.length * 1.5, 9);
 
@@ -249,10 +265,21 @@ export function beoordeel(k: Kandidaat, i: Invoer): Aanbeveling {
 
 /** De beste voorstellen, elk met 1 à 2 redenen. Zonder reden geen voorstel. */
 export function beveelAan(i: Invoer): Aanbeveling[] {
-  return i.kandidaten
-    .filter((k) => toegelaten(k, i))
-    .map((k) => beoordeel(k, i))
-    .filter((a) => a.redenen.length > 0)
-    .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title))
-    .slice(0, i.max ?? 3);
+  return (
+    i.kandidaten
+      .filter((k) => toegelaten(k, i))
+      .map((k) => beoordeel(k, i))
+      // Geen gegevens (geen voorraad, geschiedenis of sterren)? Dan toch een eerlijk voorstel:
+      // de basiservaring hangt nooit af van uitgebreide invoer.
+      .map((a) =>
+        a.redenen.length
+          ? a
+          : {
+              ...a,
+              redenen: [{ soort: "eigen" as const, tekst: "Uit je eigen recepten", gewicht: 0 }],
+            },
+      )
+      .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title))
+      .slice(0, i.max ?? 3)
+  );
 }

@@ -3,7 +3,7 @@
  * Alleen nepdata (lokale nep-Supabase). Bestanden: docs/foodloapp-v2/schermen/v2/<project>-<naam>.png
  */
 import type { Page } from "@playwright/test";
-import { meldAan, resetDemo, test, zetKlok } from "./helpers";
+import { meldAan, resetDemo, test, voorraadBijhouden, zetKlok } from "./helpers";
 
 test.skip(!process.env["SCHERMEN"], "alleen met SCHERMEN=1");
 test.describe.configure({ timeout: 180_000 });
@@ -30,6 +30,7 @@ async function foto(page: Page, project: string, naam: string, volledig = false)
 test.beforeEach(async ({ page }) => {
   await resetDemo();
   await meldAan(page);
+  await voorraadBijhouden(page);
 });
 
 test("vandaag en navigatie", async ({ page }, info) => {

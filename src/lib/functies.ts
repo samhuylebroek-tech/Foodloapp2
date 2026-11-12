@@ -246,7 +246,7 @@ export const FUNCTIES: Functie[] = [
     module: "voorraad",
     route: "/voorraad",
     bestanden: ["src/routes/voorraad.tsx", "src/lib/intelligentie/gebruik-eerst.ts"],
-    labels: ["Gebruik eerst"],
+    labels: ["Gebruik eerst", "Ik houd mijn voorraad bij"],
   },
   {
     sleutel: "ontdek.bewaren",

@@ -14,6 +14,7 @@ import {
   storing,
   test,
   zetKlok,
+  voorraadBijhouden,
 } from "./helpers";
 
 const STOOFVLEES = "/recepten/aaaaaaaa-0000-4000-8000-000000000001";
@@ -172,6 +173,8 @@ test("WP2 wat eten we vanavond: één tik plant het en zet alleen het tekort op 
     method: "DELETE",
   });
   const lijstVoor = (await open()).length;
+  // Deze gebruiker houdt zijn voorraad bij (voorraadbeheer is optioneel).
+  await voorraadBijhouden(page);
   await zetKlok(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Wat eten we vandaag?" })).toBeVisible();

@@ -20,6 +20,7 @@ import {
 import { Groep, KnopRij, LinkRij, Paneel } from "@/components/mobiel/Lijst";
 import { Switch } from "@/components/ui/switch";
 import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
+import { useVoorraadBijhouden } from "@/lib/intelligentie/voorraad-modus";
 import { cn } from "@/lib/utils";
 import { etenstijd } from "@/lib/vandaag";
 import { marketingUrl } from "@/lib/app-url";
@@ -417,6 +418,7 @@ const STAAL: Record<ThemaId, string> = {
 /** Modulair: wie liever alles zelf kiest, zet de voorstellen uit. De rest van Foodlo blijft werken. */
 function SlimmeVoorstellen({ t }: { t: (s: string) => string }) {
   const [aan, zet] = useSlimmeVoorstellen();
+  const [voorraad, zetVoorraad] = useVoorraadBijhouden();
   return (
     <Groep
       titel={t("Voorstellen")}
@@ -429,6 +431,15 @@ function SlimmeVoorstellen({ t }: { t: (s: string) => string }) {
           {t("Slimme voorstellen")}
         </span>
         <Switch checked={aan} onCheckedChange={zet} />
+      </label>
+      <label className="flex min-h-16 cursor-pointer items-center gap-3.5 px-4 py-3">
+        <span className="min-w-0 flex-1 text-[1.05rem] font-semibold leading-snug">
+          {t("Ik houd mijn voorraad bij")}
+          <span className="block text-[0.95rem] font-normal text-muted-foreground">
+            {t("Uit: Foodlo gaat er niet van uit dat iets nog in huis is.")}
+          </span>
+        </span>
+        <Switch checked={voorraad} onCheckedChange={zetVoorraad} />
       </label>
     </Groep>
   );

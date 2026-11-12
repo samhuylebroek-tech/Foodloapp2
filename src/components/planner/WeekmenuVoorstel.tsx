@@ -34,6 +34,7 @@ import { beoordeel, toegelaten, type Kandidaat } from "@/lib/intelligentie/voors
 import { leesKennismaking } from "@/lib/kennismaking";
 import { weekmenuIdeeen, type WeekmenuIdee } from "@/lib/ai.functions";
 import { ideeTitelToegelaten } from "@/lib/veiligheid";
+import { bruikbareVoorraad, useVoorraadBijhouden } from "@/lib/intelligentie/voorraad-modus";
 import { type WeekmenuInstelling, type DagVoorkeur } from "@/lib/voorkeuren";
 import { kiesUitEigen, type DagRegel, type Soortkeuze } from "@/lib/weekmenu-voorstel";
 import { datumTekst, labelVoor, kortLabel } from "./gedeeld";
@@ -198,17 +199,24 @@ export function WeekmenuVoorstel({
   const kennis = leesKennismaking(user?.id);
 
   // Alleen voor de redenen: voorraad, sterren en favorieten. Lukt het niet, dan zonder.
+  // Voorraad alleen als je die bijhoudt (anders hooguit "onlangs gekocht"; zie voorraad-modus.ts).
+  const [voorraadBijgehouden] = useVoorraadBijhouden();
   const { data: extra } = useQuery({
-    queryKey: ["voorstel-redenen", user?.id],
+    queryKey: ["voorstel-redenen", user?.id, voorraadBijgehouden],
     enabled: !!user,
     queryFn: async () => {
       const [voorraad, sterren, favorieten] = await Promise.all([
-        supabase.from("pantry_items").select("naam").eq("user_id", user!.id),
+        supabase
+          .from("pantry_items")
+          .select("naam, created_at, updated_at")
+          .eq("user_id", user!.id),
         supabase.from("recipe_ratings").select("recipe_id, stars").eq("user_id", user!.id),
         supabase.from("favorites").select("recipe_id").eq("user_id", user!.id),
       ]);
+      const v = bruikbareVoorraad(voorraad.data ?? [], voorraadBijgehouden);
       return {
-        voorraad: (voorraad.data ?? []).map((v) => v.naam),
+        voorraad: v.inHuis,
+        onlangsGekocht: v.onlangsGekocht,
         sterren: Object.fromEntries((sterren.data ?? []).map((x) => [x.recipe_id, x.stars])),
         favorieten: (favorieten.data ?? []).map((f) => f.recipe_id as string),
       };
@@ -487,6 +495,7 @@ export function WeekmenuVoorstel({
       kandidaten: [],
       context,
       voorraad: extra?.voorraad ?? [],
+      onlangsGekocht: extra?.onlangsGekocht ?? [],
       geschiedenis: { laatst, komend: new Set(), minutenPerWeekdag: {} },
       sterren: extra?.sterren ?? {},
       favorieten: extra?.favorieten ?? [],

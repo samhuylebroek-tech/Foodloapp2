@@ -3,7 +3,16 @@
  * Keuken toont "Al X dagen in huis" en "Gebruik eerst"; Vandaag geeft de reden; bijkopen zet de
  * datum terug op vandaag (en ongedaan maken zet hem terug). Nepdata (demo), vaste klok.
  */
-import { expect, meldAan, nepDb, resetDemo, test, zetKlok, axeErnstig } from "./helpers";
+import {
+  expect,
+  meldAan,
+  nepDb,
+  resetDemo,
+  test,
+  zetKlok,
+  axeErnstig,
+  voorraadBijhouden,
+} from "./helpers";
 
 const NEP = "http://127.0.0.1:54439/rest/v1";
 const geleden = (dagen: number) => new Date(Date.now() - dagen * 86400000).toISOString();
@@ -20,6 +29,7 @@ test.beforeEach(async ({ page }) => {
   });
   expect(res.ok).toBe(true);
   await meldAan(page);
+  await voorraadBijhouden(page);
   await zetKlok(page, 17);
 });
 

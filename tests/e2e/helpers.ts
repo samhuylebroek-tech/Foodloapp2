@@ -147,3 +147,18 @@ export async function zetKlok(page: Page, uur = 14) {
   d.setHours(uur, 0, 0, 0);
   await page.clock.setFixedTime(d);
 }
+
+/**
+ * Voorraadbeheer is optioneel (2026-11-12): alleen wie zijn voorraad bijhoudt, krijgt voorstellen
+ * "met wat je in huis hebt". Tests over die situatie zetten de keuze vooraf aan (zoals een gebruiker
+ * die zelf iets in de voorraad zet).
+ */
+export async function voorraadBijhouden(
+  page: Page,
+  userId = "11111111-1111-4111-8111-111111111111",
+) {
+  await page.addInitScript(
+    (id) => window.localStorage.setItem(`foodlo:voorraad-bijhouden:${id}`, "aan"),
+    userId,
+  );
+}

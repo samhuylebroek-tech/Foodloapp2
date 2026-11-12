@@ -85,6 +85,7 @@ export function VulAan({
       })),
       voorraad: bronnen.voorraad,
       oudInHuis: bronnen.oudInHuis,
+      onlangsGekocht: bronnen.onlangsGekocht,
       geschiedenis: vatSamen(bronnen.plan, minuten, vandaag),
       sterren: bronnen.sterren,
       favorieten: bronnen.favorieten,

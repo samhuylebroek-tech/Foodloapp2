@@ -81,6 +81,7 @@ export function VanavondVoorstellen({ recepten }: { recepten: ReceptKort[] }) {
       allergieen: kennis.allergieen,
       nietNu,
       oudInHuis: bronnen.oudInHuis,
+      onlangsGekocht: bronnen.onlangsGekocht,
       max: 12,
     });
     const inHuis = alle.filter((a) => a.aanwezig.length > 0);

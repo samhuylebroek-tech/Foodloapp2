@@ -21,6 +21,7 @@ export type VulAanInvoer = {
   kandidaten: Kandidaat[];
   voorraad: string[];
   oudInHuis?: OudInHuis[];
+  onlangsGekocht?: string[];
   geschiedenis: Geschiedenis;
   sterren?: Record<string, number>;
   favorieten?: string[];
@@ -45,6 +46,7 @@ export function vulAan(i: VulAanInvoer): DagVoorstel[] {
       context,
       voorraad: i.voorraad,
       ...(i.oudInHuis ? { oudInHuis: i.oudInHuis } : {}),
+      ...(i.onlangsGekocht ? { onlangsGekocht: i.onlangsGekocht } : {}),
       geschiedenis: i.geschiedenis,
       ...(i.sterren ? { sterren: i.sterren } : {}),
       ...(i.favorieten ? { favorieten: i.favorieten } : {}),

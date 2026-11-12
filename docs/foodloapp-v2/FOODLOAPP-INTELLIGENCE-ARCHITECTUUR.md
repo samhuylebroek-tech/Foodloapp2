@@ -198,3 +198,38 @@ Alle voorstellen lopen door **één motor** (`src/lib/intelligentie/voorstel.ts`
 3. Nooit een automatische actie: elk voorstel vraagt één tik en heeft "Ongedaan maken".
 4. Uit te zetten met "Slimme voorstellen". Zonder de bron werkt alles zoals voordien.
 5. Gezondheidsgegevens blijven op het toestel (of later, na 0005, alleen binnen het huishouden met toestemming) en gaan nooit naar een externe dienst of de AI.
+
+## 9. Voorraad en restjes zijn optioneel (productbeslissing 2026-11-12)
+### 9.1 Onderzoek: hoe het was
+| Situatie | Wat er gebeurde | Probleem |
+|---|---|---|
+| 1. Geen voorraad | Voorstellen uit recepten, seizoen, tijd, geschiedenis | Een recept zonder enige reden viel weg. Met weinig gegevens kon er niets overblijven (geen fout, wel geen voorstel). |
+| 2. Wel boodschappen, geen voorraad bijgehouden | "Klaar met winkelen" zet aankopen altijd in de voorraad | Voorstellen zeiden "Gebruikt je kip" en "Gebruik eerst: kip (al 12 dagen in huis)", ook als de kip allang op was. Dat veronderstelt aanwezigheid. |
+| 3. Voorraad bijgehouden | Werkt zoals bedoeld | — |
+| Restjes | Alleen wat je na het koken registreert | Correct: geen registratie = geen restjes. |
+
+### 9.2 Wat er veranderd is (lokaal gebouwd, geen migratie)
+- **Keuze "Ik houd mijn voorraad bij"** (`voorraad-modus.ts`, op het toestel):
+  - Ze staat in Instellingen en bovenaan de voorraadpagina.
+  - Ze gaat vanzelf aan zodra je zelf iets in je voorraad zet of aanpast. Je kan ze altijd uitzetten, en "uit" blijft uit.
+  - **Onbekend = niet bijgehouden.**
+- **Niet bijgehouden:**
+  - niets telt als "in huis";
+  - geen "Gebruik eerst";
+  - een aankoop van hooguit 3 dagen geleden mag als hint "Je kocht onlangs rundvlees". Zo'n gerecht telt niet als "alles in huis".
+- **Basisreden:** zonder andere gegevens krijgt een eigen recept de eerlijke reden "Uit je eigen recepten". Gebruikers zonder voorraad of geschiedenis krijgen dus altijd voorstellen, ook in Week ("Vul aan").
+- **"Wat kan ik koken?"** blijft je eigen lijst gebruiken: dat is wat je op die pagina zelf ziet, geen voorstel uit het niets.
+- **Tests:**
+  - E2E `voorraad-optioneel.spec.ts` loopt de drie situaties na.
+  - Unittests in `voorraad-modus.test.ts` en `intelligentie.test.ts`.
+  - De oude test "zonder reden geen voorstel" is bewust vervangen: de productbeslissing draait die regel om.
+
+### 9.3 Nog open (beslissing eigenaar, niet zelf doorgevoerd)
+- **Wat het raakt:** Slim aanvullen, "Voor morgen nog nodig" en "Nog nodig" op Vandaag trekken de voorraad af van wat je nodig hebt. Wie zijn voorraad niet bijhoudt, krijgt zo minder op de lijst voor iets dat hij weken geleden kocht.
+- **Wat al tegenwicht biedt:** Slim aanvullen toont "in huis" apart, en met één tik zet je het toch op de lijst.
+- **Voorstel:** bij "niet bijgehouden" alleen aankopen van de laatste 14 dagen aftrekken.
+- **Gevolg:** minder vergeten, maar een kleine kans dat je iets dubbel koopt.
+- **Waarom ik het niet zelf doorvoerde:** het verandert de kern van de boodschappenlijst.
+
+### 9.4 Samenwerking
+Situatie 1 en 2 krijgen dezelfde motor en dezelfde veiligheidsregel, met minder invoer. Weer, dag, tijdstip, seizoen en geschiedenis werken in alle drie de situaties. Voorraad, "Gebruik eerst" en restjes voegen alleen iets toe als je ze gebruikt.

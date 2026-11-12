@@ -3,11 +3,20 @@
  * allergieën als harde grens en uitleg in het Help Center. Nepdata (demo), vaste klok.
  */
 import { DEMO_USER_ID } from "./demo-data.mjs";
-import { axeErnstig, expect, kleineDoelen, meldAan, resetDemo, test, zetKlok } from "./helpers";
+import {
+  axeErnstig,
+  expect,
+  kleineDoelen,
+  meldAan,
+  resetDemo,
+  test,
+  zetKlok,
+  voorraadBijhouden,
+} from "./helpers";
 
 const vandaag = () => new Date().toLocaleDateString("sv-SE");
 const REDEN =
-  /Gebruikt je|Klaar in|Past bij het seizoen|in het seizoen|sterren|favorieten|meestal snel|is het/;
+  /Gebruikt je|Je kocht onlangs|Uit je eigen recepten|Klaar in|Past bij het seizoen|in het seizoen|sterren|favorieten|meestal snel|is het/;
 
 test.beforeEach(async ({ page }) => {
   await resetDemo();
@@ -16,6 +25,7 @@ test.beforeEach(async ({ page }) => {
     method: "DELETE",
   });
   await meldAan(page);
+  await voorraadBijhouden(page);
   await zetKlok(page, 17);
 });
 
@@ -37,7 +47,7 @@ test("elk voorstel toont 1 à 2 redenen en 'Waarom zie ik dit?' legt het uit", a
     // Hooguit 2 redenen (gescheiden door " · ").
     const regel =
       tekst.match(
-        /(Gebruikt je|Klaar in|Past bij|Je gaf|Een van|Op \w+dag|Over|Vandaag is|[A-Z][a-z ]+ (?:is|zijn) nu in het seizoen)[^]*/,
+        /(Gebruikt je|Je kocht onlangs|Uit je eigen recepten|Klaar in|Past bij|Je gaf|Een van|Op \w+dag|Over|Vandaag is|[A-Z][a-z ]+ (?:is|zijn) nu in het seizoen)[^]*/,
       )?.[0] ?? "";
     expect(regel.split(" · ").length).toBeLessThanOrEqual(2);
   }

@@ -114,8 +114,19 @@ describe("Meal Intelligence: harde regels", () => {
     expect(ids(i)).toEqual([]);
   });
 
-  it("zonder reden geen voorstel", () => {
-    expect(ids(invoer([k("los")]))).toEqual([]);
+  // Productbeslissing 2026-11-12: de basiservaring hangt niet af van voorraad of geschiedenis.
+  it("zonder andere gegevens toch een voorstel, met de eerlijke reden 'Uit je eigen recepten'", () => {
+    expect(ids(invoer([k("los")]))).toEqual(["los"]);
+    expect(redenen(invoer([k("los")]), "los")).toEqual(["Uit je eigen recepten"]);
+  });
+  it("voorraad niet bijgehouden: een recente aankoop is 'Je kocht onlangs', nooit 'in huis'", () => {
+    const i = invoer([k("Kip curry", { ingredienten: ["kip", "rijst", "curry"] })], {
+      voorraad: [],
+      onlangsGekocht: ["kip"],
+    });
+    const a = beveelAan(i)[0]!;
+    expect(a.redenen.map((r) => r.tekst)).toContain("Je kocht onlangs kip");
+    expect(a.aanwezig).toEqual([]);
   });
 });
 
