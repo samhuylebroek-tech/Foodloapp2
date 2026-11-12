@@ -1,0 +1,14 @@
+{
+  // Claude Code Desktop: de "Browser"-preview start de V2-demo met verzonnen gegevens
+  // (nep-Supabase op 127.0.0.1, nooit productie). Aanmelden: demo@foodlo.be / demo1234.
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "foodloapp-demo",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/demo.mjs"],
+      "port": 4319,
+      "autoPort": false
+    }
+  ]
+}

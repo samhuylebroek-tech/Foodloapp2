@@ -5,7 +5,7 @@ Build Foodloapp into an exceptional, commercially sustainable cooking ecosystem:
 
 ## Non-negotiable safety boundaries
 - Never push to `main`, deploy, run production migrations, alter production secrets, or change Lovable production settings.
-- Work only on a dedicated feature branch. The prepared handoff branch is `v2/claude-code-ready`; create your own child branch from it before implementation.
+- Work only on a dedicated feature branch. The V2 integration branch is `v2/dev` (it contains `v2/claude-code-ready`). In cloud sessions, create a child branch `v2/<onderwerp>` from `v2/dev` and open a pull request into `v2/dev`, never into `main`.
 - Do not rewrite published Git history or force-push. The repository is connected to Lovable; published commits may sync to the Lovable project.
 - Never print, log, paste, or commit environment variable values. Never ask the user to paste secrets into chat.
 - Treat `.env` as local-only. `.env` and `.env.*` are ignored; `.env.example` may contain names and safe placeholders only.
@@ -48,3 +48,13 @@ Build Foodloapp into an exceptional, commercially sustainable cooking ecosystem:
 - Treat authentication, authorization, RLS, credits/billing, creator entitlements and personal data as high risk.
 - Include loading, empty, error, offline and accessibility states for user-facing changes.
 - Keep changes small, reviewable and testable. Document assumptions and deferred work.
+
+## Visual-first workflow (cloud and desktop)
+The owner judges progress by the real screens, not by reports. For every user-facing change:
+1. Before editing, run `npm run schermen` and keep a copy of `docs/foodloapp-v2/schermen/actueel/` as "voor" (outside the repo or in the PR's first commit).
+2. Make the change. Look at the screenshots yourself (read the JPGs) at 390 px in the light theme and in "Extra duidelijk" with large text; fix truncation, overlap, contrast and spacing problems you see.
+3. Run `npm run schermen` again, then `SCHERMEN_VOOR=<voor-map> node scripts/schermen-galerij.mjs` for a before/after gallery. Commit only the JPGs of the screens that changed, plus the gallery README, so the PR shows them on GitHub.
+4. In the PR description: what the user notices, the before/after images, which tests ran (real exit codes), and open questions in plain Dutch for a non-technical owner.
+- Cloud sessions run the app only against the fake Supabase (`npm run demo`, `tests/e2e/fake-supabase.mjs`); they never receive real keys. Playwright uses the preinstalled Chrome via `CHROME_PATH`.
+- Before any push, run `npm run controle-voor-push`. Pushing still requires the owner's explicit approval; never push to `main`, never force-push.
+- Prefer small visible improvements over backend work; keep the safety rules (allergies, diet, privacy) intact in every UI change.

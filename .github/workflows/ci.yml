@@ -45,6 +45,9 @@ jobs:
         run: bun run build
 
   e2e:
+    # Zwaar (5 × ± 20 min): niet bij elke push, wel bij elke pull request of met de hand.
+    # Zo blijft een privérepository binnen de gratis GitHub Actions-minuten.
+    if: github.event_name != 'push'
     # Lokale dev-server + NEP-Supabase op 127.0.0.1. Externe requests worden geblokkeerd.
     # Per schermformaat een eigen taak (parallel): de volledige suite duurt anders > 30 min.
     runs-on: ubuntu-latest
@@ -96,3 +99,33 @@ jobs:
         run: node tests/rls/alles.mjs
         env:
           PGLITE_DIR: ${{ runner.temp }}/pglite
+
+  schermen:
+    # Visuele rondgang (Vandaag, Week, Lijst, winkelen, recept, koken, Keuken, Ontdek, Instellingen)
+    # in het lichte thema en in "Extra duidelijk" met grote tekst. Alleen nepgegevens.
+    # Resultaat: downloadbare galerij "schermen" bij de pull request (index.html + README.md).
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
+      - name: Rondgang
+        run: bunx playwright test rondgang --project=mobiel-390
+        env:
+          CI: "true"
+          SCHERMEN: "1"
+      - name: Galerij
+        run: node scripts/schermen-galerij.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schermen
+          path: docs/foodloapp-v2/schermen/actueel
+          retention-days: 14

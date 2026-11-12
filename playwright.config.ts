@@ -45,6 +45,10 @@ export default defineConfig({
     locale: "nl-BE",
     timezoneId: "Europe/Brussels",
     trace: "retain-on-failure",
+    // Claude Code in de cloud: daar staat Chrome al klaar (CHROME_PATH); geen browserdownload nodig.
+    ...(process.env["CHROME_PATH"]
+      ? { launchOptions: { executablePath: process.env["CHROME_PATH"] } }
+      : {}),
   },
   projects: [
     // Beginner op een kleine telefoon (Pixel 7, 412 px).
@@ -71,7 +75,7 @@ export default defineConfig({
       name: "mobiel-390",
       use: { ...devices["Pixel 7"], viewport: { width: 390, height: 844 } },
       testMatch:
-        /kernflow|schermen|personas|schermen-alle|mobiel-breedtes|mobiel-kwaliteit|kringloop|navigatie|weekmenu-lijst|vandaag|winkelmodus|\/lijst\.spec|audit-|a11y-|reis-/,
+        /kernflow|schermen|personas|schermen-alle|mobiel-breedtes|mobiel-kwaliteit|kringloop|navigatie|weekmenu-lijst|vandaag|winkelmodus|\/lijst\.spec|audit-|a11y-|reis-|rondgang/,
     },
     ...webkitProject,
     {

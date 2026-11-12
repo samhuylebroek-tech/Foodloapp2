@@ -14,7 +14,9 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit -p .",
     "test:e2e": "playwright test",
-    "demo": "node scripts/demo.mjs"
+    "demo": "node scripts/demo.mjs",
+    "schermen": "SCHERMEN=1 playwright test rondgang --project=mobiel-390 && node scripts/schermen-galerij.mjs",
+    "controle-voor-push": "bash scripts/controle-voor-push.sh"
   },
   "overrides": {
     "rolldown": "1.2.1"

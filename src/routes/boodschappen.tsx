@@ -1529,7 +1529,7 @@ function BoodschappenPage() {
               <Accordion type="single" collapsible className="paneel px-4">
                 <AccordionItem value="kaarten" className="border-0">
                   <AccordionTrigger>
-                    <span className="flex min-w-0 items-center gap-3 [overflow-wrap:anywhere]">
+                    <span className="flex min-w-0 items-center gap-3 hyphens-auto break-words">
                       <Icoon icoon={WalletCards} tint="blauw" /> Klantenkaarten
                     </span>
                   </AccordionTrigger>
@@ -2064,13 +2064,14 @@ function ItemRij({
       {/* De hele rij is tikbaar om af te vinken: makkelijk met één hand in de winkel. */}
       <label
         htmlFor={vinkId}
-        className="flex min-h-14 min-w-0 flex-1 cursor-pointer items-center gap-2 py-2 text-left"
+        className="flex min-h-14 min-w-0 flex-1 cursor-pointer flex-wrap items-center gap-x-2 gap-y-1 py-2 text-left"
       >
-        <span className="min-w-0 flex-1">
+        {/* Grote tekst: de naam breekt af in plaats van "run…", en de hoeveelheid schuift eronder. */}
+        <span className="min-w-0 flex-1 basis-24">
           <ItemNaam
             naam={item.name}
             className={cn(
-              "block truncate text-lg leading-snug",
+              "block hyphens-auto break-words text-lg leading-snug",
               item.checked && "text-muted-foreground line-through",
             )}
           />
