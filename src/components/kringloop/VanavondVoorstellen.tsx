@@ -16,6 +16,7 @@ import { meldMetHerstel } from "@/hooks/useAanvulling";
 import { bepaalContext } from "@/lib/intelligentie/context";
 import { vatSamen } from "@/lib/intelligentie/geschiedenis";
 import { herstelNietNu, nietNuLijst, zetNietNu } from "@/lib/intelligentie/niet-nu";
+import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
 import { beveelAan, type Aanbeveling } from "@/lib/intelligentie/voorstel";
 import { leesKennismaking } from "@/lib/kennismaking";
 import { HalfGelukt, kookVanavond } from "@/lib/kringloop-db";
@@ -43,13 +44,15 @@ export function VanavondVoorstellen({ recepten }: { recepten: ReceptKort[] }) {
   const { momenten, weekmenu } = useVoorkeuren();
   const [bezig, setBezig] = useState<string | null>(null);
   const [nietNu, setNietNu] = useState<string[]>([]);
+  // "Slimme voorstellen" uit: niets voorstellen en ook niets extra opvragen.
+  const [slim] = useSlimmeVoorstellen();
   // Pas lezen als de gebruiker bekend is (na het aanmelden en niet tijdens server-rendering).
   useEffect(() => setNietNu(nietNuLijst(user?.id)), [user?.id]);
   const ids = recepten.map((r) => r.id);
 
   const { data: bronnen } = useQuery({
     queryKey: ["vanavond", user?.id, ids.join(",")],
-    enabled: !!user && ids.length > 0,
+    enabled: !!user && ids.length > 0 && slim,
     queryFn: async () => {
       const van = lokaleDatum(new Date(Date.now() - 180 * 86400000));
       const [ingr, voorraad, plan, sterren, favorieten] = await Promise.all([
@@ -117,7 +120,7 @@ export function VanavondVoorstellen({ recepten }: { recepten: ReceptKort[] }) {
       : { voorstellen: alle.slice(0, 3), uitHuis: false };
   }, [bronnen, recepten, weekmenu, nietNu, user?.id]);
 
-  if (!voorstellen.length) return null;
+  if (!slim || !voorstellen.length) return null;
 
   async function kies(id: string) {
     const recept = recepten.find((r) => r.id === id);

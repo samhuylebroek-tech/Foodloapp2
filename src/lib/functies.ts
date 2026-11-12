@@ -85,6 +85,14 @@ export const FUNCTIES: Functie[] = [
     labels: ["Met wat je in huis hebt", "Niet nu", "Waarom zie ik dit?"],
   },
   {
+    sleutel: "instellingen.voorstellen",
+    titel: "Slimme voorstellen aan of uit",
+    module: "account",
+    route: "/instellingen",
+    bestanden: ["src/routes/instellingen.tsx", "src/lib/intelligentie/slim.ts"],
+    labels: ["Slimme voorstellen"],
+  },
+  {
     sleutel: "week.plannen",
     titel: "Een gerecht inplannen",
     module: "week",

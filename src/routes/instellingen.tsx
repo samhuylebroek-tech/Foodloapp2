@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Groep, KnopRij, LinkRij, Paneel } from "@/components/mobiel/Lijst";
 import { Switch } from "@/components/ui/switch";
+import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
 import { cn } from "@/lib/utils";
 import { etenstijd } from "@/lib/vandaag";
 import { marketingUrl } from "@/lib/app-url";
@@ -291,6 +292,8 @@ function InstellingenPage() {
           ))}
         </Groep>
 
+        <SlimmeVoorstellen t={t} />
+
         <Groep titel={t("Jouw Foodlo")}>
           <LinkRij
             to="/credits"
@@ -410,6 +413,26 @@ const STAAL: Record<ThemaId, string> = {
   donker: "linear-gradient(135deg, oklch(0.74 0.12 155) 50%, oklch(0.19 0.01 150) 50%)",
   contrast: "linear-gradient(135deg, oklch(0.2 0 0) 50%, oklch(1 0 0) 50%)",
 };
+
+/** Modulair: wie liever alles zelf kiest, zet de voorstellen uit. De rest van Foodlo blijft werken. */
+function SlimmeVoorstellen({ t }: { t: (s: string) => string }) {
+  const [aan, zet] = useSlimmeVoorstellen();
+  return (
+    <Groep
+      titel={t("Voorstellen")}
+      voet={t(
+        "Foodlo stelt op Vandaag gerechten voor en zegt in de winkel wat je voor morgen nog nodig hebt. Zet dit uit als je liever alles zelf kiest. Je recepten, weekmenu en lijst blijven gewoon werken. Deze keuze geldt op dit toestel.",
+      )}
+    >
+      <label className="flex min-h-16 cursor-pointer items-center gap-3.5 px-4 py-3">
+        <span className="min-w-0 flex-1 text-[1.05rem] font-semibold leading-snug">
+          {t("Slimme voorstellen")}
+        </span>
+        <Switch checked={aan} onCheckedChange={zet} />
+      </label>
+    </Groep>
+  );
+}
 
 function AccountVerwijderen() {
   const [open, setOpen] = useState(false);

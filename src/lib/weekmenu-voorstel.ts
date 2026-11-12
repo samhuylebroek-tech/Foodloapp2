@@ -31,15 +31,28 @@ const VIS = [
   "pangasius", "tilapia", "krab", "kreeft", "victoriabaars", "heilbot", "coquille",
 ];
 
+/** BUG-128: ook het label "vlees" en Belgische vleesgerechten. */
+const VLEES_EXTRA = [
+  "vlees",
+  "stoofvlees",
+  "stoverij",
+  "carbonade",
+  "vol-au-vent",
+  "frikandel",
+  "boulet",
+  "gyros",
+];
+
 const VLEES = [
   "kip", "rund", "rundvlees", "gehakt", "varken", "varkens", "spek", "ham", "worst", "chorizo",
   "salami", "lam", "kalkoen", "eend", "kalfs", "biefstuk", "steak", "ribbetjes", "bacon",
   "braadworst", "shoarma", "kebab", "kipfilet", "vleesbrood", "burger", "balletjes", "konijn",
-  "hesp", "pancetta", "prosciutto", "vlees", "stoofvlees", "stoverij", "carbonade", "vol-au-vent",
-  "frikandel", "boulet", "gyros",
+  "hesp", "pancetta", "prosciutto",
+  ...VLEES_EXTRA,
 ];
 /** Wat wél "vlees" zegt, maar het niet is. */
-const GEEN_VLEES = /vleesvervang\w*|vleesloos|zonder vlees|vegetarisch gehakt|vegagehakt|veggie gehakt/g;
+const GEEN_VLEES =
+  /vleesvervang\w*|vleesloos|zonder vlees|vegetarisch gehakt|vegagehakt|veggie gehakt/g;
 
 const VEGA_WOORDEN = ["vegetarisch", "vega", "veganistisch", "vegan", "plantaardig", "meatless"];
 

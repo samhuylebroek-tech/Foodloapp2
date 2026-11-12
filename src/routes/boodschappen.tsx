@@ -42,6 +42,7 @@ import { Klantenkaarten } from "@/components/Klantenkaarten";
 import { Groep, Icoon } from "@/components/mobiel/Lijst";
 import { AanvulKaart, AanvulRegel } from "@/components/kringloop/AanvulKaart";
 import { meldMetHerstel, useAanvulling, useKringloopVernieuw } from "@/hooks/useAanvulling";
+import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
 import { nogNodigVoorMorgen } from "@/lib/intelligentie/voor-morgen";
 import { HalfGelukt, klaarMetWinkelen } from "@/lib/kringloop-db";
 import { Button } from "@/components/ui/button";
@@ -931,9 +932,11 @@ function BoodschappenPage() {
   const vernieuwKringloop = useKringloopVernieuw();
   // Usecase 9: in de winkel tonen wat je voor vandaag of morgen nog vergeten bent.
   const aanvulling = useAanvulling();
-  const voorMorgen = aanvulling.data
-    ? nogNodigVoorMorgen(aanvulling.data.aanvulling.kopen, lokaleDatum())
-    : null;
+  const [slim] = useSlimmeVoorstellen();
+  const voorMorgen =
+    slim && aanvulling.data
+      ? nogNodigVoorMorgen(aanvulling.data.aanvulling.kopen, lokaleDatum())
+      : null;
   const [winkelKlaarBezig, setWinkelKlaarBezig] = useState(false);
   async function klaarMetWinkelenNu() {
     if (!user || !actieveLijst || !klaar.length || winkelKlaarBezig) return;
