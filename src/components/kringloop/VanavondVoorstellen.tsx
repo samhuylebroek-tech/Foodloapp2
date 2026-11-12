@@ -17,6 +17,7 @@ import { bepaalContext } from "@/lib/intelligentie/context";
 import { vatSamen } from "@/lib/intelligentie/geschiedenis";
 import { herstelNietNu, nietNuLijst, zetNietNu } from "@/lib/intelligentie/niet-nu";
 import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
+import { gebruikEerst } from "@/lib/intelligentie/gebruik-eerst";
 import { beveelAan, type Aanbeveling } from "@/lib/intelligentie/voorstel";
 import { leesKennismaking } from "@/lib/kennismaking";
 import { HalfGelukt, kookVanavond } from "@/lib/kringloop-db";
@@ -60,7 +61,10 @@ export function VanavondVoorstellen({ recepten }: { recepten: ReceptKort[] }) {
           .from("recipe_ingredients")
           .select("recipe_id, name")
           .in("recipe_id", ids.slice(0, 100)),
-        supabase.from("pantry_items").select("naam").eq("user_id", user!.id),
+        supabase
+          .from("pantry_items")
+          .select("naam, created_at, updated_at")
+          .eq("user_id", user!.id),
         supabase
           .from("meal_plan")
           .select("recipe_id, plan_date")
@@ -75,6 +79,7 @@ export function VanavondVoorstellen({ recepten }: { recepten: ReceptKort[] }) {
       return {
         ingredienten: per,
         voorraad: (voorraad.data ?? []).map((v) => v.naam),
+        oudInHuis: gebruikEerst(voorraad.data ?? []),
         // Geschiedenis, sterren en favorieten zijn hulp: lukt het niet, dan zonder.
         plan: plan.data ?? [],
         sterren: Object.fromEntries((sterren.data ?? []).map((s) => [s.recipe_id, s.stars])),
@@ -112,6 +117,7 @@ export function VanavondVoorstellen({ recepten }: { recepten: ReceptKort[] }) {
       },
       allergieen: kennis.allergieen,
       nietNu,
+      oudInHuis: bronnen.oudInHuis,
       max: 12,
     });
     const inHuis = alle.filter((a) => a.aanwezig.length > 0);

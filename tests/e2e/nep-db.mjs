@@ -222,7 +222,9 @@ export function rest(db, { method, tabel, params, body, headers }) {
 
   if (method === "PATCH") {
     const doel = pasFilter(rijen, params);
-    for (const r of doel) Object.assign(r, body, { updated_at: new Date().toISOString() });
+    // Standaard "nu"; geeft de app zelf een datum mee (bv. terugzetten), dan geldt die,
+    // zoals Postgres zonder trigger op die tabel (pantry_items heeft er volgens de repo geen).
+    for (const r of doel) Object.assign(r, { updated_at: new Date().toISOString() }, body);
     if (!metRepresentatie) return { status: 204, body: null, kop };
     return antwoord(200, doel);
   }

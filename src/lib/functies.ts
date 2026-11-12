@@ -220,6 +220,14 @@ export const FUNCTIES: Functie[] = [
     labels: ["Wat kan ik koken?", "Ontbrekende op mijn lijst"],
   },
   {
+    sleutel: "voorraad.gebruik-eerst",
+    titel: "Gebruik eerst wat al even in huis is",
+    module: "voorraad",
+    route: "/voorraad",
+    bestanden: ["src/routes/voorraad.tsx", "src/lib/intelligentie/gebruik-eerst.ts"],
+    labels: ["Gebruik eerst"],
+  },
+  {
     sleutel: "ontdek.bewaren",
     titel: "Een idee bewaren",
     module: "ontdek",

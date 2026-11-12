@@ -18,6 +18,9 @@ import { PageSkeleton } from "@/components/PageSkeleton";
 import { watKanIkKoken, zitInVoorraad } from "@/lib/voorraad-match";
 import { leesKennismaking } from "@/lib/kennismaking";
 import { magVoorstellen } from "@/lib/veiligheid";
+import { gebruikEerst } from "@/lib/intelligentie/gebruik-eerst";
+import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
+import { opsomming } from "@/lib/vandaag";
 import { vindDubbels, voegToeAlsNieuw, zorgVoorLijst } from "@/lib/boodschappen";
 import type { Recipe } from "@/lib/types";
 import { CATEGORIE_LABEL, CATEGORIE_VOLGORDE, categorieVan } from "@/lib/categorie";
@@ -48,6 +51,8 @@ type Item = {
   naam: string;
   hoeveelheid: number | null;
   eenheid: string;
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 
 type Ing = { recipe_id: string; name: string; quantity: number | null; unit: string };
@@ -92,7 +97,7 @@ function VoorraadPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("pantry_items")
-        .select("id, naam, hoeveelheid, eenheid")
+        .select("id, naam, hoeveelheid, eenheid, created_at, updated_at")
         .eq("user_id", user!.id)
         .order("naam");
       if (error) throw error;
@@ -136,6 +141,10 @@ function VoorraadPage() {
   });
 
   const voorraadNamen = useMemo(() => items.map((i) => i.naam), [items]);
+  // Minder verspilling: verse producten die al even in huis zijn (datum van aankoop of toevoegen).
+  const oudInHuis = useMemo(() => gebruikEerst(items, Date.now(), 50), [items]);
+  const oudPerNaam = useMemo(() => new Map(oudInHuis.map((o) => [o.naam, o.dagen])), [oudInHuis]);
+  const [slim] = useSlimmeVoorstellen();
   // Mobiel-eerst: voorraad per afdeling (zelfde indeling als de boodschappenlijst).
   const perAfdeling = useMemo(() => {
     const per = new Map<string, typeof items>();
@@ -169,12 +178,18 @@ function VoorraadPage() {
         { allergieen: kennis.allergieen, dieet: kennis.dieet },
       ),
     );
-    return watKanIkKoken(
+    const lijst = watKanIkKoken(
       veilig.map((r) => ({ id: r.id, title: r.title, ingredienten: perRecept.get(r.id) ?? [] })),
       voorraadNamen,
       { minAanwezig: 1, max: 6 },
     );
-  }, [recepten, ingredienten, voorraadNamen, user?.id]);
+    if (!slim || !oudInHuis.length) return lijst;
+    // Wat iets opmaakt dat al even in huis is, komt eerst (verder dezelfde volgorde).
+    const oudeNamen = oudInHuis.slice(0, 3).map((o) => o.naam);
+    const maaktOp = (m: (typeof lijst)[number]) =>
+      m.aanwezig.some((n) => zitInVoorraad(n, oudeNamen)) ? 0 : 1;
+    return [...lijst].sort((a, b) => maaktOp(a) - maaktOp(b));
+  }, [recepten, ingredienten, voorraadNamen, user?.id, slim, oudInHuis]);
 
   // Voorraad telt mee in Vandaag en Slim aanvullen: die mee verversen (anders tot 20 s verouderd).
   const vernieuw = () => {
@@ -223,6 +238,9 @@ function VoorraadPage() {
             naam: item.naam,
             hoeveelheid: item.hoeveelheid,
             eenheid: item.eenheid,
+            // Terugzetten = hoe het was, ook "sinds wanneer in huis".
+            ...(item.created_at ? { created_at: item.created_at } : {}),
+            ...(item.updated_at ? { updated_at: item.updated_at } : {}),
           });
           vernieuw();
         },
@@ -242,9 +260,14 @@ function VoorraadPage() {
     qc.setQueryData(["voorraad", user?.id], (oud: Item[] | undefined) =>
       oud?.map((i) => (i.id === item.id ? { ...i, hoeveelheid: volgende } : i)),
     );
+    // Meer = bijgekocht: "in huis sinds" begint opnieuw. Minder (opgebruikt) laat de datum staan.
     const { error } = await supabase
       .from("pantry_items")
-      .update({ hoeveelheid: volgende })
+      .update(
+        richting > 0
+          ? { hoeveelheid: volgende, updated_at: new Date().toISOString() }
+          : { hoeveelheid: volgende },
+      )
       .eq("id", item.id);
     if (error) toast.error(t("Aanpassen lukte niet."));
     vernieuw();
@@ -388,6 +411,14 @@ function VoorraadPage() {
                               ? toonBelgischeMaat(item.hoeveelheid, item.eenheid)
                               : t("in huis")}
                           </span>
+                          {oudPerNaam.has(item.naam) ? (
+                            <span className="block text-[0.95rem] font-semibold text-[oklch(0.42_0.1_55)] dark:text-[oklch(0.85_0.09_75)]">
+                              {t("Al")} {oudPerNaam.get(item.naam)}{" "}
+                              {oudPerNaam.get(item.naam) === 1
+                                ? t("dag in huis")
+                                : t("dagen in huis")}
+                            </span>
+                          ) : null}
                         </span>
                         <span className="flex shrink-0 items-center rounded-full bg-muted p-0.5">
                           <button
@@ -431,6 +462,20 @@ function VoorraadPage() {
           <p className="mt-1 text-base text-muted-foreground">
             {t("Je eigen recepten. Bovenaan: waarvoor je het minst hoeft te kopen.")}
           </p>
+          {slim && oudInHuis.length ? (
+            <p
+              role="note"
+              aria-label={t("Gebruik eerst")}
+              className="mt-3 rounded-2xl bg-[oklch(0.95_0.04_70)] px-4 py-3 text-base text-[oklch(0.32_0.07_60)] dark:bg-[oklch(0.3_0.05_70)] dark:text-[oklch(0.93_0.04_80)]"
+            >
+              <span className="font-semibold">{t("Gebruik eerst")}:</span>{" "}
+              {opsomming(
+                oudInHuis.slice(0, 3).map((o) => o.naam),
+                3,
+              )}
+              . {t("Dat is al even in huis. Recepten die het opmaken, staan bovenaan.")}
+            </p>
+          ) : null}
           {!items.length ? (
             <p className="mt-4 rounded-2xl bg-muted px-4 py-3 text-base text-muted-foreground">
               {t("Voeg eerst iets toe aan je voorraad.")}

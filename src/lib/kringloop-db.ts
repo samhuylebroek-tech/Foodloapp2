@@ -317,24 +317,33 @@ export async function klaarMetWinkelen(opts: {
   const { data: bestaand } = moet(
     await supabase
       .from("pantry_items")
-      .select("id, naam, hoeveelheid, eenheid")
+      .select("id, naam, hoeveelheid, eenheid, updated_at")
       .eq("user_id", userId),
   );
   const plan = voorraadNaKoop(gekocht, (bestaand ?? []) as VoorraadRij[]);
   const oud = new Map(
     (bestaand ?? []).map((v) => [v.id as string, v.hoeveelheid as number | null]),
   );
+  // "Gebruik eerst" telt vanaf de laatste aankoop: bijkopen zet de datum op nu (terug bij herstel).
+  const oudeDatum = new Map(
+    (bestaand ?? []).map((v) => [v.id as string, (v.updated_at as string | null) ?? null]),
+  );
+  const nu = new Date().toISOString();
   const gedaan: Herstel[] = [];
   try {
     for (const b of plan.bijwerken) {
       moet(
-        await supabase.from("pantry_items").update({ hoeveelheid: b.hoeveelheid }).eq("id", b.id),
+        await supabase
+          .from("pantry_items")
+          .update({ hoeveelheid: b.hoeveelheid, updated_at: nu })
+          .eq("id", b.id),
       );
       gedaan.push(async () => {
+        const datum = oudeDatum.get(b.id);
         moet(
           await supabase
             .from("pantry_items")
-            .update({ hoeveelheid: oud.get(b.id) ?? null })
+            .update({ hoeveelheid: oud.get(b.id) ?? null, ...(datum ? { updated_at: datum } : {}) })
             .eq("id", b.id),
         );
       });

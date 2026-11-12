@@ -62,3 +62,35 @@ Allergieën zijn een harde regel, maar ze worden nog niet overal toegepast.
 | Later | Restjes (18), Niet voor mij (0006), houdbaarheid (0007), huishouden (0005), weer, push | Wacht op staging of beslissingen | — |
 
 Na elk onderdeel komt een lokale commit, nadat typecheck, unittests, lint-ratchet, de relevante E2E-tests en de Content Manager groen zijn.
+
+## 6. Voortgang (lokaal, niet gepusht)
+| Fase | Stand | Commit |
+|---|---|---|
+| A Eén veiligheidsregel | ✅ gebouwd en getest (BUG-127, 128, 129 opgelost) | `cbe5bfb` |
+| B Slimme voorstellen aan/uit + gebruiker zonder modules | ✅ gebouwd en getest | `6e0275c` |
+| C Gebruik eerst | ✅ gebouwd en getest (zie hieronder) | volgt na regressie |
+| D Seizoenslijst | gepland | — |
+| E Week: vul aan | gepland | — |
+
+### Fase C: hoe "al X dagen in huis" werkt
+- **Bron:** de bestaande kolom `pantry_items.updated_at`. Geen migratie.
+- **Wanneer de datum verandert:**
+  - Foodlo zet ze op "nu" bij bijkopen: "Klaar met winkelen" en de knop "Meer".
+  - Opgebruiken ("Minder", koken) laat de datum staan.
+  - Ongedaan maken zet de oude datum terug.
+- **Drempels per afdeling:**
+
+  | Afdeling | Drempel |
+  |---|---|
+  | Vlees en vis | 2 dagen |
+  | Brood | 3 dagen |
+  | Groenten en fruit | 4 dagen |
+  | Zuivel | 6 dagen |
+  | Lang houdbaar (uien, aardappelen, pompoen, citroen, eieren …) | 14 dagen |
+
+  Na 60 dagen toont Foodlo niets meer (waarschijnlijk vergeten bij te werken).
+- **Geen houdbaarheidsclaim:** Foodlo toont alleen "al X dagen in huis". Een echte houdbaarheidsdatum komt pas met 0007.
+- **Afhankelijkheid BUG-011:**
+  - Volgens de repo heeft `pantry_items` géén `updated_at`-trigger. Of dat live ook zo is, is niet nagekeken.
+  - Is er toch een trigger, dan telt ook opgebruiken als nieuwe datum. Foodlo meldt dan minder, nooit een verzonnen oudere datum. Ongedaan maken kan de oude datum dan niet terugzetten.
+  - De nepdatabank respecteert nu een meegegeven datum, zoals Postgres zonder trigger.

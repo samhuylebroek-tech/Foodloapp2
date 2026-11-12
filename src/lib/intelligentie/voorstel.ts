@@ -19,6 +19,7 @@ import { soortVan, vermijdWoorden, type Soortkeuze } from "@/lib/weekmenu-voorst
 import type { Recipe } from "@/lib/types";
 import { normaliseerTekst } from "@/lib/zoeken";
 import type { Context } from "./context";
+import { dagenTekst, type OudInHuis } from "./gebruik-eerst";
 import { dagenTussen, type Geschiedenis } from "./geschiedenis";
 
 export type Kandidaat = {
@@ -74,6 +75,8 @@ export type Invoer = {
   allergieen?: string[];
   /** Recept-ids met een geldige "Niet nu". */
   nietNu?: string[];
+  /** Verse producten die al even in huis zijn (gebruik-eerst.ts). */
+  oudInHuis?: OudInHuis[];
   max?: number;
 };
 
@@ -143,15 +146,19 @@ export function beoordeel(k: Kandidaat, i: Invoer): Aanbeveling {
   const telt = k.ingredienten.map((n) => n.trim()).filter((n) => n && !isBasis(n));
   const aanwezig = telt.filter((n) => zitInVoorraad(n, i.voorraad));
   const ontbreekt = telt.filter((n) => !aanwezig.includes(n));
+  // Minder verspilling: wat al even in huis is, eerst opmaken (en dat als reden tonen).
+  const oud = (i.oudInHuis ?? []).find((o) => aanwezig.some((n) => zitInVoorraad(n, [o.naam])));
   if (aanwezig.length) {
     const punten = (8 * aanwezig.length) / telt.length + Math.min(aanwezig.length, 3);
     plus(
       "voorraad",
-      punten,
-      `Gebruikt je ${opsomming(
-        aanwezig.map((n) => n.toLowerCase()),
-        2,
-      )}`,
+      punten + (oud ? 6 : 0),
+      oud
+        ? `Gebruikt je ${oud.naam.toLowerCase()} (${dagenTekst(oud.dagen)})`
+        : `Gebruikt je ${opsomming(
+            aanwezig.map((n) => n.toLowerCase()),
+            2,
+          )}`,
     );
   }
   score -= Math.min(ontbreekt.length * 1.5, 9);

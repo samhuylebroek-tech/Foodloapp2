@@ -154,6 +154,9 @@ Elke kandidaat krijgt een score als som van gewogen factoren, en elke factor lev
 | Week: "Laat Foodlo kiezen" met dezelfde harde regels (allergeen, dieet, "liever niet") en 1 à 2 redenen per voorstel; wacht tot de ingrediënten geladen zijn; nieuw AI-idee met allergieën → "zelf nakijken" | ✅ gebouwd + E2E (allergie gluten, dieet vegetarisch, redenen, axe) | `WeekmenuVoorstel.tsx`, `tests/e2e/week-voorstel.spec.ts` |
 | Week: aparte kaart "Vul aan met 3 voorstellen" | ❌ nog niet (Laat Foodlo kiezen dekt het nu) | later |
 | Winkelmodus "Voor morgen nog nodig" (usecase 9): wat je voor vandaag of morgen nog moet kopen en niet (of niet genoeg) op je lijst staat; "Zet erbij" met ongedaan maken, telt bij bestaande regels op | ✅ gebouwd + unittests + E2E (telefoon, desktop, 320 px + 200 %, axe) | `src/lib/intelligentie/voor-morgen.ts`, `Winkelmodus.tsx`, `tests/e2e/winkel-voor-morgen.spec.ts` |
+| Eén veiligheidsregel (allergie incl. titel, "niet gecontroleerd" zonder ingrediënten, dieet incl. veganistisch) in alle voorstellen, Ontdek, Keuken en bij vervangen | ✅ gebouwd + unit + E2E (BUG-127/128) | `src/lib/veiligheid.ts`, `tests/e2e/veiligheid.spec.ts` |
+| "Slimme voorstellen" aan/uit (op het toestel) | ✅ gebouwd + E2E | `src/lib/intelligentie/slim.ts`, Instellingen |
+| Gebruik eerst (usecase 6): "al X dagen in huis" + reden op Vandaag + volgorde "Wat kan ik koken?" | ✅ gebouwd + unit + E2E (geen migratie; geen houdbaarheidsclaim) | `src/lib/intelligentie/gebruik-eerst.ts`, `tests/e2e/gebruik-eerst.spec.ts` |
 | Seizoenslijst per product | ❌ nog niet | later |
 | "Niet voor mij", feedback op het account | ❌ wacht op 0006 (staging) | I-2 |
 
