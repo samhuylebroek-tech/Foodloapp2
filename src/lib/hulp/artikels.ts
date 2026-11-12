@@ -268,7 +268,7 @@ export const ARTIKELS: Artikel[] = [
       'Typ bij "Nieuw product" wat je hebt, bijvoorbeeld ‘500 g rijst’, en tik op "Toevoegen".',
       "Met de plus- en minknoppen pas je de hoeveelheid aan.",
       'Onder "Wat kan ik koken?" zie je recepten met wat je in huis hebt. Met "Ontbrekende op mijn lijst" zet je de rest op je lijst.',
-      'Bij verse producten die al even in huis zijn, staat hoeveel dagen al. Bovenaan staat dan "Gebruik eerst", en recepten die ze opmaken komen eerst. Ook op Vandaag zie je dat als reden.',
+      'Bij verse producten die al even in huis zijn, staat hoeveel dagen al. Bovenaan staat dan "Gebruik eerst", en recepten die ze opmaken komen eerst. Ook op Vandaag zie je "Gebruik eerst" boven de voorstellen. Gebruikt geen enkel recept het product, dan tik je op "Zoek een idee met" om in Ontdek te zoeken.',
     ],
     tips: [
       'Na "Klaar met winkelen" en na het koken past Foodlo je voorraad zelf aan ("Voorraad bijgewerkt").',

@@ -30,6 +30,11 @@ import { OntdekLeeg } from "@/components/ontdek/OntdekLeeg";
 import { soortLabel } from "@/lib/recept-keuzes";
 
 export const Route = createFileRoute("/inspiratie/")({
+  // Vanuit "Gebruik eerst" op Vandaag: meteen zoeken op het product (bv. ?zoek=spinazie).
+  validateSearch: (search: Record<string, unknown>): { zoek?: string } => {
+    const z = typeof search["zoek"] === "string" ? search["zoek"].trim().slice(0, 60) : "";
+    return z ? { zoek: z } : {};
+  },
   head: () => ({
     meta: [
       { title: "Inspiratie – Foodlo" },
@@ -94,7 +99,11 @@ function AllergieLabel({ oordeel }: { oordeel: AllergieOordeel | null }) {
 
 function InspiratiePage() {
   const navigate = useNavigate();
-  const [filters, setFilters] = useState<InspiratieFilters>(LEGE_FILTERS);
+  const { zoek: startZoek } = Route.useSearch();
+  const [filters, setFilters] = useState<InspiratieFilters>(() => ({
+    ...LEGE_FILTERS,
+    zoek: startZoek ?? "",
+  }));
   const [filterOpen, setFilterOpen] = useState(false);
 
   const { data: alleRecepten = [], isLoading, isError } = useQuery({

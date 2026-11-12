@@ -253,8 +253,12 @@ export const FUNCTIES: Functie[] = [
     titel: "Gebruik eerst wat al even in huis is",
     module: "voorraad",
     route: "/voorraad",
-    bestanden: ["src/routes/voorraad.tsx", "src/lib/intelligentie/gebruik-eerst.ts"],
-    labels: ["Gebruik eerst", "Ik houd mijn voorraad bij"],
+    bestanden: [
+      "src/routes/voorraad.tsx",
+      "src/components/kringloop/VanavondVoorstellen.tsx",
+      "src/lib/intelligentie/gebruik-eerst.ts",
+    ],
+    labels: ["Gebruik eerst", "Zoek een idee met", "Ik houd mijn voorraad bij"],
   },
   {
     sleutel: "ontdek.bewaren",

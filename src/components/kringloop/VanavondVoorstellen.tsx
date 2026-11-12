@@ -18,6 +18,8 @@ import { vatSamen } from "@/lib/intelligentie/geschiedenis";
 import { herstelNietNu, nietNuLijst, zetNietNu } from "@/lib/intelligentie/niet-nu";
 import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
 import { beveelAan, type Aanbeveling } from "@/lib/intelligentie/voorstel";
+import { dagenTekst, type OudInHuis } from "@/lib/intelligentie/gebruik-eerst";
+import { zitInVoorraad } from "@/lib/voorraad-match";
 import { leesKennismaking } from "@/lib/kennismaking";
 import { HalfGelukt, kookVanavond } from "@/lib/kringloop-db";
 import { meet } from "@/lib/meten";
@@ -51,8 +53,14 @@ export function VanavondVoorstellen({ recepten }: { recepten: ReceptKort[] }) {
 
   const { data: bronnen } = useVoorstelBronnen(ids, slim);
 
-  const { voorstellen, uitHuis } = useMemo(() => {
-    if (!bronnen) return { voorstellen: [] as Aanbeveling[], uitHuis: true };
+  const { voorstellen, uitHuis, oud, zonderRecept } = useMemo(() => {
+    if (!bronnen)
+      return {
+        voorstellen: [] as Aanbeveling[],
+        uitHuis: true,
+        oud: [] as OudInHuis[],
+        zonderRecept: [] as OudInHuis[],
+      };
     const nu = new Date();
     const context = bepaalContext(nu);
     const dag = weekmenu.perDag?.[String(context.weekdag)];
@@ -84,13 +92,23 @@ export function VanavondVoorstellen({ recepten }: { recepten: ReceptKort[] }) {
       onlangsGekocht: bronnen.onlangsGekocht,
       max: 12,
     });
-    const inHuis = alle.filter((a) => a.aanwezig.length > 0);
-    return inHuis.length
+    // Gebruik eerst (alleen als je je voorraad bijhoudt): gerechten die het opmaken, komen eerst.
+    const oud = bronnen.oudInHuis.slice(0, 3);
+    const maaktOp = (a: Aanbeveling) =>
+      oud.some((o) => a.aanwezig.some((n) => zitInVoorraad(n, [o.naam])));
+    const zonderRecept = oud.filter(
+      (o) => !alle.some((a) => a.aanwezig.some((n) => zitInVoorraad(n, [o.naam]))),
+    );
+    const inHuis = alle
+      .filter((a) => a.aanwezig.length > 0)
+      .sort((a, b) => Number(maaktOp(b)) - Number(maaktOp(a)));
+    const basis = inHuis.length
       ? { voorstellen: inHuis.slice(0, 3), uitHuis: true }
       : { voorstellen: alle.slice(0, 3), uitHuis: false };
+    return { ...basis, oud, zonderRecept };
   }, [bronnen, recepten, weekmenu, nietNu, user?.id]);
 
-  if (!slim || !voorstellen.length) return null;
+  if (!slim || (!voorstellen.length && !oud?.length)) return null;
 
   async function kies(id: string) {
     const recept = recepten.find((r) => r.id === id);
@@ -158,6 +176,27 @@ export function VanavondVoorstellen({ recepten }: { recepten: ReceptKort[] }) {
       <h3 id="vanavond-kop" className="text-base font-semibold text-inkt-zacht">
         {kop}
       </h3>
+      {oud.length ? (
+        <div
+          role="note"
+          aria-label={t("Gebruik eerst")}
+          className="mt-2 text-[0.95rem] text-inkt-zacht"
+        >
+          <p className="break-words">
+            <span className="font-semibold text-inkt-foreground">{t("Gebruik eerst")}:</span>{" "}
+            {oud.map((o) => `${o.naam} (${dagenTekst(o.dagen)})`).join(", ")}.
+          </p>
+          {zonderRecept[0] ? (
+            <Link
+              to="/inspiratie"
+              search={{ zoek: zonderRecept[0].naam }}
+              className="mt-1 inline-flex min-h-11 items-center font-semibold text-inkt-foreground underline underline-offset-4"
+            >
+              {t("Zoek een idee met")} {zonderRecept[0].naam}
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
       <ul className="mt-3 space-y-2">
         {voorstellen.map((v) => {
           const recept = recepten.find((r) => r.id === v.id)!;

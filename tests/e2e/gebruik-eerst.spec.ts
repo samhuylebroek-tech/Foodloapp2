@@ -124,3 +124,38 @@ test("Klaar met winkelen zet de datum op vandaag; ongedaan maken zet hem terug",
   await expect.poll(datum).toBe(oud);
   void extern;
 });
+
+test("Vandaag: 'Gebruik eerst' met een gerecht dat het opmaakt bovenaan, en een zoekidee als geen recept past", async ({
+  page,
+  extern,
+}) => {
+  await fetch(`${NEP}/meal_plan?plan_date=eq.${new Date().toLocaleDateString("sv-SE")}`, {
+    method: "DELETE",
+  });
+  // Spinazie: geen enkel eigen recept gebruikt het (wel een idee in Ontdek).
+  await fetch(`${NEP}/pantry_items`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      id: "99999999-0000-4000-8000-0000000000aa",
+      user_id: "11111111-1111-4111-8111-111111111111",
+      naam: "spinazie",
+      hoeveelheid: 1,
+      eenheid: "zak",
+      created_at: geleden(6),
+      updated_at: geleden(6),
+    }),
+  });
+  await page.goto("/");
+  const voorstellen = page.getByRole("region", { name: "Met wat je in huis hebt" });
+  const notitie = voorstellen.getByRole("note", { name: "Gebruik eerst" });
+  await expect(notitie).toContainText("rundvlees (al 5 dagen in huis)", { timeout: 30_000 });
+  await expect(notitie).toContainText("spinazie (al 6 dagen in huis)");
+  await expect(voorstellen.getByRole("listitem").first()).toContainText("Stoofvlees met frietjes");
+  expect(await axeErnstig(page)).toEqual([]);
+
+  await notitie.getByRole("link", { name: "Zoek een idee met spinazie" }).click();
+  await expect(page.getByRole("textbox", { name: "Zoeken in inspiratie" })).toHaveValue("spinazie");
+  await expect(page.getByRole("link", { name: /Stoemp met spinazie en spek/ })).toBeVisible();
+  void extern;
+});
