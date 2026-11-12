@@ -138,7 +138,7 @@ function MeldingenPagina() {
             <span
               className={cn(
                 "flex size-14 shrink-0 items-center justify-center rounded-full",
-                aan ? "bg-honing text-honing-foreground" : "bg-secondary text-primary",
+                aan ? "bg-honing text-op-honing" : "bg-secondary text-primary",
               )}
             >
               {aan ? (

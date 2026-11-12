@@ -248,7 +248,7 @@ export function VanavondVoorstellen({ recepten }: { recepten: ReceptKort[] }) {
                   onClick={() => void kies(v.id)}
                   disabled={!!bezig}
                   aria-label={`Kook ${v.title} vanavond`}
-                  className="inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-full bg-honing px-4 text-base font-semibold text-honing-foreground disabled:opacity-60"
+                  className="inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-full bg-honing px-4 text-base font-semibold text-op-honing disabled:opacity-60"
                 >
                   {bezig === v.id ? (
                     <Loader2 className="size-5 animate-spin" aria-hidden />

@@ -84,7 +84,7 @@ function CreditsPagina() {
                 )}
               </p>
             ) : laag ? (
-              <p className="relative mt-4 rounded-2xl bg-honing p-3 text-base font-semibold text-honing-foreground">
+              <p className="relative mt-4 rounded-2xl bg-honing p-3 text-base font-semibold text-op-honing">
                 {t("Je hebt nog weinig credits over.")}
               </p>
             ) : null}

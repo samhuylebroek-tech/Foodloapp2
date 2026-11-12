@@ -121,7 +121,7 @@ export function RestjesVoorstel() {
         type="button"
         onClick={() => void eetRestjes(restje)}
         disabled={bezig}
-        className="mt-2 inline-flex min-h-12 max-w-full items-center gap-1.5 rounded-full bg-honing px-4 text-base font-semibold text-honing-foreground disabled:opacity-60"
+        className="mt-2 inline-flex min-h-12 max-w-full items-center gap-1.5 rounded-full bg-honing px-4 text-base font-semibold text-op-honing disabled:opacity-60"
       >
         {bezig ? <Loader2 className="size-5 animate-spin" aria-hidden /> : null}
         {t("Eet vanavond restjes")}

@@ -51,4 +51,12 @@ describe("voorraad is optioneel", () => {
     expect(b.oudInHuis).toEqual([]);
     expect(b.onlangsGekocht).toEqual(["kip"]);
   });
+  it("een aankoop die door klokverschil net 'in de toekomst' ligt, telt als onlangs gekocht", () => {
+    const b = bruikbareVoorraad(
+      [{ naam: "kip", updated_at: new Date(NU + 3600_000).toISOString() }],
+      false,
+      NU,
+    );
+    expect(b.onlangsGekocht).toEqual(["kip"]);
+  });
 });

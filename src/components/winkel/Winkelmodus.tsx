@@ -252,9 +252,7 @@ export function Winkelmodus({
                 aria-current={i === stap ? "step" : undefined}
                 className={cn(
                   "min-h-11 shrink-0 rounded-full px-4 text-[0.95rem] font-semibold transition-colors",
-                  i === stap
-                    ? "bg-honing text-honing-foreground"
-                    : "bg-white/10 text-inkt-foreground",
+                  i === stap ? "bg-honing text-op-honing" : "bg-white/10 text-inkt-foreground",
                 )}
               >
                 {CATEGORIE_LABEL[g.id]} · {g.lijst.length}

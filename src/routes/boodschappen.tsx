@@ -1556,7 +1556,7 @@ function BoodschappenPage() {
               to="/aanvullen"
               className="flex items-center gap-4 rounded-[1.5rem] bg-inkt p-5 text-inkt-foreground shadow-kaart transition-transform active:scale-[0.99]"
             >
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-honing text-honing-foreground">
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-honing text-op-honing">
                 <Sparkles className="size-6" aria-hidden />
               </span>
               <span className="min-w-0 flex-1">

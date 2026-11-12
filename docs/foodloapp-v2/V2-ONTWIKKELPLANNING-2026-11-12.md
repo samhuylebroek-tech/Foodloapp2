@@ -95,3 +95,32 @@ Na elk onderdeel komt een lokale commit, nadat typecheck, unittests, lint-ratche
   - Volgens de repo heeft `pantry_items` géén `updated_at`-trigger. Of dat live ook zo is, is niet nagekeken.
   - Is er toch een trigger, dan telt ook opgebruiken als nieuwe datum. Foodlo meldt dan minder, nooit een verzonnen oudere datum. Ongedaan maken kan de oude datum dan niet terugzetten.
   - De nepdatabank respecteert nu een meegegeven datum, zoals Postgres zonder trigger.
+
+## 7. Fase F: toegankelijkheid en gebruiksgemak (2026-11-12)
+**Wat getest is** (`tests/e2e/dagflow-toegankelijk.spec.ts`, Chromium met axe-core WCAG 2.2 AA):
+- **Volledige dagflow als persona:**
+  - Vandaag met restjes en "Gebruik eerst";
+  - restjes plannen;
+  - Week "Vul aan" en een dag plannen;
+  - lijst en winkelmodus;
+  - koken tot "Blijft er iets over?";
+  - Keuken met restjes;
+  - Instellingen.
+- **Senior:** thema "Extra duidelijk", tekst 200 %, 390 px. De hoofdacties gaan alleen met het toetsenbord (focus + Enter).
+- **Avond:** donker thema, 360 px.
+- **Bij elke stap:**
+  - geen ernstige axe-meldingen;
+  - niet opzij scrollen;
+  - precies één paginakop (h1);
+  - elk tikdoel in de nieuwe kaarten ≥ 44 × 44 px en met een naam;
+  - meldingen ("Ongedaan maken") in een voorleesgebied (aria-live), zodat een schermlezer ze voorleest.
+- **Contrast:** de contrasttest voor alle 5 thema's kent nu ook tekst op honingknoppen.
+
+**Gevonden en opgelost:**
+- BUG-130: contrast op honingknoppen in het donkere thema.
+- In fase E: "Vul aan" lag onder "Laat Foodlo kiezen".
+- In fase A: BUG-129 (Ontdek op 320 px).
+
+**Grenzen (eerlijk):**
+- Dit is geen test met echte VoiceOver of TalkBack, geen echte Dynamic Type en geen Safari-engine. Dat blijft fase 3 op echte toestellen (beslissing 26, protocol in TOEGANKELIJKHEID-PROTOCOL.md).
+- De toetsenbordtest dekt de hoofdacties, niet elk element.

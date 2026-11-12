@@ -43,6 +43,7 @@ const TEKST_PAREN: [string, string][] = [
   ["inkt-foreground", "inkt"], // V2 redactionele band en actieve navigatie
   ["inkt-zacht", "inkt"], // ondertitels in de inktband
   ["honing", "inkt"], // label "avondeten vandaag" in de inktband
+  ["op-honing", "honing"], // tekst op een honingknop (BUG-130: was in donker 1,4:1)
 ];
 
 /** Focusring moet minstens 3:1 halen tegen de achtergrond (WCAG 1.4.11 / 2.4.13). */

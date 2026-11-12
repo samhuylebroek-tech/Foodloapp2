@@ -103,6 +103,8 @@
   --sidebar-ring: oklch(0.43 0.09 155);
   --honing: oklch(0.77 0.14 72);
   --honing-foreground: oklch(0.25 0.04 60);
+  /* Tekst óp een honingkleurige knop: in elk thema donker (BUG-130). */
+  --op-honing: oklch(0.25 0.04 60);
   --honing-zacht: oklch(0.95 0.045 80);
   --terracotta: oklch(0.51 0.13 38); /* donkerder: ook als tekst op terracotta-zacht ≥ 4.5:1 */
   --terracotta-foreground: oklch(0.99 0.005 85);
@@ -156,6 +158,7 @@
   --sidebar-ring: oklch(0.74 0.12 155);
   --honing: oklch(0.8 0.13 75);
   --honing-foreground: oklch(0.9 0.08 80);
+  --op-honing: oklch(0.22 0.04 60);
   --honing-zacht: oklch(0.32 0.05 75);
   --terracotta: oklch(0.72 0.12 42);
   --terracotta-foreground: oklch(0.18 0.02 40);
@@ -249,6 +252,7 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-honing: var(--honing);
   --color-honing-foreground: var(--honing-foreground);
+  --color-op-honing: var(--op-honing);
   --color-honing-zacht: var(--honing-zacht);
 }
 

@@ -226,7 +226,7 @@ function VriendPage() {
                 key={r.label}
                 className={cn(
                   "inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-[0.95rem] font-semibold",
-                  r.aan ? "bg-honing text-honing-foreground" : "bg-white/10 text-inkt-zacht",
+                  r.aan ? "bg-honing text-op-honing" : "bg-white/10 text-inkt-zacht",
                 )}
               >
                 {r.aan ? (

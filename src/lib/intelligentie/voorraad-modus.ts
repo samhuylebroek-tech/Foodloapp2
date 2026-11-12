@@ -93,7 +93,8 @@ export function bruikbareVoorraad(
   const onlangs = items
     .filter((v) => {
       const t = Date.parse(v.updated_at ?? v.created_at ?? "");
-      return Number.isFinite(t) && nu - t >= 0 && nu - t <= ONLANGS_DAGEN * DAG;
+      // Kleine klokverschillen tussen toestel en server (tot een dag) tellen als "net gekocht".
+      return Number.isFinite(t) && nu - t >= -DAG && nu - t <= ONLANGS_DAGEN * DAG;
     })
     .map((v) => v.naam);
   return { inHuis: [], onlangsGekocht: onlangs, oudInHuis: [] };

@@ -314,7 +314,7 @@ function GezinPage() {
               </div>
             )}
             <div className="overflow-hidden rounded-[1.5rem] bg-inkt p-6 text-inkt-foreground shadow-kaart">
-              <span className="flex size-14 items-center justify-center rounded-full bg-honing text-honing-foreground">
+              <span className="flex size-14 items-center justify-center rounded-full bg-honing text-op-honing">
                 <Home className="size-7" aria-hidden />
               </span>
               <h2 className="mt-4 text-sectietitel">Kook samen als gezin</h2>

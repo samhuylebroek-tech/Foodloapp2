@@ -49,7 +49,7 @@ export function AanvulKaart({ toonKlaar = false }: { toonKlaar?: boolean }) {
                 await zetOpLijst("alles");
                 setBezig(false);
               }}
-              className="bg-honing text-honing-foreground hover:bg-honing/90"
+              className="bg-honing text-op-honing hover:bg-honing/90"
             >
               {bezig ? <Loader2 className="animate-spin" /> : <ShoppingCart />}
               Zet op mijn lijst

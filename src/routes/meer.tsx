@@ -80,7 +80,7 @@ function MeerPage() {
         >
           <span
             aria-hidden
-            className="flex size-16 shrink-0 items-center justify-center rounded-full bg-honing font-display text-2xl font-semibold text-honing-foreground"
+            className="flex size-16 shrink-0 items-center justify-center rounded-full bg-honing font-display text-2xl font-semibold text-op-honing"
           >
             {initialen(naam) || "F"}
           </span>
