@@ -85,6 +85,14 @@ export const FUNCTIES: Functie[] = [
     labels: ["Met wat je in huis hebt", "Niet nu", "Waarom zie ik dit?"],
   },
   {
+    sleutel: "week.vul-aan",
+    titel: "Vul aan met voorstellen (lege dagen in je weekmenu)",
+    module: "week",
+    route: "/planner",
+    bestanden: ["src/components/planner/VulAan.tsx", "src/lib/intelligentie/vul-aan.ts"],
+    labels: ["Vul aan met voorstellen", "Plan", "Niet nu", "Waarom zie ik dit?"],
+  },
+  {
     sleutel: "instellingen.voorstellen",
     titel: "Slimme voorstellen aan of uit",
     module: "account",

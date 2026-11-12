@@ -4,25 +4,23 @@
  * Eén tik: gepland voor vanavond + wat ontbreekt op de lijst. "Niet nu" verbergt een voorstel
  * 7 dagen. Allergieën en dieet komen van dit toestel en verlaten het niet. Ongedaan maken kan altijd.
  */
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Check, ChefHat, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { RecipePhoto } from "@/components/RecipePhoto";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { meldMetHerstel } from "@/hooks/useAanvulling";
+import { useVoorstelBronnen } from "@/hooks/useVoorstelBronnen";
 import { bepaalContext } from "@/lib/intelligentie/context";
 import { vatSamen } from "@/lib/intelligentie/geschiedenis";
 import { herstelNietNu, nietNuLijst, zetNietNu } from "@/lib/intelligentie/niet-nu";
 import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
-import { gebruikEerst } from "@/lib/intelligentie/gebruik-eerst";
 import { beveelAan, type Aanbeveling } from "@/lib/intelligentie/voorstel";
 import { leesKennismaking } from "@/lib/kennismaking";
 import { HalfGelukt, kookVanavond } from "@/lib/kringloop-db";
 import { meet } from "@/lib/meten";
-import { lokaleDatum } from "@/lib/tijd";
 import { useT, useVoorkeuren } from "@/lib/voorkeuren";
 
 type ReceptKort = {
@@ -51,42 +49,7 @@ export function VanavondVoorstellen({ recepten }: { recepten: ReceptKort[] }) {
   useEffect(() => setNietNu(nietNuLijst(user?.id)), [user?.id]);
   const ids = recepten.map((r) => r.id);
 
-  const { data: bronnen } = useQuery({
-    queryKey: ["vanavond", user?.id, ids.join(",")],
-    enabled: !!user && ids.length > 0 && slim,
-    queryFn: async () => {
-      const van = lokaleDatum(new Date(Date.now() - 180 * 86400000));
-      const [ingr, voorraad, plan, sterren, favorieten] = await Promise.all([
-        supabase
-          .from("recipe_ingredients")
-          .select("recipe_id, name")
-          .in("recipe_id", ids.slice(0, 100)),
-        supabase
-          .from("pantry_items")
-          .select("naam, created_at, updated_at")
-          .eq("user_id", user!.id),
-        supabase
-          .from("meal_plan")
-          .select("recipe_id, plan_date")
-          .eq("user_id", user!.id)
-          .gte("plan_date", van)
-          .limit(600),
-        supabase.from("recipe_ratings").select("recipe_id, stars").eq("user_id", user!.id),
-        supabase.from("favorites").select("recipe_id").eq("user_id", user!.id),
-      ]);
-      const per: Record<string, string[]> = {};
-      for (const i of ingr.data ?? []) (per[i.recipe_id] ??= []).push(i.name);
-      return {
-        ingredienten: per,
-        voorraad: (voorraad.data ?? []).map((v) => v.naam),
-        oudInHuis: gebruikEerst(voorraad.data ?? []),
-        // Geschiedenis, sterren en favorieten zijn hulp: lukt het niet, dan zonder.
-        plan: plan.data ?? [],
-        sterren: Object.fromEntries((sterren.data ?? []).map((s) => [s.recipe_id, s.stars])),
-        favorieten: (favorieten.data ?? []).map((f) => f.recipe_id as string),
-      };
-    },
-  });
+  const { data: bronnen } = useVoorstelBronnen(ids, slim);
 
   const { voorstellen, uitHuis } = useMemo(() => {
     if (!bronnen) return { voorstellen: [] as Aanbeveling[], uitHuis: true };

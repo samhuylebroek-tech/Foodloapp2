@@ -83,6 +83,7 @@ import { ReceptKiezer } from "@/components/planner/ReceptKiezer";
 import { LijstVraag } from "@/components/planner/LijstVraag";
 import { WeekmenuInstellingen } from "@/components/planner/WeekmenuInstellingen";
 import { ReceptFoto, WeekmenuVoorstel } from "@/components/planner/WeekmenuVoorstel";
+import { VulAan } from "@/components/planner/VulAan";
 import { VerplaatsSheet, KoppelSheet } from "@/components/planner/PlanSheets";
 import { useTablet } from "@/hooks/useTablet";
 import { TabletWeek } from "@/components/planner/TabletWeek";
@@ -268,6 +269,12 @@ function PlannerPage() {
   // wel één melding met "Ongedaan maken" die menu én lijst terugzet. Het gezinsweekmenu houdt
   // voorlopig de vragen (huishouden: WP9).
   const eigenMenu = weergave === "mij";
+  // Het hoofdmoment van de dag (avondeten, of "maaltijd" in één blok), zoals Laat Foodlo kiezen.
+  const hoofdMoment = momenten[momenten.length - 1] ?? "avondeten";
+  const legeDagen = zichtbareDagen.filter(
+    (dag) =>
+      dag >= vandaag && !plan.some((p) => p.plan_date === dag && p.meal_type === hoofdMoment),
+  );
   const menuBezig = useRef(false);
   function vernieuwMenu() {
     for (const k of ["meal-plan", "shopping", "aanvulling", "voorraad", "home-dagmenu", "home-week"])
@@ -1320,6 +1327,19 @@ function PlannerPage() {
             </p>
           </section>
         )}
+
+        {/* Usecase 7: lege dagen deze week? Per dag één voorstel, met redenen en ongedaan maken.
+            Alleen in je eigen weekmenu (daar is ongedaan maken altijd mogelijk). */}
+        {/* Niet tegelijk met "Laat Foodlo kiezen": één voorstel tegelijk. */}
+        {eigenMenu && weekVerschil >= 0 && !voorstelOpen ? (
+          <VulAan
+            legeDagen={legeDagen}
+            moment={hoofdMoment}
+            alGepland={new Set(plan.map((p) => p.recipe_id).filter((id): id is string => !!id))}
+            vandaag={vandaag}
+            onZet={zetVoorstel}
+          />
+        ) : null}
 
         {/* Acties: één hoofdknop, twee rustige knoppen */}
         <section aria-label="Acties" className="space-y-3 lg:col-span-2">

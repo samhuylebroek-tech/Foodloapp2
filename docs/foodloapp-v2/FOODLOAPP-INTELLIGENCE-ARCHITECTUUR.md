@@ -152,7 +152,7 @@ Elke kandidaat krijgt een score als som van gewogen factoren, en elke factor lev
 | Help-artikel "Waarom stelt Foodlo dit voor?" | ✅ concept (nalezing nodig, beslissing 8) | `src/lib/hulp/artikels.ts` |
 | Weerfactor | ⚙️ in de score voorzien en getest, **geen databron** (beslissing 15/16) | — |
 | Week: "Laat Foodlo kiezen" met dezelfde harde regels (allergeen, dieet, "liever niet") en 1 à 2 redenen per voorstel; wacht tot de ingrediënten geladen zijn; nieuw AI-idee met allergieën → "zelf nakijken" | ✅ gebouwd + E2E (allergie gluten, dieet vegetarisch, redenen, axe) | `WeekmenuVoorstel.tsx`, `tests/e2e/week-voorstel.spec.ts` |
-| Week: aparte kaart "Vul aan met 3 voorstellen" | ❌ nog niet (Laat Foodlo kiezen dekt het nu) | later |
+| Week: kaart "Vul aan met voorstellen" (≥ 2 lege dagen; per dag eigen context en voorkeur; Plan per dag of alles, Niet nu, ongedaan maken; niet tegelijk met Laat Foodlo kiezen; alleen eigen weekmenu) | ✅ gebouwd + unit + E2E (allergie, 320 px + 200 %, uit-schakelaar) | `VulAan.tsx`, `vul-aan.ts`, `tests/e2e/week-vul-aan.spec.ts` |
 | Winkelmodus "Voor morgen nog nodig" (usecase 9): wat je voor vandaag of morgen nog moet kopen en niet (of niet genoeg) op je lijst staat; "Zet erbij" met ongedaan maken, telt bij bestaande regels op | ✅ gebouwd + unittests + E2E (telefoon, desktop, 320 px + 200 %, axe) | `src/lib/intelligentie/voor-morgen.ts`, `Winkelmodus.tsx`, `tests/e2e/winkel-voor-morgen.spec.ts` |
 | Eén veiligheidsregel (allergie incl. titel, "niet gecontroleerd" zonder ingrediënten, dieet incl. veganistisch) in alle voorstellen, Ontdek, Keuken en bij vervangen | ✅ gebouwd + unit + E2E (BUG-127/128) | `src/lib/veiligheid.ts`, `tests/e2e/veiligheid.spec.ts` |
 | "Slimme voorstellen" aan/uit (op het toestel) | ✅ gebouwd + E2E | `src/lib/intelligentie/slim.ts`, Instellingen |
@@ -164,3 +164,35 @@ Geen nieuwe externe dienst, geen AI-oproep, geen gezondheidsgegevens buiten het 
 
 ## 7. Wat dit níét doet
 Geen automatische acties, geen medische claims, geen verkoop van gegevens, geen profilering voor reclame, geen gezondheidsgegevens naar externe AI.
+
+## 8. Hoe de functies samenwerken (stand 2026-11-12, en wat later aansluit)
+Alle voorstellen lopen door **één motor** (`src/lib/intelligentie/voorstel.ts`): eerst de harde regels (`toegelaten` → `src/lib/veiligheid.ts`), dan een score met hooguit 2 redenen. Elke plek levert alleen andere invoer aan; een nieuwe bron is dus een extra veld in `Invoer`, geen nieuwe logica per scherm.
+
+### 8.1 Wie gebruikt wat (vandaag)
+| Plek | Invoer | Bron (bestaand) |
+|---|---|---|
+| Vandaag, "Met wat je in huis hebt" | context van nu, voorraad + "al even in huis", kookgeschiedenis 180 dagen, sterren, favorieten, seizoensproducten, Niet nu, allergie en dieet (toestel) | `useVoorstelBronnen` (gedeeld) |
+| Week, "Vul aan met voorstellen" | dezelfde bronnen, maar **per lege dag een eigen context** (weekdag, je gewone kooktijd op die dag, feestdag, seizoen) en je weekmenuvoorkeur voor die dag; niets wat deze week al gepland staat | `vulAan()` in `src/lib/intelligentie/vul-aan.ts` |
+| Week, "Laat Foodlo kiezen" | weekregels (vlees/vis/vega, per dag), dezelfde harde regels en redenen | `WeekmenuVoorstel.tsx` |
+| Lijst, "Voor morgen nog nodig" | weekmenu van vandaag en morgen min voorraad en lijst | `voor-morgen.ts` (Slim aanvullen) |
+| Keuken, "Gebruik eerst" en "Wat kan ik koken?" | voorraad met aankoopdatum, dezelfde veiligheidsregel | `gebruik-eerst.ts` |
+| Restjes (Vandaag, Keuken) | wat je na het koken bewaarde (op het toestel), hooguit 3 dagen voorgesteld | `restjes.ts` |
+| Overal | "Slimme voorstellen" aan/uit (toestel) | `slim.ts` |
+
+### 8.2 Wat later aansluit, zonder de motor te herschrijven
+| Bron | Hoe het aansluit | Wat al klaarstaat | Nodig (beslissing) |
+|---|---|---|---|
+| **Weersverwachting** (I-3) | `Context.weer` per dag. Vandaag: weer van nu; Week: `vulAan({ weerVoor: datum → verwachting })`. De factor (warm eten bij kou, fris bij hitte, minder oven) zit al in de score en is getest. | Weerfactor + parameter `weerVoor` + unittest | Weerdienst en licentie (15), gemeente in plaats van GPS (16), server-proxy |
+| **Dag en tijdstip** | `bepaalContext(datum, uur)`: weekdag, uur, feestdag (10 dagen vooraf), seizoen. Week rekent per dag om 17 u; Vandaag met de echte tijd en je etenstijden. | Gebouwd | — |
+| **Kookgeschiedenis** | `vatSamen()`: laatst gekookt (variatie, "lang niet gemaakt"), komende 7 dagen (geen herhaling), gewone kooktijd per weekdag (pas vanaf 3 keer). Later: kookstand-gebeurtenissen en restjes als signaal ("kookt vaak voor 6 en eet met 3"). | Gebouwd voor weekmenu; kookstand nog niet | 0003/0003b (bewaartermijnen) voor wat bewaard mag blijven |
+| **Gezinsvoorkeuren** (I-4) | Mee-eters per maaltijd met hun allergieën en voorkeuren worden **extra harde regels** in `toegelaten` (de unie van alle allergieën van wie mee-eet), en "wie eet mee" bepaalt de porties en dus restjes. Reden alleen binnen het huishouden ("Lien eet geen vis"). | Veiligheidsregel is al één functie; uitbreiden = de allergielijst samenvoegen | 0004, daarna 0005 met toestemming per lid (7); staging (1) |
+| **Feedback** (I-2) | "Niet nu" (toestel, 7 dagen) → met 0006 op het account; "Niet voor mij" verlaagt een onderwerp (bv. curry) blijvend. | Niet nu gebouwd; tabel 0006 geschreven en getest | 0006 op staging (17) |
+| **Restjes op het account** | Nu op het toestel. Gedeeld met het huishouden vraagt een eigen tabel of een kolom `soort = 'restje'` in de voorraad, zodat restjes nooit als "ingrediënt in huis" tellen. | Logica en tests op het toestel | Migratievoorstel (nog te schrijven), staging |
+| **Houdbaarheid** | `gebruikEerst()` gebruikt nu de aankoopdatum; met 0007 (`houdbaar_tot`) komt de echte datum vóór de schatting. | Functie en tests | 0007 op staging (17) |
+
+### 8.3 Vaste afspraken voor elke nieuwe bron
+1. Eerst de harde regels: allergie, dieet, "liever niet", Niet nu. Mee-eters voegen alleen regels toe en halen er nooit weg.
+2. Hooguit 2 redenen, in gewone taal, en "Waarom zie ik dit?" in het Help Center.
+3. Nooit een automatische actie: elk voorstel vraagt één tik en heeft "Ongedaan maken".
+4. Uit te zetten met "Slimme voorstellen". Zonder de bron werkt alles zoals voordien.
+5. Gezondheidsgegevens blijven op het toestel (of later, na 0005, alleen binnen het huishouden met toestemming) en gaan nooit naar een externe dienst of de AI.

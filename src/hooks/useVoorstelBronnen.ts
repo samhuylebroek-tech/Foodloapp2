@@ -1,0 +1,67 @@
+/**
+ * Alles wat Foodloapp Intelligence nodig heeft voor voorstellen, in één keer en voor elke plek
+ * hetzelfde (Vandaag, Week): ingrediënten, voorraad (met "al even in huis"), weekmenu van de
+ * laatste 180 dagen, sterren en favorieten. Alleen bestaande tabellen; niets verlaat het toestel.
+ * `aan = false` ("Slimme voorstellen" uit): er wordt niets opgevraagd.
+ */
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { gebruikEerst, type OudInHuis } from "@/lib/intelligentie/gebruik-eerst";
+import { lokaleDatum } from "@/lib/tijd";
+
+export type VoorstelBronnen = {
+  ingredienten: Record<string, string[]>;
+  voorraad: string[];
+  oudInHuis: OudInHuis[];
+  plan: { recipe_id: string | null; plan_date: string }[];
+  sterren: Record<string, number>;
+  favorieten: string[];
+};
+
+export function useVoorstelBronnen(receptIds: string[], aan = true) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["voorstel-bronnen", user?.id, receptIds.join(",")],
+    enabled: !!user && receptIds.length > 0 && aan,
+    queryFn: async (): Promise<VoorstelBronnen> => {
+      const van = lokaleDatum(new Date(Date.now() - 180 * 86400000));
+      // Ingrediënten in blokken van 100: elk recept moet nagekeken kunnen worden (allergieën).
+      const blokken: string[][] = [];
+      for (let i = 0; i < receptIds.length; i += 100) blokken.push(receptIds.slice(i, i + 100));
+      const [ingr, voorraad, plan, sterren, favorieten] = await Promise.all([
+        Promise.all(
+          blokken.map((ids) =>
+            supabase.from("recipe_ingredients").select("recipe_id, name").in("recipe_id", ids),
+          ),
+        ),
+        supabase
+          .from("pantry_items")
+          .select("naam, created_at, updated_at")
+          .eq("user_id", user!.id),
+        supabase
+          .from("meal_plan")
+          .select("recipe_id, plan_date")
+          .eq("user_id", user!.id)
+          .gte("plan_date", van)
+          .limit(600),
+        supabase.from("recipe_ratings").select("recipe_id, stars").eq("user_id", user!.id),
+        supabase.from("favorites").select("recipe_id").eq("user_id", user!.id),
+      ]);
+      // Zonder ingrediënten kan de allergieregel niets nakijken: dan liever geen voorstellen.
+      const fout = ingr.find((r) => r.error);
+      if (fout?.error) throw fout.error;
+      const per: Record<string, string[]> = {};
+      for (const r of ingr) for (const i of r.data ?? []) (per[i.recipe_id] ??= []).push(i.name);
+      return {
+        ingredienten: per,
+        voorraad: (voorraad.data ?? []).map((v) => v.naam),
+        oudInHuis: gebruikEerst(voorraad.data ?? []),
+        // Geschiedenis, sterren en favorieten zijn hulp: lukt het niet, dan zonder.
+        plan: plan.data ?? [],
+        sterren: Object.fromEntries((sterren.data ?? []).map((s) => [s.recipe_id, s.stars])),
+        favorieten: (favorieten.data ?? []).map((f) => f.recipe_id as string),
+      };
+    },
+  });
+}
