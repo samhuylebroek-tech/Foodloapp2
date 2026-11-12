@@ -46,8 +46,13 @@ jobs:
 
   e2e:
     # Lokale dev-server + NEP-Supabase op 127.0.0.1. Externe requests worden geblokkeerd.
+    # Per schermformaat een eigen taak (parallel): de volledige suite duurt anders > 30 min.
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [telefoon, desktop, mobiel-360, mobiel-390, tablet-768]
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -59,16 +64,35 @@ jobs:
       - run: bun install --frozen-lockfile
       - name: Playwright-browser
         run: bunx playwright install --with-deps chromium
-      - name: End-to-end (telefoon + desktop)
-        run: bun run test:e2e
+      - name: End-to-end (${{ matrix.project }})
+        run: bunx playwright test --project=${{ matrix.project }}
         env:
           CI: "true"
       - name: Rapport en traces bij fouten
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-rapport
+          name: playwright-rapport-${{ matrix.project }}
           path: |
             tests/e2e/.rapport
             tests/e2e/.resultaten
           retention-days: 7
+
+  rls:
+    # Databank- en privacyregels tegen een lokale Postgres in het geheugen (PGlite). Geen echte databank.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: PGlite (buiten de repo, vaste versie)
+        run: npm install --prefix "${{ runner.temp }}/pglite" @electric-sql/pglite@0.5.12
+      - name: RLS- en privacytests (inclusief de migratievoorstellen)
+        run: node tests/rls/alles.mjs
+        env:
+          PGLITE_DIR: ${{ runner.temp }}/pglite

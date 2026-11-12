@@ -27,6 +27,8 @@ const webkitProject = process.env["WEBKIT"]
 
 export default defineConfig({
   testDir: "tests/e2e",
+  // Alle hoofdschermen één keer laten compileren vóór de eerste test (zie opwarmen.ts).
+  globalSetup: "./tests/e2e/opwarmen.ts",
   outputDir: "tests/e2e/.resultaten",
   fullyParallel: false,
   workers: 1,
