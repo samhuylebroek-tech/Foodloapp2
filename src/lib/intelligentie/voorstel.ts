@@ -128,7 +128,12 @@ export function toegelaten(
   return true;
 }
 
-function beoordeel(k: Kandidaat, i: Invoer): Aanbeveling {
+/**
+ * Score en redenen voor één gerecht, zonder de harde regels opnieuw te toetsen.
+ * Voor een keuze die al gemaakt is (bv. het weekvoorstel): roep eerst `toegelaten` aan.
+ * `kandidaten` in de invoer wordt hier niet gebruikt.
+ */
+export function beoordeel(k: Kandidaat, i: Invoer): Aanbeveling {
   const redenen: Reden[] = [];
   let score = 0;
   const plus = (soort: RedenSoort, punten: number, tekst: string | null) => {

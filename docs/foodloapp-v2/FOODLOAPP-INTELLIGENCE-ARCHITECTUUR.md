@@ -151,7 +151,8 @@ Elke kandidaat krijgt een score als som van gewogen factoren, en elke factor lev
 | "Niet nu" 7 dagen | ✅ op het toestel; naar het account pas met 0006 | `src/lib/intelligentie/niet-nu.ts` |
 | Help-artikel "Waarom stelt Foodlo dit voor?" | ✅ concept (nalezing nodig, beslissing 8) | `src/lib/hulp/artikels.ts` |
 | Weerfactor | ⚙️ in de score voorzien en getest, **geen databron** (beslissing 15/16) | — |
-| "Vul aan met 3 voorstellen" in Week met redenen | ❌ nog niet (Laat Foodlo kiezen werkt zoals voordien) | volgende stap I-1 |
+| Week: "Laat Foodlo kiezen" met dezelfde harde regels (allergeen, dieet, "liever niet") en 1 à 2 redenen per voorstel; wacht tot de ingrediënten geladen zijn; nieuw AI-idee met allergieën → "zelf nakijken" | ✅ gebouwd + E2E (allergie gluten, dieet vegetarisch, redenen, axe) | `WeekmenuVoorstel.tsx`, `tests/e2e/week-voorstel.spec.ts` |
+| Week: aparte kaart "Vul aan met 3 voorstellen" | ❌ nog niet (Laat Foodlo kiezen dekt het nu) | later |
 | Winkelmodus "voor morgen nog nodig" (usecase 9), seizoenslijst per product | ❌ nog niet | volgende stap I-1 |
 | "Niet voor mij", feedback op het account | ❌ wacht op 0006 (staging) | I-2 |
 

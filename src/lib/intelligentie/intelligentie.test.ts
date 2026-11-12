@@ -280,3 +280,17 @@ describe("Niet nu (op het toestel)", () => {
     expect(nietNuLijst(null)).toEqual([]);
   });
 });
+
+describe("Meal Intelligence: één gerecht beoordelen (weekvoorstel)", () => {
+  it("geeft redenen voor een gekozen dag, met de dag van die datum", async () => {
+    const { beoordeel } = await import("./voorstel");
+    const vrijdag = bepaalContext(new Date(2026, 10, 13, 18));
+    const a = beoordeel(k("Zalm", { minuten: 20, ingredienten: ["zalm", "citroen"] }), {
+      ...invoer([]),
+      context: vrijdag,
+      voorraad: ["citroen"],
+      voorkeur: { maxMinuten: 30, soort: "vis", vermijd: "" },
+    });
+    expect(a.redenen.map((r) => r.tekst)).toEqual(["Gebruikt je citroen", "Klaar in 20 min"]);
+  });
+});

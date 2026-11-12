@@ -1,4 +1,9 @@
-/** WP6 — "Laat Foodlo kiezen": weekvoorstel (uit routes/planner.tsx, ongewijzigd). */
+/**
+ * WP6 — "Laat Foodlo kiezen": weekvoorstel.
+ * Foodloapp Intelligence (I-1, Week): dezelfde harde regels als op Vandaag (nooit een gekozen
+ * allergeen, "liever niet" of iets buiten je dieet uit de kennismaking) en per voorstel 1 à 2
+ * redenen. Allergieën en dieet blijven op dit toestel; de AI-ideeën krijgen ze niet.
+ */
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -21,7 +26,12 @@ import { zichtbareEigenaren } from "@/lib/zichtbare-eigenaren";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { type Recipe } from "@/lib/types";
+import { AllergieWaarschuwing } from "@/components/AllergieWaarschuwing";
 import { RecipePhoto } from "@/components/RecipePhoto";
+import { useAuth } from "@/hooks/useAuth";
+import { bepaalContext } from "@/lib/intelligentie/context";
+import { beoordeel, toegelaten, type Kandidaat } from "@/lib/intelligentie/voorstel";
+import { leesKennismaking } from "@/lib/kennismaking";
 import { weekmenuIdeeen, type WeekmenuIdee } from "@/lib/ai.functions";
 import { type WeekmenuInstelling, type DagVoorkeur } from "@/lib/voorkeuren";
 import { kiesUitEigen, type DagRegel, type Soortkeuze } from "@/lib/weekmenu-voorstel";
@@ -149,7 +159,8 @@ export function WeekmenuVoorstel({
   // Wat al in deze week staat, stellen we niet nog eens voor.
   const recepten = alleRecepten.filter((r) => !alGepland.has(r.id));
 
-  const { data: ingredienten = {} } = useQuery({
+  // `klaar`: zonder ingrediënten kunnen we allergenen niet herkennen, dus nog niet voorstellen.
+  const { data: ingredienten = {}, isSuccess: ingredientenKlaar } = useQuery({
     queryKey: ["voorstel-ingredienten"],
     queryFn: async () => {
       // Gepagineerd: wie 100 recepten heeft, zit al snel boven de 1000 ingrediënten.
@@ -182,6 +193,45 @@ export function WeekmenuVoorstel({
     },
   });
 
+  const { user } = useAuth();
+  const kennis = leesKennismaking(user?.id);
+
+  // Alleen voor de redenen: voorraad, sterren en favorieten. Lukt het niet, dan zonder.
+  const { data: extra } = useQuery({
+    queryKey: ["voorstel-redenen", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const [voorraad, sterren, favorieten] = await Promise.all([
+        supabase.from("pantry_items").select("naam").eq("user_id", user!.id),
+        supabase.from("recipe_ratings").select("recipe_id, stars").eq("user_id", user!.id),
+        supabase.from("favorites").select("recipe_id").eq("user_id", user!.id),
+      ]);
+      return {
+        voorraad: (voorraad.data ?? []).map((v) => v.naam),
+        sterren: Object.fromEntries((sterren.data ?? []).map((x) => [x.recipe_id, x.stars])),
+        favorieten: (favorieten.data ?? []).map((f) => f.recipe_id as string),
+      };
+    },
+  });
+
+  const kandidaat = (r: Recipe): Kandidaat => ({
+    id: r.id,
+    title: r.title,
+    minuten: (r.prep_minutes ?? 0) + (r.cook_minutes ?? 0),
+    category: r.category ?? null,
+    tags: r.tags ?? [],
+    ingredienten: ingredienten[r.id] ?? [],
+  });
+
+  // Wat Foodlo zelf mag voorstellen: dezelfde harde regels als op Vandaag.
+  // "Zelf een gerecht kiezen" toont wel alles, met een waarschuwing bij een allergeen.
+  const voorstelbaar = recepten.filter((r) =>
+    toegelaten(kandidaat(r), {
+      voorkeur: { maxMinuten: 0, soort: null, vermijd: instelling.vermijd, dieet: kennis.dieet },
+      allergieen: kennis.allergieen,
+    }),
+  );
+
   function regelVoor(datum: string): DagRegel {
     const eigen = regels[datum] ?? instelling.perDag[weekdagVan(datum)] ?? {};
     return {
@@ -198,11 +248,12 @@ export function WeekmenuVoorstel({
   }
 
   async function maakVoorstel() {
+    if (!ingredientenKlaar) return; // allergenen pas te herkennen met de ingrediënten
     setBezigMet("Foodlo stelt je week samen…");
     try {
       const lijst = alleRegels();
       const keuzes = kiesUitEigen({
-        recepten,
+        recepten: voorstelbaar,
         ingredienten,
         regels: lijst,
         doelen: { vlees: instelling.vlees, vis: instelling.vis, vega: instelling.vega },
@@ -218,7 +269,7 @@ export function WeekmenuVoorstel({
         const keuze = eersteKeuzes.get(sleutel);
         if (keuze?.recept || !getoondeRecepten.current[sleutel]?.length) continue;
         const [herstart] = kiesUitEigen({
-          recepten,
+          recepten: voorstelbaar,
           ingredienten,
           regels: [regel],
           doelen: { vlees: 0, vis: 0, vega: 0 },
@@ -303,7 +354,7 @@ export function WeekmenuVoorstel({
     if (huidig) {
       getoondeRecepten.current[sleutel] = [...(getoondeRecepten.current[sleutel] ?? []), huidig];
     }
-    const over = recepten.filter((r) => r.id !== huidig && !gebruikt.includes(r.id));
+    const over = voorstelbaar.filter((r) => r.id !== huidig && !gebruikt.includes(r.id));
     const [keuze] = kiesUitEigen({
       recepten: over,
       ingredienten,
@@ -417,6 +468,28 @@ export function WeekmenuVoorstel({
   const actieveRij = rijen[actieveStap];
   const actieveRegel = actieveRij ? regelVoor(actieveRij.datum) : null;
   const actieveNaam = actieveRij?.recept?.title ?? actieveRij?.idee?.title ?? null;
+  const actieveRecept = actieveRij?.recept ?? null;
+  // Goedkoop (één gerecht): gewoon bij elke weergave berekenen.
+  const redenen = (() => {
+    if (!actieveRecept || !actieveRij || !actieveRegel || actieveRij.bezet) return [];
+    const context = bepaalContext(new Date(`${actieveRij.datum}T18:00:00`));
+    const laatst = Object.fromEntries(
+      Object.entries(recent).filter(([, d]) => d < actieveRij.datum),
+    );
+    return beoordeel(kandidaat(actieveRecept), {
+      kandidaten: [],
+      context,
+      voorraad: extra?.voorraad ?? [],
+      geschiedenis: { laatst, komend: new Set(), minutenPerWeekdag: {} },
+      sterren: extra?.sterren ?? {},
+      favorieten: extra?.favorieten ?? [],
+      voorkeur: {
+        maxMinuten: actieveRegel.maxMinuten,
+        soort: actieveRegel.soort,
+        vermijd: instelling.vermijd,
+      },
+    }).redenen;
+  })();
   const eigenResultaten = recepten
     .filter((recept) => recept.title.toLowerCase().includes(eigenZoek.trim().toLowerCase()))
     .slice(0, 5);
@@ -522,12 +595,15 @@ export function WeekmenuVoorstel({
 
             <Button
               onClick={maakVoorstel}
-              disabled={!dagen.length || !gekozenMomenten.length || !!bezigMet}
+              disabled={
+                !dagen.length || !gekozenMomenten.length || !!bezigMet || !ingredientenKlaar
+              }
               className="h-16 w-full text-lg"
             >
-              {bezigMet ? (
+              {bezigMet || !ingredientenKlaar ? (
                 <>
-                  <Loader2 className="size-5 animate-spin" /> {bezigMet}
+                  <Loader2 className="size-5 animate-spin" />{" "}
+                  {bezigMet || "Foodlo bekijkt je recepten…"}
                 </>
               ) : (
                 <>
@@ -542,7 +618,9 @@ export function WeekmenuVoorstel({
               <p className="text-base font-semibold text-muted-foreground">
                 Dag {actieveStap + 1} van {rijen.length}
               </p>
-              <div className="flex items-center gap-1.5" aria-label="Voortgang">
+              {/* Alleen beeld: "Dag x van y" ernaast zegt hetzelfde voor schermlezers.
+                  (Een aria-label op een div zonder rol is niet toegestaan; axe.) */}
+              <div className="flex items-center gap-1.5" aria-hidden>
                 {rijen.map((rij, index) => (
                   <span
                     key={`${rij.datum}|${rij.moment}`}
@@ -614,6 +692,23 @@ export function WeekmenuVoorstel({
                 </h4>
                 {actieveRij.idee?.waarom ? (
                   <p className="mt-2 text-base text-muted-foreground">{actieveRij.idee.waarom}</p>
+                ) : null}
+                {redenen.length ? (
+                  <p className="mt-2 text-base text-muted-foreground" data-redenen>
+                    {redenen.map((r) => r.tekst).join(" · ")}
+                  </p>
+                ) : null}
+                {/* Een nieuw idee van buiten heeft (nog) geen ingrediëntenlijst: zelf nakijken. */}
+                {actieveRij.idee && kennis.allergieen.length ? (
+                  <p className="mt-2 text-base font-semibold">
+                    Kijk de ingrediënten zelf na op je allergieën: Foodlo kent ze voor een nieuw
+                    idee nog niet.
+                  </p>
+                ) : null}
+                {actieveRecept ? (
+                  <div className="mt-3">
+                    <AllergieWaarschuwing ingredienten={ingredienten[actieveRecept.id] ?? []} />
+                  </div>
                 ) : null}
               </div>
             </div>
