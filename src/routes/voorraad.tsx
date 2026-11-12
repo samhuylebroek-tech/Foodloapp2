@@ -30,13 +30,13 @@ import { CATEGORIE_LABEL, CATEGORIE_VOLGORDE, categorieVan } from "@/lib/categor
 export const Route = createFileRoute("/voorraad")({
   head: () => ({
     meta: [
-      { title: "Voorraadkast – Foodlo" },
+      { title: "Voorraad – Foodlo" },
       {
         name: "description",
         content:
           "Houd bij wat je thuis hebt staan, zodat je nooit dubbel koopt en meteen ziet wat je nog nodig hebt.",
       },
-      { property: "og:title", content: "Voorraadkast – Foodlo" },
+      { property: "og:title", content: "Voorraad – Foodlo" },
       {
         property: "og:description",
         content: "Zie in één oogopslag wat je al in huis hebt voor je recepten.",
@@ -317,7 +317,7 @@ function VoorraadPage() {
   return (
     <AppShell
       breed
-      title={t("Voorraadkast")}
+      title={t("Voorraad")}
       ondertitel={t("Wat heb je al in huis? Dan zie je meteen wat je ermee kan koken.")}
     >
       <div className="mb-8 max-w-md">
@@ -429,10 +429,12 @@ function VoorraadPage() {
                     {g.lijst.map((item) => (
                       <li
                         key={item.id}
-                        className="flex min-h-[4.25rem] items-center gap-2 py-2 pl-4 pr-1"
+                        className="flex min-h-[4.25rem] flex-wrap items-center gap-x-2 gap-y-1 py-2 pl-4 pr-1"
                       >
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-lg font-semibold leading-snug">
+                        {/* Bij grote tekst schuiven − + en verwijderen naar een tweede regel,
+                            zodat de productnaam nooit afgekapt wordt (review punt 1). */}
+                        <span className="min-w-0 flex-1 basis-40">
+                          <span className="block hyphens-auto break-words text-lg font-semibold leading-snug">
                             {item.naam}
                           </span>
                           <span className="block text-[0.95rem] tabular-nums text-muted-foreground">
@@ -449,7 +451,7 @@ function VoorraadPage() {
                             </span>
                           ) : null}
                         </span>
-                        <span className="flex shrink-0 items-center rounded-full bg-muted p-0.5">
+                        <span className="ml-auto flex shrink-0 items-center rounded-full bg-muted p-0.5">
                           <button
                             type="button"
                             onClick={() => void wijzigAantal(item, -1)}

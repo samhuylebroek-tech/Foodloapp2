@@ -1083,6 +1083,8 @@ function BoodschappenPage() {
       title="Boodschappen"
       kop={
         <div className="mb-5">
+          {/* Titel = de volledige naam van de menuplek "Lijst" (zie NAV.lang in AppShell). Niet
+              "Boodschappenlijst": dat brak bij grote tekst over drie regels (review punt 7). */}
           <div className="flex items-start gap-2">
             <h1 className="min-w-0 flex-1 text-paginatitel">Boodschappen</h1>
             <Button
@@ -1313,12 +1315,12 @@ function BoodschappenPage() {
                           aria-label={CATEGORIE_LABEL[id]}
                           className="paneel overflow-hidden"
                         >
-                          <div className="flex items-center gap-1 border-b border-border/70 bg-muted/40 py-1 pl-2 pr-1">
+                          <div className="flex flex-wrap items-center gap-1 border-b border-border/70 bg-muted/40 py-1 pl-2 pr-1">
                             <button
                               type="button"
                               onClick={() => setDicht((d) => ({ ...d, [id]: open }))}
                               aria-expanded={open}
-                              className="flex min-h-12 flex-1 items-center gap-2 px-2 text-left"
+                              className="flex min-h-12 flex-1 basis-40 items-center gap-2 px-2 text-left"
                             >
                               <span className="text-[1.05rem] font-bold">
                                 {CATEGORIE_LABEL[id]}
@@ -1333,13 +1335,16 @@ function BoodschappenPage() {
                                 <ChevronRight className="size-5 text-muted-foreground" />
                               )}
                             </button>
+                            {/* Een woord in plaats van een dubbel vinkje zonder uitleg (review punt 10). */}
                             <Button
                               variant="ghost"
-                              size="icon"
                               aria-label={`Alles in ${CATEGORIE_LABEL[id]} afvinken`}
                               onClick={() => void vinkCategorieAf(lijst)}
+                              className="ml-auto h-12 min-h-12 shrink-0 gap-1.5 px-3 text-base font-semibold text-muted-foreground"
                             >
-                              <CheckCheck />
+                              {/* Past het niet naast de afdeling (grote tekst), dan schuift het naar
+                                  een eigen regel, rechts: nooit afgekapt. */}
+                              <CheckCheck className="size-5" aria-hidden /> Alles
                             </Button>
                           </div>
                           {open ? (
@@ -1404,10 +1409,11 @@ function BoodschappenPage() {
                           >
                             <PackageCheck /> Klaar met winkelen
                           </Button>
+                          {/* Rustig, niet rood naast de hoofdknop: er volgt nog een bevestiging. */}
                           <Button
                             variant="ghost"
                             onClick={() => setWisVraag("afgevinkt")}
-                            className="mt-1 w-full text-destructive"
+                            className="mt-1 w-full text-muted-foreground"
                           >
                             <Trash2 /> Wis afgevinkte boodschappen
                           </Button>

@@ -143,7 +143,7 @@ export const FUNCTIES: Functie[] = [
     module: "week",
     route: "/planner",
     bestanden: ["src/routes/planner.tsx"],
-    labels: ["Alles van deze week op de lijst"],
+    labels: ["Of kies zelf welke dagen op de lijst komen"],
   },
   {
     sleutel: "lijst.aanvullen",
@@ -238,7 +238,7 @@ export const FUNCTIES: Functie[] = [
     module: "voorraad",
     route: "/voorraad",
     bestanden: ["src/routes/voorraad.tsx"],
-    labels: ["Voorraadkast", "Nieuw product", "Toevoegen"],
+    labels: ["Voorraad", "Nieuw product", "Toevoegen"],
   },
   {
     sleutel: "voorraad.koken",

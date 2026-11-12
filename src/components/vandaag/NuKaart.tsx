@@ -3,14 +3,14 @@
  * Welke stap het is, beslist `hoofdStap` (lib/vandaag.ts); deze kaart toont hem alleen.
  */
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, CalendarDays, ChefHat, Loader2, Plus, ShoppingCart } from "lucide-react";
+import { ArrowRight, CalendarDays, ChefHat, Clock3, Loader2, Plus, ShoppingCart } from "lucide-react";
 import type { ReactNode } from "react";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { VanavondVoorstellen } from "@/components/kringloop/VanavondVoorstellen";
 import { RestjesVoorstel } from "@/components/kringloop/RestjesVoorstel";
 import type { Recipe } from "@/lib/types";
 import { duurLabel } from "@/lib/kookstand";
-import { opsomming, type ReceptVandaag, type Stap } from "@/lib/vandaag";
+import { opsomming, type ReceptVandaag, type Stap, type Tijdsplan } from "@/lib/vandaag";
 import { useT } from "@/lib/voorkeuren";
 
 const knopHoofd =
@@ -21,6 +21,17 @@ const knopTweede =
 function momentLabel(moment: string) {
   const m = moment.trim();
   return m ? m.charAt(0).toUpperCase() + m.slice(1) : "Vandaag";
+}
+
+/** Eén zin over de timing, in gewone taal (review 2026-11-12, punt 8). */
+function tijdregel(plan: Tijdsplan | null | undefined, t: (s: string) => string): string | null {
+  if (!plan) return null;
+  const duur = duurLabel(plan.duurMin * 60);
+  if (plan.soort === "later")
+    return `${t("Begin om")} ${plan.beginOm} · ${duur} · ${t("aan tafel om")} ${plan.aanTafel}`;
+  return plan.laat
+    ? `${t("Begin nu")}: ${t("het duurt")} ${duur}, ${t("dan eet je rond")} ${plan.aanTafel}`
+    : `${t("Begin nu, dan eet je om")} ${plan.aanTafel}`;
 }
 
 function kooktijd(r: ReceptVandaag) {
@@ -59,6 +70,13 @@ export function NuKaart({
   let uitleg: ReactNode = null;
   let acties: ReactNode = null;
   let extra: ReactNode = null;
+  // Timing: bij aanvullen en winkelen altijd; bij koken alleen als "begin om" er nog niet staat.
+  const tijd =
+    stap?.soort === "aanvullen" || stap?.soort === "winkelen"
+      ? tijdregel(stap.plan, t)
+      : stap?.soort === "koken" && !stap.beginOm
+        ? tijdregel(stap.plan, t)
+        : null;
 
   const naarRecept = (r: ReceptVandaag, tekst: string) => (
     <Link to="/recepten/$id" params={{ id: r.id }} className={knopTweede}>
@@ -236,6 +254,15 @@ export function NuKaart({
                 ) : null}
                 <h2 className="mt-2 text-heldentitel text-inkt-foreground">{titel}</h2>
                 {uitleg ? <p className="mt-3 max-w-md text-lg text-inkt-zacht">{uitleg}</p> : null}
+                {tijd ? (
+                  <p
+                    className="mt-3 flex max-w-md items-start gap-2 text-lg font-semibold text-inkt-foreground"
+                    data-testid="tijdregel"
+                  >
+                    <Clock3 className="mt-1 size-5 shrink-0 text-[var(--honing)]" aria-hidden />
+                    <span>{tijd}</span>
+                  </p>
+                ) : null}
                 {extra}
                 {acties ? (
                   <div className="mt-6 flex flex-col gap-3 sm:flex-row md:flex-col lg:flex-row">

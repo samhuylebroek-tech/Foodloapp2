@@ -55,16 +55,55 @@ export type VandaagInvoer = {
   etenstijden?: Record<string, string> | undefined;
 };
 
+/**
+ * Wanneer beginnen, hoe lang, wanneer aan tafel (review 2026-11-12, punt 8: "Wanneer moet ik
+ * beginnen?"). Alleen als zowel de etenstijd als de kooktijd bekend zijn; nooit gegokt.
+ */
+export type Tijdsplan =
+  | { soort: "later"; beginOm: string; aanTafel: string; duurMin: number }
+  | { soort: "nu"; aanTafel: string; duurMin: number; laat: boolean };
+
+export function tijdsplan(
+  moment: string,
+  recept: ReceptVandaag,
+  nu: Date,
+  eigen?: Record<string, string>,
+): Tijdsplan | null {
+  const tijd = etenstijd(moment, eigen);
+  const duur = kooktijd(recept);
+  if (!tijd || duur <= 0) return null;
+  const nuMin = nu.getHours() * 60 + nu.getMinutes();
+  const eten = minuten(tijd);
+  if (nuMin > eten + 60) return null;
+  const start = eten - duur;
+  if (start - nuMin >= 15) return { soort: "later", beginOm: alsTijd(start), aanTafel: tijd, duurMin: duur };
+  const klaar = Math.max(eten, nuMin + duur);
+  return { soort: "nu", aanTafel: alsTijd(klaar), duurMin: duur, laat: klaar > eten + 10 };
+}
+
 export type Stap =
   | { soort: "hervatten"; maaltijd: MaaltijdVandaag; recept: ReceptVandaag; stap: number }
-  | { soort: "aanvullen"; maaltijd: MaaltijdVandaag; recept: ReceptVandaag; ontbreekt: string[] }
-  | { soort: "winkelen"; maaltijd: MaaltijdVandaag; recept: ReceptVandaag; nogKopen: string[] }
+  | {
+      soort: "aanvullen";
+      maaltijd: MaaltijdVandaag;
+      recept: ReceptVandaag;
+      ontbreekt: string[];
+      plan?: Tijdsplan | null;
+    }
+  | {
+      soort: "winkelen";
+      maaltijd: MaaltijdVandaag;
+      recept: ReceptVandaag;
+      nogKopen: string[];
+      plan?: Tijdsplan | null;
+    }
   | {
       soort: "koken";
       maaltijd: MaaltijdVandaag;
       recept: ReceptVandaag;
       /** "17:40" als het nog te vroeg is om te beginnen; anders null (begin maar). */
       beginOm: string | null;
+      plan?: Tijdsplan | null;
     }
   | { soort: "zonder-recept"; maaltijd: MaaltijdVandaag }
   | {
@@ -174,10 +213,11 @@ export function hoofdStap(i: VandaagInvoer): Stap {
   if (!m) return i.heeftRecepten ? { soort: "kiezen" } : { soort: "eerste-recept" };
   const r = m.recept;
   if (!r) return { soort: "zonder-recept", maaltijd: m };
+  const plan = tijdsplan(m.meal_type, r, i.nu, i.etenstijden);
   if (i.ontbreektVandaag.length)
-    return { soort: "aanvullen", maaltijd: m, recept: r, ontbreekt: i.ontbreektVandaag };
+    return { soort: "aanvullen", maaltijd: m, recept: r, ontbreekt: i.ontbreektVandaag, plan };
   if (i.nogKopenVandaag.length)
-    return { soort: "winkelen", maaltijd: m, recept: r, nogKopen: i.nogKopenVandaag };
+    return { soort: "winkelen", maaltijd: m, recept: r, nogKopen: i.nogKopenVandaag, plan };
 
   const tijd = etenstijd(m.meal_type, i.etenstijden);
   const duur = kooktijd(r);
@@ -187,7 +227,7 @@ export function hoofdStap(i: VandaagInvoer): Stap {
     // Pas "begin om" tonen als dat nog minstens 15 minuten weg is.
     if (start - nuMin >= 15) beginOm = alsTijd(start);
   }
-  return { soort: "koken", maaltijd: m, recept: r, beginOm };
+  return { soort: "koken", maaltijd: m, recept: r, beginOm, plan };
 }
 
 /**

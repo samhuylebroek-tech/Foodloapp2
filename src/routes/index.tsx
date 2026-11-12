@@ -424,6 +424,7 @@ function StartPage() {
                         path={recipe.image_url}
                         alt={recipe.title}
                         recept={recipe}
+                        opschrift
                         className={
                           i === 0
                             ? "aspect-[4/3] w-full transition-transform duration-500 group-hover:scale-[1.03] lg:aspect-[5/4]"

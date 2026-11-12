@@ -30,7 +30,9 @@ export function SterrenKiezer({
   return (
     <div>
       <p className="mb-2 text-base font-semibold">{label}</p>
-      <div className="flex flex-wrap items-center gap-1">
+      {/* Altijd vijf op één rij: de knoppen krimpen tot 44 px in plaats van naar een
+          tweede regel te springen (review 2026-11-12: 4 + 1 en 3 + 2). */}
+      <div className="flex max-w-[19rem] items-center gap-1">
         {[1, 2, 3, 4, 5].map((n) => (
           <button
             key={n}
@@ -38,11 +40,11 @@ export function SterrenKiezer({
             onClick={() => onKies(waarde === n ? 0 : n)}
             aria-label={`${n} ${n === 1 ? "ster" : "sterren"}`}
             aria-pressed={n <= waarde}
-            className="flex size-14 items-center justify-center rounded-xl hover:bg-secondary"
+            className="flex h-14 min-w-[44px] flex-1 items-center justify-center rounded-xl hover:bg-secondary"
           >
             <Star
               className={cn(
-                "size-8",
+                "size-8 max-w-[34px]",
                 n <= waarde ? "fill-primary text-primary" : "text-muted-foreground",
               )}
               aria-hidden

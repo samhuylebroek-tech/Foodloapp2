@@ -97,3 +97,34 @@ test("320 px en tekst 200 %: melding past, knop groot genoeg", async ({ page, ex
   expect((await kleineDoelen(page)).filter((d) => !d.includes("Naar de inhoud"))).toEqual([]);
   void extern;
 });
+
+// Review 2026-11-12, punt 3: bij grote tekst vulde de melding het scherm en stond het eerste
+// product pas onder de vouw. De producten van de afdeling komen altijd eerst.
+test("390 px en tekst 150 %: het eerste product staat in beeld, de melding erna", async ({
+  page,
+  extern,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    document.addEventListener("DOMContentLoaded", () => {
+      document.documentElement.style.fontSize = "150%";
+    });
+  });
+  const winkel = await winkelOpen(page);
+  const melding = winkel.getByRole("region", { name: /^Voor morgen nog nodig: / });
+  await expect(melding).toBeVisible();
+  const eerste = winkel.getByRole("listitem").first();
+  await expect(eerste).toBeInViewport({ ratio: 0.9 });
+  const yProduct = (await eerste.boundingBox())!.y;
+  const yMelding = (await melding.boundingBox())!.y;
+  expect(yMelding).toBeGreaterThan(yProduct);
+  // De afdelingsnaam breekt niet middenin een woord: één woord per regel, nooit een losse letter.
+  const kop = winkel.locator("p.font-display").first();
+  const regels = await kop.evaluate((el) => {
+    const r = document.createRange();
+    r.selectNodeContents(el);
+    return r.getClientRects().length;
+  });
+  expect(regels).toBeLessThanOrEqual(2);
+  void extern;
+});

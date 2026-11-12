@@ -10,7 +10,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Check,
-  Sparkles,
   Copy,
   Repeat,
   Settings,
@@ -19,6 +18,7 @@ import {
   BookOpen,
   MoreVertical,
   Users,
+  Wand2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { meldMetHerstel } from "@/hooks/useAanvulling";
@@ -1069,16 +1069,16 @@ function PlannerPage() {
     const alleMomenten = [...new Set([...momenten, ...items.map((p) => p.meal_type)])];
     const titel = datum.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" });
     const kaart = (p: PlanRow) => (
-                    <li key={p.id} className="paneel flex min-h-24 items-center gap-2 p-3">
-                      {p.recipe_id ? <Link to="/recepten/$id" params={{ id: p.recipe_id }} search={p.personen != null ? { personen: p.personen } : {}} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ReceptFoto url={p.recipes?.image_url ?? null} recept={p.recipes} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.recipes?.title ?? "Recept"}</span>{p.recipes ? <span className="mt-0.5 flex items-center gap-1 text-base text-muted-foreground"><Clock3 className="size-3.5" /> {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) || "Tijd niet ingevuld"}</span> : null}</span></Link> : <div className="flex min-w-0 flex-1 items-center gap-3"><ReceptFoto url={null} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.custom_title}</span>{!p.soort ? <button type="button" onClick={() => setKoppelRij(p)} className="mt-0.5 block text-left text-base font-semibold text-primary underline underline-offset-2">Nog geen recept · koppelen</button> : null}</span></div>}
+                    <li key={p.id} className="paneel @container flex min-h-24 items-center gap-2 p-3">
+                      {p.recipe_id ? <Link to="/recepten/$id" params={{ id: p.recipe_id }} search={p.personen != null ? { personen: p.personen } : {}} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg hyphens-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring @max-[17rem]:flex-col @max-[17rem]:items-start"><ReceptFoto url={p.recipes?.image_url ?? null} recept={p.recipes} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.recipes?.title ?? "Recept"}</span>{p.recipes ? <span className="mt-0.5 flex items-center gap-1 text-base text-muted-foreground"><Clock3 className="size-3.5" /> {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) || "Tijd niet ingevuld"}</span> : null}</span></Link> : <div className="flex min-w-0 flex-1 items-center gap-3 hyphens-auto @max-[17rem]:flex-col @max-[17rem]:items-start"><ReceptFoto url={null} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.custom_title}</span>{!p.soort ? <button type="button" onClick={() => setKoppelRij(p)} className="mt-0.5 block text-left text-base font-semibold text-primary underline underline-offset-2">Nog geen recept · koppelen</button> : null}</span></div>}
                       {weergave === "gezin" && p.user_id !== user?.id ? <Avatar naam={plannerNamen[p.user_id] ?? "?"} sleutel={p.user_id} className="size-8 shrink-0 text-base" /> : null}
                       {planActies(p)}
                     </li>
     );
     return (
       <div className="space-y-4">
-        <div className="flex items-end gap-3">
-          <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
+          <div className="min-w-0 flex-1 basis-52">
             {groot ? (
               <p className="text-base font-semibold text-muted-foreground">
                 {dag === vandaag ? "Vandaag" : voorbij ? "Voorbij" : dag === datumTekst(new Date(Date.now() + 86400000)) ? "Morgen" : "Gepland"}
@@ -1341,18 +1341,11 @@ function PlannerPage() {
           />
         ) : null}
 
-        {/* Acties: één hoofdknop, twee rustige knoppen */}
+        {/* Acties (review 2026-11-12, punt 4): eerst plannen (twee rustige knoppen naast elkaar),
+            dan één gevulde hoofdknop voor de boodschappen. Zelf dagen kiezen is een tekstlink. */}
         <section aria-label="Acties" className="space-y-3 lg:col-span-2">
-          {/* V2-kringloop: wat nog nodig is, min voorraad en lijst — één tik. */}
-          <Button asChild className="h-16 w-full gap-3 text-lg">
-            <Link to="/aanvullen">
-              <Sparkles className="size-6" /> Slim aanvullen
-            </Link>
-          </Button>
-          <Button variant="outline" onClick={() => setBoodschappenOpen(true)} className="h-14 w-full gap-3 text-base">
-            <ShoppingCart className="size-5" /> Alles van deze week op de lijst
-          </Button>
-          <div className="grid gap-3 sm:grid-cols-2">
+          {/* Naast elkaar als het past; bij grote tekst onder elkaar. */}
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">
             <Button
               variant="outline"
               onClick={() => {
@@ -1363,9 +1356,9 @@ function PlannerPage() {
                 }
                 setKiezen({ datum: startDag, moment: momenten[momenten.length - 1] ?? "avondeten", vraagDag: true });
               }}
-              className="h-16 gap-2 text-base"
+              className="h-auto min-h-16 gap-2 px-3 text-base"
             >
-              <Plus className="size-5" /> Gerecht toevoegen
+              <Plus className="size-5 shrink-0" /> Gerecht toevoegen
             </Button>
             <Button
               variant="outline"
@@ -1376,9 +1369,29 @@ function PlannerPage() {
                 }
                 setVoorstelOpen(true);
               }}
-              className="h-16 gap-2 text-base"
+              className="h-auto min-h-16 gap-2 px-3 text-base"
             >
-              <Sparkles className="size-5" /> Laat Foodlo kiezen
+              <Wand2 className="size-5 shrink-0" /> Laat Foodlo kiezen
+            </Button>
+          </div>
+          {/* V2-kringloop: wat nog nodig is, min voorraad en lijst — één tik. */}
+          <Button asChild className="h-auto min-h-16 w-full flex-col gap-0.5 py-3 text-lg">
+            <Link to="/aanvullen">
+              <span className="flex items-center gap-3">
+                <ShoppingCart className="size-6 shrink-0" /> Slim aanvullen
+              </span>
+              <span className="text-base font-normal opacity-90">
+                Wat je deze week nog nodig hebt, op je lijst
+              </span>
+            </Link>
+          </Button>
+          <div className="text-center">
+            <Button
+              variant="link"
+              onClick={() => setBoodschappenOpen(true)}
+              className="h-auto min-h-12 px-2 text-base"
+            >
+              Of kies zelf welke dagen op de lijst komen
             </Button>
           </div>
         </section>

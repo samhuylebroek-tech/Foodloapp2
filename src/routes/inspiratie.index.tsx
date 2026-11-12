@@ -23,7 +23,7 @@ import {
   type InspiratieFilters,
   type InspiratieRecept,
 } from "@/lib/inspiratie";
-import { useSignedUrl } from "@/lib/photos";
+import { RecipePhoto } from "@/components/RecipePhoto";
 import { themas as maakThemas, type Thema } from "@/lib/themas";
 import { ThemaRij } from "@/components/ontdek/ThemaRij";
 import { OntdekLeeg } from "@/components/ontdek/OntdekLeeg";
@@ -60,24 +60,26 @@ function tijdLabel(r: { prep_minutes: number; cook_minutes: number }): string {
   return totaal > 0 ? `${totaal} min` : "";
 }
 
-/** Foto met nette terugval als de afbeelding ontbreekt of niet laadt. */
-function ReceptFoto({ pad, titel }: { pad: string | null; titel: string }) {
-  const url = useSignedUrl(pad);
-  const [kapot, setKapot] = useState(false);
-  if (!url || kapot) {
-    return (
-      <div className="flex aspect-[4/3] w-full items-center justify-center bg-secondary text-3xl" aria-hidden>
-        🍽️
-      </div>
-    );
-  }
+/**
+ * Foto, of zonder foto een ontworpen omslag (kleur van de soort, beginletter in het merkletter-
+ * type). Vroeger een grijs vlak met een bordje: 8 van de 10 kaarten zagen er leeg uit.
+ */
+function ReceptFoto({
+  pad,
+  titel,
+  soort,
+}: {
+  pad: string | null;
+  titel: string;
+  soort?: string | null;
+}) {
   return (
-    <img
-      src={url}
+    <RecipePhoto
+      path={pad}
       alt={titel}
-      loading="lazy"
-      onError={() => setKapot(true)}
-      className="aspect-[4/3] w-full object-cover"
+      recept={{ title: titel, category: soort ?? null }}
+      opschrift
+      className="aspect-[4/3] w-full"
     />
   );
 }
@@ -300,7 +302,7 @@ function InspiratiePage() {
                   params={{ id: r.id }}
                   className="paneel block overflow-hidden transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:shadow-md"
                 >
-                  <ReceptFoto pad={r.image_url} titel={r.title} />
+                  <ReceptFoto pad={r.image_url} titel={r.title} soort={r.category} />
                   <div className="space-y-1 p-3">
                     <p className="text-base font-semibold leading-tight">{r.title}</p>
                     {/* Bron: later de food creator (naam en profiel), nu de Foodlo-keuken. */}
@@ -326,7 +328,7 @@ function InspiratiePage() {
         <DialogContent className="max-w-sm p-0 overflow-hidden">
           {verrassing ? (
             <div>
-              <ReceptFoto pad={verrassing.image_url} titel={verrassing.title} />
+              <ReceptFoto pad={verrassing.image_url} titel={verrassing.title} soort={verrassing.category} />
               <div className="space-y-4 p-5">
                 <DialogHeader className="text-left">
                   <DialogTitle className="text-xl leading-snug">{verrassing.title}</DialogTitle>

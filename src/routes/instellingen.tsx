@@ -23,6 +23,7 @@ import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
 import { useVoorraadBijhouden } from "@/lib/intelligentie/voorraad-modus";
 import { cn } from "@/lib/utils";
 import { etenstijd } from "@/lib/vandaag";
+import { tijdKeuzes } from "@/lib/tijdkeuzes";
 import { marketingUrl } from "@/lib/app-url";
 import { exporteerMijnGegevens } from "@/lib/export.functions";
 import { useQuery } from "@tanstack/react-query";
@@ -149,8 +150,9 @@ function InstellingenPage() {
             <p id="handle-uitleg" className="mt-1 text-[0.95rem] text-muted-foreground">
               {t("Met deze naam kunnen vrienden je terugvinden. Bijvoorbeeld: marie")}
             </p>
-            <div className="mt-3 flex gap-2">
-              <div className="relative min-w-0 flex-1">
+            {/* Bij grote tekst schuift "Bewaren" onder het veld, zodat de naam leesbaar blijft. */}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <div className="relative min-w-0 flex-1 basis-48">
                 <span
                   aria-hidden
                   className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"
@@ -276,9 +278,9 @@ function InstellingenPage() {
               <span className="min-w-[7rem] flex-1 text-[1.05rem] font-semibold capitalize leading-snug">
                 {t(m === "maaltijd" ? "Eten" : m)}
               </span>
-              <input
-                type="time"
-                step={300}
+              {/* Keuzelijst per kwartier in plaats van het tijdveld van de browser: dat toonde
+                  "06:30 PM" op toestellen met een Engelse systeemtaal (review punt 9). Altijd 24 uur. */}
+              <select
                 aria-label={`${t("Etenstijd")} ${t(m === "maaltijd" ? "eten" : m)}`}
                 value={etenstijd(m, weekmenu.etenstijden) ?? ""}
                 onChange={(e) => {
@@ -287,8 +289,17 @@ function InstellingenPage() {
                   const sleutel = m === "maaltijd" ? "avondeten" : m;
                   zetWeekmenu({ etenstijden: { ...weekmenu.etenstijden, [sleutel]: waarde } });
                 }}
-                className="h-12 rounded-xl border border-input bg-background px-3 text-lg tabular-nums"
-              />
+                className="h-12 min-w-[6.5rem] rounded-xl border border-input bg-background px-3 text-lg tabular-nums"
+              >
+                {etenstijd(m, weekmenu.etenstijden) ? null : (
+                  <option value="">{t("Kies een tijd")}</option>
+                )}
+                {tijdKeuzes(etenstijd(m, weekmenu.etenstijden)).map((tijd) => (
+                  <option key={tijd} value={tijd}>
+                    {tijd}
+                  </option>
+                ))}
+              </select>
             </label>
           ))}
         </Groep>

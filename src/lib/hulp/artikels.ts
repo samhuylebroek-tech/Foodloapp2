@@ -169,7 +169,8 @@ export const ARTIKELS: Artikel[] = [
       'Kies een dag bovenaan. Met "Vorige week" en "Volgende week" blader je.',
       'Tik op "Gerecht toevoegen" bij het moment dat je wil plannen en kies een recept.',
       'Vanuit een recept kan het ook: tik op "Inplannen".',
-      'Klaar met plannen? Tik op "Alles van deze week op de lijst".',
+      'Klaar met plannen? Tik op "Slim aanvullen". Wat je al hebt, laat Foodlo weg.',
+      'Liever zelf kiezen welke dagen? Tik op "Of kies zelf welke dagen op de lijst komen".',
     ],
     tips: [
       'Met "Laat Foodlo kiezen" krijg je een voorstel voor de week. Je beslist zelf wat je houdt.',

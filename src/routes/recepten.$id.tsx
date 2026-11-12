@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { markeerGezien } from "@/lib/gezien";
 import { meet } from "@/lib/meten";
 import { createFileRoute, Link, useBlocker, useNavigate } from "@tanstack/react-router";
@@ -73,6 +73,10 @@ import { PageSkeleton } from "@/components/PageSkeleton";
 import { AllergieWaarschuwing } from "@/components/AllergieWaarschuwing";
 import { RestjeVraag } from "@/components/kringloop/RestjeVraag";
 import { markeerKookstand } from "@/lib/eerste-stappen";
+
+/** Kleine actieknop in de receptkop: pictogram met een woord eronder (48 px breed minimum). */
+const ACTIE_KNOP =
+  "h-auto min-h-14 min-w-14 flex-col gap-0.5 px-2 py-1 text-[0.8rem] font-semibold leading-tight";
 
 export const Route = createFileRoute("/recepten/$id")({
   head: () => ({
@@ -355,13 +359,20 @@ function ReceptPage() {
       setBewaardeStap(leesVoortgang(kookRecept.id, kookRecept.instructions.length));
   }, [kookRecept, kookstand]);
 
+  // Kookstand begint altijd bovenaan: bij het openen (de knop "Start koken" staat vaak onderaan
+  // het recept) en bij elke nieuwe stap. Anders valt de staptekst onder de vaste kop (review
+  // 2026-11-12, punt 5). Vóór het tekenen, zodat er niets verspringt.
+  useLayoutEffect(() => {
+    if (kookstand) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [kookstand, stap, klaarVragen]);
+
   // Elke stap bewaren, en bij een nieuwe stap de focus op de staptekst zetten
-  // zodat een schermlezer hem meteen voorleest.
+  // zodat een schermlezer hem meteen voorleest (zonder te scrollen: we staan al bovenaan).
   useEffect(() => {
     if (!kookstand || !kookRecept || stap < 0) return;
     bewaarVoortgang(kookRecept.id, stap);
     markeerKookstand();
-    stapKop.current?.focus();
+    stapKop.current?.focus({ preventScroll: true });
   }, [kookstand, stap, kookRecept]);
 
   // Pijltjestoetsen: vorige / volgende stap.
@@ -694,21 +705,12 @@ function ReceptPage() {
           className="sticky top-0 z-20 border-b border-border/70 bg-background/95 px-4 pb-3 backdrop-blur-md"
           style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}
         >
-          <div className="mx-auto flex max-w-2xl items-center gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-base font-semibold text-muted-foreground">
-                {recipe.title}
-              </p>
-              <p className="text-xl font-bold">
-                {voorbereiding ? (
-                  t("Alles klaarzetten")
-                ) : (
-                  <>
-                    Stap {stap + 1} van {stappen.length}
-                  </>
-                )}
-              </p>
-            </div>
+          {/* Recepttitel naast "Stoppen"; de stap eronder over de volle breedte. Zo breekt
+              "Alles klaarzetten" ook bij grote tekst niet middenin een woord (review punt 1). */}
+          <div className="mx-auto flex max-w-2xl items-start gap-3">
+            <p className="min-w-0 flex-1 break-words pt-1 text-base font-semibold leading-snug text-muted-foreground">
+              {recipe.title}
+            </p>
             <Button
               variant="zacht"
               onClick={() => setStopVraag(true)}
@@ -719,6 +721,15 @@ function ReceptPage() {
               <span className="hidden min-[360px]:inline">{t("Stoppen")}</span>
             </Button>
           </div>
+          <p className="mx-auto mt-1 max-w-2xl text-xl font-bold">
+            {voorbereiding ? (
+              t("Alles klaarzetten")
+            ) : (
+              <>
+                Stap {stap + 1} van {stappen.length}
+              </>
+            )}
+          </p>
           {/* Voortgang: één blokje per stap, zichtbaar én voor schermlezers. */}
           <div
             role="progressbar"
@@ -869,34 +880,35 @@ function ReceptPage() {
     <AppShell
       title={t(recipe.title)}
       action={
+        // Review 2026-11-12, punt 10: elke actie met een zichtbaar woord onder het pictogram.
         <div className="flex flex-wrap items-center">
-          <Button variant="ghost" size="icon" onClick={toggleFavorite} aria-label={t("Favoriet")}>
-            <Heart className={isFavorite ? "fill-primary text-primary" : ""} />
-          </Button>
           <Button
             variant="ghost"
-            size="icon"
-            onClick={() => void deelRecept()}
-            aria-label={t("Delen")}
+            onClick={toggleFavorite}
+            aria-pressed={isFavorite}
+            className={ACTIE_KNOP}
           >
-            <Share2 />
+            <Heart className={isFavorite ? "fill-primary text-primary" : ""} aria-hidden />
+            {t("Favoriet")}
+          </Button>
+          <Button variant="ghost" onClick={() => void deelRecept()} className={ACTIE_KNOP}>
+            <Share2 aria-hidden />
+            {t("Delen")}
           </Button>
           {/* BUG-102: aanpassen was alleen te vinden in "…". Zichtbaar voor eigen recepten. */}
           {isOwner ? (
-            <Button variant="ghost" size="icon" asChild>
-              <Link
-                to="/recepten/$id/bewerken"
-                params={{ id: recipe.id }}
-                aria-label={t("Aanpassen")}
-              >
-                <Pencil />
+            <Button variant="ghost" asChild className={ACTIE_KNOP}>
+              <Link to="/recepten/$id/bewerken" params={{ id: recipe.id }}>
+                <Pencil aria-hidden />
+                {t("Aanpassen")}
               </Link>
             </Button>
           ) : null}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label={t("Meer")}>
-                <MoreHorizontal />
+              <Button variant="ghost" className={ACTIE_KNOP}>
+                <MoreHorizontal aria-hidden />
+                {t("Meer")}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-52 rounded-xl p-2">
@@ -942,6 +954,7 @@ function ReceptPage() {
                 path={recipe.image_url}
                 alt={recipe.title}
                 recept={recipe}
+                opschrift
                 className="aspect-[4/3] w-full rounded-3xl shadow-kaart sm:aspect-[16/9]"
               />
               {fotoBezig && (
@@ -955,6 +968,7 @@ function ReceptPage() {
                 bezig={fotoBezig}
                 heeftFoto={!!recipe.image_url}
                 onBestand={(f) => void vervangFoto(f)}
+                rustig
               />
             )}
             {extraFotos.length > 0 ? (

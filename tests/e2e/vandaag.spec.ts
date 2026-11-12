@@ -125,3 +125,29 @@ test("Vandaag ververst na een voorraadwijziging in de app", async ({ page, exter
   await expect(nu.getByText(/^Nog nodig: /)).not.toContainText("boter");
   void extern;
 });
+
+// Review 2026-11-12, punt 8: "Wanneer moet ik beginnen?" — ook als er nog iets ontbreekt.
+// Stoofvlees met frietjes duurt 170 minuten, avondeten om 18:30.
+test("Vandaag zegt wanneer je moet beginnen, en eerlijk als het al laat is", async ({
+  page,
+  extern,
+}) => {
+  await zetKlok(page, 14);
+  await page.goto("/");
+  const nu = page.locator("[data-nu]");
+  await expect(nu).toHaveAttribute("data-nu", "aanvullen");
+  await expect(nu.getByTestId("tijdregel")).toHaveText(
+    "Begin om 15:40 · 2 uur 50 min · aan tafel om 18:30",
+  );
+  // De timing is geen extra knop: nog altijd hooguit twee acties.
+  expect(await nu.locator("a, button").count()).toBeLessThanOrEqual(2);
+
+  await zetKlok(page, 17);
+  await page.reload();
+  // Na 15:40 kan het niet meer op tijd: de kaart zegt dat eerlijk, met het werkelijke uur
+  // (zetKlok rekent in de tijdzone van de testmachine, de browser in Brussel).
+  await expect(nu.getByTestId("tijdregel")).toHaveText(
+    /^Begin nu: het duurt 2 uur 50 min, dan eet je rond (19|20):50$/,
+  );
+  void extern;
+});

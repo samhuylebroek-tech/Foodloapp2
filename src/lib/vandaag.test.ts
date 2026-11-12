@@ -6,6 +6,7 @@ import {
   huidigeMaaltijd,
   opsomming,
   signalen,
+  tijdsplan,
   type MaaltijdVandaag,
   type VandaagInvoer,
 } from "./vandaag";
@@ -167,5 +168,45 @@ describe("eigen etenstijden", () => {
     expect(etenstijd("ontbijt", laat)).toBe("08:00");
     expect(avondGrens()).toBe(21 * 60);
     expect(avondGrens({ avondeten: "19:45" })).toBe(21 * 60 + 45);
+  });
+});
+
+// Review 2026-11-12, punt 8: Vandaag zegt wanneer je moet beginnen, ook als er nog iets ontbreekt.
+describe("tijdsplan", () => {
+  const stoof = recept("stoofvlees", 170);
+  it("ruim op tijd: begin om, duur en aan tafel", () => {
+    expect(tijdsplan("avondeten", stoof, om(14), { avondeten: "18:30" })).toEqual({
+      soort: "later",
+      beginOm: "15:40",
+      aanTafel: "18:30",
+      duurMin: 170,
+    });
+  });
+  it("minder dan een kwartier voor de start: begin nu, nog op tijd", () => {
+    expect(tijdsplan("avondeten", stoof, om(15, 30), { avondeten: "18:30" })).toEqual({
+      soort: "nu",
+      aanTafel: "18:30",
+      duurMin: 170,
+      laat: false,
+    });
+  });
+  it("te laat begonnen: eerlijk zeggen wanneer je dan eet", () => {
+    expect(tijdsplan("avondeten", stoof, om(17), { avondeten: "18:30" })).toEqual({
+      soort: "nu",
+      aanTafel: "19:50",
+      duurMin: 170,
+      laat: true,
+    });
+  });
+  it("gokt niet: zonder kooktijd of ruim na het eten geen plan", () => {
+    expect(tijdsplan("avondeten", recept("x", 0), om(14), { avondeten: "18:30" })).toBeNull();
+    expect(tijdsplan("avondeten", stoof, om(20), { avondeten: "18:30" })).toBeNull();
+  });
+  it("zit ook in de hoofdstap als er nog iets ontbreekt", () => {
+    const stap = hoofdStap(
+      basis({ nu: om(14), vandaag: [maal("avondeten", stoof)], ontbreektVandaag: ["boter"] }),
+    );
+    expect(stap.soort).toBe("aanvullen");
+    expect(stap.soort === "aanvullen" && stap.plan?.soort).toBe("later");
   });
 });

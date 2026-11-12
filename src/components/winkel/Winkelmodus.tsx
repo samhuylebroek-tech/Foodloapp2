@@ -216,18 +216,25 @@ export function Winkelmodus({
           >
             <X className="size-7" />
           </Button>
+          {/* Eén regel "In de winkel · 6 te halen"; de afdeling eronder over de volle breedte,
+              zodat "Groenten & fruit" bij grote tekst niet middenin breekt (review punt 1). */}
           <div className="min-w-0 flex-1">
-            <p className="text-label text-inkt-zacht">In de winkel</p>
-            <p className="font-display text-2xl font-semibold leading-tight">
+            <p className="flex flex-wrap items-baseline gap-x-2 text-base text-inkt-zacht">
+              <span className="text-label">In de winkel</span>
+              <span>
+                <span
+                  className="text-xl font-bold tabular-nums text-inkt-foreground"
+                  data-testid="te-halen"
+                >
+                  {teHalen}
+                </span>{" "}
+                te halen
+              </span>
+            </p>
+            <p className="font-display text-2xl font-semibold leading-tight hyphens-auto">
               {huidig ? CATEGORIE_LABEL[huidig.id] : "Klaar"}
             </p>
           </div>
-          <p className="shrink-0 text-right text-base">
-            <span className="block text-2xl font-bold tabular-nums" data-testid="te-halen">
-              {teHalen}
-            </span>
-            <span className="text-inkt-zacht">te halen</span>
-          </p>
         </div>
         <div
           className="mx-auto mt-3 h-2 w-full max-w-3xl overflow-hidden rounded-full bg-white/15"
@@ -264,39 +271,6 @@ export function Winkelmodus({
 
       <div className="flex-1 overflow-y-auto px-4 py-4 md:px-8">
         <div className="mx-auto w-full max-w-3xl">
-          {voorMorgen && onVoorMorgen ? (
-            <section
-              aria-labelledby="voor-morgen-kop"
-              className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl bg-honing/20 px-4 py-3"
-            >
-              <CalendarClock className="size-7 shrink-0 text-foreground" aria-hidden />
-              <div className="min-w-0 flex-1 basis-48">
-                <h2 id="voor-morgen-kop" className="text-lg font-semibold">
-                  {voorMorgen.kop}: {opsomming(voorMorgen.namen, 3)}
-                </h2>
-                <p className="text-base break-words text-muted-foreground">
-                  Voor {opsomming(voorMorgen.gerechten, 2)}. Nog niet of niet genoeg op je lijst.
-                </p>
-              </div>
-              <Button
-                type="button"
-                onClick={async () => {
-                  if (voorMorgenBezig) return;
-                  setVoorMorgenBezig(true);
-                  try {
-                    await onVoorMorgen(voorMorgen);
-                  } finally {
-                    setVoorMorgenBezig(false);
-                  }
-                }}
-                disabled={voorMorgenBezig}
-                className="min-h-12 max-w-full shrink-0 px-4 text-base"
-              >
-                {voorMorgenBezig ? <Loader2 className="size-5 animate-spin" aria-hidden /> : null}
-                Zet erbij
-              </Button>
-            </section>
-          ) : null}
           {huidig ? (
             <ul className="grid gap-3 md:grid-cols-2">
               {huidig.lijst.map((item) => (
@@ -390,6 +364,40 @@ export function Winkelmodus({
               </p>
             </div>
           )}
+          {/* Hulp voor morgen staat ná de producten: hij mag ze nooit wegduwen (review punt 3). */}
+          {voorMorgen && onVoorMorgen ? (
+            <section
+              aria-labelledby="voor-morgen-kop"
+              className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl bg-honing/20 px-4 py-3"
+            >
+              <CalendarClock className="size-6 shrink-0 text-foreground" aria-hidden />
+              <div className="min-w-0 flex-1 basis-48">
+                <h2 id="voor-morgen-kop" className="text-base font-semibold">
+                  {voorMorgen.kop}: {opsomming(voorMorgen.namen, 3)}
+                </h2>
+                <p className="text-base break-words text-muted-foreground">
+                  Voor {opsomming(voorMorgen.gerechten, 2)}. Nog niet of niet genoeg op je lijst.
+                </p>
+              </div>
+              <Button
+                type="button"
+                onClick={async () => {
+                  if (voorMorgenBezig) return;
+                  setVoorMorgenBezig(true);
+                  try {
+                    await onVoorMorgen(voorMorgen);
+                  } finally {
+                    setVoorMorgenBezig(false);
+                  }
+                }}
+                disabled={voorMorgenBezig}
+                className="min-h-12 max-w-full shrink-0 px-4 text-base"
+              >
+                {voorMorgenBezig ? <Loader2 className="size-5 animate-spin" aria-hidden /> : null}
+                Zet erbij
+              </Button>
+            </section>
+          ) : null}
         </div>
       </div>
 
