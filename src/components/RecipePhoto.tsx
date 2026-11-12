@@ -31,7 +31,10 @@ const ICONEN: Record<OmslagIcoon, LucideIcon> = {
 
 /** Eerste letter van de naam, zonder lidwoord ("De gouden soep" → "G"). */
 export function beginletter(titel: string | null | undefined): string {
-  const woorden = (titel ?? "").trim().split(/\s+/).filter((w) => /\p{L}/u.test(w));
+  const woorden = (titel ?? "")
+    .trim()
+    .split(/\s+/)
+    .filter((w) => /\p{L}/u.test(w));
   const kern =
     woorden.length > 1 && /^(de|het|een|'t)$/i.test(woorden[0]!) ? woorden[1] : woorden[0];
   return (kern?.match(/\p{L}/u)?.[0] ?? "").toLocaleUpperCase("nl-BE");

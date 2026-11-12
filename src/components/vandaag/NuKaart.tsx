@@ -3,7 +3,15 @@
  * Welke stap het is, beslist `hoofdStap` (lib/vandaag.ts); deze kaart toont hem alleen.
  */
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, CalendarDays, ChefHat, Clock3, Loader2, Plus, ShoppingCart } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarDays,
+  ChefHat,
+  Clock3,
+  Loader2,
+  Plus,
+  ShoppingCart,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { VanavondVoorstellen } from "@/components/kringloop/VanavondVoorstellen";

@@ -78,7 +78,9 @@ test("contextuele hulp: vanaf Voorraad naar de uitleg van dat scherm, en 'Doe he
   await expect(page.getByText("Ondertitels lezen")).toBeVisible();
   expect(await axeErnstig(page)).toEqual([]);
   await page.getByRole("link", { name: /Doe het nu/ }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Voorraad", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Voorraad", exact: true }),
+  ).toBeVisible();
   void extern;
 });
 

@@ -76,7 +76,8 @@ export function tijdsplan(
   const eten = minuten(tijd);
   if (nuMin > eten + 60) return null;
   const start = eten - duur;
-  if (start - nuMin >= 15) return { soort: "later", beginOm: alsTijd(start), aanTafel: tijd, duurMin: duur };
+  if (start - nuMin >= 15)
+    return { soort: "later", beginOm: alsTijd(start), aanTafel: tijd, duurMin: duur };
   const klaar = Math.max(eten, nuMin + duur);
   return { soort: "nu", aanTafel: alsTijd(klaar), duurMin: duur, laat: klaar > eten + 10 };
 }
