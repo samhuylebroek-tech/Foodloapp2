@@ -218,10 +218,11 @@ export const ARTIKELS: Artikel[] = [
     stappen: [
       'Open je lijst en tik op "Ik ga winkelen".',
       "Tik op een product om het af te vinken. Het verdwijnt meteen uit beeld.",
+      'Mis je nog iets voor de gerechten van vandaag of morgen, dan zie je bovenaan "Voor morgen nog nodig" met wat er ontbreekt. Tik op "Zet erbij" om het op je lijst te zetten. Je kan dat meteen ongedaan maken.',
       'Klaar? Tik op "Klaar met winkelen". Wat je gekocht hebt, gaat naar je voorraad.',
     ],
     functies: ["lijst.winkelmodus"],
-    trefwoorden: ["winkel", "supermarkt", "winkelen", "kassa", "afdelingen"],
+    trefwoorden: ["winkel", "supermarkt", "winkelen", "kassa", "afdelingen", "vergeten", "morgen"],
     doeHetNu: { route: "/boodschappen", label: "Naar je lijst" },
     ...AI,
   },

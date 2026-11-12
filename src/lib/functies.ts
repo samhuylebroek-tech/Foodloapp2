@@ -138,7 +138,7 @@ export const FUNCTIES: Functie[] = [
     module: "lijst",
     route: "/boodschappen",
     bestanden: ["src/routes/boodschappen.tsx", "src/components/winkel/Winkelmodus.tsx"],
-    labels: ["Ik ga winkelen", "Klaar met winkelen"],
+    labels: ["Ik ga winkelen", "Klaar met winkelen", "Voor morgen nog nodig", "Zet erbij"],
   },
   {
     sleutel: "lijst.klantenkaarten",

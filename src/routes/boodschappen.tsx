@@ -41,7 +41,8 @@ import { cn } from "@/lib/utils";
 import { Klantenkaarten } from "@/components/Klantenkaarten";
 import { Groep, Icoon } from "@/components/mobiel/Lijst";
 import { AanvulKaart, AanvulRegel } from "@/components/kringloop/AanvulKaart";
-import { meldMetHerstel, useKringloopVernieuw } from "@/hooks/useAanvulling";
+import { meldMetHerstel, useAanvulling, useKringloopVernieuw } from "@/hooks/useAanvulling";
+import { nogNodigVoorMorgen } from "@/lib/intelligentie/voor-morgen";
 import { HalfGelukt, klaarMetWinkelen } from "@/lib/kringloop-db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -928,6 +929,11 @@ function BoodschappenPage() {
   // V2-kringloop (S2): klaar met winkelen = in de voorraad + lijst opgeruimd. Geen vraag,
   // wel één "Ongedaan maken".
   const vernieuwKringloop = useKringloopVernieuw();
+  // Usecase 9: in de winkel tonen wat je voor vandaag of morgen nog vergeten bent.
+  const aanvulling = useAanvulling();
+  const voorMorgen = aanvulling.data
+    ? nogNodigVoorMorgen(aanvulling.data.aanvulling.kopen, lokaleDatum())
+    : null;
   const [winkelKlaarBezig, setWinkelKlaarBezig] = useState(false);
   async function klaarMetWinkelenNu() {
     if (!user || !actieveLijst || !klaar.length || winkelKlaarBezig) return;
@@ -1790,6 +1796,11 @@ function BoodschappenPage() {
           onVervang={vervangInWinkel}
           onSluit={() => setWinkel(false)}
           onOpruimen={() => { setWinkel(false); void klaarMetWinkelenNu(); }}
+          voorMorgen={voorMorgen}
+          onVoorMorgen={async (v) => {
+            const aantal = await aanvulling.zetOpLijst(new Set(v.sleutels));
+            if (aantal) void meet("winkel.voor_morgen", undefined, { aantal });
+          }}
         />
       )}
 

@@ -8,14 +8,26 @@
  *   oorspronkelijke (zie `vervangNaam` in lib/product-herkenning).
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, CheckCheck, PackageCheck, Repeat, SearchX, Undo2, X } from "lucide-react";
+import {
+  CalendarClock,
+  Check,
+  CheckCheck,
+  Loader2,
+  PackageCheck,
+  Repeat,
+  SearchX,
+  Undo2,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CATEGORIE_LABEL, type CategorieId } from "@/lib/categorie";
 import { toonBelgischeMaat } from "@/lib/ingredienten";
 import { vervanging } from "@/lib/product-herkenning";
 import { vervangVoorstellen } from "@/lib/vervangen";
+import type { VoorMorgen } from "@/lib/intelligentie/voor-morgen";
 import { cn } from "@/lib/utils";
+import { opsomming } from "@/lib/vandaag";
 
 export type WinkelItem = {
   id: string;
@@ -73,6 +85,8 @@ export function Winkelmodus({
   onVervang,
   onSluit,
   onOpruimen,
+  voorMorgen = null,
+  onVoorMorgen,
 }: {
   lijstId: string;
   groepen: { id: CategorieId; lijst: WinkelItem[] }[];
@@ -83,7 +97,12 @@ export function Winkelmodus({
   onVervang: (item: WinkelItem, door: Vervanging) => Promise<boolean>;
   onSluit: () => void;
   onOpruimen: () => void;
+  /** Usecase 9: wat je voor vandaag of morgen nog nodig hebt en niet op je lijst staat. */
+  voorMorgen?: VoorMorgen | null;
+  /** Eén tik: zet precies die producten op de lijst (met ongedaan maken). */
+  onVoorMorgen?: (v: VoorMorgen) => Promise<void>;
 }) {
+  const [voorMorgenBezig, setVoorMorgenBezig] = useState(false);
   const [stap, setStap] = useState(0);
   const [overgeslagen, setOvergeslagen] = useState<Set<string>>(() => leesOvergeslagen(lijstId));
   const [nietGevonden, setNietGevonden] = useState<WinkelItem | null>(null);
@@ -218,6 +237,7 @@ export function Winkelmodus({
         {zichtbaar.length > 1 ? (
           <div
             className="scroll-rij -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 md:mx-auto md:max-w-3xl md:flex-wrap md:overflow-visible md:px-0"
+            role="group"
             aria-label="Afdelingen"
           >
             {zichtbaar.map((g, i) => (
@@ -242,6 +262,39 @@ export function Winkelmodus({
 
       <div className="flex-1 overflow-y-auto px-4 py-4 md:px-8">
         <div className="mx-auto w-full max-w-3xl">
+          {voorMorgen && onVoorMorgen ? (
+            <section
+              aria-labelledby="voor-morgen-kop"
+              className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl bg-honing/20 px-4 py-3"
+            >
+              <CalendarClock className="size-7 shrink-0 text-foreground" aria-hidden />
+              <div className="min-w-0 flex-1 basis-48">
+                <h2 id="voor-morgen-kop" className="text-lg font-semibold">
+                  {voorMorgen.kop}: {opsomming(voorMorgen.namen, 3)}
+                </h2>
+                <p className="text-base break-words text-muted-foreground">
+                  Voor {opsomming(voorMorgen.gerechten, 2)}. Nog niet of niet genoeg op je lijst.
+                </p>
+              </div>
+              <Button
+                type="button"
+                onClick={async () => {
+                  if (voorMorgenBezig) return;
+                  setVoorMorgenBezig(true);
+                  try {
+                    await onVoorMorgen(voorMorgen);
+                  } finally {
+                    setVoorMorgenBezig(false);
+                  }
+                }}
+                disabled={voorMorgenBezig}
+                className="min-h-12 max-w-full shrink-0 px-4 text-base"
+              >
+                {voorMorgenBezig ? <Loader2 className="size-5 animate-spin" aria-hidden /> : null}
+                Zet erbij
+              </Button>
+            </section>
+          ) : null}
           {huidig ? (
             <ul className="grid gap-3 md:grid-cols-2">
               {huidig.lijst.map((item) => (

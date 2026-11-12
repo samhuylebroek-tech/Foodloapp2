@@ -153,7 +153,8 @@ Elke kandidaat krijgt een score als som van gewogen factoren, en elke factor lev
 | Weerfactor | ⚙️ in de score voorzien en getest, **geen databron** (beslissing 15/16) | — |
 | Week: "Laat Foodlo kiezen" met dezelfde harde regels (allergeen, dieet, "liever niet") en 1 à 2 redenen per voorstel; wacht tot de ingrediënten geladen zijn; nieuw AI-idee met allergieën → "zelf nakijken" | ✅ gebouwd + E2E (allergie gluten, dieet vegetarisch, redenen, axe) | `WeekmenuVoorstel.tsx`, `tests/e2e/week-voorstel.spec.ts` |
 | Week: aparte kaart "Vul aan met 3 voorstellen" | ❌ nog niet (Laat Foodlo kiezen dekt het nu) | later |
-| Winkelmodus "voor morgen nog nodig" (usecase 9), seizoenslijst per product | ❌ nog niet | volgende stap I-1 |
+| Winkelmodus "Voor morgen nog nodig" (usecase 9): wat je voor vandaag of morgen nog moet kopen en niet (of niet genoeg) op je lijst staat; "Zet erbij" met ongedaan maken, telt bij bestaande regels op | ✅ gebouwd + unittests + E2E (telefoon, desktop, 320 px + 200 %, axe) | `src/lib/intelligentie/voor-morgen.ts`, `Winkelmodus.tsx`, `tests/e2e/winkel-voor-morgen.spec.ts` |
+| Seizoenslijst per product | ❌ nog niet | later |
 | "Niet voor mij", feedback op het account | ❌ wacht op 0006 (staging) | I-2 |
 
 Geen nieuwe externe dienst, geen AI-oproep, geen gezondheidsgegevens buiten het toestel. Twee extra leesvragen per bezoek aan Vandaag wanneer er niets gepland is (`recipe_ratings`, `favorites`) plus het weekmenu van de laatste 180 dagen.

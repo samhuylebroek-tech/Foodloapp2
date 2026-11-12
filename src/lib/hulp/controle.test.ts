@@ -20,12 +20,13 @@ function bronTekst(): string {
     }
   };
   for (const map of ["src/routes", "src/components", "src/hooks"]) loop(path.join(ROOT, map));
-  // lib behalve hulp/ en het register
+  // lib behalve hulp/ en het register; submappen (bv. intelligentie/) tellen mee: hun teksten
+  // staan echt op het scherm ("Voor morgen nog nodig").
   for (const n of readdirSync(path.join(ROOT, "src/lib"))) {
     const p = path.join(ROOT, "src/lib", n);
-    if (n === "hulp" || n === "functies.ts" || statSync(p).isDirectory() || /\.test\./.test(n))
-      continue;
-    uit.push(readFileSync(p, "utf8"));
+    if (n === "hulp" || n === "functies.ts" || /\.test\./.test(n)) continue;
+    if (statSync(p).isDirectory()) loop(p);
+    else uit.push(readFileSync(p, "utf8"));
   }
   return uit.join("\n");
 }
@@ -173,7 +174,7 @@ describe("zoeken en assistent", () => {
 describe("tutorials: script, storyboard, ondertitels, hoofdstukken, vertaling", () => {
   const tut = maakTutorial(ARTIKELS.find((a) => a.slug === "winkelmodus")!)!;
   it("één scene per stap plus een titelkaart, tijden lopen op", () => {
-    expect(tut.scenes).toHaveLength(4);
+    expect(tut.scenes).toHaveLength(5); // titelkaart + 4 stappen
     for (let i = 1; i < tut.scenes.length; i++)
       expect(tut.scenes[i]!.start).toBe(tut.scenes[i - 1]!.eind);
     expect(tut.duur).toBeLessThanOrEqual(60);
@@ -199,6 +200,8 @@ describe("tutorials: script, storyboard, ondertitels, hoofdstukken, vertaling", 
   it("geciteerde labels uit een artikel", () => {
     expect(geciteerdeLabels(ARTIKELS.find((a) => a.slug === "winkelmodus")!)).toEqual([
       "Ik ga winkelen",
+      "Voor morgen nog nodig",
+      "Zet erbij",
       "Klaar met winkelen",
     ]);
   });
