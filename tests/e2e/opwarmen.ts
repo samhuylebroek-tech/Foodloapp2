@@ -23,7 +23,10 @@ const PADEN = [
 
 export default async function opwarmen() {
   if (process.env["GEEN_OPWARMEN"]) return;
-  const browser = await chromium.launch();
+  // Zelfde browser als de tests (playwright.config.ts): in de cloud staat Chrome klaar via CHROME_PATH.
+  const browser = await chromium.launch(
+    process.env["CHROME_PATH"] ? { executablePath: process.env["CHROME_PATH"] } : {},
+  );
   try {
     const page = await browser.newPage();
     await resetDemo();
