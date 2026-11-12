@@ -3,11 +3,14 @@ import {
   bewaarRestje,
   dagenOud,
   gekooktTekst,
+  planRestje,
   restjes,
+  restjeVeilig,
   verwijderRestje,
   voorTeStellenRestjes,
   zetRestjeTerug,
 } from "./restjes";
+import { restjesVoorWeek } from "./restjes-week";
 
 const opslag = new Map<string, string>();
 beforeEach(() => {
@@ -61,5 +64,42 @@ describe("restjes (op het toestel)", () => {
     expect(gekooktTekst({ gekookt: MAANDAG_19U }, dagLater(1, 8))).toBe("gisteren gekookt");
     expect(gekooktTekst({ gekookt: MAANDAG_19U }, dagLater(2))).toBe("2 dagen geleden gekookt");
     expect(dagenOud({ gekookt: MAANDAG_19U }, dagLater(3))).toBe(3);
+  });
+});
+
+describe("restjes plannen, in Week en veilig", () => {
+  it("ingepland = niet meer voorgesteld; ongedaan maken maakt het weer vrij", () => {
+    const r = bewaarRestje("u1", { titel: "Soep", receptId: "r1", porties: 2 }, MAANDAG_19U);
+    planRestje("u1", r.id, "2026-11-10");
+    expect(voorTeStellenRestjes("u1", dagLater(1))).toHaveLength(0);
+    expect(restjes("u1", dagLater(1))[0]!.gepland).toBe("2026-11-10");
+    planRestje("u1", r.id, null);
+    expect(voorTeStellenRestjes("u1", dagLater(1))).toHaveLength(1);
+  });
+  it("Week: oudste restje op de eerste lege dag waarop het nog goed is, één per dag", () => {
+    const oud = bewaarRestje("u1", { titel: "Stoofvlees", receptId: "a", porties: 2 }, MAANDAG_19U);
+    const nieuw = bewaarRestje("u1", { titel: "Soep", receptId: "b", porties: 2 }, dagLater(2, 19));
+    const uit = restjesVoorWeek(
+      [nieuw, oud],
+      ["2026-11-11", "2026-11-12", "2026-11-13", "2026-11-20"],
+    );
+    expect(uit.map((u) => [u.datum, u.restje.titel])).toEqual([
+      ["2026-11-11", "Stoofvlees"],
+      ["2026-11-12", "Soep"],
+    ]);
+    // Na 3 dagen past het restje nergens meer.
+    expect(restjesVoorWeek([oud], ["2026-11-13"])).toEqual([]);
+    // Geen geregistreerde restjes = geen restjes.
+    expect(restjesVoorWeek([], ["2026-11-11"])).toEqual([]);
+  });
+  it("veilig: zonder allergieën altijd; met allergieën alleen met bekende, veilige ingrediënten", () => {
+    const r = { titel: "Spaghetti bolognese" };
+    expect(restjeVeilig(r, undefined, {})).toBe(true);
+    expect(restjeVeilig(r, undefined, { allergieen: ["selder"] })).toBe(false);
+    expect(restjeVeilig(r, ["spaghetti", "gehakt"], { allergieen: ["gluten"] })).toBe(false);
+    expect(restjeVeilig({ titel: "Soep" }, ["pompoen", "ui"], { allergieen: ["gluten"] })).toBe(
+      true,
+    );
+    expect(restjeVeilig(r, ["spaghetti", "gehakt"], { dieet: "vegetarisch" })).toBe(false);
   });
 });

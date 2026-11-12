@@ -11,7 +11,12 @@ const NEP = "http://127.0.0.1:54439/rest/v1";
 const ZALM = "/recepten/aaaaaaaa-0000-4000-8000-000000000003"; // 4 stappen
 const SLEUTEL = `foodlo:restjes:${DEMO_USER_ID}`;
 
-async function zetRestje(page: Page, titel: string, dagenGeleden: number) {
+async function zetRestje(
+  page: Page,
+  titel: string,
+  dagenGeleden: number,
+  receptId: string | null = null,
+) {
   await page.addInitScript(
     ([sleutel, waarde]) => {
       if (!window.localStorage.getItem(sleutel)) window.localStorage.setItem(sleutel, waarde);
@@ -22,7 +27,7 @@ async function zetRestje(page: Page, titel: string, dagenGeleden: number) {
         {
           id: "r-1",
           titel,
-          receptId: null,
+          receptId,
           porties: 2,
           gekookt: Date.now() - dagenGeleden * 86400000,
         },
@@ -162,5 +167,61 @@ test("320 px en tekst 200 %: restjes op Vandaag en in Keuken lopen niet uit", as
     });
     expect(uit, pad).toEqual({ scroll: 0, te: [] });
   }
+  void extern;
+});
+
+const SPAGHETTI = "aaaaaaaa-0000-4000-8000-000000000004";
+
+test("Week: een restje krijgt voorrang op de eerste lege dag; plannen en ongedaan maken", async ({
+  page,
+  extern,
+}) => {
+  await fetch(`${NEP}/meal_plan?id=neq.0`, { method: "DELETE" });
+  await zetRestje(page, "Spaghetti bolognese", 1, SPAGHETTI);
+  await page.goto("/planner");
+  const kaart = page.getByRole("region", { name: "Vul aan met voorstellen" });
+  await expect(kaart).toBeVisible({ timeout: 60_000 });
+  await expect(kaart.getByRole("listitem").first()).toContainText("Restjes: Spaghetti bolognese");
+  await expect(kaart).toContainText("Eerst je restjes");
+  // Het restje staat niet ook nog eens als recept op de kaart.
+  await expect(kaart.getByRole("button", { name: /^Plan Spaghetti bolognese op / })).toHaveCount(0);
+  expect(await axeErnstig(page)).toEqual([]);
+
+  await kaart.getByRole("button", { name: /^Plan restjes van Spaghetti bolognese op / }).click();
+  await expect
+    .poll(async () => (await restjesPlan()).map((p) => p["custom_title"]))
+    .toEqual(["Restjes: Spaghetti bolognese"]);
+  await expect(kaart.getByText("Restjes: Spaghetti bolognese")).toHaveCount(0);
+  await page.getByRole("button", { name: "Ongedaan maken", exact: true }).first().click();
+  await expect.poll(async () => (await restjesPlan()).length).toBe(0);
+  await expect(kaart.getByText("Restjes: Spaghetti bolognese")).toBeVisible();
+  void extern;
+});
+
+test("allergie: een restje met gluten of zonder bekende ingrediënten wordt niet voorgesteld", async ({
+  page,
+  extern,
+}) => {
+  await fetch(`${NEP}/meal_plan?id=neq.0`, { method: "DELETE" });
+  await page.addInitScript(
+    ([id]) =>
+      window.localStorage.setItem(
+        `foodlo:kennismaking:${id}`,
+        JSON.stringify({ allergieen: ["gluten"] }),
+      ),
+    [DEMO_USER_ID],
+  );
+  await zetRestje(page, "Spaghetti bolognese", 1, SPAGHETTI);
+  await page.goto("/");
+  await page.waitForLoadState("networkidle").catch(() => undefined);
+  await expect(page.getByText("Wat eten we vandaag?")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Nog restjes" })).toHaveCount(0);
+  await page.goto("/planner");
+  const kaart = page.getByRole("region", { name: "Vul aan met voorstellen" });
+  await expect(kaart).toBeVisible({ timeout: 60_000 });
+  await expect(kaart.getByText(/^Restjes:/)).toHaveCount(0);
+  // Wel nog zichtbaar in Keuken: het is je eigen lijst, geen voorstel.
+  await page.goto("/voorraad");
+  await expect(page.getByRole("region", { name: "Restjes" })).toContainText("Spaghetti bolognese");
   void extern;
 });

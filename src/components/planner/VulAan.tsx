@@ -4,8 +4,10 @@
  * Eén tik per dag of alles samen; daarna altijd "Ongedaan maken" (via het weekmenu).
  * Dezelfde harde regels als overal (allergie, dieet, liever niet, Niet nu). Uitschakelbaar met
  * "Slimme voorstellen". Pas zichtbaar als alle ingrediënten geladen zijn (allergiecontrole).
+ * Restjes gaan voor: een geregistreerd restje krijgt de eerste lege dag waarop het nog goed is
+ * (hooguit 3 dagen na het koken), de andere dagen krijgen recepten.
  */
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { CalendarPlus, Loader2 } from "lucide-react";
@@ -13,9 +15,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useRestjes } from "@/hooks/useRestjes";
 import { useVoorstelBronnen } from "@/hooks/useVoorstelBronnen";
 import { vatSamen } from "@/lib/intelligentie/geschiedenis";
 import { herstelNietNu, nietNuLijst, zetNietNu } from "@/lib/intelligentie/niet-nu";
+import { gekooktTekst, planRestje, restjeVeilig, type Restje } from "@/lib/intelligentie/restjes";
+import { restjesVoorWeek } from "@/lib/intelligentie/restjes-week";
 import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
 import { vulAan } from "@/lib/intelligentie/vul-aan";
 import { leesKennismaking } from "@/lib/kennismaking";
@@ -47,9 +52,13 @@ export function VulAan({
   const [nietNu, setNietNu] = useState<string[]>([]);
   const [bezig, setBezig] = useState<string | null>(null);
   useEffect(() => setNietNu(nietNuLijst(user?.id)), [user?.id]);
-  const actief = slim && legeDagen.length >= 2;
+  const qc = useQueryClient();
+  const alleRestjes = useRestjes();
+  // Zonder geregistreerde restjes: geen restjes (niets verondersteld).
+  const mogelijkeRestjes = slim ? restjesVoorWeek(alleRestjes, legeDagen) : [];
+  const actief = slim && (legeDagen.length >= 2 || mogelijkeRestjes.length > 0);
 
-  const { data: recepten = [] } = useQuery({
+  const { data: recepten = [], isSuccess: receptenKlaar } = useQuery({
     queryKey: ["vul-aan-recepten", user?.id],
     enabled: !!user && actief,
     queryFn: async () => {
@@ -69,12 +78,26 @@ export function VulAan({
     actief,
   );
 
+  // Klaar om te tonen: alle ingrediënten geladen (of er zijn geen eigen recepten).
+  const klaar = isSuccess || (receptenKlaar && recepten.length === 0);
+
+  // Restjes eerst, met dezelfde allergie- en dieetregel (onbekende ingrediënten = niet voorstellen).
+  const restjesRijen = useMemo(() => {
+    if (!actief || !klaar) return [];
+    const kennis = leesKennismaking(user?.id);
+    const veilig = alleRestjes.filter((r) =>
+      restjeVeilig(r, r.receptId ? bronnen?.ingredienten[r.receptId] : undefined, kennis),
+    );
+    return restjesVoorWeek(veilig, legeDagen);
+  }, [actief, klaar, alleRestjes, bronnen, legeDagen, user?.id]);
+
   const voorstellen = useMemo(() => {
     if (!bronnen || !actief) return [];
     const kennis = leesKennismaking(user?.id);
+    const restjesDagen = new Set(restjesRijen.map((r) => r.datum));
     const minuten = Object.fromEntries(recepten.map((r) => [r.id, minutenVan(r)]));
     return vulAan({
-      dagen: legeDagen,
+      dagen: legeDagen.filter((d) => !restjesDagen.has(d)),
       kandidaten: recepten.map((r) => ({
         id: r.id,
         title: r.title,
@@ -103,9 +126,20 @@ export function VulAan({
       alGepland,
       max: 3,
     });
-  }, [bronnen, actief, recepten, legeDagen, weekmenu, nietNu, alGepland, vandaag, user?.id]);
+  }, [
+    bronnen,
+    actief,
+    recepten,
+    legeDagen,
+    weekmenu,
+    nietNu,
+    alGepland,
+    vandaag,
+    user?.id,
+    restjesRijen,
+  ]);
 
-  if (!actief || !isSuccess || !voorstellen.length) return null;
+  if (!actief || !klaar || (!voorstellen.length && !restjesRijen.length)) return null;
   const receptVan = (id: string) => recepten.find((r) => r.id === id)!;
 
   async function zet(rijen: { datum: string; id: string }[], sleutel: string) {
@@ -115,6 +149,50 @@ export function VulAan({
         rijen.map((r) => ({ datum: r.datum, moment, recept: receptVan(r.id), idee: null })),
       );
       void meet("week.vul_aan", undefined, { aantal: rijen.length });
+    } finally {
+      setBezig(null);
+    }
+  }
+
+  /** Restjes op een dag: "Restjes: …" zonder recept (niets op de lijst), met ongedaan maken. */
+  async function planRestjes(r: Restje, datum: string) {
+    if (!user) return;
+    setBezig(`restje-${r.id}`);
+    try {
+      const { data, error } = await supabase
+        .from("meal_plan")
+        .insert({
+          user_id: user.id,
+          recipe_id: null,
+          custom_title: `Restjes: ${r.titel}`,
+          plan_date: datum,
+          meal_type: moment,
+          personen: r.porties,
+          group_id: null,
+        })
+        .select("id")
+        .single();
+      if (error || !data) throw error ?? new Error("geen id");
+      planRestje(user.id, r.id, datum);
+      void meet("week.restjes", undefined, { porties: r.porties });
+      const vernieuw = () => {
+        for (const k of ["meal-plan", "home-dagmenu", "home-week"])
+          void qc.invalidateQueries({ queryKey: [k] });
+      };
+      vernieuw();
+      toast.success(`Restjes van ${r.titel} staan op ${labelVoor(datum)}`, {
+        duration: 8000,
+        action: {
+          label: "Ongedaan maken",
+          onClick: async () => {
+            await supabase.from("meal_plan").delete().eq("id", data.id);
+            planRestje(user.id, r.id, null);
+            vernieuw();
+          },
+        },
+      });
+    } catch {
+      toast.error("Dat lukte niet. Er is niets veranderd; probeer het opnieuw.");
     } finally {
       setBezig(null);
     }
@@ -142,9 +220,37 @@ export function VulAan({
         Vul aan met voorstellen
       </h2>
       <p className="mt-1 text-base text-muted-foreground">
-        Nog {legeDagen.length} dagen zonder maaltijd. Foodlo stelt voor uit je eigen recepten.
+        Nog {legeDagen.length} {legeDagen.length === 1 ? "dag" : "dagen"} zonder maaltijd.{" "}
+        {restjesRijen.length
+          ? "Eerst je restjes, daarna je eigen recepten."
+          : "Foodlo stelt voor uit je eigen recepten."}
       </p>
       <ul className="mt-4 space-y-3">
+        {restjesRijen.map(({ datum, restje: r }) => (
+          <li key={`restje-${r.id}`} className="min-w-0 rounded-2xl bg-muted/50 p-3">
+            <p className="text-[0.95rem] font-semibold capitalize text-muted-foreground">
+              {labelVoor(datum)}
+            </p>
+            <p className="text-lg font-semibold leading-snug break-words">Restjes: {r.titel}</p>
+            <p
+              data-redenen
+              className="mt-0.5 text-[0.95rem] leading-snug break-words text-muted-foreground"
+            >
+              Restje, {gekooktTekst(r)} · {r.porties} {r.porties === 1 ? "portie" : "porties"}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button
+                onClick={() => void planRestjes(r, datum)}
+                disabled={!!bezig}
+                aria-label={`Plan restjes van ${r.titel} op ${labelVoor(datum)}`}
+                className="h-12 min-w-[48px] px-4 text-base"
+              >
+                {bezig === `restje-${r.id}` ? <Loader2 className="size-5 animate-spin" /> : null}
+                Plan restjes
+              </Button>
+            </div>
+          </li>
+        ))}
         {voorstellen.map(({ datum, aanbeveling: a }) => (
           <li key={datum} className="min-w-0 rounded-2xl bg-muted/50 p-3">
             <p className="text-[0.95rem] font-semibold capitalize text-muted-foreground">

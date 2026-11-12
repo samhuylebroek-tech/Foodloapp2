@@ -93,9 +93,17 @@ export const FUNCTIES: Functie[] = [
       "src/components/kringloop/RestjeVraag.tsx",
       "src/components/kringloop/RestjesVoorstel.tsx",
       "src/components/kringloop/RestjesLijst.tsx",
+      "src/components/planner/VulAan.tsx",
       "src/lib/intelligentie/restjes.ts",
     ],
-    labels: ["Blijft er iets over?", "Nog restjes", "Eet vanavond restjes", "Restjes", "Is op"],
+    labels: [
+      "Blijft er iets over?",
+      "Nog restjes",
+      "Eet vanavond restjes",
+      "Plan restjes",
+      "Restjes",
+      "Is op",
+    ],
   },
   {
     sleutel: "week.vul-aan",

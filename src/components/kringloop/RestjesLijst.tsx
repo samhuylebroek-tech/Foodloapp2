@@ -6,6 +6,7 @@
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useRestjes } from "@/hooks/useRestjes";
+import { labelVoor } from "@/components/planner/gedeeld";
 import {
   RESTJE_VOORSTEL_DAGEN,
   dagenOud,
@@ -33,6 +34,11 @@ export function RestjesLijst() {
               <span className="block text-[0.95rem] text-muted-foreground">
                 {gekooktTekst(r)} · {r.porties} {r.porties === 1 ? "portie" : "porties"}
               </span>
+              {r.gepland ? (
+                <span className="block text-[0.95rem] font-semibold text-primary">
+                  Gepland: {labelVoor(r.gepland)}
+                </span>
+              ) : null}
               {dagenOud(r) > RESTJE_VOORSTEL_DAGEN ? (
                 <span className="block text-[0.95rem] font-semibold text-[oklch(0.42_0.1_55)] dark:text-[oklch(0.85_0.09_75)]">
                   Kijk zelf of het nog goed is.

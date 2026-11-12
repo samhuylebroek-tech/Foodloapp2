@@ -159,7 +159,7 @@ Elke kandidaat krijgt een score als som van gewogen factoren, en elke factor lev
 | Gebruik eerst (usecase 6): "al X dagen in huis" + reden op Vandaag + volgorde "Wat kan ik koken?" | ✅ gebouwd + unit + E2E (geen migratie; geen houdbaarheidsclaim) | `src/lib/intelligentie/gebruik-eerst.ts`, `tests/e2e/gebruik-eerst.spec.ts` |
 | Seizoenslijst per product (België, volle grond, ongeveer): reden "… is nu in het seizoen" en Ontdek-thema "Nu in het seizoen" | ✅ gebouwd + unit + E2E | `src/lib/intelligentie/seizoen-producten.ts`, `src/lib/themas.ts` |
 | Restjes (usecase 18): "Blijft er iets over?" na het koken, "Eet vanavond restjes" op Vandaag (zonder lijst), "Restjes" met "Is op" in Keuken; hooguit 3 dagen voorgesteld; op het toestel | ✅ gebouwd + unit + E2E | `restjes.ts`, `RestjeVraag/RestjesVoorstel/RestjesLijst.tsx`, `tests/e2e/restjes.spec.ts` |
-| Restjes in Week ("Vul aan" kiest eerst restjes voor de eerste lege dag) | ❌ nog niet | volgende stap |
+| Restjes in Week: voorrang op de eerste lege dag waarop ze nog goed zijn (≤ 3 dagen), "Plan restjes" met ongedaan maken; ingepland = niet opnieuw voorgesteld; allergie- en dieetregel ook op restjes (onbekende ingrediënten = niet voorstellen, ook op Vandaag) | ✅ gebouwd + unit + E2E | `restjes-week.ts`, `VulAan.tsx`, `tests/e2e/restjes.spec.ts` |
 | "Niet voor mij", feedback op het account | ❌ wacht op 0006 (staging) | I-2 |
 
 Geen nieuwe externe dienst, geen AI-oproep, geen gezondheidsgegevens buiten het toestel. Twee extra leesvragen per bezoek aan Vandaag wanneer er niets gepland is (`recipe_ratings`, `favorites`) plus het weekmenu van de laatste 180 dagen.

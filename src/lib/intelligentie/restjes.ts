@@ -8,6 +8,9 @@
  * goedgekeurde migratie (zie FOODLOAPP-INTELLIGENCE-ARCHITECTUUR §8).
  * Geen gezondheidsgegevens: alleen de naam van het gerecht, porties en de kookdatum.
  */
+import type { Dieet } from "@/lib/kennismaking";
+import { magVoorstellen } from "@/lib/veiligheid";
+
 const DAG = 86400000;
 /** Na zoveel dagen stelt Foodlo een restje niet meer voor (algemene richtlijn: 2 à 3 dagen in de koelkast). */
 export const RESTJE_VOORSTEL_DAGEN = 3;
@@ -21,6 +24,8 @@ export type Restje = {
   porties: number;
   /** Tijdstip van koken (ms). */
   gekookt: number;
+  /** Ingepland om op te eten (YYYY-MM-DD): dan niet opnieuw voorstellen. */
+  gepland?: string;
 };
 
 const sleutel = (userId: string) => `foodlo:restjes:${userId}`;
@@ -63,7 +68,7 @@ export function restjes(userId: string | null | undefined, nu = Date.now()): Res
 
 /** Restjes die Foodlo nog mag voorstellen (hooguit 3 dagen oud). */
 export function voorTeStellenRestjes(userId: string | null | undefined, nu = Date.now()) {
-  return restjes(userId, nu).filter((r) => dagenOud(r, nu) <= RESTJE_VOORSTEL_DAGEN);
+  return restjes(userId, nu).filter((r) => !r.gepland && dagenOud(r, nu) <= RESTJE_VOORSTEL_DAGEN);
 }
 
 export function bewaarRestje(
@@ -96,6 +101,18 @@ export function verwijderRestje(userId: string, id: string): Restje | null {
   return weg;
 }
 
+/** Ingepland om op te eten (of `null`: weer vrij, bv. bij ongedaan maken). */
+export function planRestje(userId: string, id: string, datum: string | null) {
+  schrijf(
+    userId,
+    lees(userId).map((r) => {
+      if (r.id !== id) return r;
+      const { gepland: _weg, ...rest } = r;
+      return datum ? { ...rest, gepland: datum } : rest;
+    }),
+  );
+}
+
 /** Ongedaan maken: een verwijderd restje terugzetten zoals het was. */
 export function zetRestjeTerug(userId: string, r: Restje) {
   schrijf(userId, [...lees(userId).filter((x) => x.id !== r.id), r]);
@@ -115,4 +132,22 @@ export function gekooktTekst(r: Pick<Restje, "gekookt">, nu = Date.now()): strin
   if (d <= 0) return "vandaag gekookt";
   if (d === 1) return "gisteren gekookt";
   return `${d} dagen geleden gekookt`;
+}
+
+/**
+ * Mag Foodlo dit restje voorstellen? Dezelfde regel als voor recepten: met allergieën of een
+ * beperkend dieet alleen als de ingrediënten van het recept bekend en veilig zijn.
+ */
+export function restjeVeilig(
+  r: Pick<Restje, "titel">,
+  ingredienten: readonly string[] | undefined,
+  wie: { allergieen?: readonly string[] | undefined; dieet?: Dieet | null | undefined },
+): boolean {
+  const streng =
+    (wie.allergieen?.length ?? 0) > 0 ||
+    wie.dieet === "vegetarisch" ||
+    wie.dieet === "veganistisch" ||
+    wie.dieet === "pescotarisch";
+  if (!streng) return true;
+  return magVoorstellen({ title: r.titel, ingredienten: [...(ingredienten ?? [])] }, wie);
 }

@@ -1,9 +1,10 @@
 /**
  * Vandaag, niets gepland (usecase 18): "Nog restjes van …". Eén tik zet "Restjes: …" op vanavond
- * (zonder recept, dus niets op je lijst) en haalt het restje weg; "Ongedaan maken" zet beide terug.
+ * (zonder recept, dus niets op je lijst) en markeert het restje als ingepland; "Ongedaan maken"
+ * zet beide terug. Dezelfde allergie- en dieetregel als overal.
  * Alleen restjes van hooguit 3 dagen. Uit met "Slimme voorstellen".
  */
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Loader2, Soup } from "lucide-react";
 import { toast } from "sonner";
@@ -14,11 +15,12 @@ import {
   RESTJE_VOORSTEL_DAGEN,
   dagenOud,
   gekooktTekst,
-  verwijderRestje,
-  zetRestjeTerug,
+  planRestje,
+  restjeVeilig,
   type Restje,
 } from "@/lib/intelligentie/restjes";
 import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
+import { leesKennismaking } from "@/lib/kennismaking";
 import { meet } from "@/lib/meten";
 import { lokaleDatum } from "@/lib/tijd";
 import { useT, useVoorkeuren } from "@/lib/voorkeuren";
@@ -30,8 +32,27 @@ export function RestjesVoorstel() {
   const { momenten } = useVoorkeuren();
   const [slim] = useSlimmeVoorstellen();
   const [bezig, setBezig] = useState(false);
-  const lijst = useRestjes().filter((r) => dagenOud(r) <= RESTJE_VOORSTEL_DAGEN);
-  const restje = lijst[0];
+  const lijst = useRestjes().filter((r) => !r.gepland && dagenOud(r) <= RESTJE_VOORSTEL_DAGEN);
+  // Dezelfde veiligheidsregel: met allergieën of dieet alleen met bekende, veilige ingrediënten.
+  const kennis = leesKennismaking(user?.id);
+  const ids = [...new Set(lijst.map((r) => r.receptId).filter((x): x is string => !!x))];
+  const { data: ingr, isSuccess } = useQuery({
+    queryKey: ["restjes-ingredienten", ids.join(",")],
+    enabled: slim && ids.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("recipe_ingredients")
+        .select("recipe_id, name")
+        .in("recipe_id", ids);
+      if (error) throw error;
+      const per: Record<string, string[]> = {};
+      for (const i of data ?? []) (per[i.recipe_id] ??= []).push(i.name);
+      return per;
+    },
+  });
+  const restje = lijst.find((r) =>
+    restjeVeilig(r, r.receptId && isSuccess ? (ingr?.[r.receptId] ?? []) : undefined, kennis),
+  );
   if (!slim || !restje || !user) return null;
 
   const vernieuw = () => {
@@ -60,7 +81,8 @@ export function RestjesVoorstel() {
         .select("id")
         .single();
       if (error || !data) throw error ?? new Error("geen id");
-      verwijderRestje(user.id, r.id);
+      // Ingepland, niet weg: het restje blijft in Keuken staan tot je "Is op" tikt.
+      planRestje(user.id, r.id, lokaleDatum());
       void meet("restjes.vanavond", undefined, { dagen: dagenOud(r) });
       vernieuw();
       toast.success(`Restjes van ${r.titel} staan op vanavond`, {
@@ -69,7 +91,7 @@ export function RestjesVoorstel() {
           label: "Ongedaan maken",
           onClick: async () => {
             await supabase.from("meal_plan").delete().eq("id", data.id);
-            zetRestjeTerug(user.id, r);
+            planRestje(user.id, r.id, null);
             vernieuw();
           },
         },
