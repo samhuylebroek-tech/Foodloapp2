@@ -93,9 +93,12 @@ Stand 2026-11-12, `v2/dev`, lokaal. Dit plan vat de bestaande documenten samen t
 
 ### Overdrachtsplan (pas na jouw schriftelijke akkoord)
 1. Laatste controle: geheimenscan (§5) en een volledige lokale regressie.
-2. `v2/dev` pushen naar een **nieuwe** branch op GitHub (bv. `v2/dev`, die er al is maar 122 commits achterloopt). Geen force-push. `main` en de originele branches blijven onaangeroerd, zodat Lovable niets merkt.
+2. `v2/dev` pushen naar de bestaande branch `v2/dev` op GitHub.
+   - Die loopt 123 commits achter en heeft niets wat lokaal ontbreekt, dus het is een gewone vooruitspoeling: geen force-push.
+   - `main` en de originele branches blijven onaangeroerd, zodat Lovable niets merkt.
 3. CI controleren op GitHub. Eerst groen, daarna pas verder.
 4. Een pull request naar `main` komt pas **na de stagingtest**, en alleen met jouw akkoord, want Lovable rolt `main` uit.
+   - Eerst de 3 nieuwe Lovable-commits van `main` (11 november, 4 bestanden: aanmeldopslag in de preview en de databanktypes) in V2 samenvoegen en opnieuw testen.
 
 ## 5. Geheimen en persoonsgegevens in de geschiedenis (gecontroleerd 2026-11-12)
 Gecontroleerd: alle branches, 1 527 commits. Alleen namen van bestanden, nooit de waarden.
