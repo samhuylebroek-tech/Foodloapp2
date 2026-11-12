@@ -74,6 +74,17 @@ export const FUNCTIES: Functie[] = [
     labels: ["Daarna", "Deze week", "Start koken"],
   },
   {
+    sleutel: "vandaag.voorstellen",
+    titel: "Voorstellen voor vanavond, met de reden erbij",
+    module: "vandaag",
+    route: "/",
+    bestanden: [
+      "src/components/kringloop/VanavondVoorstellen.tsx",
+      "src/lib/intelligentie/voorstel.ts",
+    ],
+    labels: ["Met wat je in huis hebt", "Niet nu", "Waarom zie ik dit?"],
+  },
+  {
     sleutel: "week.plannen",
     titel: "Een gerecht inplannen",
     module: "week",

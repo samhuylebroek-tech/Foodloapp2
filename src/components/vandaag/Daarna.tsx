@@ -31,18 +31,19 @@ export function Daarna({
                 <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-honing/25 text-foreground">
                   <Sparkles className="size-6" aria-hidden />
                 </span>
-                <span className="min-w-0 text-lg">
+                <span className="min-w-0 text-lg break-words hyphens-auto">
                   <span className="font-semibold">
                     {s.aantal} {t(s.aantal === 1 ? "ding ontbreekt" : "dingen ontbreken")}
                   </span>{" "}
                   <span className="text-muted-foreground">{t("voor je komende maaltijden")}</span>
                 </span>
-                {/* Smal scherm: knop onder de tekst, zodat de zin niet in stukjes breekt. */}
+                {/* Smal scherm: knop onder de tekst, zodat de zin niet in stukjes breekt.
+                    Onder 400 px over de volle breedte (BUG-126: 320 px met tekst 200 %). */}
                 <button
                   type="button"
                   onClick={onAanvullen}
                   disabled={bezig}
-                  className="col-start-2 inline-flex min-h-12 items-center gap-2 justify-self-start rounded-full bg-primary px-4 text-base font-semibold text-primary-foreground disabled:opacity-70 sm:col-start-3"
+                  className="col-span-2 inline-flex min-h-12 max-w-full items-center gap-2 justify-self-start rounded-full bg-primary px-4 text-left text-base font-semibold text-primary-foreground disabled:opacity-70 min-[400px]:col-span-1 min-[400px]:col-start-2 sm:col-start-3"
                 >
                   {bezig ? (
                     <Loader2 className="size-5 animate-spin" aria-hidden />
@@ -55,7 +56,7 @@ export function Daarna({
             ) : (
               <Link
                 to={s.soort === "week-vrij" ? "/planner" : "/boodschappen"}
-                className="-mx-4 -my-3 flex min-h-20 flex-1 items-center gap-4 px-4 py-3 hover:bg-muted/50"
+                className="-mx-4 -my-3 flex min-h-20 min-w-0 flex-1 items-center gap-3 px-4 py-3 hover:bg-muted/50 min-[400px]:gap-4"
               >
                 <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-secondary text-primary">
                   {s.soort === "week-vrij" ? (
@@ -64,7 +65,8 @@ export function Daarna({
                     <ShoppingCart className="size-6" aria-hidden />
                   )}
                 </span>
-                <span className="min-w-0 flex-1 text-lg">
+                {/* BUG-126: lange woorden ("boodschappenlijst") mogen afbreken bij grote tekst. */}
+                <span className="min-w-0 flex-1 text-lg break-words hyphens-auto">
                   {s.soort === "week-vrij" ? (
                     <>
                       <span className="font-semibold">

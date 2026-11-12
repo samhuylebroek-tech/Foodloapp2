@@ -37,7 +37,7 @@ Niets uit de oorspronkelijke documenten is weggelaten; die blijven geldig.
 | 3 | **BUG-097 / 0002** beheerregels: live alleen-lezen controle en daarna 0002 op staging | Ja | Databank volgt dezelfde rechten als de app | Latent risico zodra er teamleden komen |
 | 4 | **BUG-011**: schema van live vergelijken met de repo (op staging) | Ja | Betrouwbare basis voor elke migratie | Elke migratie blijft een gok |
 | 5 | **0004** (weekmenuvoorkeuren alleen voor jezelf, BUG-119) | Ja, op staging | "Liever niet"-tekst niet meer zichtbaar voor gezin of uitnodigers | Mogelijke gezondheidsinfo blijft leesbaar |
-| 6 | **0003 en 0003b** bewaartermijnen (zie §G) | Ja, met de aangepaste termijnen in §G | Minder gegevens = minder risico; privacybeleid concreet | AVG-beginsel opslagbeperking niet ingevuld |
+| 6 | **0003 en 0003b** bewaartermijnen (zie §G; 0003b is intussen aangepast aan de strengere termijnen, lokaal getest) | Ja, met de aangepaste termijnen in §G | Minder gegevens = minder risico; privacybeleid concreet | AVG-beginsel opslagbeperking niet ingevuld |
 | 7 | **0005** allergieën en voorkeuren per gezinslid | Ja, maar **na** 0004 en met toestemming per lid | Echte gezinspersonalisatie | Allergieën blijven per toestel (werkt, maar niet gedeeld) |
 | 8 | **Help Center-artikels nalezen** (22): wie leest na en keurt goed? | Jij of een vertrouwd persoon, 1–2 uur | Help Center zichtbaar in productie | In productie alleen "wordt nagelezen" + support |
 | 9 | **Proefvideo's** in de app zetten | Pas na staging en echte toestellen | Tutorials met beeld | Alleen ondertitels als tekst (werkt) |
@@ -52,7 +52,7 @@ Niets uit de oorspronkelijke documenten is weggelaten; die blijven geldig.
 | 14 | Beginnen **zonder generatieve AI** (regels + redenen) | Ja | Voorspelbaar, goedkoop, testbaar; AI later per onderdeel |
 | 15 | **Weerdienst**: Open-Meteo (commerciële licentie nodig voor een commerciële app) of een andere | Open-Meteo via server-proxy, eerst offerte of licentie nakijken | Kleine maandkost (onzeker, zie RISICO-EN-KOSTENANALYSE); het IP-adres van de gebruiker gaat niet naar de weerdienst |
 | 16 | **Locatie** voor het weer: gemeente of postcode in plaats van GPS | Ja (gemeente of postcode, zelf gekozen) | Minder privacyrisico, geen GPS-toestemming nodig |
-| 17 | **Feedbacktabel** 0006 en **houdbaarheid** in de voorraad 0007 | Ja, op staging | Leren en verspilling tegengaan |
+| 17 | **Feedbacktabel** 0006 en **houdbaarheid** in de voorraad 0007 (beide geschreven en lokaal getest, niet uitgevoerd) | Ja, op staging | Leren en verspilling tegengaan |
 | 18 | **Proactieve push** (max. 1 per dag, opt-in) | Ja, na de mobiele validatie | Meer gebruik, risico op irritatie (daarom opt-in en uitknop) |
 | 19 | **AI-budget** per maand (Lovable AI) | Behoud de huidige budgetrem; eerst €0 extra voor fase 2 | Geen verrassingen |
 | 20 | **Gezondheidsgegevens nooit naar externe AI** | Ja (vast principe) | Sommige slimme functies kunnen dan niet; dat is de bedoeling |

@@ -54,6 +54,30 @@ export const ARTIKELS: Artikel[] = [
     ...AI,
   },
   {
+    slug: "voorstellen",
+    titel: "Waarom stelt Foodlo dit voor?",
+    module: "vandaag",
+    soort: "vraag",
+    niveau: "alle",
+    samenvatting:
+      "Staat er vandaag nog niets gepland, dan stelt Foodlo tot drie gerechten uit je eigen recepten voor. Onder elk gerecht staat waarom: bijvoorbeeld wat je al in huis hebt, hoe snel het klaar is of dat je het lang niet maakte.",
+    stappen: [
+      'Op Vandaag zie je onder "Met wat je in huis hebt" tot drie voorstellen. Onder de naam staan één of twee redenen.',
+      "Foodlo kijkt naar je voorraad, je eigen kooktijd op deze weekdag, het seizoen, feestdagen die eraan komen, je sterren en favorieten, en wat je onlangs at.",
+      'Tik op "Vanavond" om het gerecht in te plannen. Wat ontbreekt, komt op je lijst. Je kan dat meteen ongedaan maken.',
+      'Tik op "Niet nu" als je het even niet wil. Je ziet het voorstel dan een week niet.',
+      "Gerechten met een allergeen dat je bij de kennismaking aanduidde, en wat je bij je weekmenu onder liever niet zette, stelt Foodlo nooit voor.",
+    ],
+    tips: [
+      "Foodlo doet nooit iets vanzelf: elk voorstel vraagt jouw tik.",
+      "Je allergieën en dieet blijven op dit toestel. Het voorstel wordt op je toestel berekend.",
+    ],
+    functies: ["vandaag.voorstellen"],
+    trefwoorden: ["voorstel", "voorstellen", "waarom", "suggestie", "idee", "vanavond", "niet nu"],
+    doeHetNu: { route: "/", label: "Open Vandaag" },
+    ...AI,
+  },
+  {
     slug: "recept-toevoegen",
     titel: "Een recept toevoegen",
     module: "keuken",

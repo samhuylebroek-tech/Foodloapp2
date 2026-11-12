@@ -141,5 +141,21 @@ Elke kandidaat krijgt een score als som van gewogen factoren, en elke factor lev
 4. **I-4:** Opt-in push met voorstellen + het huishouden (0005).
 5. **I-5:** Optionele AI-ideeën binnen budget.
 
+### Stand 2026-11-11 (lokaal gebouwd op `v2/dev`, niet gepusht of uitgerold)
+| Onderdeel | Stand | Waar |
+|---|---|---|
+| Context Engine: dag, uur, seizoen, feestdagen BE/NL (10 dagen vooraf, Pasen berekend) | ✅ gebouwd + unittests | `src/lib/intelligentie/context.ts` |
+| Cooking History: laatst gepland, komende 7 dagen, gewone kooktijd per weekdag (pas vanaf 3 keer; nooit een stereotype) | ✅ gebouwd + unittests | `src/lib/intelligentie/geschiedenis.ts` |
+| Meal Intelligence: score + max. 2 redenen; harde regels allergeen, "liever niet", dieet, "Niet nu" | ✅ gebouwd + unittests per factor | `src/lib/intelligentie/voorstel.ts` |
+| Voorstel op de Nu-kaart ("Met wat je in huis hebt", anders "Ideeën voor vanavond") met "Niet nu" en "Waarom zie ik dit?" | ✅ gebouwd + E2E (telefoon, 360, desktop, 320 px + 200 %) | `VanavondVoorstellen.tsx`, `tests/e2e/intelligentie.spec.ts` |
+| "Niet nu" 7 dagen | ✅ op het toestel; naar het account pas met 0006 | `src/lib/intelligentie/niet-nu.ts` |
+| Help-artikel "Waarom stelt Foodlo dit voor?" | ✅ concept (nalezing nodig, beslissing 8) | `src/lib/hulp/artikels.ts` |
+| Weerfactor | ⚙️ in de score voorzien en getest, **geen databron** (beslissing 15/16) | — |
+| "Vul aan met 3 voorstellen" in Week met redenen | ❌ nog niet (Laat Foodlo kiezen werkt zoals voordien) | volgende stap I-1 |
+| Winkelmodus "voor morgen nog nodig" (usecase 9), seizoenslijst per product | ❌ nog niet | volgende stap I-1 |
+| "Niet voor mij", feedback op het account | ❌ wacht op 0006 (staging) | I-2 |
+
+Geen nieuwe externe dienst, geen AI-oproep, geen gezondheidsgegevens buiten het toestel. Twee extra leesvragen per bezoek aan Vandaag wanneer er niets gepland is (`recipe_ratings`, `favorites`) plus het weekmenu van de laatste 180 dagen.
+
 ## 7. Wat dit níét doet
 Geen automatische acties, geen medische claims, geen verkoop van gegevens, geen profilering voor reclame, geen gezondheidsgegevens naar externe AI.

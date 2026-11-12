@@ -227,7 +227,8 @@ export function AppShell({
         className="sticky top-0 z-30 border-b border-border/60 bg-background/90 backdrop-blur-md"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
+        {/* BUG-126: op 320 px met tekst 200 % liep de kop uit; kleinere tussenruimtes onder 400 px. */}
+        <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-2 px-3 min-[400px]:gap-3 min-[400px]:px-4 sm:px-6">
           {toonTerug ? (
             <button
               type="button"
@@ -244,7 +245,13 @@ export function AppShell({
               className="flex min-h-12 shrink-0 items-center gap-2 rounded-xl pr-2"
               aria-label="Foodlo, Vandaag"
             >
-              <img src={logo} alt="" width={30} height={30} className="size-8" />
+              <img
+                src={logo}
+                alt=""
+                width={30}
+                height={30}
+                className="size-[32px] min-[400px]:size-8"
+              />
               <span
                 className={cn(
                   "hidden font-display text-[1.6rem] font-semibold leading-none tracking-tight min-[400px]:inline",
@@ -293,16 +300,17 @@ export function AppShell({
             </ul>
           </nav>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-1 min-[400px]:gap-2">
             <button
               type="button"
               onClick={() => setNieuwOpen(true)}
               aria-haspopup="dialog"
               aria-label={t("Nieuw")}
               data-tour="nieuw"
-              className="inline-flex min-h-12 min-w-12 items-center justify-center gap-1.5 rounded-full bg-primary px-3 text-base font-semibold text-primary-foreground shadow-zacht hover:bg-primary/90 min-[400px]:px-3.5 sm:px-4"
+              className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center gap-1.5 rounded-full bg-primary px-2 text-base font-semibold text-primary-foreground shadow-zacht hover:bg-primary/90 min-[400px]:px-3.5 sm:px-4"
             >
-              <Plus className="size-6 min-[400px]:size-5" aria-hidden />
+              {/* Pictogram in px: groeit niet mee met grote tekst (BUG-126); het label wel. */}
+              <Plus className="size-[24px] min-[400px]:size-5" aria-hidden />
               {/* Smalle telefoon (< 400 px): alleen het plusteken, anders past de kop niet. */}
               <span className="hidden min-[400px]:inline">{t("Nieuw")}</span>
             </button>
@@ -312,13 +320,13 @@ export function AppShell({
               aria-label={t("Meer")}
               aria-current={isActief("/meer") ? "page" : undefined}
               className={cn(
-                "flex min-h-12 min-w-12 items-center justify-center gap-2 rounded-full px-3 text-base font-semibold transition-colors",
+                "flex min-h-[48px] min-w-[48px] items-center justify-center gap-2 rounded-full px-2 text-base font-semibold transition-colors min-[400px]:px-3",
                 isActief("/meer")
                   ? "bg-inkt text-inkt-foreground"
                   : "text-foreground hover:bg-muted",
               )}
             >
-              <CircleUserRound className="size-6" aria-hidden />
+              <CircleUserRound className="size-[24px] min-[400px]:size-6" aria-hidden />
               <span className="hidden min-[400px]:inline">{t("Meer")}</span>
             </Link>
           </div>

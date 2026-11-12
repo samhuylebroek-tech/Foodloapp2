@@ -308,8 +308,9 @@ function StartPage() {
         </div>
 
         <section aria-labelledby="week-titel">
-          <div className="flex items-end justify-between gap-4">
-            <div>
+          {/* BUG-126: bij grote tekst op een smal scherm gaat "Weekmenu" onder de titel. */}
+          <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
+            <div className="min-w-0">
               <h2 id="week-titel" className="text-sectietitel">
                 {t("Deze week")}
               </h2>
