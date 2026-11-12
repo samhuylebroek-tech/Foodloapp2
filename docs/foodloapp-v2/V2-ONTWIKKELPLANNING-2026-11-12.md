@@ -68,8 +68,8 @@ Na elk onderdeel komt een lokale commit, nadat typecheck, unittests, lint-ratche
 |---|---|---|
 | A Eén veiligheidsregel | ✅ gebouwd en getest (BUG-127, 128, 129 opgelost) | `cbe5bfb` |
 | B Slimme voorstellen aan/uit + gebruiker zonder modules | ✅ gebouwd en getest | `6e0275c` |
-| C Gebruik eerst | ✅ gebouwd en getest (zie hieronder) | volgt na regressie |
-| D Seizoenslijst | gepland | — |
+| C Gebruik eerst | ✅ gebouwd en getest (zie hieronder) | `62d0282` |
+| D Seizoenslijst België (reden + thema "Nu in het seizoen") | ✅ gebouwd en getest | zie log |
 | E Week: vul aan | gepland | — |
 
 ### Fase C: hoe "al X dagen in huis" werkt

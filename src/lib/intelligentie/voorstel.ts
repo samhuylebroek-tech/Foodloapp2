@@ -20,6 +20,7 @@ import type { Recipe } from "@/lib/types";
 import { normaliseerTekst } from "@/lib/zoeken";
 import type { Context } from "./context";
 import { dagenTekst, type OudInHuis } from "./gebruik-eerst";
+import { seizoensProductenIn } from "./seizoen-producten";
 import { dagenTussen, type Geschiedenis } from "./geschiedenis";
 
 export type Kandidaat = {
@@ -188,7 +189,20 @@ export function beoordeel(k: Kandidaat, i: Invoer): Aanbeveling {
   }
 
   // Seizoen en feestdag.
-  if (heeftWoord(tekst, c.seizoen.woorden))
+  // Eerst concreet (usecase 16): seizoensproducten van eigen bodem; anders het seizoensthema.
+  const vanBijOns = seizoensProductenIn(
+    [k.title, ...k.ingredienten],
+    Number(c.datum.slice(5, 7)) - 1,
+  );
+  if (vanBijOns.length) {
+    const namen = opsomming(vanBijOns, 2);
+    plus(
+      "seizoen",
+      4,
+      `${namen.charAt(0).toUpperCase()}${namen.slice(1)} ${vanBijOns.length > 1 ? "zijn" : "is"} nu in het seizoen`,
+    );
+    // Zoals de thema's in Ontdek: ook samengestelde woorden ("linzensoep", "kippenstoofpot").
+  } else if (c.seizoen.woorden.some((w) => tekst.includes(normaliseerTekst(w))))
     plus("seizoen", 3, `Past bij het seizoen: ${c.seizoen.titel.toLowerCase()}`);
   if (c.feest && heeftWoord(tekst, c.feest.woorden))
     plus(

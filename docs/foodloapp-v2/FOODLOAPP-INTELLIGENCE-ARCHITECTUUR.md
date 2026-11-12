@@ -157,7 +157,7 @@ Elke kandidaat krijgt een score als som van gewogen factoren, en elke factor lev
 | Eén veiligheidsregel (allergie incl. titel, "niet gecontroleerd" zonder ingrediënten, dieet incl. veganistisch) in alle voorstellen, Ontdek, Keuken en bij vervangen | ✅ gebouwd + unit + E2E (BUG-127/128) | `src/lib/veiligheid.ts`, `tests/e2e/veiligheid.spec.ts` |
 | "Slimme voorstellen" aan/uit (op het toestel) | ✅ gebouwd + E2E | `src/lib/intelligentie/slim.ts`, Instellingen |
 | Gebruik eerst (usecase 6): "al X dagen in huis" + reden op Vandaag + volgorde "Wat kan ik koken?" | ✅ gebouwd + unit + E2E (geen migratie; geen houdbaarheidsclaim) | `src/lib/intelligentie/gebruik-eerst.ts`, `tests/e2e/gebruik-eerst.spec.ts` |
-| Seizoenslijst per product | ❌ nog niet | later |
+| Seizoenslijst per product (België, volle grond, ongeveer): reden "… is nu in het seizoen" en Ontdek-thema "Nu in het seizoen" | ✅ gebouwd + unit + E2E | `src/lib/intelligentie/seizoen-producten.ts`, `src/lib/themas.ts` |
 | "Niet voor mij", feedback op het account | ❌ wacht op 0006 (staging) | I-2 |
 
 Geen nieuwe externe dienst, geen AI-oproep, geen gezondheidsgegevens buiten het toestel. Twee extra leesvragen per bezoek aan Vandaag wanneer er niets gepland is (`recipe_ratings`, `favorites`) plus het weekmenu van de laatste 180 dagen.

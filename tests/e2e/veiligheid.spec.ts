@@ -233,3 +233,24 @@ test("Ontdek op 320 px met tekst 200 % en allergieën: labels lopen niet uit", a
   expect(uit).toEqual({ scroll: 0, te: [] });
   void extern;
 });
+
+// Fase D: thema "Nu in het seizoen" (vaste Belgische lijst). In de demo: pompoen en witloof,
+// samen alleen van oktober tot december.
+test("Ontdek: thema 'Nu in het seizoen' toont gerechten met producten van bij ons", async ({
+  page,
+  extern,
+}) => {
+  test.skip(
+    ![9, 10, 11].includes(new Date().getMonth()),
+    "demo-ideeën alleen okt–dec in het seizoen",
+  );
+  await page.goto("/inspiratie");
+  await page.waitForLoadState("networkidle").catch(() => undefined);
+  await page.getByRole("button", { name: /Nu in het seizoen/ }).click();
+  await expect(page.getByRole("heading", { name: "Nu in het seizoen" })).toBeVisible();
+  const lijst = page.getByRole("list", { name: "Nu in het seizoen" });
+  await expect(lijst.getByRole("link", { name: /Romige pompoensoep met gember/ })).toBeVisible();
+  await expect(lijst.getByRole("link", { name: /Witloofgratin/ })).toBeVisible();
+  await expect(lijst.getByRole("link", { name: /Zalm uit de oven/ })).toHaveCount(0);
+  void extern;
+});

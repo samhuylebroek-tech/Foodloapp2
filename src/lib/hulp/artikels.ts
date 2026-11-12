@@ -72,6 +72,7 @@ export const ARTIKELS: Artikel[] = [
     tips: [
       "Foodlo doet nooit iets vanzelf: elk voorstel vraagt jouw tik.",
       "Je allergieën en dieet blijven op dit toestel. Het voorstel wordt op je toestel berekend.",
+      "Seizoen betekent: groenten en fruit die in België ongeveer in die maand van eigen bodem komen, zoals witloof en pompoen in november. Het weer kan dat een paar weken verschuiven.",
     ],
     functies: ["vandaag.voorstellen", "instellingen.voorstellen"],
     trefwoorden: ["voorstel", "voorstellen", "waarom", "suggestie", "idee", "vanavond", "niet nu"],

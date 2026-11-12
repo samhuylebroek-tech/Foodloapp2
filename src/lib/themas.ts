@@ -5,6 +5,7 @@
 import { bepaalDieet } from "@/lib/dieet";
 import type { InspiratieRecept } from "@/lib/inspiratie";
 import { normaliseerTekst } from "@/lib/zoeken";
+import { inSeizoen, seizoensProductenIn } from "@/lib/intelligentie/seizoen-producten";
 
 export type Thema = { id: string; titel: string; uitleg: string; recepten: InspiratieRecept[] };
 
@@ -67,6 +68,15 @@ export function themas(recepten: InspiratieRecept[], maand = new Date().getMonth
       titel: s.titel,
       uitleg: s.uitleg,
       recepten: recepten.filter((r) => heeft(r, s.woorden)),
+    },
+    {
+      // Usecase 16: concreet wat nu van eigen bodem komt (vaste lijst, ongeveer).
+      id: "van-bij-ons",
+      titel: "Nu in het seizoen",
+      uitleg: `Van bij ons: ${inSeizoen(maand).slice(0, 4).join(", ")}`,
+      recepten: recepten.filter(
+        (r) => seizoensProductenIn([r.title, ...(r.tags ?? [])], maand).length > 0,
+      ),
     },
     {
       id: "snel",

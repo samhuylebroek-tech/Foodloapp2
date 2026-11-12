@@ -47,6 +47,13 @@ describe("themas (Ontdek)", () => {
     expect(per["weekend"]).toEqual(["2", "6"]);
     expect(t.every((x) => x.recepten.length >= 2)).toBe(true);
   });
+  it("Nu in het seizoen: concrete producten van bij ons, per maand", () => {
+    const nov = themas(lijst, 10).find((x) => x.id === "van-bij-ons");
+    expect(nov?.recepten.map((y) => y.id).sort()).toEqual(["1", "6"]);
+    expect(nov?.uitleg).toMatch(/^Van bij ons: witloof, pompoen/);
+    // In mei geen pompoen of witloof: het thema verdwijnt (minder dan 2 recepten).
+    expect(themas(lijst, 4).find((x) => x.id === "van-bij-ons")).toBeUndefined();
+  });
   it("lege catalogus: geen thema's (de pagina toont dan de eigen keuken)", () => {
     expect(themas([], 10)).toEqual([]);
   });

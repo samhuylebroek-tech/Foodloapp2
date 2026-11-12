@@ -182,7 +182,14 @@ describe("Meal Intelligence: redenen per factor", () => {
 
   it("seizoen en feestdag geven een reden", () => {
     const i = invoer([k("Witloof in de oven", { ingredienten: ["witloof"] })], { voorraad: [] });
-    expect(redenen(i, "Witloof in de oven")).toContain("Past bij het seizoen: soep en stoofpot");
+    // Concreet seizoensproduct van eigen bodem gaat voor het algemene thema (usecase 16).
+    expect(redenen(i, "Witloof in de oven")).toContain("Witloof is nu in het seizoen");
+    const soep = invoer([k("Linzensoep", { ingredienten: ["linzen", "ui"] })], { voorraad: [] });
+    expect(redenen(soep, "Linzensoep")).toContain("Past bij het seizoen: soep en stoofpot");
+    const twee = invoer([k("Stoemp", { ingredienten: ["prei", "spruitjes", "aardappel"] })], {
+      voorraad: [],
+    });
+    expect(redenen(twee, "Stoemp")).toContain("Spruitjes en prei zijn nu in het seizoen");
     const kerst = invoer([k("Kalkoen met kerstsaus")], {
       context: bepaalContext(new Date(2026, 11, 20, 16)),
     });
