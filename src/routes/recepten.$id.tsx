@@ -71,6 +71,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { AllergieWaarschuwing } from "@/components/AllergieWaarschuwing";
+import { RestjeVraag } from "@/components/kringloop/RestjeVraag";
 import { markeerKookstand } from "@/lib/eerste-stappen";
 
 export const Route = createFileRoute("/recepten/$id")({
@@ -656,6 +657,7 @@ function ReceptPage() {
               label={t("Jouw score")}
             />
           </div>
+          <RestjeVraag titel={recipe.title} receptId={recipe.id} />
           <Button
             variant="secondary"
             onClick={() => {

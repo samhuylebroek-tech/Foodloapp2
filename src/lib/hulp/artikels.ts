@@ -54,6 +54,29 @@ export const ARTIKELS: Artikel[] = [
     ...AI,
   },
   {
+    slug: "restjes",
+    titel: "Restjes bewaren en opeten",
+    module: "koken",
+    soort: "handleiding",
+    niveau: "alle",
+    samenvatting:
+      "Blijft er na het koken iets over, dan onthoudt Foodlo dat. De komende dagen stelt het voor om de restjes op te eten, zodat er minder weggegooid wordt.",
+    stappen: [
+      'Na de laatste stap in de kookstand vraagt Foodlo "Blijft er iets over?". Tik op het aantal porties.',
+      'Staat er de volgende dagen nog niets gepland, dan zie je op Vandaag "Nog restjes". Tik op "Eet vanavond restjes": het staat dan op vanavond, en er komt niets op je lijst.',
+      'In Keuken zie je onder "Restjes" wat je nog hebt en wanneer je het kookte. Tik op "Is op" als het op is.',
+      "Ongedaan maken kan altijd meteen.",
+    ],
+    tips: [
+      "Foodlo stelt restjes hooguit 3 dagen na het koken voor. Bewaar ze in de koelkast en kijk zelf of ze nog goed zijn.",
+      "Je restjes staan voorlopig alleen op dit toestel, niet bij je gezin.",
+    ],
+    functies: ["koken.restjes"],
+    trefwoorden: ["restjes", "overschot", "over", "verspilling", "porties", "koelkast"],
+    doeHetNu: { route: "/voorraad", label: "Bekijk je restjes" },
+    ...AI,
+  },
+  {
     slug: "voorstellen",
     titel: "Waarom stelt Foodlo dit voor?",
     module: "vandaag",

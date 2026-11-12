@@ -21,6 +21,7 @@ import { magVoorstellen } from "@/lib/veiligheid";
 import { gebruikEerst } from "@/lib/intelligentie/gebruik-eerst";
 import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
 import { opsomming } from "@/lib/vandaag";
+import { RestjesLijst } from "@/components/kringloop/RestjesLijst";
 import { vindDubbels, voegToeAlsNieuw, zorgVoorLijst } from "@/lib/boodschappen";
 import type { Recipe } from "@/lib/types";
 import { CATEGORIE_LABEL, CATEGORIE_VOLGORDE, categorieVan } from "@/lib/categorie";
@@ -454,6 +455,8 @@ function VoorraadPage() {
             </ul>
           )}
         </section>
+
+        <RestjesLijst />
 
         <section aria-labelledby="koken-titel" className="min-w-0">
           <h2 id="koken-titel" className="text-sectietitel">

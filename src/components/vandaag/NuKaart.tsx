@@ -7,6 +7,7 @@ import { ArrowRight, CalendarDays, ChefHat, Loader2, Plus, ShoppingCart } from "
 import type { ReactNode } from "react";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { VanavondVoorstellen } from "@/components/kringloop/VanavondVoorstellen";
+import { RestjesVoorstel } from "@/components/kringloop/RestjesVoorstel";
 import type { Recipe } from "@/lib/types";
 import { duurLabel } from "@/lib/kookstand";
 import { opsomming, type ReceptVandaag, type Stap } from "@/lib/vandaag";
@@ -181,7 +182,12 @@ export function NuKaart({
     case "kiezen":
       titel = t("Wat eten we vandaag?");
       uitleg = t("Er staat nog niets gepland. Kies een gerecht uit je recepten.");
-      extra = <VanavondVoorstellen recepten={recepten} />;
+      extra = (
+        <>
+          <RestjesVoorstel />
+          <VanavondVoorstellen recepten={recepten} />
+        </>
+      );
       acties = (
         <Link to="/planner" className={knopTweede}>
           <Plus className="size-5" aria-hidden />

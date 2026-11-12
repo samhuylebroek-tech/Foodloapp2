@@ -85,6 +85,19 @@ export const FUNCTIES: Functie[] = [
     labels: ["Met wat je in huis hebt", "Niet nu", "Waarom zie ik dit?"],
   },
   {
+    sleutel: "koken.restjes",
+    titel: "Restjes bewaren en opeten",
+    module: "koken",
+    route: "/voorraad",
+    bestanden: [
+      "src/components/kringloop/RestjeVraag.tsx",
+      "src/components/kringloop/RestjesVoorstel.tsx",
+      "src/components/kringloop/RestjesLijst.tsx",
+      "src/lib/intelligentie/restjes.ts",
+    ],
+    labels: ["Blijft er iets over?", "Nog restjes", "Eet vanavond restjes", "Restjes", "Is op"],
+  },
+  {
     sleutel: "week.vul-aan",
     titel: "Vul aan met voorstellen (lege dagen in je weekmenu)",
     module: "week",

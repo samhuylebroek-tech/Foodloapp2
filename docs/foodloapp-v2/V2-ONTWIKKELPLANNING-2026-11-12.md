@@ -70,8 +70,8 @@ Na elk onderdeel komt een lokale commit, nadat typecheck, unittests, lint-ratche
 | B Slimme voorstellen aan/uit + gebruiker zonder modules | ✅ gebouwd en getest | `6e0275c` |
 | C Gebruik eerst | ✅ gebouwd en getest (zie hieronder) | `62d0282` |
 | D Seizoenslijst België (reden + thema "Nu in het seizoen") | ✅ gebouwd en getest | `88c431e` |
-| E Week: "Vul aan met voorstellen" | ✅ gebouwd en getest | zie log |
-| E2 Restjes (usecase 18) | in uitvoering | — |
+| E Week: "Vul aan met voorstellen" | ✅ gebouwd en getest | `821ad45` |
+| E2 Restjes (usecase 18): bewaren na het koken, "Eet vanavond restjes" op Vandaag, lijst in Keuken | ✅ gebouwd en getest (op het toestel) | zie log |
 
 ### Fase C: hoe "al X dagen in huis" werkt
 - **Bron:** de bestaande kolom `pantry_items.updated_at`. Geen migratie.
