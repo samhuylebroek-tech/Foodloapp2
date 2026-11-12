@@ -1,5 +1,25 @@
 # Claude Code instructions — Foodloapp
 
+## Snel starten (lees dit eerst)
+- **Installeren:** `npm install` (of `bun install --frozen-lockfile`; `bun.lock` is leidend, voeg geen `package-lock.json` toe).
+- **App bekijken met verzonnen gegevens:** `npm run demo` → http://127.0.0.1:4319, aanmelden met `demo@foodlo.be` / `demo1234`. Gebruikt een nep-databank (`tests/e2e/fake-supabase.mjs`); nooit productie.
+- `npm run dev` start alleen de app en heeft een `.env` nodig (namen in `.env.example`). Gebruik in de cloud altijd `npm run demo`.
+- **Controleren:** `npm run typecheck`, `npm test` (unit), `npx playwright test --project=<telefoon|desktop|mobiel-360|mobiel-390|tablet-768>` (E2E tegen de nep-databank), `npm run schermen` (visuele rondgang), `node scripts/lint-ratchet.mjs origin/main`.
+- **Structuur:**
+  - `src/routes` (schermen, TanStack Start);
+  - `src/components`;
+  - `src/lib` (logica; `src/lib/intelligentie` = voorstellen, `src/lib/veiligheid.ts` = allergie- en dieetregels);
+  - `supabase/migrations` (schema; voorstellen in `docs/foodloapp-v2`);
+  - `tests/e2e` (Playwright);
+  - `tests/rls` (databankregels met PGlite);
+  - `docs/foodloapp-v2` (plannen, bugregister, beslissingen).
+- **Afspraken:**
+  - geen productiegegevens of echte sleutels;
+  - geen migraties naar productie of staging zonder akkoord van de eigenaar;
+  - niets wijzigen aan Lovable, aan `main` of aan de oorspronkelijke repository `samhuylebroek-tech/dinner-dialogue-hub`;
+  - werk op `v2/dev` of een `v2/<onderwerp>`-branch;
+  - nooit force-pushen.
+
 ## Mission
 Build Foodloapp into an exceptional, commercially sustainable cooking ecosystem: instantly understandable to a 70-year-old beginner and delightful, expressive and powerful for a 20-year-old food creator. Preserve the functioning live product, its useful features and customer data; improve incrementally and verify every change.
 
