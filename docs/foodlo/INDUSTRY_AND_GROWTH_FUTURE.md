@@ -1,35 +1,27 @@
-# AI Growth OS en de toekomst van de sector
-**Bron van waarheid voor:** de strategische ambitie van een generiek AI Growth Operating System, en hoe het zich verhoudt tot Foodlo.
+# Grens met het AI Growth OS
+**Bron van waarheid voor:** de grens tussen Foodlo en het toekomstige AI Marketing & Growth Operating System.
 
-**Status:** **apart product**. Het hoort niet bij Foodlo F1–F3 en mag de Foodlo-lancering nooit vertragen (D-2026-11-13-1). Er wordt niets van gebouwd zonder een aparte opdracht.
+> **Beslissing van de eigenaar (2026-11-13):**
+> - Het AI Marketing & Growth OS is een **volledig afzonderlijk project**. Het bestaat voorlopig alleen als concept.
+> - Het wordt **niet in Foodlo gebouwd**. Code en productdocumentatie worden niet vermengd.
+> - Dit document hoort in de lijst van de masteropdracht. Daarom beschrijft het **alleen de grens** vanuit Foodlo, niet het Growth OS zelf. De productvisie van het Growth OS hoort in een eigen project of repository.
 
-## 1. Wat het zou kunnen worden
-- AI-marketingagents;
-- SEO en contentmarketing;
-- koppelingen met sociale media;
-- advertentiebeheer;
-- marketingautomatisering;
-- omzetanalyse;
-- business intelligence;
-- CRM-koppelingen;
-- revenue intelligence;
-- commerciële SaaS-diensten.
+## 1. Wat Foodlo niet doet
+- **Geen marketingfuncties in Foodlo:**
+  - geen marketing-agents;
+  - geen SEO- of advertentiebeheer;
+  - geen CRM;
+  - geen omzetintelligentie voor derden.
+- **Gebruikersgegevens blijven in Foodlo.** Foodlo-gebruikersgegevens, zoals profielen, recepten, voeding en gezin, worden nooit gedeeld met het Growth OS. De reden is doelbinding (AVG), en voeding en gezondheid zijn bijzondere gegevens.
 
-## 2. Wat gedeeld kan worden, en wat apart blijft
-| Onderdeel | Delen? | Waarom |
-|---|---|---|
-| AI-gateway en providerinterface, credits, kostenmeting, cache | **ja, als infrastructuur** (bibliotheek of dienst) | Zelfde probleem: kosten, limieten, providers wisselen |
-| Privacylaag (`voorAI`) | **het patroon wel, de lijsten niet** | Foodlo-gezondheidstermen horen niet in een marketingproduct |
-| Auth, meten, foutopvang, e-mail, push | ja, als infrastructuur | Generiek |
-| Designsysteem | deels (basiscomponenten) | Het merk en de toon verschillen |
-| **Foodlo-gebruikersgegevens** (profielen, recepten, voeding, gezin) | **nooit** | Ander doel (AVG doelbinding), bijzondere gegevens |
-| Partner-BCC (F3) | mogelijk de eerste klant van het Growth OS | Via een API met geaggregeerde, toegestane gegevens |
-| Databank | **apart** | Eigen schema, eigen toegangsrechten (RLS) en bewaartermijnen |
+## 2. Wat Foodlo wel doet, om later niets te hoeven herbouwen
+Dit gebeurt toch al voor Foodlo zelf.
 
-## 3. Wat Foodlo nu doet om dit later mogelijk te houden
-- **Infrastructuur achter interfaces:**
-  - de AI-provider (`AI_ARCHITECTURE.md` §4);
-  - de betaaladapter (F3);
-  - e-mail en push.
-- **Geen marketing in de consumentenapp:** geen marketing- of advertentiefuncties hardgecodeerd in de consumentenapp.
-- **Gebeurtenissen zonder inhoud:** de gebeurtenissen (`meten.ts`) zijn al zonder inhoud en per sessie. Een latere BI-laag kan geaggregeerd meelezen, met toestemming.
+| Wat | Waarom |
+|---|---|
+| AI via één provider-interface met credits en kostenmeting | `AI_ARCHITECTURE.md` §4 |
+| Betalingen via een adapter (F3) | `COMMERCIAL_ROADMAP.md` §1 |
+| E-mail en push achter één ingang | — |
+| Gebeurtenissen zonder inhoud, per sessie | `meten.ts` |
+
+Als het Growth OS ooit een dienst aanbiedt aan Foodlo-partners (F3), dan alleen via een API met **geaggregeerde, toegestane** gegevens. Daarvoor is een aparte beslissing en een juridische toets nodig.

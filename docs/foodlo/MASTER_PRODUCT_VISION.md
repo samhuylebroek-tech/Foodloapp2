@@ -61,4 +61,4 @@ Foodlo helpt elke dag met beslissen wat je eet, je week organiseren, inspiratie 
 - **Gebruik:** consumenten komen dagelijks of wekelijks terug, omdat Foodlo echt helpt beslissen en organiseren.
 - **Zonder hulp:** een beginner kan zonder hulp een recept toevoegen, plannen, boodschappen doen en koken.
 - **Geen veiligheidsfouten:** geen onveilige suggestie bij een allergie, en geen gevoelige gegevens naar externe AI.
-- **Toekomst:** creators, partners en het Growth OS kunnen later aansluiten zonder herbouw.
+- **Toekomst:** creators en partners kunnen later aansluiten zonder herbouw. Het Growth OS blijft een apart project (D-2026-11-13-6).

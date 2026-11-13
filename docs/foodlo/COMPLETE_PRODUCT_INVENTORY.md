@@ -41,6 +41,7 @@ Inhoud volgens PRODUCTMATRIX, stand 2026-11-13.
 |---|---|---|
 | 2026-11-13 | D-2026-11-13-1 (optie B) | "Allergieën en dieet op het account": van F1/F2 naar **F1, te ontwikkelen**. "Persoonlijke voorkeuren en uitsluitingen op het account": **F1, te ontwikkelen**. Allergieën en voorkeuren per gezinslid, mee-eters en eigen collecties: **F2, latere fase** (blijven op de roadmap). |
 | 2026-11-13 | D-2026-11-13-3 (ronde 2) | Status van BUG-142/143/144/145/146, Lijst en Instellingen: "Te ontwikkelen in ronde 2" |
+| 2026-11-13 | D-2026-11-13-7 (volledige voorgeschiedenis) | 16 wensen uit eerdere gesprekken die nog geen eigen rij hadden, toegevoegd in PRODUCTMATRIX §L: community, creatorvideo's, AI-substituties en -aanpassingen, gesprek, agents, lokale producten, overgangen, foutstaten, editorvoorbeeld, supermarkt, terugbetalingen en fraude, analytics, kosten per eenheid, vertalingen, Growth OS-grens. |
 
 ## 4. Regel
 Wie een functie toevoegt, wijzigt of uitstelt, past **eerst** de PRODUCTMATRIX aan en daarna dit overzicht. Verwijderen kan alleen met gate G7 en een beslissing in `DECISIONS_LOG.md`.

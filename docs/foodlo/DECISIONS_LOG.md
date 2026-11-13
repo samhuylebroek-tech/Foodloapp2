@@ -36,6 +36,8 @@
 | **D-2026-11-13-3** | 2026-11-13 | **Ronde 2 goedgekeurd** (12 punten, DEVELOPMENT_ROADMAP §2), inclusief de privacyfix BUG-142 en de betaalpoort op de server BUG-143 | Uitvoeren op de featurebranch |
 | D-2026-11-13-4 | 2026-11-13 | 0004 eerst technisch controleren en op staging uitvoeren; **0005 niet aanmaken of uitvoeren** | DATABASE_ARCHITECTURE §3, §5 |
 | D-2026-11-13-5 | 2026-11-13 | Werken op de bestaande featurebranch `claude/sleepy-euler-eghoc3` | — |
+| D-2026-11-13-6 | 2026-11-13 | Het AI Marketing & Growth OS is een **volledig afzonderlijk project**, alleen als concept. Het wordt niet in Foodlo gebouwd en code en documentatie worden niet vermengd. | INDUSTRY_AND_GROWTH_FUTURE beschrijft alleen de grens |
+| D-2026-11-13-7 | 2026-11-13 | De volledige voorgeschiedenis telt. Elke eerder besproken wens blijft traceerbaar. Fasering bepaalt wanneer iets gebouwd wordt, niet of het blijft. | PRODUCTMATRIX §L (aanvullende wensen) |
 
 ## 3. Open beslissingen
 Op volgorde van wat de lancering het meest blokkeert. De nummers #1–#33 komen uit BESLISSINGEN-EIGENAAR.
@@ -74,3 +76,4 @@ Op volgorde van wat de lancering het meest blokkeert. De nummers #1–#33 komen 
 | T10 | 8 overlappende plannen | `docs/foodlo/` als bron, oude docs met verwijzing | opgelost |
 | T11 | `@capacitor/ios` zonder iOS-project | RELEASE_PLAN M1 | gepland |
 | T12 | Growth OS staat nergens | INDUSTRY_AND_GROWTH_FUTURE | opgelost |
+| T13 | De masteropdracht vraagt een document over het Growth OS in de Foodlo-documentatie, maar de aanvulling zegt documentatie niet te vermengen | Het document blijft, maar beschrijft alleen de grens vanuit Foodlo (D-2026-11-13-6). De visie van het Growth OS hoort in een eigen project. | opgelost; eigenaar kan anders beslissen |

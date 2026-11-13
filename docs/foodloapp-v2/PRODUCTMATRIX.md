@@ -231,6 +231,30 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | CI (typecheck, unit, lint, build, E2E, RLS, schermen) | Behouden | ja | Draait vanaf deze PR |
 | Cloudontwikkeling reproduceerbaar | Opgelost (ronde 1) | — | BUG-131 |
 
+## L. Aanvullende wensen uit de gesprekken (traceerbaarheid, 2026-11-13)
+**Waarom:** controle van alle opdrachten van de eigenaar en van `CLAUDE.md` tegen deze matrix.
+
+**Wat:** deze wensen stonden nog niet als aparte rij in de matrix. Ze zijn hier toegevoegd. Niets is geschrapt.
+
+| Wens | Bron | Status | Fase | Opmerking |
+|---|---|---|---|---|
+| **Community:** interacties tussen gebruikers, zoals reacties, vragen aan de maker en gekookt-meldingen | Masteropdracht §6; complete productvisie §3 | Latere fase | F2 | Pas na moderatie (B). Bestaat niet |
+| **Creatorcontent:** video's, kooklessen en andere media | Complete productvisie §3; CLAUDE.md | Latere fase | F2/F3 | Opslag- en verwerkingskost apart ramen |
+| **AI:** ingrediënten vervangen (substituties met reden) | Masteropdracht §4 | Te ontwikkelen | F2 | Eerst regels (vervangingslijst, zoals al in de winkelmodus), daarna AI via de privacylaag |
+| **AI:** recepten aanpassen (bv. vegetarisch maken, minder tijd) | Masteropdracht §4 | Te ontwikkelen | F2 | Altijd als voorstel om na te kijken (AC-6) |
+| **AI:** vragen beantwoorden (gesprek met de assistent) | Masteropdracht §4; #10 | Latere fase | F2 | Privacylaag verplicht; aantal per dag (#10) |
+| **AI:** agents die meerdere stappen voorstellen (bv. "plan en vul mijn week aan") | Masteropdracht §4 | Latere fase | F2/F3 | Altijd met een goedkeuringsstap (AI_ARCHITECTURE §3–4) |
+| Lokale producten als signaal | Productmissie §2; complete visie §7 | Uitbreiden | F2 | Nu via seizoensproducten |
+| **UX:** vlotte overgangen en micro-interacties | Productmissie §3; complete visie §8 | Verbeteren | F1 | Met respect voor `prefers-reduced-motion` |
+| **UX:** lege toestanden en foutmeldingen consequent | Complete visie §8; CLAUDE.md | Behouden / Verbeteren | F1 | `EmptyState` bestaat; per scherm nalopen |
+| **Editor:** voorbeeldweergave vóór bewaren, tussentijds bewaren, stappen herschikken | Aanvulling receptinvoer §3 | Verbeteren | F1 | Tussentijds bewaren bestaat (concept); voorbeeld ontbreekt |
+| **Supermarkt:** bestaande integraties behouden, later modulair uitbreiden | CLAUDE.md | Behouden | F1 | Winkelvolgorde, afdelingen en klantenkaarten blijven; nieuwe aanbieders pas in F3 |
+| **Betalingen:** terugbetalingen, annulering, fraude en chargebacks, inkomstendeling creators, platformvergoeding | CLAUDE.md | Latere fase | F3 | In COMMERCIAL_ROADMAP §4; G5 en jurist |
+| **Analytics:** creatorconversie, retentie, churn, inkomsten | CLAUDE.md | Latere fase | F3 | Alleen geaggregeerd |
+| **Kosten per eenheid:** per actieve gebruiker, creator, AI-actie, opslag, e-mail en databankbewerking | CLAUDE.md | Uitbreiden | F1 (AI) / F2 (rest) | AI-kosten worden al gemeten (`ai_usage`, beheer Kosten) |
+| **Vertalingen:** kernvertalingen statisch en professioneel nagelezen | CLAUDE.md | Latere fase | F2 | Nu machinevertaling; lancering in het Nederlands |
+| **AI Growth OS** | Masteropdracht §8; aanvulling 2026-11-13 §6 | Apart project | — | **Niet in Foodlo bouwen of vermengen.** In Foodlo staat alleen de grens (`docs/foodlo/INDUSTRY_AND_GROWTH_FUTURE.md`) |
+
 ---
 
 ## J. Fasering en lanceringsplan (richting: ± 6 weken, geen gegarandeerde datum)

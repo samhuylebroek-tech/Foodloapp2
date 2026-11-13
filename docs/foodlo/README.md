@@ -30,7 +30,7 @@ Sinds 2026-11-13 is dit de **bron van waarheid** voor product, architectuur en p
 | [DATABASE_ARCHITECTURE](DATABASE_ARCHITECTURE.md) | Schema, migratievolgorde, 0004, 0005 (alleen ontwerp) |
 | [MOBILE_ARCHITECTURE](MOBILE_ARCHITECTURE.md) | Web, PWA, Capacitor, website-in-app tegenover meegeleverde app |
 | [COMMERCIAL_ROADMAP](COMMERCIAL_ROADMAP.md) | Creators, partners, BCC, betalingen, premium |
-| [INDUSTRY_AND_GROWTH_FUTURE](INDUSTRY_AND_GROWTH_FUTURE.md) | AI Growth OS als apart product; wat gedeeld kan worden |
+| [INDUSTRY_AND_GROWTH_FUTURE](INDUSTRY_AND_GROWTH_FUTURE.md) | Alleen de grens met het afzonderlijke AI Growth OS (D-2026-11-13-6) |
 | [DEVELOPMENT_ROADMAP](DEVELOPMENT_ROADMAP.md) | Werkstromen, volgorde, afhankelijkheden, rondes |
 | [TESTING_STRATEGY](TESTING_STRATEGY.md) | Testlagen, regels, echte toestellen |
 | [IMPLEMENTATION_STATUS](IMPLEMENTATION_STATUS.md) | Gemeten stand, met datum |
