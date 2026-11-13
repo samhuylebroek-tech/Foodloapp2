@@ -70,7 +70,7 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | | Altijd bovenaan beginnen | Opgelost (ronde 1) | F1 | — | BUG-132 |
 | | Spraak, handsfree | Latere fase | F2 | — | MODULE-AUDIT P2 |
 | **Boodschappen** | Lijsten, afdelingen, samentellen, eigen producten, eerder gekocht, winkelideeën, delen met link, offline wachtrij, Slim aanvullen, "Waarom op mijn lijst?" | Behouden | F1 | — | `lijst.spec.ts` |
-| | Rust en eenvoud | Verbeteren | F1 | Deels gedaan in ronde 1; open: blokken samenvoegen, leeg vlak (BUG-138), voorbeeldtekst (BUG-137) | — |
+| | Rust en eenvoud | Verbeteren | F1 | Ronde 1 en 2: "Alles" in plaats van het dubbele vinkje, geen leeg vlak (BUG-138), korte voorbeeldtekst (BUG-137). Open: blokken "Toevoegen uit…" en "Klantenkaarten" samenvoegen | — |
 | | Winkelvolgorde per huishouden | Geblokkeerd | F2 | Nu per toestel | BUG-087, G1 |
 | **Winkelmodus** | Eén hand, grote rijen, "Niet gevonden", vervangen, "Voor morgen nog nodig", klaar → voorraad | Behouden | F1 | — | `winkelmodus.spec.ts` |
 | | Product altijd eerst in beeld | Opgelost (ronde 1) | F1 | — | BUG-133 |
@@ -88,7 +88,7 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | **Credits** | Saldo, bewegingen, extra vragen | Behouden | F1 | Kopen staat uit | G5 |
 | **Instellingen** | Profiel, kleuren, taal, etenstijden, momenten, voorraad, slimme voorstellen, export, verwijderen | Behouden | F1 | — | `instellingen.tsx` |
 | | 24-uurstijden, Nederlandse namen | Opgelost (ronde 1) | F1 | — | BUG-135 |
-| | Opdelen in onderdelen | Verbeteren | F1 | Eén lange pagina | §J vraag 2 |
+| | Opdelen in onderdelen | Verbeterd (ronde 2) | F1 | Drie delen (Weergave, Maaltijden, Account en privacy) met een sprongmenu; echte subpagina's zijn een optie voor later | — |
 | | Persoonlijke allergieën, intoleranties, dieet en uitsluitingen op het account (nu alleen op het toestel) | Te ontwikkelen | **F1** | Maximaal beschermd: alleen voor jezelf, nooit naar de AI (D-2026-11-13-1/2) | voorstel 0004b (N-1), FR-I-03 |
 
 ## A2. Recepten toevoegen en beheren (verplicht volledig)
@@ -107,12 +107,12 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | 8 | Zoeken op naam (app, web, AI-ideeën, laten uitschrijven) | "Zoeken" | zoeken gratis, ideeën AI | ja, "Gevonden recept" | Behouden | alleen de UI | F1 |
 | 9 | Delen naar de app (PWA share target) | systeem "Delen" → Foodlo | zoals 2/4 | ja | Behouden; testen | geen | F1 |
 | 10 | Uit Ontdek | "Toevoegen aan mijn recepten" | nee | ja | Behouden | geen eigen test | F1 |
-| 11 | Recept van een vriend of gezinslid kopiëren | Meer → "Zet in mijn gerechten" | nee | **nee**, kopieert meteen; foto's en stap-ingrediënten gaan niet mee | Verbeteren (BUG-144) | geen | F1 |
+| 11 | Recept van een vriend of gezinslid kopiëren | Meer → "Zet in mijn gerechten" | nee | ja: overzicht vóór kopiëren, foto's gaan mee (ronde 2) | Verbeterd (BUG-144) | `recept-beheer.spec.ts` | F1 |
 | 12 | Vanuit het weekmenu (zoeken, voorstellen, recept van een naam) | ReceptKiezer | AI behalve zoeken | ja, "Controleer het recept" | Behouden | regels getest | F1 |
 | 13 | "Laat Foodlo kiezen" → recepten | Week | AI | voorstel | Behouden | `week-voorstel.spec.ts` | F1 |
 | 14 | Nieuw recept koppelen aan een maaltijd | "Klaar en koppelen" | nee | ja | Behouden | ? | F1 |
 | — | Hulpmiddelen in het formulier: AI-foto, stappen verbeteren, foto van de bron ophalen | in het formulier | AI | ja (voorstel) | Behouden | — | F1 |
-| — | "Vul dit gerecht aan" op de receptpagina | receptpagina | AI | **nee**, schrijft meteen weg | Verbeteren (BUG-145): AI overschrijft nooit zonder nakijken | — | F1 |
+| — | "Vul dit gerecht aan" op de receptpagina | receptpagina | AI | ja: voorstel met "Overnemen" of "Niet doen" (ronde 2) | Verbeterd (BUG-145) | typecheck, regressie (geen AI in de testomgeving) | F1 |
 | — | Document of PDF importeren | — | — | — | Te ontwikkelen | — | F2 |
 | — | Export van een andere app (bv. Paprika) | — | — | — | Latere fase | — | F2 |
 | — | Creator-editor: concept, publiceren, voorbeeld | — | — | — | Latere fase (zie B) | — | F2 |
@@ -120,7 +120,7 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | Beheer | Status | Opmerking |
 |---|---|---|
 | Aanpassen (zelfde formulier), versies (10, terugzetten), foto's, concepten (automatisch bewaren) | Behouden | — |
-| Verwijderen | Verbeteren (BUG-146) | Twee manieren: zacht met bevestiging in de lijst, hard met een browservenster op de receptpagina. Wordt één manier, zacht, met ongedaan maken |
+| Verwijderen | Verbeterd (BUG-146, ronde 2) | Overal: bevestigen, zacht verwijderen, "Ongedaan maken"; op de pagina van een verwijderd recept staat "Terugzetten" |
 | Eigen recept dupliceren | Te ontwikkelen | Kan nu niet |
 | Publiek, privé, alleen volgers | Latere fase | Er is geen zichtbaarheidsveld (G1/G2) |
 | Eigen collecties | Geblokkeerd | G1/G2 |
@@ -164,7 +164,7 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | 2FA voor beheer | Geblokkeerd | F1 | Gebouwd, staat uit (#2); BUG-141 |
 | Rollen bruikbaar maken, rol `finance` | Geblokkeerd | F2 | BUG-096, #31 |
 | RLS beheer (`is_admin`) | Geblokkeerd | F1 | BUG-097, 0002, G1/G2 |
-| Betaalpoort ook op de server | Geblokkeerd | F1 | BUG-143 (autorisatie) |
+| Betaalpoort ook op de server | Opgelost (ronde 2) | F1 | BUG-143: de server weigert betalen of credits kopen zonder provider |
 | Partners, merken, producenten, retail, restaurants, campagnes, gesponsorde content, productintegraties, rapportage voor partners | Latere fase | F3 | Bestaat niet; eigen professionele UX, los van de consumentenapp |
 | Moderatie, AVG-register, incidenten, back-ups | Te ontwikkelen | F2 | BCC-audit §6 |
 
@@ -191,7 +191,7 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | Gezin als signaal | Latere fase | F2 | 0005 |
 | Generatieve AI (13 functies, credits, cache) | Behouden | F1 | #14, #19 |
 | Harde veiligheidsregels allergie en dieet | Behouden | F1 | `veiligheid.ts`, 20 unit- en 9 E2E-tests |
-| **Vrij veld "Wat eet je liever niet?" gaat naar de externe AI** | Geblokkeerd (privacy) | F1 | **BUG-142**: kan allergieën bevatten; voorstel in het bugregister |
+| Privacylaag voor externe AI (vrij veld "liever niet") | Opgelost (ronde 2) | F1 | **BUG-142**: allergenen, intoleranties, dieet en gezondheid worden eruit gehaald, op het toestel én op de server |
 
 ## G. Privacy, account en beveiliging
 | Onderdeel | Status | F1 nodig | Voorwaarde |

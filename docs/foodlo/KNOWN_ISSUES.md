@@ -12,25 +12,32 @@
 | P2 | Kan na F1 |
 
 ## 1. Open bugs
-Bijgewerkt na elke ronde. Stand bij de start van ronde 2.
+Bijgewerkt na elke ronde. Stand na ronde 2 (2026-11-13).
+
+**Opgelost in ronde 2:**
+
+| Bug | Onderwerp |
+|---|---|
+| BUG-142 | Privacylaag AI |
+| BUG-143 | Betaalpoort op de server |
+| BUG-144 | Kopiëren met nakijken |
+| BUG-145 | "Vul aan" als voorstel |
+| BUG-146 | Eén manier van verwijderen |
+| BUG-137 | Korte voorbeeldtekst |
+| BUG-138 | Geen leeg vlak meer op de lijst |
+| BUG-139 | Tijdzone in de tests |
+| BUG-140 | Testfout, niet de app |
+| BUG-141 | Geen bug: verwachte mislukking (BUG-095) |
+
+Details en bewijs in het bugregister. Nog open:
 
 | Bug | Ernst | Onderwerp | Prio | Plan |
 |---|---|---|---|---|
-| BUG-142 | Hoog (privacy) | Vrij veld "liever niet" gaat naar de externe AI | P0 | Ronde 2: privacylaag |
-| BUG-143 | Medium (beveiliging) | Betaalpoort zit alleen in de interface | P0 | Ronde 2: servercontrole |
 | BUG-095 | Hoog (latent) | 2FA voor beheer staat uit | P0 | #2, eerst op staging |
 | BUG-097 | Hoog (latent) | RLS-beheer (`is_admin`, feedback) | P1 | 0002 op staging (#3) |
 | BUG-061 | Hoog (kosten), ook live | Opgelost op `v2/dev`, live nog niet | P0 (live) | Release (G3/G4) |
 | BUG-119 | Medium (privacy) | Weekmenuvoorkeuren leesbaar voor het gezin | P1 | 0004: controle, dan staging |
 | BUG-011 | Medium | Schema van live ≠ repo | P1 | Vergelijken (N-2), baseline |
-| BUG-144 | Medium | "Zet in mijn gerechten" kopieert zonder nakijken | P1 | Ronde 2 |
-| BUG-145 | Medium (AI) | "Vul aan" schrijft zonder nakijken | P1 | Ronde 2 |
-| BUG-146 | Medium | Twee manieren van verwijderen | P1 | Ronde 2 |
-| BUG-140 | Medium | Dagtelling rond middernacht | P1 | Ronde 2 (test en dagtelling) |
-| BUG-141 | Medium (test) | 2FA-test faalt | P1 | Bij het 2FA-werk |
-| BUG-139 | Info (test) | Tijdzone van de testmachine | P1 | Ronde 2: `TZ=Europe/Brussels` |
-| BUG-137 | Laag | Voorbeeldtekst in invoervelden afgekapt bij grote tekst | P1 | Ronde 2 |
-| BUG-138 | Laag | Leeg vlak onderaan de lijst | P1 | Ronde 2 |
 | BUG-134 | Medium (a11y) | Grote tekst: harde test ontbreekt voor Week, Keuken en Instellingen | P1 | Ronde 2: test |
 | BUG-086 | Medium | Echte toestellen en Safari niet getest | P0 | #26 |
 | BUG-117 | Info | Idem (Safari/WebKit) | P0 | #26 |
