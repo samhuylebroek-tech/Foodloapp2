@@ -1080,6 +1080,7 @@ function BoodschappenPage() {
   return (
     <AppShell
       breed
+      vasteInvoer={weergave === "lijst"}
       title="Boodschappen"
       kop={
         <div className="mb-5">
@@ -1232,7 +1233,7 @@ function BoodschappenPage() {
                     onKeyDown={(e) => e.key === "Enter" && void voegToe()}
                     onFocus={() => setInvoerFocus(true)}
                     onBlur={() => window.setTimeout(() => setInvoerFocus(false), 150)}
-                    placeholder="Melk, 6 eieren, wasmiddel…"
+                    placeholder="Wat koop je?"
                     className="rounded-full bg-card px-5"
                     autoComplete="off"
                     enterKeyHint="done"
@@ -1545,8 +1546,8 @@ function BoodschappenPage() {
                 </AccordionItem>
               </Accordion>
             </aside>
-            {/* Ruimte voor de vaste invoerbalk onderaan (alleen telefoon). */}
-            <div aria-hidden className="h-28 md:hidden" />
+            {/* Ruimte voor de vaste invoerbalk: nu onderaan de pagina (AppShell vasteInvoer), niet
+                meer als leeg vlak boven "Hulp bij dit scherm" (BUG-138). */}
           </div>
         ) : (
           <div className="space-y-5">

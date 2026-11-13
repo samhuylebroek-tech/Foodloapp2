@@ -118,6 +118,7 @@ export function AppShell({
   breed = false,
   ondertitel,
   kop,
+  vasteInvoer = false,
 }: {
   title: string;
   children: ReactNode;
@@ -130,6 +131,12 @@ export function AppShell({
   ondertitel?: ReactNode;
   /** Eigen paginakop (bv. de redactionele band op Vandaag). Vervangt titel en ondertitel. */
   kop?: ReactNode;
+  /**
+   * Er staat een vaste invoerbalk boven de onderbalk (Lijst). Dan krijgt de pagina onderaan extra
+   * ruimte ONDER de inhoud, zodat niets achter de balk verdwijnt en er geen leeg vlak ontstaat
+   * boven "Hulp bij dit scherm" (BUG-138). Rem-gebaseerd: groeit mee met grote tekst.
+   */
+  vasteInvoer?: boolean;
 }) {
   const { session, loading } = useAuth();
   const t = useT();
@@ -337,6 +344,7 @@ export function AppShell({
         id="inhoud"
         className={cn(
           "mx-auto w-full overflow-x-clip px-4 pb-36 pt-6 sm:px-6 md:pb-16 md:pl-32 md:pr-8 lg:px-6 lg:pb-16 lg:pt-10",
+          vasteInvoer && "pb-[calc(9rem+5.75rem)]",
           breedte,
         )}
       >

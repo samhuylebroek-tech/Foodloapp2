@@ -365,7 +365,7 @@ function VoorraadPage() {
               onChange={(e) => setNieuw(e.target.value)}
               aria-label={t("Nieuw product")}
               aria-describedby="voorraad-hulp"
-              placeholder={t("Wat heb je in huis?")}
+              placeholder={t("Wat heb je?")}
               className="h-14 text-lg"
             />
             <Button type="submit" className="size-14 shrink-0 px-0 text-lg sm:w-auto sm:px-5">

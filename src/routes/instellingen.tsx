@@ -12,10 +12,12 @@ import {
   Loader2,
   LogOut,
   QrCode,
+  Palette,
   ShieldCheck,
   Smartphone,
   Sparkles,
   Trash2,
+  UtensilsCrossed,
 } from "lucide-react";
 import { Groep, KnopRij, LinkRij, Paneel } from "@/components/mobiel/Lijst";
 import { Switch } from "@/components/ui/switch";
@@ -144,275 +146,324 @@ function InstellingenPage() {
   return (
     <AppShell title={t("Instellingen")}>
       <div className="space-y-7">
-        <Groep titel={t("Profiel")}>
-          <div className="p-4">
-            <Label htmlFor="handle">{t("Jouw Foodlo-naam")}</Label>
-            <p id="handle-uitleg" className="mt-1 text-[0.95rem] text-muted-foreground">
-              {t("Met deze naam kunnen vrienden je terugvinden. Bijvoorbeeld: marie")}
-            </p>
-            {/* Bij grote tekst schuift "Bewaren" onder het veld, zodat de naam leesbaar blijft. */}
-            <div className="mt-3 flex flex-wrap gap-2">
-              <div className="relative min-w-0 flex-1 basis-48">
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"
+        {/* Review punt 9 / ronde 2: Instellingen in drie delen. Alles blijft op één pagina (niets
+            verborgen), met bovenaan een sprongmenu naar elk deel. */}
+        <nav
+          aria-label={t("Delen van Instellingen")}
+          className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-2"
+        >
+          {(
+            [
+              ["weergave", "Weergave", Palette],
+              ["maaltijden", "Maaltijden", UtensilsCrossed],
+              ["account", "Account en privacy", ShieldCheck],
+            ] as const
+          ).map(([doel, naam, Icoon]) => (
+            <a
+              key={doel}
+              href={`#${doel}`}
+              className="flex min-h-14 items-center gap-2 rounded-2xl border border-border bg-card px-4 py-2 text-base font-semibold hover:bg-muted"
+            >
+              <Icoon className="size-5 shrink-0 text-primary" aria-hidden />
+              {t(naam)}
+            </a>
+          ))}
+        </nav>
+        <section aria-labelledby="deel-weergave" id="weergave" className="scroll-mt-24 space-y-7">
+          <h2 id="deel-weergave" className="text-sectietitel">
+            {t("Weergave")}
+          </h2>
+          <Groep titel={t("Weergave")}>
+            <div className="p-4">
+              <h3 className="text-base font-semibold">{t("Kleuren")}</h3>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {THEMAS.map((k) => {
+                  const actief = thema === k.id;
+                  return (
+                    <button
+                      key={k.id}
+                      type="button"
+                      onClick={() => zetThema(k.id as ThemaId)}
+                      aria-pressed={actief}
+                      className={cn(
+                        "flex min-h-14 items-center gap-3 rounded-2xl border-2 px-3 text-left text-[0.95rem] font-semibold leading-tight transition-colors",
+                        actief
+                          ? "border-primary bg-secondary text-foreground"
+                          : "border-border bg-card hover:bg-muted",
+                      )}
+                    >
+                      <span
+                        aria-hidden
+                        className="size-7 shrink-0 rounded-full ring-2 ring-card"
+                        style={{ background: STAAL[k.id] }}
+                      />
+                      <span className="min-w-0 flex-1">{t(k.label)}</span>
+                      {actief ? (
+                        <Check className="size-5 shrink-0 text-primary" aria-hidden />
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="p-4">
+              <Label htmlFor="taal">{t("Taal")}</Label>
+              <p id="taal-uitleg" className="mt-1 text-[0.95rem] text-muted-foreground">
+                {t("De hele app en je recepten worden dan in die taal getoond.")}
+              </p>
+              <div className="relative mt-3">
+                <select
+                  id="taal"
+                  value={taal}
+                  onChange={(e) => zetTaal(e.target.value)}
+                  aria-describedby="taal-uitleg"
+                  className="h-14 w-full appearance-none rounded-2xl border-2 border-input bg-card pl-4 pr-12 text-base font-semibold focus-visible:border-primary"
                 >
-                  @
-                </span>
-                <Input
-                  id="handle"
-                  value={handle}
-                  onChange={(e) => setHandle(e.target.value)}
-                  aria-describedby="handle-uitleg"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  className="pl-9"
+                  {TALEN.map((l) => (
+                    <option key={l.code} value={l.code}>
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  aria-hidden
+                  className="pointer-events-none absolute right-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
                 />
               </div>
-              <Button onClick={bewaarHandle} disabled={handleBezig} className="shrink-0">
-                {handleBezig ? <Loader2 className="size-5 animate-spin" /> : null}
-                {t("Bewaren")}
-              </Button>
             </div>
-          </div>
-        </Groep>
+          </Groep>
 
-        <Groep titel={t("Weergave")}>
-          <div className="p-4">
-            <h3 className="text-base font-semibold">{t("Kleuren")}</h3>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {THEMAS.map((k) => {
-                const actief = thema === k.id;
-                return (
-                  <button
-                    key={k.id}
-                    type="button"
-                    onClick={() => zetThema(k.id as ThemaId)}
-                    aria-pressed={actief}
-                    className={cn(
-                      "flex min-h-14 items-center gap-3 rounded-2xl border-2 px-3 text-left text-[0.95rem] font-semibold leading-tight transition-colors",
-                      actief
-                        ? "border-primary bg-secondary text-foreground"
-                        : "border-border bg-card hover:bg-muted",
-                    )}
-                  >
-                    <span
-                      aria-hidden
-                      className="size-7 shrink-0 rounded-full ring-2 ring-card"
-                      style={{ background: STAAL[k.id] }}
-                    />
-                    <span className="min-w-0 flex-1">{t(k.label)}</span>
-                    {actief ? <Check className="size-5 shrink-0 text-primary" aria-hidden /> : null}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <div className="p-4">
-            <Label htmlFor="taal">{t("Taal")}</Label>
-            <p id="taal-uitleg" className="mt-1 text-[0.95rem] text-muted-foreground">
-              {t("De hele app en je recepten worden dan in die taal getoond.")}
-            </p>
-            <div className="relative mt-3">
-              <select
-                id="taal"
-                value={taal}
-                onChange={(e) => zetTaal(e.target.value)}
-                aria-describedby="taal-uitleg"
-                className="h-14 w-full appearance-none rounded-2xl border-2 border-input bg-card pl-4 pr-12 text-base font-semibold focus-visible:border-primary"
-              >
-                {TALEN.map((l) => (
-                  <option key={l.code} value={l.code}>
-                    {l.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                aria-hidden
-                className="pointer-events-none absolute right-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
-              />
-            </div>
-          </div>
-        </Groep>
-
-        <Groep titel={t("Weekmenu")} voet={t("Kies welke momenten je per dag wil inplannen.")}>
-          <label className="flex min-h-16 cursor-pointer items-center gap-3.5 px-4 py-3">
-            <span className="min-w-0 flex-1 text-[1.05rem] font-semibold leading-snug">
-              {t("Alles in 1 blok (geen ontbijt/middag/avond)")}
-            </span>
-            <Switch
-              checked={eenBlok}
-              onCheckedChange={(aan) => zetMomenten(aan ? [...EEN_BLOK] : [...ALLE_MOMENTEN])}
+          <Groep titel={t("Jouw Foodlo")}>
+            <LinkRij
+              to="/credits"
+              icoon={Sparkles}
+              tint="honing"
+              titel={t("Credits")}
+              rechts={
+                credits.data ? (
+                  <span className="text-base font-semibold text-muted-foreground">
+                    {credits.data.saldo}
+                  </span>
+                ) : null
+              }
             />
-          </label>
-          {!eenBlok
-            ? ALLE_MOMENTEN.map((m) => (
+            <LinkRij to="/meldingen" icoon={Bell} tint="honing" titel={t("Meldingen")} />
+            <LinkRij
+              to="/installeren"
+              icoon={Smartphone}
+              tint="groen"
+              titel={t("Foodlo op je telefoon zetten")}
+            />
+            <LinkRij
+              to="/rondleiding"
+              icoon={Compass}
+              tint="groen"
+              titel={t("Rondleiding opnieuw bekijken")}
+            />
+            <LinkRij
+              to="/kennismaking"
+              search={{ terug: "instellingen" }}
+              icoon={Compass}
+              tint="groen"
+              titel={t("Kennismaking aanpassen")}
+              uitleg={t("Kookervaring, kooktijd, dieet en allergieën")}
+            />
+            <LinkRij to="/hulp" icoon={Compass} tint="groen" titel={t("Help Center")} />
+          </Groep>
+
+          <Groep
+            titel={t("Deel met vrienden")}
+            voet={t("Laat anderen Foodlo openen zonder app store.")}
+          >
+            <div className="p-4">
+              <QrDeelKaart compact />
+            </div>
+            <LinkRij to="/deel" icoon={QrCode} tint="groen" titel={t("Grotere QR-code tonen")} />
+          </Groep>
+        </section>
+        <section
+          aria-labelledby="deel-maaltijden"
+          id="maaltijden"
+          className="scroll-mt-24 space-y-7"
+        >
+          <h2 id="deel-maaltijden" className="text-sectietitel">
+            {t("Maaltijden")}
+          </h2>
+          <Groep titel={t("Weekmenu")} voet={t("Kies welke momenten je per dag wil inplannen.")}>
+            <label className="flex min-h-16 cursor-pointer items-center gap-3.5 px-4 py-3">
+              <span className="min-w-0 flex-1 text-[1.05rem] font-semibold leading-snug">
+                {t("Alles in 1 blok (geen ontbijt/middag/avond)")}
+              </span>
+              <Switch
+                checked={eenBlok}
+                onCheckedChange={(aan) => zetMomenten(aan ? [...EEN_BLOK] : [...ALLE_MOMENTEN])}
+              />
+            </label>
+            {!eenBlok
+              ? ALLE_MOMENTEN.map((m) => (
+                  <label
+                    key={m}
+                    className="flex min-h-16 cursor-pointer items-center gap-3.5 px-4 py-3"
+                  >
+                    <span className="min-w-0 flex-1 text-[1.05rem] font-semibold capitalize leading-snug">
+                      {t(m)}
+                    </span>
+                    <Switch
+                      checked={momenten.includes(m)}
+                      onCheckedChange={(aan) =>
+                        zetMomenten(
+                          aan
+                            ? ALLE_MOMENTEN.filter((x) => x === m || momenten.includes(x))
+                            : momenten.filter((x) => x !== m),
+                        )
+                      }
+                    />
+                  </label>
+                ))
+              : null}
+          </Groep>
+
+          <Groep
+            titel={t("Wanneer eet je?")}
+            voet={t(
+              "Foodlo zegt op Vandaag wanneer je moet beginnen met koken, en kijkt na je avondeten naar morgen.",
+            )}
+          >
+            {(eenBlok ? ["maaltijd"] : ALLE_MOMENTEN.filter((m) => momenten.includes(m))).map(
+              (m) => (
                 <label
                   key={m}
-                  className="flex min-h-16 cursor-pointer items-center gap-3.5 px-4 py-3"
+                  className="flex min-h-16 flex-wrap items-center gap-x-3.5 gap-y-2 px-4 py-3"
                 >
-                  <span className="min-w-0 flex-1 text-[1.05rem] font-semibold capitalize leading-snug">
-                    {t(m)}
+                  <span className="min-w-[7rem] flex-1 text-[1.05rem] font-semibold capitalize leading-snug">
+                    {t(m === "maaltijd" ? "Eten" : m)}
                   </span>
-                  <Switch
-                    checked={momenten.includes(m)}
-                    onCheckedChange={(aan) =>
-                      zetMomenten(
-                        aan
-                          ? ALLE_MOMENTEN.filter((x) => x === m || momenten.includes(x))
-                          : momenten.filter((x) => x !== m),
-                      )
-                    }
-                  />
-                </label>
-              ))
-            : null}
-        </Groep>
-
-        <Groep
-          titel={t("Wanneer eet je?")}
-          voet={t("Foodlo zegt op Vandaag wanneer je moet beginnen met koken, en kijkt na je avondeten naar morgen.")}
-        >
-          {(eenBlok ? ["maaltijd"] : ALLE_MOMENTEN.filter((m) => momenten.includes(m))).map((m) => (
-            <label key={m} className="flex min-h-16 flex-wrap items-center gap-x-3.5 gap-y-2 px-4 py-3">
-              <span className="min-w-[7rem] flex-1 text-[1.05rem] font-semibold capitalize leading-snug">
-                {t(m === "maaltijd" ? "Eten" : m)}
-              </span>
-              {/* Keuzelijst per kwartier in plaats van het tijdveld van de browser: dat toonde
+                  {/* Keuzelijst per kwartier in plaats van het tijdveld van de browser: dat toonde
                   "06:30 PM" op toestellen met een Engelse systeemtaal (review punt 9). Altijd 24 uur. */}
-              <select
-                aria-label={`${t("Etenstijd")} ${t(m === "maaltijd" ? "eten" : m)}`}
-                value={etenstijd(m, weekmenu.etenstijden) ?? ""}
-                onChange={(e) => {
-                  const waarde = e.target.value;
-                  if (!/^\d{2}:\d{2}$/.test(waarde)) return;
-                  const sleutel = m === "maaltijd" ? "avondeten" : m;
-                  zetWeekmenu({ etenstijden: { ...weekmenu.etenstijden, [sleutel]: waarde } });
-                }}
-                className="h-12 min-w-[6.5rem] rounded-xl border border-input bg-background px-3 text-lg tabular-nums"
+                  <select
+                    aria-label={`${t("Etenstijd")} ${t(m === "maaltijd" ? "eten" : m)}`}
+                    value={etenstijd(m, weekmenu.etenstijden) ?? ""}
+                    onChange={(e) => {
+                      const waarde = e.target.value;
+                      if (!/^\d{2}:\d{2}$/.test(waarde)) return;
+                      const sleutel = m === "maaltijd" ? "avondeten" : m;
+                      zetWeekmenu({ etenstijden: { ...weekmenu.etenstijden, [sleutel]: waarde } });
+                    }}
+                    className="h-12 min-w-[6.5rem] rounded-xl border border-input bg-background px-3 text-lg tabular-nums"
+                  >
+                    {etenstijd(m, weekmenu.etenstijden) ? null : (
+                      <option value="">{t("Kies een tijd")}</option>
+                    )}
+                    {tijdKeuzes(etenstijd(m, weekmenu.etenstijden)).map((tijd) => (
+                      <option key={tijd} value={tijd}>
+                        {tijd}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ),
+            )}
+          </Groep>
+
+          <SlimmeVoorstellen t={t} />
+        </section>
+        <section aria-labelledby="deel-account" id="account" className="scroll-mt-24 space-y-7">
+          <h2 id="deel-account" className="text-sectietitel">
+            {t("Account en privacy")}
+          </h2>
+          <Groep titel={t("Profiel")}>
+            <div className="p-4">
+              <Label htmlFor="handle">{t("Jouw Foodlo-naam")}</Label>
+              <p id="handle-uitleg" className="mt-1 text-[0.95rem] text-muted-foreground">
+                {t("Met deze naam kunnen vrienden je terugvinden. Bijvoorbeeld: marie")}
+              </p>
+              {/* Bij grote tekst schuift "Bewaren" onder het veld, zodat de naam leesbaar blijft. */}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <div className="relative min-w-0 flex-1 basis-48">
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  >
+                    @
+                  </span>
+                  <Input
+                    id="handle"
+                    value={handle}
+                    onChange={(e) => setHandle(e.target.value)}
+                    aria-describedby="handle-uitleg"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    className="pl-9"
+                  />
+                </div>
+                <Button onClick={bewaarHandle} disabled={handleBezig} className="shrink-0">
+                  {handleBezig ? <Loader2 className="size-5 animate-spin" /> : null}
+                  {t("Bewaren")}
+                </Button>
+              </div>
+            </div>
+          </Groep>
+
+          <Groep titel={t("Beveiliging")}>
+            <div className="space-y-3 p-4">
+              <h3 className="text-base font-semibold">{t("Wachtwoord")}</h3>
+              <div>
+                <Label htmlFor="pw" className="text-[0.95rem]">
+                  {t("Nieuw wachtwoord")}
+                </Label>
+                <Input
+                  id="pw"
+                  type="password"
+                  autoComplete="new-password"
+                  value={wachtwoord}
+                  onChange={(e) => setWachtwoord(e.target.value)}
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="pw2" className="text-[0.95rem]">
+                  {t("Herhaal het wachtwoord")}
+                </Label>
+                <Input
+                  id="pw2"
+                  type="password"
+                  autoComplete="new-password"
+                  value={herhaal}
+                  onChange={(e) => setHerhaal(e.target.value)}
+                  className="mt-1.5"
+                />
+              </div>
+              <Button
+                variant="outline"
+                onClick={bewaarWachtwoord}
+                disabled={wachtwoordBezig}
+                className="w-full"
               >
-                {etenstijd(m, weekmenu.etenstijden) ? null : (
-                  <option value="">{t("Kies een tijd")}</option>
-                )}
-                {tijdKeuzes(etenstijd(m, weekmenu.etenstijden)).map((tijd) => (
-                  <option key={tijd} value={tijd}>
-                    {tijd}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ))}
-        </Groep>
-
-        <SlimmeVoorstellen t={t} />
-
-        <Groep titel={t("Jouw Foodlo")}>
-          <LinkRij
-            to="/credits"
-            icoon={Sparkles}
-            tint="honing"
-            titel={t("Credits")}
-            rechts={
-              credits.data ? (
-                <span className="text-base font-semibold text-muted-foreground">
-                  {credits.data.saldo}
-                </span>
-              ) : null
-            }
-          />
-          <LinkRij to="/meldingen" icoon={Bell} tint="honing" titel={t("Meldingen")} />
-          <LinkRij
-            to="/installeren"
-            icoon={Smartphone}
-            tint="groen"
-            titel={t("Foodlo op je telefoon zetten")}
-          />
-          <LinkRij
-            to="/rondleiding"
-            icoon={Compass}
-            tint="groen"
-            titel={t("Rondleiding opnieuw bekijken")}
-          />
-          <LinkRij
-            to="/kennismaking"
-            search={{ terug: "instellingen" }}
-            icoon={Compass}
-            tint="groen"
-            titel={t("Kennismaking aanpassen")}
-            uitleg={t("Kookervaring, kooktijd, dieet en allergieën")}
-          />
-          <LinkRij to="/hulp" icoon={Compass} tint="groen" titel={t("Help Center")} />
-        </Groep>
-
-        <Groep titel={t("Beveiliging")}>
-          <div className="space-y-3 p-4">
-            <h3 className="text-base font-semibold">{t("Wachtwoord")}</h3>
-            <div>
-              <Label htmlFor="pw" className="text-[0.95rem]">
-                {t("Nieuw wachtwoord")}
-              </Label>
-              <Input
-                id="pw"
-                type="password"
-                autoComplete="new-password"
-                value={wachtwoord}
-                onChange={(e) => setWachtwoord(e.target.value)}
-                className="mt-1.5"
-              />
+                {wachtwoordBezig ? <Loader2 className="size-5 animate-spin" /> : null}
+                {t("Wachtwoord bewaren")}
+              </Button>
             </div>
-            <div>
-              <Label htmlFor="pw2" className="text-[0.95rem]">
-                {t("Herhaal het wachtwoord")}
-              </Label>
-              <Input
-                id="pw2"
-                type="password"
-                autoComplete="new-password"
-                value={herhaal}
-                onChange={(e) => setHerhaal(e.target.value)}
-                className="mt-1.5"
-              />
-            </div>
-            <Button
-              variant="outline"
-              onClick={bewaarWachtwoord}
-              disabled={wachtwoordBezig}
-              className="w-full"
-            >
-              {wachtwoordBezig ? <Loader2 className="size-5 animate-spin" /> : null}
-              {t("Wachtwoord bewaren")}
-            </Button>
-          </div>
-        </Groep>
+          </Groep>
 
-        <Groep
-          titel={t("Deel met vrienden")}
-          voet={t("Laat anderen Foodlo openen zonder app store.")}
-        >
-          <div className="p-4">
-            <QrDeelKaart compact />
-          </div>
-          <LinkRij to="/deel" icoon={QrCode} tint="groen" titel={t("Grotere QR-code tonen")} />
-        </Groep>
+          <Pakketten t={t} />
 
-        <Pakketten t={t} />
+          <OverFoodlo t={t} />
 
-        <OverFoodlo t={t} />
+          <BeheerLink />
 
-        <BeheerLink />
-
-        <Groep titel={t("Account")}>
-          <KnopRij
-            icoon={LogOut}
-            tint="grijs"
-            titel={t("Afmelden")}
-            onClick={async () => {
-              await beeindigSessie();
-              await supabase.auth.signOut();
-            }}
-          />
-          <AccountVerwijderen />
-        </Groep>
+          <Groep titel={t("Account")}>
+            <KnopRij
+              icoon={LogOut}
+              tint="grijs"
+              titel={t("Afmelden")}
+              onClick={async () => {
+                await beeindigSessie();
+                await supabase.auth.signOut();
+              }}
+            />
+            <AccountVerwijderen />
+          </Groep>
+        </section>
       </div>
     </AppShell>
   );
