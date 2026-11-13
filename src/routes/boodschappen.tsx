@@ -53,11 +53,44 @@ import { vervangNaam, vervanging, zelfdeProduct } from "@/lib/product-herkenning
 import { zitInVoorraad } from "@/lib/voorraad-match";
 import { belgischeMaat, parseIngredientLine, toonBelgischeMaat } from "@/lib/ingredienten";
 import { appOrigin } from "@/lib/app-url";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { EmptyState } from "@/components/EmptyState";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WinkelIdeeen } from "@/components/WinkelIdeeen";
@@ -199,7 +232,10 @@ function BoodschappenPage() {
       if (weg.length) await supabase.from("shopping_items").delete().in("id", weg);
       await Promise.all(
         voor.map((b) =>
-          supabase.from("shopping_items").update({ quantity: b.quantity, unit: b.unit, checked: b.checked }).eq("id", b.id),
+          supabase
+            .from("shopping_items")
+            .update({ quantity: b.quantity, unit: b.unit, checked: b.checked })
+            .eq("id", b.id),
         ),
       );
     };
@@ -303,7 +339,10 @@ function BoodschappenPage() {
     queryKey: ["shopping-staples", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase.from("shopping_staples").select("id, name, quantity, unit").order("name");
+      const { data, error } = await supabase
+        .from("shopping_staples")
+        .select("id, name, quantity, unit")
+        .order("name");
       if (error) throw error;
       return (data ?? []) as Vast[];
     },
@@ -379,7 +418,10 @@ function BoodschappenPage() {
         );
       if (!mislukt && !opgegeven) toast.success("Je wijzigingen zijn bewaard");
     }
-    const aan = () => { zet(); void verwerk(); };
+    const aan = () => {
+      zet();
+      void verwerk();
+    };
     window.addEventListener("online", aan);
     window.addEventListener("offline", zet);
     if (navigator.onLine) void verwerk();
@@ -394,7 +436,10 @@ function BoodschappenPage() {
     queryKey: ["pantry-namen", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase.from("pantry_items").select("naam").eq("user_id", user!.id);
+      const { data, error } = await supabase
+        .from("pantry_items")
+        .select("naam")
+        .eq("user_id", user!.id);
       if (error) throw error;
       return (data ?? []).map((r) => (r.naam as string).trim().toLowerCase()).filter(Boolean);
     },
@@ -450,7 +495,8 @@ function BoodschappenPage() {
       const handmatig = correcties[normaliseerTekst(item.name)];
       // Echte productherkenning (BUG-057): "ui" in de voorraad is geen "suiker".
       const thuis = zitInVoorraad(item.name, voorraad);
-      const id: CategorieId = handmatig ?? (thuis ? "voorraadkast" : categorieVan(item.name, correcties));
+      const id: CategorieId =
+        handmatig ?? (thuis ? "voorraadkast" : categorieVan(item.name, correcties));
       const lijst = per.get(id) ?? [];
       lijst.push(item);
       per.set(id, lijst);
@@ -518,7 +564,10 @@ function BoodschappenPage() {
   }
 
   const opLijstNamen = items.filter((i) => !i.checked).map((i) => i.name);
-  const suggesties = useMemo(() => maakSuggesties(geschiedenis, opLijstNamen), [geschiedenis, items]); // eslint-disable-line react-hooks/exhaustive-deps
+  const suggesties = useMemo(
+    () => maakSuggesties(geschiedenis, opLijstNamen),
+    [geschiedenis, items],
+  ); // eslint-disable-line react-hooks/exhaustive-deps
   const vaak = useMemo(() => vaakGekocht(geschiedenis).slice(0, 12), [geschiedenis]);
   const vaakLos = useMemo(() => vaakLosGekocht(geschiedenis), [geschiedenis]);
   const vaakLosOpen = useMemo(
@@ -533,7 +582,10 @@ function BoodschappenPage() {
     ]);
     return weekGerechten.filter((g) => !alToegevoegd.has(g.recipe_id));
   }, [weekGerechten, items, geschiedenis]);
-  const toegevoegdeWeekGerechten = useMemo(() => weekGerechten.filter((g) => !weekOpen.some((open) => open.recipe_id === g.recipe_id)), [weekGerechten, weekOpen]);
+  const toegevoegdeWeekGerechten = useMemo(
+    () => weekGerechten.filter((g) => !weekOpen.some((open) => open.recipe_id === g.recipe_id)),
+    [weekGerechten, weekOpen],
+  );
   const typSuggesties = useMemo(() => {
     const t = normaliseerTekst(nieuw);
     if (t.length < 2) return [];
@@ -541,10 +593,14 @@ function BoodschappenPage() {
     return vaakGekocht(geschiedenis)
       .map((e) => e.name)
       .concat(vaste.map((v) => v.name))
-      .filter((n, i, a) => a.indexOf(n) === i && normaliseerTekst(n).startsWith(t) && !op.has(normaliseerTekst(n)))
+      .filter(
+        (n, i, a) =>
+          a.indexOf(n) === i && normaliseerTekst(n).startsWith(t) && !op.has(normaliseerTekst(n)),
+      )
       .slice(0, 4);
   }, [nieuw, geschiedenis, vaste, items]); // eslint-disable-line react-hooks/exhaustive-deps
-  const isVast = (naam: string) => vaste.some((v) => normaliseerTekst(v.name) === normaliseerTekst(naam));
+  const isVast = (naam: string) =>
+    vaste.some((v) => normaliseerTekst(v.name) === normaliseerTekst(naam));
 
   async function voegTekstToe(tekst: string) {
     if (!user || !actief || !tekst.trim()) return;
@@ -571,7 +627,9 @@ function BoodschappenPage() {
     onthoud(`${geparsed.name} is weer van je lijst`, draaiOm);
     const lijstId = actief;
     toast.success(
-      bestaand ? `${bestaand.name} stond al op je lijst — samengeteld` : `${geparsed.name} staat op je lijst`,
+      bestaand
+        ? `${bestaand.name} stond al op je lijst — samengeteld`
+        : `${geparsed.name} staat op je lijst`,
       {
         action: {
           label: "Ongedaan maken",
@@ -580,7 +638,11 @@ function BoodschappenPage() {
               if (bestaand) {
                 await supabase
                   .from("shopping_items")
-                  .update({ quantity: bestaand.quantity, unit: bestaand.unit, checked: bestaand.checked })
+                  .update({
+                    quantity: bestaand.quantity,
+                    unit: bestaand.unit,
+                    checked: bestaand.checked,
+                  })
                   .eq("id", bestaand.id);
               } else {
                 await supabase
@@ -604,7 +666,10 @@ function BoodschappenPage() {
     await voegTekstToe(tekst);
   }
 
-  async function voegMeerdereToe(lijst: { name: string; quantity: number | null; unit: string; note?: string | null }[], melding: string) {
+  async function voegMeerdereToe(
+    lijst: { name: string; quantity: number | null; unit: string; note?: string | null }[],
+    melding: string,
+  ) {
     if (!user || !actief || !lijst.length) return;
     const draaiOm = snapshotToevoegen(lijst.map((l) => l.name));
     try {
@@ -614,11 +679,19 @@ function BoodschappenPage() {
       return;
     }
     refresh();
-    onthoud(lijst.length === 1 ? `${lijst[0]!.name} is weer van je lijst` : "Toevoeging teruggedraaid", draaiOm);
+    onthoud(
+      lijst.length === 1 ? `${lijst[0]!.name} is weer van je lijst` : "Toevoeging teruggedraaid",
+      draaiOm,
+    );
     if (melding) toast.success(melding);
   }
 
-  async function zetGerechtOpLijst(recipeId: string, titel: string, personen?: number | null, servings?: number | null) {
+  async function zetGerechtOpLijst(
+    recipeId: string,
+    titel: string,
+    personen?: number | null,
+    servings?: number | null,
+  ) {
     if (!user || !actief) return;
     // Schaalt de ingrediënten mee met het geplande aantal personen, indien gekend.
     const factor = personen && servings && servings > 0 ? personen / servings : 1;
@@ -629,7 +702,10 @@ function BoodschappenPage() {
       .order("position");
     const lijst = (data ?? []).map((i) => ({
       ...i,
-      quantity: i.quantity === null || i.quantity === undefined ? null : Math.round(i.quantity * factor * 100) / 100,
+      quantity:
+        i.quantity === null || i.quantity === undefined
+          ? null
+          : Math.round(i.quantity * factor * 100) / 100,
       recipe_id: recipeId,
     }));
     if (!lijst.length) {
@@ -650,7 +726,12 @@ function BoodschappenPage() {
     } else {
       await supabase
         .from("shopping_staples")
-        .insert({ user_id: user.id, name: item.name, quantity: item.quantity, unit: item.unit ?? "" });
+        .insert({
+          user_id: user.id,
+          name: item.name,
+          quantity: item.quantity,
+          unit: item.unit ?? "",
+        });
       toast.success(`${item.name} is nu een vaste boodschap`);
     }
     qc.invalidateQueries({ queryKey: ["shopping-staples"] });
@@ -681,7 +762,11 @@ function BoodschappenPage() {
         action: {
           label: "Ongedaan maken",
           onClick: () => {
-            void supabase.from("shopping_items").update({ checked: false }).eq("id", item.id).then(refresh);
+            void supabase
+              .from("shopping_items")
+              .update({ checked: false })
+              .eq("id", item.id)
+              .then(refresh);
           },
         },
       });
@@ -749,7 +834,12 @@ function BoodschappenPage() {
     }
     void meet("boodschappen.vervangen");
     setAfvinkTijd((t) => ({ ...t, [item.id]: Date.now() }));
-    const vorig = { name: item.name, quantity: item.quantity, unit: item.unit, checked: item.checked };
+    const vorig = {
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      checked: item.checked,
+    };
     let teruggezet = false;
     const herstel = async () => {
       if (teruggezet) return;
@@ -759,16 +849,19 @@ function BoodschappenPage() {
     };
     onthoud(`${vervanging(item.name).naam} staat weer op je lijst`, herstel);
     refresh();
-    toast.success(`${vervanging(naam).naam} in je kar, in plaats van ${vervanging(item.name).naam}`, {
-      action: {
-        label: "Ongedaan maken",
-        onClick: () => {
-          void herstel()
-            .catch(() => toast.error("Terugzetten lukte niet."))
-            .finally(refresh);
+    toast.success(
+      `${vervanging(naam).naam} in je kar, in plaats van ${vervanging(item.name).naam}`,
+      {
+        action: {
+          label: "Ongedaan maken",
+          onClick: () => {
+            void herstel()
+              .catch(() => toast.error("Terugzetten lukte niet."))
+              .finally(refresh);
+          },
         },
       },
-    });
+    );
     return true;
   }
 
@@ -785,7 +878,13 @@ function BoodschappenPage() {
     const nu = Date.now();
     setAfvinkTijd((t) => ({ ...t, ...Object.fromEntries(open.map((i) => [i.id, nu])) }));
     onthoud(`${open.length} terug op je lijst`, async () => {
-      await supabase.from("shopping_items").update({ checked: false }).in("id", open.map((i) => i.id));
+      await supabase
+        .from("shopping_items")
+        .update({ checked: false })
+        .in(
+          "id",
+          open.map((i) => i.id),
+        );
     });
     refresh();
   }
@@ -803,7 +902,10 @@ function BoodschappenPage() {
     if (!gekozen.size || !actief) return;
     const weg = items.filter((i) => gekozen.has(i.id));
     const lijstId = actief;
-    const { error } = await supabase.from("shopping_items").delete().in("id", [...gekozen]);
+    const { error } = await supabase
+      .from("shopping_items")
+      .delete()
+      .in("id", [...gekozen]);
     if (error) {
       toast.error("Verwijderen lukte niet. Je lijst blijft zoals hij was.");
       return;
@@ -832,7 +934,10 @@ function BoodschappenPage() {
 
   async function verplaatsGekozen(naarLijst: string) {
     if (!gekozen.size) return;
-    await supabase.from("shopping_items").update({ list_id: naarLijst }).in("id", [...gekozen]);
+    await supabase
+      .from("shopping_items")
+      .update({ list_id: naarLijst })
+      .in("id", [...gekozen]);
     toast.success("Verplaatst naar het andere lijstje");
     setGekozen(new Set());
     setKiesModus(false);
@@ -859,7 +964,12 @@ function BoodschappenPage() {
     const vorig = bewerkItem;
     const { error } = await supabase
       .from("shopping_items")
-      .update({ name: bewerkNaam.trim(), quantity: maat.quantity, unit: maat.unit, note: bewerkNota.trim() ? bewerkNota.trim().slice(0, 100) : null })
+      .update({
+        name: bewerkNaam.trim(),
+        quantity: maat.quantity,
+        unit: maat.unit,
+        note: bewerkNota.trim() ? bewerkNota.trim().slice(0, 100) : null,
+      })
       .eq("id", bewerkItem.id);
     if (error) {
       toast.error("Het lukte niet om op te slaan. Probeer het opnieuw.");
@@ -870,7 +980,15 @@ function BoodschappenPage() {
     }
     setBewerkItem(null);
     onthoud(`${vorig.name} teruggezet zoals het was`, async () => {
-      await supabase.from("shopping_items").update({ name: vorig.name, quantity: vorig.quantity, unit: vorig.unit, note: vorig.note ?? null }).eq("id", vorig.id);
+      await supabase
+        .from("shopping_items")
+        .update({
+          name: vorig.name,
+          quantity: vorig.quantity,
+          unit: vorig.unit,
+          note: vorig.note ?? null,
+        })
+        .eq("id", vorig.id);
     });
     refresh();
     toast.success("Opgeslagen");
@@ -906,7 +1024,11 @@ function BoodschappenPage() {
       action: {
         label: "Ongedaan maken",
         onClick: () => {
-          void supabase.from("shopping_items").update({ checked: false }).in("id", ids).then(refresh);
+          void supabase
+            .from("shopping_items")
+            .update({ checked: false })
+            .in("id", ids)
+            .then(refresh);
         },
       },
     });
@@ -916,7 +1038,11 @@ function BoodschappenPage() {
   async function wisAfgevinkt() {
     if (!actief || !user || !actieveLijst) return;
     await bewaarGekocht(user.id, actieveLijst, klaar).catch(() => {});
-    const { error } = await supabase.from("shopping_items").delete().eq("checked", true).eq("list_id", actief);
+    const { error } = await supabase
+      .from("shopping_items")
+      .delete()
+      .eq("checked", true)
+      .eq("list_id", actief);
     if (error) {
       toast.error("Opruimen lukte niet. Probeer het opnieuw.");
       return;
@@ -985,7 +1111,10 @@ function BoodschappenPage() {
   /** De lijst netjes per afdeling als tekst, om door te sturen. */
   function lijstAlsTekst() {
     return groepen
-      .map(({ id, lijst }) => `${CATEGORIE_LABEL[id]}:\n${lijst.map((i) => `- ${itemTekst(i)}`).join("\n")}`)
+      .map(
+        ({ id, lijst }) =>
+          `${CATEGORIE_LABEL[id]}:\n${lijst.map((i) => `- ${itemTekst(i)}`).join("\n")}`,
+      )
       .join("\n\n");
   }
 
@@ -1029,7 +1158,11 @@ function BoodschappenPage() {
     qc.invalidateQueries({ queryKey: ["boodschappen-delers"] });
     try {
       if (navigator.share) {
-        await navigator.share({ title: "Foodlo boodschappen", text: "Kijk mee op mijn boodschappenlijst", url: link });
+        await navigator.share({
+          title: "Foodlo boodschappen",
+          text: "Kijk mee op mijn boodschappenlijst",
+          url: link,
+        });
         return;
       }
       await navigator.clipboard.writeText(link);
@@ -1196,7 +1329,10 @@ function BoodschappenPage() {
                   </div>
                 ) : null}
                 {typSuggesties.length > 0 ? (
-                  <div className="scroll-rij -mx-1 mb-2 flex gap-2 overflow-x-auto px-1" aria-label="Eerder gekocht">
+                  <div
+                    className="scroll-rij -mx-1 mb-2 flex gap-2 overflow-x-auto px-1"
+                    aria-label="Eerder gekocht"
+                  >
                     {typSuggesties.map((s) => (
                       <Button
                         key={s}
@@ -1216,11 +1352,13 @@ function BoodschappenPage() {
                 <label htmlFor="toevoegen" className="sr-only">
                   Iets toevoegen
                 </label>
-                <div className="flex gap-2">
+                {/* Bij grote tekst (smalle rij in rem) geen tegelknop: het veld krijgt de ruimte.
+                    "Producten" blijft bereikbaar via "Toevoegen uit…" (BUG-137). */}
+                <div className="@container flex gap-2">
                   <Button
                     variant="zacht"
                     size="icon"
-                    className="size-14"
+                    className="size-14 @max-[16rem]:hidden"
                     aria-label="Producten kiezen"
                     onClick={() => setCatalogusOpen(true)}
                   >
@@ -1594,7 +1732,9 @@ function BoodschappenPage() {
                   return (
                     <div key={g.recipe_id} className="flex min-h-20 items-center gap-3 px-4 py-3">
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[1.05rem] font-semibold">{g.titel}</span>
+                        <span className="block truncate text-[1.05rem] font-semibold">
+                          {g.titel}
+                        </span>
                         <span className="block text-[0.95rem] capitalize text-muted-foreground">
                           {datumLabel(g.dag)}
                         </span>
@@ -1718,14 +1858,99 @@ function BoodschappenPage() {
             >
               <ArrowUpDown /> Volgorde van je winkel
             </Button>
-            <Button variant="outline" className="h-14 w-full justify-start text-base" onClick={() => { setMeerOpen(false); setDeelOpen(true); }}><Share2 /> Lijst delen</Button>
-            <Button variant="outline" className="h-14 w-full justify-start text-base" onClick={() => { setMeerOpen(false); void vinkVoorraadAf(); }}><Package /> Vink af wat ik al in huis heb</Button>
-            {items.length > 0 ? <Button variant="outline" className="h-14 w-full justify-start text-base" onClick={() => { setMeerOpen(false); setKiesModus(true); setGekozen(new Set()); }}><CheckCheck /> Meerdere tegelijk kiezen</Button> : null}
-            <Button variant="outline" className="h-14 w-full justify-start text-base" onClick={() => { setMeerOpen(false); setLijstNaam(""); setNaamVenster("nieuw"); }}><ListPlus /> Nieuw lijstje maken</Button>
-            {actieveLijst && !actieveLijst.group_id ? <Button variant="outline" className="h-14 w-full justify-start text-base" onClick={() => { setMeerOpen(false); setLijstNaam(actieveNaam); setNaamVenster("hernoem"); }}><Pencil /> Naam van de lijst wijzigen</Button> : null}
-            {klaar.length > 0 ? <Button variant="outline" className="h-14 w-full justify-start text-base" onClick={() => { setMeerOpen(false); setWisVraag("afgevinkt"); }}><Trash2 /> Gekochte opruimen ({klaar.length})</Button> : null}
-            {items.length > 0 ? <Button variant="outline" className="h-14 w-full justify-start text-base text-destructive" onClick={() => { setMeerOpen(false); setWisVraag("alles"); }}><Trash2 /> Hele lijst leegmaken</Button> : null}
-            {lijsten.length > 1 && !actieveLijst?.group_id ? <Button variant="outline" className="h-14 w-full justify-start text-base text-destructive" onClick={() => { setMeerOpen(false); setVraagVerwijder(true); }}><Trash2 /> Dit lijstje verwijderen</Button> : null}
+            <Button
+              variant="outline"
+              className="h-14 w-full justify-start text-base"
+              onClick={() => {
+                setMeerOpen(false);
+                setDeelOpen(true);
+              }}
+            >
+              <Share2 /> Lijst delen
+            </Button>
+            <Button
+              variant="outline"
+              className="h-14 w-full justify-start text-base"
+              onClick={() => {
+                setMeerOpen(false);
+                void vinkVoorraadAf();
+              }}
+            >
+              <Package /> Vink af wat ik al in huis heb
+            </Button>
+            {items.length > 0 ? (
+              <Button
+                variant="outline"
+                className="h-14 w-full justify-start text-base"
+                onClick={() => {
+                  setMeerOpen(false);
+                  setKiesModus(true);
+                  setGekozen(new Set());
+                }}
+              >
+                <CheckCheck /> Meerdere tegelijk kiezen
+              </Button>
+            ) : null}
+            <Button
+              variant="outline"
+              className="h-14 w-full justify-start text-base"
+              onClick={() => {
+                setMeerOpen(false);
+                setLijstNaam("");
+                setNaamVenster("nieuw");
+              }}
+            >
+              <ListPlus /> Nieuw lijstje maken
+            </Button>
+            {actieveLijst && !actieveLijst.group_id ? (
+              <Button
+                variant="outline"
+                className="h-14 w-full justify-start text-base"
+                onClick={() => {
+                  setMeerOpen(false);
+                  setLijstNaam(actieveNaam);
+                  setNaamVenster("hernoem");
+                }}
+              >
+                <Pencil /> Naam van de lijst wijzigen
+              </Button>
+            ) : null}
+            {klaar.length > 0 ? (
+              <Button
+                variant="outline"
+                className="h-14 w-full justify-start text-base"
+                onClick={() => {
+                  setMeerOpen(false);
+                  setWisVraag("afgevinkt");
+                }}
+              >
+                <Trash2 /> Gekochte opruimen ({klaar.length})
+              </Button>
+            ) : null}
+            {items.length > 0 ? (
+              <Button
+                variant="outline"
+                className="h-14 w-full justify-start text-base text-destructive"
+                onClick={() => {
+                  setMeerOpen(false);
+                  setWisVraag("alles");
+                }}
+              >
+                <Trash2 /> Hele lijst leegmaken
+              </Button>
+            ) : null}
+            {lijsten.length > 1 && !actieveLijst?.group_id ? (
+              <Button
+                variant="outline"
+                className="h-14 w-full justify-start text-base text-destructive"
+                onClick={() => {
+                  setMeerOpen(false);
+                  setVraagVerwijder(true);
+                }}
+              >
+                <Trash2 /> Dit lijstje verwijderen
+              </Button>
+            ) : null}
           </div>
         </SheetContent>
       </Sheet>
@@ -1739,17 +1964,35 @@ function BoodschappenPage() {
           <div className="mt-4 space-y-6 pb-4">
             <section aria-label="Vaste boodschappen">
               <div className="flex items-center justify-between gap-2">
-                <h3 className="flex items-center gap-2 text-lg font-semibold"><Star className="size-5 text-accent-foreground" /> Vaste boodschappen</h3>
+                <h3 className="flex items-center gap-2 text-lg font-semibold">
+                  <Star className="size-5 text-accent-foreground" /> Vaste boodschappen
+                </h3>
                 {vaste.length > 0 ? (
-                  <Button className="h-12" onClick={() => void voegMeerdereToe(vaste, "Je vaste boodschappen staan op je lijst")}>Alles toevoegen</Button>
+                  <Button
+                    className="h-12"
+                    onClick={() =>
+                      void voegMeerdereToe(vaste, "Je vaste boodschappen staan op je lijst")
+                    }
+                  >
+                    Alles toevoegen
+                  </Button>
                 ) : null}
               </div>
               {vaste.length === 0 ? (
-                <p className="mt-1 text-base text-muted-foreground">Tik op het sterretje bij een product om het een vaste boodschap te maken.</p>
+                <p className="mt-1 text-base text-muted-foreground">
+                  Tik op het sterretje bij een product om het een vaste boodschap te maken.
+                </p>
               ) : (
                 <ul className="mt-2 divide-y divide-border/70">
                   {vaste.map((v) => (
-                    <GeheugenRij key={v.id} naam={v.name} sub={toonBelgischeMaat(v.quantity, v.unit)} vast onVast={() => void wisselVast(v)} onPlus={() => void voegMeerdereToe([v], `${v.name} staat op je lijst`)} />
+                    <GeheugenRij
+                      key={v.id}
+                      naam={v.name}
+                      sub={toonBelgischeMaat(v.quantity, v.unit)}
+                      vast
+                      onVast={() => void wisselVast(v)}
+                      onPlus={() => void voegMeerdereToe([v], `${v.name} staat op je lijst`)}
+                    />
                   ))}
                 </ul>
               )}
@@ -1758,11 +2001,20 @@ function BoodschappenPage() {
             <section aria-label="Wat koop ik vaak">
               <h3 className="text-lg font-semibold">Wat koop je vaak?</h3>
               {vaak.length === 0 ? (
-                <p className="mt-1 text-base text-muted-foreground">Dit vult zich vanzelf: wat je afvinkt en opruimt, onthoudt Foodlo hier.</p>
+                <p className="mt-1 text-base text-muted-foreground">
+                  Dit vult zich vanzelf: wat je afvinkt en opruimt, onthoudt Foodlo hier.
+                </p>
               ) : (
                 <ul className="mt-2 divide-y divide-border/70">
                   {vaak.map((e) => (
-                    <GeheugenRij key={e.name} naam={e.name} sub={`${e.keer} keer gekocht`} vast={isVast(e.name)} onVast={() => void wisselVast(e)} onPlus={() => void voegMeerdereToe([e], `${e.name} staat op je lijst`)} />
+                    <GeheugenRij
+                      key={e.name}
+                      naam={e.name}
+                      sub={`${e.keer} keer gekocht`}
+                      vast={isVast(e.name)}
+                      onVast={() => void wisselVast(e)}
+                      onPlus={() => void voegMeerdereToe([e], `${e.name} staat op je lijst`)}
+                    />
                   ))}
                 </ul>
               )}
@@ -1775,15 +2027,31 @@ function BoodschappenPage() {
                   {beurten.map((b) => (
                     <AccordionItem key={b.dag} value={b.dag}>
                       <AccordionTrigger className="min-h-14 text-base capitalize no-underline hover:no-underline">
-                        {datumLabel(b.dag)} · {b.lijst.length} {b.lijst.length === 1 ? "product" : "producten"}
+                        {datumLabel(b.dag)} · {b.lijst.length}{" "}
+                        {b.lijst.length === 1 ? "product" : "producten"}
                       </AccordionTrigger>
                       <AccordionContent>
-                        <Button variant="outline" className="mb-2 h-12 w-full" onClick={() => void voegMeerdereToe(b.lijst, "Alles staat weer op je lijst")}>
+                        <Button
+                          variant="outline"
+                          className="mb-2 h-12 w-full"
+                          onClick={() =>
+                            void voegMeerdereToe(b.lijst, "Alles staat weer op je lijst")
+                          }
+                        >
                           <Plus /> Alles opnieuw op de lijst
                         </Button>
                         <ul className="divide-y divide-border/70">
                           {b.lijst.map((r) => (
-                            <GeheugenRij key={r.id} naam={r.name} sub={toonBelgischeMaat(r.quantity, r.unit)} vast={isVast(r.name)} onVast={() => void wisselVast(r)} onPlus={() => void voegMeerdereToe([r], `${r.name} staat op je lijst`)} />
+                            <GeheugenRij
+                              key={r.id}
+                              naam={r.name}
+                              sub={toonBelgischeMaat(r.quantity, r.unit)}
+                              vast={isVast(r.name)}
+                              onVast={() => void wisselVast(r)}
+                              onPlus={() =>
+                                void voegMeerdereToe([r], `${r.name} staat op je lijst`)
+                              }
+                            />
                           ))}
                         </ul>
                       </AccordionContent>
@@ -1805,7 +2073,10 @@ function BoodschappenPage() {
           onVink={(item) => void vink(item)}
           onVervang={vervangInWinkel}
           onSluit={() => setWinkel(false)}
-          onOpruimen={() => { setWinkel(false); void klaarMetWinkelenNu(); }}
+          onOpruimen={() => {
+            setWinkel(false);
+            void klaarMetWinkelenNu();
+          }}
           voorMorgen={voorMorgen}
           onVoorMorgen={async (v) => {
             const aantal = await aanvulling.zetOpLijst(new Set(v.sleutels));
@@ -1814,21 +2085,39 @@ function BoodschappenPage() {
         />
       )}
 
-      <Dialog open={deelOpen} onOpenChange={(open) => { if (!open) { setDeelOpen(false); setDeelLink(null); } }}>
+      <Dialog
+        open={deelOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeelOpen(false);
+            setDeelLink(null);
+          }
+        }}
+      >
         <DialogContent className="rounded-2xl sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Lijst delen</DialogTitle>
-            <DialogDescription>Stuur de lijst door of laat iemand meekijken in Foodlo.</DialogDescription>
+            <DialogDescription>
+              Stuur de lijst door of laat iemand meekijken in Foodlo.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Button variant="outline" className="h-14 w-full justify-start text-base" onClick={() => void deelTekst()}>
+            <Button
+              variant="outline"
+              className="h-14 w-full justify-start text-base"
+              onClick={() => void deelTekst()}
+            >
               <MessageSquare /> Stuur als tekst
             </Button>
-            <Button className="h-14 w-full justify-start text-base" onClick={() => void maakDeelLink()}>
+            <Button
+              className="h-14 w-full justify-start text-base"
+              onClick={() => void maakDeelLink()}
+            >
               <Link2 /> Deel met een link
             </Button>
             <p className="px-1 text-base text-muted-foreground">
-              Wie de link opent, maakt eerst een gratis Foodlo-account. Daarna kan die mee aanvullen en afvinken.
+              Wie de link opent, maakt eerst een gratis Foodlo-account. Daarna kan die mee aanvullen
+              en afvinken.
             </p>
             {deelLink ? (
               <div className="rounded-xl bg-secondary p-3">
@@ -1836,7 +2125,10 @@ function BoodschappenPage() {
                 <Button
                   variant="ghost"
                   className="mt-1 h-11"
-                  onClick={() => { void navigator.clipboard.writeText(deelLink); toast.success("Link gekopieerd"); }}
+                  onClick={() => {
+                    void navigator.clipboard.writeText(deelLink);
+                    toast.success("Link gekopieerd");
+                  }}
                 >
                   Kopieer link
                 </Button>
@@ -1848,12 +2140,20 @@ function BoodschappenPage() {
                   <Users className="size-4" /> Kijkt mee
                 </p>
                 {meekijkers.map((m) => (
-                  <div key={m.id} className="flex min-h-12 items-center gap-2 rounded-xl bg-secondary px-3">
+                  <div
+                    key={m.id}
+                    className="flex min-h-12 items-center gap-2 rounded-xl bg-secondary px-3"
+                  >
                     <span className="flex-1 text-base">
                       {m.invited_name || "Uitnodiging"}
                       {m.status === "accepted" ? "" : " · nog niet aanvaard"}
                     </span>
-                    <Button variant="ghost" size="icon" aria-label="Stop delen" onClick={() => void stopDelen(m.id)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Stop delen"
+                      onClick={() => void stopDelen(m.id)}
+                    >
                       <X className="size-5" />
                     </Button>
                   </div>
@@ -1864,55 +2164,131 @@ function BoodschappenPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={naamVenster !== null} onOpenChange={(open) => { if (!open) setNaamVenster(null); }}>
+      <Dialog
+        open={naamVenster !== null}
+        onOpenChange={(open) => {
+          if (!open) setNaamVenster(null);
+        }}
+      >
         <DialogContent className="rounded-2xl sm:max-w-md">
-          <DialogHeader><DialogTitle>{naamVenster === "nieuw" ? "Nieuw lijstje" : "Naam wijzigen"}</DialogTitle><DialogDescription>Geef dit lijstje een herkenbare naam.</DialogDescription></DialogHeader>
-          <Input autoFocus value={lijstNaam} onChange={(event) => setLijstNaam(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void (naamVenster === "nieuw" ? nieuwLijstje() : hernoem()); }} className="h-14 text-base" />
-          <DialogFooter><Button variant="outline" onClick={() => setNaamVenster(null)}>Annuleren</Button><Button onClick={() => void (naamVenster === "nieuw" ? nieuwLijstje() : hernoem())}>Bewaren</Button></DialogFooter>
+          <DialogHeader>
+            <DialogTitle>{naamVenster === "nieuw" ? "Nieuw lijstje" : "Naam wijzigen"}</DialogTitle>
+            <DialogDescription>Geef dit lijstje een herkenbare naam.</DialogDescription>
+          </DialogHeader>
+          <Input
+            autoFocus
+            value={lijstNaam}
+            onChange={(event) => setLijstNaam(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter")
+                void (naamVenster === "nieuw" ? nieuwLijstje() : hernoem());
+            }}
+            className="h-14 text-base"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNaamVenster(null)}>
+              Annuleren
+            </Button>
+            <Button onClick={() => void (naamVenster === "nieuw" ? nieuwLijstje() : hernoem())}>
+              Bewaren
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={bewerkItem !== null} onOpenChange={(open) => { if (!open) setBewerkItem(null); }}>
+      <Dialog
+        open={bewerkItem !== null}
+        onOpenChange={(open) => {
+          if (!open) setBewerkItem(null);
+        }}
+      >
         <DialogContent className="rounded-2xl sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Boodschap aanpassen</DialogTitle>
             <DialogDescription>
-              {bewerkItem?.recept ? `Voor het gerecht “${bewerkItem.recept}”.` : "Pas aan wat je wilt en tik op Opslaan."}
+              {bewerkItem?.recept
+                ? `Voor het gerecht “${bewerkItem.recept}”.`
+                : "Pas aan wat je wilt en tik op Opslaan."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            <label className="block text-base font-semibold">Naam
-              <Input autoFocus value={bewerkNaam} onChange={(event) => setBewerkNaam(event.target.value)} className="mt-1 h-14 text-base" />
+            <label className="block text-base font-semibold">
+              Naam
+              <Input
+                autoFocus
+                value={bewerkNaam}
+                onChange={(event) => setBewerkNaam(event.target.value)}
+                className="mt-1 h-14 text-base"
+              />
             </label>
             <div className="grid grid-cols-2 gap-3">
-              <label className="block text-base font-semibold">Hoeveel
-                <Input inputMode="decimal" placeholder="bv. 2" value={bewerkAantal} onChange={(event) => setBewerkAantal(event.target.value)} className="mt-1 h-14 text-base" />
+              <label className="block text-base font-semibold">
+                Hoeveel
+                <Input
+                  inputMode="decimal"
+                  placeholder="bv. 2"
+                  value={bewerkAantal}
+                  onChange={(event) => setBewerkAantal(event.target.value)}
+                  className="mt-1 h-14 text-base"
+                />
               </label>
-              <label className="block text-base font-semibold">Eenheid
-                <Input placeholder="bv. kg, stuk(s)" value={bewerkEenheid} onChange={(event) => setBewerkEenheid(event.target.value)} className="mt-1 h-14 text-base" />
+              <label className="block text-base font-semibold">
+                Eenheid
+                <Input
+                  placeholder="bv. kg, stuk(s)"
+                  value={bewerkEenheid}
+                  onChange={(event) => setBewerkEenheid(event.target.value)}
+                  className="mt-1 h-14 text-base"
+                />
               </label>
             </div>
-            <label className="block text-base font-semibold">Nota
-              <Input placeholder="bv. de biologische" value={bewerkNota} maxLength={100} onChange={(event) => setBewerkNota(event.target.value)} className="mt-1 h-14 text-base" />
+            <label className="block text-base font-semibold">
+              Nota
+              <Input
+                placeholder="bv. de biologische"
+                value={bewerkNota}
+                maxLength={100}
+                onChange={(event) => setBewerkNota(event.target.value)}
+                className="mt-1 h-14 text-base"
+              />
             </label>
-            <label className="block text-base font-semibold">Afdeling
+            <label className="block text-base font-semibold">
+              Afdeling
               <select
                 value={bewerkCategorie}
                 onChange={(e) => setBewerkCategorie(e.target.value as CategorieId)}
                 className="mt-1 h-14 w-full rounded-xl border border-input bg-background px-3 text-base"
               >
-                {CATEGORIE_VOLGORDE.map((c) => <option key={c} value={c}>{CATEGORIE_LABEL[c]}</option>)}
+                {CATEGORIE_VOLGORDE.map((c) => (
+                  <option key={c} value={c}>
+                    {CATEGORIE_LABEL[c]}
+                  </option>
+                ))}
               </select>
             </label>
             {bewerkItem ? (
-              <Button variant="outline" className="h-14 w-full justify-start text-base" onClick={() => void wisselVast(bewerkItem)}>
+              <Button
+                variant="outline"
+                className="h-14 w-full justify-start text-base"
+                onClick={() => void wisselVast(bewerkItem)}
+              >
                 <Star className={isVast(bewerkItem.name) ? "fill-current text-primary" : ""} />
-                {isVast(bewerkItem.name) ? "Vaste boodschap (tik om te stoppen)" : "Maak er een vaste boodschap van"}
+                {isVast(bewerkItem.name)
+                  ? "Vaste boodschap (tik om te stoppen)"
+                  : "Maak er een vaste boodschap van"}
               </Button>
             ) : null}
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" className="text-destructive" onClick={() => { const i = bewerkItem; setBewerkItem(null); if (i) void verwijder(i); }}>
+            <Button
+              variant="outline"
+              className="text-destructive"
+              onClick={() => {
+                const i = bewerkItem;
+                setBewerkItem(null);
+                if (i) void verwijder(i);
+              }}
+            >
               <Trash2 /> Verwijderen
             </Button>
             <Button onClick={() => void bewaarItem()}>Opslaan</Button>
@@ -1920,10 +2296,17 @@ function BoodschappenPage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={wisVraag !== null} onOpenChange={(open) => { if (!open) setWisVraag(null); }}>
+      <AlertDialog
+        open={wisVraag !== null}
+        onOpenChange={(open) => {
+          if (!open) setWisVraag(null);
+        }}
+      >
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>{wisVraag === "alles" ? "Hele lijst leegmaken?" : "Afgevinkte boodschappen wissen?"}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {wisVraag === "alles" ? "Hele lijst leegmaken?" : "Afgevinkte boodschappen wissen?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {wisVraag === "alles"
                 ? `Alle ${items.length} boodschappen verdwijnen uit “${actieveNaam}”.`
@@ -1932,7 +2315,10 @@ function BoodschappenPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuleren</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void (wisVraag === "alles" ? wisAlles() : wisAfgevinkt())} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={() => void (wisVraag === "alles" ? wisAlles() : wisAfgevinkt())}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               <Trash2 /> Verwijderen
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -1977,17 +2363,43 @@ function BoodschappenPage() {
 }
 
 /** Schermvullende weergave om in de winkel af te vinken, afdeling per afdeling. */
-function GeheugenRij({ naam, sub, vast, onVast, onPlus }: { naam: string; sub: string; vast: boolean; onVast: () => void; onPlus: () => void }) {
+function GeheugenRij({
+  naam,
+  sub,
+  vast,
+  onVast,
+  onPlus,
+}: {
+  naam: string;
+  sub: string;
+  vast: boolean;
+  onVast: () => void;
+  onPlus: () => void;
+}) {
   return (
     <li className="flex min-h-16 items-center gap-2">
       <span className="min-w-0 flex-1">
         <span className="block truncate text-lg">{naam}</span>
         {sub ? <span className="block text-base text-muted-foreground">{sub}</span> : null}
       </span>
-      <Button variant="ghost" size="icon" className="size-12 shrink-0" aria-pressed={vast} aria-label={vast ? `${naam} is een vaste boodschap` : `Maak ${naam} een vaste boodschap`} onClick={onVast}>
-        <Star className={vast ? "size-6 fill-current text-primary" : "size-6 text-muted-foreground"} />
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-12 shrink-0"
+        aria-pressed={vast}
+        aria-label={vast ? `${naam} is een vaste boodschap` : `Maak ${naam} een vaste boodschap`}
+        onClick={onVast}
+      >
+        <Star
+          className={vast ? "size-6 fill-current text-primary" : "size-6 text-muted-foreground"}
+        />
       </Button>
-      <Button variant="outline" className="h-12 shrink-0" onClick={onPlus} aria-label={`${naam} op je lijst zetten`}>
+      <Button
+        variant="outline"
+        className="h-12 shrink-0"
+        onClick={onPlus}
+        aria-label={`${naam} op je lijst zetten`}
+      >
         <Plus /> Lijst
       </Button>
     </li>
