@@ -1,5 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// BUG-139: de testcode (zetKlok, datums in de nep-databank) rekent in dezelfde tijdzone als de
+// browser (timezoneId hieronder). Zonder dit liepen datumtests rond middernacht een dag of uur mis
+// wanneer de testmachine op UTC staat (cloud, CI).
+process.env["TZ"] = "Europe/Brussels";
+
 /**
  * End-to-end-tests draaien tegen een lokale dev-server en een NEP-Supabase.
  * Elke request naar een ander adres dan 127.0.0.1/localhost wordt in de tests
