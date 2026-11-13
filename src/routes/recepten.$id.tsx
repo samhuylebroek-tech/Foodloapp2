@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { meldVerwijderd, verwijderReceptZacht, zetReceptTerug } from "@/lib/recept-verwijderen";
 import { markeerGezien } from "@/lib/gezien";
 import { meet } from "@/lib/meten";
 import { createFileRoute, Link, useBlocker, useNavigate } from "@tanstack/react-router";
@@ -73,6 +74,16 @@ import { PageSkeleton } from "@/components/PageSkeleton";
 import { AllergieWaarschuwing } from "@/components/AllergieWaarschuwing";
 import { RestjeVraag } from "@/components/kringloop/RestjeVraag";
 import { markeerKookstand } from "@/lib/eerste-stappen";
+
+/** Voorstel van "Vul dit gerecht aan": alleen wat nu leeg is (BUG-145). */
+type AanvulVoorstel = {
+  description: string | null;
+  servings: number | null;
+  prep_minutes: number | null;
+  cook_minutes: number | null;
+  instructions: string[];
+  ingredients: { name: string; quantity: number | null; unit?: string | null }[];
+};
 
 /** Kleine actieknop in de receptkop: pictogram met een woord eronder (48 px breed minimum). */
 const ACTIE_KNOP =
@@ -192,6 +203,9 @@ function ReceptPage() {
 
   // Niet per ongeluk wegnavigeren tijdens het koken (terugknop, link, veeggebaar).
   const [stopVraag, setStopVraag] = useState(false);
+  const [verwijderVraag, setVerwijderVraag] = useState(false);
+  const [kopieVraag, setKopieVraag] = useState(false);
+  const [aanvulVoorstel, setAanvulVoorstel] = useState<AanvulVoorstel | null>(null);
   const vernieuwKringloop = useKringloopVernieuw();
   // Keuken als één geheel: het recept weet wat er in huis is.
   const { data: voorraadNamen = [] } = useVoorraadNamen();
@@ -513,6 +527,7 @@ function ReceptPage() {
   }
 
   async function kopieerNaarMij() {
+    setKopieVraag(false);
     if (!user) return;
     const { data, error } = await supabase
       .from("recipes")
@@ -547,18 +562,33 @@ function ReceptPage() {
         })),
       );
     }
-    toast.success(t("Toegevoegd aan jouw gerechten"));
+    // BUG-144: ook de extra foto's gaan mee (zelfde pad; account-opruimen houdt daar rekening mee).
+    if (extraFotos.length) {
+      await supabase
+        .from("recipe_photos")
+        .insert(extraFotos.map((f, position) => ({ recipe_id: data.id, path: f.path, position })));
+    }
+    toast.success(t("Toegevoegd aan jouw gerechten. Je kan je kopie nu aanpassen."));
     navigate({ to: "/recepten/$id", params: { id: data.id } });
   }
 
+  // BUG-146: zelfde verwijderen als in de lijst: bevestigen, zacht verwijderen, "Ongedaan maken".
+  // Vroeger: browservenster en een harde .delete() zonder weg terug.
   async function verwijder() {
-    if (!confirm("Dit recept definitief verwijderen?")) return;
-    const { error } = await supabase.from("recipes").delete().eq("id", recipe.id);
-    if (error) toast.error("Verwijderen lukte niet");
-    else {
-      toast.success("Recept verwijderd");
-      navigate({ to: "/" });
+    setVerwijderVraag(false);
+    const receptId = recipe.id;
+    if (!(await verwijderReceptZacht(receptId))) {
+      toast.error(t("Verwijderen lukte niet"));
+      return;
     }
+    const ververs = async () => {
+      await qc.invalidateQueries({ queryKey: ["recipes"] });
+      await qc.invalidateQueries({ queryKey: ["recipe", receptId] });
+      await qc.invalidateQueries({ queryKey: ["meal-plan"] });
+    };
+    await ververs();
+    meldVerwijderd(receptId, t, ververs);
+    navigate({ to: "/gerechten" });
   }
 
   async function deelRecept() {
@@ -570,27 +600,57 @@ function ReceptPage() {
     }
   }
 
+  // BUG-145: AI schrijft nooit meer stil in je recept. Eerst een voorstel met alleen de lege velden,
+  // pas na "Overnemen" wordt er iets bewaard (principe: AI overschrijft nooit zonder nakijken).
   async function vulAanMetAI() {
     setAanvullen(true);
     try {
       const ai = await importRecipeFromText({
         data: { text: `Maak een volledig recept voor: ${recipe.title}` },
       });
+      const voorstel: AanvulVoorstel = {
+        description: recipe.description ? null : ai.description || null,
+        servings: recipe.servings ? null : ai.servings || null,
+        prep_minutes: recipe.prep_minutes ? null : ai.prep_minutes || null,
+        cook_minutes: recipe.cook_minutes ? null : ai.cook_minutes || null,
+        instructions: recipe.instructions.length ? [] : ai.instructions,
+        ingredients: ingredients.length ? [] : ai.ingredients,
+      };
+      const leeg =
+        !voorstel.description &&
+        !voorstel.servings &&
+        !voorstel.prep_minutes &&
+        !voorstel.cook_minutes &&
+        !voorstel.instructions.length &&
+        !voorstel.ingredients.length;
+      if (leeg) toast(t("Er valt niets aan te vullen: alles is al ingevuld."));
+      else setAanvulVoorstel(voorstel);
+    } catch {
+      toast.error(t("Aanvullen lukte niet"));
+    } finally {
+      setAanvullen(false);
+    }
+  }
+
+  async function aanvullingOvernemen() {
+    const v = aanvulVoorstel;
+    if (!v) return;
+    setAanvulVoorstel(null);
+    try {
       const { error } = await supabase
         .from("recipes")
         .update({
-          description: recipe.description || ai.description,
-          servings: recipe.servings || ai.servings,
-          prep_minutes: recipe.prep_minutes || ai.prep_minutes,
-          cook_minutes: recipe.cook_minutes || ai.cook_minutes,
-          instructions: recipe.instructions.length ? recipe.instructions : ai.instructions,
+          description: recipe.description || v.description || recipe.description,
+          servings: recipe.servings || v.servings || recipe.servings,
+          prep_minutes: recipe.prep_minutes || v.prep_minutes || recipe.prep_minutes,
+          cook_minutes: recipe.cook_minutes || v.cook_minutes || recipe.cook_minutes,
+          instructions: recipe.instructions.length ? recipe.instructions : v.instructions,
         })
         .eq("id", recipe.id);
       if (error) throw error;
-
-      if (!ingredients.length && ai.ingredients.length) {
+      if (!ingredients.length && v.ingredients.length) {
         await supabase.from("recipe_ingredients").insert(
-          ai.ingredients.map((i, index) => ({
+          v.ingredients.map((i, index) => ({
             recipe_id: recipe.id,
             name: i.name,
             quantity: i.quantity,
@@ -600,11 +660,9 @@ function ReceptPage() {
         );
       }
       await qc.invalidateQueries({ queryKey: ["recipe", id] });
-      toast.success(t("Voorstel klaar. Lees het na en pas aan wat je anders wil."));
+      toast.success(t("Aangevuld. Je kan alles nog aanpassen."));
     } catch {
       toast.error(t("Aanvullen lukte niet"));
-    } finally {
-      setAanvullen(false);
     }
   }
 
@@ -906,7 +964,11 @@ function ReceptPage() {
           ) : null}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className={ACTIE_KNOP}>
+              <Button
+                variant="ghost"
+                className={ACTIE_KNOP}
+                aria-label={t("Meer acties voor dit recept")}
+              >
                 <MoreHorizontal aria-hidden />
                 {t("Meer")}
               </Button>
@@ -921,7 +983,7 @@ function ReceptPage() {
                 </DropdownMenuItem>
               ) : (
                 <DropdownMenuItem
-                  onSelect={() => void kopieerNaarMij()}
+                  onSelect={() => setKopieVraag(true)}
                   className="min-h-12 text-base"
                 >
                   <Copy />
@@ -932,7 +994,7 @@ function ReceptPage() {
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onSelect={() => void verwijder()}
+                    onSelect={() => setVerwijderVraag(true)}
                     className="min-h-12 text-base text-destructive"
                   >
                     <Trash2 />
@@ -946,6 +1008,30 @@ function ReceptPage() {
       }
     >
       <div className="space-y-10">
+        {(recipe as { deleted_at?: string | null }).deleted_at ? (
+          <div
+            role="status"
+            className="flex flex-wrap items-center gap-3 rounded-2xl bg-muted px-4 py-3 text-base"
+          >
+            <span className="min-w-0 flex-1">{t("Dit gerecht is verwijderd.")}</span>
+            {isOwner ? (
+              <Button
+                variant="outline"
+                onClick={() =>
+                  void (async () => {
+                    if (await zetReceptTerug(recipe.id)) {
+                      toast.success(t("Gerecht teruggezet"));
+                      await qc.invalidateQueries({ queryKey: ["recipe", id] });
+                      await qc.invalidateQueries({ queryKey: ["recipes"] });
+                    } else toast.error(t("Terugzetten lukte niet"));
+                  })()
+                }
+              >
+                {t("Terugzetten")}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
         {/* V2: kop met foto en acties naast elkaar op desktop. */}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:gap-8 lg:gap-10">
           <div className="space-y-3">
@@ -1380,6 +1466,115 @@ function ReceptPage() {
           </div>
         </div>
       ) : null}
+      <AlertDialog open={!!aanvulVoorstel} onOpenChange={(o) => !o && setAanvulVoorstel(null)}>
+        <AlertDialogContent className="max-h-[85dvh] overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Voorstel van Foodlo")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("Alleen wat nu nog leeg is. Lees het na; je kan het daarna nog aanpassen.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {aanvulVoorstel ? (
+            <div className="space-y-3 text-base" data-testid="aanvulvoorstel">
+              {aanvulVoorstel.description ? (
+                <p>
+                  <strong>{t("Beschrijving")}:</strong> {aanvulVoorstel.description}
+                </p>
+              ) : null}
+              {aanvulVoorstel.servings ? (
+                <p>
+                  <strong>{t("Personen")}:</strong> {aanvulVoorstel.servings}
+                </p>
+              ) : null}
+              {aanvulVoorstel.prep_minutes || aanvulVoorstel.cook_minutes ? (
+                <p>
+                  <strong>{t("Tijd")}:</strong>{" "}
+                  {(aanvulVoorstel.prep_minutes ?? 0) + (aanvulVoorstel.cook_minutes ?? 0)} min
+                </p>
+              ) : null}
+              {aanvulVoorstel.ingredients.length ? (
+                <div>
+                  <strong>{t("Ingrediënten")}:</strong>
+                  <ul className="mt-1 list-disc pl-5">
+                    {aanvulVoorstel.ingredients.map((i, n) => (
+                      <li key={n}>{[i.quantity, i.unit, i.name].filter(Boolean).join(" ")}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {aanvulVoorstel.instructions.length ? (
+                <div>
+                  <strong>{t("Bereiding")}:</strong>
+                  <ol className="mt-1 list-decimal pl-5">
+                    {aanvulVoorstel.instructions.map((stap, n) => (
+                      <li key={n}>{stap}</li>
+                    ))}
+                  </ol>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("Niet doen")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void aanvullingOvernemen()}>
+              {t("Overnemen")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {/* BUG-144: eerst tonen wat er gekopieerd wordt, pas dan bewaren. */}
+      <AlertDialog open={kopieVraag} onOpenChange={setKopieVraag}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Zet in mijn gerechten?")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                "Je krijgt een eigen kopie die je zelf kan aanpassen. Het origineel blijft van de maker.",
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <ul className="space-y-1 text-base" data-testid="kopie-overzicht">
+            <li>
+              <strong>{t(recipe.title)}</strong>
+            </li>
+            <li>
+              {ingredients.length} {t(ingredients.length === 1 ? "ingrediënt" : "ingrediënten")} ·{" "}
+              {recipe.instructions.length}{" "}
+              {t(recipe.instructions.length === 1 ? "stap" : "stappen")}
+            </li>
+            <li>
+              {recipe.image_url || extraFotos.length
+                ? `${(recipe.image_url ? 1 : 0) + extraFotos.length} ${t("foto('s) gaan mee")}`
+                : t("Zonder foto")}
+            </li>
+          </ul>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("Annuleren")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void kopieerNaarMij()}>
+              {t("Zet in mijn gerechten")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {/* BUG-146: zelfde bevestiging als in de lijst; daarna "Ongedaan maken". */}
+      <AlertDialog open={verwijderVraag} onOpenChange={setVerwijderVraag}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Zeker verwijderen?")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("Je verwijdert")} “{t(recipe.title)}”.{" "}
+              {t("Het staat ook niet meer in je weekmenu.")}{" "}
+              {t("Je kan het meteen nog terugzetten.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("Annuleren")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void verwijder()}>
+              {t("Verwijderen")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }

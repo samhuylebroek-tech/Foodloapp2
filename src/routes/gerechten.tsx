@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { meldVerwijderd, verwijderReceptZacht } from "@/lib/recept-verwijderen";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Heart, Search, Clock, RotateCcw, Plus, Trash2, X, SlidersHorizontal } from "lucide-react";
@@ -338,20 +339,21 @@ function GerechtenPage() {
 
   async function verwijder(r: Recipe) {
     setBezig(true);
-    const { error } = await supabase
-      .from("recipes")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", r.id);
+    const gelukt = await verwijderReceptZacht(r.id);
     setBezig(false);
-    if (error) {
+    if (!gelukt) {
       toast.error(t("Verwijderen lukte niet"));
       return;
     }
-    toast.success(t("Gerecht verwijderd"));
     setTeVerwijderen(null);
-    qc.invalidateQueries({ queryKey: ["recipes"] });
-    qc.invalidateQueries({ queryKey: ["alle-ingredienten"] });
-    qc.invalidateQueries({ queryKey: ["meal-plan"] });
+    const ververs = () => {
+      qc.invalidateQueries({ queryKey: ["recipes"] });
+      qc.invalidateQueries({ queryKey: ["alle-ingredienten"] });
+      qc.invalidateQueries({ queryKey: ["meal-plan"] });
+    };
+    ververs();
+    // BUG-146: zelfde verwijderen als op de receptpagina, met "Ongedaan maken".
+    meldVerwijderd(r.id, t, ververs);
   }
 
   return (
