@@ -1,5 +1,7 @@
 # Risico- en kostenanalyse (VOORSTEL)
 
+> Samengevat in [`docs/foodlo/AI_ARCHITECTURE.md`](../foodlo/AI_ARCHITECTURE.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-11. **Ramingen, geen offertes.** Er is niets aangeschaft of geactiveerd. Prijzen komen uit openbare bronnen of derden en moeten vóór aankoop op de officiële prijspagina nagekeken worden. Onzekerheden staan erbij.
 
 ## 1. Kosten

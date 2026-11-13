@@ -1,5 +1,7 @@
 # Functie-inventaris Foodloapp (stand 2026-11-08, branch `v2/dev`)
 
+> Samengevat in [`docs/foodlo/COMPLETE_PRODUCT_INVENTORY.md`](../foodlo/COMPLETE_PRODUCT_INVENTORY.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Doel: **niets ongemerkt verliezen** tijdens het V2-herontwerp. Per functie: wat er bestaat, of het getest is, en het V2-plan.
 Classificatie: **Behouden** · **Verbeteren** · **Herontwerpen** · **Vervangen (met akkoord)** · **Te onderzoeken**.
 "E2E" = gedekt door Playwright-tests tegen de nep-Supabase (geen echte database). "—" = nog geen automatische test.

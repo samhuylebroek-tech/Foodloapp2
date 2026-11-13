@@ -1,5 +1,7 @@
 # Staging-voorstellen (niets hiervan is uitgevoerd)
 
+> Samengevat in [`docs/foodlo/DATABASE_ARCHITECTURE.md`](../foodlo/DATABASE_ARCHITECTURE.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Elk voorstel raakt database, opslag of persoonsgegevens en valt dus onder een approval gate.
 Volgorde per voorstel: **alleen-lezen onderzoek → staging-project → test → akkoord eigenaar → productie**.
 Er wordt nooit iets in productie gewijzigd zonder expliciete toestemming.

@@ -1,5 +1,7 @@
 # Mobiele strategie: iOS en Android (VOORSTEL)
 
+> Samengevat in [`docs/foodlo/MOBILE_ARCHITECTURE.md`](../foodlo/MOBILE_ARCHITECTURE.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-11. **Alleen voorgesteld.** Er is niets gebouwd, ingediend of aangemaakt (geen ontwikkelaarsaccount, geen build).
 
 ## 1. Huidige technische basis (gecontroleerd in de repo)

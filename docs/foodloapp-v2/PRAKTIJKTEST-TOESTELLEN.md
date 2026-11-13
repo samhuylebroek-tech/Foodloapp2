@@ -1,5 +1,7 @@
 # Praktijktest op echte iPhone- en Android-toestellen
 
+> Samengevat in [`docs/foodlo/TESTING_STRATEGY.md`](../foodlo/TESTING_STRATEGY.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-10. **Nog niet uitgevoerd.** Alle tests tot nu toe draaiden in Chromium-emulatie (Playwright) op een Mac. Dat zegt niets over Safari op iOS, echte vingers, het toetsenbord, de notch, VoiceOver of TalkBack. Dit plan maakt de eerste echte test mogelijk zonder productie of echte gegevens.
 
 ## 1. Opzet (vraagt toestemming)

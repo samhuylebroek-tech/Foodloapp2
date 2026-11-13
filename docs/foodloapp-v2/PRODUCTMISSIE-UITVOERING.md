@@ -1,5 +1,7 @@
 # Productmissie V2: uitvoeringsplan
 
+> Samengevat in [`docs/foodlo/DEVELOPMENT_ROADMAP.md`](../foodlo/DEVELOPMENT_ROADMAP.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-12. Branch `claude/sleepy-euler-eghoc3` (vanaf `v2/dev`), oplevering via een pull request naar `v2/dev`.
 Uitgangspunten:
 - de opdracht van de eigenaar "Fundamentele product- en lanceringsmissie";

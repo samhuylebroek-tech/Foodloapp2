@@ -1,5 +1,7 @@
 # AVG-audit Foodloapp V2: inventaris van persoonsgegevens
 
+> Samengevat in [`docs/foodlo/PRIVACY_AND_SECURITY.md`](../foodlo/PRIVACY_AND_SECURITY.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis. **Let op:** §9–10 noemen BUG-025/110 "niet gebouwd". Dat is verouderd: ze zijn opgelost en lokaal getest (zie BUG-REGISTER).
+
 Stand 2026-11-11, branch `v2/dev`. Fase 1 (inventaris) en **fase 2 (verbeteringen en tests, §7–§10)**. Er is geen databank gewijzigd.
 
 **Bron:**

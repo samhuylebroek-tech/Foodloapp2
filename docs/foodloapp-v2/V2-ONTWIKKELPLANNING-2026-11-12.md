@@ -1,5 +1,7 @@
 # Foodloapp V2: inventarisatie en ontwikkelplanning
 
+> Samengevat in [`docs/foodlo/DEVELOPMENT_ROADMAP.md`](../foodlo/DEVELOPMENT_ROADMAP.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-12. Lokaal op `v2/dev`. Niets gepusht, gemigreerd of uitgerold.
 - Goedkeuring eigenaar: grotere lokale V2-ontwikkelfase (2026-11-12).
 - Grenzen: geen push, deployment, migratie naar een echte databank, betaalde of externe diensten zonder aparte schriftelijke toestemming.

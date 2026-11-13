@@ -1,5 +1,7 @@
 # Foodloapp Intelligence: architectuur (VOORSTEL)
 
+> Samengevat in [`docs/foodlo/AI_ARCHITECTURE.md`](../foodlo/AI_ARCHITECTURE.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-11. **Alleen voorgesteld. Niets gebouwd, geen externe dienst geactiveerd.** Uitgangspunt: uitlegbare regels op bestaande code, AI alleen waar het aantoonbaar helpt.
 
 ## 1. Wat er al bestaat en herbruikbaar is (in de repo)

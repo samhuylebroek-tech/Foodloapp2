@@ -1,5 +1,7 @@
 # Foodloapp V2 — Bugregister
 
+> Prioriteiten en overzicht: [`docs/foodlo/KNOWN_ISSUES.md`](../foodlo/KNOWN_ISSUES.md). Dit register blijft de bron voor elke bug en elk bugnummer.
+
 Levend register. Elke bevinding: reproduceren → prioriteren → oplossen → opnieuw testen.
 Ernst: **Kritiek** (dataverlies/inbraak), **Hoog** (beveiliging/geld/kernflow), **Medium**, **Laag**.
 Status: `Open` · `Bezig` · `Opgelost en getest` · `Opgelost, gedeeltelijk getest` · `Opgelost, niet getest` · `Goedkeuring nodig` (gate G1–G8) · `Geaccepteerd risico`.

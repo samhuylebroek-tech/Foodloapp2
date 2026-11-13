@@ -1,5 +1,7 @@
 # Productroadmap V2: vijf fases (VOORSTEL)
 
+> Samengevat in [`docs/foodlo/DEVELOPMENT_ROADMAP.md`](../foodlo/DEVELOPMENT_ROADMAP.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-11. **Voorstel ter goedkeuring. Niets uitgevoerd.**
 - Beslissingen met nummer: zie [BESLISSINGEN-EIGENAAR.md](BESLISSINGEN-EIGENAAR.md).
 - Kosten en risico's: zie [RISICO-EN-KOSTENANALYSE.md](RISICO-EN-KOSTENANALYSE.md).

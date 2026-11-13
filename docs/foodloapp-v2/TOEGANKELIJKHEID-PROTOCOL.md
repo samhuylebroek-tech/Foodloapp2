@@ -1,5 +1,7 @@
 # Toegankelijkheid — automatische stand en protocol voor een echte schermlezer
 
+> Samengevat in [`docs/foodlo/TESTING_STRATEGY.md`](../foodlo/TESTING_STRATEGY.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-10.
 
 ## 1. Eerlijk vooraf

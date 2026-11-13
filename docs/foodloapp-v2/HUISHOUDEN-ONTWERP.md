@@ -1,5 +1,7 @@
 # Het huishouden als centraal samenwerkingsmodel (ontwerp, 2026-11-09)
 
+> Samengevat in [`docs/foodlo/DATABASE_ARCHITECTURE.md`](../foodlo/DATABASE_ARCHITECTURE.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Dit is een ontwerp. Er is **niets aan de databank veranderd**. Uitvoeren vraagt jouw akkoord: G1 (migraties, eerst op staging) en G2 (rechten/RLS).
 
 ## 1. Het idee in één zin

@@ -1,5 +1,7 @@
 # Architectuurvoorstellen: collecties, gezinsvoorkeuren, creators en schaal
 
+> Samengevat in [`docs/foodlo/TECHNICAL_ARCHITECTURE.md`](../foodlo/TECHNICAL_ARCHITECTURE.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-11. **Alleen voorstellen.** Elk onderdeel hieronder vraagt een databankwijziging, en die wordt pas na een test op staging en jouw akkoord uitgevoerd. Er is niets gebouwd dat een nieuwe tabel nodig heeft. Er worden geen fictieve externe diensten of cijfers gebruikt.
 
 Twee omgevingen, nooit verwarren:

@@ -1,5 +1,7 @@
 # Migratievoorstel 0002: recepten, foto's, beheerrechten en feedback
 
+> Samengevat in [`docs/foodlo/DATABASE_ARCHITECTURE.md`](../foodlo/DATABASE_ARCHITECTURE.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-11. **Voorstel, niet uitgevoerd.** De SQL staat in `migratie-voorstel/` en **niet** in `supabase/migrations/`, zodat Lovable ze niet kan oppikken.
 - Heen: [`0002_rollen_en_rls.up.sql`](migratie-voorstel/0002_rollen_en_rls.up.sql)
 - Terug: [`0002_rollen_en_rls.down.sql`](migratie-voorstel/0002_rollen_en_rls.down.sql)

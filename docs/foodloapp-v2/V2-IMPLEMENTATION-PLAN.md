@@ -1,5 +1,7 @@
 # Foodloapp V2 — Definitief uitvoeringsplan
 
+> Samengevat in [`docs/foodlo/TECHNICAL_ARCHITECTURE.md`](../foodlo/TECHNICAL_ARCHITECTURE.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Status: **gezaghebbend** vanaf 2026-11-08. Vervangt geen originele documenten; die blijven staan.
 Bronnen: `CLAUDE.md`, `CLAUDE-CODE-HANDOFF.md`, `START-HERE-FOR-CLAUDE-CODE.md`, `roadmap.md`, `.lovable/memory`, `.lovable/plan/*`, en een audit van de broncode (zie `BASELINE-2026-11-08.md`, `BUG-REGISTER.md`).
 De oudere map `foodloapp-v2-planning/` is niet gevonden (BUG-017). Als die terugkomt, wordt hij hiertegen gecontroleerd en worden verschillen hier bijgewerkt.

@@ -15,21 +15,7 @@ Sinds 2026-11-13 is dit de **bron van waarheid** voor product, architectuur en p
 4. **Meetresultaten** staan alleen in `IMPLEMENTATION_STATUS.md`, met datum en commando. Andere documenten verwijzen ernaar en herhalen geen cijfers.
 5. **Bij tegenspraak** geldt het document hier. De tegenspraak wordt genoteerd in `DECISIONS_LOG.md` §Tegenstrijdigheden, nooit stil weggehaald.
 
-> **Stand 2026-11-13: onvolledig.** 14 van de 17 documenten zijn geschreven. De volgende drie bestaan nog niet; tot ze er zijn, gelden de oude bronnen:
->
-> | Ontbreekt | Oude bron die tot dan geldt |
-> |---|---|
-> | `DECISIONS_LOG.md` | `docs/foodloapp-v2/BESLISSINGEN-EIGENAAR.md` |
-> | `KNOWN_ISSUES.md` | `docs/foodloapp-v2/BUG-REGISTER.md` |
-> | `RELEASE_PLAN.md` | `docs/foodloapp-v2/LANCERINGSPLAN-V2.md` |
->
-> De beslissingen van 2026-11-13 die de nog te schrijven `DECISIONS_LOG.md` moet opnemen:
->
-> | Code | Beslissing |
-> |---|---|
-> | D-2026-11-13-1 | Optie B: gefaseerde lancering |
-> | D-2026-11-13-2 | Gevoelige voedingsinformatie nooit naar externe AI |
-> | D-2026-11-13-3 | Ronde 2 goedgekeurd |
+> Stand 2026-11-13: alle 17 documenten zijn geschreven.
 
 ## Documenten
 | Document | Bron van waarheid voor |

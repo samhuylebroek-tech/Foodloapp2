@@ -1,5 +1,7 @@
 # Migratievoorstel boodschappen V2 — sjablonen, winkels, merken, varianten, foto's
 
+> Samengevat in [`docs/foodlo/DATABASE_ARCHITECTURE.md`](../foodlo/DATABASE_ARCHITECTURE.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-10. **Voorstel, niet uitgevoerd.** Er is niets gewijzigd aan een databank, bucket of Lovable-instelling. De SQL staat bewust in `docs/foodloapp-v2/migratie-voorstel/` en **niet** in `supabase/migrations/`. Zo kan Lovable haar niet oppikken of automatisch toepassen.
 
 - SQL heen: [`0001_boodschappen_v2.up.sql`](migratie-voorstel/0001_boodschappen_v2.up.sql)

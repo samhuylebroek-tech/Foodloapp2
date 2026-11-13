@@ -1,5 +1,7 @@
 # Module-audit Foodloapp V2 (2026-11-09)
 
+> Samengevat in [`docs/foodlo/FUNCTIONAL_REQUIREMENTS.md`](../foodlo/FUNCTIONAL_REQUIREMENTS.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Doel: per module eerlijk vaststellen hoe ver Foodloapp staat tegenover goede gespecialiseerde apps, en wat we eerst moeten bouwen. Dit document stuurt de volgende werkpakketten (masterplan §18). Het herhaalt niet wat al gebouwd is, maar beoordeelt het.
 
 **Hoe:**

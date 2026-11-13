@@ -1,6 +1,6 @@
 # Foodloapp: volledige productmatrix
 
-**Stand en bron.** Stand 2026-11-13. Gecontroleerd in de code van branch `claude/sleepy-euler-eghoc3` (= `v2/dev` + productronde 1) en in alle planningsdocumenten van `docs/foodloapp-v2/`.
+**Stand en bron.** Stand 2026-11-13 (bijgewerkt met beslissing D-2026-11-13-1, optie B). Samengevat in `docs/foodlo/COMPLETE_PRODUCT_INVENTORY.md`. Gecontroleerd in de code van branch `claude/sleepy-euler-eghoc3` (= `v2/dev` + productronde 1) en in alle planningsdocumenten van `docs/foodloapp-v2/`.
 
 **Doel.** Dit document is de blijvende productchecklist: **niets verdwijnt stilzwijgend**. Een module die niet in de eerste lancering zit, blijft hier staan met een fase.
 
@@ -89,7 +89,7 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | **Instellingen** | Profiel, kleuren, taal, etenstijden, momenten, voorraad, slimme voorstellen, export, verwijderen | Behouden | F1 | — | `instellingen.tsx` |
 | | 24-uurstijden, Nederlandse namen | Opgelost (ronde 1) | F1 | — | BUG-135 |
 | | Opdelen in onderdelen | Verbeteren | F1 | Eén lange pagina | §J vraag 2 |
-| | Allergieën en dieet op het account (nu alleen op het toestel) | Te ontwikkelen | F1/F2 | Werkt niet op een tweede toestel | 0004/0005, #5, #7 |
+| | Persoonlijke allergieën, intoleranties, dieet en uitsluitingen op het account (nu alleen op het toestel) | Te ontwikkelen | **F1** | Maximaal beschermd: alleen voor jezelf, nooit naar de AI (D-2026-11-13-1/2) | voorstel 0004b (N-1), FR-I-03 |
 
 ## A2. Recepten toevoegen en beheren (verplicht volledig)
 

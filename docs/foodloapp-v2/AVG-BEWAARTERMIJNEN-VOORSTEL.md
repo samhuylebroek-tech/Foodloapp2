@@ -1,5 +1,7 @@
 # Bewaartermijnen: concreet voorstel per soort gegevens
 
+> Samengevat in [`docs/foodlo/PRIVACY_AND_SECURITY.md`](../foodlo/PRIVACY_AND_SECURITY.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-11. **Alleen een voorstel. Er is niets uitgevoerd of vastgelegd.**
 - De automatische opruiming (migratie `0003`) is lokaal getest maar draait nergens.
 - Jij kiest de termijnen. Daarna komen ze in het privacybeleid en pas dan in de databank.
