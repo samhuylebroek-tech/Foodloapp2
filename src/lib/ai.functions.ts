@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { hintVoorAI, voorAI } from "@/lib/ai/privacy";
 import { z } from "zod";
 import { begrensdeLijst } from "@/lib/zod-hulp";
 import { belgischeMaat, parseIngredientLine } from "@/lib/ingredienten";
@@ -818,7 +819,12 @@ export const receptVanNaam = createServerFn({ method: "POST" })
   .inputValidator((data) =>
     z.object({ titel: z.string().min(2).max(160), hint: z.string().max(300).default("") }).parse(data),
   )
-  .handler(async ({ data, context }): Promise<ImportedRecipe> => {
+  .handler(async ({ data: invoer, context }): Promise<ImportedRecipe> => {
+    // BUG-142: een persoonlijke "Vermijd: …"-hint gaat alleen opgeschoond naar de AI (privacylaag).
+    const data = {
+      ...invoer,
+      hint: /^vermijd:/i.test(invoer.hint.trim()) ? hintVoorAI(invoer.hint) : invoer.hint,
+    };
     const { resultaat } = await metCredits(
       {
         userId: context.userId,
@@ -1136,7 +1142,10 @@ export const weekmenuIdeeen = createServerFn({ method: "POST" })
       })
       .parse(data),
   )
-  .handler(async ({ data, context }): Promise<WeekmenuIdee[]> => {
+  .handler(async ({ data: invoer, context }): Promise<WeekmenuIdee[]> => {
+    // BUG-142: "liever niet" kan allergieën of gezondheid bevatten. Alleen neutrale smaakwensen gaan
+    // naar de AI en in de cachesleutel; de volledige tekst filtert op het toestel (vermijdWoorden).
+    const data = { ...invoer, vermijd: voorAI(invoer.vermijd).tekst };
     const maand = new Date().toLocaleDateString("nl-BE", { month: "long" });
     const { resultaat } = await metCredits(
       {

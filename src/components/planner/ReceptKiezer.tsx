@@ -1,4 +1,5 @@
 /** WP6 — recept kiezen voor een maaltijd (uit routes/planner.tsx, ongewijzigd). */
+import { hintVoorAI, voorAI } from "@/lib/ai/privacy";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -209,7 +210,7 @@ export function ReceptKiezer({
         data: {
           aantal: 3,
           wensen,
-          vermijd: instelling.vermijd,
+          vermijd: voorAI(instelling.vermijd).tekst,
           maxMinuten: dagVoorkeur?.maxMinuten ?? instelling.maxMinuten,
           bekend: recipes.map((r) => r.title).slice(0, 60),
         },
@@ -232,7 +233,7 @@ export function ReceptKiezer({
     setAiBezig(true);
     try {
       const r = await receptVanNaam({
-        data: { titel, hint: instelling.vermijd ? `Vermijd: ${instelling.vermijd}` : "" },
+        data: { titel, hint: hintVoorAI(instelling.vermijd ? `Vermijd: ${instelling.vermijd}` : "") },
       });
       toonVoorstel(titel, r);
     } catch {

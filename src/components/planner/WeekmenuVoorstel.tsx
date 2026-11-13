@@ -4,6 +4,7 @@
  * allergeen, "liever niet" of iets buiten je dieet uit de kennismaking) en per voorstel 1 à 2
  * redenen. Allergieën en dieet blijven op dit toestel; de AI-ideeën krijgen ze niet.
  */
+import { voorAI } from "@/lib/ai/privacy";
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -324,7 +325,7 @@ export function WeekmenuVoorstel({
           data: {
             aantal: gaten.length,
             wensen: `${instelling.vlees}x vlees, ${instelling.vis}x vis, ${instelling.vega}x vegetarisch`,
-            vermijd: instelling.vermijd,
+            vermijd: voorAI(instelling.vermijd).tekst,
             maxMinuten: instelling.maxMinuten,
             bekend: [...recepten.slice(0, 60).map((r) => r.title), ...getoondeIdeeen.current],
           },
@@ -449,7 +450,7 @@ export function WeekmenuVoorstel({
         data: {
           aantal: 1,
           wensen: regel.soort ? `Voor deze dag: ${regel.soort}` : "Gevarieerd gerecht",
-          vermijd: instelling.vermijd,
+          vermijd: voorAI(instelling.vermijd).tekst,
           maxMinuten: regel.maxMinuten,
           bekend: [
             ...recepten.slice(0, 60).map((recept) => recept.title),

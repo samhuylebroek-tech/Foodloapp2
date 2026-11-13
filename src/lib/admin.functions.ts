@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { betaalInstellingGeweigerd } from "./betaalpoort";
 import { z } from "zod";
 import { begrensdeLijst } from "@/lib/zod-hulp";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -886,6 +887,12 @@ export const adminInstellingZetten = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ key: z.string().min(1), value: z.any() }).parse(d))
   .handler(async ({ context, data }) => {
     const { db, profiel } = await bewaker(context as Ctx, "settings.manage");
+    // BUG-143: de betaalpoort zit op de server, niet alleen in de interface.
+    const geweigerd = betaalInstellingGeweigerd(data.key, data.value);
+    if (geweigerd) {
+      await logboek(db, profiel, "settings.geweigerd", "setting", data.key, { value: data.value });
+      throw new Error(geweigerd);
+    }
     await db
       .from("platform_settings")
       .update({ value: data.value, updated_at: new Date().toISOString(), updated_by: profiel.user_id })

@@ -122,7 +122,13 @@ export function WeekmenuInstellingen({
                 onChange={(e) => onZet({ vermijd: e.target.value })}
                 placeholder="bv. paddenstoelen, bloemkool"
                 className="mt-1 h-14 text-base"
+                aria-describedby="vermijd-uitleg"
               />
+              {/* BUG-142: eerlijk zeggen wat er met deze tekst gebeurt. */}
+              <p id="vermijd-uitleg" className="mt-1 text-[0.95rem] text-muted-foreground">
+                Allergieën vul je in bij je allergieën. Voor ideeën van de AI sturen we alleen
+                smaakwensen door, nooit allergieën, dieet of gezondheid.
+              </p>
               <p className="mt-4 text-base text-muted-foreground">Waaruit mag Foodlo kiezen?</p>
               <div className="mt-2 grid gap-2">
                 {(

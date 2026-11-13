@@ -8,10 +8,10 @@ import { supabase } from "@/integrations/supabase/client";
  */
 
 /**
- * Er is nog geen betaalprovider gekoppeld (zie BUSINESS-CONTROL-CENTER-AUDIT.md). Pas op `true`
- * zetten wanneer kopen werkelijk kan; tot dan kan het beheer betalen niet aanzetten (BUG-094).
+ * Er is nog geen betaalprovider gekoppeld (zie BUSINESS-CONTROL-CENTER-AUDIT.md). De vlag en de
+ * servercontrole staan in `betaalpoort.ts` (BUG-094, BUG-143); hier opnieuw uitgevoerd voor de UI.
  */
-export const BETAALPROVIDER_GEKOPPELD = false;
+export { BETAALPROVIDER_GEKOPPELD } from "./betaalpoort";
 export type Limiet = {
   betalenActief: boolean;
   gratis: number;
