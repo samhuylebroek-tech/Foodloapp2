@@ -233,7 +233,10 @@ export function ReceptKiezer({
     setAiBezig(true);
     try {
       const r = await receptVanNaam({
-        data: { titel, hint: hintVoorAI(instelling.vermijd ? `Vermijd: ${instelling.vermijd}` : "") },
+        data: {
+          titel,
+          hint: hintVoorAI(instelling.vermijd ? `Vermijd: ${instelling.vermijd}` : ""),
+        },
       });
       toonVoorstel(titel, r);
     } catch {
