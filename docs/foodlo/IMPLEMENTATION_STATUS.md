@@ -3,7 +3,17 @@ Dit document is de enige plek voor meetresultaten.
 
 Elke regel heeft een datum, een commando en een branch. Oudere cijfers in andere documenten zijn historisch, bijvoorbeeld "unit 648" of "RLS 11/14/18" (tegenstrijdigheid T5).
 
-## 1. Laatste meting (na ronde 2, 2026-11-13)
+## 0. Laatste meting (na ronde 3, 2026-11-14)
+| Datum | Controle | Commando | Uitkomst |
+|---|---|---|---|
+| 2026-11-14 | Typecheck | `npm run typecheck` | 0 fouten |
+| 2026-11-14 | Unit-tests | `npm test` | **684/684** (53 bestanden) |
+| 2026-11-14 | E2E telefoon + 390 px, volledig | `npx playwright test --project=mobiel-390 --project=telefoon` | **212 geslaagd, 0 gefaald**, 86 overgeslagen. De ene ✘ is de bewuste `test.fail` voor BUG-095. |
+| 2026-11-14 | Nieuwe E2E ronde 3 | dupliceren, "Iets anders vanavond", voorbeeld in de editor, offline-scherm, "Waarom nu" | allemaal groen, telkens op twee projecten |
+| 2026-11-14 | Schone cloudinstallatie | `rm -rf node_modules` + `scripts/cloud-start.sh` | < 1 s, exacte versies uit `bun.lock`, `bun.lock` ongewijzigd |
+| 2026-11-14 | Lint-ratchet | `node scripts/lint-ratchet.mjs origin/v2/dev` | geen nieuwe meldingen |
+
+## 1. Vorige meting (na ronde 2, 2026-11-13)
 Branch `claude/sleepy-euler-eghoc3`.
 
 | Datum | Controle | Commando | Uitkomst |
