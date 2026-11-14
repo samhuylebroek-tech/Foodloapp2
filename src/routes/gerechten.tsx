@@ -8,6 +8,7 @@ import { zichtbareEigenaren } from "@/lib/zichtbare-eigenaren";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { KeukenWissel } from "@/components/KeukenWissel";
+import { MijnVerzamelingen } from "@/components/makers/MijnVerzamelingen";
 import { useVoorraadStand } from "@/hooks/useVoorraadStand";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { CollectieOmslag } from "@/components/ontdek/CollectieOmslag";
@@ -396,6 +397,9 @@ function GerechtenPage() {
             aria-label={t("Zoeken")}
           />
         </div>
+
+        {/* Module B: eigen verzamelingen (pas zichtbaar na migratie 0008 of in de demo). */}
+        <MijnVerzamelingen />
 
         {collecties.length ? (
           <section aria-labelledby="collecties-titel">
