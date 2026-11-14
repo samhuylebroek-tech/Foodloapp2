@@ -15,7 +15,7 @@ Sinds 2026-11-13 is dit de **bron van waarheid** voor product, architectuur en p
 4. **Meetresultaten** staan alleen in `IMPLEMENTATION_STATUS.md`, met datum en commando. Andere documenten verwijzen ernaar en herhalen geen cijfers.
 5. **Bij tegenspraak** geldt het document hier. De tegenspraak wordt genoteerd in `DECISIONS_LOG.md` §Tegenstrijdigheden, nooit stil weggehaald.
 
-> Stand 2026-11-13: alle 17 documenten zijn geschreven.
+> Stand 2026-11-14: alle 17 gevraagde documenten zijn geschreven, plus MODULE_DESIGNS (ronde 3).
 
 ## Documenten
 | Document | Bron van waarheid voor |
@@ -37,5 +37,6 @@ Sinds 2026-11-13 is dit de **bron van waarheid** voor product, architectuur en p
 | [DECISIONS_LOG](DECISIONS_LOG.md) | Beslissingen, gates, tegenstrijdigheden |
 | [KNOWN_ISSUES](KNOWN_ISSUES.md) | Open bugs met prioriteit (nummers uit het bugregister) |
 | [RELEASE_PLAN](RELEASE_PLAN.md) | F1-lancering: voorwaarden, blokkades, stores |
+| [MODULE_DESIGNS](MODULE_DESIGNS.md) | UX, werking, afhankelijkheden en planning van elke nog niet gebouwde module |
 
 **Werkwijze:** `CLAUDE.md` (veiligheidsgrenzen, visuele werkwijze) en `docs/foodloapp-v2/DESIGNSYSTEEM.md` (bindend voor schermen) blijven gelden.
