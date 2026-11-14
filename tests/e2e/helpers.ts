@@ -120,7 +120,7 @@ export async function nepDb(): Promise<Record<string, Record<string, unknown>[]>
 
 export async function storing(s: {
   pad: string;
-  soort: "fout" | "traag" | "netwerk";
+  soort: "fout" | "traag" | "netwerk" | "ontbreekt";
   methode?: string;
   keer?: number;
   ms?: number;

@@ -26,6 +26,7 @@ import {
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { themas as maakThemas, type Thema } from "@/lib/themas";
 import { ThemaRij } from "@/components/ontdek/ThemaRij";
+import { MakersRij } from "@/components/makers/MakersRij";
 import { OntdekLeeg } from "@/components/ontdek/OntdekLeeg";
 import { soortLabel } from "@/lib/recept-keuzes";
 
@@ -266,6 +267,9 @@ function InspiratiePage() {
         ) : !isLoading && !isError && !actieveFilters && !filters.zoek && recepten.length ? (
           <ThemaRij themas={themaLijst} onKies={setThema} />
         ) : null}
+
+        {/* Makers (module B): alleen zonder zoekopdracht of filter, en pas na de migratie. */}
+        {!thema && !actieveFilters && !filters.zoek ? <MakersRij /> : null}
 
         {!isLoading && !isError && !recepten.length ? (
           <OntdekLeeg />

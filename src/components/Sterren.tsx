@@ -3,7 +3,11 @@ import { cn } from "@/lib/utils";
 
 export function Sterren({ waarde, klein = false }: { waarde: number; klein?: boolean }) {
   return (
-    <span className="inline-flex items-center gap-0.5" aria-label={`${waarde} van 5 sterren`}>
+    <span
+      className="inline-flex items-center gap-0.5"
+      role="img"
+      aria-label={`${waarde} van 5 sterren`}
+    >
       {[1, 2, 3, 4, 5].map((n) => (
         <Star
           key={n}

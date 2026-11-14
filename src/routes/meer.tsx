@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Smartphone,
   Users,
+  ChefHat,
   WalletCards,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
@@ -105,6 +106,13 @@ function MeerPage() {
             tint="terracotta"
             titel={t("Vrienden en gezin")}
             uitleg={t("Samen koken, delen en je gezin beheren")}
+          />
+          <LinkRij
+            to="/makers"
+            icoon={ChefHat}
+            tint="honing"
+            titel={t("Makers")}
+            uitleg={t("Volg koks en deel zelf recepten")}
           />
         </Groep>
 

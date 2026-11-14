@@ -279,6 +279,134 @@ const INSPIRATIE_INGREDIENTEN = [
   })),
 );
 
+// ---------- Module B: makers, verzamelingen en community (verzonnen) ----------
+// Andere gebruikers dan het gezin: hun recepten staan dus NIET in Marie's Keuken, alleen via de
+// openbare makerpagina (recipe_publicaties: openbaar + gepubliceerd + goedgekeurd).
+export const MAKER_USERS = {
+  lotte: "9a9a9a9a-0000-4000-8000-000000000001",
+  ahmed: "9a9a9a9a-0000-4000-8000-000000000002",
+  gust: "9a9a9a9a-0000-4000-8000-000000000003",
+};
+export const MAKER_IDS = {
+  lotte: "c7c7c7c7-0000-4000-8000-000000000001",
+  ahmed: "c7c7c7c7-0000-4000-8000-000000000002",
+  gust: "c7c7c7c7-0000-4000-8000-000000000003",
+};
+const MR = (n) => `a7a7a7a7-0000-4000-8000-0000000000${String(n).padStart(2, "0")}`;
+export const MAKER_RECEPT = { wortelsoep: MR(1), stoemp: MR(2), tajine: MR(3), linzen: MR(4), pompoen: MR(5) };
+
+const MAKER_RECEPTEN = [
+  [1, "lotte", "Wortelsoep met sinaasappel", "soep", ["vegetarisch", "soep", "snel"], 10, 25, null,
+    ["wortelen", "ui", "sinaasappel", "groentebouillon", "gember"],
+    ["Snij wortelen en ui grof.", "Stoof ze 5 minuten in wat olie.", "Voeg bouillon en gember toe en kook 20 minuten.", "Mix fijn en pers de sinaasappel erboven uit."],
+    null],
+  [2, "lotte", "Stoemp met prei en spekjes", "hoofdgerecht", ["vlees", "Belgisch", "stoemp"], 15, 25, null,
+    ["aardappelen", "prei", "spekblokjes", "boter", "nootmuskaat"],
+    ["Kook de aardappelen gaar.", "Stoof de prei in boter.", "Bak de spekjes krokant.", "Stamp alles samen en kruid met nootmuskaat."],
+    "https://www.youtube.com/watch?v=demo-stoemp"],
+  [3, "ahmed", "Kip-tajine met abrikozen", "hoofdgerecht", ["vlees", "stoof"], 20, 60, null,
+    ["kippendijen", "gedroogde abrikozen", "ui", "kaneel", "komijn", "amandelen"],
+    ["Bak de kip rondom bruin.", "Fruit de ui met kaneel en komijn.", "Voeg kip, abrikozen en een glas water toe.", "Laat een uur zacht stoven en werk af met amandelen."],
+    "https://www.tiktok.com/@chefahmed/video/1234567890"],
+  [4, "ahmed", "Linzensalade met munt", "salade", ["vegetarisch", "snel"], 10, 20, null,
+    ["groene linzen", "rode ui", "verse munt", "citroen", "olijfolie"],
+    ["Kook de linzen beetgaar.", "Snij ui en munt fijn.", "Meng met citroensap en olijfolie."],
+    null],
+  [5, "gust", "Geroosterde pompoen met feta", "hoofdgerecht", ["vegetarisch", "herfst", "oven"], 10, 35, "demo/pompoensoep.jpg",
+    ["pompoen", "feta", "honing", "tijm", "olijfolie"],
+    ["Snij de pompoen in partjes.", "Rooster 30 minuten op 200 graden met olie en tijm.", "Verbrokkel de feta erover en besprenkel met honing."],
+    null],
+];
+
+export function makerSeed(DEMO_USER_ID, JAN) {
+  const creators = [
+    ["lotte", "lotte-kookt", "Lotte kookt", "Seizoensgroenten, soepen en Belgische klassiekers, altijd haalbaar op een weekavond.", ["Soepen", "Belgisch", "Seizoen"], false],
+    ["ahmed", "chef-ahmed", "Chef Ahmed", "Marokkaanse familierecepten met een Brusselse twist. Rustig koken, veel smaak.", ["Marokkaans", "Stoofpotten", "Kruiden"], true],
+    ["gust", "groenten-met-gust", "Groenten met Gust", "Volledig vegetarisch uit de moestuin.", ["Vegetarisch", "Oven"], false],
+  ].map(([k, handle, naam, bio, specialisaties, geverifieerd], i) => ({
+    id: MAKER_IDS[k],
+    user_id: MAKER_USERS[k],
+    handle,
+    naam,
+    bio,
+    specialisaties,
+    omslag_url: null,
+    avatar_url: null,
+    geverifieerd,
+    created_at: `2026-10-0${i + 1}T10:00:00Z`,
+  }));
+  const recipes = MAKER_RECEPTEN.map(([n, k, title, category, tags, prep, cook, foto, , stappen]) => ({
+    id: MR(n),
+    user_id: MAKER_USERS[k],
+    title,
+    description: `Een recept van ${creators.find((c) => c.user_id === MAKER_USERS[k]).naam} (demo).`,
+    image_url: foto,
+    servings: 4,
+    prep_minutes: prep,
+    cook_minutes: cook,
+    difficulty: "makkelijk",
+    category,
+    tags,
+    instructions: stappen,
+    source_url: null,
+    is_concept: false,
+    deleted_at: null,
+    created_at: `2026-10-${String(10 + n).padStart(2, "0")}T10:00:00Z`,
+    updated_at: `2026-10-${String(10 + n).padStart(2, "0")}T10:00:00Z`,
+  }));
+  const recipe_ingredients = MAKER_RECEPTEN.flatMap(([n, , , , , , , , ingr]) =>
+    ingr.map((name, position) => ({
+      id: `b7b7b7b7-00${String(n).padStart(2, "0")}-4000-8000-0000000000${String(position).padStart(2, "0")}`,
+      recipe_id: MR(n),
+      name,
+      quantity: null,
+      unit: "",
+      position,
+    })),
+  );
+  const recipe_publicaties = MAKER_RECEPTEN.map(([n, k, , , , , , , , , video], i) => ({
+    id: `d7d7d7d7-0000-4000-8000-0000000000${String(n).padStart(2, "0")}`,
+    recipe_id: MR(n),
+    creator_id: MAKER_IDS[k],
+    zichtbaarheid: "openbaar",
+    status: "gepubliceerd",
+    gepubliceerd_op: `2026-10-${String(20 + i).padStart(2, "0")}T10:00:00Z`,
+    video_url: video,
+    moderatie: "goedgekeurd",
+  }));
+  return {
+    creators,
+    recipes,
+    recipe_ingredients,
+    recipe_publicaties,
+    // Marie volgt Lotte; volgen is privé (alleen eigen rijen leesbaar).
+    follows: [
+      { id: "f7f7f7f7-0000-4000-8000-000000000001", follower_id: DEMO_USER_ID, creator_id: MAKER_IDS.lotte },
+      { id: "f7f7f7f7-0000-4000-8000-000000000002", follower_id: JAN, creator_id: MAKER_IDS.ahmed },
+      { id: "f7f7f7f7-0000-4000-8000-000000000003", follower_id: MAKER_USERS.lotte, creator_id: MAKER_IDS.ahmed },
+    ],
+    collections: [
+      { id: "e7e7e7e7-0000-4000-8000-000000000001", user_id: DEMO_USER_ID, naam: "Zondag", beschrijving: "Rustig koken in het weekend.", openbaar: false, created_at: "2026-11-01T10:00:00Z" },
+      { id: "e7e7e7e7-0000-4000-8000-000000000002", user_id: MAKER_USERS.lotte, naam: "Snelle soepen", beschrijving: null, openbaar: true, created_at: "2026-10-25T10:00:00Z" },
+    ],
+    collection_recipes: [
+      { id: "e8e8e8e8-0000-4000-8000-000000000001", collection_id: "e7e7e7e7-0000-4000-8000-000000000001", recipe_id: R(1), positie: 0 },
+      { id: "e8e8e8e8-0000-4000-8000-000000000002", collection_id: "e7e7e7e7-0000-4000-8000-000000000001", recipe_id: MR(1), positie: 1 },
+      { id: "e8e8e8e8-0000-4000-8000-000000000003", collection_id: "e7e7e7e7-0000-4000-8000-000000000002", recipe_id: MR(1), positie: 0 },
+    ],
+    community_bijdragen: [
+      { id: "e9e9e9e9-0000-4000-8000-000000000001", recipe_id: MR(3), user_id: JAN, weergavenaam: "Jan", tekst: "Met wat extra kaneel; de kinderen vroegen om meer.", sterren: 5, foto_url: null, verborgen: false, created_at: "2026-11-05T18:30:00Z" },
+      { id: "e9e9e9e9-0000-4000-8000-000000000002", recipe_id: MR(3), user_id: MAKER_USERS.lotte, weergavenaam: "Lotte", tekst: "Lekker, maar ik liet het een halfuur langer stoven.", sterren: 4, foto_url: null, verborgen: false, created_at: "2026-11-08T19:00:00Z" },
+    ],
+    content_meldingen: [],
+    profielen: [
+      { id: MAKER_USERS.lotte, display_name: "Lotte Vermeulen", handle: "lotte-kookt", onboarding_klaar: true },
+      { id: MAKER_USERS.ahmed, display_name: "Ahmed El Idrissi", handle: "chef-ahmed", onboarding_klaar: true },
+      { id: MAKER_USERS.gust, display_name: "Gust De Smet", handle: "groenten-met-gust", onboarding_klaar: true },
+    ],
+  };
+}
+
 export function demoSeed() {
   // Twee demofoto's (CC0, zie demo-fotos/LICENTIES.md); de rest toont bewust de omslag.
   const FOTO = { 1: "demo/stoofvlees.jpg", 2: "demo/pompoensoep.jpg" };
@@ -342,7 +470,15 @@ export function demoSeed() {
     shopping_view: true,
     shopping_edit: true,
   };
+  const makers = makerSeed(DEMO_USER_ID, JAN);
   return {
+    creators: makers.creators,
+    recipe_publicaties: makers.recipe_publicaties,
+    follows: makers.follows,
+    collections: makers.collections,
+    collection_recipes: makers.collection_recipes,
+    community_bijdragen: makers.community_bijdragen,
+    content_meldingen: makers.content_meldingen,
     inspiration_recipes: INSPIRATIE,
     inspiration_ingredients: INSPIRATIE_INGREDIENTEN,
     groups: [
@@ -370,6 +506,7 @@ export function demoSeed() {
     extraProfielen: [
       { id: JAN, display_name: "Jan Peeters", handle: "jan", onboarding_klaar: true },
       { id: LOTTE, display_name: "Lotte Peeters", handle: "lotte", onboarding_klaar: true },
+      ...makers.profielen,
     ],
     loyalty_stores: [
       ["colruyt", "Colruyt", "#e3000f", 1],
@@ -404,8 +541,8 @@ export function demoSeed() {
       ["recept_foto", "Recept van een foto inlezen", 2],
       ["weekmenu_ai", "Laat Foodlo je week kiezen", 3],
     ].map(([feature, label, credit_cost]) => ({ feature, label, credit_cost, enabled: true })),
-    recipes,
-    recipe_ingredients,
+    recipes: [...recipes, ...makers.recipes],
+    recipe_ingredients: [...recipe_ingredients, ...makers.recipe_ingredients],
     meal_plan,
     favorites: [
       { id: "dddddddd-0000-4000-8000-000000000001", user_id: DEMO_USER_ID, recipe_id: R(1) },

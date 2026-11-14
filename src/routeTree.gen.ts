@@ -26,6 +26,7 @@ import { Route as InspiratieRouteImport } from './routes/inspiratie'
 import { Route as InstallerenRouteImport } from './routes/installeren'
 import { Route as InstellingenRouteImport } from './routes/instellingen'
 import { Route as KennismakingRouteImport } from './routes/kennismaking'
+import { Route as MakerRouteImport } from './routes/maker'
 import { Route as MeerRouteImport } from './routes/meer'
 import { Route as MeldingenRouteImport } from './routes/meldingen'
 import { Route as PlannerRouteImport } from './routes/planner'
@@ -67,8 +68,11 @@ import { Route as InspiratieIndexRouteImport } from './routes/inspiratie.index'
 import { Route as InspiratieIdRouteImport } from './routes/inspiratie.$id'
 import { Route as KaartenIndexRouteImport } from './routes/kaarten.index'
 import { Route as KaartenIdRouteImport } from './routes/kaarten.$id'
+import { Route as MakersIndexRouteImport } from './routes/makers.index'
+import { Route as MakersHandleRouteImport } from './routes/makers.$handle'
 import { Route as ReceptenIdRouteImport } from './routes/recepten.$id'
 import { Route as ReceptenNieuwRouteImport } from './routes/recepten.nieuw'
+import { Route as VerzamelingenIdRouteImport } from './routes/verzamelingen.$id'
 import { Route as VriendenIndexRouteImport } from './routes/vrienden.index'
 import { Route as VriendenIdRouteImport } from './routes/vrienden.$id'
 import { Route as BeheerGebruikerIdRouteImport } from './routes/beheer.gebruiker.$id'
@@ -176,6 +180,11 @@ const InstellingenRoute = InstellingenRouteImport.update({
 const KennismakingRoute = KennismakingRouteImport.update({
   id: '/kennismaking',
   path: '/kennismaking',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MakerRoute = MakerRouteImport.update({
+  id: '/maker',
+  path: '/maker',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MeerRoute = MeerRouteImport.update({
@@ -383,6 +392,16 @@ const KaartenIdRoute = KaartenIdRouteImport.update({
   path: '/kaarten/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MakersIndexRoute = MakersIndexRouteImport.update({
+  id: '/makers/',
+  path: '/makers/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MakersHandleRoute = MakersHandleRouteImport.update({
+  id: '/makers/$handle',
+  path: '/makers/$handle',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReceptenIdRoute = ReceptenIdRouteImport.update({
   id: '/recepten/$id',
   path: '/recepten/$id',
@@ -391,6 +410,11 @@ const ReceptenIdRoute = ReceptenIdRouteImport.update({
 const ReceptenNieuwRoute = ReceptenNieuwRouteImport.update({
   id: '/recepten/nieuw',
   path: '/recepten/nieuw',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerzamelingenIdRoute = VerzamelingenIdRouteImport.update({
+  id: '/verzamelingen/$id',
+  path: '/verzamelingen/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VriendenIndexRoute = VriendenIndexRouteImport.update({
@@ -528,6 +552,7 @@ export interface FileRoutesByFullPath {
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
   '/kennismaking': typeof KennismakingRoute
+  '/maker': typeof MakerRoute
   '/meer': typeof MeerRoute
   '/meldingen': typeof MeldingenRoute
   '/planner': typeof PlannerRoute
@@ -565,13 +590,16 @@ export interface FileRoutesByFullPath {
   '/hulp/tutorials': typeof HulpTutorialsRoute
   '/inspiratie/$id': typeof InspiratieIdRoute
   '/kaarten/$id': typeof KaartenIdRoute
+  '/makers/$handle': typeof MakersHandleRoute
   '/recepten/$id': typeof ReceptenIdRoute
   '/recepten/nieuw': typeof ReceptenNieuwRoute
+  '/verzamelingen/$id': typeof VerzamelingenIdRoute
   '/vrienden/$id': typeof VriendenIdRoute
   '/beheer/': typeof BeheerIndexRoute
   '/hulp/': typeof HulpIndexRoute
   '/inspiratie/': typeof InspiratieIndexRoute
   '/kaarten/': typeof KaartenIndexRoute
+  '/makers/': typeof MakersIndexRoute
   '/vrienden/': typeof VriendenIndexRoute
   '/beheer/gebruiker/$id': typeof BeheerGebruikerIdRoute
   '/beheer/ui/activiteit': typeof BeheerUiActiviteitRoute
@@ -610,6 +638,7 @@ export interface FileRoutesByTo {
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
   '/kennismaking': typeof KennismakingRoute
+  '/maker': typeof MakerRoute
   '/meer': typeof MeerRoute
   '/meldingen': typeof MeldingenRoute
   '/planner': typeof PlannerRoute
@@ -646,13 +675,16 @@ export interface FileRoutesByTo {
   '/hulp/tutorials': typeof HulpTutorialsRoute
   '/inspiratie/$id': typeof InspiratieIdRoute
   '/kaarten/$id': typeof KaartenIdRoute
+  '/makers/$handle': typeof MakersHandleRoute
   '/recepten/$id': typeof ReceptenIdRoute
   '/recepten/nieuw': typeof ReceptenNieuwRoute
+  '/verzamelingen/$id': typeof VerzamelingenIdRoute
   '/vrienden/$id': typeof VriendenIdRoute
   '/beheer': typeof BeheerIndexRoute
   '/hulp': typeof HulpIndexRoute
   '/inspiratie': typeof InspiratieIndexRoute
   '/kaarten': typeof KaartenIndexRoute
+  '/makers': typeof MakersIndexRoute
   '/vrienden': typeof VriendenIndexRoute
   '/beheer/gebruiker/$id': typeof BeheerGebruikerIdRoute
   '/beheer/ui/activiteit': typeof BeheerUiActiviteitRoute
@@ -695,6 +727,7 @@ export interface FileRoutesById {
   '/installeren': typeof InstallerenRoute
   '/instellingen': typeof InstellingenRoute
   '/kennismaking': typeof KennismakingRoute
+  '/maker': typeof MakerRoute
   '/meer': typeof MeerRoute
   '/meldingen': typeof MeldingenRoute
   '/planner': typeof PlannerRoute
@@ -732,13 +765,16 @@ export interface FileRoutesById {
   '/hulp/tutorials': typeof HulpTutorialsRoute
   '/inspiratie/$id': typeof InspiratieIdRoute
   '/kaarten/$id': typeof KaartenIdRoute
+  '/makers/$handle': typeof MakersHandleRoute
   '/recepten/$id': typeof ReceptenIdRoute
   '/recepten/nieuw': typeof ReceptenNieuwRoute
+  '/verzamelingen/$id': typeof VerzamelingenIdRoute
   '/vrienden/$id': typeof VriendenIdRoute
   '/beheer/': typeof BeheerIndexRoute
   '/hulp/': typeof HulpIndexRoute
   '/inspiratie/': typeof InspiratieIndexRoute
   '/kaarten/': typeof KaartenIndexRoute
+  '/makers/': typeof MakersIndexRoute
   '/vrienden/': typeof VriendenIndexRoute
   '/beheer/gebruiker/$id': typeof BeheerGebruikerIdRoute
   '/beheer/ui/activiteit': typeof BeheerUiActiviteitRoute
@@ -782,6 +818,7 @@ export interface FileRouteTypes {
     | '/installeren'
     | '/instellingen'
     | '/kennismaking'
+    | '/maker'
     | '/meer'
     | '/meldingen'
     | '/planner'
@@ -819,13 +856,16 @@ export interface FileRouteTypes {
     | '/hulp/tutorials'
     | '/inspiratie/$id'
     | '/kaarten/$id'
+    | '/makers/$handle'
     | '/recepten/$id'
     | '/recepten/nieuw'
+    | '/verzamelingen/$id'
     | '/vrienden/$id'
     | '/beheer/'
     | '/hulp/'
     | '/inspiratie/'
     | '/kaarten/'
+    | '/makers/'
     | '/vrienden/'
     | '/beheer/gebruiker/$id'
     | '/beheer/ui/activiteit'
@@ -864,6 +904,7 @@ export interface FileRouteTypes {
     | '/installeren'
     | '/instellingen'
     | '/kennismaking'
+    | '/maker'
     | '/meer'
     | '/meldingen'
     | '/planner'
@@ -900,13 +941,16 @@ export interface FileRouteTypes {
     | '/hulp/tutorials'
     | '/inspiratie/$id'
     | '/kaarten/$id'
+    | '/makers/$handle'
     | '/recepten/$id'
     | '/recepten/nieuw'
+    | '/verzamelingen/$id'
     | '/vrienden/$id'
     | '/beheer'
     | '/hulp'
     | '/inspiratie'
     | '/kaarten'
+    | '/makers'
     | '/vrienden'
     | '/beheer/gebruiker/$id'
     | '/beheer/ui/activiteit'
@@ -948,6 +992,7 @@ export interface FileRouteTypes {
     | '/installeren'
     | '/instellingen'
     | '/kennismaking'
+    | '/maker'
     | '/meer'
     | '/meldingen'
     | '/planner'
@@ -985,13 +1030,16 @@ export interface FileRouteTypes {
     | '/hulp/tutorials'
     | '/inspiratie/$id'
     | '/kaarten/$id'
+    | '/makers/$handle'
     | '/recepten/$id'
     | '/recepten/nieuw'
+    | '/verzamelingen/$id'
     | '/vrienden/$id'
     | '/beheer/'
     | '/hulp/'
     | '/inspiratie/'
     | '/kaarten/'
+    | '/makers/'
     | '/vrienden/'
     | '/beheer/gebruiker/$id'
     | '/beheer/ui/activiteit'
@@ -1034,6 +1082,7 @@ export interface RootRouteChildren {
   InstallerenRoute: typeof InstallerenRoute
   InstellingenRoute: typeof InstellingenRoute
   KennismakingRoute: typeof KennismakingRoute
+  MakerRoute: typeof MakerRoute
   MeerRoute: typeof MeerRoute
   MeldingenRoute: typeof MeldingenRoute
   PlannerRoute: typeof PlannerRoute
@@ -1044,10 +1093,13 @@ export interface RootRouteChildren {
   WachtwoordHerstellenRoute: typeof WachtwoordHerstellenRoute
   WelkomRoute: typeof WelkomRoute
   KaartenIdRoute: typeof KaartenIdRoute
+  MakersHandleRoute: typeof MakersHandleRoute
   ReceptenIdRoute: typeof ReceptenIdRoute
   ReceptenNieuwRoute: typeof ReceptenNieuwRoute
+  VerzamelingenIdRoute: typeof VerzamelingenIdRoute
   VriendenIdRoute: typeof VriendenIdRoute
   KaartenIndexRoute: typeof KaartenIndexRoute
+  MakersIndexRoute: typeof MakersIndexRoute
   VriendenIndexRoute: typeof VriendenIndexRoute
   ReceptenIdBewerkenRoute: typeof ReceptenIdBewerkenRoute
   ApiPublicMeldingenRunRoute: typeof ApiPublicMeldingenRunRoute
@@ -1173,6 +1225,13 @@ declare module '@tanstack/react-router' {
       path: '/kennismaking'
       fullPath: '/kennismaking'
       preLoaderRoute: typeof KennismakingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/maker': {
+      id: '/maker'
+      path: '/maker'
+      fullPath: '/maker'
+      preLoaderRoute: typeof MakerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/meer': {
@@ -1462,6 +1521,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KaartenIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/makers/': {
+      id: '/makers/'
+      path: '/makers'
+      fullPath: '/makers/'
+      preLoaderRoute: typeof MakersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/makers/$handle': {
+      id: '/makers/$handle'
+      path: '/makers/$handle'
+      fullPath: '/makers/$handle'
+      preLoaderRoute: typeof MakersHandleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/recepten/$id': {
       id: '/recepten/$id'
       path: '/recepten/$id'
@@ -1474,6 +1547,13 @@ declare module '@tanstack/react-router' {
       path: '/recepten/nieuw'
       fullPath: '/recepten/nieuw'
       preLoaderRoute: typeof ReceptenNieuwRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verzamelingen/$id': {
+      id: '/verzamelingen/$id'
+      path: '/verzamelingen/$id'
+      fullPath: '/verzamelingen/$id'
+      preLoaderRoute: typeof VerzamelingenIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/vrienden/': {
@@ -1791,6 +1871,7 @@ const rootRouteChildren: RootRouteChildren = {
   InstallerenRoute: InstallerenRoute,
   InstellingenRoute: InstellingenRoute,
   KennismakingRoute: KennismakingRoute,
+  MakerRoute: MakerRoute,
   MeerRoute: MeerRoute,
   MeldingenRoute: MeldingenRoute,
   PlannerRoute: PlannerRoute,
@@ -1801,10 +1882,13 @@ const rootRouteChildren: RootRouteChildren = {
   WachtwoordHerstellenRoute: WachtwoordHerstellenRoute,
   WelkomRoute: WelkomRoute,
   KaartenIdRoute: KaartenIdRoute,
+  MakersHandleRoute: MakersHandleRoute,
   ReceptenIdRoute: ReceptenIdRoute,
   ReceptenNieuwRoute: ReceptenNieuwRoute,
+  VerzamelingenIdRoute: VerzamelingenIdRoute,
   VriendenIdRoute: VriendenIdRoute,
   KaartenIndexRoute: KaartenIndexRoute,
+  MakersIndexRoute: MakersIndexRoute,
   VriendenIndexRoute: VriendenIndexRoute,
   ReceptenIdBewerkenRoute: ReceptenIdBewerkenRoute,
   ApiPublicMeldingenRunRoute: ApiPublicMeldingenRunRoute,

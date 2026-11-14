@@ -177,6 +177,12 @@ const server = http.createServer((req, res) => {
       if (s.soort === "netwerk") return req.socket.destroy();
       if (s.soort === "fout")
         return stuur(res, s.status ?? 500, { code: "XX000", message: "nep-fout" });
+      // Tabel bestaat (nog) niet, zoals in productie vóór een migratie (PostgREST PGRST205).
+      if (s.soort === "ontbreekt")
+        return stuur(res, 404, {
+          code: "PGRST205",
+          message: `Could not find the table 'public.${pad.split("/").pop()}' in the schema cache`,
+        });
     }
 
     const auth = req.headers["authorization"];
@@ -305,6 +311,28 @@ const server = http.createServer((req, res) => {
     // ---- Data ----
     if (url.pathname.startsWith("/rest/v1/rpc/")) {
       const naam = url.pathname.slice("/rest/v1/rpc/".length);
+      // Voorstel 0008: geaggregeerde makercijfers (zoals public.maker_statistiek), nooit wie.
+      if (naam === "maker_statistiek") {
+        const maker = db.t("creators").find((c) => c.id === body?.p_creator);
+        if (!maker) return stuur(res, 200, null);
+        const ids = new Set(
+          db.t("recipe_publicaties").filter((p) => p.creator_id === maker.id).map((p) => p.recipe_id),
+        );
+        const anderen = (r) => ids.has(r.recipe_id) && r.user_id !== maker.user_id;
+        const verzamelingVanAnderen = new Set(
+          db.t("collections").filter((c) => c.user_id !== maker.user_id).map((c) => c.id),
+        );
+        return stuur(res, 200, {
+          volgers: db.t("follows").filter((f) => f.creator_id === maker.id).length,
+          bewaard:
+            db.t("favorites").filter(anderen).length +
+            db
+              .t("collection_recipes")
+              .filter((r) => ids.has(r.recipe_id) && verzamelingVanAnderen.has(r.collection_id))
+              .length,
+          gepland: db.t("meal_plan").filter(anderen).length,
+        });
+      }
       return stuur(res, 200, RPC_STANDAARD[naam] ?? null);
     }
     if (url.pathname.startsWith("/rest/v1/")) {
