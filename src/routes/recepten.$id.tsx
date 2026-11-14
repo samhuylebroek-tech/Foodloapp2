@@ -526,14 +526,15 @@ function ReceptPage() {
     }
   }
 
-  async function kopieerNaarMij() {
+  // Ronde 3 (FR-RI-07): je eigen recept dupliceren gebruikt dezelfde kopie, met "(kopie)" erbij.
+  async function kopieerNaarMij(opties: { dupliceren?: boolean } = {}) {
     setKopieVraag(false);
     if (!user) return;
     const { data, error } = await supabase
       .from("recipes")
       .insert({
         user_id: user.id,
-        title: recipe.title,
+        title: opties.dupliceren ? `${recipe.title} (kopie)`.slice(0, 160) : recipe.title,
         description: recipe.description,
         image_url: recipe.image_url,
         servings: recipe.servings,
@@ -568,7 +569,11 @@ function ReceptPage() {
         .from("recipe_photos")
         .insert(extraFotos.map((f, position) => ({ recipe_id: data.id, path: f.path, position })));
     }
-    toast.success(t("Toegevoegd aan jouw gerechten. Je kan je kopie nu aanpassen."));
+    toast.success(
+      opties.dupliceren
+        ? t("Kopie gemaakt. Pas ze aan zoals je wil; het origineel blijft ongewijzigd.")
+        : t("Toegevoegd aan jouw gerechten. Je kan je kopie nu aanpassen."),
+    );
     navigate({ to: "/recepten/$id", params: { id: data.id } });
   }
 
@@ -980,6 +985,15 @@ function ReceptPage() {
                     <Pencil />
                     {t("Aanpassen")}
                   </Link>
+                </DropdownMenuItem>
+              ) : null}
+              {isOwner ? (
+                <DropdownMenuItem
+                  onSelect={() => void kopieerNaarMij({ dupliceren: true })}
+                  className="min-h-12 text-base"
+                >
+                  <Copy />
+                  {t("Dupliceren")}
                 </DropdownMenuItem>
               ) : (
                 <DropdownMenuItem

@@ -27,6 +27,25 @@ export type Kennismaking = {
 
 export const LEEG: Kennismaking = { allergieen: [] };
 
+/**
+ * Standaard aantal personen bij het inplannen, uit de gezinsgrootte van de kennismaking
+ * (ronde 3, FR-W-04). Zonder antwoord blijft het 4, zoals voorheen. Je kan het altijd aanpassen.
+ */
+export function standaardPersonen(k: Pick<Kennismaking, "gezin">): number {
+  switch (k.gezin) {
+    case "1":
+      return 1;
+    case "2":
+      return 2;
+    case "3-4":
+      return 4;
+    case "5+":
+      return 5;
+    default:
+      return 4;
+  }
+}
+
 const sleutel = (userId: string) => `foodlo:kennismaking:${userId}`;
 
 export function leesKennismaking(userId: string | null | undefined): Kennismaking {

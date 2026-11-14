@@ -29,7 +29,7 @@ import { zichtbareEigenaren } from "@/lib/zichtbare-eigenaren";
 import { useAuth } from "@/hooks/useAuth";
 import { ingredientToLine } from "@/lib/ingredienten";
 import { ideeTitelToegelaten } from "@/lib/veiligheid";
-import { leesKennismaking } from "@/lib/kennismaking";
+import { leesKennismaking, standaardPersonen } from "@/lib/kennismaking";
 import { AllergieWaarschuwing } from "@/components/AllergieWaarschuwing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -137,7 +137,8 @@ export function ReceptKiezer({
   const [dagKiezen, setDagKiezen] = useState(!!start.vraagDag);
   const [aiBezig, setAiBezig] = useState(false);
   // Voor hoeveel personen kook je dit gerecht? Eén keer gevraagd bij het inplannen.
-  const [personen, setPersonen] = useState(4);
+  // Standaard: je gezinsgrootte uit de kennismaking (ronde 3), anders 4.
+  const [personen, setPersonen] = useState(() => standaardPersonen(leesKennismaking(user?.id)));
   const [voorstel, setVoorstel] = useState<Basis | null>(null);
   const [voorstelNaam, setVoorstelNaam] = useState("");
   const [ideeen, setIdeeen] = useState<WeekmenuIdee[] | null>(null);

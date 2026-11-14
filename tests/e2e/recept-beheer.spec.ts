@@ -148,3 +148,19 @@ test("'Zet in mijn gerechten' toont eerst een overzicht en kopieert ingrediënte
     .toBe(1);
   void extern;
 });
+
+// Ronde 3 (FR-RI-07): je eigen recept dupliceren; het origineel blijft ongewijzigd.
+test("eigen recept dupliceren maakt een kopie met '(kopie)' en laat het origineel staan", async ({
+  page,
+  extern,
+}) => {
+  await page.goto(`/recepten/${MIJN}`);
+  await page.getByRole("button", { name: "Meer acties voor dit recept" }).click();
+  await page.getByRole("menuitem", { name: "Dupliceren" }).click();
+  await expect
+    .poll(async () => (await recepten()).filter((r) => r["title"] === "Mijn soep (kopie)").length)
+    .toBe(1);
+  expect((await recepten()).find((r) => r["id"] === MIJN)?.["title"]).toBe("Mijn soep");
+  await expect(page).not.toHaveURL(new RegExp(`/recepten/${MIJN}$`));
+  void extern;
+});
