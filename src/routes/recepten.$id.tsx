@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { WaaromNu } from "@/components/WaaromNu";
 import { meldVerwijderd, verwijderReceptZacht, zetReceptTerug } from "@/lib/recept-verwijderen";
 import { markeerGezien } from "@/lib/gezien";
 import { meet } from "@/lib/meten";
@@ -1099,6 +1100,8 @@ function ReceptPage() {
           </div>
 
           <div className="space-y-5">
+            {/* Ronde 3: zelfde "waarom" als Vandaag, Week en Keuken (alleen eigen recepten). */}
+            {isOwner ? <WaaromNu recept={recipe} /> : null}
             {/* De receptnaam staat als paginatitel (h1) bovenaan; hier de kenmerken. */}
             <ul className="flex flex-wrap gap-2" aria-label={t("Kenmerken")}>
               {tijdLabel(recipe.prep_minutes, recipe.cook_minutes) ? (
