@@ -316,11 +316,17 @@ const server = http.createServer((req, res) => {
         const maker = db.t("creators").find((c) => c.id === body?.p_creator);
         if (!maker) return stuur(res, 200, null);
         const ids = new Set(
-          db.t("recipe_publicaties").filter((p) => p.creator_id === maker.id).map((p) => p.recipe_id),
+          db
+            .t("recipe_publicaties")
+            .filter((p) => p.creator_id === maker.id)
+            .map((p) => p.recipe_id),
         );
         const anderen = (r) => ids.has(r.recipe_id) && r.user_id !== maker.user_id;
         const verzamelingVanAnderen = new Set(
-          db.t("collections").filter((c) => c.user_id !== maker.user_id).map((c) => c.id),
+          db
+            .t("collections")
+            .filter((c) => c.user_id !== maker.user_id)
+            .map((c) => c.id),
         );
         return stuur(res, 200, {
           volgers: db.t("follows").filter((f) => f.creator_id === maker.id).length,
