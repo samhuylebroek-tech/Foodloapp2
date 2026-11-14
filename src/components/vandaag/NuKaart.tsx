@@ -12,7 +12,7 @@ import {
   Plus,
   ShoppingCart,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { VanavondVoorstellen } from "@/components/kringloop/VanavondVoorstellen";
 import { RestjesVoorstel } from "@/components/kringloop/RestjesVoorstel";
@@ -78,6 +78,16 @@ export function NuKaart({
   let uitleg: ReactNode = null;
   let acties: ReactNode = null;
   let extra: ReactNode = null;
+  // Ronde 3, "Iets anders vanavond" (FR-V-10): alleen als er vandaag een recept gepland is.
+  const [anders, setAnders] = useState(false);
+  const gepland =
+    stap?.soort === "aanvullen" || stap?.soort === "winkelen" || stap?.soort === "koken"
+      ? {
+          planId: stap.maaltijd.id,
+          huidigReceptId: stap.recept.id,
+          huidigeTitel: stap.recept.title,
+        }
+      : null;
   // Timing: bij aanvullen en winkelen altijd; bij koken alleen als "begin om" er nog niet staat.
   const tijd =
     stap?.soort === "aanvullen" || stap?.soort === "winkelen"
@@ -279,6 +289,20 @@ export function NuKaart({
                 ) : null}
               </div>
             )}
+            {/* Buiten de hoofdkaart-acties: de kaart houdt één hoofdactie en hooguit één tweede. */}
+            {!laden && gepland ? (
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => setAnders((a) => !a)}
+                  aria-expanded={anders}
+                  className="inline-flex min-h-12 items-center gap-2 text-base font-semibold text-inkt-foreground underline underline-offset-4"
+                >
+                  {anders ? t("Toch niet") : t("Iets anders vanavond?")}
+                </button>
+                {anders ? <VanavondVoorstellen recepten={recepten} vervang={gepland} /> : null}
+              </div>
+            ) : null}
           </div>
         </div>
 

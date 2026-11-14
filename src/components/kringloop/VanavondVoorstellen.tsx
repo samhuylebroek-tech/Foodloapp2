@@ -21,7 +21,7 @@ import { beveelAan, type Aanbeveling } from "@/lib/intelligentie/voorstel";
 import { dagenTekst, type OudInHuis } from "@/lib/intelligentie/gebruik-eerst";
 import { zitInVoorraad } from "@/lib/voorraad-match";
 import { leesKennismaking } from "@/lib/kennismaking";
-import { HalfGelukt, kookVanavond } from "@/lib/kringloop-db";
+import { HalfGelukt, kookVanavond, planVervang, wijzigMenu } from "@/lib/kringloop-db";
 import { meet } from "@/lib/meten";
 import { useT, useVoorkeuren } from "@/lib/voorkeuren";
 
@@ -38,7 +38,23 @@ type ReceptKort = {
 
 const minutenVan = (r: ReceptKort) => (r.prep_minutes ?? 0) + (r.cook_minutes ?? 0);
 
-export function VanavondVoorstellen({ recepten }: { recepten: ReceptKort[] }) {
+/**
+ * `vervang`: ronde 3, "Iets anders vanavond". Het gekozen voorstel vervangt de geplande maaltijd
+ * (zelfde weg als vervangen in Week: lijst past mee aan, met ongedaan maken). Het huidige gerecht
+ * staat niet tussen de voorstellen.
+ */
+export function VanavondVoorstellen({
+  recepten: alleRecepten,
+  vervang,
+}: {
+  recepten: ReceptKort[];
+  vervang?: { planId: string; huidigReceptId: string; huidigeTitel: string };
+}) {
+  const zonder = vervang?.huidigReceptId;
+  const recepten = useMemo(
+    () => (zonder ? alleRecepten.filter((r) => r.id !== zonder) : alleRecepten),
+    [alleRecepten, zonder],
+  );
   const { user } = useAuth();
   const qc = useQueryClient();
   const t = useT();
@@ -118,6 +134,26 @@ export function VanavondVoorstellen({ recepten }: { recepten: ReceptKort[] }) {
       const moment = momenten.includes("avondeten")
         ? "avondeten"
         : (momenten.at(-1) ?? "avondeten");
+      if (vervang) {
+        const v = await wijzigMenu(user.id, planVervang(vervang.planId, recept.id));
+        void meet("kringloop.vanavond", undefined, {
+          ontbreekt: v.effect.erbij,
+          reden: voorstellen.find((x) => x.id === id)?.redenen[0]?.soort ?? null,
+        });
+        const ververs = () => {
+          void qc.invalidateQueries({ queryKey: ["home-dagmenu"] });
+          void qc.invalidateQueries({ queryKey: ["home-week"] });
+          void qc.invalidateQueries({ queryKey: ["aanvulling"] });
+          void qc.invalidateQueries({ queryKey: ["shopping"] });
+        };
+        ververs();
+        meldMetHerstel(
+          `${recept.title} ${t("in plaats van")} ${vervang.huidigeTitel}`,
+          v.herstel,
+          ververs,
+        );
+        return;
+      }
       const r = await kookVanavond({ userId: user.id, recept, moment });
       if (r.alGepland) {
         toast(`${recept.title} staat al op vanavond`);
@@ -169,7 +205,11 @@ export function VanavondVoorstellen({ recepten }: { recepten: ReceptKort[] }) {
     });
   }
 
-  const kop = uitHuis ? t("Met wat je in huis hebt") : t("Ideeën voor vanavond");
+  const kop = vervang
+    ? t("Liever iets anders?")
+    : uitHuis
+      ? t("Met wat je in huis hebt")
+      : t("Ideeën voor vanavond");
 
   return (
     <section aria-labelledby="vanavond-kop" className="mt-6">
