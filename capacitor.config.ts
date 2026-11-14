@@ -10,6 +10,9 @@ const config: CapacitorConfig = {
     url: "https://app.foodloapp.com",
     cleartext: false,
     allowNavigation: ["app.foodloapp.com", "foodloapp.com", "*.foodloapp.com"],
+    // Ronde 3 (MOBILE_ARCHITECTURE M3): geen wit scherm zonder internet. Lokale pagina uit webDir
+    // (public/offline.html) als de website niet laadt. Pas actief na een nieuwe app-build.
+    errorPath: "offline.html",
   },
   ios: { contentInset: "never", backgroundColor: "#FAF6EF" },
   android: { backgroundColor: "#FAF6EF" },

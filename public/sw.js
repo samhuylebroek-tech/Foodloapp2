@@ -1,6 +1,8 @@
 // Kleine offline-hulp: bewaart bezochte pagina's en bestanden,
 // zodat je je klantenkaart ook zonder internet kan tonen.
-const CACHE = "foodlo-offline-v5";
+const CACHE = "foodlo-offline-v6";
+// Offline-scherm (ronde 3): vooraf bewaard, getoond als een pagina niet laadt en niet in de cache zit.
+const OFFLINE = "/offline.html";
 
 // Meldingen tonen en naar de juiste pagina springen.
 self.addEventListener("push", (e) => {
@@ -36,6 +38,12 @@ self.addEventListener("notificationclick", (e) => {
 });
 
 self.addEventListener("install", (e) => {
+  e.waitUntil(
+    caches
+      .open(CACHE)
+      .then((c) => c.add(new Request(OFFLINE, { cache: "reload" })))
+      .catch(() => undefined),
+  );
   self.skipWaiting();
 });
 
@@ -82,6 +90,10 @@ self.addEventListener("fetch", (e) => {
         const uit = await caches.match(req);
         if (uit) return uit;
         if (req.mode === "navigate") {
+          // Een pagina die je nooit opende, is er offline niet: dan het offline-scherm, met uitleg en
+          // een weg naar je lijst (die wél bewaard is als je hem eerder opende).
+          const offline = await caches.match(OFFLINE);
+          if (offline) return offline;
           const shell = (await caches.match("/kaarten")) || (await caches.match("/"));
           if (shell) return shell;
         }
