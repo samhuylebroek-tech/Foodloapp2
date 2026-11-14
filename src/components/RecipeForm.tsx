@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { ReceptVoorbeeld } from "@/components/ReceptVoorbeeld";
 import { lijstUitleg, planVervang, wijzigMenu } from "@/lib/kringloop-db";
 import { useNavigate, Link as RouterLink } from "@tanstack/react-router";
 import {
@@ -127,6 +128,7 @@ export function RecipeForm({
     bewaardeEetstijl(recipe?.tags ?? []) !== null,
   );
   const [photoPath, setPhotoPath] = useState<string | null>(recipe?.image_url ?? null);
+  const [voorbeeldTonen, setVoorbeeldTonen] = useState(false);
   const [sourceUrl, setSourceUrl] = useState(recipe?.source_url ?? gedeeldeLink);
   const [ingredientTekst, setIngredientTekst] = useState(
     (ingredients ?? []).map(ingredientToLine).join("\n"),
@@ -1752,7 +1754,40 @@ export function RecipeForm({
               Kijk je recept nog even na. Pas gerust iets aan en bewaar daarna.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-5">
+          {/* Ronde 3 (FR-RI-05): wisselen tussen nakijken en een voorbeeld van het resultaat. */}
+          <div role="group" aria-label="Weergave" className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant={voorbeeldTonen ? "outline" : "default"}
+              aria-pressed={!voorbeeldTonen}
+              onClick={() => setVoorbeeldTonen(false)}
+              className="h-12"
+            >
+              Nakijken
+            </Button>
+            <Button
+              type="button"
+              variant={voorbeeldTonen ? "default" : "outline"}
+              aria-pressed={voorbeeldTonen}
+              onClick={() => setVoorbeeldTonen(true)}
+              className="h-12"
+            >
+              Voorbeeld
+            </Button>
+          </div>
+          {voorbeeldTonen ? (
+            <ReceptVoorbeeld
+              titel={title}
+              omschrijving={description}
+              fotoPad={photoPath}
+              soort={category}
+              minuten={(Number(prep) || 0) + (Number(cook) || 0)}
+              personen={Number(servings) || null}
+              ingredienten={formIngredienten}
+              stappen={stappen}
+            />
+          ) : null}
+          <div className={voorbeeldTonen ? "space-y-5 border-t border-border pt-5" : "space-y-5"}>
             <label className="block text-base font-medium">
               Naam
               <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 h-14 text-base" />

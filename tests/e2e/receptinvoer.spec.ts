@@ -90,3 +90,28 @@ test("foto van een recept die niet lukt: duidelijke melding, niets bewaard", asy
   expect(await aantalRecepten()).toBe(voor);
   void extern;
 });
+
+// Ronde 3 (FR-RI-05): voorbeeldweergave vóór bewaren, zonder iets te bewaren.
+test("editor: 'Voorbeeld' toont het recept zoals het eruit zal zien, zonder te bewaren", async ({
+  page,
+  extern,
+}) => {
+  await page.goto("/recepten/nieuw");
+  await page.getByRole("button", { name: /Zelf typen/ }).click();
+  await expect(page.getByLabel("Naam van het gerecht")).toBeEditable();
+  await page.getByLabel("Naam van het gerecht").fill("Tomatensoep van oma");
+  await page.getByLabel(/Ingrediënten — één per regel/).fill("1 kg tomaten\n1 ui\n1 l bouillon");
+  await page
+    .getByLabel(/Bereiding — één stap per regel/)
+    .fill("Snij de groenten.\nKook 20 minuten en mix.");
+  await page.getByRole("button", { name: "Klaar", exact: true }).click();
+  const venster = page.getByRole("dialog", { name: "Klopt alles?" });
+  await venster.getByRole("button", { name: "Voorbeeld" }).click();
+  const voorbeeld = venster.getByTestId("recept-voorbeeld");
+  await expect(voorbeeld.getByRole("heading", { name: "Tomatensoep van oma" })).toBeVisible();
+  await expect(voorbeeld.getByText("tomaten", { exact: true })).toBeVisible();
+  await expect(voorbeeld.getByText("Kook 20 minuten en mix.")).toBeVisible();
+  await venster.getByRole("button", { name: "Nakijken" }).click();
+  await expect(voorbeeld).toHaveCount(0);
+  void extern;
+});
