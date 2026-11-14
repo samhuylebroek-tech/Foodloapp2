@@ -59,14 +59,14 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | | Echte foto's van startrecepten | Geblokkeerd | F1 | Beslissing beeldbeleid (§J) | — |
 | | Persoonlijke aanbevelingen in Ontdek | Uitbreiden | F2 | Nu vooral in Vandaag en Week | — |
 | | Populair / nieuw | Te ontwikkelen | F2 | Vraagt gebruiksgegevens per recept | — |
-| | Creatorrecepten | Latere fase | F2 | Zie B | #28 |
+| | Creatorrecepten | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | Rij "Makers om te volgen" op Ontdek, `/makers` | #28 |
 | **Recepten** | Zoeken (verdraagt tikfouten), filters, automatische collecties, concepten | Behouden | F1 | — | `gerechten.tsx` |
-| | Eigen collecties | Geblokkeerd | F2 | Tabellen nodig | G1/G2 |
+| | Eigen collecties | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | "Bewaar in…", rij "Mijn verzamelingen", `/verzamelingen/$id` | G1/G2 |
 | | Notities bij een recept | Te ontwikkelen | F2 | Bestaat niet | MODULE-AUDIT §2 |
 | **Receptdetail** | Ingrediënten, porties, tijd, moeilijkheid, stappen met ingrediënten, voedingswaarden (lokaal), versies, foto's | Behouden | F1 | — | `recepten.$id.tsx` |
 | | Acties met woorden (Favoriet, Delen, Aanpassen, Meer) | Verbeterd (ronde 1) | F1 | — | PR #1 |
 | | Inplannen, op de lijst, kookstand | Behouden | F1 | — | — |
-| | Herkomst / creator | Latere fase | F2 | Nu staat er "Foodlo-keuken" | — |
+| | Herkomst / creator | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | "Van <maker>" op openbare makerrecepten (Ontdek-catalogus blijft "Foodlo-keuken") | — |
 | **Kookstand** | Stappen, voortgang, timers, hervatten, scherm aan, score, restje, voorraad aftrekken | Behouden | F1 | — | `kookstand.spec.ts` |
 | | Altijd bovenaan beginnen | Opgelost (ronde 1) | F1 | — | BUG-132 |
 | | Spraak, handsfree | Latere fase | F2 | — | MODULE-AUDIT P2 |
@@ -124,22 +124,22 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | Verwijderen | Verbeterd (BUG-146, ronde 2) | Overal: bevestigen, zacht verwijderen, "Ongedaan maken"; op de pagina van een verwijderd recept staat "Terugzetten" |
 | Eigen recept dupliceren | Gebouwd (ronde 3) | Meer → "Dupliceren": kopie met "(kopie)", ingrediënten en foto's mee (`recept-beheer.spec.ts`) |
 | Publiek, privé, alleen volgers | Latere fase | Er is geen zichtbaarheidsveld (G1/G2) |
-| Eigen collecties | Geblokkeerd | G1/G2 |
+| Eigen collecties | Gebouwd (marathon); actief na migratie 0008 | G1/G2 |
 | Delen (link) | Behouden | — |
 | Recepteditor in stappen | Verbeteren | Bij een nieuw recept gaat de keuze van invoer voor; het formulier toont daarna alles tegelijk. Ronde 3: voorbeeldweergave vóór bewaren ("Klopt alles?" › Voorbeeld, `receptinvoer.spec.ts`) |
 
 ## B. Creators en food influencers
-**Kern:** er bestaat nog geen creatorfunctie in de code (score 1/10, `CREATOR-GAP-ANALYSE.md`). Alles hieronder blijft in de visie.
+**Kern (bouwmarathon 2026-11-14):** C1–C8 gebouwd als eerste versie achter `useModuleBeschikbaar`; in productie "binnenkort" tot migratievoorstel 0008 is uitgevoerd. Test: `makers.spec.ts`, `community.spec.ts`, `tests/rls/makers-community.mjs` (39 scenario's).
 
 | Onderdeel | Status | Fase | Voorwaarde |
 |---|---|---|---|
-| Creatorprofiel (`/@naam`, bio, omslag, specialisaties, badge) | Latere fase | F2 | G1/G2, #28 |
-| Publiceren en zichtbaarheid (privé, gedeeld, publiek, volgers), publicatiestatus, voorbeeld | Latere fase | F2 | G1/G2 |
-| Volgen, feed, ontdekken van creators | Latere fase | F2 | — |
-| Collecties van creators | Latere fase | F2 | Tabellen collecties |
-| Bronvermelding (nu "Foodlo-keuken") → echte maker | Latere fase | F2 | Creatorprofiel |
-| Statistieken per recept (bekeken, bewaard, gekookt) | Latere fase | F2 | — |
-| Moderatie (meldknop, wachtrij; DSA) | Te ontwikkelen **vóór** publiek publiceren | F2 | Verplicht |
+| Creatorprofiel (`/makers/$handle`, bio, omslag, specialisaties, badge) | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | Omslag/profielfoto uploaden: nog niet (initialen) |
+| Publiceren en zichtbaarheid (privé, vrienden en gezin, openbaar), concept/gepubliceerd, video-link | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | Volgers/abonnees, plannen en voorbeeldweergave: later |
+| Volgen, ontdekken van creators | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | Feed "Van makers die je volgt": later |
+| Collecties van creators | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | Openbare verzameling toont alleen openbare recepten |
+| Bronvermelding → echte maker | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | — |
+| Statistieken (volgers, gepubliceerd, bewaard, ingepland; alleen totalen) | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | "Bekeken" en per recept: later |
+| Moderatie (meldknop, wachtrij; DSA) | Deels gebouwd (marathon): meldknop + `content_meldingen`, openbaar = eerst 'wacht'; goedkeuren in beheer nog te bouwen | F2 | Verplicht vóór productie |
 | Gesponsorde content met duidelijk label | Latere fase | F3 | Nog geen ontwerp: te schrijven |
 | Premium collecties, creatorabonnementen, inkomstendeling, uitbetaling/KYC | Latere fase | F3 | G5, #29, juridisch advies |
 | Affiliate, merksamenwerkingen | Latere fase | F3 | Nog geen ontwerp; juridisch advies |
@@ -239,7 +239,7 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 
 | Wens | Bron | Status | Fase | Opmerking |
 |---|---|---|---|---|
-| **Community:** interacties tussen gebruikers, zoals reacties, vragen aan de maker en gekookt-meldingen | Masteropdracht §6; complete productvisie §3 | Latere fase | F2 | Pas na moderatie (B). Bestaat niet |
+| **Community:** interacties tussen gebruikers, zoals reacties, vragen aan de maker en gekookt-meldingen | Masteropdracht §6; complete productvisie §3 | "Ik heb dit gekookt" + meldknop: Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | Foto en vraag aan de maker: later |
 | **Creatorcontent:** video's, kooklessen en andere media | Complete productvisie §3; CLAUDE.md | Latere fase | F2/F3 | Opslag- en verwerkingskost apart ramen |
 | **AI:** ingrediënten vervangen (substituties met reden) | Masteropdracht §4 | Te ontwikkelen | F2 | Eerst regels (vervangingslijst, zoals al in de winkelmodus), daarna AI via de privacylaag |
 | **AI:** recepten aanpassen (bv. vegetarisch maken, minder tijd) | Masteropdracht §4 | Te ontwikkelen | F2 | Altijd als voorstel om na te kijken (AC-6) |

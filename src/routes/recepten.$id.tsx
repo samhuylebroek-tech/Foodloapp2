@@ -36,6 +36,9 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { zichtbareEigenaren } from "@/lib/zichtbare-eigenaren";
+import { haalPubliekeBron } from "@/lib/makers-db";
+import { ReceptMakerDeel } from "@/components/makers/ReceptMakerDeel";
+import { ReceptCommunity } from "@/components/makers/ReceptCommunity";
 import { zorgVoorLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
 import { useAuth } from "@/hooks/useAuth";
 import { SterrenKiezer } from "@/components/Sterren";
@@ -291,7 +294,8 @@ function ReceptPage() {
       if (ingRes.error) throw ingRes.error;
       // Tweede laag naast RLS (BUG-105): een recept van een onbekende nooit tonen.
       const eigenaren = await zichtbareEigenaren();
-      if (!eigenaren.includes((recipeRes.data as Recipe).user_id))
+      // Module B: een openbaar gepubliceerd (en goedgekeurd) makerrecept mag iedereen zien.
+      if (!eigenaren.includes((recipeRes.data as Recipe).user_id) && !(await haalPubliekeBron(id)))
         throw new Error("niet-zichtbaar");
       return { recipe: recipeRes.data as Recipe, ingredients: ingRes.data as Ingredient[] };
     },
@@ -1183,6 +1187,9 @@ function ReceptPage() {
               <PlanKiezer momenten={momenten} servings={recipe.servings} onKies={planOp} />
             ) : null}
 
+            {/* Module B: bronvermelding van de maker, video-link en "Bewaar in…". */}
+            <ReceptMakerDeel receptId={recipe.id} />
+
             {isOwner && (ingredients.length === 0 || recipe.instructions.length === 0) && (
               <div className="rounded-2xl border border-primary/40 bg-secondary p-4">
                 <p className="text-base">
@@ -1390,6 +1397,8 @@ function ReceptPage() {
             </div>
           ) : null}
         </section>
+        {/* Module B: community op openbare makerrecepten. */}
+        <ReceptCommunity receptId={recipe.id} />
       </div>
       {vraagNogmaals ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
