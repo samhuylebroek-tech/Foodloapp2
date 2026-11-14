@@ -45,7 +45,7 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | | "Waarom nu" op de receptpagina (zelfde motor als Vandaag) | Gebouwd (ronde 3) | F1 | Alleen eigen recepten, op het toestel, uit als slimme voorstellen uit staan | `waarom-nu.spec.ts` |
 | | Weer | Geblokkeerd | F2 | Logica klaar, maar geen databron (`haalWeer` wordt nergens gebruikt) | #15, #16 |
 | | Budget | Latere fase | F2 | Bestaat niet | #21 |
-| | Gezinscontext (mee-eters) | Latere fase | F2 | Gezinsgrootte wordt bewaard maar niet gebruikt | 0005, #7 |
+| | Gezinscontext (mee-eters) | Gebouwd (marathon) bij handmatig inplannen | F2 | Waarschuwing per mee-eter in de receptkiezer; nog niet in de AI-/weekvoorstellen | 0010, #7 |
 | | "Niet voor mij" (blijvend) | Te ontwikkelen | F2 | Tabel 0006 | #17 |
 | | Alternatief als je geen zin hebt | Gebouwd (ronde 3) | F1 | "Iets anders vanavond?" onder de Vandaag-kaart: voorstellen met reden, vervangt de maaltijd met "Ongedaan maken" | `vandaag.spec.ts` |
 | **Week** | Plannen per dag en moment, verplaatsen, dupliceren, vervangen (lijst past mee aan), ongedaan maken | Behouden | F1 | — | `planner.tsx`, `weekmenu-lijst.spec.ts` |
@@ -90,7 +90,7 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | **Instellingen** | Profiel, kleuren, taal, etenstijden, momenten, voorraad, slimme voorstellen, export, verwijderen | Behouden | F1 | — | `instellingen.tsx` |
 | | 24-uurstijden, Nederlandse namen | Opgelost (ronde 1) | F1 | — | BUG-135 |
 | | Opdelen in onderdelen | Verbeterd (ronde 2) | F1 | Drie delen (Weergave, Maaltijden, Account en privacy) met een sprongmenu; echte subpagina's zijn een optie voor later | — |
-| | Persoonlijke allergieën, intoleranties, dieet en uitsluitingen op het account (nu alleen op het toestel) | Te ontwikkelen | **F1** | Maximaal beschermd: alleen voor jezelf, nooit naar de AI (D-2026-11-13-1/2) | voorstel 0004b (N-1), FR-I-03 |
+| | Persoonlijke allergieën, intoleranties, dieet en uitsluitingen op het account | Gebouwd (marathon), getest met gezin-leden.spec (telefoon/desktop) en tests/rls/huishouden-voeding.mjs; actief in productie na migratie 0009 | **F1** | `/mijn-voeding` met toestemmingsvraag en datum; zonder toestemming of zonder 0009 op het toestel. Nog open: AVG-export neemt de tabel nog niet mee | voorstel 0009 (vroeger 0004b), FR-I-03 |
 
 ## A2. Recepten toevoegen en beheren (verplicht volledig)
 
@@ -149,9 +149,9 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 |---|---|---|---|
 | Gezin maken, uitnodigen (link, QR, zoeken), verlaten, eigenaar overdragen | Behouden | F1 | `gezin.tsx`, RLS-tests |
 | Rechten per lid (6 schakelaars) | Verbeteren | F2 | Ontwerp: één huishouden zonder vinkjes (#30) |
-| Gedeelde planning en lijst | Uitbreiden | F2 | Kringloop en Vandaag alleen voor je eigen plan; realtime niet getest |
-| Mee-eters per maaltijd, porties | Latere fase | F2 | 0005 |
-| Voorkeuren en **allergieën per gezinslid** (hard, nooit onveilige suggesties) | Geblokkeerd | F2 | Na 0004; uitdrukkelijke toestemming per lid (AVG art. 9); #7 |
+| Gedeelde planning en lijst | Uitbreiden | F2 | /gezin toont nu "Samen plannen" met Gezinsweekmenu (`/planner?weergave=gezin`) en Gezinslijst (`/boodschappen?lijst=gezin`), getest met gezin-leden.spec; kringloop en Vandaag nog alleen voor je eigen plan |
+| Mee-eters per maaltijd, porties | Gebouwd (marathon), getest met gezin-leden.spec (telefoon/desktop), gezin-veiligheid.test en tests/rls/huishouden-voeding.mjs; actief in productie na migratie 0010 | F2 | "Wie eet mee?" + gasten bij inplannen, personen volgt mee-eters, initialen op de weekkaart; zonder 0010 blijft de personenteller |
+| Voorkeuren en **allergieën per gezinslid** (hard, nooit onveilige suggesties) | Gebouwd (marathon), getest met gezin-leden.spec, gezin-veiligheid.test en tests/rls/huishouden-voeding.mjs; actief in productie na migratie 0010 (vraagt akkoord eigenaar, AVG art. 9) | F2 | Lidkaarten (ook kinderen zonder account), toestemming per lid, "Delen met mijn gezin"; planners zien alleen "Niet veilig voor …" (server: `maaltijd_veilig_voor`). Nog niet in de automatische weekvoorstellen |
 | Gedeelde voorraad | Latere fase | F2 | BUG-112 (besloten zo te laten), 0007 |
 
 ## D. Business Control Center

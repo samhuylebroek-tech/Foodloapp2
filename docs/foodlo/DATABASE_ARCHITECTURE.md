@@ -29,8 +29,8 @@ Nummering gelijkgetrokken; tegenstrijdigheid T4.
 | 0002 | Rollen en RLS beheer, `is_admin`, feedback | autorisatie | getest | 3. Staging, daarna akkoord (#3). |
 | 0003, 0003b | Bewaartermijnen (opruimfuncties) | **verwijdert oude gegevens volgens termijn** | getest | Na de keuze van de termijnen (#6, #12). Eerst een droge run op staging. |
 | **0004** | Weekmenu (`profiles.weekmenu`) alleen voor jezelf | autorisatie, niet destructief | getest, app klaar | 4. Zie §3. |
-| **0004b** | Persoonlijke voeding op het account (F1) | nieuw, niet destructief | **alleen ontwerp** (§4) | 5. Na akkoord op de opzet; zelfde patroon als 0004. |
-| **0005** | Huishoudensleden: voorkeuren, allergieën per lid, mee-eters (F2) | nieuw, gezondheidsgegevens | **alleen ontwerp, niet aanmaken** (D-2026-11-13-1) | F2; na 0004, 0004b en akkoord. |
+| **0009** (was 0004b) | Persoonlijke voeding op het account (F1) | nieuw, niet destructief | **voorstel geschreven, niet uitgevoerd** (§4, `migratie-voorstel/0009_*`) | 5. Na akkoord; zelfde patroon als 0004. |
+| **0010** (opzet "0005") | Huishoudensleden: voorkeuren, allergieën per lid, mee-eters (F2) | nieuw, gezondheidsgegevens | **voorstel geschreven, niet uitgevoerd** (§5, `migratie-voorstel/0010_*`); 0005 blijft gereserveerd | F2; na 0004, 0009 en akkoord. |
 | 0006 | Feedback op voorstellen ("Niet voor mij") | nieuw | getest | F2 (#17). |
 | 0007 | Houdbaarheid voorraad | nieuw | getest | F2 (#17). |
 | 0008 | Help Center-tabellen (vroeger ook "0005" genoemd) | nieuw | idee | F2. |
@@ -59,7 +59,8 @@ Nummering gelijkgetrokken; tegenstrijdigheid T4.
    2. Uitvoeren op staging, de app-suite draaien en terugdraaien oefenen.
    3. Productie, alleen met jouw akkoord.
 
-## 4. Voorstel 0004b: persoonlijke voeding op het account (F1, optie B)
+## 4. Voorstel 0009 (vroeger "0004b"): persoonlijke voeding op het account (F1, optie B)
+> **Noot (2026-11-14):** hernummerd naar **0009**, omdat 0005 gereserveerd is en 0008 al gebruikt werd. Het voorstel staat in `docs/foodloapp-v2/migratie-voorstel/0009_persoonlijke_voeding.{up,down}.sql` en is getest met `tests/rls/huishouden-voeding.mjs`. Niet uitgevoerd. Waar hieronder "0004b" staat, lees 0009.
 Dit is een ontwerp. Het bestand komt pas na jouw akkoord op deze opzet.
 
 ```sql
@@ -93,7 +94,8 @@ create policy eigen_wissen on public.persoonlijke_voeding for delete using (user
    - E2E: allergie op toestel A, waarschuwing op toestel B.
 - **Relatie met 0005 (F2):** 0005 voegt huishoudensleden met dezelfde velden toe, plus toestemming per lid en mee-eters per maaltijd. 0004b blijft de rij van de gebruiker zelf.
 
-## 5. Opzet 0005 (F2, alleen beschrijving)
+## 5. Opzet "0005" → voorstel 0010 (F2)
+> **Noot (2026-11-14):** uitgewerkt als **0010** (`migratie-voorstel/0010_huishouden_leden.{up,down}.sql`): `huishouden_leden`, `lid_voeding` (met `delen_met_gezin`, `toestemming_door`, `toestemming_soort`, `toestemming_op`), `maaltijd_eters` en de SECURITY DEFINER-functie `maaltijd_veilig_voor(recipe, leden)` die alleen waar/onwaar per lid geeft. Leest `persoonlijke_voeding` bewust niet. Niet uitgevoerd; 0005 blijft gereserveerd.
 - **`huishouden_leden`:** naam, of koppeling aan een account, en een rol.
 - **`lid_voeding`:** zelfde velden als 0004b, plus `toestemming_door` en `toestemming_op`.
 - **`maaltijd_eters`:** wie eet mee per maaltijd.
