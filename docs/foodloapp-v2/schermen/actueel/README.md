@@ -1,6 +1,6 @@
-# Foodloapp: voor en na ronde 2
+# Foodloapp: voor en na ronde 3
 
-Stand 13 november 2026. Alleen verzonnen voorbeeldgegevens (nep-databank).
+Stand 14 november 2026. Alleen verzonnen voorbeeldgegevens (nep-databank).
 
 ## Thema: extra-duidelijk
 
@@ -8,33 +8,15 @@ Stand 13 november 2026. Alleen verzonnen voorbeeldgegevens (nep-databank).
 
 | Voor | Na |
 |---|---|
-| <img src="../voor-ronde2-2026-11-13/extra-duidelijk-01-vandaag.jpg" width="260"> | <img src="extra-duidelijk-01-vandaag.jpg" width="260"> |
+| <img src="../voor-ronde3-2026-11-14/extra-duidelijk-01-vandaag.jpg" width="260"> | <img src="extra-duidelijk-01-vandaag.jpg" width="260"> |
 
-### week
-
-| Voor | Na |
-|---|---|
-| <img src="../voor-ronde2-2026-11-13/extra-duidelijk-02-week.jpg" width="260"> | <img src="extra-duidelijk-02-week.jpg" width="260"> |
-
-### lijst
+<img src="extra-duidelijk-02-week.jpg" alt="week" width="260"> <img src="extra-duidelijk-03-lijst.jpg" alt="lijst" width="260"> <img src="extra-duidelijk-04-winkelmodus.jpg" alt="winkelmodus" width="260"> ### recept
 
 | Voor | Na |
 |---|---|
-| <img src="../voor-ronde2-2026-11-13/extra-duidelijk-03-lijst.jpg" width="260"> | <img src="extra-duidelijk-03-lijst.jpg" width="260"> |
+| <img src="../voor-ronde3-2026-11-14/extra-duidelijk-05-recept.jpg" width="260"> | <img src="extra-duidelijk-05-recept.jpg" width="260"> |
 
-### winkelmodus
-
-| Voor | Na |
-|---|---|
-| <img src="../voor-ronde2-2026-11-13/extra-duidelijk-04-winkelmodus.jpg" width="260"> | <img src="extra-duidelijk-04-winkelmodus.jpg" width="260"> |
-
-<img src="extra-duidelijk-05-recept.jpg" alt="recept" width="260"> <img src="extra-duidelijk-06-kookstand.jpg" alt="kookstand" width="260"> <img src="extra-duidelijk-07-keuken.jpg" alt="keuken" width="260"> <img src="extra-duidelijk-08-ontdek.jpg" alt="ontdek" width="260"> ### instellingen
-
-| Voor | Na |
-|---|---|
-| <img src="../voor-ronde2-2026-11-13/extra-duidelijk-09-instellingen.jpg" width="260"> | <img src="extra-duidelijk-09-instellingen.jpg" width="260"> |
-
-
+<img src="extra-duidelijk-06-kookstand.jpg" alt="kookstand" width="260"> <img src="extra-duidelijk-07-keuken.jpg" alt="keuken" width="260"> <img src="extra-duidelijk-08-ontdek.jpg" alt="ontdek" width="260"> <img src="extra-duidelijk-09-instellingen.jpg" alt="instellingen" width="260"> 
 
 ## Thema: licht
 
@@ -42,30 +24,22 @@ Stand 13 november 2026. Alleen verzonnen voorbeeldgegevens (nep-databank).
 
 | Voor | Na |
 |---|---|
-| <img src="../voor-ronde2-2026-11-13/licht-01-vandaag.jpg" width="260"> | <img src="licht-01-vandaag.jpg" width="260"> |
+| <img src="../voor-ronde3-2026-11-14/licht-01-vandaag.jpg" width="260"> | <img src="licht-01-vandaag.jpg" width="260"> |
 
-### week
-
-| Voor | Na |
-|---|---|
-| <img src="../voor-ronde2-2026-11-13/licht-02-week.jpg" width="260"> | <img src="licht-02-week.jpg" width="260"> |
-
-### lijst
+<img src="licht-02-week.jpg" alt="week" width="260"> <img src="licht-03-lijst.jpg" alt="lijst" width="260"> <img src="licht-04-winkelmodus.jpg" alt="winkelmodus" width="260"> ### recept
 
 | Voor | Na |
 |---|---|
-| <img src="../voor-ronde2-2026-11-13/licht-03-lijst.jpg" width="260"> | <img src="licht-03-lijst.jpg" width="260"> |
+| <img src="../voor-ronde3-2026-11-14/licht-05-recept.jpg" width="260"> | <img src="licht-05-recept.jpg" width="260"> |
 
-### winkelmodus
+<img src="licht-06-kookstand.jpg" alt="kookstand" width="260"> <img src="licht-07-keuken.jpg" alt="keuken" width="260"> <img src="licht-08-ontdek.jpg" alt="ontdek" width="260"> <img src="licht-09-instellingen.jpg" alt="instellingen" width="260"> 
 
-| Voor | Na |
+## Nieuw in ronde 3 (telefoonscherm 390 × 844, nepgegevens)
+
+| Iets anders vanavond | Waarom nu (recept) | Dupliceren |
+|---|---|---|
+| <img src="../ronde3-nieuw/1-iets-anders-vanavond.jpg" width="240"> | <img src="../ronde3-nieuw/2-waarom-nu-recept.jpg" width="240"> | <img src="../ronde3-nieuw/3-dupliceren-menu.jpg" width="240"> |
+
+| Voorbeeld in de editor | Offline-scherm |
 |---|---|
-| <img src="../voor-ronde2-2026-11-13/licht-04-winkelmodus.jpg" width="260"> | <img src="licht-04-winkelmodus.jpg" width="260"> |
-
-<img src="licht-05-recept.jpg" alt="recept" width="260"> <img src="licht-06-kookstand.jpg" alt="kookstand" width="260"> <img src="licht-07-keuken.jpg" alt="keuken" width="260"> <img src="licht-08-ontdek.jpg" alt="ontdek" width="260"> ### instellingen
-
-| Voor | Na |
-|---|---|
-| <img src="../voor-ronde2-2026-11-13/licht-09-instellingen.jpg" width="260"> | <img src="licht-09-instellingen.jpg" width="260"> |
-
-
+| <img src="../ronde3-nieuw/4-voorbeeld-editor.jpg" width="240"> | <img src="../ronde3-nieuw/5-offline.jpg" width="240"> |
