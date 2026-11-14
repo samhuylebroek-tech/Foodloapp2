@@ -289,6 +289,15 @@ function InstellingenPage() {
           <h2 id="deel-maaltijden" className="text-sectietitel">
             {t("Maaltijden")}
           </h2>
+          <Groep>
+            <LinkRij
+              to="/mijn-voeding"
+              icoon={ShieldCheck}
+              tint="groen"
+              titel={t("Mijn allergieën en voorkeuren")}
+              uitleg={t("Alleen voor jou. Nooit naar de AI.")}
+            />
+          </Groep>
           <Groep titel={t("Weekmenu")} voet={t("Kies welke momenten je per dag wil inplannen.")}>
             <label className="flex min-h-16 cursor-pointer items-center gap-3.5 px-4 py-3">
               <span className="min-w-0 flex-1 text-[1.05rem] font-semibold leading-snug">

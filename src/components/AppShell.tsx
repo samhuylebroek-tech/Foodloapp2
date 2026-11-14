@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { moduleVoorPad } from "@/lib/functies";
 import logo from "@/assets/logo.png";
 import { Aankondigingen } from "@/components/Aankondigingen";
+import { AccountVoedingLader } from "@/lib/voeding-db";
 import { MeldingVraag, telAanmelding } from "@/components/MeldingVraag";
 import {
   Sheet,
@@ -377,6 +378,7 @@ export function AppShell({
           </p>
         ) : null}
         <MeldingVraag actief={pathname === "/"} />
+        {session ? <AccountVoedingLader /> : null}
       </main>
 
       {/* Tablet (768–1023 px): dezelfde vijf plekken als zijbalk — duimbereik links, meer ruimte

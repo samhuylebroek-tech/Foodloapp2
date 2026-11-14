@@ -471,6 +471,54 @@ export function demoSeed() {
     shopping_edit: true,
   };
   const makers = makerSeed(DEMO_USER_ID, JAN);
+  // Voorstel 0010 (alleen demo): gezinsleden, ook zonder account, met voorkeuren en mee-eters.
+  // Lotte (kind) wordt beheerd door Jan en deelt niet: Marie ziet alleen "niet veilig".
+  // Gust (opa, zonder account) is vegetarisch en deelt dat met het gezin.
+  const HL = (n) => `aeaeaeae-0000-4000-8000-00000000000${n}`;
+  const huishouden_leden = [
+    [1, "Marie", DEMO_USER_ID, "volwassene", DEMO_USER_ID],
+    [2, "Jan", JAN, "volwassene", JAN],
+    [3, "Lotte", null, "kind", JAN],
+    [4, "Gust", null, "volwassene", DEMO_USER_ID],
+  ].map(([n, naam, user_id, rol, beheerder_id]) => ({
+    id: HL(n),
+    group_id: GEZIN,
+    naam,
+    user_id,
+    rol,
+    beheerder_id,
+    created_at: `2026-10-01T10:00:0${n}Z`,
+  }));
+  const lid_voeding = [
+    {
+      lid_id: HL(3),
+      allergieen: ["noten"],
+      intoleranties: [],
+      dieet: null,
+      uitsluitingen: [],
+      delen_met_gezin: false,
+      toestemming_door: JAN,
+      toestemming_soort: "beheerder",
+      toestemming_op: "2026-10-02T09:00:00Z",
+    },
+    {
+      lid_id: HL(4),
+      allergieen: [],
+      intoleranties: [],
+      dieet: "vegetarisch",
+      uitsluitingen: ["koriander"],
+      delen_met_gezin: true,
+      toestemming_door: DEMO_USER_ID,
+      toestemming_soort: "beheerder",
+      toestemming_op: "2026-10-02T09:05:00Z",
+    },
+  ].map((r, i) => ({ id: `afafafaf-0000-4000-8000-00000000000${i}`, ...r }));
+  // De pompoensoep (middag, over 3 dagen) eet het hele gezin mee: 4 personen.
+  const maaltijd_eters = [1, 2, 3, 4].map((n) => ({
+    id: `a0a0a0a0-0000-4000-8000-00000000000${n}`,
+    meal_plan_id: "cccccccc-0000-4000-8000-000000000003",
+    lid_id: HL(n),
+  }));
   return {
     creators: makers.creators,
     recipe_publicaties: makers.recipe_publicaties,
@@ -479,6 +527,9 @@ export function demoSeed() {
     collection_recipes: makers.collection_recipes,
     community_bijdragen: makers.community_bijdragen,
     content_meldingen: makers.content_meldingen,
+    huishouden_leden,
+    lid_voeding,
+    maaltijd_eters,
     inspiration_recipes: INSPIRATIE,
     inspiration_ingredients: INSPIRATIE_INGREDIENTEN,
     groups: [

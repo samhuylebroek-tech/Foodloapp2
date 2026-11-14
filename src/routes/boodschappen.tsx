@@ -135,6 +135,8 @@ export const Route = createFileRoute("/boodschappen")({
       { property: "og:description", content: "Vink af terwijl je winkelt en deel de lijst." },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>): { lijst?: "gezin" } =>
+    s["lijst"] === "gezin" ? { lijst: "gezin" } : {},
   component: BoodschappenPage,
 });
 
@@ -173,6 +175,7 @@ function BoodschappenPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [nieuw, setNieuw] = useState("");
+  const zoekLijst = Route.useSearch().lijst;
   const [actief, setActief] = useState<string | null>(null);
   const [naamVenster, setNaamVenster] = useState<"nieuw" | "hernoem" | null>(null);
   const [lijstNaam, setLijstNaam] = useState("");
@@ -271,10 +274,14 @@ function BoodschappenPage() {
   }, [user, qc]);
 
   useEffect(() => {
-    if (!actief && lijsten.length) setActief(lijsten[0]!.id);
+    if (!actief && lijsten.length) {
+      // Vanuit "Gezinslijst" op /gezin: meteen de gedeelde gezinslijst openen.
+      const gezinsLijst = zoekLijst === "gezin" ? lijsten.find((l) => l.group_id) : undefined;
+      setActief((gezinsLijst ?? lijsten[0]!).id);
+    }
     if (actief && lijsten.length && !lijsten.some((l) => l.id === actief))
       setActief(lijsten[0]!.id);
-  }, [lijsten, actief]);
+  }, [lijsten, actief, zoekLijst]);
 
   const { data: items = [] } = useQuery({
     queryKey: ["shopping", actief],

@@ -48,7 +48,33 @@ export function standaardPersonen(k: Pick<Kennismaking, "gezin">): number {
 
 const sleutel = (userId: string) => `foodlo:kennismaking:${userId}`;
 
+/**
+ * Persoonlijke voeding op het account (voorstel 0009), alleen na toestemming. In het geheugen,
+ * nooit in localStorage: de veiligheidsregels lezen toestel en account samen (strengste kant).
+ */
+const accountVoeding = new Map<string, { allergieen: string[]; dieet?: Dieet }>();
+
+export function zetAccountVoeding(
+  userId: string,
+  v: { allergieen: string[]; dieet?: Dieet } | null,
+) {
+  if (v) accountVoeding.set(userId, v);
+  else accountVoeding.delete(userId);
+}
+
+/** Toestel + account samen; dit gebruiken alle veiligheidsregels. */
 export function leesKennismaking(userId: string | null | undefined): Kennismaking {
+  const k = leesToestelKennismaking(userId);
+  const a = userId ? accountVoeding.get(userId) : undefined;
+  if (!a) return k;
+  const uit: Kennismaking = { ...k, allergieen: [...new Set([...k.allergieen, ...a.allergieen])] };
+  const dieet = a.dieet ?? k.dieet;
+  if (dieet) uit.dieet = dieet;
+  return uit;
+}
+
+/** Alleen wat op dit toestel staat (om de kennismaking te bewerken). */
+export function leesToestelKennismaking(userId: string | null | undefined): Kennismaking {
   if (!userId) return LEEG;
   try {
     const ruw = window.localStorage.getItem(sleutel(userId));
@@ -106,6 +132,7 @@ export function korteRondleiding(k: Kennismaking): boolean {
  * zijn gezondheidsgegevens; op een gedeeld toestel mogen ze niet blijven staan.
  */
 export function wisAlleKennismakingen() {
+  accountVoeding.clear();
   try {
     const weg: string[] = [];
     for (let i = 0; i < window.localStorage.length; i++) {

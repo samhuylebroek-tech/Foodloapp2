@@ -7,7 +7,7 @@ import { ALLERGENEN } from "@/lib/allergenen";
 import { markeerNieuweGebruiker } from "@/lib/eerste-stappen";
 import {
   bewaarKennismaking,
-  leesKennismaking,
+  leesToestelKennismaking,
   naarWeekmenu,
   type Kennismaking,
 } from "@/lib/kennismaking";
@@ -71,7 +71,7 @@ function KennismakingPagina() {
   const navigate = useNavigate();
   const { terug } = Route.useSearch();
   const { weekmenu, zetWeekmenu } = useVoorkeuren();
-  const [k, setK] = useState<Kennismaking>(() => leesKennismaking(user?.id));
+  const [k, setK] = useState<Kennismaking>(() => leesToestelKennismaking(user?.id));
   const zet =
     <S extends keyof Kennismaking>(s: S) =>
     (w: Kennismaking[S]) =>

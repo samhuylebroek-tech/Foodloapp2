@@ -22,6 +22,7 @@ import {
   ChevronDown,
   UtensilsCrossed,
   Minus,
+  ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,8 +64,24 @@ import {
 import { useVoorkeuren, type WeekmenuInstelling } from "@/lib/voorkeuren";
 import { tijdLabel } from "@/lib/tijd";
 import { datumTekst, labelVoor, type NieuwExtra, type Basis } from "./gedeeld";
+import {
+  EtersWaarschuwing,
+  WieEetMee,
+  oordeelVoorGerecht,
+  useMeeEters,
+  useVeiligheidVoorEters,
+} from "./WieEetMee";
 
-export function GerechtKaart({ recept, onKies }: { recept: Recipe; onKies: () => void }) {
+export function GerechtKaart({
+  recept,
+  onKies,
+  waarschuwing,
+}: {
+  recept: Recipe;
+  onKies: () => void;
+  /** "Niet veilig voor Lotte" (mee-eters); nooit de reden zonder toestemming. */
+  waarschuwing?: string | null;
+}) {
   const [fout, setFout] = useState(false);
   const info = [tijdLabel(recept.prep_minutes, recept.cook_minutes), recept.category]
     .filter(Boolean)
@@ -99,6 +116,12 @@ export function GerechtKaart({ recept, onKies }: { recept: Recipe; onKies: () =>
         {info && (
           <span className="mt-0.5 block text-base font-normal text-muted-foreground">{info}</span>
         )}
+        {waarschuwing ? (
+          <span className="mt-1 flex items-start gap-1.5 text-base font-semibold text-honing-foreground">
+            <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <span className="min-w-0">{waarschuwing}</span>
+          </span>
+        ) : null}
       </span>
       <Plus className="size-5 shrink-0 text-primary" aria-hidden />
     </Button>
@@ -113,13 +136,21 @@ export function ReceptKiezer({
   onSluit,
   onKies,
   onNieuw,
+  gezinId = null,
 }: {
   week: string[];
   momenten: string[];
   instelling: WeekmenuInstelling;
   start: { datum: string; moment: string; vraagDag?: boolean };
   onSluit: () => void;
-  onKies: (id: string, datum: string, moment: string, titel: string, personen: number) => void;
+  onKies: (
+    id: string,
+    datum: string,
+    moment: string,
+    titel: string,
+    personen: number,
+    eters?: string[],
+  ) => void;
   onNieuw: (
     naam: string,
     basis: Basis | null,
@@ -127,7 +158,10 @@ export function ReceptKiezer({
     moment: string,
     extra?: NieuwExtra,
     personen?: number,
+    eters?: string[],
   ) => void;
+  /** Gezin voor "Wie eet mee?" (voorstel 0010); zonder gezin blijft de personenteller. */
+  gezinId?: string | null;
 }) {
   const { user } = useAuth();
   const { taal } = useVoorkeuren();
@@ -138,7 +172,13 @@ export function ReceptKiezer({
   const [aiBezig, setAiBezig] = useState(false);
   // Voor hoeveel personen kook je dit gerecht? Eén keer gevraagd bij het inplannen.
   // Standaard: je gezinsgrootte uit de kennismaking (ronde 3), anders 4.
-  const [personen, setPersonen] = useState(() => standaardPersonen(leesKennismaking(user?.id)));
+  const [eigenPersonen, setPersonen] = useState(() =>
+    standaardPersonen(leesKennismaking(user?.id)),
+  );
+  // Met gezinsleden volgt het aantal personen de mee-eters (+ gasten).
+  const mee = useMeeEters(gezinId);
+  const personen = mee.actief ? mee.personen : eigenPersonen;
+  const eters = mee.actief ? mee.gekozen : undefined;
   const [voorstel, setVoorstel] = useState<Basis | null>(null);
   const [voorstelNaam, setVoorstelNaam] = useState("");
   const [ideeen, setIdeeen] = useState<WeekmenuIdee[] | null>(null);
@@ -404,6 +444,7 @@ export function ReceptKiezer({
   const gefilterdeRecepten = term
     ? receptenMetSoort.filter((r) => r.title.toLowerCase().includes(term.toLowerCase()))
     : receptenMetSoort;
+  const waarschuwingVoor = useVeiligheidVoorEters(mee, gefilterdeRecepten, user?.id);
   const actieveSoortLabel = soortFilter
     ? soortFilter.charAt(0).toUpperCase() + soortFilter.slice(1)
     : null;
@@ -440,6 +481,13 @@ export function ReceptKiezer({
             <AllergieWaarschuwing
               ingredienten={voorstel.ingredienten.map((i) => i.name)}
               titel={voorstel.title}
+            />
+            <EtersWaarschuwing
+              tekst={oordeelVoorGerecht(
+                mee,
+                { title: voorstel.title, ingredienten: voorstel.ingredienten.map((i) => i.name) },
+                user?.id,
+              )}
             />
             {voorstel.ingredienten.length > 0 && (
               <div>
@@ -480,6 +528,7 @@ export function ReceptKiezer({
                   moment,
                   undefined,
                   personen,
+                  eters,
                 )
               }
               className="mt-0 h-14 flex-[2] text-base"
@@ -594,28 +643,32 @@ export function ReceptKiezer({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2">
-          <span className="text-base font-medium">Voor hoeveel personen?</span>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => setPersonen(Math.max(1, personen - 1))}
-              aria-label="Minder personen"
-              className="size-12 bg-card"
-            >
-              <Minus className="size-5" />
-            </Button>
-            <span className="min-w-8 text-center text-lg font-semibold">{personen}</span>
-            <Button
-              variant="secondary"
-              onClick={() => setPersonen(Math.min(50, personen + 1))}
-              aria-label="Meer personen"
-              className="size-12 bg-card"
-            >
-              <Plus className="size-5" />
-            </Button>
+        {mee.actief ? (
+          <WieEetMee mee={mee} />
+        ) : (
+          <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2">
+            <span className="text-base font-medium">Voor hoeveel personen?</span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => setPersonen(Math.max(1, eigenPersonen - 1))}
+                aria-label="Minder personen"
+                className="size-12 bg-card"
+              >
+                <Minus className="size-5" />
+              </Button>
+              <span className="min-w-8 text-center text-lg font-semibold">{personen}</span>
+              <Button
+                variant="secondary"
+                onClick={() => setPersonen(Math.min(50, eigenPersonen + 1))}
+                aria-label="Meer personen"
+                className="size-12 bg-card"
+              >
+                <Plus className="size-5" />
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="border-b border-border px-4 py-3">
           <div
@@ -795,7 +848,8 @@ export function ReceptKiezer({
                     <li key={r.id}>
                       <GerechtKaart
                         recept={r}
-                        onKies={() => onKies(r.id, datum, moment, r.title, personen)}
+                        onKies={() => onKies(r.id, datum, moment, r.title, personen, eters)}
+                        waarschuwing={waarschuwingVoor(r)}
                       />
                     </li>
                   ))}
@@ -806,7 +860,7 @@ export function ReceptKiezer({
                   <>
                     <Button
                       variant="outline"
-                      onClick={() => onNieuw(term, null, datum, moment, undefined, personen)}
+                      onClick={() => onNieuw(term, null, datum, moment, undefined, personen, eters)}
                       className="h-auto min-h-14 w-full justify-start whitespace-normal text-left text-base"
                     >
                       <Type className="size-5" /> “{term}” inplannen zonder recept
@@ -814,7 +868,7 @@ export function ReceptKiezer({
                     <Button
                       variant="outline"
                       onClick={() =>
-                        onNieuw(term, null, datum, moment, { maakRecept: true }, personen)
+                        onNieuw(term, null, datum, moment, { maakRecept: true }, personen, eters)
                       }
                       className="h-auto min-h-14 w-full justify-start whitespace-normal text-left text-base"
                     >
@@ -836,7 +890,9 @@ export function ReceptKiezer({
                     <Button
                       key={soort}
                       variant="secondary"
-                      onClick={() => onNieuw(label, null, datum, moment, { soort }, personen)}
+                      onClick={() =>
+                        onNieuw(label, null, datum, moment, { soort }, personen, eters)
+                      }
                       className="h-14 min-w-0 whitespace-normal px-2 text-base leading-tight"
                     >
                       {label}
@@ -980,14 +1036,16 @@ export function ReceptKiezer({
               <div className="space-y-2">
                 <Button
                   variant="outline"
-                  onClick={() => onNieuw(term, null, datum, moment, undefined, personen)}
+                  onClick={() => onNieuw(term, null, datum, moment, undefined, personen, eters)}
                   className="h-14 w-full justify-start text-base"
                 >
                   <Type className="size-5" /> Alleen als naam inplannen
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => onNieuw(term, null, datum, moment, { maakRecept: true }, personen)}
+                  onClick={() =>
+                    onNieuw(term, null, datum, moment, { maakRecept: true }, personen, eters)
+                  }
                   className="h-14 w-full justify-start text-base"
                 >
                   <Pencil className="size-5" /> Zelf een recept maken of importeren

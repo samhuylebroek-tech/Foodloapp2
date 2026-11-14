@@ -80,6 +80,8 @@ import {
   type Basis,
 } from "@/components/planner/gedeeld";
 import { ReceptKiezer } from "@/components/planner/ReceptKiezer";
+import { EterInitialen } from "@/components/planner/EterInitialen";
+import { bewaarEters, haalEters, useHuishouden } from "@/lib/voeding-db";
 import { LijstVraag } from "@/components/planner/LijstVraag";
 import { WeekmenuInstellingen } from "@/components/planner/WeekmenuInstellingen";
 import { ReceptFoto, WeekmenuVoorstel } from "@/components/planner/WeekmenuVoorstel";
@@ -105,6 +107,8 @@ export const Route = createFileRoute("/planner")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>): { weergave?: "gezin" } =>
+    s["weergave"] === "gezin" ? { weergave: "gezin" } : {},
   component: PlannerPage,
 });
 
@@ -145,7 +149,10 @@ function PlannerPage() {
     bron: string;
   } | null>(null);
 
-  const [weergave, setWeergave] = useState<"mij" | "gezin">("mij");
+  const zoekWeergave = Route.useSearch().weergave;
+  const [weergave, setWeergave] = useState<"mij" | "gezin">(
+    zoekWeergave === "gezin" ? "gezin" : "mij",
+  );
   const [instellingenOpen, setInstellingenOpen] = useState(false);
   const [voorstelOpen, setVoorstelOpen] = useState(false);
   const [kalenderOpen, setKalenderOpen] = useState(false);
@@ -232,6 +239,19 @@ function PlannerPage() {
       return data as unknown as PlanRow[];
     },
   });
+
+  // Wie eet mee (voorstel 0010): kleine initialen op de weekkaart.
+  const { data: huishouden } = useHuishouden(gezin?.id);
+  const planIds = plan.map((p) => p.id);
+  const { data: etersPerMaaltijd } = useQuery({
+    queryKey: ["maaltijd-eters", planIds.join(",")],
+    enabled: !!huishouden?.beschikbaar && planIds.length > 0,
+    queryFn: () => haalEters(planIds),
+  });
+  const etersVan = (planId: string) => {
+    const ids = etersPerMaaltijd?.get(planId) ?? [];
+    return (huishouden?.data.leden ?? []).filter((l) => ids.includes(l.id));
+  };
 
   // Het weekmenu opent op vandaag: de dag van vandaag is al gekozen en
   // gemarkeerd in de weekbalk, dus we scrollen niet automatisch naar beneden —
@@ -344,10 +364,21 @@ function PlannerPage() {
     toast.success("Ingrediënten van je boodschappenlijst gehaald");
   }
 
+  /** Mee-eters bij een maaltijd bewaren (voorstel 0010). Mislukt dit, dan blijft de maaltijd staan. */
+  async function zetEters(planId: string, eters?: string[]) {
+    if (!eters) return;
+    try {
+      await bewaarEters(planId, eters);
+      qc.invalidateQueries({ queryKey: ["maaltijd-eters"] });
+    } catch {
+      toast.error("Wie meeëet, kon niet bewaard worden. De maaltijd staat er wel.");
+    }
+  }
+
   // BUG-032: een dubbele tik terwijl de eerste nog bezig is, mag niet twee keer inplannen.
   const planBezig = useRef(false);
 
-  async function plan_toevoegen(recipeId: string, datum: string, moment: string, titel: string, personen: number) {
+  async function plan_toevoegen(recipeId: string, datum: string, moment: string, titel: string, personen: number, eters?: string[]) {
     if (!user || planBezig.current) return;
     if (eigenMenu) {
       const id = await menuWijziging(
@@ -355,6 +386,7 @@ function PlannerPage() {
         `${titel} staat op ${labelVoor(datum)}`,
       );
       if (id === null) return;
+      if (id) await zetEters(id, eters);
       setKiezen(null);
       setWeekStart(maandagVan(new Date(`${datum}T12:00:00`)));
       return;
@@ -384,6 +416,7 @@ function PlannerPage() {
       toast.error("Inplannen lukte niet");
       return;
     }
+    await zetEters(data.id, eters);
     setKiezen(null);
     setWeekStart(maandagVan(new Date(`${datum}T12:00:00`)));
     toast.success(`${titel} staat op ${labelVoor(datum)}`, {
@@ -580,7 +613,7 @@ function PlannerPage() {
   }
 
 
-  async function nieuw_gerecht(naam: string, basis: Basis | null, datum: string, moment: string, extra?: NieuwExtra, personen?: number) {
+  async function nieuw_gerecht(naam: string, basis: Basis | null, datum: string, moment: string, extra?: NieuwExtra, personen?: number, eters?: string[]) {
     if (!user) return;
     let recipeId: string | null = null;
 
@@ -658,6 +691,7 @@ function PlannerPage() {
       }
       geplandeRij = data;
     }
+    if (geplandeRij) await zetEters(geplandeRij.id, eters);
     if (extra?.maakRecept && geplandeRij) {
       setKiezen(null);
       navigate({ to: "/recepten/nieuw", search: { title: naam, koppel: geplandeRij.id } });
@@ -1023,6 +1057,7 @@ function PlannerPage() {
                                     {p.custom_title}
                                   </span>
                                 )}
+                                <EterInitialen leden={etersVan(p.id)} className="px-2.5 pt-1.5" />
                                 <div className="flex items-center justify-between gap-1 pb-1 pl-2.5 pr-1">
                                   <span className="truncate text-[0.9rem] text-muted-foreground">
                                     {p.recipes
@@ -1070,7 +1105,7 @@ function PlannerPage() {
     const titel = datum.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" });
     const kaart = (p: PlanRow) => (
                     <li key={p.id} className="paneel @container flex min-h-24 items-center gap-2 p-3">
-                      {p.recipe_id ? <Link to="/recepten/$id" params={{ id: p.recipe_id }} search={p.personen != null ? { personen: p.personen } : {}} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg hyphens-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring @max-[17rem]:flex-col @max-[17rem]:items-start"><ReceptFoto url={p.recipes?.image_url ?? null} recept={p.recipes} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.recipes?.title ?? "Recept"}</span>{p.recipes ? <span className="mt-0.5 flex items-center gap-1 text-base text-muted-foreground"><Clock3 className="size-3.5" /> {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) || "Tijd niet ingevuld"}</span> : null}</span></Link> : <div className="flex min-w-0 flex-1 items-center gap-3 hyphens-auto @max-[17rem]:flex-col @max-[17rem]:items-start"><ReceptFoto url={null} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.custom_title}</span>{!p.soort ? <button type="button" onClick={() => setKoppelRij(p)} className="mt-0.5 block text-left text-base font-semibold text-primary underline underline-offset-2">Nog geen recept · koppelen</button> : null}</span></div>}
+                      {p.recipe_id ? <Link to="/recepten/$id" params={{ id: p.recipe_id }} search={p.personen != null ? { personen: p.personen } : {}} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg hyphens-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring @max-[17rem]:flex-col @max-[17rem]:items-start"><ReceptFoto url={p.recipes?.image_url ?? null} recept={p.recipes} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.recipes?.title ?? "Recept"}</span>{p.recipes ? <span className="mt-0.5 flex items-center gap-1 text-base text-muted-foreground"><Clock3 className="size-3.5" /> {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) || "Tijd niet ingevuld"}</span> : null}<EterInitialen leden={etersVan(p.id)} className="mt-1" /></span></Link> : <div className="flex min-w-0 flex-1 items-center gap-3 hyphens-auto @max-[17rem]:flex-col @max-[17rem]:items-start"><ReceptFoto url={null} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.custom_title}</span>{!p.soort ? <button type="button" onClick={() => setKoppelRij(p)} className="mt-0.5 block text-left text-base font-semibold text-primary underline underline-offset-2">Nog geen recept · koppelen</button> : null}</span></div>}
                       {weergave === "gezin" && p.user_id !== user?.id ? <Avatar naam={plannerNamen[p.user_id] ?? "?"} sleutel={p.user_id} className="size-8 shrink-0 text-base" /> : null}
                       {planActies(p)}
                     </li>
@@ -1585,6 +1620,7 @@ function PlannerPage() {
           onSluit={() => setKiezen(null)}
           onKies={plan_toevoegen}
           onNieuw={nieuw_gerecht}
+          gezinId={gezin?.id ?? null}
         />
       )}
 
