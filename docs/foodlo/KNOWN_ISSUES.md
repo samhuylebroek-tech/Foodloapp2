@@ -61,12 +61,12 @@ Details en bewijs in het bugregister. Nog open:
 | Nakijken vóór bewaren overal; één manier van verwijderen | FR-RI-04, FR-RI-08 | 2 | — |
 | Echte tests per invoermethode | FR-RI-02 | 2 | — |
 | Instellingen opdelen; Lijst rustiger | FR-I-02, FR-B-02 | 2 | — |
-| "Iets anders vanavond" | FR-V-10 | 3 | — |
-| Gezinsgrootte als standaard voor het aantal personen | FR-W-04 | 3 | — |
-| Dupliceren | FR-RI-07 | 3 | — |
-| Voorbeeld in de editor | FR-RI-05 | 3 | — |
+| ~~"Iets anders vanavond"~~ gebouwd in ronde 3 | FR-V-10 | 3 | — |
+| ~~Gezinsgrootte als standaard voor het aantal personen~~ gebouwd in ronde 3 | FR-W-04 | 3 | — |
+| ~~Dupliceren~~ gebouwd in ronde 3 | FR-RI-07 | 3 | — |
+| ~~Voorbeeld in de editor~~ gebouwd in ronde 3 | FR-RI-05 | 3 | — |
 | Invoer in stappen | FR-RI-06 | 3 | — |
-| iOS-project, offline-scherm, native push, iconen | M1–M4 | 4 | #22, #23 |
+| iOS-project, native push, iconen (offline-scherm gebouwd in ronde 3) | M1, M2, M4 | 4–5 | #22, #23 |
 | Storemateriaal en privacylabels | M7 | 6 | #27 |
 
 **F2 en F3:** zie `COMPLETE_PRODUCT_INVENTORY.md` §2 en `COMMERCIAL_ROADMAP.md`. Daar is niets geschrapt.

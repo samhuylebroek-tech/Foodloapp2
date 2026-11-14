@@ -58,6 +58,23 @@ Alles wat in F2/F3 staat: COMPLETE_PRODUCT_INVENTORY en COMMERCIAL_ROADMAP.
 
 Ik maak zelf geen accounts aan en doe geen uitgaven.
 
+## 3b. Mobiele test voorbereiden (ronde 3)
+Klaar zonder goedkeuring:
+- **Offline-scherm:** gebouwd. Op het web werkt het meteen; in de app is het actief na de volgende build (`server.errorPath`).
+- **Testscript:** `docs/foodloapp-v2/PRAKTIJKTEST-TOESTELLEN.md` (bestaat). Extra in ronde 3:
+  1. "Iets anders vanavond" kiezen en ongedaan maken;
+  2. recept dupliceren;
+  3. de voorbeeldweergave bij grote systeemtekst bekijken;
+  4. vliegtuigmodus aan, een nieuwe pagina openen en het offline-scherm zien.
+- **Wie wat doet bij de test:**
+  - eigenaar: 2 iPhones en 2 Android-toestellen, met grote systeemtekst, VoiceOver en TalkBack;
+  - ik: de testversie (Android-APK via de Capacitor-build, iOS via TestFlight zodra er accounts zijn) en een bugformulier in het bugregister.
+
+Wacht op de eigenaar:
+- **#22:** de keuze tussen de website in de app en een meegeleverde app.
+- **Accounts (#24/#25):** nodig voor TestFlight en de gesloten test in Play.
+- **iOS-project (M1):** vraagt een Mac met Xcode.
+
 ## 4. Volgorde
 Zie `DEVELOPMENT_ROADMAP.md` §2–3:
 

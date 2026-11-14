@@ -42,15 +42,16 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | | Tijdregel: begin om, duur, aan tafel | Uitgebreid (ronde 1) | F1 | Nu ook als er nog iets ontbreekt; eerlijk als het te laat is | `tijdsplan`, PR #1 |
 | | Voorstellen met reden, "Waarom zie ik dit?", "Niet nu" | Behouden | F1 | "Niet nu" staat per toestel | `voorstel.ts`, `niet-nu.ts` |
 | | Seizoen en feestdagen (BE/NL) | Behouden | F1 | — | `intelligentie/context.ts` |
+| | "Waarom nu" op de receptpagina (zelfde motor als Vandaag) | Gebouwd (ronde 3) | F1 | Alleen eigen recepten, op het toestel, uit als slimme voorstellen uit staan | `waarom-nu.spec.ts` |
 | | Weer | Geblokkeerd | F2 | Logica klaar, maar geen databron (`haalWeer` wordt nergens gebruikt) | #15, #16 |
 | | Budget | Latere fase | F2 | Bestaat niet | #21 |
 | | Gezinscontext (mee-eters) | Latere fase | F2 | Gezinsgrootte wordt bewaard maar niet gebruikt | 0005, #7 |
 | | "Niet voor mij" (blijvend) | Te ontwikkelen | F2 | Tabel 0006 | #17 |
-| | Alternatief als je geen zin hebt | Verbeteren | F1 | Wel meerdere voorstellen, maar geen knop "iets anders vanavond" op de kaart | — |
+| | Alternatief als je geen zin hebt | Gebouwd (ronde 3) | F1 | "Iets anders vanavond?" onder de Vandaag-kaart: voorstellen met reden, vervangt de maaltijd met "Ongedaan maken" | `vandaag.spec.ts` |
 | **Week** | Plannen per dag en moment, verplaatsen, dupliceren, vervangen (lijst past mee aan), ongedaan maken | Behouden | F1 | — | `planner.tsx`, `weekmenu-lijst.spec.ts` |
 | | Hoofdacties en hiërarchie | Verbeterd (ronde 1) | F1 | Twee planknoppen, één hoofdknop "Slim aanvullen" | PR #1 |
 | | "Laat Foodlo kiezen", "Vul aan" voor lege dagen, restjes plannen | Behouden | F1 | — | `week-voorstel.spec.ts`, `week-vul-aan.spec.ts` |
-| | Personen per maaltijd | Verbeteren | F1 | Standaard 4; de gezinsgrootte uit de kennismaking wordt niet gebruikt | `porties.ts` |
+| | Personen per maaltijd | Verbeterd (ronde 3) | F1 | Standaard = gezinsgrootte uit de kennismaking (1/2/4/5), anders 4 | `standaardPersonen` (unit) |
 | | Gezinsplanning | Uitbreiden | F2 | Weergave "gezin" bestaat; de lijst past zich alleen aan bij je eigen plan | `kringloop-db.ts` |
 | | Plan delen | Uitbreiden | F2 | Alleen via de rechten van vrienden of gezin | — |
 | **Ontdek** | Catalogus, filters, thema's, "Verras mij", allergielabels | Behouden | F1 | — | `inspiratie.index.tsx` |
@@ -121,11 +122,11 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 |---|---|---|
 | Aanpassen (zelfde formulier), versies (10, terugzetten), foto's, concepten (automatisch bewaren) | Behouden | — |
 | Verwijderen | Verbeterd (BUG-146, ronde 2) | Overal: bevestigen, zacht verwijderen, "Ongedaan maken"; op de pagina van een verwijderd recept staat "Terugzetten" |
-| Eigen recept dupliceren | Te ontwikkelen | Kan nu niet |
+| Eigen recept dupliceren | Gebouwd (ronde 3) | Meer → "Dupliceren": kopie met "(kopie)", ingrediënten en foto's mee (`recept-beheer.spec.ts`) |
 | Publiek, privé, alleen volgers | Latere fase | Er is geen zichtbaarheidsveld (G1/G2) |
 | Eigen collecties | Geblokkeerd | G1/G2 |
 | Delen (link) | Behouden | — |
-| Recepteditor in stappen | Verbeteren | Bij een nieuw recept gaat de keuze van invoer voor; het formulier toont daarna alles tegelijk |
+| Recepteditor in stappen | Verbeteren | Bij een nieuw recept gaat de keuze van invoer voor; het formulier toont daarna alles tegelijk. Ronde 3: voorbeeldweergave vóór bewaren ("Klopt alles?" › Voorbeeld, `receptinvoer.spec.ts`) |
 
 ## B. Creators en food influencers
 **Kern:** er bestaat nog geen creatorfunctie in de code (score 1/10, `CREATOR-GAP-ANALYSE.md`). Alles hieronder blijft in de visie.
@@ -215,7 +216,7 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | Web push | Behouden | ja | — |
 | Native push | Te ontwikkelen | sterk aanbevolen | #23 |
 | Talen (10, machinevertaling) | Behouden | nee (lancering in het Nederlands) | Vertalingen nalezen: F2 |
-| Offline (lijst, klantenkaart) | Behouden; offline-scherm native: te ontwikkelen | ja | #22 |
+| Offline (lijst, klantenkaart) | Behouden; offline-scherm gebouwd (ronde 3): web via de service worker, app via `server.errorPath` (actief na een nieuwe app-build) | ja | `offline.spec.ts` |
 
 ## I. Mobiele platformen en lancering
 | Onderdeel | Status | F1 nodig | Voorwaarde |
@@ -247,7 +248,7 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | Lokale producten als signaal | Productmissie §2; complete visie §7 | Uitbreiden | F2 | Nu via seizoensproducten |
 | **UX:** vlotte overgangen en micro-interacties | Productmissie §3; complete visie §8 | Verbeteren | F1 | Met respect voor `prefers-reduced-motion` |
 | **UX:** lege toestanden en foutmeldingen consequent | Complete visie §8; CLAUDE.md | Behouden / Verbeteren | F1 | `EmptyState` bestaat; per scherm nalopen |
-| **Editor:** voorbeeldweergave vóór bewaren, tussentijds bewaren, stappen herschikken | Aanvulling receptinvoer §3 | Verbeteren | F1 | Tussentijds bewaren bestaat (concept); voorbeeld ontbreekt |
+| **Editor:** voorbeeldweergave vóór bewaren, tussentijds bewaren, stappen herschikken | Aanvulling receptinvoer §3 | Verbeterd (ronde 3) | F1 | Voorbeeld gebouwd; tussentijds bewaren bestaat (concept); stappen herschikken: open |
 | **Supermarkt:** bestaande integraties behouden, later modulair uitbreiden | CLAUDE.md | Behouden | F1 | Winkelvolgorde, afdelingen en klantenkaarten blijven; nieuwe aanbieders pas in F3 |
 | **Betalingen:** terugbetalingen, annulering, fraude en chargebacks, inkomstendeling creators, platformvergoeding | CLAUDE.md | Latere fase | F3 | In COMMERCIAL_ROADMAP §4; G5 en jurist |
 | **Analytics:** creatorconversie, retentie, churn, inkomsten | CLAUDE.md | Latere fase | F3 | Alleen geaggregeerd |
