@@ -56,6 +56,7 @@ const ALLE_VOORSTELLEN = schrijf("alle-voorstellen.sql", [
   "0004_profielinstellingen_prive.up.sql",
   "0006_aanbeveling_feedback.up.sql",
   "0007_voorraad_houdbaarheid.up.sql",
+  "0008_creators_community.up.sql",
 ]);
 
 const gevallen = [
@@ -92,7 +93,13 @@ const gevallen = [
     "rls-gezin-privacy.mjs",
     ALLE_VOORSTELLEN,
     0,
-    "0002a + 0002 + 0004 + 0006 + 0007: alleen de voorraad",
+    "0002a + 0002 + 0004 + 0006 + 0007 + 0008: alleen de voorraad",
+  ],
+  [
+    "makers-community.mjs",
+    null,
+    0,
+    "voorstel 0008: makers, publiceren, volgen, verzamelingen, community, meldingen, heen+terug",
   ],
   ["verwijder-gezinseigenaar.mjs", null, 0, "verslag BUG-110/025 (rapporteert, faalt niet)"],
 ];

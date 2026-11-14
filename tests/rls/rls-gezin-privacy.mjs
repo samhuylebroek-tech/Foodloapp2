@@ -19,6 +19,7 @@ const G = "f0000000-0000-4000-8000-0000000000f0";
 const TOEGELATEN = {
   pantry_items: "gedeelde huishoudvoorraad (BUG-112, beslissing eigenaar)",
   group_members: "lidmaatschap van hetzelfde gezin",
+  creators: "makerprofiel: bewust leesbaar voor ingelogde gebruikers (voorstel 0008)",
 };
 
 const { db, fouten } = await bouwDatabank({
@@ -52,7 +53,7 @@ const metGroep = new Set(
 );
 
 // Kolommen met een vaste lijst van toegelaten waarden (CHECK), bv. voorstel 0006.
-const VASTE_WAARDEN = { signaal: "'niet_nu'" };
+const VASTE_WAARDEN = { signaal: "'niet_nu'", handle: "'test-a'", tekst: "'Lekker'" };
 // Optionele kolommen die een tabelregel (CHECK) toch vraagt.
 const EXTRA_KOLOMMEN = { aanbeveling_feedback: { onderwerp: "'curry'" } };
 
