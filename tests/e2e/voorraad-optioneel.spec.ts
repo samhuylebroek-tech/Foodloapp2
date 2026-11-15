@@ -40,6 +40,11 @@ test("1. zonder voorraad: voorstellen met redenen op Vandaag en in Week, zonder 
   await expect(page.getByText(/kon niet geladen worden|Er ging iets mis/)).toHaveCount(0);
 
   await page.goto("/planner");
+  // "Vul aan" verschijnt pas vanaf twee lege dagen in de getoonde week. Op zondag blijft er van
+  // deze week maar één dag over: kijk dan naar volgende week (die is leeg na de reset).
+  if (new Date().getDay() === 0) {
+    await page.getByRole("button", { name: "Volgende week" }).click();
+  }
   await expect(page.getByRole("region", { name: "Vul aan met voorstellen" })).toBeVisible({
     timeout: 30_000,
   });
