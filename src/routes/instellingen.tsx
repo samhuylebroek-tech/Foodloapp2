@@ -22,6 +22,7 @@ import {
 import { Groep, KnopRij, LinkRij, Paneel } from "@/components/mobiel/Lijst";
 import { Switch } from "@/components/ui/switch";
 import { WeerInstelling } from "@/components/instellingen/WeerInstelling";
+import { BudgetInstelling } from "@/components/budget/BudgetInstelling";
 import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
 import { useVoorraadBijhouden } from "@/lib/intelligentie/voorraad-modus";
 import { cn } from "@/lib/utils";
@@ -377,6 +378,7 @@ function InstellingenPage() {
 
           <SlimmeVoorstellen t={t} />
           <WeerInstelling />
+          <BudgetInstelling />
         </section>
         <section aria-labelledby="deel-account" id="account" className="scroll-mt-24 space-y-7">
           <h2 id="deel-account" className="text-sectietitel">

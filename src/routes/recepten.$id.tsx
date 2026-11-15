@@ -79,6 +79,7 @@ import { AllergieWaarschuwing } from "@/components/AllergieWaarschuwing";
 import { RestjeVraag } from "@/components/kringloop/RestjeVraag";
 import { markeerKookstand } from "@/lib/eerste-stappen";
 import { KookAssistent, VraagFoodloKnop } from "@/components/assistent/KookAssistent";
+import { ReceptKost } from "@/components/budget/ReceptKost";
 
 /** Voorstel van "Vul dit gerecht aan": alleen wat nu leeg is (BUG-145). */
 type AanvulVoorstel = {
@@ -1133,6 +1134,8 @@ function ReceptPage() {
                 <Users className="size-5 text-primary" aria-hidden />
                 {aantal} {t(aantal === 1 ? "persoon" : "personen")}
               </li>
+              {/* Werkstroom F: geschatte kost (schatting, geen winkelprijs). */}
+              <ReceptKost ingredienten={ingredients} factor={factor} personen={aantal} />
               {recipe.category ? (
                 <li className="inline-flex min-h-10 items-center rounded-full bg-secondary px-3.5 text-base font-medium text-secondary-foreground">
                   {t(soortLabel(recipe.category))}

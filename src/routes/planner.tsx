@@ -85,6 +85,7 @@ import { bewaarEters, haalEters, useHuishouden } from "@/lib/voeding-db";
 import { LijstVraag } from "@/components/planner/LijstVraag";
 import { WeekmenuInstellingen } from "@/components/planner/WeekmenuInstellingen";
 import { ReceptFoto, WeekmenuVoorstel } from "@/components/planner/WeekmenuVoorstel";
+import { WeekBudget } from "@/components/budget/WeekBudget";
 import { VulAan } from "@/components/planner/VulAan";
 import { VerplaatsSheet, KoppelSheet } from "@/components/planner/PlanSheets";
 import { useTablet } from "@/hooks/useTablet";
@@ -1319,6 +1320,16 @@ function PlannerPage() {
             })}
           </div>
         </section>
+
+        {/* Werkstroom F: geschatte kost van de week en waarschuwing boven het weekbudget. */}
+        <WeekBudget
+          plan={plan.map((p) => ({
+            id: p.id,
+            recipe_id: p.recipe_id,
+            personen: p.personen ?? null,
+            servings: p.recipes?.servings ?? null,
+          }))}
+        />
 
         {weekRaster()}
         {tablet ? (
