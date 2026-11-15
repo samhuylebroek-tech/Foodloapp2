@@ -58,6 +58,22 @@ import { useServerFn } from "@tanstack/react-start";
 import { creditOverzicht } from "@/lib/credits.functions";
 
 import { RecipePhoto } from "@/components/RecipePhoto";
+import {
+  StappenControle,
+  StappenKeuze,
+  StappenKop,
+  StappenNavigatie,
+} from "@/components/recept/StappenInvoer";
+import { VolgordeLijst } from "@/components/recept/VolgordeLijst";
+import { telbareRegels, verplaatsRegel, wisselSleutels } from "@/lib/volgorde";
+import {
+  bewaarStappenKeuze,
+  leesStappenKeuze,
+  toonInStap,
+  volgendeStap,
+  vorigeStap,
+  type ReceptStap,
+} from "@/lib/recept-stappen";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -136,6 +152,13 @@ export function RecipeForm({
   const [stappenTekst, setStappenTekst] = useState((recipe?.instructions ?? []).join("\n"));
   const [stapKeuze, setStapKeuze] = useState<StapKoppeling>(recipe?.step_ingredients ?? {});
   const [meerDetails, setMeerDetails] = useState(false);
+  // Stap voor stap (beginners, alleen bij een nieuw recept): velden blijven bestaan, alleen verborgen.
+  const [stapsgewijs, setStapsgewijs] = useState(false);
+  const [stap, setStap] = useState<ReceptStap>(1);
+  useEffect(() => {
+    if (!recipe) setStapsgewijs(leesStappenKeuze());
+  }, [recipe]);
+  const toon = (blok: ReceptStap) => toonInStap(stapsgewijs, stap, blok);
   // Spelling en grammatica van de stappen laten nakijken
   const [taalBezig, setTaalBezig] = useState(false);
   const [taalVoorstel, setTaalVoorstel] = useState<string[] | null>(null);
@@ -986,7 +1009,7 @@ export function RecipeForm({
 
   return (
     <div className="space-y-6">
-      {!recipe && (
+      {!recipe && !stapsgewijs && (
         <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-card p-2 shadow-zacht">
           {/* Niet plakkend: de paginakop is hoger dan 4,25 rem, waardoor deze balk bij het
               scrollen onder de kop verdween en inhoud bedekte. "Klaar" staat ook onderaan. */}
@@ -999,7 +1022,7 @@ export function RecipeForm({
           </Button>
         </div>
       )}
-      {!recipe && (
+      {!recipe && !stapsgewijs && (
         <section className="rounded-3xl bg-card p-4 shadow-kaart sm:p-5">
           <h2 className="text-sectietitel">Hoe wil je je recept toevoegen?</h2>
           <div className="mt-4 grid grid-cols-1 gap-2.5 min-[400px]:grid-cols-2 lg:grid-cols-4">
@@ -1379,8 +1402,20 @@ export function RecipeForm({
         </section>
       )}
 
+      {!recipe && (
+        <StappenKeuze
+          aan={stapsgewijs}
+          onWissel={(aan) => {
+            setStapsgewijs(aan);
+            setStap(1);
+            bewaarStappenKeuze(aan);
+          }}
+        />
+      )}
+      {stapsgewijs && <StappenKop stap={stap} />}
+
       <section className="space-y-4">
-        <div>
+        <div className={toon(1) ? "" : "hidden"}>
           <Label htmlFor="title" className="text-base">
             Naam van het gerecht
           </Label>
@@ -1399,7 +1434,7 @@ export function RecipeForm({
 
 
 
-        <div>
+        <div className={toon(2) ? "" : "hidden"}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <Label htmlFor="ingredienten" className="text-base">
               Ingrediënten — één per regel
@@ -1436,16 +1471,22 @@ export function RecipeForm({
           <p id="ingredienten-hulp" className="mt-1 text-[0.9rem] text-muted-foreground">
             Eén ingrediënt per regel, bijvoorbeeld: 500 g bloem · 2 eieren · snufje zout
           </p>
+          <VolgordeLijst
+            id="volgorde-ingredienten"
+            titel="Volgorde van de ingrediënten aanpassen"
+            items={telbareRegels(ingredientTekst)}
+            onVerplaats={(i, r) => setIngredientTekst((t) => verplaatsRegel(t, i, r))}
+          />
         </div>
 
-        {ingredientTekst.trim() && (
+        {ingredientTekst.trim() && toon(2) && (
           <Voedingswaarden
             ingredienten={parseIngredientText(ingredientTekst)}
             porties={Number(servings) || schatting || 4}
           />
         )}
 
-        <div>
+        <div className={toon(3) ? "" : "hidden"}>
           <Label htmlFor="stappen" className="text-base">
             Bereiding — één stap per regel
           </Label>
@@ -1460,6 +1501,16 @@ export function RecipeForm({
           <p id="stappen-hulp" className="mt-1 text-[0.9rem] text-muted-foreground">
             Eén stap per regel, bijvoorbeeld: Verwarm de oven op 180 graden.
           </p>
+          <VolgordeLijst
+            id="volgorde-stappen"
+            titel="Volgorde van de stappen aanpassen"
+            items={telbareRegels(stappenTekst)}
+            onVerplaats={(i, r) => {
+              setStappenTekst((t) => verplaatsRegel(t, i, r));
+              // "Wat gebruik je bij deze stap" verhuist mee met de stap.
+              setStapKeuze((k) => wisselSleutels(k, i, i + r));
+            }}
+          />
           {stappen.length > 0 && (
             <Button
               type="button"
@@ -1508,7 +1559,7 @@ export function RecipeForm({
           </DialogContent>
         </Dialog>
 
-        {stappen.length > 0 && formIngredienten.length > 0 && (
+        {stappen.length > 0 && formIngredienten.length > 0 && toon(3) && (
           <div>
             <Label className="text-base">Wat gebruik je bij elke stap?</Label>
             <p className="mt-1 text-base text-muted-foreground">
@@ -1562,7 +1613,7 @@ export function RecipeForm({
         )}
 
 
-        <div>
+        <div className={toon(1) ? "" : "hidden"}>
           <Label className="text-base">Foto van het gerecht</Label>
           <div className="mt-2 flex items-center gap-4">
             <div className="relative shrink-0">
@@ -1615,7 +1666,17 @@ export function RecipeForm({
         </div>
       </section>
 
-      <section className="rounded-2xl border border-border bg-card">
+      {stapsgewijs && stap === 4 && (
+        <StappenControle
+          titel={title}
+          heeftFoto={!!(photoPath || voorstelFoto)}
+          ingredienten={formIngredienten.map((i) => i.name)}
+          stappen={stappen}
+          onNaarStap={setStap}
+        />
+      )}
+
+      <section className={toon(4) ? "rounded-2xl border border-border bg-card" : "hidden"}>
         <button
           type="button"
           onClick={() => setMeerDetails(!meerDetails)}
@@ -1724,7 +1785,24 @@ export function RecipeForm({
         </p>
       )}
 
-      <div className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-20 -mx-1 rounded-2xl border border-border bg-card/95 p-2 shadow-lg backdrop-blur md:bottom-4">
+      {stapsgewijs && (
+        <StappenNavigatie
+          stap={stap}
+          titel={title}
+          bezig={saving}
+          bewaarLabel={koppelMaaltijd ? "Bewaren en koppelen" : "Bewaren"}
+          onVorige={() => setStap(vorigeStap(stap))}
+          onVolgende={() => setStap(volgendeStap(stap))}
+          onBewaar={() => void handleSave()}
+        />
+      )}
+      <div
+        className={
+          stapsgewijs
+            ? "hidden"
+            : "sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-20 -mx-1 rounded-2xl border border-border bg-card/95 p-2 shadow-lg backdrop-blur md:bottom-4"
+        }
+      >
         <ul className="flex flex-wrap justify-center gap-x-3 gap-y-1 px-2 pb-1 text-base text-muted-foreground" aria-label="Wat is al ingevuld">
           {([
             ["Naam", !!title.trim()],
