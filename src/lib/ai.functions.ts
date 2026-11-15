@@ -17,6 +17,13 @@ import {
   type Platform,
 } from "@/lib/import.server";
 import { leesBeperkt, TeGrootFout, veiligeUrl, veiligOphalen } from "@/lib/veilige-url";
+import { Venster } from "@/lib/kostrem";
+import {
+  isDemoOmgeving,
+  TestAssistentAdapter,
+  type HulpAntwoord,
+  type HulpVraag,
+} from "@/lib/assistent/adapter";
 
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
@@ -1270,4 +1277,88 @@ export const verbeterStappen = createServerFn({ method: "POST" })
       },
     );
     return resultaat;
+  });
+
+// ---------- Kookassistent (werkstroom F) ----------
+// Volgorde: testadapter in demo/tests → echte AI als er een sleutel is → anders "regels" (de app
+// gebruikt dan de vaste tabel). Alle tekst gaat eerst door voorAI(): geen allergie, dieet of
+// gezondheid naar de AI. De vervangers worden op het toestel nog eens getoetst (veiligheid.ts).
+const assistentPerGebruiker = new Venster(30, 24 * 60 * 60_000);
+
+export const assistentHulp = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        soort: z.enum(["vervang", "vraag"]),
+        tekst: z.string().trim().min(1).max(200),
+        recept: z.string().max(160).optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }): Promise<HulpAntwoord> => {
+    const tekst = voorAI(data.tekst).tekst;
+    const recept = voorAI(data.recept ?? "").tekst;
+    const vraag: HulpVraag =
+      data.soort === "vervang"
+        ? { soort: "vervang", ingredient: tekst, recept }
+        : { soort: "vraag", vraag: tekst, recept };
+    if (isDemoOmgeving(process.env)) return new TestAssistentAdapter().vraag(vraag);
+    if (!process.env["LOVABLE_API_KEY"])
+      return { bron: "regels", melding: "De slimme hulp is nog niet aangesloten." };
+    if (!tekst)
+      return { bron: "regels", melding: "Deze vraag beantwoordt Foodlo alleen met vaste tips." };
+    if (!assistentPerGebruiker.neem(context.userId))
+      return { bron: "regels", melding: "Je hebt vandaag al veel gevraagd. Morgen kan het weer." };
+    try {
+      const { resultaat } = await metCredits(
+        {
+          userId: context.userId,
+          feature: "assistent",
+          cacheSleutel: `${data.soort}|${tekst}|${recept}`,
+          model: MODEL,
+        },
+        async (meter) => {
+          const systeem =
+            data.soort === "vervang"
+              ? 'Je bent een Belgische kookhulp. Geef maximaal 4 gangbare vervangers voor het gevraagde ingrediënt in dit gerecht, elk met een korte reden (max. 12 woorden), in het Nederlands. Antwoord uitsluitend met JSON: {"vervangers":[{"naam":"...","reden":"..."}]}'
+              : 'Je bent een Belgische kookhulp. Beantwoord de kookvraag kort en praktisch (max. 3 zinnen), in gewone taal, met Belgische maten. Geef geen medisch of allergieadvies. Antwoord uitsluitend met JSON: {"antwoord":"..."}';
+          const raw = await askAI(
+            [
+              { role: "system", content: systeem },
+              { role: "user", content: recept ? `Gerecht: ${recept}\n${tekst}` : tekst },
+            ],
+            "assistent",
+            meter,
+          );
+          const uit = parseJson<{ vervangers?: unknown; antwoord?: unknown }>(raw, {});
+          if (data.soort === "vervang") {
+            const lijst = Array.isArray(uit.vervangers) ? uit.vervangers : [];
+            return {
+              bron: "ai" as const,
+              vervangers: lijst
+                .filter(
+                  (x): x is { naam: string; reden?: string } =>
+                    !!x && typeof (x as { naam?: unknown }).naam === "string",
+                )
+                .slice(0, 4)
+                .map((x) => ({
+                  naam: x.naam.slice(0, 60),
+                  reden: String(x.reden ?? "").slice(0, 140),
+                })),
+            };
+          }
+          return {
+            bron: "ai" as const,
+            antwoord: typeof uit.antwoord === "string" ? uit.antwoord.slice(0, 500) : "",
+          };
+        },
+      );
+      return resultaat;
+    } catch {
+      return {
+        bron: "regels",
+        melding: "De slimme hulp is nu niet bereikbaar. Hier zijn de vaste tips.",
+      };
+    }
   });

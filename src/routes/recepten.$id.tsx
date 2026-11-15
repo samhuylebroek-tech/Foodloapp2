@@ -78,6 +78,7 @@ import { PageSkeleton } from "@/components/PageSkeleton";
 import { AllergieWaarschuwing } from "@/components/AllergieWaarschuwing";
 import { RestjeVraag } from "@/components/kringloop/RestjeVraag";
 import { markeerKookstand } from "@/lib/eerste-stappen";
+import { KookAssistent, VraagFoodloKnop } from "@/components/assistent/KookAssistent";
 
 /** Voorstel van "Vul dit gerecht aan": alleen wat nu leeg is (BUG-145). */
 type AanvulVoorstel = {
@@ -209,6 +210,8 @@ function ReceptPage() {
   const [stopVraag, setStopVraag] = useState(false);
   const [verwijderVraag, setVerwijderVraag] = useState(false);
   const [kopieVraag, setKopieVraag] = useState(false);
+  // Werkstroom F: "Vraag het Foodlo" (vervangers, aanpassen, kookvraag).
+  const [assistentOpen, setAssistentOpen] = useState(false);
   const [aanvulVoorstel, setAanvulVoorstel] = useState<AanvulVoorstel | null>(null);
   const vernieuwKringloop = useKringloopVernieuw();
   // Keuken als één geheel: het recept weet wat er in huis is.
@@ -789,15 +792,19 @@ function ReceptPage() {
               <span className="hidden min-[360px]:inline">{t("Stoppen")}</span>
             </Button>
           </div>
-          <p className="mx-auto mt-1 max-w-2xl text-xl font-bold">
-            {voorbereiding ? (
-              t("Alles klaarzetten")
-            ) : (
-              <>
-                Stap {stap + 1} van {stappen.length}
-              </>
-            )}
-          </p>
+          <div className="mx-auto mt-1 flex max-w-2xl items-center justify-between gap-3">
+            <p className="min-w-0 text-xl font-bold">
+              {voorbereiding ? (
+                t("Alles klaarzetten")
+              ) : (
+                <>
+                  Stap {stap + 1} van {stappen.length}
+                </>
+              )}
+            </p>
+            {/* Werkstroom F: hulp tijdens het koken (vervangen, kookvraag). */}
+            <VraagFoodloKnop compact onClick={() => setAssistentOpen(true)} />
+          </div>
           {/* Voortgang: één blokje per stap, zichtbaar én voor schermlezers. */}
           <div
             role="progressbar"
@@ -919,6 +926,14 @@ function ReceptPage() {
           </div>
         </div>
 
+        <KookAssistent
+          open={assistentOpen}
+          onOpenChange={setAssistentOpen}
+          recept={recipe}
+          ingredienten={ingredients}
+          isOwner={isOwner}
+          kookstand
+        />
         <AlertDialog open={stopVraag} onOpenChange={setStopVraag}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -1182,6 +1197,15 @@ function ReceptPage() {
                 <ShoppingCart className="size-5 shrink-0" /> {t("Op mijn lijst")}
               </Button>
             </div>
+
+            <VraagFoodloKnop onClick={() => setAssistentOpen(true)} />
+            <KookAssistent
+              open={assistentOpen}
+              onOpenChange={setAssistentOpen}
+              recept={recipe}
+              ingredienten={ingredients}
+              isOwner={isOwner}
+            />
 
             {planOpen ? (
               <PlanKiezer momenten={momenten} servings={recipe.servings} onKies={planOp} />
