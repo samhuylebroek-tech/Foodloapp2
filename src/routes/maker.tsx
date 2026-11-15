@@ -463,6 +463,11 @@ function PublicatieRij({
           {publicatieStatusLabel(publicatie)}
         </span>
       </div>
+      {publicatie?.moderatie === "afgewezen" && publicatie.moderatie_reden ? (
+        <p role="note" className="paneel p-3 text-base">
+          Reden van het Foodlo-team: {publicatie.moderatie_reden}
+        </p>
+      ) : null}
       <fieldset>
         <legend className="mb-2 text-base font-semibold">Wie mag dit zien?</legend>
         <div className="flex flex-wrap gap-2">

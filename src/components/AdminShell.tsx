@@ -65,6 +65,7 @@ const SECTIES: Sectie[] = [
       { pad: "/beheer/ui", label: "Diepgaand", recht: "dashboard.view" },
       { pad: "/beheer/analytics", label: "Functies", recht: "dashboard.view" },
       { pad: "/beheer/recepten", label: "Recepten", recht: "recipes.view" },
+      { pad: "/beheer/moderatie", label: "Moderatie", recht: "content.manage" },
       { pad: "/beheer/imports", label: "Imports", recht: "ai.view" },
     ],
   },

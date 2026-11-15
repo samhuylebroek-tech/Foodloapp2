@@ -33,6 +33,8 @@ export type Publicatie = {
   gepubliceerd_op: string | null;
   video_url: string | null;
   moderatie?: Moderatie;
+  /** Uitleg van het Foodlo-team bij "afgewezen" (moderatie in /beheer/moderatie). */
+  moderatie_reden?: string | null;
 };
 
 /** Openbare inhoud gaat eerst langs moderatie (C1 vóór elke publieke inhoud). */
