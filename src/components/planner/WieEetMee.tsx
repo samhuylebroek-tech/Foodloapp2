@@ -12,6 +12,7 @@ import {
 } from "@/lib/gezin-veiligheid";
 import { heeftVoeding } from "@/lib/persoonlijke-voeding";
 import { serverOordeel, useHuishouden } from "@/lib/voeding-db";
+import { etiketVoorEters } from "@/lib/voorstel-eters";
 
 /**
  * "Wie eet mee?" bij het inplannen. Zonder gezin (of vóór migratie 0010) is er geen keuze en
@@ -163,7 +164,8 @@ export function useVeiligheidVoorEters(
 /** "Niet veilig voor Lotte" — met reden alleen als die gedeeld is ("Gust: past niet bij …"). */
 export function tekstMetReden(oordelen: EterOordeel[]): string | null {
   const t = waarschuwingTekst(oordelen);
-  if (!t) return null;
+  // Geen harde botsing: dan eventueel de zachte ("Liever niet voor Jan (Jan: liever geen kokos)").
+  if (!t) return etiketVoorEters(oordelen);
   const redenen = oordelen
     .filter((o) => o.veilig === false && o.reden)
     .map((o) => `${o.naam}: ${o.reden}`);

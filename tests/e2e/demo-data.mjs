@@ -792,6 +792,7 @@ export function demoSeed() {
   // Voorstel 0010 (alleen demo): gezinsleden, ook zonder account, met voorkeuren en mee-eters.
   // Lotte (kind) wordt beheerd door Jan en deelt niet: Marie ziet alleen "niet veilig".
   // Gust (opa, zonder account) is vegetarisch en deelt dat met het gezin.
+  // Jan eet liever geen gember en deelt dat: een zachte voorkeur ("liever niet"), geen verbod.
   const HL = (n) => `aeaeaeae-0000-4000-8000-00000000000${n}`;
   const huishouden_leden = [
     [1, "Marie", DEMO_USER_ID, "volwassene", DEMO_USER_ID],
@@ -829,6 +830,17 @@ export function demoSeed() {
       toestemming_door: DEMO_USER_ID,
       toestemming_soort: "beheerder",
       toestemming_op: "2026-10-02T09:05:00Z",
+    },
+    {
+      lid_id: HL(2),
+      allergieen: [],
+      intoleranties: [],
+      dieet: null,
+      uitsluitingen: ["gember"],
+      delen_met_gezin: true,
+      toestemming_door: JAN,
+      toestemming_soort: "zelf",
+      toestemming_op: "2026-10-02T09:10:00Z",
     },
   ].map((r, i) => ({ id: `afafafaf-0000-4000-8000-00000000000${i}`, ...r }));
   // De pompoensoep (middag, over 3 dagen) eet het hele gezin mee: 4 personen.

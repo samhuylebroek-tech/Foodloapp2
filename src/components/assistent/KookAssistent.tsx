@@ -8,7 +8,7 @@
  *   verschillen; daarna kies je "Bewaar als kopie" of "Pas dit recept aan" (met ongedaan maken).
  * - Vraag: korte kookvraag, eerst vaste antwoorden.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -252,6 +252,7 @@ export function KookAssistent({
   ingredienten,
   isOwner,
   kookstand = false,
+  beginIngredient = null,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -259,6 +260,8 @@ export function KookAssistent({
   ingredienten: Ingredient[];
   isOwner: boolean;
   kookstand?: boolean;
+  /** Fase 1 veiligheid: "Vervanger zoeken" opent meteen bij dit ingrediënt. */
+  beginIngredient?: string | null;
 }) {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -269,6 +272,12 @@ export function KookAssistent({
 
   const [tab, setTab] = useState("vervangen");
   const [gekozen, setGekozen] = useState<string | null>(null);
+  useEffect(() => {
+    if (open && beginIngredient) {
+      setTab("vervangen");
+      setGekozen(beginIngredient.trim());
+    }
+  }, [open, beginIngredient]);
   const [eigen, setEigen] = useState("");
   const [slim, setSlim] = useState<{
     bron: AssistentBron;

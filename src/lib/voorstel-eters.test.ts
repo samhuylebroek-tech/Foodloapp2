@@ -2,8 +2,13 @@ import { describe, expect, it } from "vitest";
 import type { HuishoudenLid, LidVoeding } from "./gezin-veiligheid";
 import { LEGE_VOEDING } from "./persoonlijke-voeding";
 import {
+  beoordeel,
   etiketVoorEters,
+  ingredientBotsing,
+  kookWaarschuwingen,
+  maaltijdOordeel,
   namenLijst,
+  productOordeel,
   nietGeschikt,
   oordelenVoor,
   veiligVoorEters,
@@ -100,5 +105,100 @@ describe("voorstellen per mee-eter", () => {
     expect(voorWieTekst([{ naam: "Lotte" }, { naam: "Gust" }])).toBe(
       "Rekening gehouden met Lotte en Gust",
     );
+  });
+});
+
+describe("fase 1: één oordeel voor een maaltijd (hard / zacht)", () => {
+  const jan = lid("j", "Jan", { user_id: JAN, beheerder_id: JAN, rol: "volwassene" });
+  const metJan = (extra: Partial<EtersContext> = {}) =>
+    ctx({
+      eters: [marie, jan, lotte, gust],
+      voeding: new Map([
+        ["l", voeding("l", { allergieen: ["noten"] })],
+        ["g", voeding("g", { dieet: "vegetarisch", delen_met_gezin: true })],
+        ["j", voeding("j", { uitsluitingen: ["kokos"], delen_met_gezin: true })],
+      ]),
+      ...extra,
+    });
+  const kokossoep = { id: "k", title: "Pompoensoep", ingredienten: ["pompoen", "kokosmelk"] };
+
+  it("hard: strikt dieet met gedeelde reden en het ingrediënt dat botst", () => {
+    const o = maaltijdOordeel(stoof, metJan());
+    expect(o.niveau).toBe("hard");
+    expect(o.titel).toBe("Niet geschikt voor Gust");
+    expect(o.hard[0]).toMatchObject({ naam: "Gust", reden: "past niet bij vegetarisch" });
+    expect(ingredientBotsing("rundvlees", o)).toEqual({
+      ernst: "hard",
+      namen: ["Gust"],
+      tekst: "Niet voor Gust",
+    });
+    expect(ingredientBotsing("bier", o)).toBeNull();
+  });
+
+  it("zacht: 'liever niet' blokkeert niets en ziet er anders uit", () => {
+    const o = maaltijdOordeel(kokossoep, metJan());
+    expect(o.niveau).toBe("zacht");
+    expect(o.hard).toHaveLength(0);
+    expect(o.titel).toBe("Liever niet voor Jan");
+    expect(etiketVoorEters(oordelenVoor(kokossoep, metJan()))).toBe(
+      "Liever niet voor Jan (Jan: liever geen kokos)",
+    );
+    // Een voorkeur filtert een voorstel niet weg.
+    expect(nietGeschikt(kokossoep, metJan())).toBe(false);
+    expect(veiligVoorEters([kokossoep], (x) => x, metJan()).veilig).toHaveLength(1);
+    expect(ingredientBotsing("kokosmelk", o)?.ernst).toBe("zacht");
+  });
+
+  it("privacy: zonder gedeelde reden geen reden, geen ingrediënt, geen markering", () => {
+    const o = maaltijdOordeel(pesto, metJan());
+    expect(o.niveau).toBe("hard");
+    expect(o.titel).toBe("Niet geschikt voor Lotte");
+    expect(o.hard[0]!.reden).toBeUndefined();
+    expect(o.hard[0]!.ingredienten).toBeUndefined();
+    expect(ingredientBotsing("hazelnoten", o)).toBeNull();
+    expect(JSON.stringify(o)).not.toMatch(/noten/);
+    expect(kookWaarschuwingen(o)).toEqual([
+      { ernst: "hard", tekst: "Let op: niet geschikt voor Lotte — Lotte eet mee" },
+    ]);
+    // De beheerder (Jan) mag de reden wel zien.
+    const voorJan = maaltijdOordeel(pesto, metJan({ kijkerId: JAN }));
+    expect(voorJan.hard[0]!.reden).toBe("bevat mogelijk noten");
+    expect(ingredientBotsing("hazelnoten", voorJan)?.namen).toEqual(["Lotte"]);
+  });
+
+  it("meerdere eters: hard wint, zacht blijft erbij; kookstand noemt iedereen", () => {
+    const g = { id: "x", title: "Kip met kokos", ingredienten: ["kipfilet", "kokosmelk"] };
+    const o = maaltijdOordeel(g, metJan());
+    expect(o.niveau).toBe("hard");
+    expect(o.hard.map((e) => e.naam)).toEqual(["Gust"]);
+    expect(o.zacht.map((e) => e.naam)).toEqual(["Jan"]);
+    expect(kookWaarschuwingen(o).map((w) => w.tekst)).toEqual([
+      "Let op: past niet bij vegetarisch — Gust eet mee",
+      "Liever niet: liever geen kokos — Jan eet mee",
+    ]);
+  });
+
+  it("wie niet meeëet, telt niet mee", () => {
+    expect(maaltijdOordeel(stoof, metJan({ eters: [marie, jan, lotte] })).niveau).toBe("ok");
+    expect(beoordeel([]).titel).toBeNull();
+  });
+
+  it("serveroordeel (niet leesbaar) is hard, zonder reden", () => {
+    const o = maaltijdOordeel(
+      soep,
+      ctx({ voeding: new Map(), server: { o: new Map([["l", false]]) } }),
+    );
+    expect(o.niveau).toBe("hard");
+    expect(o.hard[0]).toEqual({ lidId: "l", naam: "Lotte", veilig: false, ernst: "hard" });
+  });
+
+  it("boodschappen: product botst alleen met gedeelde reden", () => {
+    const c = metJan();
+    expect(productOordeel("rundvlees", c).titel).toBe("Niet geschikt voor Gust");
+    // Lotte deelt niet: "hazelnoten" krijgt geen markering (zou haar allergie verraden).
+    expect(productOordeel("hazelnoten", c).niveau).toBe("ok");
+    expect(productOordeel("hazelnoten", { ...c, kijkerId: JAN }).niveau).toBe("hard");
+    expect(productOordeel("kokosmelk", c).niveau).toBe("zacht");
+    expect(productOordeel("melk", c).niveau).toBe("ok");
   });
 });

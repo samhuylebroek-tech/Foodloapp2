@@ -2,7 +2,7 @@
  * WP3 — de "Nu"-kaart bovenaan Vandaag: één ding dat nu telt, één knop.
  * Welke stap het is, beslist `hoofdStap` (lib/vandaag.ts); deze kaart toont hem alleen.
  */
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowRight,
   CalendarDays,
@@ -20,6 +20,8 @@ import type { Recipe } from "@/lib/types";
 import { duurLabel } from "@/lib/kookstand";
 import { opsomming, type ReceptVandaag, type Stap, type Tijdsplan } from "@/lib/vandaag";
 import { useT } from "@/lib/voorkeuren";
+import { useEtersOordelen, useMaaltijdEters } from "@/hooks/useMaaltijdEters";
+import { MaaltijdVeiligheid } from "@/components/veiligheid/EtersOordeel";
 
 const knopHoofd =
   "inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-inkt-foreground px-6 text-lg font-semibold text-inkt hover:bg-inkt-foreground/90 disabled:opacity-70";
@@ -88,6 +90,35 @@ export function NuKaart({
           huidigeTitel: stap.recept.title,
         }
       : null;
+  // Fase 1: wie eet mee en is het gerecht veilig voor iedereen? (zelfde oordeel als Week en recept)
+  const navigate = useNavigate();
+  const veiligPlan =
+    gepland?.planId ??
+    (stap?.soort === "morgen" && stap.maaltijd?.recept ? stap.maaltijd.id : null);
+  const mee = useMaaltijdEters(veiligPlan ? [veiligPlan] : []);
+  const oordelen = useEtersOordelen(
+    veiligPlan && recept ? [{ sleutel: veiligPlan, recept, eters: mee.etersVan(veiligPlan) }] : [],
+    mee,
+  );
+  const veiligheid =
+    veiligPlan && recept ? (
+      <MaaltijdVeiligheid
+        className="mt-4 max-w-md"
+        planId={veiligPlan}
+        titel={recept.title}
+        oordeel={oordelen[veiligPlan]}
+        mee={mee}
+        toon="inkt"
+        onAnder={gepland ? () => setAnders(true) : undefined}
+        onVervanger={(ingredient) =>
+          void navigate({
+            to: "/recepten/$id",
+            params: { id: recept.id },
+            search: { vervang: ingredient, plan: veiligPlan },
+          })
+        }
+      />
+    ) : null;
   // Timing: bij aanvullen en winkelen altijd; bij koken alleen als "begin om" er nog niet staat.
   const tijd =
     stap?.soort === "aanvullen" || stap?.soort === "winkelen"
@@ -105,7 +136,7 @@ export function NuKaart({
     <Link
       to="/recepten/$id"
       params={{ id: r.id }}
-      search={{ koken: true }}
+      search={gepland ? { koken: true, plan: gepland.planId } : { koken: true }}
       className={hoofd ? knopHoofd : knopTweede}
     >
       <ChefHat className="size-6" aria-hidden />
@@ -289,6 +320,8 @@ export function NuKaart({
                 ) : null}
               </div>
             )}
+            {/* Fase 1: veiligheid voor wie meeëet, buiten de hoofdacties (één hoofdknop + één tweede). */}
+            {!laden && stap ? veiligheid : null}
             {/* Buiten de hoofdkaart-acties: de kaart houdt één hoofdactie en hooguit één tweede. */}
             {!laden && gepland ? (
               <div className="mt-4">

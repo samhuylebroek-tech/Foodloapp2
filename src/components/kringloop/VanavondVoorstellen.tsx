@@ -7,7 +7,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChefHat, Loader2, ShieldAlert } from "lucide-react";
+import { Check, ChefHat, Info, Loader2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,7 +26,13 @@ import { HalfGelukt, kookVanavond, planVervang, wijzigMenu } from "@/lib/kringlo
 import { meet } from "@/lib/meten";
 import { useT, useVoorkeuren } from "@/lib/voorkeuren";
 import { useVoorstelEters } from "@/hooks/useVoorstelEters";
-import { etiketVoorEters, oordelenVoor, veiligVoorEters, voorWieTekst } from "@/lib/voorstel-eters";
+import {
+  beoordeel,
+  etiketVoorEters,
+  oordelenVoor,
+  veiligVoorEters,
+  voorWieTekst,
+} from "@/lib/voorstel-eters";
 
 type ReceptKort = {
   id: string;
@@ -297,19 +303,32 @@ export function VanavondVoorstellen({
                     {v.redenen.map((r) => r.tekst).join(" · ")}
                   </span>
                   {(() => {
-                    const etiket = etiketVoorEters(
-                      oordelenVoor({ ...gerechtVan(v), id: v.id }, eters),
-                    );
-                    return etiket ? (
+                    const oordelen = oordelenVoor({ ...gerechtVan(v), id: v.id }, eters);
+                    const etiket = etiketVoorEters(oordelen);
+                    if (!etiket) return null;
+                    // Fase 1: hard (niet geschikt) en zacht (liever niet) zien er anders uit.
+                    const hard = beoordeel(oordelen).niveau === "hard";
+                    return (
                       <span
                         role="note"
-                        data-testid="niet-geschikt"
-                        className="mt-1 flex items-start gap-1.5 rounded-lg bg-honing-zacht px-2 py-1 text-[0.95rem] font-semibold break-words text-honing-foreground"
+                        data-testid={hard ? "niet-geschikt" : "liever-niet"}
+                        className={
+                          hard
+                            ? "mt-1 flex items-start gap-1.5 rounded-lg border-l-4 border-terracotta bg-terracotta-zacht px-2 py-1 text-[0.95rem] font-semibold break-words text-foreground"
+                            : "mt-1 flex items-start gap-1.5 rounded-lg border border-dashed border-honing bg-honing-zacht px-2 py-1 text-[0.95rem] font-semibold break-words text-honing-foreground"
+                        }
                       >
-                        <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+                        {hard ? (
+                          <ShieldAlert
+                            className="mt-0.5 size-4 shrink-0 text-terracotta"
+                            aria-hidden
+                          />
+                        ) : (
+                          <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+                        )}
                         <span className="min-w-0">{etiket}</span>
                       </span>
-                    ) : null;
+                    );
                   })()}
                   {totaal > 0 && (
                     <span className="mt-1 flex flex-wrap items-center gap-1 text-[0.95rem] text-inkt-zacht">

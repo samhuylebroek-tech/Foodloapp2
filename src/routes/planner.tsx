@@ -81,7 +81,8 @@ import {
 } from "@/components/planner/gedeeld";
 import { ReceptKiezer } from "@/components/planner/ReceptKiezer";
 import { EterInitialen } from "@/components/planner/EterInitialen";
-import { bewaarEters, haalEters, useHuishouden } from "@/lib/voeding-db";
+import { useEtersOordelen, useMaaltijdEters } from "@/hooks/useMaaltijdEters";
+import { MaaltijdVeiligheid, OordeelLabel } from "@/components/veiligheid/EtersOordeel";
 import { LijstVraag } from "@/components/planner/LijstVraag";
 import { WeekmenuInstellingen } from "@/components/planner/WeekmenuInstellingen";
 import { ReceptFoto, WeekmenuVoorstel } from "@/components/planner/WeekmenuVoorstel";
@@ -241,17 +242,25 @@ function PlannerPage() {
     },
   });
 
-  // Wie eet mee (voorstel 0010): kleine initialen op de weekkaart.
-  const { data: huishouden } = useHuishouden(gezin?.id);
-  const planIds = plan.map((p) => p.id);
-  const { data: etersPerMaaltijd } = useQuery({
-    queryKey: ["maaltijd-eters", planIds.join(",")],
-    enabled: !!huishouden?.beschikbaar && planIds.length > 0,
-    queryFn: () => haalEters(planIds),
-  });
-  const etersVan = (planId: string) => {
-    const ids = etersPerMaaltijd?.get(planId) ?? [];
-    return (huishouden?.data.leden ?? []).filter((l) => ids.includes(l.id));
+  // Wie eet mee (voorstel 0010, terugval op dit toestel): initialen op de weekkaart als er zelf
+  // gekozen is, en per maaltijd het veiligheidsoordeel (fase 1: overal hetzelfde).
+  const mee = useMaaltijdEters(
+    plan.map((p) => p.id),
+    { gezinId: gezin?.id ?? null },
+  );
+  const etersVan = (planId: string) => (mee.isGekozen(planId) ? mee.etersVan(planId) : []);
+  const oordelen = useEtersOordelen(
+    plan.map((p) => ({ sleutel: p.id, recept: p.recipes, eters: mee.etersVan(p.id) })),
+    mee,
+  );
+  const [etersRij, setEtersRij] = useState<PlanRow | null>(null);
+  const zoekVervanger = (p: PlanRow, ingredient: string) => {
+    if (!p.recipe_id) return;
+    void navigate({
+      to: "/recepten/$id",
+      params: { id: p.recipe_id },
+      search: { vervang: ingredient, plan: p.id },
+    });
   };
 
   // Het weekmenu opent op vandaag: de dag van vandaag is al gekozen en
@@ -369,8 +378,7 @@ function PlannerPage() {
   async function zetEters(planId: string, eters?: string[]) {
     if (!eters) return;
     try {
-      await bewaarEters(planId, eters);
-      qc.invalidateQueries({ queryKey: ["maaltijd-eters"] });
+      await mee.bewaarStil(planId, eters);
     } catch {
       toast.error("Wie meeëet, kon niet bewaard worden. De maaltijd staat er wel.");
     }
@@ -435,6 +443,7 @@ function PlannerPage() {
   /** Zet de aangevinkte dagen uit het voorstel in het weekmenu. */
   async function zetVoorstel(
     rijen: { datum: string; moment: string; recept: Recipe | null; idee: WeekmenuIdee | null }[],
+    gekozenEters: string[] | null = null,
   ) {
     if (!user) return;
     let gelukt = 0;
@@ -484,18 +493,24 @@ function PlannerPage() {
             planErbij({ userId: user.id, recipeId, datum: rij.datum, moment: rij.moment }),
           );
           herstellen.push(w.herstel);
+          if (w.id && gekozenEters) await zetEters(w.id, gekozenEters);
           effect.erbij += w.effect.erbij;
           effect.minder += w.effect.minder;
           effect.weg += w.effect.weg;
         } else {
-          const { error } = await supabase.from("meal_plan").insert({
-            user_id: user.id,
-            recipe_id: recipeId,
-            plan_date: rij.datum,
-            meal_type: rij.moment,
-            group_id: weergave === "gezin" ? gezin!.id : null,
-          });
+          const { data: nieuw, error } = await supabase
+            .from("meal_plan")
+            .insert({
+              user_id: user.id,
+              recipe_id: recipeId,
+              plan_date: rij.datum,
+              meal_type: rij.moment,
+              group_id: weergave === "gezin" ? gezin!.id : null,
+            })
+            .select("id")
+            .single();
           if (error) throw error;
+          if (nieuw?.id && gekozenEters) await zetEters(nieuw.id, gekozenEters);
         }
         gelukt += 1;
         ingepland.push({ recipeId, titel: rij.recept?.title ?? rij.idee?.title ?? "Gerecht" });
@@ -957,6 +972,14 @@ function PlannerPage() {
               <Repeat className="size-5" /> Ander gerecht
             </DropdownMenuItem>
           ) : null}
+          {p.recipe_id && mee.leden.length ? (
+            <DropdownMenuItem
+              onSelect={() => setEtersRij(p)}
+              className="min-h-12 rounded-lg text-base"
+            >
+              <Users className="size-5" /> Wie eet mee?
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuItem
             onSelect={() => setVerplaats({ rij: p, kopie: false })}
             className="min-h-12 rounded-lg text-base"
@@ -1059,6 +1082,11 @@ function PlannerPage() {
                                   </span>
                                 )}
                                 <EterInitialen leden={etersVan(p.id)} className="px-2.5 pt-1.5" />
+                                {oordelen[p.id]?.niveau && oordelen[p.id]!.niveau !== "ok" ? (
+                                  <span className="block px-2.5 pt-1.5">
+                                    <OordeelLabel oordeel={oordelen[p.id]} />
+                                  </span>
+                                ) : null}
                                 <div className="flex items-center justify-between gap-1 pb-1 pl-2.5 pr-1">
                                   <span className="truncate text-[0.9rem] text-muted-foreground">
                                     {p.recipes
@@ -1105,11 +1133,74 @@ function PlannerPage() {
     const alleMomenten = [...new Set([...momenten, ...items.map((p) => p.meal_type)])];
     const titel = datum.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" });
     const kaart = (p: PlanRow) => (
-                    <li key={p.id} className="paneel @container flex min-h-24 items-center gap-2 p-3">
-                      {p.recipe_id ? <Link to="/recepten/$id" params={{ id: p.recipe_id }} search={p.personen != null ? { personen: p.personen } : {}} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg hyphens-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring @max-[17rem]:flex-col @max-[17rem]:items-start"><ReceptFoto url={p.recipes?.image_url ?? null} recept={p.recipes} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.recipes?.title ?? "Recept"}</span>{p.recipes ? <span className="mt-0.5 flex items-center gap-1 text-base text-muted-foreground"><Clock3 className="size-3.5" /> {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) || "Tijd niet ingevuld"}</span> : null}<EterInitialen leden={etersVan(p.id)} className="mt-1" /></span></Link> : <div className="flex min-w-0 flex-1 items-center gap-3 hyphens-auto @max-[17rem]:flex-col @max-[17rem]:items-start"><ReceptFoto url={null} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.custom_title}</span>{!p.soort ? <button type="button" onClick={() => setKoppelRij(p)} className="mt-0.5 block text-left text-base font-semibold text-primary underline underline-offset-2">Nog geen recept · koppelen</button> : null}</span></div>}
-                      {weergave === "gezin" && p.user_id !== user?.id ? <Avatar naam={plannerNamen[p.user_id] ?? "?"} sleutel={p.user_id} className="size-8 shrink-0 text-base" /> : null}
-                      {planActies(p)}
-                    </li>
+      <li key={p.id} className="paneel @container p-3">
+        <div className="flex min-h-[4.5rem] items-center gap-2">
+          {p.recipe_id ? (
+            <Link
+              to="/recepten/$id"
+              params={{ id: p.recipe_id }}
+              search={p.personen != null ? { personen: p.personen } : {}}
+              className="flex min-w-0 flex-1 items-center gap-3 rounded-lg hyphens-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring @max-[17rem]:flex-col @max-[17rem]:items-start"
+            >
+              <ReceptFoto url={p.recipes?.image_url ?? null} recept={p.recipes} />
+              <span className="min-w-0">
+                <span className="block text-base font-semibold capitalize text-muted-foreground">
+                  {p.meal_type}
+                </span>
+                <span className="block text-lg font-semibold leading-tight">
+                  {p.recipes?.title ?? "Recept"}
+                </span>
+                {p.recipes ? (
+                  <span className="mt-0.5 flex items-center gap-1 text-base text-muted-foreground">
+                    <Clock3 className="size-3.5" />{" "}
+                    {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) ||
+                      "Tijd niet ingevuld"}
+                  </span>
+                ) : null}
+                <EterInitialen leden={etersVan(p.id)} className="mt-1" />
+              </span>
+            </Link>
+          ) : (
+            <div className="flex min-w-0 flex-1 items-center gap-3 hyphens-auto @max-[17rem]:flex-col @max-[17rem]:items-start">
+              <ReceptFoto url={null} />
+              <span className="min-w-0">
+                <span className="block text-base font-semibold capitalize text-muted-foreground">
+                  {p.meal_type}
+                </span>
+                <span className="block text-lg font-semibold leading-tight">{p.custom_title}</span>
+                {!p.soort ? (
+                  <button
+                    type="button"
+                    onClick={() => setKoppelRij(p)}
+                    className="mt-0.5 block text-left text-base font-semibold text-primary underline underline-offset-2"
+                  >
+                    Nog geen recept · koppelen
+                  </button>
+                ) : null}
+              </span>
+            </div>
+          )}
+          {weergave === "gezin" && p.user_id !== user?.id ? (
+            <Avatar
+              naam={plannerNamen[p.user_id] ?? "?"}
+              sleutel={p.user_id}
+              className="size-8 shrink-0 text-base"
+            />
+          ) : null}
+          {planActies(p)}
+        </div>
+        {p.recipe_id ? (
+          <MaaltijdVeiligheid
+            className="mt-2 border-t border-border/70 pt-2"
+            planId={p.id}
+            titel={p.recipes?.title ?? "dit gerecht"}
+            oordeel={oordelen[p.id]}
+            mee={mee}
+            onAnder={eigenMenu ? () => setVervangRij(p) : undefined}
+            onVervanger={(i) => zoekVervanger(p, i)}
+          />
+        ) : null}
+      </li>
     );
     return (
       <div className="space-y-4">
@@ -1443,6 +1534,38 @@ function PlannerPage() {
         </section>
       </div>
 
+      <Sheet
+        open={!!etersRij}
+        onOpenChange={(open) => {
+          if (!open) setEtersRij(null);
+        }}
+      >
+        <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Wie eet mee?</SheetTitle>
+            <SheetDescription>{etersRij?.recipes?.title ?? "Deze maaltijd"}</SheetDescription>
+          </SheetHeader>
+          {etersRij ? (
+            <MaaltijdVeiligheid
+              className="mt-4"
+              standaardOpen
+              planId={etersRij.id}
+              titel={etersRij.recipes?.title ?? "dit gerecht"}
+              oordeel={oordelen[etersRij.id]}
+              mee={mee}
+              onAnder={
+                eigenMenu
+                  ? () => {
+                      setVervangRij(etersRij);
+                      setEtersRij(null);
+                    }
+                  : undefined
+              }
+              onVervanger={(i) => zoekVervanger(etersRij, i)}
+            />
+          ) : null}
+        </SheetContent>
+      </Sheet>
       <Sheet open={boodschappenOpen} onOpenChange={setBoodschappenOpen}>
         <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto">
           <SheetHeader>

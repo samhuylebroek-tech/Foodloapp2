@@ -60,44 +60,105 @@ export function magVoorkeurenBeheren(
   return lid.beheerder_id === kijkerId;
 }
 
+/**
+ * Hard = mag niet op tafel voor dit lid: allergie, intolerantie die Foodlo herkent (gluten bij
+ * coeliakie, lactose), of een strikt dieet (vegetarisch, veganistisch, pescotarisch).
+ * Zacht = liever niet: een "liever niet"-term, of vlees voor wie "weinig vlees" eet.
+ */
+export type Ernst = "hard" | "zacht";
+export type BotsingSoort = "allergie" | "dieet" | "voorkeur";
+
 export type EterOordeel = {
   lidId: string;
   naam: string;
-  /** true = veilig, false = niet veilig, null = niet te controleren (geen ingrediënten). */
+  /** true = geen harde botsing, false = niet veilig, null = niet te controleren (geen ingrediënten). */
   veilig: boolean | null;
+  /** Alleen bij een botsing: hard (niet veilig) of zacht (liever niet; `veilig` blijft true). */
+  ernst?: Ernst;
+  /** Alleen ingevuld als de kijker de reden mag zien. */
+  soort?: BotsingSoort;
   /** Alleen ingevuld als de kijker de reden mag zien. */
   reden?: string;
+  /** Welke ingrediënten botsen (alleen als de kijker de reden mag zien; anders verraadt het de allergie). */
+  ingredienten?: string[];
+};
+
+export type LidOordeel = {
+  veilig: boolean | null;
+  reden?: string;
+  ernst?: Ernst;
+  soort?: BotsingSoort;
+  ingredienten?: string[];
+};
+
+const DIEET_TEKST: Record<string, string> = {
+  pescotarisch: "pescotarisch",
+  vegetarisch: "vegetarisch",
+  veganistisch: "veganistisch",
 };
 
 /** Oordeel voor één lid uit zijn gegevens (als de kijker die mag lezen). */
-export function oordeelVoorLid(
-  g: Gerecht,
-  voeding: Voeding,
-): { veilig: boolean | null; reden?: string } {
+export function oordeelVoorLid(g: Gerecht, voeding: Voeding): LidOordeel {
   const allergenen = teVermijdenAllergenen(voeding);
   const a = allergieOordeel(g, allergenen);
   if (a.status === "allergeen") {
     return {
       veilig: false,
+      ernst: "hard",
+      soort: "allergie",
       reden: `bevat mogelijk ${a.treffers.map((t) => t.naam.toLowerCase()).join(", ")}`,
+      ingredienten: [...new Set(a.treffers.flatMap((t) => t.ingredienten))],
     };
   }
   if (!pastBijDieet(g, voeding.dieet)) {
-    return { veilig: false, reden: `past niet bij ${voeding.dieet ?? "het dieet"}` };
+    return {
+      veilig: false,
+      ernst: "hard",
+      soort: "dieet",
+      reden: `past niet bij ${DIEET_TEKST[voeding.dieet ?? ""] ?? "het dieet"}`,
+      ingredienten: g.ingredienten.filter(
+        (i) => !pastBijDieet({ title: "", ingredienten: [i] }, voeding.dieet),
+      ),
+    };
   }
   const tekst = normaliseerTekst([g.title, ...g.ingredienten].join(" "));
   const term = voeding.uitsluitingen.find((t) => {
     const n = normaliseerTekst(t);
     return n.length >= 3 && tekst.includes(n);
   });
-  if (term) return { veilig: false, reden: `liever geen ${term}` };
+  if (term) {
+    const n = normaliseerTekst(term);
+    return {
+      veilig: true,
+      ernst: "zacht",
+      soort: "voorkeur",
+      reden: `liever geen ${term}`,
+      ingredienten: g.ingredienten.filter((i) => normaliseerTekst(i).includes(n)),
+    };
+  }
+  // "Weinig vlees" is een voorkeur, geen verbod: vlees is dan "liever niet".
+  const vlees =
+    voeding.dieet === "weinig-vlees"
+      ? g.ingredienten.filter(
+          (i) => !pastBijDieet({ title: "", ingredienten: [i] }, "pescotarisch"),
+        )
+      : [];
+  if (vlees.length) {
+    return {
+      veilig: true,
+      ernst: "zacht",
+      soort: "dieet",
+      reden: "eet liefst weinig vlees",
+      ingredienten: vlees,
+    };
+  }
   if (a.status === "onbekend") return { veilig: null };
   return { veilig: true };
 }
 
 /**
  * Oordeel per mee-eter. `voeding` bevat alleen wat de kijker mag lezen; `server` is het
- * oordeel van `maaltijd_veilig_voor` voor de anderen (alleen waar/onwaar).
+ * oordeel van `maaltijd_veilig_voor` voor de anderen (alleen waar/onwaar, telt als hard).
  */
 export function oordeelVoorEters(
   g: Gerecht,
@@ -115,11 +176,15 @@ export function oordeelVoorEters(
         lidId: lid.id,
         naam: lid.naam,
         veilig: o.veilig,
+        ...(o.ernst ? { ernst: o.ernst } : {}),
         ...(zien && o.reden ? { reden: o.reden } : {}),
+        ...(zien && o.soort ? { soort: o.soort } : {}),
+        ...(zien && o.ingredienten?.length ? { ingredienten: o.ingredienten } : {}),
       };
     }
     const s = server.get(lid.id);
-    return { lidId: lid.id, naam: lid.naam, veilig: s === undefined ? true : s };
+    if (s === false) return { lidId: lid.id, naam: lid.naam, veilig: false, ernst: "hard" };
+    return { lidId: lid.id, naam: lid.naam, veilig: true };
   });
 }
 

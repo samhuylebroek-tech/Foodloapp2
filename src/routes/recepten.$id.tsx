@@ -76,6 +76,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { AllergieWaarschuwing } from "@/components/AllergieWaarschuwing";
+import {
+  IngredientMarkering,
+  KookWaarschuwing,
+  MaaltijdVeiligheid,
+  OordeelMelding,
+} from "@/components/veiligheid/EtersOordeel";
+import { useEtersOordelen, useMaaltijdEters } from "@/hooks/useMaaltijdEters";
+import { zonderEter } from "@/lib/maaltijd-eters";
 import { RestjeVraag } from "@/components/kringloop/RestjeVraag";
 import { markeerKookstand } from "@/lib/eerste-stappen";
 import { KookAssistent, VraagFoodloKnop } from "@/components/assistent/KookAssistent";
@@ -108,9 +116,17 @@ export const Route = createFileRoute("/recepten/$id")({
       { property: "og:description", content: "Ingrediënten, stappen en kookstand in één scherm." },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>): { personen?: number; koken?: true } => {
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { personen?: number; koken?: true; plan?: string; vervang?: string } => {
     const n = Number(search["personen"]);
-    const uit: { personen?: number; koken?: true } = {};
+    const uit: { personen?: number; koken?: true; plan?: string; vervang?: string } = {};
+    // Fase 1: voor welke geplande maaltijd (wie eet mee) en "Vervanger zoeken" voor een ingrediënt.
+    const plan = search["plan"];
+    if (typeof plan === "string" && /^[0-9a-f-]{36}$/i.test(plan)) uit.plan = plan;
+    const vervang = search["vervang"];
+    if (typeof vervang === "string" && vervang.trim() && vervang.length <= 80)
+      uit.vervang = vervang.trim();
     if (Number.isInteger(n) && n >= 1 && n <= 50) uit.personen = n;
     // V2: "Start koken" vanaf Vandaag opent meteen de kookstand.
     if (search["koken"] === true || search["koken"] === "1" || search["koken"] === 1)
@@ -427,6 +443,58 @@ function ReceptPage() {
     }
     qc.invalidateQueries({ queryKey: ["rating", id] });
     qc.invalidateQueries({ queryKey: ["ratings"] });
+  }
+
+  // Fase 1 — veiligheid voor wie meeëet: de geplande maaltijd (uit de link, of de eerstvolgende
+  // met dit recept) bepaalt wie er meeëet; anders het hele huishouden.
+  const { data: volgendePlan = null } = useQuery({
+    queryKey: ["recept-volgende-plan", id],
+    enabled: !!user && !zoek.plan,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data: rij } = await supabase
+        .from("meal_plan")
+        .select("id")
+        .eq("recipe_id", id)
+        .gte("plan_date", new Date().toLocaleDateString("sv-SE"))
+        .order("plan_date")
+        .limit(1)
+        .maybeSingle();
+      return (rij?.id as string | undefined) ?? null;
+    },
+  });
+  const veiligPlan = zoek.plan ?? volgendePlan;
+  const mee = useMaaltijdEters(veiligPlan ? [veiligPlan] : []);
+  const veiligOordelen = useEtersOordelen(
+    data?.recipe
+      ? [
+          {
+            sleutel: "recept",
+            recept: data.recipe,
+            eters: mee.etersVan(veiligPlan),
+            ingredienten: data.ingredients.map((i) => i.name),
+          },
+        ]
+      : [],
+    // Op de receptpagina staat je eigen allergiewaarschuwing al; in de kookstand niet.
+    { ...mee, metMijzelf: kookstand },
+  );
+  const veiligOordeel = veiligOordelen["recept"];
+  const [vervangIngredient, setVervangIngredient] = useState<string | null>(zoek.vervang ?? null);
+  useEffect(() => {
+    if (zoek.vervang) {
+      setVervangIngredient(zoek.vervang);
+      setAssistentOpen(true);
+    }
+  }, [zoek.vervang]);
+  function zoekVervanger(ingredient: string) {
+    setVervangIngredient(ingredient);
+    setAssistentOpen(true);
+  }
+  function zonderEterHier(lidId: string, naam: string) {
+    if (!veiligPlan) return;
+    const ids = mee.etersVan(veiligPlan).map((e) => e.id);
+    void mee.zet(veiligPlan, zonderEter(ids, lidId), `${naam} eet niet mee`);
   }
 
   if (isError) {
@@ -842,6 +910,13 @@ function ReceptPage() {
                 ) : null}
               </p>
               <div className="mt-5">
+                <KookWaarschuwing
+                  oordeel={veiligOordeel}
+                  onVervanger={zoekVervanger}
+                  onZonder={veiligPlan ? zonderEterHier : undefined}
+                />
+              </div>
+              <div className="mt-5">
                 <PersonenKiezer aantal={aantal} onZet={setPersonen} />
               </div>
               <ul className="paneel mt-6 divide-y divide-border/80 px-4 text-xl">
@@ -850,7 +925,10 @@ function ReceptPage() {
                     key={ing.id}
                     className="flex min-h-16 items-center justify-between gap-3 py-3"
                   >
-                    <span>{t(ing.name)}</span>
+                    <span className="min-w-0">
+                      {t(ing.name)}
+                      <IngredientMarkering ingredient={ing.name} oordeel={veiligOordeel} />
+                    </span>
                     <span className="shrink-0 font-bold tabular-nums text-primary">
                       {toonHoeveelheid(ing, factor)}
                     </span>
@@ -891,7 +969,10 @@ function ReceptPage() {
               <ul className="mt-3 space-y-3 text-lg">
                 {ingredients.map((ing) => (
                   <li key={ing.id} className="flex justify-between gap-3">
-                    <span>{t(ing.name)}</span>
+                    <span className="min-w-0">
+                      {t(ing.name)}
+                      <IngredientMarkering ingredient={ing.name} oordeel={veiligOordeel} />
+                    </span>
                     <span className="shrink-0 tabular-nums text-muted-foreground">
                       {toonHoeveelheid(ing, factor)}
                     </span>
@@ -934,6 +1015,7 @@ function ReceptPage() {
           ingredienten={ingredients}
           isOwner={isOwner}
           kookstand
+          beginIngredient={vervangIngredient}
         />
         <AlertDialog open={stopVraag} onOpenChange={setStopVraag}>
           <AlertDialogContent>
@@ -1208,6 +1290,7 @@ function ReceptPage() {
               recept={recipe}
               ingredienten={ingredients}
               isOwner={isOwner}
+              beginIngredient={vervangIngredient}
             />
 
             {planOpen ? (
@@ -1244,6 +1327,17 @@ function ReceptPage() {
         {/* V2: geen tabbladen meer — ingrediënten en bereiding in één oogopslag.
             Desktop: ingrediënten blijven in beeld terwijl je de stappen leest. */}
         <AllergieWaarschuwing ingredienten={ingredients.map((i) => i.name)} titel={recipe.title} />
+        {veiligPlan ? (
+          <MaaltijdVeiligheid
+            planId={veiligPlan}
+            titel={recipe.title}
+            oordeel={veiligOordeel}
+            mee={mee}
+            onVervanger={zoekVervanger}
+          />
+        ) : (
+          <OordeelMelding oordeel={veiligOordeel} />
+        )}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,23rem)_minmax(0,1fr)] lg:gap-12">
           <section
             aria-labelledby="ingredienten-titel"
@@ -1302,6 +1396,7 @@ function ReceptPage() {
                           {t("in huis")}
                         </span>
                       ) : null}
+                      <IngredientMarkering ingredient={i.name} oordeel={veiligOordeel} />
                     </span>
                     <span className="shrink-0 font-semibold">
                       {i.quantity === null ? "" : toonBelgischeMaat(i.quantity * factor, i.unit)}

@@ -111,9 +111,34 @@ describe("veiligheid per lid", () => {
     expect(oordeelVoorLid(stoof, veg).veilig).toBe(false);
     expect(oordeelVoorLid(soep, veg).veilig).toBe(true);
   });
-  it("liever niet: term in de ingrediënten", () => {
+  it("liever niet: term in de ingrediënten is zacht (geen verbod)", () => {
+    // Fase 1: "liever niet" is een voorkeur. Vroeger telde het als "niet veilig".
     const o = oordeelVoorLid(soep, { ...LEGE_VOEDING, uitsluitingen: ["kokos"] });
-    expect(o).toEqual({ veilig: false, reden: "liever geen kokos" });
+    expect(o).toEqual({
+      veilig: true,
+      ernst: "zacht",
+      soort: "voorkeur",
+      reden: "liever geen kokos",
+      ingredienten: ["kokosmelk"],
+    });
+  });
+  it("allergie en strikt dieet zijn hard, met de ingrediënten die botsen", () => {
+    const a = oordeelVoorLid(pesto, { ...LEGE_VOEDING, allergieen: ["noten"] });
+    expect(a).toMatchObject({ veilig: false, ernst: "hard", soort: "allergie" });
+    expect(a.ingredienten).toEqual(["hazelnoten"]);
+    const d = oordeelVoorLid(stoof, { ...LEGE_VOEDING, dieet: "vegetarisch" });
+    expect(d).toMatchObject({ veilig: false, ernst: "hard", soort: "dieet" });
+    expect(d.ingredienten).toEqual(["rundvlees"]);
+  });
+  it("coeliakie (gluten) als intolerantie is ook hard", () => {
+    const o = oordeelVoorLid(stoof, { ...LEGE_VOEDING, intoleranties: ["gluten"] });
+    expect(o).toMatchObject({ veilig: false, ernst: "hard", reden: "bevat mogelijk gluten" });
+    expect(o.ingredienten).toEqual(["bier"]);
+  });
+  it("weinig vlees: vlees is zacht, vegetarisch past", () => {
+    const w = { ...LEGE_VOEDING, dieet: "weinig-vlees" as const };
+    expect(oordeelVoorLid(stoof, w)).toMatchObject({ veilig: true, ernst: "zacht" });
+    expect(oordeelVoorLid(soep, w)).toEqual({ veilig: true });
   });
   it("zonder ingrediënten en met allergie: niet te controleren", () => {
     const o = oordeelVoorLid(
@@ -156,7 +181,8 @@ describe("zichtbaarheid", () => {
       ["g2", vGust],
     ]);
     const o = oordeelVoorEters(pesto, [lotte, gust], map, MARIE);
-    expect(o[0]).toEqual({ lidId: "l", naam: "Lotte", veilig: false });
+    // Wel "hard" (dat zegt niets over welke allergie), nooit reden of ingrediënten.
+    expect(o[0]).toEqual({ lidId: "l", naam: "Lotte", veilig: false, ernst: "hard" });
     expect(o[1]!.veilig).toBe(true);
     expect(waarschuwingTekst(o)).toBe("Niet veilig voor Lotte");
     const viaJan = oordeelVoorEters(pesto, [lotte], map, JAN);
@@ -168,7 +194,7 @@ describe("zichtbaarheid", () => {
   });
   it("niet leesbaar: het serveroordeel telt, zonder reden", () => {
     const o = oordeelVoorEters(pesto, [lotte], new Map(), MARIE, new Map([["l", false]]));
-    expect(o).toEqual([{ lidId: "l", naam: "Lotte", veilig: false }]);
+    expect(o).toEqual([{ lidId: "l", naam: "Lotte", veilig: false, ernst: "hard" }]);
     expect(oordeelVoorEters(pesto, [lotte], new Map(), MARIE)[0]!.veilig).toBe(true);
   });
   it("waarschuwing voor meerdere namen", () => {

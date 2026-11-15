@@ -98,6 +98,13 @@ import { ItemNaam, Winkelmodus, type Vervanging } from "@/components/winkel/Wink
 import { WaaromSheet, type WaaromRegel } from "@/components/lijst/WaaromSheet";
 import { WinkelvolgordeSheet } from "@/components/lijst/WinkelvolgordeSheet";
 import { CatalogusSheet } from "@/components/lijst/CatalogusSheet";
+import {
+  LijstBotsingLabel,
+  VervangerSheet,
+  useLijstBotsingen,
+  type LijstBotsing,
+} from "@/components/lijst/LijstVeiligheid";
+import type { Vervanger } from "@/lib/assistent/vervangingen";
 import { bewaarVolgorde, leesVolgorde } from "@/lib/winkelvolgorde";
 import {
   CATEGORIE_LABEL,
@@ -517,6 +524,46 @@ function BoodschappenPage() {
   }, [items, voorraad, correcties, volgorde]);
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["shopping"] });
+
+  // Fase 1: product dat botst met iemand die meeëet → markering + "Vervanger zoeken".
+  const { botsingen, mee: lijstEters } = useLijstBotsingen(items);
+  const [vervangItem, setVervangItem] = useState<Item | null>(null);
+  async function kiesVervanger(item: Item, v: Vervanger) {
+    const vorig = item;
+    const { error } = await supabase
+      .from("shopping_items")
+      .update({ name: v.naam, note: `in plaats van ${item.name}`.slice(0, 100) })
+      .eq("id", item.id);
+    if (error) {
+      toast.error("Vervangen lukte niet. Er is niets veranderd.");
+      return;
+    }
+    setVervangItem(null);
+    const terug = async () => {
+      await supabase
+        .from("shopping_items")
+        .update({ name: vorig.name, note: vorig.note ?? null })
+        .eq("id", vorig.id);
+    };
+    onthoud(`${vorig.name} staat terug op je lijst`, terug);
+    refresh();
+    toast.success(`${v.naam} in plaats van ${vorig.name}`, {
+      duration: 8000,
+      action: {
+        label: "Ongedaan maken",
+        onClick: async () => {
+          try {
+            await terug();
+            toast("Teruggezet");
+          } catch {
+            toast.error("Terugzetten lukte niet.");
+          } finally {
+            refresh();
+          }
+        },
+      },
+    });
+  }
   const refreshLijsten = () => qc.invalidateQueries({ queryKey: ["shopping-lists"] });
   const [vraagVerwijder, setVraagVerwijder] = useState(false);
   const [weergave, setWeergave] = useState<"lijst" | "gerechten">("lijst");
@@ -1508,6 +1555,8 @@ function BoodschappenPage() {
                                     onWaarom={() => setWaarom(item)}
                                     door={doorWie(item)}
                                     onCategorie={(c) => zetCategorie(item.name, c)}
+                                    botsing={botsingen[item.id]}
+                                    onVervanger={() => setVervangItem(item)}
                                   />
                                 </li>
                               ))}
@@ -1774,6 +1823,13 @@ function BoodschappenPage() {
         )}
       </div>
 
+      <VervangerSheet
+        item={vervangItem}
+        botsing={vervangItem ? botsingen[vervangItem.id] : undefined}
+        voeding={lijstEters.voeding}
+        onSluit={() => setVervangItem(null)}
+        onKies={(v) => vervangItem && void kiesVervanger(vervangItem, v)}
+      />
       {user ? (
         <WaaromSheet
           regel={waarom}
@@ -2424,6 +2480,8 @@ function ItemRij({
   onCategorie,
   onWaarom,
   door,
+  botsing,
+  onVervanger,
 }: {
   item: Item;
   kiesModus: boolean;
@@ -2437,6 +2495,9 @@ function ItemRij({
   onWaarom?: () => void;
   /** Fase 5: naam van wie het toevoegde (alleen als dat iemand anders was). */
   door?: string | null;
+  /** Fase 1: botst dit product met iemand die meeëet? */
+  botsing?: LijstBotsing | undefined;
+  onVervanger?: () => void;
 }) {
   const start = useRef<number | null>(null);
 
@@ -2526,6 +2587,9 @@ function ItemRij({
             <span className="block truncate text-[0.95rem] text-muted-foreground">
               voor {item.recept}
             </span>
+          ) : null}
+          {onVervanger ? (
+            <LijstBotsingLabel naam={item.name} botsing={botsing} onVervanger={onVervanger} />
           ) : null}
         </span>
         {maatTekst(item) ? (

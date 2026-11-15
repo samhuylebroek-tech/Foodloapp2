@@ -53,6 +53,7 @@ import { kiesSoort, raadSoort } from "@/lib/soort";
 import { Voedingswaarden } from "@/components/Voedingswaarden";
 import { koppelStappen, normaliseer, type StapKoppeling } from "@/lib/stap-ingredienten";
 import { netteStap } from "@/lib/tekst-opkuis";
+import { NieuwReceptControle } from "@/components/veiligheid/EtersOordeel";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { creditOverzicht } from "@/lib/credits.functions";
@@ -1666,6 +1667,12 @@ export function RecipeForm({
         </div>
       </section>
 
+      {stapsgewijs && stap === 4 ? (
+        <NieuwReceptControle
+          titel={title}
+          ingredienten={formIngredienten.map((i) => i.name).filter(Boolean)}
+        />
+      ) : null}
       {stapsgewijs && stap === 4 && (
         <StappenControle
           titel={title}
@@ -1832,6 +1839,11 @@ export function RecipeForm({
               Kijk je recept nog even na. Pas gerust iets aan en bewaar daarna.
             </DialogDescription>
           </DialogHeader>
+          {/* Fase 1: past dit recept voor wie in het huishouden meeëet? */}
+          <NieuwReceptControle
+            titel={title}
+            ingredienten={formIngredienten.map((i) => i.name).filter(Boolean)}
+          />
           {/* Ronde 3 (FR-RI-05): wisselen tussen nakijken en een voorbeeld van het resultaat. */}
           <div role="group" aria-label="Weergave" className="grid grid-cols-2 gap-2">
             <Button

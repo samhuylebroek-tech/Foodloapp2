@@ -20,7 +20,6 @@ import {
   Utensils,
   BookOpen,
   WandSparkles,
-  ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,7 +42,8 @@ import { datumTekst, labelVoor, kortLabel } from "./gedeeld";
 import { GerechtKaart } from "./ReceptKiezer";
 import { alleRijen } from "@/lib/pagineer";
 import { useVoorstelEters } from "@/hooks/useVoorstelEters";
-import { etiketVoorEters, oordelenVoor, veiligVoorEters } from "@/lib/voorstel-eters";
+import { maaltijdOordeel, veiligVoorEters } from "@/lib/voorstel-eters";
+import { OordeelMelding } from "@/components/veiligheid/EtersOordeel";
 
 export function ReceptFoto({
   url,
@@ -129,7 +129,8 @@ export function WeekmenuVoorstel({
   /** Gerechten die deze week al ingepland staan; die stellen we niet opnieuw voor. */
   alGepland: Set<string>;
   onSluit: () => void;
-  onZet: (rijen: Rij[]) => Promise<void>;
+  /** `eters`: wie meeëet (lid-id's), of null = het hele huishouden (standaard). */
+  onZet: (rijen: Rij[], eters: string[] | null) => Promise<void>;
 }) {
   const [stap, setStap] = useState<"vragen" | "voorstel">("vragen");
   const [dagen, setDagen] = useState<string[]>(week);
@@ -780,31 +781,21 @@ export function WeekmenuVoorstel({
                     idee nog niet.
                   </p>
                 ) : null}
-                {actieveRecept && !actieveRij.bezet
-                  ? (() => {
-                      const etiket = etiketVoorEters(
-                        oordelenVoor(
-                          {
-                            id: actieveRecept.id,
-                            title: actieveRecept.title,
-                            tags: actieveRecept.tags ?? [],
-                            ingredienten: ingredienten[actieveRecept.id] ?? [],
-                          },
-                          eters,
-                        ),
-                      );
-                      return etiket ? (
-                        <p
-                          role="note"
-                          data-testid="niet-geschikt"
-                          className="mt-3 flex items-start gap-2 rounded-xl bg-honing-zacht px-3 py-2 text-base font-semibold text-honing-foreground"
-                        >
-                          <ShieldAlert className="mt-0.5 size-5 shrink-0" aria-hidden />
-                          <span className="min-w-0">{etiket}</span>
-                        </p>
-                      ) : null;
-                    })()
-                  : null}
+                {actieveRecept && !actieveRij.bezet ? (
+                  <OordeelMelding
+                    className="mt-3"
+                    testId="niet-geschikt"
+                    oordeel={maaltijdOordeel(
+                      {
+                        id: actieveRecept.id,
+                        title: actieveRecept.title,
+                        tags: actieveRecept.tags ?? [],
+                        ingredienten: ingredienten[actieveRecept.id] ?? [],
+                      },
+                      eters,
+                    )}
+                  />
+                ) : null}
                 {actieveRij.idee && eters.eters.length ? (
                   <p className="mt-2 text-base text-muted-foreground">
                     Kijk de ingrediënten van een nieuw idee zelf na voor wie meeeet: Foodlo kent ze
@@ -961,7 +952,11 @@ export function WeekmenuVoorstel({
                     onClick={async () => {
                       setBezigMet("bezig");
                       try {
-                        await onZet(rijen.filter((rij) => rij.aan));
+                        // Fase 1: de gekozen mee-eters worden bij elke geplande maaltijd bewaard.
+                        await onZet(
+                          rijen.filter((rij) => rij.aan),
+                          gekozenEters ? eters.eters.map((e) => e.id) : null,
+                        );
                       } finally {
                         setBezigMet("");
                       }
