@@ -8,7 +8,7 @@ type Rij = Record<string, unknown>;
 type Oproep = { tabel: string; filters: [string, unknown][] };
 
 /** Kleine nep-databank die wél filtert en, zoals PostgREST, max. 1000 rijen per verzoek geeft. */
-function nepDb(tabellen: Record<string, Rij[]>) {
+function nepDb(tabellen: Record<string, Rij[]>, ontbreekt: string[] = [], kapot: string[] = []) {
   const oproepen: Oproep[] = [];
   const db = {
     from(tabel: string) {
@@ -32,7 +32,17 @@ function nepDb(tabellen: Record<string, Rij[]>) {
           tot = Math.min(b, a + 999);
           return q;
         },
-        then(ok: (r: { data: Rij[]; error: null }) => unknown) {
+        then(ok: (r: { data: Rij[] | null; error: unknown }) => unknown) {
+          if (ontbreekt.includes(tabel))
+            return Promise.resolve({
+              data: null,
+              error: { code: "42P01", message: `relation "public.${tabel}" does not exist` },
+            }).then(ok);
+          if (kapot.includes(tabel))
+            return Promise.resolve({
+              data: null,
+              error: { code: "57014", message: "timeout" },
+            }).then(ok);
           const rijen = (tabellen[tabel] ?? []).filter((r) =>
             o.filters.every(([k, v]) => (Array.isArray(v) ? v.includes(r[k]) : r[k] === v)),
           );
@@ -84,6 +94,51 @@ function wereld() {
       { id: "f1", user_id: IK, message: "mijn ticket" },
       { id: "f2", user_id: ANDER, message: "ander ticket" },
     ],
+    persoonlijke_voeding: [
+      { user_id: IK, allergieen: ["sesam"] },
+      { user_id: ANDER, allergieen: ["geheim-allergie"] },
+    ],
+    huishouden_leden: [
+      { id: "h1", naam: "Ik", user_id: IK, beheerder_id: IK },
+      { id: "h2", naam: "Mijn kind", user_id: null, beheerder_id: IK },
+      { id: "h3", naam: "Kind van ander", user_id: null, beheerder_id: ANDER },
+    ],
+    lid_voeding: [
+      { lid_id: "h2", allergieen: ["noten"] },
+      { lid_id: "h3", allergieen: ["geheim-kind"] },
+    ],
+    creators: [
+      { id: "c1", user_id: IK, naam: "Mijn keuken" },
+      { id: "c2", user_id: ANDER, naam: "Andere keuken" },
+    ],
+    recipe_publicaties: [
+      { id: "rp1", creator_id: "c1", recipe_id: "r0" },
+      { id: "rp2", creator_id: "c2", recipe_id: "x1" },
+    ],
+    follows: [
+      { id: "fo1", follower_id: IK, creator_id: "c2" },
+      { id: "fo2", follower_id: ANDER, creator_id: "c1" },
+    ],
+    collections: [
+      { id: "co1", user_id: IK, naam: "Mijn soepen" },
+      { id: "co2", user_id: ANDER, naam: "Geheime map" },
+    ],
+    collection_recipes: [
+      { id: "cr1", collection_id: "co1", recipe_id: "r1" },
+      { id: "cr2", collection_id: "co2", recipe_id: "x1" },
+    ],
+    community_bijdragen: [{ id: "b1", user_id: IK, tekst: "Lekker!" }],
+    content_meldingen: [
+      { id: "m1", melder_id: IK, soort: "recept", doel_id: "x1", reden: "anders" },
+    ],
+    partner_aanvragen: [{ id: "pa1", user_id: IK, bedrijf: "Mijn bakkerij" }],
+    partner_leden: [{ id: "pl1", user_id: IK, partner_id: "p1", rol: "eigenaar" }],
+    abonnementen: [{ id: "ab1", user_id: IK, provider: "test", status: "actief" }],
+    facturen: [
+      { id: "fa1", user_id: IK, nummer: "TEST-001" },
+      { id: "fa2", user_id: ANDER, nummer: "TEST-999" },
+    ],
+    entitlements: [{ id: "e1", user_id: IK, soort: "premium" }],
   } as Record<string, Rij[]>;
 }
 
@@ -101,7 +156,22 @@ describe("AVG-export (BUG-026/103)", () => {
     for (const o of oproepen) {
       const ok = o.filters.some(
         ([k, v]) =>
-          (["user_id", "id", "owner_id", "member_id"].includes(k) && v === IK) ||
+          ([
+            "user_id",
+            "id",
+            "owner_id",
+            "member_id",
+            "beheerder_id",
+            "follower_id",
+            "melder_id",
+          ].includes(k) &&
+            v === IK) ||
+          // Rijen die horen bij eigen rijen (eigen gezinsleden, makerprofiel, verzamelingen).
+          (k === "lid_id" &&
+            Array.isArray(v) &&
+            v.every((id) => ["h1", "h2"].includes(String(id)))) ||
+          (k === "creator_id" && Array.isArray(v) && v.every((id) => id === "c1")) ||
+          (k === "collection_id" && Array.isArray(v) && v.every((id) => id === "co1")) ||
           (k === "recipe_id" && Array.isArray(v) && v.every((id) => String(id).startsWith("r"))),
       );
       expect(ok, `${o.tabel} zonder filter op de gebruiker: ${JSON.stringify(o.filters)}`).toBe(
@@ -135,5 +205,63 @@ describe("AVG-export (BUG-026/103)", () => {
     expect(uit.recepten).toHaveLength(1205);
     expect(uit.ingredienten).toHaveLength(1205);
     expect(uit.receptfotos).toHaveLength(1);
+  });
+
+  it("neemt de eigen rijen van de nieuwe modules mee, en niets van een ander", async () => {
+    const { db } = nepDb(wereld());
+    const uit = await verzamelPersoonsgegevens(db, IK);
+    expect(uit.mijn_voeding).toEqual([{ user_id: IK, allergieen: ["sesam"] }]);
+    expect((uit.huishouden_leden as Rij[]).map((l) => l["id"]).sort()).toEqual(["h1", "h2"]);
+    expect(uit.huishouden_voeding).toEqual([{ lid_id: "h2", allergieen: ["noten"] }]);
+    expect(uit.maker_publicaties).toHaveLength(1);
+    expect(uit.volgt).toHaveLength(1);
+    expect(uit.verzameling_recepten).toEqual([
+      { id: "cr1", collection_id: "co1", recipe_id: "r1" },
+    ]);
+    expect(uit.facturen).toHaveLength(1);
+    expect(uit.abonnementen).toHaveLength(1);
+    expect(uit.partner_aanvragen).toHaveLength(1);
+    expect(uit.toegangsrechten).toHaveLength(1);
+    const tekst = JSON.stringify(uit);
+    for (const geheim of [
+      "geheim-allergie",
+      "geheim-kind",
+      "Kind van ander",
+      "Geheime map",
+      "TEST-999",
+      "Andere keuken",
+    ])
+      expect(tekst).not.toContain(geheim);
+  });
+
+  it("faalt niet als de nieuwe tabellen nog niet bestaan (productie vóór de migratie)", async () => {
+    const nieuw = [
+      "persoonlijke_voeding",
+      "huishouden_leden",
+      "lid_voeding",
+      "creators",
+      "recipe_publicaties",
+      "follows",
+      "collections",
+      "collection_recipes",
+      "community_bijdragen",
+      "content_meldingen",
+      "partner_aanvragen",
+      "partner_leden",
+      "abonnementen",
+      "facturen",
+      "entitlements",
+    ];
+    const { db } = nepDb(wereld(), nieuw);
+    const uit = await verzamelPersoonsgegevens(db, IK);
+    expect(uit.recepten).toHaveLength(1205);
+    expect(uit.mijn_voeding).toEqual([]);
+    expect(uit.huishouden_voeding).toEqual([]);
+    expect(uit.facturen).toEqual([]);
+  });
+
+  it("een andere fout bij een nieuwe tabel laat de export wel falen (geen half bestand)", async () => {
+    const { db } = nepDb(wereld(), [], ["facturen"]);
+    await expect(verzamelPersoonsgegevens(db, IK)).rejects.toThrow();
   });
 });

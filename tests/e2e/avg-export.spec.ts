@@ -3,7 +3,7 @@
  * strikt op de gebruiker filteren. Fictieve gegevens; er wordt niets buiten 127.0.0.1 aangesproken.
  */
 import { readFileSync } from "node:fs";
-import { expect, meldAan, resetDemo, seedDb, test, zetKlok } from "./helpers";
+import { expect, meldAan, resetDemo, seedDb, storing, test, zetKlok } from "./helpers";
 
 const VREEMD = "66666666-6666-4666-8666-666666666666";
 
@@ -71,8 +71,54 @@ test("Mijn gegevens downloaden: volledig, eigen gegevens, niets van een ander", 
   expect(inhoud).not.toContain("geheime saus");
   expect(inhoud).not.toContain("vreemde voorraad");
   expect(inhoud).not.toContain("vreemd ticket");
-  // Geheimen bewust niet in het bestand.
-  expect(inhoud).not.toContain('"nummer"');
+  // Geheimen bewust niet in het bestand (kaartnummers; een factuurnummer is geen geheim).
+  expect(JSON.stringify(json["klantenkaarten"])).not.toContain('"nummer"');
   expect(inhoud).not.toContain('"p256dh"');
+  // Nieuwe modules (voorstellen 0008–0012, in de demo aanwezig): eigen rijen erin.
+  for (const sectie of [
+    "mijn_voeding",
+    "huishouden_leden",
+    "huishouden_voeding",
+    "makerprofiel",
+    "volgt",
+    "verzamelingen",
+    "community_bijdragen",
+    "partner_aanvragen",
+    "abonnementen",
+    "facturen",
+  ])
+    expect(Array.isArray(json[sectie]), sectie).toBe(true);
+  // Gust (beheerd door Marie) staat erin; Lotte (beheerd door Jan, deelt niet) niet.
+  const lidVoeding = json["huishouden_voeding"] as { lid_id: string; dieet: string | null }[];
+  expect(lidVoeding.map((r) => r.lid_id)).toEqual(["aeaeaeae-0000-4000-8000-000000000004"]);
+  expect(JSON.stringify(json["huishouden_leden"])).toContain("Gust");
+  void extern;
+});
+
+test("Mijn gegevens downloaden lukt ook als de nieuwe tabellen nog niet bestaan", async ({
+  page,
+  extern,
+}) => {
+  await resetDemo();
+  for (const pad of [
+    "persoonlijke_voeding",
+    "huishouden_leden",
+    "lid_voeding",
+    "facturen",
+    "creators",
+  ])
+    await storing({ pad: `/rest/v1/${pad}`, soort: "ontbreekt", keer: 50 });
+  await zetKlok(page, 14);
+  await meldAan(page);
+  await page.goto("/instellingen");
+  const [bestand] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: /Mijn gegevens downloaden/ }).click(),
+  ]);
+  const json = JSON.parse(readFileSync(await bestand.path(), "utf8")) as Record<string, unknown>;
+  expect((json["recepten"] as unknown[]).length).toBeGreaterThan(0);
+  expect(json["mijn_voeding"]).toEqual([]);
+  expect(json["huishouden_voeding"]).toEqual([]);
+  expect(json["facturen"]).toEqual([]);
   void extern;
 });

@@ -14,22 +14,8 @@ import { supabase } from "@/integrations/supabase/client";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const db = supabase as unknown as SupabaseClient<any>;
 
-type MogelijkeFout = { code?: unknown; message?: unknown; details?: unknown; hint?: unknown };
-
-/** Waar als de fout betekent dat de tabel (of view) niet bestaat. */
-export function isOntbrekendeTabel(fout: unknown): boolean {
-  if (!fout || typeof fout !== "object") return false;
-  const f = fout as MogelijkeFout;
-  const code = typeof f.code === "string" ? f.code : "";
-  if (code === "42P01" || code === "PGRST205") return true;
-  const tekst = [f.message, f.details, f.hint]
-    .filter((x): x is string => typeof x === "string")
-    .join(" ");
-  return (
-    /relation ["']?[\w.]+["']? does not exist/i.test(tekst) ||
-    /could not find the table/i.test(tekst)
-  );
-}
+export { isOntbrekendeTabel } from "@/lib/ontbrekende-tabel";
+import { isOntbrekendeTabel } from "@/lib/ontbrekende-tabel";
 
 /** Controleert of een tabel bestaat. Andere fouten (netwerk) tellen niet als "ontbreekt". */
 export async function controleerTabel(tabel: string): Promise<boolean> {
