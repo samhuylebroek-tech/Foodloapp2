@@ -45,7 +45,7 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | | "Waarom nu" op de receptpagina (zelfde motor als Vandaag) | Gebouwd (ronde 3) | F1 | Alleen eigen recepten, op het toestel, uit als slimme voorstellen uit staan | `waarom-nu.spec.ts` |
 | | Weer | Gebouwd (marathon) met testgegevens | F2 | Signaal op Vandaag + zachte bijsturing, aan/uit in Instellingen; `WeerAdapter` + TestWeerAdapter (vaste demodata, gelabeld). Getest met weer-bron.test + weer-signaal.spec. Echte bron: na licentie en serverproxy | #15, #16 |
 | | Budget | Gebouwd (marathon), schatting | F2 | Weekbudget (per toestel), kost per recept en per week met vaste richtprijzen (altijd "schatting"), waarschuwing in Week. Getest met budget.test + budget.spec. Echte prijzen: na prijsbron/partner (`PrijsBron`) | #21 |
-| | Gezinscontext (mee-eters) | Gebouwd (marathon) bij handmatig inplannen | F2 | Waarschuwing per mee-eter in de receptkiezer; nog niet in de AI-/weekvoorstellen | 0010, #7 |
+| | Gezinscontext (mee-eters) | Gebouwd (marathon), getest met eters-voorstellen.spec (telefoon/desktop) en voorstel-eters.test; actief in productie na migratie 0010 | F2 | Receptkiezer, Vandaag ("Wie eet mee vanavond?") en "Laat Foodlo kiezen" ("Wie eet mee?"): niets onveiligs voorgesteld, anders "Niet geschikt voor …" (reden alleen als gedeeld) | 0010, #7 |
 | | "Niet voor mij" (blijvend) | Te ontwikkelen | F2 | Tabel 0006 | #17 |
 | | Alternatief als je geen zin hebt | Gebouwd (ronde 3) | F1 | "Iets anders vanavond?" onder de Vandaag-kaart: voorstellen met reden, vervangt de maaltijd met "Ongedaan maken" | `vandaag.spec.ts` |
 | **Week** | Plannen per dag en moment, verplaatsen, dupliceren, vervangen (lijst past mee aan), ongedaan maken | Behouden | F1 | — | `planner.tsx`, `weekmenu-lijst.spec.ts` |
@@ -90,7 +90,7 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | **Instellingen** | Profiel, kleuren, taal, etenstijden, momenten, voorraad, slimme voorstellen, export, verwijderen | Behouden | F1 | — | `instellingen.tsx` |
 | | 24-uurstijden, Nederlandse namen | Opgelost (ronde 1) | F1 | — | BUG-135 |
 | | Opdelen in onderdelen | Verbeterd (ronde 2) | F1 | Drie delen (Weergave, Maaltijden, Account en privacy) met een sprongmenu; echte subpagina's zijn een optie voor later | — |
-| | Persoonlijke allergieën, intoleranties, dieet en uitsluitingen op het account | Gebouwd (marathon), getest met gezin-leden.spec (telefoon/desktop) en tests/rls/huishouden-voeding.mjs; actief in productie na migratie 0009 | **F1** | `/mijn-voeding` met toestemmingsvraag en datum; zonder toestemming of zonder 0009 op het toestel. Nog open: AVG-export neemt de tabel nog niet mee | voorstel 0009 (vroeger 0004b), FR-I-03 |
+| | Persoonlijke allergieën, intoleranties, dieet en uitsluitingen op het account | Gebouwd (marathon), getest met gezin-leden.spec (telefoon/desktop) en tests/rls/huishouden-voeding.mjs; actief in productie na migratie 0009 | **F1** | `/mijn-voeding` met toestemmingsvraag en datum; zonder toestemming of zonder 0009 op het toestel. AVG-export neemt de nieuwe tabellen mee (avg-export.test, avg-export.spec), lege sectie zolang een tabel ontbreekt | voorstel 0009 (vroeger 0004b), FR-I-03 |
 
 ## A2. Recepten toevoegen en beheren (verplicht volledig)
 
@@ -99,6 +99,7 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | # | Invoermethode | Ingang (label) | AI/credits | Nakijken vóór bewaren | Status | Testdekking | Fase |
 |---|---|---|---|---|---|---|---|
 | 1 | Zelf typen (formulier) | Recept toevoegen → "Zelf typen" | nee | ja, "Klopt alles?" | Behouden | volledig (`kernflow.spec.ts`) | F1 |
+| 1b | Stap voor stap (beginners, FR-RI-06) | Nieuw recept → "Stap voor stap" | nee | ja, stap 4 "Klopt alles?" | Gebouwd (marathon), getest met recept-stappen.spec en grote-tekst-woorden.spec (telefoon/desktop); werkt meteen in productie (geen migratie) | `recept-stappen.spec.ts` | F1 |
 | 2 | Link van een website | "Link plakken" → "Inlezen" | eerst gratis (JSON-LD), dan AI | ja | Behouden; **test uitbreiden** | alleen de UI | F1 |
 | 3 | Sociale media (Instagram, TikTok, YouTube, Facebook, Pinterest) | zelfde knop | AI | ja | Behouden; **test uitbreiden** | geen | F1 |
 | 4 | Tekst plakken | "Recept eruit halen" | AI | ja | Behouden; **test uitbreiden** | geen | F1 |
@@ -121,6 +122,7 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | Beheer | Status | Opmerking |
 |---|---|---|
 | Aanpassen (zelfde formulier), versies (10, terugzetten), foto's, concepten (automatisch bewaren) | Behouden | — |
+| Ingrediënten en stappen herschikken (hoger/lager-knoppen, geen slepen) | Gebouwd (marathon), getest met volgorde.test en recept-volgorde.spec; werkt meteen in productie | "Wat gebruik je bij elke stap" verhuist mee |
 | Verwijderen | Verbeterd (BUG-146, ronde 2) | Overal: bevestigen, zacht verwijderen, "Ongedaan maken"; op de pagina van een verwijderd recept staat "Terugzetten" |
 | Eigen recept dupliceren | Gebouwd (ronde 3) | Meer → "Dupliceren": kopie met "(kopie)", ingrediënten en foto's mee (`recept-beheer.spec.ts`) |
 | Publiek, privé, alleen volgers | Latere fase | Er is geen zichtbaarheidsveld (G1/G2) |

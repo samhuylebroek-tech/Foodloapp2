@@ -85,8 +85,8 @@ describe("SterrenSnel", () => {
     expect(iconen[4]?.getAttribute("class")).not.toContain("honing");
   });
 
-  it("knoppen zijn minstens 44px hoog", () => {
+  it("knoppen zijn minstens 48px hoog (BUG-016, designsysteem)", () => {
     render(<SterrenSnel waarde={0} onKies={() => {}} />);
-    for (const k of screen.getAllByRole("button")) expect(k.className).toMatch(/\bh-11\b/);
+    for (const k of screen.getAllByRole("button")) expect(k.className).toMatch(/\bh-12\b/);
   });
 });

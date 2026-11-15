@@ -38,7 +38,6 @@ Details en bewijs in het bugregister. Nog open:
 | BUG-061 | Hoog (kosten), ook live | Opgelost op `v2/dev`, live nog niet | P0 (live) | Release (G3/G4) |
 | BUG-119 | Medium (privacy) | Weekmenuvoorkeuren leesbaar voor het gezin | P1 | 0004: controle, dan staging |
 | BUG-011 | Medium | Schema van live ≠ repo | P1 | Vergelijken (N-2), baseline |
-| BUG-134 | Medium (a11y) | Grote tekst: harde test ontbreekt voor Week, Keuken en Instellingen | P1 | Ronde 2: test |
 | BUG-086 | Medium | Echte toestellen en Safari niet getest | P0 | #26 |
 | BUG-117 | Info | Idem (Safari/WebKit) | P0 | #26 |
 | BUG-109 | Medium | Bewaartermijnen | P1 | 0003 (#6) |
@@ -48,7 +47,6 @@ Details en bewijs in het bugregister. Nog open:
 | BUG-035 | Medium | zod 4 | P2 | `ZOD4-MIGRATIE.md` |
 | BUG-013 | Laag | Lint-baseline | P2 | Ratchet per bestand |
 | BUG-014 | Laag | Dode code `NieuweSuggesties.tsx` | P2 | G7 |
-| BUG-016 | Laag (a11y) | Snelle sterren 44 px in plaats van 56 px | P2 | — |
 | BUG-080, 089, 108, 114 | Laag–Medium | Opgelost, nog gedeeltelijk getest | P1 | Op staging of een toestel |
 
 ## 2. Ontbrekende functionaliteit
@@ -65,7 +63,7 @@ Details en bewijs in het bugregister. Nog open:
 | ~~Gezinsgrootte als standaard voor het aantal personen~~ gebouwd in ronde 3 | FR-W-04 | 3 | — |
 | ~~Dupliceren~~ gebouwd in ronde 3 | FR-RI-07 | 3 | — |
 | ~~Voorbeeld in de editor~~ gebouwd in ronde 3 | FR-RI-05 | 3 | — |
-| Invoer in stappen | FR-RI-06 | 3 | — |
+| ~~Invoer in stappen~~ gebouwd (marathon, werkstroom A) | FR-RI-06 | 3 | — |
 | iOS-project, native push, iconen (offline-scherm gebouwd in ronde 3) | M1, M2, M4 | 4–5 | #22, #23 |
 | Storemateriaal en privacylabels | M7 | 6 | #27 |
 

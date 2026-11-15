@@ -71,7 +71,7 @@ export function SterrenSnel({ waarde, onKies }: { waarde: number; onKies: (n: nu
           onClick={() => onKies(waarde === n ? 0 : n)}
           aria-label={`Geef ${n} ${n === 1 ? "ster" : "sterren"}`}
           aria-pressed={n <= waarde}
-          className="flex h-11 min-w-0 flex-1 items-center justify-center rounded-lg active:scale-90 transition-transform hover:bg-secondary"
+          className="flex h-12 min-w-0 flex-1 items-center justify-center rounded-lg active:scale-90 transition-transform hover:bg-secondary"
         >
           <Star
             aria-hidden

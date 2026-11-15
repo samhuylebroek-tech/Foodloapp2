@@ -22,9 +22,21 @@ export function StappenKeuze({
   aan: boolean;
   onWissel: (aan: boolean) => void;
 }) {
+  // In de stappen zelf: alleen een rustige tekstknop, zodat de stap bovenaan staat.
+  if (aan)
+    return (
+      <button
+        type="button"
+        onClick={() => onWissel(false)}
+        className="inline-flex min-h-12 items-center gap-2 text-base font-semibold text-primary underline underline-offset-4"
+      >
+        <Rows3 className="size-5" aria-hidden />
+        Alles op één scherm
+      </button>
+    );
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-secondary p-3">
-      <p className="min-w-0 flex-1 text-base">
+      <p className="min-w-[min(100%,14rem)] flex-1 text-base">
         {aan
           ? "Je vult je recept stap voor stap in."
           : "Liever rustig, één ding tegelijk? Vul je recept stap voor stap in."}
@@ -34,7 +46,7 @@ export function StappenKeuze({
         variant="outline"
         aria-pressed={aan}
         onClick={() => onWissel(!aan)}
-        className="h-14 shrink-0 text-base"
+        className="h-auto min-h-14 max-w-full text-base whitespace-normal"
       >
         {aan ? (
           <Rows3 className="size-5" aria-hidden />
@@ -103,7 +115,7 @@ export function StappenControle({
 }) {
   const rij = (nr: ReceptStap, label: string, inhoud: string, ok: boolean) => (
     <li className="flex flex-wrap items-start justify-between gap-2 border-b border-border py-3 last:border-0">
-      <span className="min-w-0 flex-1">
+      <span className="min-w-[min(100%,12rem)] flex-1">
         <span className="block text-base font-semibold">
           {ok ? "✓" : "○"} {label}
         </span>
@@ -170,18 +182,22 @@ export function StappenNavigatie({
           {ontbreekt}
         </p>
       ) : null}
-      <div className="grid grid-cols-[1fr_2fr] gap-2">
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-2">
         <Button
           type="button"
           variant="outline"
           onClick={onVorige}
           disabled={stap === 1}
-          className="h-14 text-base"
+          className="h-auto min-h-14 min-w-0 px-3 text-base whitespace-normal"
         >
           <ArrowLeft className="size-5" aria-hidden /> Vorige
         </Button>
         {stap < AANTAL_STAPPEN ? (
-          <Button type="button" onClick={onVolgende} className="h-14 text-base">
+          <Button
+            type="button"
+            onClick={onVolgende}
+            className="h-auto min-h-14 min-w-0 px-3 text-base whitespace-normal"
+          >
             Volgende <ArrowRight className="size-5" aria-hidden />
           </Button>
         ) : (
@@ -189,7 +205,7 @@ export function StappenNavigatie({
             type="button"
             onClick={onBewaar}
             disabled={bezig || !!ontbreekt}
-            className="h-14 text-base"
+            className="h-auto min-h-14 min-w-0 px-3 text-base whitespace-normal"
           >
             {bezig ? (
               <Loader2 className="size-5 animate-spin" aria-hidden />
