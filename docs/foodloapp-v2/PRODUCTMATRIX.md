@@ -43,8 +43,8 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | | Voorstellen met reden, "Waarom zie ik dit?", "Niet nu" | Behouden | F1 | "Niet nu" staat per toestel | `voorstel.ts`, `niet-nu.ts` |
 | | Seizoen en feestdagen (BE/NL) | Behouden | F1 | — | `intelligentie/context.ts` |
 | | "Waarom nu" op de receptpagina (zelfde motor als Vandaag) | Gebouwd (ronde 3) | F1 | Alleen eigen recepten, op het toestel, uit als slimme voorstellen uit staan | `waarom-nu.spec.ts` |
-| | Weer | Geblokkeerd | F2 | Logica klaar, maar geen databron (`haalWeer` wordt nergens gebruikt) | #15, #16 |
-| | Budget | Latere fase | F2 | Bestaat niet | #21 |
+| | Weer | Gebouwd (marathon) met testgegevens | F2 | Signaal op Vandaag + zachte bijsturing, aan/uit in Instellingen; `WeerAdapter` + TestWeerAdapter (vaste demodata, gelabeld). Getest met weer-bron.test + weer-signaal.spec. Echte bron: na licentie en serverproxy | #15, #16 |
+| | Budget | Gebouwd (marathon), schatting | F2 | Weekbudget (per toestel), kost per recept en per week met vaste richtprijzen (altijd "schatting"), waarschuwing in Week. Getest met budget.test + budget.spec. Echte prijzen: na prijsbron/partner (`PrijsBron`) | #21 |
 | | Gezinscontext (mee-eters) | Gebouwd (marathon) bij handmatig inplannen | F2 | Waarschuwing per mee-eter in de receptkiezer; nog niet in de AI-/weekvoorstellen | 0010, #7 |
 | | "Niet voor mij" (blijvend) | Te ontwikkelen | F2 | Tabel 0006 | #17 |
 | | Alternatief als je geen zin hebt | Gebouwd (ronde 3) | F1 | "Iets anders vanavond?" onder de Vandaag-kaart: voorstellen met reden, vervangt de maaltijd met "Ongedaan maken" | `vandaag.spec.ts` |
@@ -187,8 +187,8 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | Geschiedenis, voorraad, restjes, gebruik eerst, seizoensproducten, "niet nu", vul aan, voor morgen | Behouden | F1 | Unit + E2E |
 | Uitleg "waarom" en uitschakelbaar ("Slimme voorstellen") | Behouden | F1 | Schakelaar nu per toestel → naar het account (F2) |
 | Tijdregel (begin om) | Uitgebreid (ronde 1) | F1 | — |
-| Weer | Geblokkeerd | F2 | Proxy op de server, licentie (#15, #16) |
-| Budget | Latere fase | F2 | #21 |
+| Weer | Gebouwd (testgegevens) | F2 | Adapter + testbron; echte bron na proxy en licentie (#15, #16) |
+| Budget | Gebouwd (schatting) | F2 | Richtprijzen; echte prijzen na #21 |
 | Gezin als signaal | Latere fase | F2 | 0005 |
 | Generatieve AI (13 functies, credits, cache) | Behouden | F1 | #14, #19 |
 | Harde veiligheidsregels allergie en dieet | Behouden | F1 | `veiligheid.ts`, 20 unit- en 9 E2E-tests |
@@ -241,15 +241,15 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 |---|---|---|---|---|
 | **Community:** interacties tussen gebruikers, zoals reacties, vragen aan de maker en gekookt-meldingen | Masteropdracht §6; complete productvisie §3 | "Ik heb dit gekookt" + meldknop: Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | Foto en vraag aan de maker: later |
 | **Creatorcontent:** video's, kooklessen en andere media | Complete productvisie §3; CLAUDE.md | Latere fase | F2/F3 | Opslag- en verwerkingskost apart ramen |
-| **AI:** ingrediënten vervangen (substituties met reden) | Masteropdracht §4 | Te ontwikkelen | F2 | Eerst regels (vervangingslijst, zoals al in de winkelmodus), daarna AI via de privacylaag |
-| **AI:** recepten aanpassen (bv. vegetarisch maken, minder tijd) | Masteropdracht §4 | Te ontwikkelen | F2 | Altijd als voorstel om na te kijken (AC-6) |
-| **AI:** vragen beantwoorden (gesprek met de assistent) | Masteropdracht §4; #10 | Latere fase | F2 | Privacylaag verplicht; aantal per dag (#10) |
+| **AI:** ingrediënten vervangen (substituties met reden) | Masteropdracht §4 | Gebouwd (marathon) | F2 | "Vraag het Foodlo" op recept en kookstand: vaste vervangingstabel getoetst aan allergie/dieet van jou en mee-eters; slimme hulp via voorAI() + credits, in demo TestAssistentAdapter. Getest met assistent.test + assistent.spec. Echte AI: LOVABLE_API_KEY + credit_costs-rij "assistent" |
+| **AI:** recepten aanpassen (bv. vegetarisch maken, minder tijd) | Masteropdracht §4 | Gebouwd (marathon), regels | F2 | Personen, vegetarisch, zonder allergeen: voorbeeld met verschillen, "Bewaar als kopie" of "Pas dit recept aan" met ongedaan maken (assistent.spec). "Sneller": later |
+| **AI:** vragen beantwoorden (gesprek met de assistent) | Masteropdracht §4; #10 | Gebouwd (marathon), korte vraag | F2 | Vaste antwoorden eerst, slimme hulp optioneel; 20 per dag (toestel) + 30 per dag (server). Gesprek met acties: later |
 | **AI:** agents die meerdere stappen voorstellen (bv. "plan en vul mijn week aan") | Masteropdracht §4 | Latere fase | F2/F3 | Altijd met een goedkeuringsstap (AI_ARCHITECTURE §3–4) |
-| Lokale producten als signaal | Productmissie §2; complete visie §7 | Uitbreiden | F2 | Nu via seizoensproducten |
+| Lokale producten als signaal | Productmissie §2; complete visie §7 | Gebouwd (marathon) | F2 | Filter "In het seizoen" in Ontdek (België, vaste lijst; seizoen-ontdek.spec); reden in voorstellen bestond al |
 | **UX:** vlotte overgangen en micro-interacties | Productmissie §3; complete visie §8 | Verbeteren | F1 | Met respect voor `prefers-reduced-motion` |
 | **UX:** lege toestanden en foutmeldingen consequent | Complete visie §8; CLAUDE.md | Behouden / Verbeteren | F1 | `EmptyState` bestaat; per scherm nalopen |
 | **Editor:** voorbeeldweergave vóór bewaren, tussentijds bewaren, stappen herschikken | Aanvulling receptinvoer §3 | Verbeterd (ronde 3) | F1 | Voorbeeld gebouwd; tussentijds bewaren bestaat (concept); stappen herschikken: open |
-| **Supermarkt:** bestaande integraties behouden, later modulair uitbreiden | CLAUDE.md | Behouden | F1 | Winkelvolgorde, afdelingen en klantenkaarten blijven; nieuwe aanbieders pas in F3 |
+| **Supermarkt:** bestaande integraties behouden, later modulair uitbreiden | CLAUDE.md | Behouden + interface (marathon) | F1 | Gedrag ongewijzigd. Interface `SupermarktProvider` (`src/lib/supermarkt/provider.ts`): LokaleSupermarkt over de bestaande functies + TestSupermarktProvider (testgegevens), getest met provider.test. Schermen omzetten pas met de eerste partner (BUG-087) |
 | **Betalingen:** terugbetalingen, annulering, fraude en chargebacks, inkomstendeling creators, platformvergoeding | CLAUDE.md | Latere fase | F3 | In COMMERCIAL_ROADMAP §4; G5 en jurist |
 | **Analytics:** creatorconversie, retentie, churn, inkomsten | CLAUDE.md | Latere fase | F3 | Alleen geaggregeerd |
 | **Kosten per eenheid:** per actieve gebruiker, creator, AI-actie, opslag, e-mail en databankbewerking | CLAUDE.md | Uitbreiden | F1 (AI) / F2 (rest) | AI-kosten worden al gemeten (`ai_usage`, beheer Kosten) |
