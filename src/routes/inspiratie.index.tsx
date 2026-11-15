@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Search, SlidersHorizontal, Shuffle, Clock3, X, Plus, TriangleAlert } from "lucide-react";
+import { Sprout } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +31,7 @@ import { MakersRij } from "@/components/makers/MakersRij";
 import { GesponsordPlek } from "@/components/ontdek/GesponsordPlek";
 import { OntdekLeeg } from "@/components/ontdek/OntdekLeeg";
 import { soortLabel } from "@/lib/recept-keuzes";
+import { filterSeizoen, seizoenIn, seizoenUitleg } from "@/lib/lokaal";
 
 export const Route = createFileRoute("/inspiratie/")({
   // Vanuit "Gebruik eerst" op Vandaag: meteen zoeken op het product (bv. ?zoek=spinazie).
@@ -144,12 +146,9 @@ function InspiratiePage() {
   // Fase 3: thema's (seizoen, snel, vegetarisch, weekend) als ingang; een thema werkt als filter.
   const themaLijst = useMemo(() => maakThemas(recepten), [recepten]);
   const [thema, setThema] = useState<Thema | null>(null);
-  const resultaten = useMemo(() => {
-    const gefilterd = filterInspiratie(recepten, filters);
-    if (!thema) return gefilterd;
-    const ids = new Set(thema.recepten.map((x) => x.id));
-    return gefilterd.filter((x) => ids.has(x.id));
-  }, [recepten, filters, thema]);
+  // Werkstroom F: "In het seizoen" (groenten en fruit van bij ons, vaste lijst).
+  const [seizoenAan, setSeizoenAan] = useState(false);
+  const maand = new Date().getMonth();
 
   const actieveFilters =
     (filters.categorie ? 1 : 0) +
@@ -167,10 +166,17 @@ function InspiratiePage() {
   const ideeIds = alleRecepten.map((r) => r.id);
   const { data: namenPerIdee, isSuccess: namenKlaar } = useQuery({
     queryKey: ["inspiratie-ingredient-namen", ideeIds.join(",")],
-    enabled: beperkt && ideeIds.length > 0,
+    enabled: (beperkt || seizoenAan) && ideeIds.length > 0,
     queryFn: () => haalInspiratieIngredientNamen(ideeIds),
     staleTime: 5 * 60 * 1000,
   });
+  const resultaten = useMemo(() => {
+    let gefilterd = filterInspiratie(recepten, filters);
+    if (seizoenAan) gefilterd = filterSeizoen(gefilterd, namenPerIdee, maand);
+    if (!thema) return gefilterd;
+    const ids = new Set(thema.recepten.map((x) => x.id));
+    return gefilterd.filter((x) => ids.has(x.id));
+  }, [recepten, filters, thema, seizoenAan, namenPerIdee, maand]);
   const gerechtVan = (r: InspiratieRecept) => ({
     title: r.title,
     tags: r.tags ?? [],
@@ -246,6 +252,14 @@ function InspiratiePage() {
           </Button>
           <Button
             variant="outline"
+            onClick={() => setSeizoenAan((a) => !a)}
+            aria-pressed={seizoenAan}
+            className="h-12 shrink-0 px-5 text-base"
+          >
+            <Sprout className="size-4" /> In het seizoen
+          </Button>
+          <Button
+            variant="outline"
             onClick={kiesVerrassing}
             disabled={!resultaten.length || !verrasKlaar}
             aria-busy={!verrasKlaar}
@@ -254,6 +268,15 @@ function InspiratiePage() {
             <Shuffle className="size-4" /> Verras mij
           </Button>
         </div>
+
+        {seizoenAan ? (
+          <p
+            role="status"
+            className="rounded-2xl bg-secondary px-4 py-3 text-base text-secondary-foreground"
+          >
+            {seizoenUitleg(maand)} Ongeveer: het weer verschuift het seizoen soms een paar weken.
+          </p>
+        ) : null}
 
         {thema ? (
           <div className="flex items-center gap-3">
@@ -293,7 +316,14 @@ function InspiratiePage() {
               We vinden momenteel geen gerecht met deze combinatie. Probeer bijvoorbeeld pasta, kip
               of vegetarisch.
             </p>
-            <Button variant="outline" onClick={() => setFilters(LEGE_FILTERS)} className="mt-4 h-14 px-6 text-base">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setFilters(LEGE_FILTERS);
+                setSeizoenAan(false);
+              }}
+              className="mt-4 h-14 px-6 text-base"
+            >
               Filters wissen
             </Button>
           </div>
@@ -315,6 +345,12 @@ function InspiratiePage() {
                     {/* Bron: later de food creator (naam en profiel), nu de Foodlo-keuken. */}
                     <p className="text-[0.9rem] text-muted-foreground">Foodlo-keuken</p>
                     <AllergieLabel oordeel={oordeelVan(r)} />
+                    {seizoenAan ? (
+                      <p className="flex items-center gap-1 text-[0.95rem] font-medium text-primary">
+                        <Sprout className="size-4 shrink-0" aria-hidden />
+                        Seizoen: {seizoenIn(r, namenPerIdee?.get(r.id) ?? [], maand).join(", ")}
+                      </p>
+                    ) : null}
                     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base text-muted-foreground">
                       {r.category ? <span>{soortLabel(r.category)}</span> : null}
                       {tijdLabel(r) ? (
