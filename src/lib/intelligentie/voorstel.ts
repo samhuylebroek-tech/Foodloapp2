@@ -202,6 +202,9 @@ export function beoordeel(k: Kandidaat, i: Invoer): Aanbeveling {
         plus("weer", 4, `Fris voor een warme dag (${Math.round(c.weer.temp)} °C)`);
       else if (heeftWoord(tekst, OVEN)) score -= 4;
     }
+    // Werkstroom F: regen zonder kou: zacht naar een comfortgerecht.
+    if (c.weer.regen && c.weer.temp > 8 && c.weer.temp < 25 && heeftWoord(tekst, WARM))
+      plus("weer", 3, "Iets warms voor een regendag");
   }
 
   // Seizoen en feestdag.

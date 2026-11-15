@@ -13,6 +13,7 @@ import { RecipePhoto } from "@/components/RecipePhoto";
 import { useAuth } from "@/hooks/useAuth";
 import { meldMetHerstel } from "@/hooks/useAanvulling";
 import { useVoorstelBronnen } from "@/hooks/useVoorstelBronnen";
+import { useWeer } from "@/hooks/useWeer";
 import { bepaalContext } from "@/lib/intelligentie/context";
 import { vatSamen } from "@/lib/intelligentie/geschiedenis";
 import { herstelNietNu, nietNuLijst, zetNietNu } from "@/lib/intelligentie/niet-nu";
@@ -68,6 +69,8 @@ export function VanavondVoorstellen({
   const ids = recepten.map((r) => r.id);
 
   const { data: bronnen } = useVoorstelBronnen(ids, slim);
+  // Werkstroom F: het weer stuurt zacht bij (alleen als het aan staat en er een bron is).
+  const { weer } = useWeer();
 
   const { voorstellen, uitHuis, oud, zonderRecept } = useMemo(() => {
     if (!bronnen)
@@ -78,7 +81,7 @@ export function VanavondVoorstellen({
         zonderRecept: [] as OudInHuis[],
       };
     const nu = new Date();
-    const context = bepaalContext(nu);
+    const context = bepaalContext(nu, weer ? { temp: weer.temp, regen: weer.regen } : null);
     const dag = weekmenu.perDag?.[String(context.weekdag)];
     const kennis = leesKennismaking(user?.id);
     const minuten = Object.fromEntries(recepten.map((r) => [r.id, minutenVan(r)]));
@@ -122,7 +125,7 @@ export function VanavondVoorstellen({
       ? { voorstellen: inHuis.slice(0, 3), uitHuis: true }
       : { voorstellen: alle.slice(0, 3), uitHuis: false };
     return { ...basis, oud, zonderRecept };
-  }, [bronnen, recepten, weekmenu, nietNu, user?.id]);
+  }, [bronnen, recepten, weekmenu, nietNu, user?.id, weer]);
 
   if (!slim || (!voorstellen.length && !oud?.length)) return null;
 
