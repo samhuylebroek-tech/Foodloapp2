@@ -139,9 +139,9 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | Collecties van creators | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | Openbare verzameling toont alleen openbare recepten |
 | Bronvermelding → echte maker | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | — |
 | Statistieken (volgers, gepubliceerd, bewaard, ingepland; alleen totalen) | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | "Bekeken" en per recept: later |
-| Moderatie (meldknop, wachtrij; DSA) | Deels gebouwd (marathon): meldknop + `content_meldingen`, openbaar = eerst 'wacht'; goedkeuren in beheer nog te bouwen | F2 | Verplicht vóór productie |
-| Gesponsorde content met duidelijk label | Latere fase | F3 | Nog geen ontwerp: te schrijven |
-| Premium collecties, creatorabonnementen, inkomstendeling, uitbetaling/KYC | Latere fase | F3 | G5, #29, juridisch advies |
+| Moderatie (meldknop, wachtrij; DSA) | Gebouwd (marathon): /beheer/moderatie (goedkeuren/afwijzen met reden, bijdrage verbergen/terugzetten, melding afsluiten, gelogd), getest met moderatie.spec (telefoon/desktop); actief in productie na migratie 0008 + 0011 | F2 | Verplicht vóór productie |
+| Gesponsorde content met duidelijk label | Gebouwd (marathon): één vaste plek in Ontdek, "Gesponsord · In samenwerking met …", allergie/dieetregel, getest met partner-portaal.spec + partners.test; actief in productie na migratie 0011 | F3 | Tellen van vertoningen via gesponsord_tel() nog niet aangesloten |
+| Premium collecties, creatorabonnementen, inkomstendeling, uitbetaling/KYC | Voorbereid (marathon): blok "Abonnees" in /maker (uit, testprijs + fee-verdeling, betalen.test); geen uitbetaling | F3 | G5, #29, KYC/uitbetaling via provider, juridisch advies |
 | Affiliate, merksamenwerkingen | Latere fase | F3 | Nog geen ontwerp; juridisch advies |
 
 ## C. Gezin en huishouden
@@ -166,8 +166,8 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | Rollen bruikbaar maken, rol `finance` | Geblokkeerd | F2 | BUG-096, #31 |
 | RLS beheer (`is_admin`) | Geblokkeerd | F1 | BUG-097, 0002, G1/G2 |
 | Betaalpoort ook op de server | Opgelost (ronde 2) | F1 | BUG-143: de server weigert betalen of credits kopen zonder provider |
-| Partners, merken, producenten, retail, restaurants, campagnes, gesponsorde content, productintegraties, rapportage voor partners | Latere fase | F3 | Bestaat niet; eigen professionele UX, los van de consumentenapp |
-| Moderatie, AVG-register, incidenten, back-ups | Te ontwikkelen | F2 | BCC-audit §6 |
+| Partners, merken, producenten, retail, restaurants, campagnes, gesponsorde content, productintegraties, rapportage voor partners | Gebouwd (marathon): aparte omgeving /partner (overzicht, profiel, producten, campagnes, gesponsorde content, samenwerkingen, rapportage met alleen dagtotalen, team met rollen, abonnement) + goedkeuren in /beheer/moderatie, getest met partner-portaal.spec, partners.test en tests/rls/partners-premium.mjs; actief in productie na migratie 0011 | F3 | Aanvragen goedkeuren en teamleden uitnodigen loopt nog via het team |
+| Moderatie, AVG-register, incidenten, back-ups | Moderatie gebouwd (marathon, zie B); AVG-register, incidenten, back-ups te ontwikkelen | F2 | BCC-audit §6 |
 
 ## E. Betalingen en verdienmodellen
 | Onderdeel | Status | Fase | Voorwaarde |
@@ -175,8 +175,8 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | AI-credits (saldo, reserveren, terugstorten, cache, limieten) | Behouden | F1 | `credits.server.ts` |
 | Creditpakketten kopen | Geblokkeerd | F3 | G5 |
 | Gratis ervaring met limiet (100 gerechten) | Behouden | F1 | `limiet.ts` |
-| Premium, abonnementen | Latere fase | F3 | B5 (#29), G5, juridisch advies |
-| Betaalprovider achter een adapter (geen vaste keuze) | Latere fase | F3 | Stripe Connect of Mollie te evalueren |
+| Premium, abonnementen | Gebouwd in testmodus (marathon): /premium, /abonnement (status, opzeggen in 2 tikken, testfacturen), entitlements (heeftRecht), getest met premium.spec + betalen.test en tests/rls/partners-premium.mjs; actief in productie na migratie 0012, echt verkopen pas na G5 | F3 | B5 (#29), G5, juridisch advies |
+| Betaalprovider achter een adapter (geen vaste keuze) | Gebouwd (marathon): `src/lib/betalen/` (BetaalProvider, TestBetaalProvider, webhook-verifier, statusmachine idempotent op event-id); serverweg alleen als BETAALPROVIDER_GEKOPPELD=false en modus test | F3 | Stripe Connect of Mollie te evalueren |
 | Facturatie, btw/OSS, DAC7, herroeping | Latere fase | F3 | Boekhouder/jurist |
 | Zakelijke abonnementen, commerciële samenwerkingen | Latere fase | F3 | — |
 

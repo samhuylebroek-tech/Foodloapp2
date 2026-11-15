@@ -55,7 +55,15 @@ const metGroep = new Set(
 // Kolommen met een vaste lijst van toegelaten waarden (CHECK), bv. voorstel 0006.
 const VASTE_WAARDEN = { signaal: "'niet_nu'", handle: "'test-a'", tekst: "'Lekker'" };
 // Optionele kolommen die een tabelregel (CHECK) toch vraagt.
-const EXTRA_KOLOMMEN = { aanbeveling_feedback: { onderwerp: "'curry'" } };
+// Ook verplichte kolommen met een CHECK krijgen hier een geldige waarde (voorstellen 0011/0012).
+const EXTRA_KOLOMMEN = {
+  aanbeveling_feedback: { onderwerp: "'curry'" },
+  abonnementen: { plan: "'premium_maand'", status: "'proef'" },
+  entitlements: { recht: "'premium.weekmenu_extra'" },
+  facturen: { status: "'betaald'" },
+  partner_aanvragen: { bedrijfsnaam: "'Bakkerij A'", soort: "'retail'" },
+  partner_leden: { rol: "'eigenaar'" },
+};
 
 function waarde(type) {
   if (type === "uuid") return "gen_random_uuid()";
@@ -84,9 +92,13 @@ for (const t of tabellen) {
   const namen = ["user_id", ...kol.map((k) => k.column_name)];
   const waarden = [
     `'${A}'`,
-    ...kol.map((k) => VASTE_WAARDEN[k.column_name] ?? waarde(k.data_type)),
+    ...kol.map(
+      (k) =>
+        EXTRA_KOLOMMEN[t]?.[k.column_name] ?? VASTE_WAARDEN[k.column_name] ?? waarde(k.data_type),
+    ),
   ];
   for (const [k, w] of Object.entries(EXTRA_KOLOMMEN[t] ?? {})) {
+    if (namen.includes(k)) continue;
     namen.push(k);
     waarden.push(w);
   }
