@@ -7,7 +7,7 @@ import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { maakDb, rest } from "./nep-db.mjs";
-import { demoSeed } from "./demo-data.mjs";
+import { demoSeed, PARTNER_USERS } from "./demo-data.mjs";
 
 const FOTO_MAP = path.join(path.dirname(fileURLToPath(import.meta.url)), "demo-fotos");
 
@@ -106,6 +106,11 @@ const geldigToken = (auth) =>
 /** Verzonnen beheersleutel voor tests en demo (geen echt geheim). */
 export const NEP_BEHEERSLEUTEL = "sb_secret_nep_alleen_lokaal";
 
+const EXTRA_DEMO_LOGINS = {
+  "partner@foodlo.be": PARTNER_USERS.els,
+  "proef@foodlo.be": PARTNER_USERS.proef,
+};
+
 const RPC_STANDAARD = {
   credits_saldo: { saldo: 50 },
   mijn_credits: { balance: 50 },
@@ -190,6 +195,23 @@ const server = http.createServer((req, res) => {
     // ---- Auth ----
     if (url.pathname === "/auth/v1/token") {
       const demoLogin = DEMO && body?.email === "demo@foodlo.be" && body?.password === "demo1234";
+      // Extra demo-aanmeldingen (verzonnen): partneromgeving en een proefabonnement.
+      const extraSub =
+        DEMO && body?.password === "demo1234" ? EXTRA_DEMO_LOGINS[body?.email] : undefined;
+      const refreshSub = String(body?.refresh_token ?? "").startsWith("nep-refresh:")
+        ? String(body.refresh_token).slice("nep-refresh:".length)
+        : undefined;
+      const anderSub = extraSub ?? refreshSub;
+      if (anderSub && /^[0-9a-f-]{36}$/.test(anderSub)) {
+        return stuur(res, 200, {
+          access_token: maakToken(anderSub),
+          refresh_token: `nep-refresh:${anderSub}`,
+          token_type: "bearer",
+          expires_in: 86400,
+          expires_at: Math.floor(Date.now() / 1000) + 86400,
+          user: { ...TEST_USER, id: anderSub, email: body?.email ?? TEST_USER.email },
+        });
+      }
       if (url.searchParams.get("grant_type") === "refresh_token" || demoLogin) {
         return stuur(res, 200, {
           access_token: maakToken(),

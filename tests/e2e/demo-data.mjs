@@ -572,6 +572,158 @@ export function makerSeed(DEMO_USER_ID, JAN) {
   };
 }
 
+// ---------- Partners (voorstel 0011) en premium (voorstel 0012): verzonnen ----------
+// Marie heeft GEEN partnerrol. Els is eigenaar van "Boerderij Hoeve Groen", Tom is er analist.
+// Demo-aanmelding als partner: partner@foodlo.be / demo1234 (alleen nep-Supabase).
+export const PARTNER_USERS = {
+  els: "5a5a5a5a-0000-4000-8000-000000000001",
+  tom: "5a5a5a5a-0000-4000-8000-000000000002",
+  proef: "5a5a5a5a-0000-4000-8000-000000000003",
+};
+export const PARTNER_IDS = {
+  hoeve: "5b5b5b5b-0000-4000-8000-000000000001",
+  kruiden: "5b5b5b5b-0000-4000-8000-000000000002",
+};
+export const CAMPAGNE_IDS = {
+  herfst: "5c5c5c5c-0000-4000-8000-000000000001",
+  kruiden: "5c5c5c5c-0000-4000-8000-000000000002",
+};
+
+export function partnerSeed(DEMO_USER_ID) {
+  const partners = [
+    {
+      id: PARTNER_IDS.hoeve,
+      naam: "Boerderij Hoeve Groen",
+      soort: "producent",
+      website: "https://hoevegroen.example/",
+      logo_url: null,
+      verificatie_status: "geverifieerd",
+      omschrijving: "Familieboerderij met seizoensgroenten uit de Kempen (verzonnen).",
+    },
+    {
+      id: PARTNER_IDS.kruiden,
+      naam: "Merk Testkruiden",
+      soort: "merk",
+      website: null,
+      logo_url: null,
+      verificatie_status: "aangevraagd",
+      omschrijving: "Verzonnen kruidenmerk voor de demo.",
+    },
+  ];
+  const partner_leden = [
+    [PARTNER_IDS.hoeve, PARTNER_USERS.els, "eigenaar"],
+    [PARTNER_IDS.hoeve, PARTNER_USERS.tom, "analist"],
+  ].map(([partner_id, user_id, rol], i) => ({
+    id: `5d5d5d5d-0000-4000-8000-00000000000${i + 1}`,
+    partner_id,
+    user_id,
+    rol,
+  }));
+  const campagnes = [
+    {
+      id: CAMPAGNE_IDS.herfst,
+      partner_id: PARTNER_IDS.hoeve,
+      naam: "Pompoen van bij ons",
+      status: "actief",
+      start: dag(-10),
+      einde: dag(20),
+      doel: "Seizoenspompoen bekender maken.",
+      beoordeling_reden: null,
+    },
+    {
+      id: CAMPAGNE_IDS.kruiden,
+      partner_id: PARTNER_IDS.kruiden,
+      naam: "Kruiden voor de winter",
+      status: "concept",
+      start: dag(5),
+      einde: dag(40),
+      doel: null,
+      beoordeling_reden: null,
+    },
+  ];
+  const gesponsorde_items = [
+    {
+      id: "5e5e5e5e-0000-4000-8000-000000000001",
+      campagne_id: CAMPAGNE_IDS.herfst,
+      soort: "recept",
+      recipe_id: MAKER_RECEPT.pompoen,
+      product_naam: null,
+      label_tekst: "Gesponsord",
+    },
+  ];
+  const partner_producten = [
+    ["Butternut van Hoeve Groen", "pompoen", "5412345000013"],
+    ["Bloemkool uit de Kempen", "bloemkool", null],
+  ].map(([naam, ingredient_koppeling, ean], i) => ({
+    id: `5f5f5f5f-0000-4000-8000-00000000000${i + 1}`,
+    partner_id: PARTNER_IDS.hoeve,
+    naam,
+    ingredient_koppeling,
+    ean,
+  }));
+  // Dagtotalen (verzonnen): nooit per gebruiker, alleen getoond/bekeken per dag.
+  const gesponsord_statistiek = [0, 1, 2, 3, 4, 5, 6].map((n) => ({
+    id: `5a6a6a6a-0000-4000-8000-00000000000${n}`,
+    campagne_id: CAMPAGNE_IDS.herfst,
+    dag: dag(-7 + n),
+    vertoningen: [820, 910, 760, 1040, 1180, 990, 870][n],
+    klikken: [21, 30, 18, 33, 41, 27, 24][n],
+  }));
+  const samenwerkingen = [
+    {
+      id: "5a7a7a7a-0000-4000-8000-000000000001",
+      partner_id: PARTNER_IDS.hoeve,
+      creator_id: MAKER_IDS.gust,
+      status: "lopend",
+      omschrijving: "Gust kookt een herfstreeks met pompoen van de hoeve.",
+    },
+  ];
+  // Premium (0012): Marie gratis (geen rij), een demogebruiker in proefperiode.
+  const abonnementen = [
+    {
+      id: "5a8a8a8a-0000-4000-8000-000000000001",
+      user_id: PARTNER_USERS.proef,
+      plan: "premium_maand",
+      status: "proef",
+      modus: "test",
+      provider: "test",
+      provider_ref: "test_sub_proef",
+      periode_einde: dag(10),
+      opgezegd_op: null,
+      created_at: dag(-4),
+    },
+  ];
+  const entitlements = [
+    {
+      id: "5a9a9a9a-0000-4000-8000-000000000001",
+      user_id: PARTNER_USERS.proef,
+      recht: "premium.weekmenu_extra",
+      bron: "abonnement",
+      geldig_tot: dag(10),
+    },
+  ];
+  void DEMO_USER_ID;
+  return {
+    partners,
+    partner_leden,
+    partner_aanvragen: [],
+    campagnes,
+    gesponsorde_items,
+    partner_producten,
+    gesponsord_statistiek,
+    samenwerkingen,
+    abonnementen,
+    entitlements,
+    facturen: [],
+    betaal_events: [],
+    profielen: [
+      { id: PARTNER_USERS.els, display_name: "Els Van Hoeve", onboarding_klaar: true },
+      { id: PARTNER_USERS.tom, display_name: "Tom Janssens", onboarding_klaar: true },
+      { id: PARTNER_USERS.proef, display_name: "Pieter Proef", onboarding_klaar: true },
+    ],
+  };
+}
+
 export function demoSeed() {
   // Twee demofoto's (CC0, zie demo-fotos/LICENTIES.md); de rest toont bewust de omslag.
   const FOTO = { 1: "demo/stoofvlees.jpg", 2: "demo/pompoensoep.jpg" };
@@ -636,6 +788,7 @@ export function demoSeed() {
     shopping_edit: true,
   };
   const makers = makerSeed(DEMO_USER_ID, JAN);
+  const { profielen: partnerProfielen, ...partnerTabellen } = partnerSeed(DEMO_USER_ID);
   // Voorstel 0010 (alleen demo): gezinsleden, ook zonder account, met voorkeuren en mee-eters.
   // Lotte (kind) wordt beheerd door Jan en deelt niet: Marie ziet alleen "niet veilig".
   // Gust (opa, zonder account) is vegetarisch en deelt dat met het gezin.
@@ -692,6 +845,7 @@ export function demoSeed() {
     collection_recipes: makers.collection_recipes,
     community_bijdragen: makers.community_bijdragen,
     content_meldingen: makers.content_meldingen,
+    ...partnerTabellen,
     huishouden_leden,
     lid_voeding,
     maaltijd_eters,
@@ -723,6 +877,7 @@ export function demoSeed() {
       { id: JAN, display_name: "Jan Peeters", handle: "jan", onboarding_klaar: true },
       { id: LOTTE, display_name: "Lotte Peeters", handle: "lotte", onboarding_klaar: true },
       ...makers.profielen,
+      ...partnerProfielen,
     ],
     loyalty_stores: [
       ["colruyt", "Colruyt", "#e3000f", 1],
