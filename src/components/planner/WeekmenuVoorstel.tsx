@@ -20,6 +20,7 @@ import {
   Utensils,
   BookOpen,
   WandSparkles,
+  ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,6 +42,8 @@ import { kiesUitEigen, type DagRegel, type Soortkeuze } from "@/lib/weekmenu-voo
 import { datumTekst, labelVoor, kortLabel } from "./gedeeld";
 import { GerechtKaart } from "./ReceptKiezer";
 import { alleRijen } from "@/lib/pagineer";
+import { useVoorstelEters } from "@/hooks/useVoorstelEters";
+import { etiketVoorEters, oordelenVoor, veiligVoorEters } from "@/lib/voorstel-eters";
 
 export function ReceptFoto({
   url,
@@ -114,7 +117,10 @@ export function WeekmenuVoorstel({
   alGepland,
   onSluit,
   onZet,
+  gezinId,
 }: {
+  /** Gezin voor "Wie eet mee?"; weggelaten = je eigen gezin opzoeken. */
+  gezinId?: string | null;
   week: string[];
   momenten: string[];
   instelling: WeekmenuInstelling;
@@ -139,6 +145,8 @@ export function WeekmenuVoorstel({
   const [eigenZoek, setEigenZoek] = useState("");
   const getoondeRecepten = useRef<Record<string, string[]>>({});
   const getoondeIdeeen = useRef<string[]>([]);
+  // Wie eet mee (werkstroom A): standaard het hele huishouden.
+  const [gekozenEters, setGekozenEters] = useState<string[] | null>(null);
 
   const { data: alleRecepten = [] } = useQuery({
     queryKey: ["voorstel-recepten"],
@@ -235,12 +243,21 @@ export function WeekmenuVoorstel({
 
   // Wat Foodlo zelf mag voorstellen: dezelfde harde regels als op Vandaag.
   // "Zelf een gerecht kiezen" toont wel alles, met een waarschuwing bij een allergeen.
-  const voorstelbaar = recepten.filter((r) =>
+  const voorstelbaarVoorMij = recepten.filter((r) =>
     toegelaten(kandidaat(r), {
       voorkeur: { maxMinuten: 0, soort: null, vermijd: instelling.vermijd, dieet: kennis.dieet },
       allergieen: kennis.allergieen,
     }),
   );
+  // Mee-eters: wat niet veilig is voor iemand die meeeet, stelt Foodlo niet voor. Voor leden
+  // waarvan je de gegevens niet mag lezen, kijkt de server het getoonde gerecht na (zie onder).
+  const actiefReceptId = rijen[actieveStap]?.recept?.id;
+  const eters = useVoorstelEters({
+    gezinId,
+    gekozen: gekozenEters,
+    receptIds: actiefReceptId ? [actiefReceptId] : [],
+  });
+  const voorstelbaar = veiligVoorEters(voorstelbaarVoorMij, kandidaat, eters).veilig;
 
   function regelVoor(datum: string): DagRegel {
     const eigen = regels[datum] ?? instelling.perDag[weekdagVan(datum)] ?? {};
@@ -580,6 +597,47 @@ export function WeekmenuVoorstel({
               </div>
             </div>
 
+            {eters.leden.length ? (
+              <div>
+                <h3 id="voorstel-wie" className="text-base font-semibold">
+                  Wie eet mee?
+                </h3>
+                <div
+                  role="group"
+                  aria-labelledby="voorstel-wie"
+                  className="mt-2 flex flex-wrap gap-2"
+                >
+                  {eters.leden.map((l) => {
+                    const aan = eters.eters.some((e) => e.id === l.id);
+                    return (
+                      <button
+                        key={l.id}
+                        type="button"
+                        aria-pressed={aan}
+                        onClick={() =>
+                          setGekozenEters((v) => {
+                            const nu = v ?? eters.leden.map((x) => x.id);
+                            return nu.includes(l.id) ? nu.filter((x) => x !== l.id) : [...nu, l.id];
+                          })
+                        }
+                        className={
+                          aan
+                            ? "inline-flex min-h-12 items-center gap-1.5 rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground"
+                            : "inline-flex min-h-12 items-center rounded-xl border border-border px-4 text-base font-semibold"
+                        }
+                      >
+                        {aan ? <Check className="size-4" aria-hidden /> : null}
+                        {l.naam}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-base text-muted-foreground">
+                  Foodlo stelt niets voor wat niet veilig is voor wie meeeet.
+                </p>
+              </div>
+            ) : null}
+
             <div>
               <h3 className="text-base font-semibold">Waaruit mag Foodlo kiezen?</h3>
               <div className="mt-2 space-y-2">
@@ -720,6 +778,37 @@ export function WeekmenuVoorstel({
                   <p className="mt-2 text-base font-semibold">
                     Kijk de ingrediënten zelf na op je allergieën: Foodlo kent ze voor een nieuw
                     idee nog niet.
+                  </p>
+                ) : null}
+                {actieveRecept && !actieveRij.bezet
+                  ? (() => {
+                      const etiket = etiketVoorEters(
+                        oordelenVoor(
+                          {
+                            id: actieveRecept.id,
+                            title: actieveRecept.title,
+                            tags: actieveRecept.tags ?? [],
+                            ingredienten: ingredienten[actieveRecept.id] ?? [],
+                          },
+                          eters,
+                        ),
+                      );
+                      return etiket ? (
+                        <p
+                          role="note"
+                          data-testid="niet-geschikt"
+                          className="mt-3 flex items-start gap-2 rounded-xl bg-honing-zacht px-3 py-2 text-base font-semibold text-honing-foreground"
+                        >
+                          <ShieldAlert className="mt-0.5 size-5 shrink-0" aria-hidden />
+                          <span className="min-w-0">{etiket}</span>
+                        </p>
+                      ) : null;
+                    })()
+                  : null}
+                {actieveRij.idee && eters.eters.length ? (
+                  <p className="mt-2 text-base text-muted-foreground">
+                    Kijk de ingrediënten van een nieuw idee zelf na voor wie meeeet: Foodlo kent ze
+                    nog niet.
                   </p>
                 ) : null}
                 {actieveRecept ? (

@@ -7,7 +7,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChefHat, Loader2 } from "lucide-react";
+import { Check, ChefHat, Loader2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,6 +25,8 @@ import { leesKennismaking } from "@/lib/kennismaking";
 import { HalfGelukt, kookVanavond, planVervang, wijzigMenu } from "@/lib/kringloop-db";
 import { meet } from "@/lib/meten";
 import { useT, useVoorkeuren } from "@/lib/voorkeuren";
+import { useVoorstelEters } from "@/hooks/useVoorstelEters";
+import { etiketVoorEters, oordelenVoor, veiligVoorEters, voorWieTekst } from "@/lib/voorstel-eters";
 
 type ReceptKort = {
   id: string;
@@ -72,20 +74,15 @@ export function VanavondVoorstellen({
   // Werkstroom F: het weer stuurt zacht bij (alleen als het aan staat en er een bron is).
   const { weer } = useWeer();
 
-  const { voorstellen, uitHuis, oud, zonderRecept } = useMemo(() => {
-    if (!bronnen)
-      return {
-        voorstellen: [] as Aanbeveling[],
-        uitHuis: true,
-        oud: [] as OudInHuis[],
-        zonderRecept: [] as OudInHuis[],
-      };
+  // Stap 1: alle kandidaten (hooguit 12) volgens jouw eigen regels.
+  const alle = useMemo(() => {
+    if (!bronnen) return [] as Aanbeveling[];
     const nu = new Date();
     const context = bepaalContext(nu, weer ? { temp: weer.temp, regen: weer.regen } : null);
     const dag = weekmenu.perDag?.[String(context.weekdag)];
     const kennis = leesKennismaking(user?.id);
     const minuten = Object.fromEntries(recepten.map((r) => [r.id, minutenVan(r)]));
-    const alle = beveelAan({
+    return beveelAan({
       kandidaten: recepten.map((r) => ({
         id: r.id,
         title: r.title,
@@ -111,21 +108,58 @@ export function VanavondVoorstellen({
       onlangsGekocht: bronnen.onlangsGekocht,
       max: 12,
     });
+  }, [bronnen, recepten, weekmenu, nietNu, user?.id, weer]);
+
+  // Stap 2: wat niet veilig is voor een mee-eter, stellen we niet voor (werkstroom A).
+  // Wie eet mee vanavond? Standaard het hele huishouden; aan te passen voor vandaag.
+  const [gekozenEters, setGekozenEters] = useState<string[] | null>(null);
+  const [wieOpen, setWieOpen] = useState(false);
+  useEffect(() => setGekozenEters(leesVanavondEters(user?.id)), [user?.id]);
+  const eters = useVoorstelEters({ gekozen: gekozenEters, receptIds: alle.map((a) => a.id) });
+  function wisselEter(id: string) {
+    const nu = gekozenEters ?? eters.leden.map((l) => l.id);
+    const volgende = nu.includes(id) ? nu.filter((x) => x !== id) : [...nu, id];
+    setGekozenEters(volgende);
+    bewaarVanavondEters(user?.id, volgende);
+  }
+  const gerechtVan = (a: Aanbeveling) => ({
+    title: a.title,
+    tags: recepten.find((r) => r.id === a.id)?.tags ?? [],
+    ingredienten: bronnen?.ingredienten[a.id] ?? [],
+  });
+  const etersTekst = voorWieTekst(eters.eters);
+
+  const { voorstellen, uitHuis, oud, zonderRecept } = useMemo(() => {
+    if (!bronnen)
+      return {
+        voorstellen: [] as Aanbeveling[],
+        uitHuis: true,
+        oud: [] as OudInHuis[],
+        zonderRecept: [] as OudInHuis[],
+      };
+    // Past niets voor iedereen, dan tonen we ze toch, met "Niet geschikt voor …" erbij.
+    const gerecht = (a: Aanbeveling) => ({
+      title: a.title,
+      tags: recepten.find((r) => r.id === a.id)?.tags ?? [],
+      ingredienten: bronnen.ingredienten[a.id] ?? [],
+    });
+    const { veilig } = veiligVoorEters(alle, gerecht, eters);
+    const kandidaten = veilig.length ? veilig : alle;
     // Gebruik eerst (alleen als je je voorraad bijhoudt): gerechten die het opmaken, komen eerst.
     const oud = bronnen.oudInHuis.slice(0, 3);
     const maaktOp = (a: Aanbeveling) =>
       oud.some((o) => a.aanwezig.some((n) => zitInVoorraad(n, [o.naam])));
     const zonderRecept = oud.filter(
-      (o) => !alle.some((a) => a.aanwezig.some((n) => zitInVoorraad(n, [o.naam]))),
+      (o) => !kandidaten.some((a) => a.aanwezig.some((n) => zitInVoorraad(n, [o.naam]))),
     );
-    const inHuis = alle
+    const inHuis = kandidaten
       .filter((a) => a.aanwezig.length > 0)
       .sort((a, b) => Number(maaktOp(b)) - Number(maaktOp(a)));
     const basis = inHuis.length
       ? { voorstellen: inHuis.slice(0, 3), uitHuis: true }
-      : { voorstellen: alle.slice(0, 3), uitHuis: false };
+      : { voorstellen: kandidaten.slice(0, 3), uitHuis: false };
     return { ...basis, oud, zonderRecept };
-  }, [bronnen, recepten, weekmenu, nietNu, user?.id, weer]);
+  }, [bronnen, alle, eters, recepten]);
 
   if (!slim || (!voorstellen.length && !oud?.length)) return null;
 
@@ -262,6 +296,21 @@ export function VanavondVoorstellen({
                   <span className="mt-0.5 block text-[0.95rem] leading-snug break-words text-inkt-zacht">
                     {v.redenen.map((r) => r.tekst).join(" · ")}
                   </span>
+                  {(() => {
+                    const etiket = etiketVoorEters(
+                      oordelenVoor({ ...gerechtVan(v), id: v.id }, eters),
+                    );
+                    return etiket ? (
+                      <span
+                        role="note"
+                        data-testid="niet-geschikt"
+                        className="mt-1 flex items-start gap-1.5 rounded-lg bg-honing-zacht px-2 py-1 text-[0.95rem] font-semibold break-words text-honing-foreground"
+                      >
+                        <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+                        <span className="min-w-0">{etiket}</span>
+                      </span>
+                    ) : null;
+                  })()}
                   {totaal > 0 && (
                     <span className="mt-1 flex flex-wrap items-center gap-1 text-[0.95rem] text-inkt-zacht">
                       {ontbreekt === 0 ? (
@@ -305,6 +354,48 @@ export function VanavondVoorstellen({
           );
         })}
       </ul>
+      {eters.leden.length ? (
+        <div className="mt-2">
+          <p className="text-[0.95rem] break-words text-inkt-zacht" data-testid="voor-wie">
+            {etersTekst ? `${etersTekst}.` : t("Niemand van je gezin eet mee.")}
+          </p>
+          <button
+            type="button"
+            aria-expanded={wieOpen}
+            onClick={() => setWieOpen((o) => !o)}
+            className="mt-1 inline-flex min-h-11 items-center text-[0.95rem] font-semibold text-inkt-foreground underline underline-offset-4"
+          >
+            {t("Wie eet mee vanavond?")}
+          </button>
+          {wieOpen ? (
+            <div
+              role="group"
+              aria-label={t("Wie eet mee vanavond?")}
+              className="mt-1 flex flex-wrap gap-2"
+            >
+              {eters.leden.map((l) => {
+                const aan = eters.eters.some((e) => e.id === l.id);
+                return (
+                  <button
+                    key={l.id}
+                    type="button"
+                    aria-pressed={aan}
+                    onClick={() => wisselEter(l.id)}
+                    className={
+                      aan
+                        ? "inline-flex min-h-11 items-center gap-1.5 rounded-full bg-honing px-4 text-base font-semibold text-op-honing"
+                        : "inline-flex min-h-11 items-center rounded-full border border-inkt-foreground/40 px-4 text-base font-semibold text-inkt-foreground"
+                    }
+                  >
+                    {aan ? <Check className="size-4" aria-hidden /> : null}
+                    {l.naam}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       <Link
         to="/hulp/$slug"
         params={{ slug: "voorstellen" }}
@@ -314,4 +405,34 @@ export function VanavondVoorstellen({
       </Link>
     </section>
   );
+}
+
+/** Keuze "wie eet mee vanavond" geldt alleen voor vandaag, op dit toestel. */
+function sleutelEters(userId: string) {
+  return `foodlo:vanavond-eters:${userId}`;
+}
+function leesVanavondEters(userId: string | undefined): string[] | null {
+  if (!userId) return null;
+  try {
+    const ruw = JSON.parse(window.localStorage.getItem(sleutelEters(userId)) ?? "null") as {
+      datum?: string;
+      ids?: unknown;
+    } | null;
+    if (ruw?.datum !== new Date().toLocaleDateString("sv-SE") || !Array.isArray(ruw.ids))
+      return null;
+    return ruw.ids.filter((x): x is string => typeof x === "string");
+  } catch {
+    return null;
+  }
+}
+function bewaarVanavondEters(userId: string | undefined, ids: string[]) {
+  if (!userId) return;
+  try {
+    window.localStorage.setItem(
+      sleutelEters(userId),
+      JSON.stringify({ datum: new Date().toLocaleDateString("sv-SE"), ids }),
+    );
+  } catch {
+    /* privévenster: dan alleen voor nu */
+  }
 }

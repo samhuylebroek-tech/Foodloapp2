@@ -6,7 +6,7 @@
  * 3. voorraad bijgehouden (zelf iets toegevoegd): "Met wat je in huis hebt".
  * Geen geregistreerde restjes = geen restjes. Nepdata (demo).
  */
-import { expect, meldAan, resetDemo, test, zetKlok } from "./helpers";
+import { alleenIkEetMee, expect, meldAan, resetDemo, test, zetKlok } from "./helpers";
 
 const NEP = "http://127.0.0.1:54439/rest/v1";
 const vandaag = () => new Date().toLocaleDateString("sv-SE");
@@ -50,6 +50,7 @@ test("2. voorraad niet bijgehouden: niets 'in huis', geen Gebruik eerst; recente
   page,
   extern,
 }) => {
+  await alleenIkEetMee(page); // gaat over rundvlees, niet over vegetarische Gust
   // Zoals na "Klaar met winkelen": rundvlees vandaag gekocht, spinazie al lang geleden.
   await fetch(`${NEP}/pantry_items?naam=eq.rundvlees`, {
     method: "PATCH",

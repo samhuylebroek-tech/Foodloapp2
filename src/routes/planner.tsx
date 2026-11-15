@@ -1619,6 +1619,7 @@ function PlannerPage() {
           }
           onSluit={() => setVoorstelOpen(false)}
           onZet={zetVoorstel}
+          gezinId={gezin?.id ?? null}
         />
       )}
 

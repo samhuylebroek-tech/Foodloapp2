@@ -12,6 +12,7 @@ import {
   zetKlok,
   axeErnstig,
   voorraadBijhouden,
+  alleenIkEetMee,
 } from "./helpers";
 
 const NEP = "http://127.0.0.1:54439/rest/v1";
@@ -69,6 +70,7 @@ test("Keuken: 'Al 5 dagen in huis' en 'Gebruik eerst'; recept dat het opmaakt st
 });
 
 test("Vandaag: de reden noemt wat al even in huis is", async ({ page, extern }) => {
+  await alleenIkEetMee(page); // gaat over rundvlees, niet over vegetarische Gust
   await fetch(`${NEP}/meal_plan?plan_date=eq.${new Date().toLocaleDateString("sv-SE")}`, {
     method: "DELETE",
   });
@@ -137,6 +139,7 @@ test("Vandaag: 'Gebruik eerst' met een gerecht dat het opmaakt bovenaan, en een 
   page,
   extern,
 }) => {
+  await alleenIkEetMee(page); // gaat over rundvlees, niet over vegetarische Gust
   await fetch(`${NEP}/meal_plan?plan_date=eq.${new Date().toLocaleDateString("sv-SE")}`, {
     method: "DELETE",
   });

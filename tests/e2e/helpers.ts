@@ -162,3 +162,19 @@ export async function voorraadBijhouden(
     userId,
   );
 }
+
+/**
+ * Werkstroom A: Vandaag houdt rekening met wie meeeet (standaard het hele demo-gezin, met Gust
+ * die vegetarisch is). Tests die over iets anders gaan (bv. vlees dat al even in huis is), zetten
+ * "Wie eet mee vanavond?" op alleen Marie, zoals een gebruiker dat zelf kan doen.
+ */
+export async function alleenIkEetMee(page: Page, lidId = "aeaeaeae-0000-4000-8000-000000000001") {
+  await page.addInitScript(
+    ([id, lid]) =>
+      window.localStorage.setItem(
+        `foodlo:vanavond-eters:${id}`,
+        JSON.stringify({ datum: new Date().toLocaleDateString("sv-SE"), ids: [lid] }),
+      ),
+    ["11111111-1111-4111-8111-111111111111", lidId] as const,
+  );
+}
