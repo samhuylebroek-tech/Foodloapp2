@@ -16,6 +16,8 @@ import {
   Users,
   ChefHat,
   WalletCards,
+  Sparkles,
+  Handshake,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Groep, LinkRij } from "@/components/mobiel/Lijst";
@@ -149,11 +151,25 @@ function MeerPage() {
             uitleg={t("Saldo en slim gebruik")}
           />
           <LinkRij
+            to="/premium"
+            icoon={Sparkles}
+            tint="honing"
+            titel={t("Premium")}
+            uitleg={t("Extra's in testmodus, nog niet te koop")}
+          />
+          <LinkRij
             to="/instellingen"
             icoon={Settings}
             tint="grijs"
             titel={t("Instellingen")}
             uitleg={t("Profiel, voorkeuren en privacy")}
+          />
+          <LinkRij
+            to="/partner"
+            icoon={Handshake}
+            tint="grijs"
+            titel={t("Voor bedrijven")}
+            uitleg={t("Partneromgeving voor merken en producenten")}
           />
         </Groep>
 

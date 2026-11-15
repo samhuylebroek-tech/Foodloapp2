@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AanmeldenRouteImport } from './routes/aanmelden'
 import { Route as AanvullenRouteImport } from './routes/aanvullen'
+import { Route as AbonnementRouteImport } from './routes/abonnement'
 import { Route as BeheerRouteImport } from './routes/beheer'
 import { Route as BoodschappenRouteImport } from './routes/boodschappen'
 import { Route as CreditsRouteImport } from './routes/credits'
@@ -32,6 +33,7 @@ import { Route as MeldingenRouteImport } from './routes/meldingen'
 import { Route as MijnVoedingRouteImport } from './routes/mijn-voeding'
 import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as PlannerRouteImport } from './routes/planner'
+import { Route as PremiumRouteImport } from './routes/premium'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RondleidingRouteImport } from './routes/rondleiding'
 import { Route as UitnodigingRouteImport } from './routes/uitnodiging'
@@ -74,6 +76,7 @@ import { Route as KaartenIdRouteImport } from './routes/kaarten.$id'
 import { Route as MakersIndexRouteImport } from './routes/makers.index'
 import { Route as MakersHandleRouteImport } from './routes/makers.$handle'
 import { Route as PartnerIndexRouteImport } from './routes/partner.index'
+import { Route as PartnerAbonnementRouteImport } from './routes/partner.abonnement'
 import { Route as PartnerCampagnesRouteImport } from './routes/partner.campagnes'
 import { Route as PartnerGesponsordRouteImport } from './routes/partner.gesponsord'
 import { Route as PartnerProductenRouteImport } from './routes/partner.producten'
@@ -121,6 +124,11 @@ const AanmeldenRoute = AanmeldenRouteImport.update({
 const AanvullenRoute = AanvullenRouteImport.update({
   id: '/aanvullen',
   path: '/aanvullen',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AbonnementRoute = AbonnementRouteImport.update({
+  id: '/abonnement',
+  path: '/abonnement',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BeheerRoute = BeheerRouteImport.update({
@@ -221,6 +229,11 @@ const PartnerRoute = PartnerRouteImport.update({
 const PlannerRoute = PlannerRouteImport.update({
   id: '/planner',
   path: '/planner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PremiumRoute = PremiumRouteImport.update({
+  id: '/premium',
+  path: '/premium',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -433,6 +446,11 @@ const PartnerIndexRoute = PartnerIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PartnerRoute,
 } as any)
+const PartnerAbonnementRoute = PartnerAbonnementRouteImport.update({
+  id: '/abonnement',
+  path: '/abonnement',
+  getParentRoute: () => PartnerRoute,
+} as any)
 const PartnerCampagnesRoute = PartnerCampagnesRouteImport.update({
   id: '/campagnes',
   path: '/campagnes',
@@ -604,6 +622,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/aanmelden': typeof AanmeldenRoute
   '/aanvullen': typeof AanvullenRoute
+  '/abonnement': typeof AbonnementRoute
   '/beheer': typeof BeheerRouteWithChildren
   '/boodschappen': typeof BoodschappenRoute
   '/credits': typeof CreditsRoute
@@ -624,6 +643,7 @@ export interface FileRoutesByFullPath {
   '/mijn-voeding': typeof MijnVoedingRoute
   '/partner': typeof PartnerRouteWithChildren
   '/planner': typeof PlannerRoute
+  '/premium': typeof PremiumRoute
   '/privacy': typeof PrivacyRoute
   '/rondleiding': typeof RondleidingRoute
   '/uitnodiging': typeof UitnodigingRoute
@@ -660,6 +680,7 @@ export interface FileRoutesByFullPath {
   '/inspiratie/$id': typeof InspiratieIdRoute
   '/kaarten/$id': typeof KaartenIdRoute
   '/makers/$handle': typeof MakersHandleRoute
+  '/partner/abonnement': typeof PartnerAbonnementRoute
   '/partner/campagnes': typeof PartnerCampagnesRoute
   '/partner/gesponsord': typeof PartnerGesponsordRoute
   '/partner/producten': typeof PartnerProductenRoute
@@ -704,6 +725,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/aanmelden': typeof AanmeldenRoute
   '/aanvullen': typeof AanvullenRoute
+  '/abonnement': typeof AbonnementRoute
   '/boodschappen': typeof BoodschappenRoute
   '/credits': typeof CreditsRoute
   '/deel': typeof DeelRoute
@@ -720,6 +742,7 @@ export interface FileRoutesByTo {
   '/meldingen': typeof MeldingenRoute
   '/mijn-voeding': typeof MijnVoedingRoute
   '/planner': typeof PlannerRoute
+  '/premium': typeof PremiumRoute
   '/privacy': typeof PrivacyRoute
   '/rondleiding': typeof RondleidingRoute
   '/uitnodiging': typeof UitnodigingRoute
@@ -755,6 +778,7 @@ export interface FileRoutesByTo {
   '/inspiratie/$id': typeof InspiratieIdRoute
   '/kaarten/$id': typeof KaartenIdRoute
   '/makers/$handle': typeof MakersHandleRoute
+  '/partner/abonnement': typeof PartnerAbonnementRoute
   '/partner/campagnes': typeof PartnerCampagnesRoute
   '/partner/gesponsord': typeof PartnerGesponsordRoute
   '/partner/producten': typeof PartnerProductenRoute
@@ -800,6 +824,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/aanmelden': typeof AanmeldenRoute
   '/aanvullen': typeof AanvullenRoute
+  '/abonnement': typeof AbonnementRoute
   '/beheer': typeof BeheerRouteWithChildren
   '/boodschappen': typeof BoodschappenRoute
   '/credits': typeof CreditsRoute
@@ -820,6 +845,7 @@ export interface FileRoutesById {
   '/mijn-voeding': typeof MijnVoedingRoute
   '/partner': typeof PartnerRouteWithChildren
   '/planner': typeof PlannerRoute
+  '/premium': typeof PremiumRoute
   '/privacy': typeof PrivacyRoute
   '/rondleiding': typeof RondleidingRoute
   '/uitnodiging': typeof UitnodigingRoute
@@ -856,6 +882,7 @@ export interface FileRoutesById {
   '/inspiratie/$id': typeof InspiratieIdRoute
   '/kaarten/$id': typeof KaartenIdRoute
   '/makers/$handle': typeof MakersHandleRoute
+  '/partner/abonnement': typeof PartnerAbonnementRoute
   '/partner/campagnes': typeof PartnerCampagnesRoute
   '/partner/gesponsord': typeof PartnerGesponsordRoute
   '/partner/producten': typeof PartnerProductenRoute
@@ -902,6 +929,7 @@ export interface FileRouteTypes {
     | '/'
     | '/aanmelden'
     | '/aanvullen'
+    | '/abonnement'
     | '/beheer'
     | '/boodschappen'
     | '/credits'
@@ -922,6 +950,7 @@ export interface FileRouteTypes {
     | '/mijn-voeding'
     | '/partner'
     | '/planner'
+    | '/premium'
     | '/privacy'
     | '/rondleiding'
     | '/uitnodiging'
@@ -958,6 +987,7 @@ export interface FileRouteTypes {
     | '/inspiratie/$id'
     | '/kaarten/$id'
     | '/makers/$handle'
+    | '/partner/abonnement'
     | '/partner/campagnes'
     | '/partner/gesponsord'
     | '/partner/producten'
@@ -1002,6 +1032,7 @@ export interface FileRouteTypes {
     | '/'
     | '/aanmelden'
     | '/aanvullen'
+    | '/abonnement'
     | '/boodschappen'
     | '/credits'
     | '/deel'
@@ -1018,6 +1049,7 @@ export interface FileRouteTypes {
     | '/meldingen'
     | '/mijn-voeding'
     | '/planner'
+    | '/premium'
     | '/privacy'
     | '/rondleiding'
     | '/uitnodiging'
@@ -1053,6 +1085,7 @@ export interface FileRouteTypes {
     | '/inspiratie/$id'
     | '/kaarten/$id'
     | '/makers/$handle'
+    | '/partner/abonnement'
     | '/partner/campagnes'
     | '/partner/gesponsord'
     | '/partner/producten'
@@ -1097,6 +1130,7 @@ export interface FileRouteTypes {
     | '/'
     | '/aanmelden'
     | '/aanvullen'
+    | '/abonnement'
     | '/beheer'
     | '/boodschappen'
     | '/credits'
@@ -1117,6 +1151,7 @@ export interface FileRouteTypes {
     | '/mijn-voeding'
     | '/partner'
     | '/planner'
+    | '/premium'
     | '/privacy'
     | '/rondleiding'
     | '/uitnodiging'
@@ -1153,6 +1188,7 @@ export interface FileRouteTypes {
     | '/inspiratie/$id'
     | '/kaarten/$id'
     | '/makers/$handle'
+    | '/partner/abonnement'
     | '/partner/campagnes'
     | '/partner/gesponsord'
     | '/partner/producten'
@@ -1198,6 +1234,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AanmeldenRoute: typeof AanmeldenRoute
   AanvullenRoute: typeof AanvullenRoute
+  AbonnementRoute: typeof AbonnementRoute
   BeheerRoute: typeof BeheerRouteWithChildren
   BoodschappenRoute: typeof BoodschappenRoute
   CreditsRoute: typeof CreditsRoute
@@ -1218,6 +1255,7 @@ export interface RootRouteChildren {
   MijnVoedingRoute: typeof MijnVoedingRoute
   PartnerRoute: typeof PartnerRouteWithChildren
   PlannerRoute: typeof PlannerRoute
+  PremiumRoute: typeof PremiumRoute
   PrivacyRoute: typeof PrivacyRoute
   RondleidingRoute: typeof RondleidingRoute
   UitnodigingRoute: typeof UitnodigingRoute
@@ -1259,6 +1297,13 @@ declare module '@tanstack/react-router' {
       path: '/aanvullen'
       fullPath: '/aanvullen'
       preLoaderRoute: typeof AanvullenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/abonnement': {
+      id: '/abonnement'
+      path: '/abonnement'
+      fullPath: '/abonnement'
+      preLoaderRoute: typeof AbonnementRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/beheer': {
@@ -1399,6 +1444,13 @@ declare module '@tanstack/react-router' {
       path: '/planner'
       fullPath: '/planner'
       preLoaderRoute: typeof PlannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/premium': {
+      id: '/premium'
+      path: '/premium'
+      fullPath: '/premium'
+      preLoaderRoute: typeof PremiumRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -1693,6 +1745,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/partner/'
       preLoaderRoute: typeof PartnerIndexRouteImport
+      parentRoute: typeof PartnerRoute
+    }
+    '/partner/abonnement': {
+      id: '/partner/abonnement'
+      path: '/abonnement'
+      fullPath: '/partner/abonnement'
+      preLoaderRoute: typeof PartnerAbonnementRouteImport
       parentRoute: typeof PartnerRoute
     }
     '/partner/campagnes': {
@@ -2065,6 +2124,7 @@ const InspiratieRouteWithChildren = InspiratieRoute._addFileChildren(
 )
 
 interface PartnerRouteChildren {
+  PartnerAbonnementRoute: typeof PartnerAbonnementRoute
   PartnerCampagnesRoute: typeof PartnerCampagnesRoute
   PartnerGesponsordRoute: typeof PartnerGesponsordRoute
   PartnerProductenRoute: typeof PartnerProductenRoute
@@ -2076,6 +2136,7 @@ interface PartnerRouteChildren {
 }
 
 const PartnerRouteChildren: PartnerRouteChildren = {
+  PartnerAbonnementRoute: PartnerAbonnementRoute,
   PartnerCampagnesRoute: PartnerCampagnesRoute,
   PartnerGesponsordRoute: PartnerGesponsordRoute,
   PartnerProductenRoute: PartnerProductenRoute,
@@ -2093,6 +2154,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AanmeldenRoute: AanmeldenRoute,
   AanvullenRoute: AanvullenRoute,
+  AbonnementRoute: AbonnementRoute,
   BeheerRoute: BeheerRouteWithChildren,
   BoodschappenRoute: BoodschappenRoute,
   CreditsRoute: CreditsRoute,
@@ -2113,6 +2175,7 @@ const rootRouteChildren: RootRouteChildren = {
   MijnVoedingRoute: MijnVoedingRoute,
   PartnerRoute: PartnerRouteWithChildren,
   PlannerRoute: PlannerRoute,
+  PremiumRoute: PremiumRoute,
   PrivacyRoute: PrivacyRoute,
   RondleidingRoute: RondleidingRoute,
   UitnodigingRoute: UitnodigingRoute,

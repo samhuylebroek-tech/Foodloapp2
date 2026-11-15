@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChefHat, ExternalLink, Flag, Loader2, Pencil, Video } from "lucide-react";
 import { toast } from "sonner";
+import { MakerAbonnees } from "@/components/makers/MakerAbonnees";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleNietBeschikbaar } from "@/components/ModuleNietBeschikbaar";
@@ -122,6 +123,7 @@ function MakerBeheer() {
             </div>
           </section>
           <MijnRecepten maker={maker} />
+          <MakerAbonnees />
           <MijnMeldingen />
         </div>
       )}
