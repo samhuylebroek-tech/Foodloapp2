@@ -13,6 +13,8 @@ import {
   Search,
   X,
   ImagePlus as ImageIcon,
+  FileText,
+  Video,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,6 +55,22 @@ import { kiesSoort, raadSoort } from "@/lib/soort";
 import { Voedingswaarden } from "@/components/Voedingswaarden";
 import { koppelStappen, normaliseer, type StapKoppeling } from "@/lib/stap-ingredienten";
 import { netteStap } from "@/lib/tekst-opkuis";
+import {
+  BronRegel,
+  DubbelMelding,
+  dubbelVoor,
+  ImportFout,
+  NakijkLabel,
+  NakijkVeiligheid,
+  OnzekerLijst,
+  useEigenReceptenVoorDubbel,
+  type Alternatief,
+  type ImportFoutInfo,
+  type NakijkBron,
+} from "@/components/recept/NakijkHulp";
+import { leesReceptTekst, type Onzeker } from "@/lib/recept-tekst";
+import { onzekerVelden } from "@/lib/nakijken";
+import { eersteLink, herkenVideoLink } from "@/lib/video-link";
 import { NieuwReceptControle } from "@/components/veiligheid/EtersOordeel";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -88,7 +106,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-type Manier = "zoek" | "link" | "foto" | "zelf";
+type Manier = "zoek" | "link" | "tekst" | "foto" | "video" | "zelf";
 
 const PLATFORM_NAAM: Record<string, string> = {
   instagram: "Instagram",
@@ -99,6 +117,13 @@ const PLATFORM_NAAM: Record<string, string> = {
   website: "de website",
 };
 
+/** Foto onleesbaar of AI niet beschikbaar: uitleg en alternatieven, nooit een leeg scherm. */
+const FOUT_FOTO: ImportFoutInfo = {
+  titel: "We konden de foto niet lezen",
+  uitleg:
+    "Neem de foto recht van boven, met goed licht en de hele bladzijde in beeld. Of plak de tekst, of typ het recept zelf over.",
+  alternatieven: ["tekst", "zelf"],
+};
 
 export function RecipeForm({
   recipe,
@@ -120,10 +145,33 @@ export function RecipeForm({
   const navigate = useNavigate();
 
   const gedeeldeTekst = [gedeeld?.title, gedeeld?.text].filter(Boolean).join("\n\n");
-  const gedeeldeLink =
-    gedeeld?.url ?? [gedeeld?.text, gedeeld?.title].join(" ").match(/https?:\/\/\S+/)?.[0] ?? "";
+  const gedeeldeLink = gedeeld?.url ?? eersteLink([gedeeld?.text, gedeeld?.title].join(" ")) ?? "";
+  // Fase 2 (delen naar de app): een video-link gaat naar "Video-link", alleen tekst naar
+  // "Tekst plakken", een gewone link naar "Link plakken". Er wordt niets vanzelf bewaard.
+  const gedeeldeVideo = herkenVideoLink(gedeeldeLink);
+  const gedeeldeTekstZonderLink = gedeeldeLink
+    ? gedeeldeTekst.replace(gedeeldeLink, "").trim()
+    : gedeeldeTekst;
+  const startManier: Manier = startNaam
+    ? "zelf"
+    : gedeeldeVideo
+      ? "video"
+      : !gedeeldeLink && gedeeldeTekst.trim()
+        ? "tekst"
+        : "link";
 
-  const [manier, setManier] = useState<Manier>(startNaam ? "zelf" : "link");
+  const [manier, setManierRuw] = useState<Manier>(startManier);
+  // Vriendelijke foutmelding met alternatieven (link onbereikbaar, geen recept, foto onleesbaar).
+  const [importFout, setImportFout] = useState<ImportFoutInfo | null>(null);
+  function setManier(m: Manier) {
+    setManierRuw(m);
+    setImportFout(null);
+  }
+  // Video-link (fase 2): alleen de link en de bronvermelding, nooit de video zelf.
+  const [videoUrl, setVideoUrl] = useState(gedeeldeVideo ? gedeeldeLink : "");
+  const [videoTekst, setVideoTekst] = useState(gedeeldeVideo ? gedeeldeTekstZonderLink : "");
+  const [videoMaker, setVideoMaker] = useState(gedeeldeVideo?.maker ?? "");
+  const [videoFout, setVideoFout] = useState<string | null>(null);
   const [ingevuld, setIngevuld] = useState(Boolean(recipe) || Boolean(startNaam));
 
   const [title, setTitle] = useState(recipe?.title ?? startNaam ?? "");
@@ -203,8 +251,10 @@ export function RecipeForm({
     }
   }
 
-  const [importUrl, setImportUrl] = useState(gedeeldeLink);
-  const [vrijeTekst, setVrijeTekst] = useState(gedeeldeTekst);
+  const [importUrl, setImportUrl] = useState(gedeeldeVideo ? "" : gedeeldeLink);
+  const [vrijeTekst, setVrijeTekst] = useState(
+    gedeeldeVideo ? "" : gedeeldeLink ? gedeeldeTekstZonderLink : gedeeldeTekst,
+  );
 
   const [importInfo, setImportInfo] = useState<
     { platform: string; gratis: boolean; ontbrekend: string[] } | null
@@ -257,6 +307,9 @@ export function RecipeForm({
   // Foto van het gevonden recept: je kan ze weigeren met het kruisje.
   const [vbFotoWeg, setVbFotoWeg] = useState(false);
   const [controleOpen, setControleOpen] = useState(false);
+  // Nakijkscherm (fase 2): waar het recept vandaan komt en wat zeker nagekeken moet worden.
+  const [vbBron, setVbBron] = useState<NakijkBron | null>(null);
+  const [vbVast, setVbVast] = useState<Onzeker[]>([]);
   // Recepten die we al op de achtergrond ophaalden, per weblink.
   const vooruitCache = useRef<Map<string, Promise<ImportedRecipe>>>(new Map());
 
@@ -268,8 +321,11 @@ export function RecipeForm({
     setVbFout(null);
   }
 
-  /** Toont het gevonden recept in een venster om na te kijken. */
-  function toonVoorbeeld(data: ImportedRecipe) {
+  /** Toont het gevonden recept in een venster om na te kijken. Niets wordt vooraf bewaard. */
+  function toonVoorbeeld(data: ImportedRecipe, bron: NakijkBron = { soort: "zoek" }) {
+    setImportFout(null);
+    setVbBron({ ...bron, url: bron.url ?? data.source_url ?? null });
+    setVbVast(onzekerVelden(data).filter((o) => o.veld === "gok"));
     setVbFotoWeg(false);
     setVensterOpen(true);
     setVbBezig(false);
@@ -491,19 +547,26 @@ export function RecipeForm({
     try {
       const imageDataUrl = await fileToDataUrl(file);
       const data = await recipeFromPhoto({ data: { imageDataUrl } });
-      vulIn(data);
       naAiActie();
+      let foto: string | null = null;
       if (user) {
         try {
-          const path = await uploadRecipePhoto(file, user.id);
-          setPhotoPath(path);
+          foto = await uploadRecipePhoto(file, user.id);
         } catch {
           // foto bewaren mag mislukken, het recept blijft staan
         }
       }
-      toast.success("Voorstel klaar. Lees het even na en pas aan wat je anders wil.");
-    } catch (err) {
-      meldFout(err, "We konden hier geen gerecht van maken");
+      if (!data.title && !data.ingredients.length) {
+        setImportFout(FOUT_FOTO);
+        return;
+      }
+      toonVoorbeeld(
+        { ...data, is_suggestie: true, image_url: foto ?? data.image_url ?? null },
+        { soort: "gerecht" },
+      );
+    } catch {
+      void qc.invalidateQueries({ queryKey: ["credits"] });
+      setImportFout(FOUT_FOTO);
     } finally {
       setSuggereren(false);
     }
@@ -515,11 +578,15 @@ export function RecipeForm({
     try {
       const imageDataUrl = await fileToDataUrl(file);
       const data = await importRecipeFromScreenshot({ data: { imageDataUrl } });
-      vulIn(data);
       naAiActie();
-      toast.success("Recept van je schermafbeelding gehaald. Lees het even na.");
-    } catch (err) {
-      meldFout(err, "We konden geen recept uit deze afbeelding halen");
+      if (!data.title && !data.ingredients.length && !data.instructions.length) {
+        setImportFout(FOUT_FOTO);
+        return;
+      }
+      toonVoorbeeld(data, { soort: "foto" });
+    } catch {
+      void qc.invalidateQueries({ queryKey: ["credits"] });
+      setImportFout(FOUT_FOTO);
     } finally {
       setScreenshotBezig(false);
     }
@@ -646,23 +713,85 @@ export function RecipeForm({
     }
   }
 
+  /**
+   * Tekst plakken: eerst de slimme hulp (zoals vroeger). Lukt die niet (geen AI, geen credits,
+   * storing), dan lezen we de tekst zelf, zonder AI. Het resultaat gaat altijd naar nakijken.
+   */
   async function handleTekst() {
-    if (vrijeTekst.trim().length < 5) {
+    const tekst = vrijeTekst.trim();
+    if (tekst.length < 5) {
       toast.error("Plak eerst wat tekst");
       return;
     }
-    if (!magStarten("import_tekst")) return;
+    const bronLink = importUrl.trim() || eersteLink(tekst);
+    const zonderAi = () => {
+      const { recept } = leesReceptTekst(tekst);
+      if (!recept.title && !recept.ingredients.length && !recept.instructions.length) {
+        setImportFout({
+          titel: "Hier vonden we geen recept in",
+          uitleg:
+            "Zet de ingrediënten elk op een eigen regel en de stappen daaronder. Of typ het recept zelf, dat gaat ook snel.",
+          alternatieven: ["zelf", "foto"],
+        });
+        return;
+      }
+      toonVoorbeeld(
+        { ...recept, source_url: bronLink, bron: "tekst" },
+        { soort: "tekst", zonderAi: true },
+      );
+    };
     setLezenTekst(true);
     try {
-      const data = await importRecipeFromText({ data: { text: vrijeTekst.trim() } });
-      vulIn(data);
+      const c = kost("import_tekst");
+      if (c > 0 && (credits.data?.saldo ?? 0) < c) return zonderAi();
+      const data = await importRecipeFromText({ data: { text: tekst } });
       naAiActie();
-      toast.success("We hebben alles ingevuld. Controleer het even en sla op.");
-    } catch (err) {
-      meldFout(err, "Hier konden we geen recept uit halen");
+      if (!data.title && !data.ingredients.length) return zonderAi();
+      toonVoorbeeld({ ...data, source_url: data.source_url ?? bronLink }, { soort: "tekst" });
+    } catch {
+      void qc.invalidateQueries({ queryKey: ["credits"] });
+      zonderAi();
     } finally {
       setLezenTekst(false);
     }
+  }
+
+  /** Video-link: herkennen, eventueel de meegeplakte beschrijving lezen (zonder AI), nakijken. */
+  function handleVideo() {
+    const link = herkenVideoLink(videoUrl);
+    if (!link) {
+      setVideoFout(
+        videoUrl.trim()
+          ? "Dit herkennen we niet als video. Plak de link van een video op YouTube, TikTok, Instagram of Facebook."
+          : "Plak eerst de link van de video.",
+      );
+      return;
+    }
+    setVideoFout(null);
+    const maker = videoMaker.trim() || link.maker;
+    const { recept } = leesReceptTekst(videoTekst);
+    const vermelding = maker ? `Video van ${maker} op ${link.platform}.` : "";
+    toonVoorbeeld(
+      {
+        ...recept,
+        description: [vermelding, recept.description].filter(Boolean).join(" "),
+        source_url: link.url,
+        bron: "video",
+      },
+      { soort: "video", zonderAi: true, platform: link.platform, maker, url: link.url },
+    );
+  }
+
+  /** Een alternatief uit de foutmelding kiezen; wat al ingevuld was, blijft staan. */
+  function kiesAlternatief(a: Alternatief) {
+    const link = importUrl.trim();
+    if (a === "video") {
+      setVideoUrl(link);
+      setVideoMaker(herkenVideoLink(link)?.maker ?? "");
+    }
+    if (a === "zelf" && link) setSourceUrl(link);
+    setManier(a);
+    if (a === "zelf") window.setTimeout(() => document.getElementById("title")?.focus(), 50);
   }
 
   async function handlePhoto(file: File) {
@@ -710,29 +839,54 @@ export function RecipeForm({
     if (!magStarten("import_url")) return;
     setImporting(true);
     setImportInfo(null);
+    const video = herkenVideoLink(importUrl);
+    const linkFout = (uitleg: string, bestaand?: { id: string; title: string } | null) =>
+      setImportFout({
+        titel: bestaand ? "Dit recept heb je al" : "Deze link konden we niet inlezen",
+        uitleg,
+        bestaand: bestaand ?? null,
+        alternatieven: bestaand
+          ? []
+          : video
+            ? ["video", "tekst", "zelf"]
+            : ["tekst", "foto", "zelf"],
+      });
     try {
       const data = await importRecipeFromUrl({ data: { url: importUrl.trim() } });
       if (data.fout) {
-        toast.error(data.fout);
+        linkFout(
+          data.reeds_bekend
+            ? data.fout
+            : video
+              ? `${data.fout} Je kan de video ook gewoon als link bewaren, met de tekst onder de video erbij.`
+              : `${data.fout} De pagina is misschien even onbereikbaar, of er staat geen recept op.`,
+          data.reeds_bekend,
+        );
         return;
       }
-      vulIn(data);
-
       naAiActie();
-      setSourceUrl(data.source_url ?? importUrl.trim());
       const ontbrekend = (data.ontbrekend ?? []).filter((v) => v !== "foto");
       setImportInfo({
         platform: data.platform ?? "website",
         gratis: data.bron === "paginagegevens",
         ontbrekend,
       });
-      toast.success(
-        data.bron === "paginagegevens"
-          ? "Recept ingelezen zonder credits. Controleer het even en sla op."
-          : "Recept ingelezen. Controleer het even en sla op.",
+      toonVoorbeeld(
+        { ...data, source_url: data.source_url ?? importUrl.trim() },
+        {
+          soort: video ? "video" : "link",
+          platform: video?.platform ?? PLATFORM_NAAM[data.platform ?? "website"] ?? null,
+          maker: video?.maker ?? null,
+          zonderAi: data.bron === "paginagegevens",
+        },
       );
     } catch (err) {
-      meldFout(err, "Dit recept kon niet worden ingelezen");
+      void qc.invalidateQueries({ queryKey: ["credits"] });
+      linkFout(
+        err instanceof Error && err.message.length < 200
+          ? err.message
+          : "De pagina is misschien even onbereikbaar, of er staat geen recept op.",
+      );
     } finally {
       setImporting(false);
     }
@@ -972,18 +1126,68 @@ export function RecipeForm({
     }
   }
 
+  // Dubbelcheck (fase 2): pas laden als een nakijkscherm open is; nooit bij aanpassen.
+  const eigenRecepten = useEigenReceptenVoorDubbel(
+    user?.id,
+    !recipe && (vensterOpen || controleOpen),
+  );
+  const vbIngNamen = parseIngredientText(vbIngredienten).map((i) => i.name);
+  const vbDubbel =
+    voorbeeld && !vbBezig
+      ? dubbelVoor(
+          eigenRecepten.data,
+          { title: vbTitel, ingredienten: vbIngNamen, source_url: voorbeeld.source_url ?? null },
+          [conceptId],
+        )
+      : null;
+  const vbOnzeker: Onzeker[] = voorbeeld
+    ? [
+        ...vbVast,
+        ...onzekerVelden({
+          title: vbTitel,
+          ingredients: parseIngredientText(vbIngredienten),
+          instructions: vbStappen.split("\n").filter((x) => x.trim()),
+        }),
+      ]
+    : [];
+  const vbMoetNakijken = (veld: Onzeker["veld"]) => vbOnzeker.some((o) => o.veld === veld);
+  const formDubbel = controleOpen
+    ? dubbelVoor(
+        eigenRecepten.data,
+        {
+          title,
+          ingredienten: formIngredienten.map((i) => i.name),
+          source_url: sourceUrl.trim() || null,
+        },
+        [conceptId],
+      )
+    : null;
+
+  function openBestaande(id: string) {
+    sluitVenster();
+    setControleOpen(false);
+    navigate({ to: "/recepten/$id", params: { id } });
+  }
+
   /** Opent het controlevenster — vanaf de knop boven- of onderaan. */
   function openControle() {
     if (!title.trim()) { toast.error("Geef het gerecht een naam"); return; }
     setControleOpen(true);
   }
 
+  // Fase 2: één ingang voor alle bronnen, met uitleg in gewone taal.
   const manieren: { id: Manier; label: string; uitleg: string; icon: typeof Link2 }[] = [
     {
       id: "link",
       label: "Link plakken",
-      uitleg: "Website, Instagram, TikTok, YouTube",
+      uitleg: "Van een website met recepten",
       icon: Link2,
+    },
+    {
+      id: "tekst",
+      label: "Tekst plakken",
+      uitleg: "Uit een bericht, mail of je notities",
+      icon: FileText,
     },
     {
       id: "foto",
@@ -991,7 +1195,13 @@ export function RecipeForm({
       uitleg: "Kookboek, briefje of screenshot",
       icon: Camera,
     },
-    { id: "zelf", label: "Zelf typen", uitleg: "Begin met een lege kaart", icon: Pencil },
+    {
+      id: "video",
+      label: "Video-link",
+      uitleg: "YouTube, TikTok, Instagram, Facebook",
+      icon: Video,
+    },
+    { id: "zelf", label: "Zelf typen", uitleg: "Gewoon of stap voor stap", icon: Pencil },
     { id: "zoek", label: "Zoeken", uitleg: "Vind een recept op naam", icon: Search },
   ];
 
@@ -1026,7 +1236,7 @@ export function RecipeForm({
       {!recipe && !stapsgewijs && (
         <section className="rounded-3xl bg-card p-4 shadow-kaart sm:p-5">
           <h2 className="text-sectietitel">Hoe wil je je recept toevoegen?</h2>
-          <div className="mt-4 grid grid-cols-1 gap-2.5 min-[400px]:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-4 grid grid-cols-1 gap-2.5 min-[400px]:grid-cols-2 lg:grid-cols-3">
             {manieren.map((m) => {
               const Icon = m.icon;
               const actief = manier === m.id;
@@ -1036,22 +1246,23 @@ export function RecipeForm({
                   type="button"
                   onClick={() => setManier(m.id)}
                   aria-pressed={actief}
+                  // Onder 400 px een rij (pictogram links): zes keuzes passen zo zonder eindeloos scrollen.
                   className={
                     actief
-                      ? "flex min-h-28 flex-col items-start justify-between gap-2 rounded-2xl border-2 border-primary bg-primary p-3 text-left text-primary-foreground shadow-zacht"
-                      : "flex min-h-28 flex-col items-start justify-between gap-2 rounded-2xl border-2 border-transparent bg-secondary p-3 text-left transition-colors hover:border-primary/40"
+                      ? "flex min-h-20 items-center gap-3 rounded-2xl border-2 border-primary bg-primary p-3 text-left text-primary-foreground shadow-zacht min-[400px]:min-h-28 min-[400px]:flex-col min-[400px]:items-start min-[400px]:justify-between min-[400px]:gap-2"
+                      : "flex min-h-20 items-center gap-3 rounded-2xl border-2 border-transparent bg-secondary p-3 text-left transition-colors hover:border-primary/40 min-[400px]:min-h-28 min-[400px]:flex-col min-[400px]:items-start min-[400px]:justify-between min-[400px]:gap-2"
                   }
                 >
                   <span
                     className={
                       actief
-                        ? "flex size-10 items-center justify-center rounded-xl bg-white/15"
-                        : "flex size-10 items-center justify-center rounded-xl bg-card text-primary"
+                        ? "flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/15"
+                        : "flex size-10 shrink-0 items-center justify-center rounded-xl bg-card text-primary"
                     }
                   >
                     <Icon className="size-5" aria-hidden />
                   </span>
-                  <span>
+                  <span className="min-w-0">
                     <span className="block text-base font-semibold leading-tight">{m.label}</span>
                     <span
                       className={
@@ -1254,8 +1465,8 @@ export function RecipeForm({
           {manier === "link" && (
             <div className="mt-4">
               <p className="text-base text-muted-foreground">
-                Plak de link van een recept, ook van Instagram, TikTok, YouTube, Facebook of
-                Pinterest. Wij vullen alles voor je in.
+                Plak de link van een recept, bijvoorbeeld van een kookwebsite of Pinterest. Wij
+                vullen alles in en jij kijkt het daarna na.
               </p>
               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                 <Input
@@ -1295,12 +1506,16 @@ export function RecipeForm({
                 </div>
               )}
 
-              <div className="mt-5 border-t border-border pt-4">
-                <p className="text-base text-muted-foreground">
-                  Of plak hier gewoon de tekst van het recept: van Instagram, een bericht of je
-                  eigen notities.
-                </p>
-              </div>
+              {importFout ? <ImportFout fout={importFout} onKies={kiesAlternatief} /> : null}
+            </div>
+          )}
+
+          {manier === "tekst" && (
+            <div className="mt-4">
+              <p className="text-base text-muted-foreground">
+                Plak de tekst van het recept: uit een bericht, een mail, Instagram of je eigen
+                notities. Zet de ingrediënten liefst elk op een eigen regel.
+              </p>
               <Textarea
                 value={vrijeTekst}
                 onChange={(e) => setVrijeTekst(e.target.value)}
@@ -1317,7 +1532,84 @@ export function RecipeForm({
                 )}
                 Recept eruit halen
               </Button>
+              {importFout ? <ImportFout fout={importFout} onKies={kiesAlternatief} /> : null}
+            </div>
+          )}
 
+          {manier === "video" && (
+            <div className="mt-4 space-y-4">
+              <p className="text-base text-muted-foreground">
+                Plak de link van een kookvideo. We bewaren de link en de naam van de maker. De video
+                zelf blijft bij YouTube, TikTok, Instagram of Facebook.
+              </p>
+              <div>
+                <Label htmlFor="video-url" className="text-base">
+                  Link naar de video
+                </Label>
+                <Input
+                  id="video-url"
+                  value={videoUrl}
+                  onChange={(e) => {
+                    setVideoUrl(e.target.value);
+                    setVideoFout(null);
+                    const v = herkenVideoLink(e.target.value);
+                    if (v?.maker && !videoMaker.trim()) setVideoMaker(v.maker);
+                  }}
+                  placeholder="https://…"
+                  inputMode="url"
+                  aria-describedby="video-url-hulp"
+                  aria-invalid={videoFout ? true : undefined}
+                  className="mt-2 h-14 text-base"
+                />
+                <p id="video-url-hulp" aria-live="polite" className="mt-1 text-base">
+                  {videoFout ? (
+                    <span role="alert" className="font-semibold text-destructive">
+                      {videoFout}
+                    </span>
+                  ) : herkenVideoLink(videoUrl) ? (
+                    <span className="font-semibold text-primary">
+                      ✓ Video van {herkenVideoLink(videoUrl)!.platform} herkend
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      Tik in de app van de video op “Delen” en dan op “Link kopiëren”.
+                    </span>
+                  )}
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="video-maker" className="text-base">
+                  Wie maakte de video? (mag leeg)
+                </Label>
+                <Input
+                  id="video-maker"
+                  value={videoMaker}
+                  onChange={(e) => setVideoMaker(e.target.value)}
+                  placeholder="@naam"
+                  className="mt-2 h-14 text-base"
+                />
+              </div>
+              <div>
+                <Label htmlFor="video-tekst" className="text-base">
+                  Tekst onder de video (mag leeg)
+                </Label>
+                <Textarea
+                  id="video-tekst"
+                  value={videoTekst}
+                  onChange={(e) => setVideoTekst(e.target.value)}
+                  rows={5}
+                  aria-describedby="video-tekst-hulp"
+                  className="mt-2 text-base"
+                />
+                <p id="video-tekst-hulp" className="mt-1 text-[0.9rem] text-muted-foreground">
+                  Staan de ingrediënten in de beschrijving? Kopieer die tekst hierheen. Een tijd bij
+                  een stap, zoals 0:45, wordt een knop naar dat moment in de video.
+                </p>
+              </div>
+              <Button onClick={handleVideo} className="h-14 w-full text-base">
+                <Video className="size-5" aria-hidden />
+                Verder naar nakijken
+              </Button>
             </div>
           )}
 
@@ -1392,12 +1684,14 @@ export function RecipeForm({
                   />
                 </label>
               </div>
+              {importFout ? <ImportFout fout={importFout} onKies={kiesAlternatief} /> : null}
             </div>
           )}
 
           {manier === "zelf" && (
             <p className="mt-4 text-base text-muted-foreground">
               Vul hieronder gewoon een naam in. Ingrediënten en stappen mag je later aanvullen.
+              Liever één ding tegelijk? Zet “Stap voor stap” aan.
             </p>
           )}
         </section>
@@ -1839,11 +2133,14 @@ export function RecipeForm({
               Kijk je recept nog even na. Pas gerust iets aan en bewaar daarna.
             </DialogDescription>
           </DialogHeader>
-          {/* Fase 1: past dit recept voor wie in het huishouden meeëet? */}
-          <NieuwReceptControle
+          {/* Fase 1/2: past dit recept voor jou en voor wie in het huishouden meeëet? */}
+          <NakijkVeiligheid
             titel={title}
             ingredienten={formIngredienten.map((i) => i.name).filter(Boolean)}
           />
+          {formDubbel && !recipe ? (
+            <DubbelMelding dubbel={formDubbel} onOpen={() => openBestaande(formDubbel.recept.id)} />
+          ) : null}
           {/* Ronde 3 (FR-RI-05): wisselen tussen nakijken en een voorbeeld van het resultaat. */}
           <div role="group" aria-label="Weergave" className="grid grid-cols-2 gap-2">
             <Button
@@ -1918,7 +2215,11 @@ export function RecipeForm({
             </ul>
             <div className="grid gap-2">
               <Button onClick={() => { setControleOpen(false); void handleSave(); }} disabled={saving} className="h-14 w-full text-lg">
-                {koppelMaaltijd ? "Bewaren en koppelen" : "Bewaren"}
+                {koppelMaaltijd
+                  ? "Bewaren en koppelen"
+                  : formDubbel && !recipe
+                    ? "Toch bewaren"
+                    : "Bewaren"}
               </Button>
               <Button variant="secondary" onClick={() => setControleOpen(false)} className="h-14 w-full text-lg">Nog iets aanpassen</Button>
             </div>
@@ -1929,9 +2230,9 @@ export function RecipeForm({
       <Dialog open={vensterOpen} onOpenChange={(open) => !open && sluitVenster()}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-left text-xl">Gevonden recept</DialogTitle>
+            <DialogTitle className="text-left text-xl">Kijk je recept na</DialogTitle>
             <DialogDescription className="text-left text-base">
-              Kijk het even na en pas aan wat je anders wil. Daarna neem je het over.
+              Er is nog niets bewaard. Pas aan wat je anders wil en bewaar het daarna.
             </DialogDescription>
           </DialogHeader>
           {vbBezig && (
@@ -1953,6 +2254,12 @@ export function RecipeForm({
             </div>
           )}
           <div className={voorbeeld && !vbBezig ? "space-y-4" : "hidden"}>
+            {voorbeeld && vbBron ? <BronRegel bron={vbBron} /> : null}
+            {voorbeeld ? <NakijkVeiligheid titel={vbTitel} ingredienten={vbIngNamen} /> : null}
+            {vbDubbel ? (
+              <DubbelMelding dubbel={vbDubbel} onOpen={() => openBestaande(vbDubbel.recept.id)} />
+            ) : null}
+            <OnzekerLijst items={vbOnzeker} />
             {voorbeeld?.image_url && !vbFotoWeg ? (
               <div className="relative">
                 <RecipePhoto
@@ -1976,6 +2283,7 @@ export function RecipeForm({
             <div>
               <Label htmlFor="vb-titel" className="text-base">
                 Naam
+                <NakijkLabel toon={vbMoetNakijken("naam")} />
               </Label>
               <Input
                 id="vb-titel"
@@ -1986,7 +2294,10 @@ export function RecipeForm({
             </div>
             <div>
               <Label htmlFor="vb-ing" className="text-base">
-                Ingrediënten
+                Ingrediënten — één per regel
+                <NakijkLabel
+                  toon={vbMoetNakijken("ingredienten") || vbMoetNakijken("hoeveelheden")}
+                />
               </Label>
               <Textarea
                 id="vb-ing"
@@ -1998,7 +2309,8 @@ export function RecipeForm({
             </div>
             <div>
               <Label htmlFor="vb-stap" className="text-base">
-                Bereiding
+                Bereiding — één stap per regel
+                <NakijkLabel toon={vbMoetNakijken("stappen")} />
               </Label>
               <Textarea
                 id="vb-stap"
@@ -2012,11 +2324,7 @@ export function RecipeForm({
               <p className="text-base font-medium">Soort gerecht</p>
               <SoortKeuze waarde={vbSoort} onKies={setVbSoort} />
             </div>
-            {voorbeeld?.source_url ? (
-              <p className="break-words text-base text-muted-foreground">
-                Bron: {voorbeeld.source_url}
-              </p>
-            ) : null}
+
           </div>
           <DialogFooter className="gap-2 sm:justify-between">
             {voorbeeld && !vbBezig ? (
@@ -2026,10 +2334,14 @@ export function RecipeForm({
                 </Button>
                 <Button
                   onClick={() => void bewaarVoorbeeld()}
-                  disabled={saving}
+                  disabled={saving || !vbTitel.trim()}
                   className="h-14 text-base"
                 >
-                  {saving ? "Bezig met bewaren…" : "Bewaar bij mijn recepten"}
+                  {saving
+                    ? "Bezig met bewaren…"
+                    : vbDubbel
+                      ? "Toch bewaren"
+                      : "Bewaar bij mijn recepten"}
                 </Button>
               </>
             ) : (

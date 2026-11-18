@@ -7,6 +7,8 @@
  * - een maker ziet alleen geaggregeerde cijfers, nooit wie volgt of bewaarde.
  */
 
+import { videoPlatformVanHost } from "./video-link";
+
 export type Zichtbaarheid = "prive" | "vrienden" | "openbaar";
 export type PublicatieStatus = "concept" | "gepubliceerd";
 export type Moderatie = "wacht" | "goedgekeurd" | "afgewezen" | null;
@@ -199,17 +201,8 @@ export function videoBron(invoer: string | null | undefined): VideoBron | null {
     return null;
   }
   if (u.protocol !== "https:" || u.username || u.password) return null;
-  const h = u.hostname.toLowerCase().replace(/^(www|m)\./, "");
-  const platform =
-    h === "youtube.com" || h === "youtu.be"
-      ? "YouTube"
-      : h === "tiktok.com" || h === "vm.tiktok.com"
-        ? "TikTok"
-        : h === "instagram.com"
-          ? "Instagram"
-          : h === "vimeo.com"
-            ? "Vimeo"
-            : null;
+  // Zelfde lijst als bij het toevoegen van een recept via een video-link (fase 2).
+  const platform = videoPlatformVanHost(u.hostname);
   return platform ? { platform, url: u.toString() } : null;
 }
 

@@ -38,6 +38,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { zichtbareEigenaren } from "@/lib/zichtbare-eigenaren";
 import { haalPubliekeBron } from "@/lib/makers-db";
 import { ReceptMakerDeel } from "@/components/makers/ReceptMakerDeel";
+import { ReceptDelen } from "@/components/recept/ReceptDelen";
+import { makerUitOmschrijving, StapMetTijd, VideoBronKaart } from "@/components/recept/VideoBron";
+import { herkenVideoLink } from "@/lib/video-link";
 import { ReceptCommunity } from "@/components/makers/ReceptCommunity";
 import { zorgVoorLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
 import { useAuth } from "@/hooks/useAuth";
@@ -227,6 +230,7 @@ function ReceptPage() {
   const [stopVraag, setStopVraag] = useState(false);
   const [verwijderVraag, setVerwijderVraag] = useState(false);
   const [kopieVraag, setKopieVraag] = useState(false);
+  const [deelOpen, setDeelOpen] = useState(false);
   // Werkstroom F: "Vraag het Foodlo" (vervangers, aanpassen, kookvraag).
   const [assistentOpen, setAssistentOpen] = useState(false);
   const [aanvulVoorstel, setAanvulVoorstel] = useState<AanvulVoorstel | null>(null);
@@ -673,14 +677,11 @@ function ReceptPage() {
     navigate({ to: "/gerechten" });
   }
 
-  async function deelRecept() {
-    const url = window.location.href;
-    if (navigator.share) await navigator.share({ title: recipe.title, url });
-    else {
-      await navigator.clipboard.writeText(url);
-      toast.success(t("Link gekopieerd"));
-    }
+  // Fase 2: delen opent een venster met "Link kopiëren", "Als tekst delen" en wie het kan zien.
+  function deelRecept() {
+    setDeelOpen(true);
   }
+  const video = herkenVideoLink(recipe.source_url);
 
   // BUG-145: AI schrijft nooit meer stil in je recept. Eerst een voorstel met alleen de lege velden,
   // pas na "Overnemen" wordt er iets bewaard (principe: AI overschrijft nooit zonder nakijken).
@@ -1057,7 +1058,7 @@ function ReceptPage() {
             <Heart className={isFavorite ? "fill-primary text-primary" : ""} aria-hidden />
             {t("Favoriet")}
           </Button>
-          <Button variant="ghost" onClick={() => void deelRecept()} className={ACTIE_KNOP}>
+          <Button variant="ghost" onClick={deelRecept} className={ACTIE_KNOP}>
             <Share2 aria-hidden />
             {t("Delen")}
           </Button>
@@ -1297,6 +1298,14 @@ function ReceptPage() {
               <PlanKiezer momenten={momenten} servings={recipe.servings} onKies={planOp} />
             ) : null}
 
+            {/* Fase 2: recept van een video — alleen de link, geen ingesloten speler. */}
+            {video ? (
+              <VideoBronKaart
+                video={video}
+                maker={makerUitOmschrijving(recipe.description) ?? video.maker}
+              />
+            ) : null}
+
             {/* Module B: bronvermelding van de maker, video-link en "Bewaar in…". */}
             <ReceptMakerDeel receptId={recipe.id} />
 
@@ -1441,7 +1450,9 @@ function ReceptPage() {
                     {t("Stap")} {i + 1}:
                   </span>
                   <div className="min-w-0">
-                    <p className="text-lg leading-relaxed">{netteStap(t(s))}</p>
+                    <p className="text-lg leading-relaxed">
+                      <StapMetTijd tekst={s} video={video} render={(x) => netteStap(t(x))} />
+                    </p>
                     <StapIngredienten ingredienten={stapIngredienten(i)} factor={factor} />
                   </div>
                 </li>
@@ -1486,7 +1497,7 @@ function ReceptPage() {
             {t("Jouw recept")}
           </h2>
           <SterrenKiezer waarde={mijnScore} onKies={zetScore} label={t("Jouw score")} />
-          {recipe.source_url ? (
+          {recipe.source_url && !video ? (
             <a
               href={recipe.source_url}
               target="_blank"
@@ -1670,6 +1681,13 @@ function ReceptPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <ReceptDelen
+        open={deelOpen}
+        onOpenChange={setDeelOpen}
+        recept={recipe}
+        ingredienten={ingredients}
+        isOwner={isOwner}
+      />
       {/* BUG-144: eerst tonen wat er gekopieerd wordt, pas dan bewaren. */}
       <AlertDialog open={kopieVraag} onOpenChange={setKopieVraag}>
         <AlertDialogContent>

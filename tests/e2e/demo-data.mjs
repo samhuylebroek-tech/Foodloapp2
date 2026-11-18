@@ -210,6 +210,32 @@ const RECEPTEN = [
       "Giet de saus erover en gratineer 20 minuten op 200 graden.",
     ],
   },
+  // Fase 2: een recept dat Marie van een video haalde (alleen de link, geen video in de app).
+  // De tijdcodes vooraan de stappen worden klikbaar ("Bekijk op 0:45").
+  {
+    n: 9,
+    title: "Chocomousse in 5 minuten",
+    category: "nagerecht",
+    tags: ["vegetarisch", "zoet"],
+    description: "Video van @chefanna op YouTube.",
+    prep: 5,
+    cook: 0,
+    diff: "makkelijk",
+    servings: 4,
+    bron: "https://www.youtube.com/watch?v=demoChoco01",
+    ingr: [
+      ["pure chocolade", 200, "g"],
+      ["eieren", 4, ""],
+      ["suiker", 2, "el"],
+      ["snuf zout", null, ""],
+    ],
+    stappen: [
+      "0:20 Smelt de chocolade au bain-marie.",
+      "0:45 Splits de eieren en klop het eiwit stijf met een snuf zout.",
+      "1:30 Meng de dooiers en de suiker door de chocolade.",
+      "2:10 Spatel het eiwit er luchtig onder en zet 2 uur koud.",
+    ],
+  },
 ];
 
 /** Ontdek-catalogus voor de demo (verzonnen, geen productiedata). Foto's: alleen de twee CC0-demofoto's. */
@@ -740,7 +766,7 @@ export function demoSeed() {
     category: r.category,
     tags: r.tags,
     instructions: r.stappen,
-    source_url: null,
+    source_url: r.bron ?? null,
     is_concept: false,
     deleted_at: null,
     created_at: new Date(Date.now() - (i + 1) * 86400000).toISOString(),

@@ -191,7 +191,14 @@ export const FUNCTIES: Functie[] = [
     module: "keuken",
     route: "/recepten/nieuw",
     bestanden: ["src/routes/recepten.nieuw.tsx", "src/components/RecipeForm.tsx"],
-    labels: ["Hoe wil je je recept toevoegen?", "Link plakken", "Foto van recept", "Zelf typen"],
+    labels: [
+      "Hoe wil je je recept toevoegen?",
+      "Link plakken",
+      "Tekst plakken",
+      "Foto van recept",
+      "Video-link",
+      "Zelf typen",
+    ],
   },
   {
     sleutel: "keuken.zoeken",

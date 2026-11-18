@@ -434,7 +434,7 @@ function PublicatieRij({
   async function bewaarVideo() {
     const v = video.trim();
     if (v && !videoBron(v))
-      return setVideoFout("Plak een https-link van YouTube, TikTok, Instagram of Vimeo.");
+      return setVideoFout("Plak een https-link van YouTube, TikTok, Instagram, Facebook of Vimeo.");
     setVideoFout(null);
     await schrijf(
       { video_url: v ? videoBron(v)!.url : null },
