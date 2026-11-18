@@ -59,6 +59,7 @@ const VASTE_WAARDEN = { signaal: "'niet_nu'", handle: "'test-a'", tekst: "'Lekke
 const EXTRA_KOLOMMEN = {
   aanbeveling_feedback: { onderwerp: "'curry'" },
   abonnementen: { plan: "'premium_maand'", status: "'proef'" },
+  budget_weken: { week: "date_trunc('week', current_date)::date" },
   entitlements: { recht: "'premium.weekmenu_extra'" },
   facturen: { status: "'betaald'" },
   partner_aanvragen: { bedrijfsnaam: "'Bakkerij A'", soort: "'retail'" },
