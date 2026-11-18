@@ -141,7 +141,7 @@ export function ReceptDelen({
             Als tekst delen
           </Button>
         </div>
-        <p className="break-words rounded-2xl border border-border p-3 text-[0.95rem] text-muted-foreground">
+        <p className="min-w-0 rounded-2xl border border-border p-3 text-[0.95rem] text-muted-foreground [overflow-wrap:anywhere]">
           {link}
         </p>
       </DialogContent>

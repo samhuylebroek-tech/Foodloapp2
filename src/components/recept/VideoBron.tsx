@@ -56,6 +56,13 @@ export function makerUitOmschrijving(omschrijving: string | null | undefined): s
   );
 }
 
+/** Omschrijving zonder die vermelding (die staat al op de videokaart). */
+export function zonderVideoVermelding(omschrijving: string | null | undefined): string {
+  return (omschrijving ?? "")
+    .replace(/^Video van .+? op (?:YouTube|TikTok|Instagram|Facebook|Vimeo)\.\s*/, "")
+    .trim();
+}
+
 /**
  * Stap met een tijdcode vooraan: de tijd wordt een link naar dat moment (als het platform dat
  * kan), de rest is de gewone staptekst. Zonder tijdcode: gewoon de tekst.

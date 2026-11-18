@@ -46,20 +46,16 @@ test("link inlezen die niet lukt: duidelijke melding, niets bewaard", async ({ p
   void extern;
 });
 
-test("tekst omzetten die niet lukt: duidelijke melding, niets bewaard", async ({
-  page,
-  extern,
-}) => {
+// Fase 2: zonder AI leest Foodlo de tekst zelf; het resultaat gaat naar nakijken, niets bewaard.
+test("tekst omzetten zonder AI: nakijkscherm, niets bewaard", async ({ page, extern }) => {
   const voor = await aantalRecepten();
   await page.goto("/recepten/nieuw");
-  await page.getByRole("button", { name: /Link plakken/ }).click();
+  await page.getByRole("button", { name: /Tekst plakken/ }).click();
   await page
     .getByLabel("Tekst van het recept")
     .fill("Pannenkoeken\n250 g bloem\n2 eieren\n500 ml melk\nMeng alles en bak.");
   await page.getByRole("button", { name: "Recept eruit halen" }).click();
-  await expect(
-    page.locator("[data-sonner-toast], [role=alert], [role=status]").first(),
-  ).toBeVisible({
+  await expect(page.getByRole("dialog", { name: "Kijk je recept na" })).toBeVisible({
     timeout: 30_000,
   });
   await page.waitForTimeout(1000);

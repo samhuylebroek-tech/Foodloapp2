@@ -33,12 +33,12 @@ const MINUTEN =
   /(?:bereidingstijd|kooktijd|totale tijd|tijd|klaar in|duurt|in)\s*:?\s*(?:±|ca\.?|ongeveer)?\s*(\d{1,3})\s*(?:min|minuten|minutes)\b/i;
 const NAAR_SMAAK = /\b(naar smaak|snuf(je)?|scheutje|beetje|wat|handvol|optioneel)\b/i;
 // Emoji's en pictogrammen vooraan een regel (Instagram, TikTok).
-const VERSIERING = /^[\s\p{Extended_Pictographic}\u{FE0F}\u{200D}•·*▪►✔✓☑-]+/u;
+const VERSIERING = /^(?:[\s\p{Extended_Pictographic}•·*▪►✔✓☑-]|\u{FE0F}|\u{200D})+/u;
 
 function schoonRegel(regel: string): string {
   return regel
     .replace(VERSIERING, "")
-    .replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, "")
+    .replace(/\p{Extended_Pictographic}|\u{FE0F}|\u{200D}/gu, "")
     .replace(/\s+/g, " ")
     .trim();
 }

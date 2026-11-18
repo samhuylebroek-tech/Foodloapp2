@@ -137,7 +137,8 @@ test("Week: 'Laat Foodlo kiezen' vraagt wie meeeet en stelt niets onveiligs voor
   const aantal = Number((await page.getByText(/Dag 1 van \d+/).innerText()).match(/van (\d+)/)![1]);
   for (let n = 0; n < aantal; n++) {
     gezien.add(await page.locator("h4").first().innerText());
-    if (n < aantal - 1) await page.getByRole("button", { name: "Volgende dag" }).click();
+    if (n < aantal - 1)
+      await page.getByRole("button", { name: "Volgende dag", exact: true }).click();
   }
   expect([...gezien]).not.toContain("Pasta met hazelnootpesto");
   expect([...gezien].some((t) => /Kipcurry|Tomatensoep/.test(t))).toBe(true);

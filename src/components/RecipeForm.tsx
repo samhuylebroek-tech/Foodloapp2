@@ -858,8 +858,10 @@ export function RecipeForm({
           data.reeds_bekend
             ? data.fout
             : video
-              ? `${data.fout} Je kan de video ook gewoon als link bewaren, met de tekst onder de video erbij.`
-              : `${data.fout} De pagina is misschien even onbereikbaar, of er staat geen recept op.`,
+              ? "Deze video konden we niet openen. Je kan ze gewoon als video-link bewaren, met de tekst onder de video erbij."
+              : /opgehaald|fetch|bereik|time-?out|netwerk/i.test(data.fout)
+                ? "We konden deze pagina niet openen. Ze is misschien even onbereikbaar, of de link klopt niet."
+                : `${data.fout} Misschien staat er geen recept op deze pagina.`,
           data.reeds_bekend,
         );
         return;
@@ -883,9 +885,7 @@ export function RecipeForm({
     } catch (err) {
       void qc.invalidateQueries({ queryKey: ["credits"] });
       linkFout(
-        err instanceof Error && err.message.length < 200
-          ? err.message
-          : "De pagina is misschien even onbereikbaar, of er staat geen recept op.",
+        "We konden deze pagina niet openen. Ze is misschien even onbereikbaar, of er staat geen recept op.",
       );
     } finally {
       setImporting(false);
@@ -1201,7 +1201,7 @@ export function RecipeForm({
       uitleg: "YouTube, TikTok, Instagram, Facebook",
       icon: Video,
     },
-    { id: "zelf", label: "Zelf typen", uitleg: "Gewoon of stap voor stap", icon: Pencil },
+    { id: "zelf", label: "Zelf typen", uitleg: "Alles samen of één ding tegelijk", icon: Pencil },
     { id: "zoek", label: "Zoeken", uitleg: "Vind een recept op naam", icon: Search },
   ];
 

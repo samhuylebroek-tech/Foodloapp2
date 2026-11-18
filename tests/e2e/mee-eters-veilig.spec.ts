@@ -204,7 +204,8 @@ test("weekvoorstel: de gekozen mee-eters worden bij elke maaltijd bewaard", asyn
   for (let n = 0; n < aantal; n++) {
     const kies = page.getByRole("button", { name: "Deze dag kiezen" });
     if (await kies.isVisible()) await kies.click();
-    if (n < aantal - 1) await page.getByRole("button", { name: "Volgende dag" }).click();
+    if (n < aantal - 1)
+      await page.getByRole("button", { name: "Volgende dag", exact: true }).click();
   }
   await page.getByRole("button", { name: /^Zet [1-9]\d* (dag|dagen) in mijn weekmenu/ }).click();
   await expect

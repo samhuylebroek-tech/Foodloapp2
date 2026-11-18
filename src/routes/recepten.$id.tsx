@@ -39,7 +39,12 @@ import { zichtbareEigenaren } from "@/lib/zichtbare-eigenaren";
 import { haalPubliekeBron } from "@/lib/makers-db";
 import { ReceptMakerDeel } from "@/components/makers/ReceptMakerDeel";
 import { ReceptDelen } from "@/components/recept/ReceptDelen";
-import { makerUitOmschrijving, StapMetTijd, VideoBronKaart } from "@/components/recept/VideoBron";
+import {
+  makerUitOmschrijving,
+  StapMetTijd,
+  VideoBronKaart,
+  zonderVideoVermelding,
+} from "@/components/recept/VideoBron";
 import { herkenVideoLink } from "@/lib/video-link";
 import { ReceptCommunity } from "@/components/makers/ReceptCommunity";
 import { zorgVoorLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
@@ -1231,9 +1236,10 @@ function ReceptPage() {
               ) : null}
             </ul>
 
-            {recipe.description ? (
+            {/* Fase 2: de bronvermelding van een video staat al op de videokaart. */}
+            {zonderVideoVermelding(recipe.description) ? (
               <p className="font-display text-xl leading-relaxed text-foreground/90">
-                {t(recipe.description)}
+                {t(zonderVideoVermelding(recipe.description))}
               </p>
             ) : null}
 

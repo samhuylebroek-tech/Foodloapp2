@@ -100,14 +100,14 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 |---|---|---|---|---|---|---|---|
 | 1 | Zelf typen (formulier) | Recept toevoegen → "Zelf typen" | nee | ja, "Klopt alles?" | Behouden | volledig (`kernflow.spec.ts`) | F1 |
 | 1b | Stap voor stap (beginners, FR-RI-06) | Nieuw recept → "Stap voor stap" | nee | ja, stap 4 "Klopt alles?" | Gebouwd (marathon), getest met recept-stappen.spec en grote-tekst-woorden.spec (telefoon/desktop); werkt meteen in productie (geen migratie) | `recept-stappen.spec.ts` | F1 |
-| 2 | Link van een website | "Link plakken" → "Inlezen" | eerst gratis (JSON-LD), dan AI | ja | Behouden; **test uitbreiden** | alleen de UI | F1 |
-| 3 | Sociale media (Instagram, TikTok, YouTube, Facebook, Pinterest) | zelfde knop | AI | ja | Behouden; **test uitbreiden** | geen | F1 |
-| 4 | Tekst plakken | "Recept eruit halen" | AI | ja | Behouden; **test uitbreiden** | geen | F1 |
-| 5 | Foto of screenshot van een recept | "Recept fotograferen" / "Kies een foto" | AI | ja | Behouden; handschrift testen | alleen de UI | F1 |
+| 2 | Link van een website | "Link plakken" → "Inlezen" | eerst gratis (JSON-LD), dan AI | ja, "Kijk je recept na" (allergie, dubbelcheck, velden om na te kijken); mislukt → uitleg + "Plak de tekst"/"Neem een foto"/"Typ het zelf" | Gebouwd (fase 2), getest met recepten-bronnen.spec + receptinvoer.spec (telefoon/desktop) en recepten-alle-bronnen.test; werkt meteen in productie (geen migratie) | foutpad E2E | F1 |
+| 3 | Video-link (YouTube, TikTok, Instagram, Facebook) | "Video-link" | nee (beschrijving zonder AI gelezen) | ja | Gebouwd (fase 2), getest met recepten-bronnen.spec + receptinvoer.spec (telefoon/desktop) en recepten-alle-bronnen.test; werkt meteen in productie (geen migratie). Alleen link + maker, geen download of ingesloten speler; tijdcodes (0:45) klikbaar bij YouTube/Vimeo. Maker staat in de omschrijving (geen kolom zonder migratie) | video → nakijken → bewaren → videolink | F1 |
+| 4 | Tekst plakken | "Tekst plakken" → "Recept eruit halen" | AI, terugval zonder AI (tekst-parser) | ja | Gebouwd (fase 2), getest met recepten-bronnen.spec + receptinvoer.spec (telefoon/desktop) en recepten-alle-bronnen.test; werkt meteen in productie (geen migratie) | allergeen + dubbel E2E | F1 |
+| 5 | Foto of screenshot van een recept | "Foto van recept" | AI | ja, nakijkscherm; onleesbaar → uitleg + alternatieven | Verbeterd (fase 2); handschrift met echte AI nog testen | foutpad E2E | F1 |
 | 6 | Foto van een gerecht (recept raden) | "Gerecht herkennen" | AI | ja, met "een gok" | Behouden | alleen de UI | F1 |
 | 7 | Ingrediënten herkennen op een foto | "Herken op foto" (in het formulier) | AI | alleen in het tekstveld | Verbeteren: eigen nakijkstap | geen | F1 |
 | 8 | Zoeken op naam (app, web, AI-ideeën, laten uitschrijven) | "Zoeken" | zoeken gratis, ideeën AI | ja, "Gevonden recept" | Behouden | alleen de UI | F1 |
-| 9 | Delen naar de app (PWA share target) | systeem "Delen" → Foodlo | zoals 2/4 | ja | Behouden; testen | geen | F1 |
+| 9 | Delen naar de app (PWA share target) | systeem "Delen" → Foodlo | zoals 2/3/4 | ja | Gebouwd (fase 2), getest met recepten-bronnen.spec + receptinvoer.spec (telefoon/desktop) en recepten-alle-bronnen.test; werkt meteen in productie (geen migratie): video-link → "Video-link", alleen tekst → "Tekst plakken", link → "Link plakken". Android-intent (Capacitor) nog niet ingesteld | share-route E2E | F1 |
 | 10 | Uit Ontdek | "Toevoegen aan mijn recepten" | nee | ja | Behouden | geen eigen test | F1 |
 | 11 | Recept van een vriend of gezinslid kopiëren | Meer → "Zet in mijn gerechten" | nee | ja: overzicht vóór kopiëren, foto's gaan mee (ronde 2) | Verbeterd (BUG-144) | `recept-beheer.spec.ts` | F1 |
 | 12 | Vanuit het weekmenu (zoeken, voorstellen, recept van een naam) | ReceptKiezer | AI behalve zoeken | ja, "Controleer het recept" | Behouden | regels getest | F1 |
@@ -127,7 +127,7 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | Eigen recept dupliceren | Gebouwd (ronde 3) | Meer → "Dupliceren": kopie met "(kopie)", ingrediënten en foto's mee (`recept-beheer.spec.ts`) |
 | Publiek, privé, alleen volgers | Latere fase | Er is geen zichtbaarheidsveld (G1/G2) |
 | Eigen collecties | Gebouwd (marathon); actief na migratie 0008 | G1/G2 |
-| Delen (link) | Behouden | — |
+| Delen (link en tekst) | Gebouwd (fase 2), getest met recepten-bronnen.spec | Venster "Recept delen": "Link kopiëren", "Als tekst delen" (Web Share, anders kopiëren), privé/vrienden/openbaar (openbaar via makerstudio + moderatie). Ontvanger: Meer → "Zet in mijn gerechten" |
 | Recepteditor in stappen | Verbeteren | Bij een nieuw recept gaat de keuze van invoer voor; het formulier toont daarna alles tegelijk. Ronde 3: voorbeeldweergave vóór bewaren ("Klopt alles?" › Voorbeeld, `receptinvoer.spec.ts`) |
 
 ## B. Creators en food influencers

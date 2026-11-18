@@ -250,13 +250,13 @@ export function ImportFout({
     <div
       role="alert"
       data-testid="import-fout"
-      className="mt-4 rounded-2xl border-l-4 border-terracotta bg-terracotta-zacht p-4 text-foreground"
+      className="mt-4 rounded-2xl border-l-4 border-terracotta bg-terracotta-zacht p-3 text-foreground sm:p-4"
     >
       <p className="flex items-start gap-2 text-base font-bold">
         <CircleAlert className="mt-0.5 size-5 shrink-0 text-terracotta" aria-hidden />
         <span className="min-w-0">{fout.titel}</span>
       </p>
-      <p className="mt-1 pl-7 text-base leading-snug">{fout.uitleg}</p>
+      <p className="mt-1 text-base leading-snug">{fout.uitleg}</p>
       {fout.bestaand ? (
         <Button asChild className="mt-3 h-14 w-full text-base">
           <Link to="/recepten/$id" params={{ id: fout.bestaand.id }}>
@@ -266,7 +266,7 @@ export function ImportFout({
       ) : null}
       {fout.alternatieven.length ? (
         <>
-          <p className="mt-3 pl-7 text-base font-semibold">Probeer het zo:</p>
+          <p className="mt-3 text-base font-semibold">Probeer het zo:</p>
           <div className="mt-2 grid gap-2 min-[400px]:grid-cols-2">
             {fout.alternatieven.map((a) => {
               const { label, icon: Icon } = ALTERNATIEF[a];
@@ -286,9 +286,7 @@ export function ImportFout({
           </div>
         </>
       ) : null}
-      <p className="mt-3 pl-7 text-[0.95rem] text-muted-foreground">
-        Wat je al invulde, blijft staan.
-      </p>
+      <p className="mt-3 text-[0.95rem]">Wat je al invulde, blijft staan.</p>
     </div>
   );
 }
