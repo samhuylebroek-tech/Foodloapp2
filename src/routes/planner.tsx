@@ -14,6 +14,7 @@ import {
   Repeat,
   Settings,
   CalendarDays,
+  CalendarRange,
   Clock3,
   BookOpen,
   MoreVertical,
@@ -1420,6 +1421,7 @@ function PlannerPage() {
             personen: p.personen ?? null,
             servings: p.recipes?.servings ?? null,
           }))}
+          week={eigenMenu && weekVerschil >= 0 ? datumTekst(weekStart) : undefined}
         />
 
         {weekRaster()}
@@ -1510,6 +1512,14 @@ function PlannerPage() {
             >
               <Wand2 className="size-5 shrink-0" /> Laat Foodlo kiezen
             </Button>
+            {/* P1 Slimme planner: weekcontext (wie eet mee, weinig tijd, niet thuis…) en voorstel. */}
+            {eigenMenu && weekVerschil >= 0 ? (
+              <Button asChild variant="outline" className="col-span-full h-auto min-h-16 gap-2 px-3 text-base">
+                <Link to="/week-samenstellen" search={{ week: datumTekst(weekStart) }}>
+                  <CalendarRange className="size-5 shrink-0" aria-hidden /> Stel mijn week samen
+                </Link>
+              </Button>
+            ) : null}
           </div>
           {/* V2-kringloop: wat nog nodig is, min voorraad en lijst — één tik. */}
           <Button asChild className="h-auto min-h-16 w-full flex-col gap-0.5 py-3 text-lg">

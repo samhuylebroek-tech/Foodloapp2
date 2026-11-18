@@ -11,7 +11,14 @@ import { budgetOordeel, euro, schatWeek, type PlanKost } from "@/lib/budget";
 
 type Ingr = { name: string; quantity: number | null; unit: string };
 
-export function WeekBudget({ plan }: { plan: (PlanKost & { id: string })[] }) {
+export function WeekBudget({
+  plan,
+  week: maandag,
+}: {
+  plan: (PlanKost & { id: string })[];
+  /** Maandag van de getoonde week (eigen menu, niet in het verleden): "Maak mijn week goedkoper". */
+  week?: string | undefined;
+}) {
   const [budget] = useWeekbudget();
   const ids = [...new Set(plan.map((p) => p.recipe_id).filter((x): x is string => !!x))].sort();
   const { data: perRecept } = useQuery({
@@ -78,6 +85,17 @@ export function WeekBudget({ plan }: { plan: (PlanKost & { id: string })[] }) {
             {budget ? "Budget aanpassen" : "Stel een weekbudget in"}
           </Link>
         </p>
+        {maandag && ids.length ? (
+          <p>
+            <Link
+              to="/week-samenstellen"
+              search={{ goedkoper: 1, week: maandag }}
+              className="inline-flex min-h-12 items-center font-semibold underline underline-offset-4"
+            >
+              Maak mijn week goedkoper
+            </Link>
+          </p>
+        ) : null}
       </div>
     </section>
   );

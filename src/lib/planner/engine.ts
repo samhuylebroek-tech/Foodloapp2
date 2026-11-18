@@ -480,6 +480,28 @@ export function rangschikDag(
   return { lijst, krapste };
 }
 
+/**
+ * Een gerecht dat al vastligt (bv. al gepland) als keuze: porties, kost en redenen, zonder de
+ * filters (die bepalen alleen wat Foodlo zélf voorstelt).
+ */
+export function keuzeVoor(ctx: PlanContext, k: PlanKandidaat, dag: PlanDag): DagKeuze {
+  return metReden(scoor(k, dag, ctx, [], null));
+}
+
+/** Een menu uit vaste keuzes (bv. je huidige week), met totalen. */
+export function menuUit(
+  dagen: readonly { dag: PlanDag; keuze: DagKeuze }[],
+  budget: number | null | undefined,
+): MenuVoorstel {
+  const uit: DagUitkomst[] = dagen.map((d) => ({
+    datum: d.dag.datum,
+    moment: d.dag.moment,
+    status: "gekozen",
+    keuze: d.keuze,
+  }));
+  return { dagen: uit, ...totalen(uit, budget) };
+}
+
 // ---------------------------------------------------------------- het menu
 
 function telBareDagen(dagen: readonly PlanDag[]) {

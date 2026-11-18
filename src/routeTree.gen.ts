@@ -40,6 +40,7 @@ import { Route as RondleidingRouteImport } from './routes/rondleiding'
 import { Route as UitnodigingRouteImport } from './routes/uitnodiging'
 import { Route as VoorraadRouteImport } from './routes/voorraad'
 import { Route as WachtwoordHerstellenRouteImport } from './routes/wachtwoord-herstellen'
+import { Route as WeekSamenstellenRouteImport } from './routes/week-samenstellen'
 import { Route as WelkomRouteImport } from './routes/welkom'
 import { Route as BeheerIndexRouteImport } from './routes/beheer.index'
 import { Route as BeheerActiviteitRouteImport } from './routes/beheer.activiteit'
@@ -265,6 +266,11 @@ const VoorraadRoute = VoorraadRouteImport.update({
 const WachtwoordHerstellenRoute = WachtwoordHerstellenRouteImport.update({
   id: '/wachtwoord-herstellen',
   path: '/wachtwoord-herstellen',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WeekSamenstellenRoute = WeekSamenstellenRouteImport.update({
+  id: '/week-samenstellen',
+  path: '/week-samenstellen',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WelkomRoute = WelkomRouteImport.update({
@@ -656,6 +662,7 @@ export interface FileRoutesByFullPath {
   '/uitnodiging': typeof UitnodigingRoute
   '/voorraad': typeof VoorraadRoute
   '/wachtwoord-herstellen': typeof WachtwoordHerstellenRoute
+  '/week-samenstellen': typeof WeekSamenstellenRoute
   '/welkom': typeof WelkomRoute
   '/beheer/activiteit': typeof BeheerActiviteitRoute
   '/beheer/ai': typeof BeheerAiRoute
@@ -756,6 +763,7 @@ export interface FileRoutesByTo {
   '/uitnodiging': typeof UitnodigingRoute
   '/voorraad': typeof VoorraadRoute
   '/wachtwoord-herstellen': typeof WachtwoordHerstellenRoute
+  '/week-samenstellen': typeof WeekSamenstellenRoute
   '/welkom': typeof WelkomRoute
   '/beheer/activiteit': typeof BeheerActiviteitRoute
   '/beheer/ai': typeof BeheerAiRoute
@@ -860,6 +868,7 @@ export interface FileRoutesById {
   '/uitnodiging': typeof UitnodigingRoute
   '/voorraad': typeof VoorraadRoute
   '/wachtwoord-herstellen': typeof WachtwoordHerstellenRoute
+  '/week-samenstellen': typeof WeekSamenstellenRoute
   '/welkom': typeof WelkomRoute
   '/beheer/activiteit': typeof BeheerActiviteitRoute
   '/beheer/ai': typeof BeheerAiRoute
@@ -966,6 +975,7 @@ export interface FileRouteTypes {
     | '/uitnodiging'
     | '/voorraad'
     | '/wachtwoord-herstellen'
+    | '/week-samenstellen'
     | '/welkom'
     | '/beheer/activiteit'
     | '/beheer/ai'
@@ -1066,6 +1076,7 @@ export interface FileRouteTypes {
     | '/uitnodiging'
     | '/voorraad'
     | '/wachtwoord-herstellen'
+    | '/week-samenstellen'
     | '/welkom'
     | '/beheer/activiteit'
     | '/beheer/ai'
@@ -1169,6 +1180,7 @@ export interface FileRouteTypes {
     | '/uitnodiging'
     | '/voorraad'
     | '/wachtwoord-herstellen'
+    | '/week-samenstellen'
     | '/welkom'
     | '/beheer/activiteit'
     | '/beheer/ai'
@@ -1274,6 +1286,7 @@ export interface RootRouteChildren {
   UitnodigingRoute: typeof UitnodigingRoute
   VoorraadRoute: typeof VoorraadRoute
   WachtwoordHerstellenRoute: typeof WachtwoordHerstellenRoute
+  WeekSamenstellenRoute: typeof WeekSamenstellenRoute
   WelkomRoute: typeof WelkomRoute
   KaartenIdRoute: typeof KaartenIdRoute
   MakersHandleRoute: typeof MakersHandleRoute
@@ -1506,6 +1519,13 @@ declare module '@tanstack/react-router' {
       path: '/wachtwoord-herstellen'
       fullPath: '/wachtwoord-herstellen'
       preLoaderRoute: typeof WachtwoordHerstellenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/week-samenstellen': {
+      id: '/week-samenstellen'
+      path: '/week-samenstellen'
+      fullPath: '/week-samenstellen'
+      preLoaderRoute: typeof WeekSamenstellenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/welkom': {
@@ -2202,6 +2222,7 @@ const rootRouteChildren: RootRouteChildren = {
   UitnodigingRoute: UitnodigingRoute,
   VoorraadRoute: VoorraadRoute,
   WachtwoordHerstellenRoute: WachtwoordHerstellenRoute,
+  WeekSamenstellenRoute: WeekSamenstellenRoute,
   WelkomRoute: WelkomRoute,
   KaartenIdRoute: KaartenIdRoute,
   MakersHandleRoute: MakersHandleRoute,

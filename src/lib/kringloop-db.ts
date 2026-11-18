@@ -614,6 +614,34 @@ export function planVerplaats(
 }
 
 /**
+ * Meerdere menuwijzigingen als één actie (P1 "Bewaar dit menu", "Maak mijn week goedkoper"):
+ * na elkaar uitgevoerd; mislukt er één, dan worden de vorige teruggedraaid. Samen met
+ * `wijzigMenu` gaat de lijst één keer mee en is er één "Ongedaan maken" voor het geheel.
+ * `ids`: de plan-id's per stap, in dezelfde volgorde (bv. om mee-eters te bewaren).
+ */
+export function planSamen(
+  acties: readonly (() => Promise<PlanUitvoering>)[],
+  ids?: (string | undefined)[],
+): () => Promise<PlanUitvoering> {
+  return async () => {
+    const gedaan: PlanUitvoering[] = [];
+    try {
+      for (const a of acties) gedaan.push(await a());
+    } catch (fout) {
+      await draaiTerug(gedaan.map((g) => g.herstel)); // gooit HalfGelukt als terugdraaien mislukt
+      throw fout;
+    }
+    if (ids) for (const g of gedaan) ids.push(g.id);
+    return {
+      id: gedaan.find((g) => g.id)?.id,
+      herstel: () => draaiTerug(gedaan.map((g) => g.herstel)),
+      erbij: gedaan.flatMap((g) => g.erbij),
+      weg: gedaan.flatMap((g) => g.weg),
+    };
+  };
+}
+
+/**
  * Eén ronde bijsturen: alles vers lezen, rekenen (`lijstBijsturen`), schrijven.
  * Mislukt een schrijfstap, dan worden de vorige teruggedraaid.
  */
