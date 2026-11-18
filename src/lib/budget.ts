@@ -1,5 +1,8 @@
 /**
- * Budget — geschatte kost per gerecht en per week, en een waarschuwing boven je weekbudget.
+ * Budget — DE kostenbron voor eten in Foodlo (P2): geschatte kost per ingrediënt, per maaltijd,
+ * per week en voor de boodschappenlijst. De planner-engine, de budgetkaart op Week, de lijst en
+ * de winkelmodus rekenen allemaal hiermee, zodat overal hetzelfde getal staat.
+ * (`kostrem.ts` gaat over iets anders: een rem op AI-kosten, niet over prijzen van eten.)
  *
  * Er is geen prijsbron (MODULE_DESIGNS §8, #21): dit is een **schatting** met vaste, ronde
  * richtprijzen van een gewone Belgische supermarkt (verzonnen gemiddelden, geen promoties, geen
@@ -186,12 +189,40 @@ export type PlanKost = {
   servings?: number | null;
 };
 
-/** Som over de week. Maaltijden zonder recept (alleen een titel) tellen als "niet geschat". */
+type Regels = readonly { name: string; quantity: number | null; unit: string }[];
+
+/**
+ * Kost van één geplande maaltijd. Eén regel voor heel Foodlo:
+ * - geschaald naar het aantal eters (`personen / servings`); onbekende `servings` = zoals geschreven;
+ * - geen ingrediënten = `null` (niet te schatten).
+ */
+export function kostMaaltijd(
+  regels: Regels | undefined | null,
+  servings: number | null | undefined,
+  personen: number | null | undefined,
+  bron: PrijsBron = SCHATTING,
+): GerechtKost | null {
+  if (!regels?.length) return null;
+  const factor = personen && personen > 0 && servings && servings > 0 ? personen / servings : 1;
+  return schatGerecht(regels, factor, bron);
+}
+
+/**
+ * Een kost telt alleen als de meeste ingrediënten geschat konden worden. Anders: "niet geschat"
+ * (nooit doen alsof een onbekende prijs € 0 is).
+ */
+export function bekendeKost(kost: GerechtKost | null | undefined): number | null {
+  if (!kost || kost.dekking < 0.5) return null;
+  return kost.totaal;
+}
+
+/**
+ * Som over de week. Maaltijden zonder recept of met te weinig gekende prijzen tellen als
+ * "niet geschat" en tellen NIET mee in het totaal.
+ */
 export function schatWeek(
   plan: readonly PlanKost[],
-  ingredientenPerRecept: Readonly<
-    Record<string, readonly { name: string; quantity: number | null; unit: string }[]>
-  >,
+  ingredientenPerRecept: Readonly<Record<string, Regels>>,
   bron: PrijsBron = SCHATTING,
 ): { totaal: number; maaltijden: number; nietGeschat: number } {
   let totaal = 0;
@@ -200,17 +231,39 @@ export function schatWeek(
   for (const p of plan) {
     maaltijden += 1;
     const ingr = p.recipe_id ? ingredientenPerRecept[p.recipe_id] : undefined;
-    if (!ingr || !ingr.length) {
-      nietGeschat += 1;
-      continue;
-    }
-    const basis = p.servings && p.servings > 0 ? p.servings : 1;
-    const factor = p.personen && p.personen > 0 ? p.personen / basis : 1;
-    const k = schatGerecht(ingr, factor, bron);
-    if (k.dekking < 0.5) nietGeschat += 1;
-    totaal += k.totaal;
+    const k = bekendeKost(kostMaaltijd(ingr, p.servings, p.personen, bron));
+    if (k === null) nietGeschat += 1;
+    else totaal += k;
   }
   return { totaal: Math.round(totaal * 100) / 100, maaltijden, nietGeschat };
+}
+
+/**
+ * Geschatte kost van wat nog op de lijst staat (niet afgevinkt). Producten zonder gekende
+ * prijs of zonder hoeveelheid tellen niet mee en worden geteld als `zonderPrijs`.
+ */
+export function schatLijst(
+  items: readonly {
+    name: string;
+    quantity: number | null;
+    unit: string | null;
+    checked?: boolean;
+  }[],
+  bron: PrijsBron = SCHATTING,
+): { totaal: number; geschat: number; zonderPrijs: number } {
+  let totaal = 0;
+  let geschat = 0;
+  let zonderPrijs = 0;
+  for (const i of items) {
+    if (i.checked || isBasis(i.name)) continue;
+    const k = kostVan({ name: i.name, quantity: i.quantity, unit: i.unit ?? "" }, 1, bron);
+    if (k === null) zonderPrijs += 1;
+    else {
+      totaal += k;
+      geschat += 1;
+    }
+  }
+  return { totaal: Math.round(totaal * 100) / 100, geschat, zonderPrijs };
 }
 
 export type BudgetStatus = "binnen" | "bijna" | "over";

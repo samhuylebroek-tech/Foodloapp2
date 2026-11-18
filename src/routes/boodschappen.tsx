@@ -44,6 +44,7 @@ import { AanvulKaart, AanvulRegel } from "@/components/kringloop/AanvulKaart";
 import { meldMetHerstel, useAanvulling, useKringloopVernieuw } from "@/hooks/useAanvulling";
 import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
 import { korteBehoefte, lijstBehoefte, type DrieGetallen } from "@/lib/ingredient/behoefte";
+import { euro, schatLijst } from "@/lib/budget";
 import { nogNodigVoorMorgen } from "@/lib/intelligentie/voor-morgen";
 import { HalfGelukt, klaarMetWinkelen } from "@/lib/kringloop-db";
 import { Button } from "@/components/ui/button";
@@ -160,6 +161,15 @@ type Item = {
   /** Wie het toevoegde (gezinslijst). */
   user_id?: string;
 };
+
+/** "Schatting nog te betalen: € 23,40 (3 zonder prijs)". Leeg als er niets te schatten valt. */
+function lijstKostTekst(k: { totaal: number; geschat: number; zonderPrijs: number }) {
+  if (!k.geschat) return "";
+  const zonder = k.zonderPrijs
+    ? ` · ${k.zonderPrijs} ${k.zonderPrijs === 1 ? "product" : "producten"} zonder prijs`
+    : "";
+  return `Schatting nog te kopen: ${euro(k.totaal)}${zonder} (richtprijzen, geen winkelprijzen)`;
+}
 
 /** "nodig 2 kg · 1,2 kg in huis": de te kopen hoeveelheid staat al in het bolletje ernaast. */
 function korteBehoefteZonderKopen(d: DrieGetallen) {
@@ -577,6 +587,9 @@ function BoodschappenPage() {
   const actieveLijst = lijsten.find((l) => l.id === actief);
   const actieveNaam = actieveLijst?.name ?? "";
   const openAantal = items.filter((item) => !item.checked).length;
+  // P2: één kostenbron (budget.ts), zelfde als de budgetkaart op Week.
+  const lijstKost = useMemo(() => schatLijst(items), [items]);
+  const kostTekst = lijstKostTekst(lijstKost);
   const klaar = items
     .filter((item) => item.checked)
     .sort((a, b) => (afvinkTijd[b.id] ?? 0) - (afvinkTijd[a.id] ?? 0));
@@ -1474,6 +1487,14 @@ function BoodschappenPage() {
               ) : (
                 <div className="space-y-4">
                   <h2 className="sr-only">Je lijst</h2>
+                  {kostTekst ? (
+                    <p
+                      className="px-1 text-[0.95rem] text-muted-foreground"
+                      data-testid="lijst-kost"
+                    >
+                      {kostTekst}
+                    </p>
+                  ) : null}
 
                   {kiesModus && (
                     <div className="sticky top-20 z-20 flex flex-wrap items-center gap-2 rounded-2xl bg-inkt p-3 text-inkt-foreground shadow-zwevend">
@@ -2164,6 +2185,7 @@ function BoodschappenPage() {
             void klaarMetWinkelenNu();
           }}
           voorMorgen={voorMorgen}
+          kostTekst={kostTekst}
           onVoorMorgen={async (v) => {
             const aantal = await aanvulling.zetOpLijst(new Set(v.sleutels));
             if (aantal) void meet("winkel.voor_morgen", undefined, { aantal });

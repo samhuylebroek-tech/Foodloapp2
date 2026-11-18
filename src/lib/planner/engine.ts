@@ -26,8 +26,9 @@
  * netwerk; allergieën en dieet blijven op het toestel.
  */
 import {
-  schatGerecht,
+  bekendeKost,
   budgetOordeel,
+  kostMaaltijd,
   SCHATTING,
   type GerechtKost,
   type PrijsBron,
@@ -259,16 +260,12 @@ export function kostVoor(
   personen: number,
   bron: PrijsBron = SCHATTING,
 ): GerechtKost | null {
-  if (!k.regels?.length) return null;
-  const basis = k.servings && k.servings > 0 ? k.servings : personen;
-  return schatGerecht(k.regels, personen / basis, bron);
+  // Eén kostenbron (budget.ts): zelfde schaalregel als de budgetkaart en de lijst.
+  return kostMaaltijd(k.regels, k.servings, personen, bron);
 }
 
-/** Een kost telt alleen als de meeste ingrediënten geschat konden worden. */
-export function bekendeKost(kost: GerechtKost | null | undefined): number | null {
-  if (!kost || kost.dekking < 0.5) return null;
-  return kost.totaal;
-}
+/** Zelfde regel als de budgetkaart: zie `budget.ts`. */
+export { bekendeKost };
 
 // ---------------------------------------------------------------- harde filters
 

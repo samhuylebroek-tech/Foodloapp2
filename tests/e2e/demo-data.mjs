@@ -11,6 +11,14 @@ function dag(offset) {
   return d.toISOString().slice(0, 10);
 }
 
+/** Maandag van de week `wekenTerug` weken geleden (YYYY-MM-DD), voor de budgetgeschiedenis. */
+function maandagTerug(wekenTerug) {
+  const d = new Date();
+  d.setHours(12, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7) - 7 * wekenTerug);
+  return d.toISOString().slice(0, 10);
+}
+
 const R = (n) => `aaaaaaaa-0000-4000-8000-00000000000${n}`;
 
 const RECEPTEN = [
@@ -1008,6 +1016,20 @@ export function demoSeed() {
       naam,
       hoeveelheid,
       eenheid,
+    })),
+    // P2 (voorstel 0014): verzonnen budgetgeschiedenis van Marie, drie vorige weken.
+    budget_weken: [
+      [1, 104.6, 1, 6],
+      [2, 131.2, 0, 7],
+      [3, 97.8, 2, 5],
+    ].map(([terug, geschat, niet_geschat, maaltijden]) => ({
+      id: `b0d6e700-0014-4000-8000-00000000000${terug}`,
+      user_id: DEMO_USER_ID,
+      week: maandagTerug(terug),
+      budget: 120,
+      geschat,
+      niet_geschat,
+      maaltijden,
     })),
   };
 }

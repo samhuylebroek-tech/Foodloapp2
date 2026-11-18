@@ -91,6 +91,7 @@ export function Winkelmodus({
   onOpruimen,
   voorMorgen = null,
   onVoorMorgen,
+  kostTekst = "",
 }: {
   lijstId: string;
   groepen: { id: CategorieId; lijst: WinkelItem[] }[];
@@ -105,6 +106,8 @@ export function Winkelmodus({
   voorMorgen?: VoorMorgen | null;
   /** Eén tik: zet precies die producten op de lijst (met ongedaan maken). */
   onVoorMorgen?: (v: VoorMorgen) => Promise<void>;
+  /** P2: geschatte kost van wat nog te kopen is (zelfde bron als de lijst en de budgetkaart). */
+  kostTekst?: string;
 }) {
   const [voorMorgenBezig, setVoorMorgenBezig] = useState(false);
   const [stap, setStap] = useState(0);
@@ -234,6 +237,11 @@ export function Winkelmodus({
             <p className="font-display text-2xl font-semibold leading-tight hyphens-auto">
               {huidig ? CATEGORIE_LABEL[huidig.id] : "Klaar"}
             </p>
+            {kostTekst ? (
+              <p className="mt-1 text-[0.95rem] text-inkt-zacht" data-testid="winkel-kost">
+                {kostTekst}
+              </p>
+            ) : null}
           </div>
         </div>
         <div
