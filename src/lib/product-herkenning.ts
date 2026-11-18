@@ -177,7 +177,9 @@ const ZINNEN = Object.keys(EXTRA_SYNONIEMEN)
 
 function vervangZinnen(tekst: string): string {
   let t = ` ${tekst} `;
-  for (const z of ZINNEN) if (t.includes(` ${z} `)) t = t.split(` ${z} `).join(` ${EXTRA_SYNONIEMEN[z]} `);
+  for (const z of ZINNEN) {
+    if (t.includes(` ${z} `)) t = t.split(` ${z} `).join(` ${EXTRA_SYNONIEMEN[z]} `);
+  }
   return t.trim();
 }
 
@@ -205,7 +207,8 @@ export function vervangNaam(nieuw: string, oud: string): string {
 
 /** Canonieke productnaam: synoniemen samengebracht, bijwoorden weg, volgorde geneutraliseerd. */
 export function canoniekeNaam(name: string): string {
-  const ruw = vervangZinnen(normaliseerTekst(vervanging(name).naam)).split(" ").filter(Boolean);
+  const zonderZinnen = vervangZinnen(normaliseerTekst(vervanging(name).naam));
+  const ruw = zonderZinnen.split(" ").filter(Boolean);
   const alle = ruw.map(canoniekWoord).filter(Boolean);
   // Bijwoord herkennen vóór én na de stam ("diepvries" werd anders "diepvrie" en bleef staan).
   const zonderBijwoorden = ruw

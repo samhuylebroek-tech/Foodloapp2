@@ -83,7 +83,8 @@ export function lijstBehoefte(opts: {
   for (const item of opts.items) {
     if (item.checked) continue;
     const unit = item.unit ?? "";
-    const pak = item.quantity == null ? null : voorgesteldeVerpakking(item.name, item.quantity, unit);
+    const pak =
+      item.quantity == null ? null : voorgesteldeVerpakking(item.name, item.quantity, unit);
     if (!item.recipe_id) {
       if (pak) uit.set(item.id, { nodig: null, inHuis: null, teKopen: null, verpakking: pak });
       continue;
