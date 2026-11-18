@@ -208,7 +208,8 @@ function teKopen(ctx: AssistentContext, id: string | null): Map<string, string> 
   for (const n of k.ingredienten) {
     if (!n.trim() || isBasis(n) || zitInVoorraad(n, [...ctx.inHuis])) continue;
     const c = canoniekeNaam(n) || normaliseerTekst(n);
-    if (c && !uit.has(c)) uit.set(c, c);
+    // Sleutel = de herkende productnaam; tonen doen we de naam uit het recept.
+    if (c && !uit.has(c)) uit.set(c, n.trim());
   }
   return uit;
 }
@@ -229,14 +230,25 @@ function lijstVerschil(
       for (const p of teKopen(ctx, r.recipeId).keys()) blijft.add(p);
   const erbij = new Set<string>();
   const eraf = new Set<string>();
+  const naam = new Map<string, string>();
   for (const w of wissels) {
     const voor = teKopen(ctx, w.van);
     const na = teKopen(ctx, w.naar);
-    for (const p of na.keys()) if (!voor.has(p) && !blijft.has(p)) erbij.add(p);
-    for (const p of voor.keys()) if (!na.has(p) && !blijft.has(p)) eraf.add(p);
+    for (const [p, n] of na)
+      if (!voor.has(p) && !blijft.has(p)) {
+        erbij.add(p);
+        naam.set(p, n);
+      }
+    for (const [p, n] of voor)
+      if (!na.has(p) && !blijft.has(p)) {
+        eraf.add(p);
+        naam.set(p, n);
+      }
   }
   for (const p of erbij) eraf.delete(p);
-  return { erbij: [...erbij].sort(), eraf: [...eraf].sort() };
+  const toon = (x: Set<string>) =>
+    [...x].map((p) => naam.get(p) ?? p).sort((a, b) => a.localeCompare(b));
+  return { erbij: toon(erbij), eraf: toon(eraf) };
 }
 
 function kostVan(ctx: AssistentContext, id: string | null, personen: number): number | null {
@@ -688,7 +700,7 @@ function opLijst(
       titel,
       `Ik vond geen eigen recept met "${o.zoek}". Kijk de naam na of zoek bij Gerechten.`,
     );
-  const producten = [...teKopen(ctx, k.id).keys()].sort();
+  const producten = [...teKopen(ctx, k.id).values()].sort((a, b) => a.localeCompare(b));
   const personen = ctx.standaardPersonen;
   const waarschuwingen: string[] = [];
   const ec = etersContext(ctx, etersVan(ctx, null));

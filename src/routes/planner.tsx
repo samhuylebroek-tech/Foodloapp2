@@ -15,6 +15,7 @@ import {
   Settings,
   CalendarDays,
   CalendarRange,
+  MessageCircleQuestion,
   Clock3,
   BookOpen,
   MoreVertical,
@@ -1542,6 +1543,14 @@ function PlannerPage() {
               <Button asChild variant="outline" className="col-span-full h-auto min-h-16 gap-2 px-3 text-base">
                 <Link to="/week-samenstellen" search={{ week: datumTekst(weekStart) }}>
                   <CalendarRange className="size-5 shrink-0" aria-hidden /> Stel mijn week samen
+                </Link>
+              </Button>
+            ) : null}
+            {/* P4: assistent met acties; voorstel met verschillen, pas na "Doe maar" uitgevoerd. */}
+            {eigenMenu && weekVerschil >= 0 ? (
+              <Button asChild variant="outline" className="col-span-full h-auto min-h-16 gap-2 px-3 text-base">
+                <Link to="/assistent" search={{ van: "week" }}>
+                  <MessageCircleQuestion className="size-5 shrink-0" aria-hidden /> Vraag de assistent
                 </Link>
               </Button>
             ) : null}

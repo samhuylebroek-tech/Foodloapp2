@@ -1,7 +1,15 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, CalendarDays, ChevronRight, Clock, Heart, Plus } from "lucide-react";
+import {
+  BookOpen,
+  CalendarDays,
+  ChevronRight,
+  Clock,
+  Heart,
+  MessageCircleQuestion,
+  Plus,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { zichtbareEigenaren } from "@/lib/zichtbare-eigenaren";
 import { useAuth } from "@/hooks/useAuth";
@@ -331,13 +339,24 @@ function StartPage() {
                   : t("Nog niets gepland deze week.")}
               </p>
             </div>
-            <Link
-              to="/planner"
-              className="flex min-h-12 shrink-0 items-center gap-1 text-base font-semibold text-primary"
-            >
-              {t("Weekmenu")}
-              <ChevronRight className="size-5" aria-hidden />
-            </Link>
+            <div className="flex flex-wrap items-center gap-x-4">
+              {/* P4: de assistent met acties ("vervang woensdag", "maak mijn week goedkoper"). */}
+              <Link
+                to="/assistent"
+                search={{ van: "vandaag" }}
+                className="flex min-h-12 shrink-0 items-center gap-1.5 text-base font-semibold text-primary"
+              >
+                <MessageCircleQuestion className="size-5" aria-hidden />
+                {t("Vraag de assistent")}
+              </Link>
+              <Link
+                to="/planner"
+                className="flex min-h-12 shrink-0 items-center gap-1 text-base font-semibold text-primary"
+              >
+                {t("Weekmenu")}
+                <ChevronRight className="size-5" aria-hidden />
+              </Link>
+            </div>
           </div>
           {/* `relative`: verborgen schermlezertekst (sr-only) blijft binnen de scrollstrook. */}
           <ul className="scroll-rij relative -mx-4 mt-4 flex gap-3 overflow-x-auto px-4 pb-3 pt-1 xl:mx-0 xl:grid xl:grid-cols-7 xl:overflow-visible xl:px-0">

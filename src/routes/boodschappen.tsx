@@ -28,6 +28,7 @@ import {
   Settings2,
   Undo2,
   Lightbulb,
+  MessageCircleQuestion,
   PackageCheck,
   WalletCards,
   ArrowUpDown,
@@ -1956,6 +1957,12 @@ function BoodschappenPage() {
               }}
             >
               <Lightbulb /> Winkelideeën
+            </Button>
+            {/* P4: "zet de ingrediënten van … op de lijst" via de assistent (met voorstel). */}
+            <Button asChild variant="outline" className="h-14 w-full justify-start text-base">
+              <Link to="/assistent" search={{ van: "lijst" }} onClick={() => setMeerOpen(false)}>
+                <MessageCircleQuestion /> Vraag de assistent
+              </Link>
             </Button>
             <Button
               variant="outline"

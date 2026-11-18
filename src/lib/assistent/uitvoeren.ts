@@ -83,9 +83,10 @@ async function zetOpLijst(
   const recept = hulp.receptVan(s.recipeId);
   if (!recept) throw new Error("Recept niet gevonden");
   const factor = recept.servings && recept.servings > 0 ? s.personen / recept.servings : 1;
-  const gewenst = new Set(alleen);
+  const sleutel = (n: string) => canoniekeNaam(n) || normaliseerTekst(n);
+  const gewenst = new Set(alleen.map(sleutel));
   const items = recept.regels
-    .filter((r) => gewenst.has(canoniekeNaam(r.name) || normaliseerTekst(r.name)))
+    .filter((r) => gewenst.has(sleutel(r.name)))
     .map((r) => ({
       name: r.name,
       quantity: r.quantity === null ? null : Math.round(r.quantity * factor * 100) / 100,

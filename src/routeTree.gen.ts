@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AanmeldenRouteImport } from './routes/aanmelden'
 import { Route as AanvullenRouteImport } from './routes/aanvullen'
 import { Route as AbonnementRouteImport } from './routes/abonnement'
+import { Route as AssistentRouteImport } from './routes/assistent'
 import { Route as BeheerRouteImport } from './routes/beheer'
 import { Route as BoodschappenRouteImport } from './routes/boodschappen'
 import { Route as CreditsRouteImport } from './routes/credits'
@@ -131,6 +132,11 @@ const AanvullenRoute = AanvullenRouteImport.update({
 const AbonnementRoute = AbonnementRouteImport.update({
   id: '/abonnement',
   path: '/abonnement',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssistentRoute = AssistentRouteImport.update({
+  id: '/assistent',
+  path: '/assistent',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BeheerRoute = BeheerRouteImport.update({
@@ -635,6 +641,7 @@ export interface FileRoutesByFullPath {
   '/aanmelden': typeof AanmeldenRoute
   '/aanvullen': typeof AanvullenRoute
   '/abonnement': typeof AbonnementRoute
+  '/assistent': typeof AssistentRoute
   '/beheer': typeof BeheerRouteWithChildren
   '/boodschappen': typeof BoodschappenRoute
   '/credits': typeof CreditsRoute
@@ -740,6 +747,7 @@ export interface FileRoutesByTo {
   '/aanmelden': typeof AanmeldenRoute
   '/aanvullen': typeof AanvullenRoute
   '/abonnement': typeof AbonnementRoute
+  '/assistent': typeof AssistentRoute
   '/boodschappen': typeof BoodschappenRoute
   '/credits': typeof CreditsRoute
   '/deel': typeof DeelRoute
@@ -841,6 +849,7 @@ export interface FileRoutesById {
   '/aanmelden': typeof AanmeldenRoute
   '/aanvullen': typeof AanvullenRoute
   '/abonnement': typeof AbonnementRoute
+  '/assistent': typeof AssistentRoute
   '/beheer': typeof BeheerRouteWithChildren
   '/boodschappen': typeof BoodschappenRoute
   '/credits': typeof CreditsRoute
@@ -948,6 +957,7 @@ export interface FileRouteTypes {
     | '/aanmelden'
     | '/aanvullen'
     | '/abonnement'
+    | '/assistent'
     | '/beheer'
     | '/boodschappen'
     | '/credits'
@@ -1053,6 +1063,7 @@ export interface FileRouteTypes {
     | '/aanmelden'
     | '/aanvullen'
     | '/abonnement'
+    | '/assistent'
     | '/boodschappen'
     | '/credits'
     | '/deel'
@@ -1153,6 +1164,7 @@ export interface FileRouteTypes {
     | '/aanmelden'
     | '/aanvullen'
     | '/abonnement'
+    | '/assistent'
     | '/beheer'
     | '/boodschappen'
     | '/credits'
@@ -1259,6 +1271,7 @@ export interface RootRouteChildren {
   AanmeldenRoute: typeof AanmeldenRoute
   AanvullenRoute: typeof AanvullenRoute
   AbonnementRoute: typeof AbonnementRoute
+  AssistentRoute: typeof AssistentRoute
   BeheerRoute: typeof BeheerRouteWithChildren
   BoodschappenRoute: typeof BoodschappenRoute
   CreditsRoute: typeof CreditsRoute
@@ -1330,6 +1343,13 @@ declare module '@tanstack/react-router' {
       path: '/abonnement'
       fullPath: '/abonnement'
       preLoaderRoute: typeof AbonnementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assistent': {
+      id: '/assistent'
+      path: '/assistent'
+      fullPath: '/assistent'
+      preLoaderRoute: typeof AssistentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/beheer': {
@@ -2195,6 +2215,7 @@ const rootRouteChildren: RootRouteChildren = {
   AanmeldenRoute: AanmeldenRoute,
   AanvullenRoute: AanvullenRoute,
   AbonnementRoute: AbonnementRoute,
+  AssistentRoute: AssistentRoute,
   BeheerRoute: BeheerRouteWithChildren,
   BoodschappenRoute: BoodschappenRoute,
   CreditsRoute: CreditsRoute,
