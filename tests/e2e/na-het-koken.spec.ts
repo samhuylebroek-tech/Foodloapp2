@@ -154,12 +154,10 @@ test("voorraad bijwerken: voorstel, aanpassen, pas na bevestiging, één keer on
   await expect(sectie.getByRole("status")).toContainText(
     "Voorraad bijgewerkt: rundvlees op, uien minder",
   );
-  await expect
-    .poll(voorraad)
-    .toEqual({
-      ...Object.fromEntries(Object.entries(voor).filter(([k]) => k !== "rundvlees")),
-      uien: 2,
-    });
+  await expect.poll(voorraad).toEqual({
+    ...Object.fromEntries(Object.entries(voor).filter(([k]) => k !== "rundvlees")),
+    uien: 2,
+  });
 
   // Eén keer ongedaan maken: alles terug, ook het opgebruikte product (zelfde id).
   await sectie.getByRole("button", { name: "Ongedaan maken" }).click();

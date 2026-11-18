@@ -164,7 +164,7 @@ export function GebruikEerstKaart({
   }
 
   return (
-    <section aria-labelledby="gebruik-eerst-titel" className="paneel space-y-4 p-5">
+    <section aria-labelledby="gebruik-eerst-titel" className="paneel space-y-4 p-4 sm:p-5">
       <div>
         <h2 id="gebruik-eerst-titel" className="flex items-center gap-2 text-sectietitel">
           <Hourglass className="size-6 shrink-0 text-[var(--honing-foreground)]" aria-hidden />
@@ -177,7 +177,7 @@ export function GebruikEerstKaart({
       {restjes.length ? (
         <ul className="space-y-3" aria-label={t("Restjes")}>
           {restjes.map((r) => (
-            <li key={r.id} className="rounded-2xl bg-secondary p-4" data-restje={r.titel}>
+            <li key={r.id} className="rounded-2xl bg-secondary p-3 sm:p-4" data-restje={r.titel}>
               <p className="flex items-start gap-2 text-lg font-semibold break-words">
                 <Soup className="mt-1 size-5 shrink-0" aria-hidden />
                 <span>{r.titel}</span>
@@ -202,7 +202,7 @@ export function GebruikEerstKaart({
         </ul>
       ) : null}
       {opmaken?.oud.length ? (
-        <div className="rounded-2xl bg-secondary p-4" data-testid="gebruik-eerst-voorraad">
+        <div className="rounded-2xl bg-secondary p-3 sm:p-4" data-testid="gebruik-eerst-voorraad">
           <p className="text-base">
             <span className="font-semibold">{t("Al even in huis")}:</span>{" "}
             {opmaken.oud.map((o) => `${o.naam} (${dagenTekst(o.dagen)})`).join(", ")}

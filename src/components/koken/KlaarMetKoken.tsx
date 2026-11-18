@@ -125,13 +125,13 @@ export function KlaarMetKoken(p: Props) {
           onScore={p.onScore}
         />
 
-        <section className="paneel p-5">
+        <section className="paneel p-4 sm:p-5">
           <RestjeVraag titel={p.recept.title} receptId={p.recept.id} />
         </section>
 
         <VoorraadBijwerken ingredienten={p.ingredienten} factor={p.factor} />
 
-        <section className="paneel p-5">
+        <section className="paneel p-4 sm:p-5">
           <label htmlFor={notitieId} className="text-lg font-semibold">
             {t("Notitie bij het recept")}
           </label>
@@ -236,7 +236,7 @@ function Oordeel({
   }
 
   return (
-    <section className="paneel p-5" aria-labelledby="oordeel-titel">
+    <section className="paneel p-4 sm:p-5" aria-labelledby="oordeel-titel">
       <h2 id="oordeel-titel" className="text-lg font-semibold">
         {t("Hoeveel sterren geef je")} “{titel}”?
       </h2>
@@ -307,7 +307,7 @@ function VoorraadBijwerken({
   if (!bijgehouden || !user) return null;
   if (isLoading)
     return (
-      <section className="paneel p-5" aria-busy="true">
+      <section className="paneel p-4 sm:p-5" aria-busy="true">
         <p className="text-base text-muted-foreground">{t("Even je voorraad nakijken…")}</p>
       </section>
     );
@@ -360,7 +360,7 @@ function VoorraadBijwerken({
   }
 
   return (
-    <section className="paneel p-5" aria-labelledby="voorraad-klaar-titel">
+    <section className="paneel p-4 sm:p-5" aria-labelledby="voorraad-klaar-titel">
       <h2 id="voorraad-klaar-titel" className="text-lg font-semibold">
         {t("Voorraad bijwerken?")}
       </h2>
@@ -394,7 +394,7 @@ function VoorraadBijwerken({
               return (
                 <li
                   key={r.id}
-                  className="rounded-2xl border border-border p-3"
+                  className="rounded-2xl border border-border p-2.5 sm:p-3"
                   data-aftrek={r.naam}
                 >
                   <div className="flex items-start gap-3">
@@ -406,7 +406,7 @@ function VoorraadBijwerken({
                       className="mt-1 size-6 shrink-0 accent-[var(--primary)]"
                     />
                     <label htmlFor={vinkId} className="min-w-0 flex-1">
-                      <span className="block text-base font-semibold">{r.naam}</span>
+                      <span className="block text-base font-semibold hyphens-auto">{r.naam}</span>
                       <span className="block text-base text-muted-foreground">
                         {t("In huis")}: {maatTekst(r.huidig, r.eenheid)}
                         {r.gebruikt != null
@@ -420,7 +420,7 @@ function VoorraadBijwerken({
                   ) : null}
                   {k.aan ? (
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <label className="flex items-center gap-2 text-base">
+                      <label className="flex min-w-0 max-w-full flex-wrap items-center gap-2 text-base">
                         <span>{t("Gebruikt")}</span>
                         <input
                           type="number"
@@ -435,7 +435,7 @@ function VoorraadBijwerken({
                             const n = Number(w);
                             zet(r.id, { gebruikt: w === "" || !Number.isFinite(n) ? null : n });
                           }}
-                          className="h-12 w-28 rounded-xl border border-input bg-background px-3 text-base"
+                          className="h-12 w-28 min-w-0 max-w-full rounded-xl border border-input bg-background px-3 text-base"
                         />
                         {r.eenheid ? <span>{r.eenheid}</span> : null}
                       </label>
