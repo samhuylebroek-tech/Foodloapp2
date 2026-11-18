@@ -65,12 +65,13 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | | Creatorrecepten | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | Rij "Makers om te volgen" op Ontdek, `/makers` | #28 |
 | **Recepten** | Zoeken (verdraagt tikfouten), filters, automatische collecties, concepten | Behouden | F1 | — | `gerechten.tsx` |
 | | Eigen collecties | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | "Bewaar in…", rij "Mijn verzamelingen", `/verzamelingen/$id` | G1/G2 |
-| | Notities bij een recept | Te ontwikkelen | F2 | Bestaat niet | MODULE-AUDIT §2 |
+| | Notities bij een recept | Gebouwd (marathon P3), getest met koken.test en na-het-koken.spec (telefoon/desktop); op het account na migratie 0015, tot dan op het toestel | F2 | Eigen notitie bij "Klaar met koken", zichtbaar als "Jouw kooknotities" op het recept; alleen voor jou, nooit naar AI | `KookNotities.tsx`, 0015 |
 | **Receptdetail** | Ingrediënten, porties, tijd, moeilijkheid, stappen met ingrediënten, voedingswaarden (lokaal), versies, foto's | Behouden | F1 | — | `recepten.$id.tsx` |
 | | Acties met woorden (Favoriet, Delen, Aanpassen, Meer) | Verbeterd (ronde 1) | F1 | — | PR #1 |
 | | Inplannen, op de lijst, kookstand | Behouden | F1 | — | — |
 | | Herkomst / creator | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | "Van <maker>" op openbare makerrecepten (Ontdek-catalogus blijft "Foodlo-keuken") | — |
 | **Kookstand** | Stappen, voortgang, timers, hervatten, scherm aan, score, restje, voorraad aftrekken | Behouden | F1 | — | `kookstand.spec.ts` |
+| | **Klaar met koken (P3)**: sterren, Niet nu / Niet voor mij, restje (naam, porties, richtwaarde bewaardatum), "Voorraad bijwerken?" als voorstel met vinkjes en bevestiging (onbekende eenheid = vraag; één keer ongedaan maken), notitie; "Gekookt" op Vandaag en in Week | Gebouwd (marathon P3), getest met koken.test (18) en na-het-koken.spec (telefoon/desktop); "gekookt" op het account na migratie 0015, tot dan op het toestel | F1 | Voorraad gaat niet meer stil omlaag na het koken (gedragswijziging). "Niet voor mij" voorlopig op het toestel (0006) | `KlaarMetKoken.tsx`, `voorraad-aftrek.ts`, 0015 |
 | | Altijd bovenaan beginnen | Opgelost (ronde 1) | F1 | — | BUG-132 |
 | | Spraak, handsfree | Latere fase | F2 | — | MODULE-AUDIT P2 |
 | **Boodschappen** | Lijsten, afdelingen, samentellen, eigen producten, eerder gekocht, winkelideeën, delen met link, offline wachtrij, Slim aanvullen, "Waarom op mijn lijst?" | Behouden | F1 | — | `lijst.spec.ts` |
@@ -81,7 +82,7 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | **Keuken** | "Wat kan ik koken?", ontbrekende op de lijst | Behouden | F1 | — | `voorraad.spec.ts` |
 | | Voorraad met drie standen (geen, alleen lijst, volledig) | Behouden | F1 | Onbekende voorraad telt nooit als in huis | `voorraad-modus.ts`, `voorraad-optioneel.spec.ts` |
 | | Gebruik eerst, "X dagen in huis" | Behouden | F1 | Datumgrens rond middernacht (BUG-140) | `gebruik-eerst.ts` |
-| | Restjes | Uitbreiden | F2 | Nu alleen op het toestel; naar het account (ontwerp R1–R5) | LANCERINGSPLAN B2 |
+| | Restjes | Uitbreiden | F2 | Nu alleen op het toestel; naar het account (ontwerp R1–R5). P3: eigen naam, richtwaarde, Restjesdag in "Stel mijn week samen" noemt de restjes, "Gebruik eerst"-kaart op Vandaag (houdbaarheid.spec) | LANCERINGSPLAN B2 |
 | | Houdbaarheid, plekken, weggegooid | Geblokkeerd | F2 | Voorstel 0007 | #17, G1 |
 | | Dubbels in de voorraad samenvoegen ("ui"/"uien") | Te ontwikkelen | F2 | — | MODULE-AUDIT P2 |
 | **Klantenkaarten** | Scannen, tonen, delen met het gezin | Behouden | F1 | Camera alleen op een echt toestel te testen | `kaarten.*` |
@@ -125,6 +126,7 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | Beheer | Status | Opmerking |
 |---|---|---|
 | Aanpassen (zelfde formulier), versies (10, terugzetten), foto's, concepten (automatisch bewaren) | Behouden | — |
+| **Receptversies (P3)**: origineel + elke aanpassing (assistent, porties bewaren, aanvullen, import, bewerken) met datum en wat veranderde; terugzetten met bevestiging en ongedaan maken; "Bewaar voor N personen" | Gebouwd (marathon P3), getest met recept-versies.test (10) en receptversies.spec (telefoon/desktop); werkt in productie (bestaande tabel recipe_versions, rechten getest in tests/rls/kookmomenten.mjs) | — |
 | Ingrediënten en stappen herschikken (hoger/lager-knoppen, geen slepen) | Gebouwd (marathon), getest met volgorde.test en recept-volgorde.spec; werkt meteen in productie | "Wat gebruik je bij elke stap" verhuist mee |
 | Verwijderen | Verbeterd (BUG-146, ronde 2) | Overal: bevestigen, zacht verwijderen, "Ongedaan maken"; op de pagina van een verwijderd recept staat "Terugzetten" |
 | Eigen recept dupliceren | Gebouwd (ronde 3) | Meer → "Dupliceren": kopie met "(kopie)", ingrediënten en foto's mee (`recept-beheer.spec.ts`) |

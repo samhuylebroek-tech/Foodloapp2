@@ -39,8 +39,8 @@ Gemeten in de code, niet uit documenten. "Werkt" = de handeling bewaart en is ge
 5. **Boodschappen**: één actie zet het tekort op de lijst: behoefte (uit porties) − voorraad (alleen wat geregistreerd is) = te kopen, met een voorgestelde verpakking ("1 zak 500 g; je hebt 350 g nodig"). Per afdeling, per recept of samen. Kost: "schatting" of "winkelprijs" (alleen bij een echte bron).
 6. **Wijziging woensdag** (pasta → ovenschotel): `wijzigMenu` past menu, porties, lijst en kost tegelijk aan; melding "lijst: 3 erbij, 2 eraf · week € 4 duurder" met Ongedaan maken.
 7. **Winkelen**: winkelmodus per afdeling, afvinken realtime gedeeld; na "Klaar met winkelen" vraagt Foodlo (volgens instelling) of gekochte producten in de voorraad mogen.
-8. **Koken**: kookstand met waarschuwing voor wie meeeet, timers, assistent; na "Klaar": "Bleef er iets over?" → restje met bewaardatum (geen veiligheidsbelofte) → komt terug in voorstellen.
-9. **Leren**: sterren, "niet nu", "niet voor mij" sturen de volgende voorstellen; alles zichtbaar en uit te zetten.
+8. **Koken**: kookstand met waarschuwing voor wie meeeet, timers, assistent; na "Klaar": "Bleef er iets over?" → restje met bewaardatum (geen veiligheidsbelofte) → komt terug in voorstellen. *Stand P3 (marathon): gebouwd — "Klaar met koken" (ook via "Gekookt" op Vandaag/Week), restje met richtwaarde, voorraad bijwerken na bevestiging, notitie, "Gebruik eerst"-kaart; gekookt/notities op het account na voorstel 0015.*
+9. **Leren**: sterren, "niet nu", "niet voor mij" sturen de volgende voorstellen; alles zichtbaar en uit te zetten. *Stand P3: sterren, "Niet nu" en "Niet voor mij" op het Klaar-scherm (laatste twee nog op het toestel tot 0006); receptversies bewaren het origineel bij elke aanpassing.*
 **Fouten/ontbrekend**: geen recepten genoeg → zeg welke filter het krapst is en bied versoepelen aan (nooit allergie); geen prijs → "prijs onbekend", niet meetellen als € 0; geen netwerk → laatst bekende planning en lijst, wijzigingen in de wachtrij.
 
 ## 3. Bouwvolgorde (na fase 2 "recepten alle bronnen")

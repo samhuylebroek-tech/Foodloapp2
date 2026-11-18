@@ -132,6 +132,9 @@ export function ReceptVersies({ recept, ingredienten, inline = false }: Props) {
           )}
         >
           <p className="text-lg font-semibold">{titelVan(v)}</p>
+          {v.soort === "huidig" && v.wijziging ? (
+            <p className="text-base font-semibold text-primary">{v.wijziging.label}</p>
+          ) : null}
           <p className="text-base text-muted-foreground">
             {v.soort === "origineel" || v.soort === "oudste" ? "Sinds" : "Op"}{" "}
             {versieDatum(v.sinds)}

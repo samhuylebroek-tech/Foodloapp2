@@ -94,6 +94,7 @@ import { useEtersOordelen, useMaaltijdEters } from "@/hooks/useMaaltijdEters";
 import { zonderEter } from "@/lib/maaltijd-eters";
 import { KlaarMetKoken } from "@/components/koken/KlaarMetKoken";
 import { ReceptVersies } from "@/components/recept/ReceptVersies";
+import { KookNotities } from "@/components/koken/KookNotities";
 import { bewaarVersie, schrijfStaat, verwijderVersie } from "@/lib/recept-versies-db";
 import { schaalStaat, staatUit } from "@/lib/recept-versies";
 import { markeerKookstand } from "@/lib/eerste-stappen";
@@ -1535,6 +1536,7 @@ function ReceptPage() {
           ) : null}
           {/* P3: origineel en aangepaste versies, terugzetten met bevestiging en ongedaan maken. */}
           {isOwner ? <ReceptVersies recept={recipe} ingredienten={ingredients} /> : null}
+          <KookNotities receptId={recipe.id} />
           {isOwner && recipe.image_url ? (
             <div className="space-y-2">
               <p className="text-base font-semibold">{t("Foto's")}</p>
