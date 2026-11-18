@@ -9,8 +9,8 @@ Gemeten in de code, niet uit documenten. "Werkt" = de handeling bewaart en is ge
 | Kosten/budget na wijziging | **Werkt als weergave** (wordt telkens herberekend), maar budget staat alleen op het toestel en stuurt de voorstellen niet | `budget.ts` `schatWeek`, `leesWeekbudget` (localStorage) |
 | Veiligheid (allergie/dieet, wie eet mee) | **Werkt** overal gelijk; hard/zacht; privacy van redenen | `veiligheid.ts`, `gezin-veiligheid.ts`, `voorstel-eters.ts` |
 | Voorstellen (vanavond, vul aan, weekvoorstel) | **Werkt**, met redenen, "niet nu", restjes, gebruik-eerst, seizoen, weer | `intelligentie/*` |
-| Ingrediënten | **Gedeeltelijk**: tekst-parser, Belgische maten, dubbel-check op de lijst; geen synoniemenlijst, geen omrekening g↔stuk↔el, geen verpakkingsmaat, geen scheiding behoefte/voorraad/te kopen | `ingredienten.ts`, `boodschappen.ts` |
-| Voorraad | **Gedeeltelijk**: aan/uit ("bijhouden"), onbekend = niet in huis (goed); geen 3 niveaus (basisvoorraad ontbreekt) | `voorraad-modus.ts` |
+| Ingrediënten | **Werkt (P2)**: synoniemen als data, omrekening (stuk↔g alleen met gekend stukgewicht), optellen, gangbare verpakking, nodig/in huis/te kopen op lijst en Slim aanvullen | `src/lib/ingredient/` |
+| Voorraad | **Werkt**: 3 niveaus (P1); basisvoorraad = "heb je meestal", niet op de lijst (P2) | `planner/profiel.ts`, `kringloop.ts` |
 | Recepten, import, editor, kookstand, assistent | **Werkt**; fase 2 (alle bronnen, video, delen) is in bouw | RecipeForm, kookstand, `assistent/*` |
 | Gezin, realtime | **Werkt**: realtime op planner, lijst, gezin | `postgres_changes` in 3 schermen |
 | Makers, community, partners, premium | **Werkt in demo**, live na migraties 0008/0011/0012 | eigen routes |
@@ -27,7 +27,7 @@ Gemeten in de code, niet uit documenten. "Werkt" = de handeling bewaart en is ge
 | Gelijktijdige wijzigingen: waarschuwen i.p.v. overschrijven | **Ontbreekt** (realtime ververst, geen conflictmelding) | — |
 | Echte prijzen, echte winkels, echt weer | **Extern** (testadapters, duidelijk gelabeld) | `supermarkt/`, `weer.ts` |
 
-**Dubbel:** twee kostenschatters (`kostrem.ts` en `budget.ts`) → één bron maken in fase C.
+**Dubbel (opgelost in P2):** `kostrem.ts` bleek een AI-kostenrem, geen prijsschatter; de echte dubbeling zat tussen budgetkaart en planner (andere schaalregel). Nu één bron: `budget.ts`, ook voor lijst en winkelmodus; budgetgeschiedenis per week (voorstel 0014).
 
 ## 2. De A-tot-Z-stroom, als scenario
 **Gezin Peeters**: Marie en Jan, Lotte (12, notenallergie, deelt het niet), opa Gust (vegetarisch, woensdag en zondag). Weekbudget € 120, winkel "testwinkel", Marie heeft door de week 30 minuten, dinsdag is niemand thuis, vrijdag mag het feestelijk, er staat nog pompoen en halve room in de koelkast, er is een oven en een airfryer, geen slowcooker.
