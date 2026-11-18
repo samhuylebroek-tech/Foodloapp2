@@ -227,9 +227,12 @@ export function DagVoorstelKaart({
   melding,
   onAlternatief,
   onVersoepel,
+  restjes,
 }: {
   uitkomst: DagUitkomst;
   momentLabel: string | null;
+  /** P3: geregistreerde restjes die op deze restjesdag nog goed zijn (richtwaarde). */
+  restjes?: readonly { id: string; titel: string; porties: number }[] | undefined;
   bezig: boolean;
   /** Korte uitleg na een wissel of als er geen alternatief is. */
   melding: string | null;
@@ -253,7 +256,23 @@ export function DagVoorstelKaart({
       {uitkomst.status === "niet-thuis" ? (
         <p className="text-base">Niemand thuis: niets gepland.</p>
       ) : uitkomst.status === "restjes" ? (
-        <p className="text-base">Restjesdag: je eet op wat er nog is. Niets op je lijst.</p>
+        restjes?.length ? (
+          <div className="space-y-1" data-restjes-dag>
+            <p className="text-base">Restjesdag. Op te eten (niets op je lijst):</p>
+            <ul className="list-disc pl-6 text-base">
+              {restjes.map((r) => (
+                <li key={r.id} className="font-semibold">
+                  {r.titel}{" "}
+                  <span className="font-normal text-muted-foreground">
+                    ({r.porties} {r.porties === 1 ? "portie" : "porties"})
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <p className="text-base">Restjesdag: je eet op wat er nog is. Niets op je lijst.</p>
+        )
       ) : uitkomst.status === "leeg" ? (
         <div className="space-y-2" role="status">
           <p className="text-base">{FILTER_TEKST[uitkomst.krapste ?? "herhaling"].waarom}</p>

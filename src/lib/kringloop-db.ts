@@ -29,6 +29,13 @@ import {
   type VoorraadRij,
 } from "@/lib/kringloop";
 import { lokaleDatum } from "@/lib/tijd";
+import {
+  aftrekPlan,
+  type AftrekKeuze,
+  type AftrekPlan,
+  type AftrekRegel,
+  type VoorraadProduct,
+} from "@/lib/koken/voorraad-aftrek";
 import { db } from "@/lib/module-beschikbaar";
 import { leesProfiel, leesToestelProfiel } from "@/lib/planner/profiel";
 import { nieuwePorties } from "@/lib/maaltijd-eters";
@@ -504,6 +511,70 @@ export async function verwerkKoken(opts: {
     ],
     herstel: eenmalig(() => draaiTerug(gedaan)),
   };
+}
+
+/**
+ * P3 "Voorraad bijwerken?": alleen wat de gebruiker aanvinkte en bevestigde. Rekent vlak vóór het
+ * schrijven opnieuw vanaf de voorraad zoals ze nu is. Alles of niets; één herstel.
+ */
+export async function werkVoorraadBij(opts: {
+  userId: string;
+  regels: readonly AftrekRegel[];
+  keuzes: Readonly<Record<string, AftrekKeuze>>;
+}): Promise<{ plan: AftrekPlan; herstel: Herstel } | null> {
+  const ids = opts.regels.map((r) => r.id);
+  if (!ids.length) return null;
+  const { data: nu } = moet(
+    await supabase
+      .from("pantry_items")
+      .select("id, naam, hoeveelheid, eenheid, created_at, updated_at")
+      .in("id", ids),
+  );
+  const plan = aftrekPlan(opts.regels, opts.keuzes, (nu ?? []) as VoorraadProduct[]);
+  if (!plan.bijwerken.length && !plan.op.length) return { plan, herstel: async () => {} };
+  const weg = (nu ?? []).filter((v) => plan.op.some((o) => o.id === v.id));
+  const gedaan: Herstel[] = [];
+  try {
+    for (const b of plan.bijwerken) {
+      moet(
+        await supabase.from("pantry_items").update({ hoeveelheid: b.hoeveelheid }).eq("id", b.id),
+      );
+      gedaan.push(async () => {
+        moet(await supabase.from("pantry_items").update({ hoeveelheid: b.oud }).eq("id", b.id));
+      });
+    }
+    if (weg.length) {
+      moet(
+        await supabase
+          .from("pantry_items")
+          .delete()
+          .in(
+            "id",
+            weg.map((o) => o.id),
+          ),
+      );
+      gedaan.push(async () => {
+        moet(
+          await supabase.from("pantry_items").insert(
+            // Zelfde id en datums: "Gebruik eerst" en koppelingen blijven kloppen.
+            weg.map((o) => ({
+              id: o.id,
+              user_id: opts.userId,
+              naam: o.naam,
+              hoeveelheid: o.hoeveelheid,
+              eenheid: o.eenheid ?? "",
+              created_at: o.created_at,
+              updated_at: o.updated_at,
+            })),
+          ),
+        );
+      });
+    }
+  } catch (fout) {
+    await draaiTerug(gedaan); // gooit HalfGelukt als terugdraaien niet lukte
+    throw fout;
+  }
+  return { plan, herstel: eenmalig(() => draaiTerug(gedaan)) };
 }
 
 // ---------------------------------------------------------------- WP4 weekmenu → lijst

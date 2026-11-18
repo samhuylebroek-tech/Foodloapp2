@@ -1,26 +1,31 @@
 /**
- * Na het koken (usecase 18): "Blijft er iets over?" Eén tik op het aantal porties bewaart een
- * restje op dit toestel, met "Ongedaan maken". Opnieuw tikken past de porties aan.
+ * Na het koken (usecase 18, P3): "Blijft er iets over?" Eén tik op het aantal porties bewaart een
+ * restje op dit toestel, met "Ongedaan maken". Opnieuw tikken past de porties aan. De naam is
+ * voorgevuld en aan te passen; de bewaardatum is een richtwaarde, geen veiligheidsbelofte.
  */
-import { useState } from "react";
+import { useId, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { bewaarRestje, verwijderRestje } from "@/lib/intelligentie/restjes";
+import { bewaarRestje, bewaarRichtwaarde, verwijderRestje } from "@/lib/intelligentie/restjes";
 import { meet } from "@/lib/meten";
 import { cn } from "@/lib/utils";
 
 export function RestjeVraag({ titel, receptId }: { titel: string; receptId: string }) {
   const { user } = useAuth();
   const [gekozen, setGekozen] = useState<number | null>(null);
+  const [naam, setNaam] = useState(titel);
+  const naamId = useId();
+  const uitlegId = useId();
   if (!user) return null;
+  const richtwaarde = bewaarRichtwaarde(Date.now());
 
   function kies(porties: number) {
     if (!user) return;
-    const r = bewaarRestje(user.id, { titel, receptId, porties });
+    const r = bewaarRestje(user.id, { titel: naam.trim() || titel, receptId, porties });
     setGekozen(porties);
     void meet("restjes.bewaard", undefined, { porties });
     toast.success(`Restje bewaard: ${porties} ${porties === 1 ? "portie" : "porties"}`, {
-      description: "Je ziet het de komende dagen op Vandaag en in Keuken.",
+      description: "Je ziet het de komende dagen op Vandaag, in Week en in Keuken.",
       action: {
         label: "Ongedaan maken",
         onClick: () => {
@@ -32,11 +37,21 @@ export function RestjeVraag({ titel, receptId }: { titel: string; receptId: stri
   }
 
   return (
-    <fieldset className="mt-6 text-left">
+    <fieldset className="text-left" aria-describedby={uitlegId}>
       <legend className="text-lg font-semibold">Blijft er iets over?</legend>
-      <p className="text-base text-muted-foreground">
+      <p id={uitlegId} className="text-base text-muted-foreground">
         Tik hoeveel porties. Foodlo stelt ze de komende dagen voor.
       </p>
+      <label htmlFor={naamId} className="mt-3 block text-base font-semibold">
+        Naam van het restje
+      </label>
+      <input
+        id={naamId}
+        value={naam}
+        maxLength={120}
+        onChange={(e) => setNaam(e.target.value)}
+        className="mt-1 h-14 w-full rounded-xl border border-input bg-background px-3 text-base"
+      />
       <div className="mt-3 flex flex-wrap gap-2">
         {[1, 2, 3, 4].map((n) => (
           <button
@@ -53,6 +68,9 @@ export function RestjeVraag({ titel, receptId }: { titel: string; receptId: stri
           </button>
         ))}
       </div>
+      <p className="mt-3 text-base text-muted-foreground" data-testid="restje-richtwaarde">
+        {richtwaarde.tekst}
+      </p>
     </fieldset>
   );
 }

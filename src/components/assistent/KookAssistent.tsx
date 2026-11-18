@@ -8,6 +8,7 @@
  *   verschillen; daarna kies je "Bewaar als kopie" of "Pas dit recept aan" (met ongedaan maken).
  * - Vraag: korte kookvraag, eerst vaste antwoorden.
  */
+import { bewaarVersie, verwijderVersie } from "@/lib/recept-versies-db";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -417,11 +418,15 @@ export function KookAssistent({
     if (!voorstel || !isOwner) return;
     setBewaren(true);
     try {
+      // P3: eerst het origineel als versie bewaren (lukt dat niet, dan gaat er niets door).
+      const versieId = user ? await bewaarVersie(recept.id, user.id, "assistent") : null;
       const punt = await pasOrigineelAan(recept, ingredienten, voorstel);
       await ververs();
+      void qc.invalidateQueries({ queryKey: ["recept-versies", recept.id] });
       setVoorstel(null);
       onOpenChange(false);
       toast.success("Recept aangepast", {
+        description: "Het origineel staat bij Versies op het recept.",
         duration: 10000,
         action: {
           label: "Ongedaan maken",
@@ -429,7 +434,9 @@ export function KookAssistent({
             void (async () => {
               try {
                 await herstel(punt);
+                await verwijderVersie(versieId);
                 await ververs();
+                void qc.invalidateQueries({ queryKey: ["recept-versies", recept.id] });
                 toast.success("Recept teruggezet zoals het was");
               } catch {
                 toast.error("Terugzetten lukte niet helemaal. Kijk het recept even na.");

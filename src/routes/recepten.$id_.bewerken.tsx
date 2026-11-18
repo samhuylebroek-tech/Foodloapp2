@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell } from "@/components/AppShell";
 import { RecipeForm } from "@/components/RecipeForm";
-import { ReceptGeschiedenis } from "@/components/ReceptGeschiedenis";
+import { ReceptVersies } from "@/components/recept/ReceptVersies";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import type { Ingredient, Recipe } from "@/lib/types";
 
@@ -61,7 +61,8 @@ function BewerkenPage() {
       ) : (
         <>
           <RecipeForm recipe={data.recipe} ingredients={data.ingredients} />
-          <ReceptGeschiedenis recipeId={id} />
+          {/* P3: dezelfde versielijst als op het recept (met bevestiging en ongedaan maken). */}
+          <ReceptVersies recept={data.recipe} ingredienten={data.ingredients} inline />
         </>
       )}
     </AppShell>

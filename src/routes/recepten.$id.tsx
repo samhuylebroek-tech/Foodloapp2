@@ -63,7 +63,7 @@ import { Copy, Users } from "lucide-react";
 import { KookTimers } from "@/components/KookTimers";
 import { bewaarVoortgang, leesVoortgang, vindTimers, wisVoortgang } from "@/lib/kookstand";
 import { meldMetHerstel, useKringloopVernieuw } from "@/hooks/useAanvulling";
-import { HalfGelukt, lijstUitleg, planErbij, verwerkKoken, wijzigMenu } from "@/lib/kringloop-db";
+import { HalfGelukt, lijstUitleg, planErbij, wijzigMenu } from "@/lib/kringloop-db";
 import { useVoorraadNamen } from "@/hooks/useVoorraadStand";
 import { isBasis, zitInVoorraad } from "@/lib/voorraad-match";
 import { soortLabel } from "@/lib/recept-keuzes";
@@ -92,7 +92,10 @@ import {
 } from "@/components/veiligheid/EtersOordeel";
 import { useEtersOordelen, useMaaltijdEters } from "@/hooks/useMaaltijdEters";
 import { zonderEter } from "@/lib/maaltijd-eters";
-import { RestjeVraag } from "@/components/kringloop/RestjeVraag";
+import { KlaarMetKoken } from "@/components/koken/KlaarMetKoken";
+import { ReceptVersies } from "@/components/recept/ReceptVersies";
+import { bewaarVersie, schrijfStaat, verwijderVersie } from "@/lib/recept-versies-db";
+import { schaalStaat, staatUit } from "@/lib/recept-versies";
 import { markeerKookstand } from "@/lib/eerste-stappen";
 import { KookAssistent, VraagFoodloKnop } from "@/components/assistent/KookAssistent";
 import { ReceptKost } from "@/components/budget/ReceptKost";
@@ -126,9 +129,15 @@ export const Route = createFileRoute("/recepten/$id")({
   }),
   validateSearch: (
     search: Record<string, unknown>,
-  ): { personen?: number; koken?: true; plan?: string; vervang?: string } => {
+  ): { personen?: number; koken?: true; klaar?: true; plan?: string; vervang?: string } => {
     const n = Number(search["personen"]);
-    const uit: { personen?: number; koken?: true; plan?: string; vervang?: string } = {};
+    const uit: {
+      personen?: number;
+      koken?: true;
+      klaar?: true;
+      plan?: string;
+      vervang?: string;
+    } = {};
     // Fase 1: voor welke geplande maaltijd (wie eet mee) en "Vervanger zoeken" voor een ingrediënt.
     const plan = search["plan"];
     if (typeof plan === "string" && /^[0-9a-f-]{36}$/i.test(plan)) uit.plan = plan;
@@ -139,6 +148,9 @@ export const Route = createFileRoute("/recepten/$id")({
     // V2: "Start koken" vanaf Vandaag opent meteen de kookstand.
     if (search["koken"] === true || search["koken"] === "1" || search["koken"] === 1)
       uit.koken = true;
+    // P3: "Gekookt" vanaf Vandaag of Week opent meteen "Klaar met koken".
+    if (search["klaar"] === true || search["klaar"] === "1" || search["klaar"] === 1)
+      uit.klaar = true;
     return uit;
   },
   component: ReceptPage,
@@ -200,7 +212,7 @@ function ReceptPage() {
   const [personen, setPersonen] = useState<number | null>(zoek.personen ?? null);
   const [kookstand, setKookstand] = useState(zoek.koken === true);
   const [stap, setStap] = useState(zoek.koken === true ? -1 : 0);
-  const [klaarVragen, setKlaarVragen] = useState(false);
+  const [klaarVragen, setKlaarVragen] = useState(zoek.klaar === true);
   // V2: na per ongeluk wegklikken of herladen verder koken bij de juiste stap.
   const [bewaardeStap, setBewaardeStap] = useState<number | null>(null);
   const stapKop = useRef<HTMLParagraphElement>(null);
@@ -725,6 +737,8 @@ function ReceptPage() {
     if (!v) return;
     setAanvulVoorstel(null);
     try {
+      // P3: de stand van vóór het aanvullen blijft bij "Versies".
+      if (user) await bewaarVersie(recipe.id, user.id, "aanvullen");
       const { error } = await supabase
         .from("recipes")
         .update({
@@ -748,6 +762,7 @@ function ReceptPage() {
         );
       }
       await qc.invalidateQueries({ queryKey: ["recipe", id] });
+      void qc.invalidateQueries({ queryKey: ["recept-versies", id] });
       toast.success(t("Aangevuld. Je kan alles nog aanpassen."));
     } catch {
       toast.error(t("Aanvullen lukte niet"));
@@ -759,84 +774,77 @@ function ReceptPage() {
     setKookstand(false);
   }
 
-  // V2-kringloop (S3): na het koken haalt Foodlo de gebruikte hoeveelheden zelf uit
-  // je voorraad. Geen vraag; de melding zegt wat er gebeurde, met "Ongedaan maken".
-  async function naKoken() {
-    stopKoken();
-    if (!user) return;
+  // P3: "Bewaar voor N personen" schaalt alle hoeveelheden en bewaart het origineel als versie.
+  async function bewaarPorties() {
+    if (!user || !isOwner || aantal === recipe.servings) return;
     try {
-      const r = await verwerkKoken({
-        userId: user.id,
-        ingredienten: ingredients.map((i) => ({
-          name: i.name,
-          quantity: i.quantity,
-          unit: i.unit,
-        })),
-        factor,
+      const versieId = await bewaarVersie(recipe.id, user.id, "porties");
+      const voor = staatUit(
+        recipe as unknown as Record<string, unknown>,
+        ingredients as unknown as Record<string, unknown>[],
+      );
+      await schrijfStaat(recipe.id, schaalStaat(voor, aantal));
+      setPersonen(null);
+      await qc.invalidateQueries({ queryKey: ["recipe", recipe.id] });
+      void qc.invalidateQueries({ queryKey: ["recept-versies", recipe.id] });
+      toast.success(`${t("Bewaard voor")} ${aantal} ${aantal === 1 ? "persoon" : "personen"}`, {
+        description: t("Het origineel staat bij Versies."),
+        duration: 10000,
+        action: {
+          label: "Ongedaan maken",
+          onClick: () =>
+            void (async () => {
+              try {
+                await schrijfStaat(recipe.id, voor);
+                await verwijderVersie(versieId);
+              } catch {
+                toast.error(t("Terugzetten lukte niet helemaal. Kijk het recept even na."));
+              }
+              await qc.invalidateQueries({ queryKey: ["recipe", recipe.id] });
+              void qc.invalidateQueries({ queryKey: ["recept-versies", recipe.id] });
+            })(),
+        },
       });
-      if (!r) return;
-      void meet("kringloop.opgebruikt", undefined, { aantal: r.samenvatting.length });
-      vernieuwKringloop();
-      meldMetHerstel(
-        `${t("Voorraad bijgewerkt")}: ${r.samenvatting.join(", ")}`,
-        r.herstel,
-        vernieuwKringloop,
-      );
-    } catch (fout) {
-      // Koken is gelukt; alleen de voorraad bijwerken niet. Dat zeggen we eerlijk.
-      toast.error(
-        fout instanceof HalfGelukt
-          ? "Je voorraad is maar gedeeltelijk bijgewerkt. Kijk ze even na."
-          : "Je voorraad is niet bijgewerkt. Er is niets veranderd.",
-      );
+    } catch {
+      toast.error(t("Bewaren lukte niet. Er is niets veranderd."));
     }
   }
 
-  if (kookstand && klaarVragen) {
+  // P3: "Klaar met koken" — één rustig scherm. Niets gaat stil uit je voorraad: dat is een
+  // voorstel met vinkjes en een bevestiging (vroeger trok Foodlo het meteen af).
+  if (klaarVragen) {
     return (
-      <div className="flex min-h-screen items-center bg-background p-5">
-        <div className="paneel mx-auto w-full max-w-2xl p-6 text-center">
-          <h2 className="text-paginatitel">{t("Smakelijk gegeten?")}</h2>
-          <p className="mt-3 text-xl text-muted-foreground">
-            {t("Hoeveel sterren geef je")} “{recipe.title}”?
-          </p>
-          <div className="mt-6 flex justify-center">
-            <SterrenKiezer
-              waarde={mijnScore}
-              onKies={async (n) => {
-                // Eerst de voortgang wissen (lokaal, onmiddellijk), dan pas de score
-                // over het netwerk bewaren: wie meteen afsluit, ziet geen oude stap meer.
-                wisVoortgang(recipe.id);
-                await zetScore(n);
-                toast.success(t("Bedankt voor je score"));
-                await naKoken();
-              }}
-              label={t("Jouw score")}
-            />
-          </div>
-          <RestjeVraag titel={recipe.title} receptId={recipe.id} />
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setKlaarVragen(false);
-              setStap(Math.max(0, recipe.instructions.length - 1));
-            }}
-            className="mt-6 h-16 w-full text-lg"
-          >
-            {t("Terug naar de stappen")}
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              wisVoortgang(recipe.id);
-              void naKoken();
-            }}
-            className="mt-3 h-16 w-full text-lg"
-          >
-            {t("Later")}
-          </Button>
-        </div>
-      </div>
+      <KlaarMetKoken
+        recept={{ id: recipe.id, title: recipe.title }}
+        ingredienten={ingredients.map((i) => ({
+          name: i.name,
+          quantity: i.quantity,
+          unit: i.unit,
+        }))}
+        factor={factor}
+        porties={aantal}
+        planId={veiligPlan}
+        score={mijnScore}
+        onScore={async (n) => {
+          // Eerst de voortgang wissen (lokaal, onmiddellijk), dan pas de score bewaren.
+          wisVoortgang(recipe.id);
+          await zetScore(n);
+        }}
+        onTerug={
+          kookstand && recipe.instructions.length
+            ? () => {
+                setKlaarVragen(false);
+                setStap(Math.max(0, recipe.instructions.length - 1));
+              }
+            : undefined
+        }
+        onSluit={() => {
+          wisVoortgang(recipe.id);
+          stopKoken();
+          if (zoek.klaar)
+            void navigate({ to: "/recepten/$id", params: { id: recipe.id }, search: {} });
+        }}
+      />
     );
   }
 
@@ -1383,6 +1391,12 @@ function ReceptPage() {
                   <Plus className="size-5" />
                 </Button>
               </div>
+              {/* P3: andere porties als standaard bewaren; het origineel blijft bij Versies. */}
+              {isOwner && aantal !== recipe.servings ? (
+                <Button variant="outline" onClick={() => void bewaarPorties()} className="w-full">
+                  {t("Bewaar voor")} {aantal} {t(aantal === 1 ? "persoon" : "personen")}
+                </Button>
+              ) : null}
             </div>
 
             {voorraadNamen.length && ingredients.length ? (
@@ -1519,6 +1533,8 @@ function ReceptPage() {
               onKlaar={() => qc.invalidateQueries({ queryKey: ["recipe", recipe.id] })}
             />
           ) : null}
+          {/* P3: origineel en aangepaste versies, terugzetten met bevestiging en ongedaan maken. */}
+          {isOwner ? <ReceptVersies recept={recipe} ingredienten={ingredients} /> : null}
           {isOwner && recipe.image_url ? (
             <div className="space-y-2">
               <p className="text-base font-semibold">{t("Foto's")}</p>

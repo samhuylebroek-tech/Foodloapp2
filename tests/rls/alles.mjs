@@ -63,6 +63,7 @@ const ALLE_VOORSTELLEN = schrijf("alle-voorstellen.sql", [
   "0012_premium_betalingen.up.sql",
   "0013_planprofiel.up.sql",
   "0014_budget_weken.up.sql",
+  "0015_kookmomenten.up.sql",
 ]);
 
 const gevallen = [
@@ -99,7 +100,7 @@ const gevallen = [
     "rls-gezin-privacy.mjs",
     ALLE_VOORSTELLEN,
     0,
-    "0002a + 0002 + 0004 + 0006 … 0014: alleen de voorraad",
+    "0002a + 0002 + 0004 + 0006 … 0015: alleen de voorraad",
   ],
   [
     "makers-community.mjs",
@@ -130,6 +131,12 @@ const gevallen = [
     null,
     0,
     "voorstel 0014: budgetgeschiedenis alleen eigen rijen, één rij per week, heen+terug",
+  ],
+  [
+    "kookmomenten.mjs",
+    null,
+    0,
+    "voorstel 0015: kookmomenten alleen eigen rijen, één per maaltijd, receptversies van de eigenaar, heen+terug",
   ],
   ["verwijder-gezinseigenaar.mjs", null, 0, "verslag BUG-110/025 (rapporteert, faalt niet)"],
 ];

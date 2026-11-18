@@ -36,7 +36,9 @@ import { useVoorstelEters } from "@/hooks/useVoorstelEters";
 import { useWeekbudget } from "@/hooks/useWeekbudget";
 import { euro } from "@/lib/budget";
 import { vatSamen } from "@/lib/intelligentie/geschiedenis";
-import { nietNuLijst } from "@/lib/intelligentie/niet-nu";
+import { nietTonenLijst } from "@/lib/intelligentie/niet-nu";
+import { restjesOpDag } from "@/lib/intelligentie/restjes";
+import { useRestjes } from "@/hooks/useRestjes";
 import { leesKennismaking, standaardPersonen } from "@/lib/kennismaking";
 import {
   lijstUitleg,
@@ -251,6 +253,7 @@ function Samenstellen({ week }: { week: string | undefined }) {
   const plan = usePlanProfiel();
   const [budget] = useWeekbudget();
   const g = usePlannerGegevens();
+  const alleRestjes = useRestjes();
   const kandidaten = useKandidaten(g);
   const huis = useVoorstelEters({});
   const mee = useMaaltijdEters([]);
@@ -373,7 +376,7 @@ function Samenstellen({ week }: { week: string | undefined }) {
       allergieen: kennis.allergieen,
       dieet: kennis.dieet,
       vermijd: weekmenu.vermijd ?? "",
-      nietNu: nietNuLijst(user?.id),
+      nietNu: nietTonenLijst(user?.id),
       apparatuur: plan.apparatuur,
       kookervaring: plan.kookervaring,
       voorraad: v,
@@ -585,6 +588,7 @@ function Samenstellen({ week }: { week: string | undefined }) {
               melding={meldingen[sleutelVan(d)] ?? null}
               onAlternatief={(s) => kiesAlternatief(i, s)}
               onVersoepel={() => d.krapste && setVersoepel((v) => [...new Set([...v, d.krapste!])])}
+              restjes={d.status === "restjes" ? restjesOpDag(alleRestjes, d.datum) : undefined}
             />
           ))}
         </ul>
@@ -837,7 +841,7 @@ function Goedkoper({ week }: { week: string | undefined }) {
       kandidaten,
       allergieen: kennis.allergieen,
       dieet: kennis.dieet,
-      nietNu: nietNuLijst(user?.id),
+      nietNu: nietTonenLijst(user?.id),
       apparatuur: plan.apparatuur,
       kookervaring: plan.kookervaring,
       budget,

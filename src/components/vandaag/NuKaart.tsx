@@ -6,6 +6,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowRight,
   CalendarDays,
+  Check,
   ChefHat,
   Clock3,
   Loader2,
@@ -71,7 +72,7 @@ export function NuKaart({
   const recept =
     stap && "recept" in stap
       ? stap.recept
-      : stap?.soort === "morgen"
+      : stap?.soort === "morgen" || stap?.soort === "gekookt"
         ? (stap.maaltijd?.recept ?? null)
         : null;
 
@@ -246,6 +247,18 @@ export function NuKaart({
         ) : null;
       }
       break;
+    case "gekookt":
+      // P3: na "Klaar" (kookstand of "Gekookt"): rust, geen nieuwe taak.
+      label = `${t(momentLabel(stap.maaltijd.meal_type))} ${t("vandaag")}`;
+      titel = t(stap.maaltijd.recept?.title ?? stap.maaltijd.custom_title ?? "Maaltijd");
+      uitleg = t("Gekookt. Smakelijk!");
+      acties = (
+        <Link to="/planner" className={knopTweede}>
+          <CalendarDays className="size-6" aria-hidden />
+          {t("Naar het weekmenu")}
+        </Link>
+      );
+      break;
     case "kiezen":
       titel = t("Wat eten we vandaag?");
       uitleg = t("Er staat nog niets gepland. Kies een gerecht uit je recepten.");
@@ -324,7 +337,17 @@ export function NuKaart({
             {!laden && stap ? veiligheid : null}
             {/* Buiten de hoofdkaart-acties: de kaart houdt één hoofdactie en hooguit één tweede. */}
             {!laden && gepland ? (
-              <div className="mt-4">
+              <div className="mt-4 flex flex-wrap items-center gap-x-6">
+                {/* P3: al gekookt (zonder kookstand)? Dan meteen "Klaar met koken". */}
+                <Link
+                  to="/recepten/$id"
+                  params={{ id: gepland.huidigReceptId }}
+                  search={{ klaar: true, plan: gepland.planId }}
+                  className="inline-flex min-h-12 items-center gap-2 text-base font-semibold text-inkt-foreground underline underline-offset-4"
+                >
+                  <Check className="size-5" aria-hidden />
+                  {t("Gekookt")}
+                </Link>
                 <button
                   type="button"
                   onClick={() => setAnders((a) => !a)}
@@ -333,7 +356,11 @@ export function NuKaart({
                 >
                   {anders ? t("Toch niet") : t("Iets anders vanavond?")}
                 </button>
-                {anders ? <VanavondVoorstellen recepten={recepten} vervang={gepland} /> : null}
+                {anders ? (
+                  <div className="basis-full">
+                    <VanavondVoorstellen recepten={recepten} vervang={gepland} />
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>

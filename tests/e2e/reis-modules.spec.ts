@@ -15,6 +15,7 @@ import {
   resetNep,
   seedDb,
   test,
+  voorraadBijhouden,
   zetKlok,
 } from "./helpers";
 
@@ -26,6 +27,8 @@ const vandaag = () => new Date().toLocaleDateString("sv-SE");
 test.describe.configure({ timeout: 180_000 });
 
 test.beforeEach(async ({ page }) => {
+  // P3: "Voorraad bijwerken?" na het koken verschijnt alleen als je je voorraad bijhoudt.
+  await voorraadBijhouden(page);
   await resetNep();
   await seedDb({
     recipes: [
@@ -158,6 +161,10 @@ test("reis: voorraad → plan → lijst → winkel → koken, in alle modules de
   for (let i = 0; i < 4; i++) await page.keyboard.press("ArrowRight");
   await page.getByRole("button", { name: "Klaar met koken" }).click();
   await page.getByRole("button", { name: "5 sterren" }).click();
+  // P3: niets gaat stil uit de voorraad; je bevestigt het voorstel.
+  await page
+    .getByRole("button", { name: /^Haal \d+ (product|producten) uit je voorraad$/ })
+    .click();
   await expect(page.getByText(/Voorraad bijgewerkt/).first()).toBeVisible();
   // Verbruikt: basilicum en parmezaan op, pasta minder (porties kunnen herschaald zijn).
   await expect
@@ -166,6 +173,9 @@ test("reis: voorraad → plan → lijst → winkel → koken, in alle modules de
       return [v["basilicum"], v["parmezaan"], Number(v["pasta"] ?? 0) < 500];
     })
     .toEqual([undefined, undefined, true]);
+  // P3: "Klaar" sluit het scherm en markeert de maaltijd als gekookt.
+  await page.getByRole("button", { name: "Klaar", exact: true }).click();
+  await expect.poll(async () => (await nepDb()).kookmomenten?.length ?? 0).toBe(1);
 
   // 7. Keuken kent het gerecht; Ontdek laadt zonder fout.
   await naar(page, "Keuken");

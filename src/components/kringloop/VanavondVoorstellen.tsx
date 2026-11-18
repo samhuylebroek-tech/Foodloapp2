@@ -16,7 +16,7 @@ import { useVoorstelBronnen } from "@/hooks/useVoorstelBronnen";
 import { useWeer } from "@/hooks/useWeer";
 import { bepaalContext } from "@/lib/intelligentie/context";
 import { vatSamen } from "@/lib/intelligentie/geschiedenis";
-import { herstelNietNu, nietNuLijst, zetNietNu } from "@/lib/intelligentie/niet-nu";
+import { herstelNietNu, nietTonenLijst, zetNietNu } from "@/lib/intelligentie/niet-nu";
 import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
 import type { Aanbeveling } from "@/lib/intelligentie/voorstel";
 import { beveelAan } from "@/lib/planner/engine";
@@ -75,7 +75,7 @@ export function VanavondVoorstellen({
   // "Slimme voorstellen" uit: niets voorstellen en ook niets extra opvragen.
   const [slim] = useSlimmeVoorstellen();
   // Pas lezen als de gebruiker bekend is (na het aanmelden en niet tijdens server-rendering).
-  useEffect(() => setNietNu(nietNuLijst(user?.id)), [user?.id]);
+  useEffect(() => setNietNu(nietTonenLijst(user?.id)), [user?.id]);
   const ids = recepten.map((r) => r.id);
 
   const { data: bronnen } = useVoorstelBronnen(ids, slim);
@@ -240,7 +240,7 @@ export function VanavondVoorstellen({
   function nietNuVoor(v: Aanbeveling) {
     if (!user) return;
     zetNietNu(user.id, v.id);
-    setNietNu(nietNuLijst(user.id));
+    setNietNu(nietTonenLijst(user.id));
     void meet("voorstel.niet_nu", undefined, { reden: v.redenen[0]?.soort ?? null });
     toast(t("Je ziet dit voorstel een week niet."), {
       duration: 8000,
@@ -248,7 +248,7 @@ export function VanavondVoorstellen({
         label: t("Ongedaan maken"),
         onClick: () => {
           herstelNietNu(user.id, v.id);
-          setNietNu(nietNuLijst(user.id));
+          setNietNu(nietTonenLijst(user.id));
         },
       },
     });

@@ -95,6 +95,8 @@ test("de volledige kringloop: aanvullen → winkelen → voorraad → koken → 
   page,
   extern,
 }) => {
+  // P3: "Voorraad bijwerken?" na het koken verschijnt alleen als je je voorraad bijhoudt.
+  await voorraadBijhouden(page);
   // 1. Vandaag (WP3) zegt wat er voor vanavond ontbreekt; één tik zet het op de lijst.
   await zetKlok(page);
   await page.goto("/");
@@ -130,19 +132,24 @@ test("de volledige kringloop: aanvullen → winkelen → voorraad → koken → 
   // Gekocht "rundvlees (stoofvlees)" krijgt een eigen regel naast het algemene "rundvlees".
   await expect.poll(stoofvlees).toBe(1000);
 
-  // 4. Koken: de voorraad wordt vanzelf bijgewerkt; het specifieke product gaat eerst op.
+  // 4. Koken: Foodlo stelt voor wat eraf gaat (P3: pas na bevestiging); het specifieke product
+  //    gaat eerst op.
   await page.goto(STOOFVLEES);
   await page.getByRole("button", { name: "Start koken" }).first().click();
   await page.getByRole("button", { name: "Begin met koken" }).click();
   for (let i = 0; i < 5; i++) await page.keyboard.press("ArrowRight");
   await page.getByRole("button", { name: "Klaar met koken" }).click();
   await page.getByRole("button", { name: "5 sterren" }).click();
-  await expect(page.getByText(/Voorraad bijgewerkt/)).toBeVisible();
+  await expect.poll(stoofvlees).toBe(1000);
+  await page
+    .getByRole("button", { name: /^Haal \d+ (product|producten) uit je voorraad$/ })
+    .click();
+  await expect(page.getByText(/Voorraad bijgewerkt/).first()).toBeVisible();
   await expect.poll(stoofvlees).toBeUndefined();
   expect(await voorraad()).toContain("rundvlees");
 
   // 5. Vergissing? Eén tik zet het terug.
-  await page.getByRole("button", { name: "Ongedaan maken", exact: true }).click();
+  await page.getByRole("button", { name: "Ongedaan maken", exact: true }).first().click();
   await expect.poll(stoofvlees).toBe(1000);
   void extern;
 });

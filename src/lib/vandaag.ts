@@ -53,6 +53,8 @@ export type VandaagInvoer = {
   heeftRecepten: boolean;
   /** Eigen etenstijden ("19:30"), per moment; ontbreekt er een, dan geldt ETENSTIJD. */
   etenstijden?: Record<string, string> | undefined;
+  /** P3: geplande maaltijden (id) die al als "gekookt" gemarkeerd zijn. */
+  gekookt?: readonly string[] | undefined;
 };
 
 /**
@@ -113,6 +115,7 @@ export type Stap =
       maaltijd: MaaltijdVandaag | null;
       ontbreekt: string[];
     }
+  | { soort: "gekookt"; maaltijd: MaaltijdVandaag }
   | { soort: "kiezen" }
   | { soort: "eerste-recept" };
 
@@ -210,8 +213,20 @@ export function hoofdStap(i: VandaagInvoer): Stap {
       return { soort: "morgen", maaltijd: m, ontbreekt: m?.recept ? i.ontbreektMorgen : [] };
   }
 
-  const m = huidigeMaaltijd(i.vandaag, i.nu, i.etenstijden);
-  if (!m) return i.heeftRecepten ? { soort: "kiezen" } : { soort: "eerste-recept" };
+  // P3: wat al gekookt is, telt niet meer als "nog te koken".
+  const gekookt = new Set(i.gekookt ?? []);
+  const m = huidigeMaaltijd(
+    i.vandaag.filter((x) => !gekookt.has(x.id)),
+    i.nu,
+    i.etenstijden,
+  );
+  if (!m) {
+    const klaar =
+      i.vandaag.find((x) => gekookt.has(x.id) && x.recept) ??
+      i.vandaag.find((x) => gekookt.has(x.id));
+    if (klaar) return { soort: "gekookt", maaltijd: klaar };
+    return i.heeftRecepten ? { soort: "kiezen" } : { soort: "eerste-recept" };
+  }
   const r = m.recept;
   if (!r) return { soort: "zonder-recept", maaltijd: m };
   const plan = tijdsplan(m.meal_type, r, i.nu, i.etenstijden);

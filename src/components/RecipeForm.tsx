@@ -1077,7 +1077,12 @@ export function RecipeForm({
             await supabase.from("recipe_versions").insert({
               recipe_id: recipeId,
               gewijzigd_door: user.id,
-              momentopname: { recept: oud.data, ingredienten: oudeIngredienten.data ?? [] },
+              // P3: met de reden, zodat "Versies" op het recept zegt wat er gebeurde.
+              momentopname: {
+                recept: oud.data,
+                ingredienten: oudeIngredienten.data ?? [],
+                reden: over ? "import" : "bewerken",
+              },
             });
           }
         } catch {

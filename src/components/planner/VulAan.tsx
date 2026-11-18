@@ -19,7 +19,7 @@ import { useRestjes } from "@/hooks/useRestjes";
 import { useVoorstelBronnen } from "@/hooks/useVoorstelBronnen";
 import { usePlanProfiel } from "@/hooks/usePlanProfiel";
 import { vatSamen } from "@/lib/intelligentie/geschiedenis";
-import { herstelNietNu, nietNuLijst, zetNietNu } from "@/lib/intelligentie/niet-nu";
+import { herstelNietNu, nietTonenLijst, zetNietNu } from "@/lib/intelligentie/niet-nu";
 import { gekooktTekst, planRestje, restjeVeilig, type Restje } from "@/lib/intelligentie/restjes";
 import { restjesVoorWeek } from "@/lib/intelligentie/restjes-week";
 import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
@@ -52,7 +52,7 @@ export function VulAan({
   const [slim] = useSlimmeVoorstellen();
   const [nietNu, setNietNu] = useState<string[]>([]);
   const [bezig, setBezig] = useState<string | null>(null);
-  useEffect(() => setNietNu(nietNuLijst(user?.id)), [user?.id]);
+  useEffect(() => setNietNu(nietTonenLijst(user?.id)), [user?.id]);
   const qc = useQueryClient();
   const alleRestjes = useRestjes();
   // Zonder geregistreerde restjes: geen restjes (niets verondersteld).
@@ -208,14 +208,14 @@ export function VulAan({
   function nietNuTik(id: string) {
     if (!user) return;
     zetNietNu(user.id, id);
-    setNietNu(nietNuLijst(user.id));
+    setNietNu(nietTonenLijst(user.id));
     toast("Je ziet dit voorstel een week niet.", {
       duration: 8000,
       action: {
         label: "Ongedaan maken",
         onClick: () => {
           herstelNietNu(user.id, id);
-          setNietNu(nietNuLijst(user.id));
+          setNietNu(nietTonenLijst(user.id));
         },
       },
     });

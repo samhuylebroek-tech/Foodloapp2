@@ -151,3 +151,48 @@ export function restjeVeilig(
   if (!streng) return true;
   return magVoorstellen({ title: r.titel, ingredienten: [...(ingredienten ?? [])] }, wie);
 }
+
+/**
+ * Richtwaarde voor de bewaardatum (P3): "meestal 2 à 3 dagen in de koelkast". Geen
+ * veiligheidsbelofte: Foodlo kent je koelkast en het gerecht niet; kijk, ruik en proef.
+ */
+export function bewaarRichtwaarde(gekookt: number, nu = gekookt): { tot: string; tekst: string } {
+  const d = new Date(gekookt);
+  d.setDate(d.getDate() + RESTJE_VOORSTEL_DAGEN);
+  const dagen = dagenOud({ gekookt }, nu);
+  const tot = d.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" });
+  return {
+    tot,
+    tekst:
+      dagen > RESTJE_VOORSTEL_DAGEN
+        ? "Langer dan 3 dagen geleden gekookt. Twijfel je, eet het dan niet meer."
+        : `Meestal 2 à 3 dagen in de koelkast: richtwaarde tot ${tot}. Twijfel je, eet het dan niet meer.`,
+  };
+}
+
+export type BijnaOp = Restje & { dagenOud: number; laatsteDag: boolean };
+
+/**
+ * "Gebruik eerst" op Vandaag: restjes die al 2 of 3 dagen oud zijn (richtwaarde bijna bereikt),
+ * de oudste eerst. Ingeplande restjes niet: die staan al op het menu.
+ */
+export function bijnaOpRestjes(lijst: readonly Restje[], nu = Date.now()): BijnaOp[] {
+  return lijst
+    .filter((r) => !r.gepland)
+    .map((r) => ({ ...r, dagenOud: dagenOud(r, nu) }))
+    .filter((r) => r.dagenOud >= RESTJE_VOORSTEL_DAGEN - 1 && r.dagenOud <= RESTJE_VOORSTEL_DAGEN)
+    .map((r) => ({ ...r, laatsteDag: r.dagenOud >= RESTJE_VOORSTEL_DAGEN }))
+    .sort((a, b) => a.gekookt - b.gekookt);
+}
+
+/** Restjes die op een bepaalde dag nog goed zijn (voor een "Restjesdag" in Week). */
+export function restjesOpDag(lijst: readonly Restje[], datum: string): Restje[] {
+  const t = Date.parse(`${datum}T12:00:00`);
+  return lijst
+    .filter((r) => !r.gepland)
+    .filter((r) => {
+      const oud = dagenOud(r, t);
+      return oud >= 0 && oud <= RESTJE_VOORSTEL_DAGEN;
+    })
+    .sort((a, b) => a.gekookt - b.gekookt);
+}

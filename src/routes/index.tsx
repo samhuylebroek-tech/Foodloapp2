@@ -14,6 +14,9 @@ import { haalGedeeldeAanvulling, useAanvulling } from "@/hooks/useAanvulling";
 import { leesVoortgang } from "@/lib/kookstand";
 import { hoofdStap, signalen as signalenVan } from "@/lib/vandaag";
 import { laadVandaag } from "@/lib/vandaag-db";
+import { gekooktePlannen } from "@/lib/koken/kookmomenten";
+import { useKookmomenten } from "@/lib/koken/kookmomenten-db";
+import { GebruikEerstKaart } from "@/components/vandaag/GebruikEerstKaart";
 import { EmptyState } from "@/components/EmptyState";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import type { Recipe } from "@/lib/types";
@@ -169,6 +172,8 @@ function StartPage() {
   });
   const aanvulling = useAanvulling();
   const [zetBezig, setZetBezig] = useState(false);
+  const kookmomenten = useKookmomenten();
+  const gekookt = useMemo(() => [...gekooktePlannen(kookmomenten)], [kookmomenten]);
   const stap = useMemo(() => {
     if (!stand) return null;
     const voortgang: Record<string, number | null> = {};
@@ -180,8 +185,9 @@ function StartPage() {
       voortgang,
       heeftRecepten: recipes.length > 0,
       etenstijden,
+      gekookt,
     });
-  }, [stand, recipes.length, etenstijden]);
+  }, [stand, recipes.length, etenstijden, gekookt]);
   const signalen = useMemo(
     () =>
       stand && stap
@@ -252,6 +258,8 @@ function StartPage() {
       <div className="space-y-12">
         {/* Werkstroom F: klein, optioneel weersignaal (testgegevens tot er een weerdienst is). */}
         <WeerSignaal />
+        {/* P3: restjes en verse producten die eerst op moeten, met een voorstel. */}
+        <GebruikEerstKaart recepten={recipes} restjeKnop={stap?.soort !== "kiezen"} />
         <WegwijsKaart />
         {/* Tablet en groter: "Daarna" en "Ook vandaag" naast elkaar; alleen één? Dan volle breedte. */}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-12 md:grid-cols-2 md:gap-8 md:[&>*:only-child]:col-span-2">

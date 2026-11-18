@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useFocusTerug } from "@/hooks/useFocusTerug";
 import { meet } from "@/lib/meten";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -20,7 +20,10 @@ import {
   MoreVertical,
   Users,
   Wand2,
+  ChefHat,
 } from "lucide-react";
+import { gekooktePlannen } from "@/lib/koken/kookmomenten";
+import { useKookmomenten } from "@/lib/koken/kookmomenten-db";
 import { toast } from "sonner";
 import { meldMetHerstel } from "@/hooks/useAanvulling";
 import {
@@ -170,6 +173,9 @@ function PlannerPage() {
     return datumTekst(d);
   });
   const vandaag = datumTekst(new Date());
+  // P3: welke maaltijden zijn al als "gekookt" gemarkeerd?
+  const kookmomenten = useKookmomenten();
+  const gekookt = useMemo(() => gekooktePlannen(kookmomenten), [kookmomenten]);
   // Alleen de dagen die je wil zien (0 = maandag … 6 = zondag).
   const zichtbareDagen = week.filter((dag) =>
     weekmenu.dagen.includes((new Date(`${dag}T12:00:00`).getDay() + 6) % 7),
@@ -944,6 +950,20 @@ function PlannerPage() {
               <ShoppingCart className="size-5" /> Op boodschappenlijst
             </DropdownMenuItem>
           ) : null}
+          {p.recipe_id && p.plan_date <= vandaag ? (
+            <DropdownMenuItem
+              onSelect={() =>
+                void navigate({
+                  to: "/recepten/$id",
+                  params: { id: p.recipe_id as string },
+                  search: { klaar: true, plan: p.id },
+                })
+              }
+              className="min-h-12 rounded-lg text-base"
+            >
+              <ChefHat className="size-5" /> {gekookt.has(p.id) ? "Opnieuw: gekookt" : "Gekookt"}
+            </DropdownMenuItem>
+          ) : null}
           {!p.recipe_id && !p.soort ? (
             <DropdownMenuItem
               onSelect={() => setKoppelRij(p)}
@@ -1159,6 +1179,11 @@ function PlannerPage() {
                   </span>
                 ) : null}
                 <EterInitialen leden={etersVan(p.id)} className="mt-1" />
+                {gekookt.has(p.id) ? (
+                  <span className="mt-1 flex items-center gap-1 text-base font-semibold text-primary">
+                    <Check className="size-4" aria-hidden /> Gekookt
+                  </span>
+                ) : null}
               </span>
             </Link>
           ) : (
