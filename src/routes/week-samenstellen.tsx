@@ -362,9 +362,7 @@ function Samenstellen({ week }: { week: string | undefined }) {
         ...d,
         eters: huis.leden.length
           ? {
-              eters: huis.leden.filter((l) =>
-                d.etersIds.includes(l.id),
-              ),
+              eters: huis.leden.filter((l) => d.etersIds.includes(l.id)),
               voeding,
               kijkerId: user?.id,
               server: controle.server,
