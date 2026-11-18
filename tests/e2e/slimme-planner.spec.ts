@@ -252,14 +252,14 @@ test("scenario Peeters: week samenstellen, goedkoper, bewaren en ongedaan maken"
   // Weekcontext.
   await dag(page, MA).getByRole("button", { name: "Weinig tijd" }).click();
   await dag(page, DI).getByRole("button", { name: "Niet thuis" }).click();
-  for (const d of [MA, DO, VR, ZA])
-    await dag(page, d)
-      .getByRole("button", { name: /^Gust eet mee op/ })
-      .click();
   await expect(dag(page, DO)).toContainText("Staat al: Stoofvlees met frietjes");
   const plannen = dag(page, DO).getByRole("checkbox", { name: "Plannen" });
   await expect(plannen).not.toBeChecked();
   await plannen.check();
+  for (const d of [MA, DO, VR, ZA])
+    await dag(page, d)
+      .getByRole("button", { name: /^Gust eet mee op/ })
+      .click();
   expect(await axeErnstig(page)).toEqual([]);
   await page.getByRole("button", { name: /^Stel mijn menu samen \(7 dagen\)$/ }).click();
 
@@ -277,7 +277,7 @@ test("scenario Peeters: week samenstellen, goedkoper, bewaren en ongedaan maken"
   expect(alleTitels).not.toContain("Pasta met hazelnootpesto"); // Lotte
   for (const r of await page.locator('ul[aria-label="Waarom"]').allInnerTexts())
     expect(r.trim().length).toBeGreaterThan(0);
-  await expect(page.getByText(/Dit menu ≈ € .* \(schatting\)/)).toBeVisible();
+  await expect(page.getByText(/Dit menu ≈ €\s[\d,]+ \(schatting\)/)).toBeVisible();
   expect(await axeErnstig(page)).toEqual([]);
 
   // Goedkoper: op de duurste dag (niet wo/zo) is het alternatief goedkoper.

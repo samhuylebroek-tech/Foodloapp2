@@ -605,7 +605,7 @@ function Samenstellen({ week }: { week: string | undefined }) {
               {teVervangen.map((d) => {
                 const b = bestaandOp(d.datum, d.moment ?? hoofd)!;
                 return (
-                  <li key={sleutelVan(d)} className="capitalize-first">
+                  <li key={sleutelVan(d)} className="first-letter:uppercase">
                     {labelVoor(d.datum)}: {titelVan(b)} → {d.keuze!.title}
                   </li>
                 );
@@ -683,21 +683,23 @@ function Samenstellen({ week }: { week: string | undefined }) {
         </div>
         {extraMomenten.length ? (
           <div role="group" aria-label="Maaltijden" className="flex flex-wrap gap-2">
-            {[hoofd, ...extraMomenten].map((m) => {
+            <span className="inline-flex min-h-12 items-center rounded-full bg-secondary px-4 text-base font-semibold">
+              {MOMENT_LABEL[hoofd] ?? hoofd} (altijd)
+            </span>
+            {extraMomenten.map((m) => {
               const aan = gekozenMomenten.includes(m);
               return (
                 <Button
                   key={m}
                   variant={aan ? "default" : "outline"}
                   aria-pressed={aan}
-                  disabled={m === hoofd}
                   onClick={() =>
                     setGekozenMomenten(
                       aan ? gekozenMomenten.filter((x) => x !== m) : [...gekozenMomenten, m],
                     )
                   }
                 >
-                  {MOMENT_LABEL[m] ?? m}
+                  + {MOMENT_LABEL[m] ?? m}
                 </Button>
               );
             })}
@@ -953,7 +955,7 @@ function Goedkoper({ week }: { week: string | undefined }) {
                       }
                     />
                     <span className="min-w-0 space-y-1 text-base">
-                      <span className="block font-bold capitalize">
+                      <span className="block font-bold first-letter:uppercase">
                         {labelVoor(huidig.dagen[w.index]!.datum)}
                       </span>
                       <span className="block">

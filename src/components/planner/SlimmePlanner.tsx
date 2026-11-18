@@ -76,7 +76,7 @@ export function DagContextKaart({
       className={cn("paneel space-y-3 p-4", !instelling.aan && "opacity-90")}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 id={titelId} className="text-kaarttitel capitalize">
+        <h3 id={titelId} className="text-kaarttitel first-letter:uppercase">
           {labelVoor(datum)}
         </h3>
         <label className="inline-flex min-h-12 cursor-pointer items-center gap-2 text-base font-semibold">
@@ -247,7 +247,7 @@ export function DagVoorstelKaart({
       data-status={uitkomst.status}
       className="paneel space-y-3 p-4"
     >
-      <p id={titelId} className="text-base font-bold capitalize text-muted-foreground">
+      <p id={titelId} className="text-base font-bold text-muted-foreground first-letter:uppercase">
         {labelVoor(uitkomst.datum)}
         {momentLabel ? ` · ${momentLabel}` : ""}
       </p>

@@ -29,7 +29,7 @@ export function BudgetInstelling() {
   return (
     <Groep
       titel="Weekbudget"
-      voet="Foodlo schat in Week wat je geplande gerechten ongeveer kosten en waarschuwt als je erboven gaat. Een schatting met vaste richtprijzen, geen echte winkelprijzen. Deze keuze geldt op dit toestel."
+      voet="Foodlo schat in Week wat je geplande gerechten ongeveer kosten en waarschuwt als je erboven gaat. Een schatting met vaste richtprijzen, geen echte winkelprijzen. Bewaard op je account (of op dit toestel zolang dat nog niet kan)."
     >
       <form
         className="space-y-3 px-4 py-3"
