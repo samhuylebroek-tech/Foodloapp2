@@ -173,7 +173,9 @@ function lijstKostTekst(k: { totaal: number; geschat: number; zonderPrijs: numbe
 
 /** "nodig 2 kg · 1,2 kg in huis": de te kopen hoeveelheid staat al in het bolletje ernaast. */
 function korteBehoefteZonderKopen(d: DrieGetallen) {
-  if (!d.nodig || (!d.inHuis && d.nodig === d.teKopen)) return "";
+  // Alleen met geregistreerde voorraad: anders zegt "nodig" zonder "in huis" niets bij (het
+  // verschil met het bolletje komt dan van een andere regel; details in "Waarom").
+  if (!d.nodig || !d.inHuis) return "";
   return korteBehoefte({ ...d, teKopen: null });
 }
 

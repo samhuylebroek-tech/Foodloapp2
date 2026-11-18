@@ -48,11 +48,11 @@ export type PlanProfielStand = {
 };
 
 export function usePlanProfiel(): PlanProfielStand {
-  const { user } = useAuth();
+  const { user, loading: authLaden } = useAuth();
   const qc = useQueryClient();
   const { beschikbaar, laden: modLaden } = useModuleBeschikbaar(PLANPROFIEL_TABEL);
   const sleutel = ["planprofiel", user?.id, beschikbaar];
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: sleutel,
     enabled: !!user && !modLaden,
     staleTime: 60_000,
@@ -121,7 +121,9 @@ export function usePlanProfiel(): PlanProfielStand {
         ? (profiel.weekbudget ?? leesWeekbudget(user?.id))
         : leesWeekbudget(user?.id),
     opslag,
-    laden: !!user && (modLaden || isLoading),
+    // Ook "laden" zolang de vraag nog niet liep (anders vult Mijn keuken het formulier met de
+    // toestelstand en kan bewaren het accountprofiel overschrijven).
+    laden: authLaden || (!!user && (modLaden || isLoading || (data === undefined && !isError))),
     bewaar,
   };
 }

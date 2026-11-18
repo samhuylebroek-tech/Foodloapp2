@@ -171,6 +171,14 @@ test("basisvoorraad: olijfolie en zout niet op de lijst maar 'heb je meestal', Ã
   await page.getByRole("button", { name: /op mijn lijst/ }).click();
   await expect.poll(async () => Object.keys(await lijst())).toContain("olijfolie");
   expect(Object.keys(await lijst())).not.toContain("zout");
+  // Mijn keuken toont de bewaarde keuze (account), niet een lege stand (wachten op aanmelden).
+  await page.goto("/mijn-keuken");
+  await expect(page.getByRole("button", { name: /Alleen basis/ })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+    { timeout: 60_000 },
+  );
+  await expect(page.getByRole("button", { name: "zout" })).toHaveAttribute("aria-pressed", "true");
   void extern;
 });
 
@@ -233,6 +241,7 @@ test("budgetkaart toont vorige weken (schatting)", async ({ page, extern }) => {
   await expect(vorige).toBeVisible({ timeout: 60_000 });
   await vorige.getByText("Vorige weken").click();
   await expect(vorige).toContainText("131,20");
+  await expect(vorige).toContainText("Week van");
   await expect(vorige).toContainText("boven budget");
   // De huidige week wordt onthouden (nep-databank kent budget_weken).
   await expect

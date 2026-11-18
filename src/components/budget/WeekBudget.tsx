@@ -117,7 +117,7 @@ export function WeekBudget({
                 const o = oordeelWeek(w);
                 return (
                   <li key={w.week} className="flex flex-wrap justify-between gap-x-3">
-                    <span className="capitalize">{weekLabel(w.week)}</span>
+                    <span>{weekLabel(w.week)}</span>
                     <span className="tabular-nums">
                       {euro(w.geschat)}
                       {w.budget ? ` van ${euro(w.budget)}` : ""}

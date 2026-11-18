@@ -68,7 +68,7 @@ export function vorigeWeken(lijst: readonly BudgetWeek[], huidige: string, max =
 /** "week van 9 nov." */
 export function weekLabel(maandag: string): string {
   const d = new Date(`${maandag}T12:00:00`);
-  return `week van ${d.toLocaleDateString("nl-BE", { day: "numeric", month: "short" })}`;
+  return `Week van ${d.toLocaleDateString("nl-BE", { day: "numeric", month: "short" })}`;
 }
 
 /** "onder budget" / "€ 4,20 boven budget" / "" (zonder budget). */
