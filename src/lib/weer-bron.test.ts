@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { bepaalContext } from "@/lib/intelligentie/context";
-import { beveelAan } from "@/lib/intelligentie/voorstel";
+import { beveelAan } from "@/lib/planner/engine";
 import { kiesWeerAdapter, TestWeerAdapter, testWeerVoor, weerSignaal } from "./weer-bron";
 
 describe("weer als zacht signaal (testadapter)", () => {

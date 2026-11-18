@@ -1,0 +1,53 @@
+# Audit tegenover de mastervisie (2026-11-18, branch claude/sleepy-euler-eghoc3, na 077fb04)
+
+Gemeten in de code, niet uit documenten. "Werkt" = de handeling bewaart en is getest met E2E tegen de nep-databank.
+
+## 1. Wat er is en hoe ver
+| Domein | Stand | Bewijs in de code |
+|---|---|---|
+| Wijziging maaltijd → lijst | **Werkt**: menu + lijst in één actie, half-mislukt wordt teruggedraaid, één keer ongedaan maken | `kringloop-db.ts` `wijzigMenu`, `planVervang/planVerplaats/planWeg` |
+| Kosten/budget na wijziging | **Werkt als weergave** (wordt telkens herberekend), maar budget staat alleen op het toestel en stuurt de voorstellen niet | `budget.ts` `schatWeek`, `leesWeekbudget` (localStorage) |
+| Veiligheid (allergie/dieet, wie eet mee) | **Werkt** overal gelijk; hard/zacht; privacy van redenen | `veiligheid.ts`, `gezin-veiligheid.ts`, `voorstel-eters.ts` |
+| Voorstellen (vanavond, vul aan, weekvoorstel) | **Werkt**, met redenen, "niet nu", restjes, gebruik-eerst, seizoen, weer | `intelligentie/*` |
+| Ingrediënten | **Gedeeltelijk**: tekst-parser, Belgische maten, dubbel-check op de lijst; geen synoniemenlijst, geen omrekening g↔stuk↔el, geen verpakkingsmaat, geen scheiding behoefte/voorraad/te kopen | `ingredienten.ts`, `boodschappen.ts` |
+| Voorraad | **Gedeeltelijk**: aan/uit ("bijhouden"), onbekend = niet in huis (goed); geen 3 niveaus (basisvoorraad ontbreekt) | `voorraad-modus.ts` |
+| Recepten, import, editor, kookstand, assistent | **Werkt**; fase 2 (alle bronnen, video, delen) is in bouw | RecipeForm, kookstand, `assistent/*` |
+| Gezin, realtime | **Werkt**: realtime op planner, lijst, gezin | `postgres_changes` in 3 schermen |
+| Makers, community, partners, premium | **Werkt in demo**, live na migraties 0008/0011/0012 | eigen routes |
+| Keukenapparatuur | **Ontbreekt** (0 vermeldingen) | — |
+| Kookervaring (beginner/ervaren) | **Ontbreekt** | — |
+| Weekcontext per dag (weinig tijd, niet thuis, feestelijk, restjesdag) | **Ontbreekt** | — |
+| Alternatieven "goedkoper / sneller / past beter" | **Ontbreekt** (er is één "ander gerecht") | — |
+| Menu genereren met budget als stuurfactor | **Ontbreekt** (budget waarschuwt alleen achteraf) | — |
+| Ontbijt/lunch/tussendoor plannen | **Gedeeltelijk** (meal_type bestaat, generator kent vooral avondeten) | `meal_type` |
+| Meerdere weken vooruit genereren | **Ontbreekt** (handmatig wel) | — |
+| Na het koken: restjes en voorraad bijwerken met bevestiging | **Ontbreekt** als één stap | — |
+| Assistent die acties op planning/lijst voorstelt en na bevestiging uitvoert | **Ontbreekt** (assistent werkt op één recept) | — |
+| Proactieve suggesties met aan/uit per soort | **Gedeeltelijk** (losse kaarten, geen centrale instelling) | — |
+| Gelijktijdige wijzigingen: waarschuwen i.p.v. overschrijven | **Ontbreekt** (realtime ververst, geen conflictmelding) | — |
+| Echte prijzen, echte winkels, echt weer | **Extern** (testadapters, duidelijk gelabeld) | `supermarkt/`, `weer.ts` |
+
+**Dubbel:** twee kostenschatters (`kostrem.ts` en `budget.ts`) → één bron maken in fase C.
+
+## 2. De A-tot-Z-stroom, als scenario
+**Gezin Peeters**: Marie en Jan, Lotte (12, notenallergie, deelt het niet), opa Gust (vegetarisch, woensdag en zondag). Weekbudget € 120, winkel "testwinkel", Marie heeft door de week 30 minuten, dinsdag is niemand thuis, vrijdag mag het feestelijk, er staat nog pompoen en halve room in de koelkast, er is een oven en een airfryer, geen slowcooker.
+
+1. **Kennismaking (2 min, overslaan mag)**: naam, gezin (4), wie heeft allergieën (hard), wie eet vegetarisch (dieet), wat lust je niet (zacht), apparaten (vinkjes), budget (optioneel), voorraad: "niet bijhouden / alleen basis / alles". Niets is verplicht; alles later aan te vullen in Instellingen › Jouw Foodlo.
+2. **"Wat eten we deze week?"** op Vandaag of Week → **Weekcontext** (één scherm): per dag wie eet mee (standaard het gezin; Gust wo + zo), snel-chips "Weinig tijd", "Niet thuis", "Feestelijk", "Restjes". Budget en winkel staan er al ingevuld.
+3. **Engine** (vaste logica, geen AI): harde filters (allergie, dieet per eter, apparaat, tijd) → kandidaten → score (smaak, seizoen, voorraad en restjes eerst, variatie over de week, overlap van ingrediënten, kost t.o.v. budget) → porties per maaltijd uit het aantal eters → kost per dag en week → controle tegen budget. Uitkomst: per dag één gerecht met "Waarom" (bv. "gebruikt je pompoen", "klaar in 25 min", "past voor Gust").
+4. **Nakijken**: per dag "Goedkoper / Sneller / Past beter" (alle drie door dezelfde veiligheidscontrole); "Bewaar dit menu". Bestaande maaltijden worden niet overschreven zonder vraag.
+5. **Boodschappen**: één actie zet het tekort op de lijst: behoefte (uit porties) − voorraad (alleen wat geregistreerd is) = te kopen, met een voorgestelde verpakking ("1 zak 500 g; je hebt 350 g nodig"). Per afdeling, per recept of samen. Kost: "schatting" of "winkelprijs" (alleen bij een echte bron).
+6. **Wijziging woensdag** (pasta → ovenschotel): `wijzigMenu` past menu, porties, lijst en kost tegelijk aan; melding "lijst: 3 erbij, 2 eraf · week € 4 duurder" met Ongedaan maken.
+7. **Winkelen**: winkelmodus per afdeling, afvinken realtime gedeeld; na "Klaar met winkelen" vraagt Foodlo (volgens instelling) of gekochte producten in de voorraad mogen.
+8. **Koken**: kookstand met waarschuwing voor wie meeeet, timers, assistent; na "Klaar": "Bleef er iets over?" → restje met bewaardatum (geen veiligheidsbelofte) → komt terug in voorstellen.
+9. **Leren**: sterren, "niet nu", "niet voor mij" sturen de volgende voorstellen; alles zichtbaar en uit te zetten.
+**Fouten/ontbrekend**: geen recepten genoeg → zeg welke filter het krapst is en bied versoepelen aan (nooit allergie); geen prijs → "prijs onbekend", niet meetellen als € 0; geen netwerk → laatst bekende planning en lijst, wijzigingen in de wachtrij.
+
+## 3. Bouwvolgorde (na fase 2 "recepten alle bronnen")
+- **P1 Slimme planner**: profiel-uitbreiding (apparaten, kookervaring, voorraadniveau), weekcontext per dag, centrale generator `src/lib/planner/` (één engine voor vanavond, vul aan, weekvoorstel), alternatieven goedkoper/sneller/past beter, budget als stuurfactor, porties uit eters, variatie, meerdere weken, ontbijt/lunch optioneel.
+- **P2 Ingrediënten & lijst**: synoniemen, eenheden-omrekening, verpakkingsmaten, behoefte/voorraad/te kopen apart, één kostenbron (kostrem + budget samen), budget op account + geschiedenis, basisvoorraad.
+- **P3 Na het koken**: restjes en voorraad bijwerken met bevestiging, receptversies (origineel bewaard bij aanpassen).
+- **P4 Assistent met acties**: "Maak mijn week goedkoper", "Vervang woensdag", "Ik heb morgen 15 min" → voorstel met verschillen → bevestigen → uitvoeren via wijzigMenu; regels eerst, AI optioneel; proactieve suggesties met één instellingenpagina.
+- **P5 Samenwerking**: conflictmelding bij gelijktijdige wijziging, lijst verdelen, meldingen.
+- **P6 Kwaliteit**: de 20 verplichte tests als één E2E-reeks, schermen voor/na, toegankelijkheid, offline.
+- **Daarna** fases 3–9 uit FASES.md (keuken/collecties, creators/video, BCC, premium, privacy, afwerking).

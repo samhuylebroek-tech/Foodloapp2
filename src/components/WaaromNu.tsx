@@ -13,7 +13,7 @@ import { bepaalContext } from "@/lib/intelligentie/context";
 import { vatSamen } from "@/lib/intelligentie/geschiedenis";
 import { nietNuLijst } from "@/lib/intelligentie/niet-nu";
 import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
-import { beveelAan } from "@/lib/intelligentie/voorstel";
+import { beveelAan } from "@/lib/planner/engine";
 import { leesKennismaking } from "@/lib/kennismaking";
 import { useT, useVoorkeuren } from "@/lib/voorkeuren";
 

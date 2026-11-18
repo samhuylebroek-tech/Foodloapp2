@@ -266,23 +266,5 @@ export function beoordeel(k: Kandidaat, i: Invoer): Aanbeveling {
   return { id: k.id, title: k.title, score, redenen: redenen.slice(0, 2), aanwezig, ontbreekt };
 }
 
-/** De beste voorstellen, elk met 1 à 2 redenen. Zonder reden geen voorstel. */
-export function beveelAan(i: Invoer): Aanbeveling[] {
-  return (
-    i.kandidaten
-      .filter((k) => toegelaten(k, i))
-      .map((k) => beoordeel(k, i))
-      // Geen gegevens (geen voorraad, geschiedenis of sterren)? Dan toch een eerlijk voorstel:
-      // de basiservaring hangt nooit af van uitgebreide invoer.
-      .map((a) =>
-        a.redenen.length
-          ? a
-          : {
-              ...a,
-              redenen: [{ soort: "eigen" as const, tekst: "Uit je eigen recepten", gewicht: 0 }],
-            },
-      )
-      .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title))
-      .slice(0, i.max ?? 3)
-  );
-}
+// De beste voorstellen voor één moment (`beveelAan`) staan in de planning-engine
+// (src/lib/planner/engine.ts): Vanavond, Vul aan en het weekmenu gebruiken die ene engine.
