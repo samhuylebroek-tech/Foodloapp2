@@ -1,5 +1,6 @@
 import { normaliseerTekst } from "@/lib/zoeken";
 import { stam } from "@/lib/stap-ingredienten";
+import { BIJVOEGLIJK, EXTRA_SYNONIEMEN } from "@/lib/ingredient/synoniemen";
 
 /**
  * Centrale productherkenning voor heel Foodlo.
@@ -164,8 +165,20 @@ const BIJWOORDEN = new Set([
  * "rode ui" op "ui" vallen. Deze woorden blijven dus altijd in de sleutel.
  */
 function canoniekWoord(woord: string): string {
+  if (BIJVOEGLIJK[woord]) return BIJVOEGLIJK[woord]!;
   const w = stam(woord);
-  return SYNONIEMEN[w] ?? SYNONIEMEN[woord] ?? w;
+  return SYNONIEMEN[w] ?? SYNONIEMEN[woord] ?? EXTRA_SYNONIEMEN[woord] ?? EXTRA_SYNONIEMEN[w] ?? w;
+}
+
+/** Synoniemen van meer dan één woord ("gemengd gehakt", "vloeibare room"), langste eerst. */
+const ZINNEN = Object.keys(EXTRA_SYNONIEMEN)
+  .filter((k) => k.includes(" "))
+  .sort((a, b) => b.length - a.length);
+
+function vervangZinnen(tekst: string): string {
+  let t = ` ${tekst} `;
+  for (const z of ZINNEN) if (t.includes(` ${z} `)) t = t.split(` ${z} `).join(` ${EXTRA_SYNONIEMEN[z]} `);
+  return t.trim();
 }
 
 /** WP5: "Diepvriesspinazie (i.p.v. spinazie)" — vervangen in de winkel, zie `vervanging`. */
@@ -192,7 +205,7 @@ export function vervangNaam(nieuw: string, oud: string): string {
 
 /** Canonieke productnaam: synoniemen samengebracht, bijwoorden weg, volgorde geneutraliseerd. */
 export function canoniekeNaam(name: string): string {
-  const ruw = normaliseerTekst(vervanging(name).naam).split(" ").filter(Boolean);
+  const ruw = vervangZinnen(normaliseerTekst(vervanging(name).naam)).split(" ").filter(Boolean);
   const alle = ruw.map(canoniekWoord).filter(Boolean);
   // Bijwoord herkennen vóór én na de stam ("diepvries" werd anders "diepvrie" en bleef staan).
   const zonderBijwoorden = ruw
