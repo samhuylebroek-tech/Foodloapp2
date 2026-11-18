@@ -203,10 +203,7 @@ export function MenuSamenvatting({ menu }: { menu: MenuVoorstel }) {
           </p>
         ) : (
           <p className="text-[0.95rem] text-muted-foreground">
-            <Link
-              to="/mijn-keuken"
-              className="font-medium underline underline-offset-4"
-            >
+            <Link to="/mijn-keuken" className="font-medium underline underline-offset-4">
               Stel een weekbudget in
             </Link>{" "}
             en Foodlo houdt er rekening mee.
