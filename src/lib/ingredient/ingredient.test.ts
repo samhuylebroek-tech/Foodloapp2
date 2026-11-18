@@ -197,3 +197,26 @@ describe("behoefte − voorraad = te kopen", () => {
     expect(a.inHuis.map((r) => r.naam)).toEqual(["peterselie"]);
   });
 });
+
+describe("lijst: nodig · in huis · verpakking per regel", () => {
+  it("Foodlo-regel met voorraad, eigen regel alleen verpakking", async () => {
+    const { lijstBehoefte, korteBehoefte } = await import("./behoefte");
+    const m = lijstBehoefte({
+      items: [
+        { id: "a", name: "pompoen", quantity: 0.8, unit: "kg", checked: false, recipe_id: "soep" },
+        { id: "b", name: "spaghetti", quantity: 350, unit: "g", checked: false, recipe_id: null },
+        { id: "c", name: "room", quantity: 20, unit: "cl", checked: true, recipe_id: "soep" },
+        { id: "d", name: "dragon", quantity: 1, unit: "bos", checked: false, recipe_id: null },
+      ],
+      plan: [{ plan_date: "2026-11-20", recipe_id: "soep", personen: 4 }],
+      recepten: [{ id: "soep", title: "Pompoensoep", servings: 4 }],
+      ingredienten: [{ recipe_id: "soep", name: "pompoen", quantity: 2, unit: "kg" }],
+      voorraad: [{ id: "v", naam: "pompoen", hoeveelheid: 1, eenheid: "" }],
+      vanaf: "2026-11-18",
+    });
+    expect(korteBehoefte(m.get("a")!)).toBe("nodig 2 kg · in huis 1,2 kg · te kopen 0,8 kg");
+    expect(m.get("b")!.verpakking!.kort).toBe("1 pak 500 g");
+    expect(m.has("c")).toBe(false);
+    expect(m.has("d")).toBe(false);
+  });
+});

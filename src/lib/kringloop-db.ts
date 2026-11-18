@@ -24,6 +24,7 @@ import {
   type Aanvulling,
   type Gekocht,
   type LijstRegel,
+  type PlanMaaltijd,
   type Regel,
   type VoorraadRij,
 } from "@/lib/kringloop";
@@ -109,6 +110,9 @@ export type AanvullingRuw = {
   }[];
   /** Recepten waarvan de ingrediënten gelezen zijn (ook als een recept er geen heeft). */
   receptIds: string[];
+  /** Het weekmenu en de recepten (voor "nodig · in huis · te kopen" op de lijst). */
+  plan?: PlanMaaltijd[];
+  recepten?: { id: string; title: string; servings: number | null }[];
   ingredienten: { recipe_id: string; name: string; quantity: number | null; unit: string | null }[];
 };
 
@@ -161,6 +165,8 @@ export async function laadAanvulling(
       lijst: (lijst.data ?? []) as AanvullingRuw["lijst"],
       receptIds: ids,
       ingredienten: (ingredienten.data ?? []) as AanvullingRuw["ingredienten"],
+      plan: (plan.data ?? []) as PlanMaaltijd[],
+      recepten: (recepten.data ?? []) as NonNullable<AanvullingRuw["recepten"]>,
     },
     aanvulling: berekenAanvulling({
       plan: plan.data ?? [],

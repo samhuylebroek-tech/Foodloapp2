@@ -15,6 +15,7 @@ import { CATEGORIE_LABEL, CATEGORIE_VOLGORDE } from "@/lib/categorie";
 import { toonBelgischeMaat } from "@/lib/ingredienten";
 import { KOMENDE_DAGEN } from "@/lib/kringloop-db";
 import { type Regel } from "@/lib/kringloop";
+import { drieGetallen } from "@/lib/ingredient/behoefte";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/aanvullen")({
@@ -151,6 +152,7 @@ function AanvullenPagina() {
                   {g.regels.map((r) => {
                     const aan = gekozen.has(r.sleutel);
                     const maat = toonBelgischeMaat(r.quantity ?? r.nodig, r.unit);
+                    const getallen = drieGetallen(r);
                     return (
                       <li key={r.sleutel}>
                         <button
@@ -183,19 +185,29 @@ function AanvullenPagina() {
                             >
                               {r.naam}
                             </span>
-                            <span className="block truncate text-[0.9rem] text-muted-foreground">
+                            <span className="block break-words text-[0.9rem] text-muted-foreground">
                               {/* Telefoon: hoeveelheid hier, zodat de naam de volle breedte krijgt. */}
                               {maat ? (
                                 <span className="font-semibold text-foreground sm:hidden">
                                   {maat} ·{" "}
                                 </span>
                               ) : null}
-                              {r.inHuisDeels
-                                ? `je hebt al ${r.inHuisDeels}`
-                                : r.opLijstDeels
-                                  ? `extra bij wat al op je lijst staat`
-                                  : kortVoor(r)}
+                              {r.inHuisDeels && getallen.nodig
+                                ? `nodig ${getallen.nodig}, ${getallen.inHuis ?? r.inHuisDeels} in huis`
+                                : r.inHuisDeels
+                                  ? `je hebt al ${r.inHuisDeels}`
+                                  : r.opLijstDeels
+                                    ? `extra bij wat al op je lijst staat`
+                                    : kortVoor(r)}
                             </span>
+                            {getallen.verpakking ? (
+                              <span
+                                className="block break-words text-[0.9rem] text-muted-foreground"
+                                data-testid="verpakking"
+                              >
+                                Gangbare verpakking: {getallen.verpakking.kort}
+                              </span>
+                            ) : null}
                           </span>
                           {maat ? (
                             <span className="hidden shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-[0.95rem] font-semibold tabular-nums sm:inline">

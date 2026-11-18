@@ -12,12 +12,20 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { toonBelgischeMaat } from "@/lib/ingredienten";
+import { rekenOm, voorgesteldeVerpakking } from "@/lib/ingredient";
 import { korteDag } from "@/lib/kringloop";
 import { laadWaarom } from "@/lib/kringloop-db";
 import { vervanging } from "@/lib/product-herkenning";
 import { lokaleDatum } from "@/lib/tijd";
 
-export type WaaromRegel = { id: string; name: string; recipe_id?: string | null };
+export type WaaromRegel = {
+  id: string;
+  name: string;
+  recipe_id?: string | null;
+  /** Wat er op de lijst staat (= te kopen). */
+  quantity?: number | null;
+  unit?: string | null;
+};
 
 function maat(q: number | null, unit: string) {
   return toonBelgischeMaat(q, unit) || "hoeveelheid onbekend";
@@ -43,6 +51,14 @@ export function WaaromSheet({
   });
   const naam = regel ? vervanging(regel.name).naam : "";
   const w = q.data;
+  // Drie getallen: nodig (uit porties) − in huis (alleen geregistreerd) = te kopen.
+  const nodigUnit = w?.nodig?.unit ?? regel?.unit ?? "";
+  const inHuisSom = w?.inHuis.reduce<number | null>((som, v) => {
+    const om = v.quantity == null ? null : rekenOm(v.quantity, v.unit, nodigUnit, regel?.name);
+    return som == null || om == null ? null : som + om;
+  }, 0);
+  const pak =
+    regel?.quantity != null ? voorgesteldeVerpakking(regel.name, regel.quantity, regel.unit) : null;
 
   return (
     <Sheet open={!!regel} onOpenChange={(o) => !o && onSluit()}>
@@ -64,6 +80,34 @@ export function WaaromSheet({
           </p>
         ) : w ? (
           <div className="mt-5 space-y-6 pb-4 text-lg">
+            {w.nodig || regel?.quantity != null ? (
+              <dl
+                className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 rounded-2xl bg-muted/50 px-4 py-3"
+                aria-label="Nodig, in huis en te kopen"
+              >
+                <dt className="text-muted-foreground">Nodig</dt>
+                <dd className="font-semibold tabular-nums">
+                  {w.nodig ? maat(w.nodig.quantity, w.nodig.unit) : "—"}
+                </dd>
+                <dt className="text-muted-foreground">In huis</dt>
+                <dd className="tabular-nums">
+                  {w.inHuis.length
+                    ? inHuisSom
+                      ? maat(Math.round(inHuisSom * 100) / 100, nodigUnit)
+                      : "staat in je voorraad"
+                    : "niets geregistreerd"}
+                </dd>
+                <dt className="text-muted-foreground">Te kopen</dt>
+                <dd className="font-semibold tabular-nums">
+                  {regel?.quantity != null ? maat(regel.quantity, regel.unit ?? "") : "—"}
+                </dd>
+                {pak ? (
+                  <dd className="col-span-2 mt-1 text-base text-muted-foreground">
+                    Gangbare verpakking: {pak.tekst}. Geen winkelprijs of -belofte.
+                  </dd>
+                ) : null}
+              </dl>
+            ) : null}
             <section aria-labelledby="waarom-voor">
               <h3 id="waarom-voor" className="flex items-center gap-2 font-semibold">
                 <CalendarDays className="size-5 text-primary" aria-hidden /> Nodig voor

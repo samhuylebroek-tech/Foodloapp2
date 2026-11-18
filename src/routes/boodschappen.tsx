@@ -43,6 +43,7 @@ import { Groep, Icoon } from "@/components/mobiel/Lijst";
 import { AanvulKaart, AanvulRegel } from "@/components/kringloop/AanvulKaart";
 import { meldMetHerstel, useAanvulling, useKringloopVernieuw } from "@/hooks/useAanvulling";
 import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
+import { korteBehoefte, lijstBehoefte, type DrieGetallen } from "@/lib/ingredient/behoefte";
 import { nogNodigVoorMorgen } from "@/lib/intelligentie/voor-morgen";
 import { HalfGelukt, klaarMetWinkelen } from "@/lib/kringloop-db";
 import { Button } from "@/components/ui/button";
@@ -159,6 +160,12 @@ type Item = {
   /** Wie het toevoegde (gezinslijst). */
   user_id?: string;
 };
+
+/** "nodig 2 kg · 1,2 kg in huis": de te kopen hoeveelheid staat al in het bolletje ernaast. */
+function korteBehoefteZonderKopen(d: DrieGetallen) {
+  if (!d.nodig || (!d.inHuis && d.nodig === d.teKopen)) return "";
+  return korteBehoefte({ ...d, teKopen: null });
+}
 
 function itemTekst(item: Item) {
   return [toonBelgischeMaat(item.quantity, item.unit), item.name].filter(Boolean).join(" ").trim();
@@ -1117,6 +1124,21 @@ function BoodschappenPage() {
     slim && aanvulling.data
       ? nogNodigVoorMorgen(aanvulling.data.aanvulling.kopen, lokaleDatum())
       : null;
+  // P2: per Foodlo-regel "nodig · in huis" en een gangbare verpakking (alleen voor het eigen
+  // weekmenu; zelfde rekenregels als Slim aanvullen).
+  const ruwAanvulling = aanvulling.data?.ruw;
+  const behoefte = useMemo(
+    () =>
+      lijstBehoefte({
+        items,
+        plan: ruwAanvulling?.plan ?? [],
+        recepten: ruwAanvulling?.recepten ?? [],
+        ingredienten: ruwAanvulling?.ingredienten ?? [],
+        voorraad: ruwAanvulling?.voorraad ?? [],
+        vanaf: lokaleDatum(),
+      }),
+    [items, ruwAanvulling],
+  );
   const [winkelKlaarBezig, setWinkelKlaarBezig] = useState(false);
   async function klaarMetWinkelenNu() {
     if (!user || !actieveLijst || !klaar.length || winkelKlaarBezig) return;
@@ -1557,6 +1579,7 @@ function BoodschappenPage() {
                                     onCategorie={(c) => zetCategorie(item.name, c)}
                                     botsing={botsingen[item.id]}
                                     onVervanger={() => setVervangItem(item)}
+                                    behoefte={behoefte.get(item.id)}
                                   />
                                 </li>
                               ))}
@@ -2482,6 +2505,7 @@ function ItemRij({
   door,
   botsing,
   onVervanger,
+  behoefte,
 }: {
   item: Item;
   kiesModus: boolean;
@@ -2498,8 +2522,11 @@ function ItemRij({
   /** Fase 1: botst dit product met iemand die meeëet? */
   botsing?: LijstBotsing | undefined;
   onVervanger?: () => void;
+  /** P2: nodig · in huis, en een gangbare verpakking (rustig, één regel). */
+  behoefte?: DrieGetallen | undefined;
 }) {
   const start = useRef<number | null>(null);
+  const behoefteTekst = behoefte ? korteBehoefteZonderKopen(behoefte) : "";
 
   // Vegen op gsm: naar links = verwijderen, naar rechts = afvinken.
   function raakStart(e: React.TouchEvent) {
@@ -2586,6 +2613,16 @@ function ItemRij({
           ) : item.recept ? (
             <span className="block truncate text-[0.95rem] text-muted-foreground">
               voor {item.recept}
+            </span>
+          ) : null}
+          {!item.checked && (behoefteTekst || behoefte?.verpakking) ? (
+            <span
+              className="block break-words text-[0.95rem] text-muted-foreground"
+              data-testid="lijst-behoefte"
+            >
+              {[behoefteTekst, behoefte?.verpakking ? `gangbaar: ${behoefte.verpakking.kort}` : ""]
+                .filter(Boolean)
+                .join(" · ")}
             </span>
           ) : null}
           {onVervanger ? (
