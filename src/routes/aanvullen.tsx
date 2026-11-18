@@ -36,6 +36,62 @@ function kortVoor(r: Regel) {
   return r.voor.length > 1 ? `${eerste} +${r.voor.length - 1}` : eerste;
 }
 
+/** Rustige keuze in chips: standaard uit, één tik om toch op de lijst te zetten. */
+function ChipKeuze({
+  id,
+  kop,
+  label,
+  uitleg,
+  regels,
+  gekozen,
+  wissel,
+}: {
+  id: string;
+  kop: string;
+  label: string;
+  uitleg?: string;
+  regels: Regel[];
+  gekozen: Set<string>;
+  wissel: (sleutel: string) => void;
+}) {
+  return (
+    <section aria-labelledby={id}>
+      <h2 id={id} className="mb-2 px-1 text-[0.95rem] font-bold text-muted-foreground">
+        {kop}
+      </h2>
+      {uitleg ? <p className="mb-2 px-1 text-[0.95rem] text-muted-foreground">{uitleg}</p> : null}
+      <ul className="flex flex-wrap gap-2" aria-label={label}>
+        {regels.map((r) => {
+          const aan = gekozen.has(r.sleutel);
+          return (
+            <li key={r.sleutel}>
+              <button
+                type="button"
+                role="checkbox"
+                aria-checked={aan}
+                onClick={() => wissel(r.sleutel)}
+                className={cn(
+                  "inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-base font-semibold transition-colors",
+                  aan
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-secondary-foreground",
+                )}
+              >
+                {aan ? (
+                  <Check className="size-4" aria-hidden />
+                ) : (
+                  <Plus className="size-4" aria-hidden />
+                )}
+                {r.naam}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 function AanvullenPagina() {
   const { data, isLoading, isError, refetch, zetOpLijst, haalWeg } = useAanvulling();
   const a = data?.aanvulling;
@@ -224,42 +280,26 @@ function AanvullenPagina() {
           )}
 
           {a.inHuis.length ? (
-            <section aria-labelledby="in-huis-kop">
-              <h2
-                id="in-huis-kop"
-                className="mb-2 px-1 text-[0.95rem] font-bold text-muted-foreground"
-              >
-                In huis — toch nodig? Tik erop
-              </h2>
-              <ul className="flex flex-wrap gap-2" aria-label="Heb je al in huis">
-                {a.inHuis.map((r) => {
-                  const aan = gekozen.has(r.sleutel);
-                  return (
-                    <li key={r.sleutel}>
-                      <button
-                        type="button"
-                        role="checkbox"
-                        aria-checked={aan}
-                        onClick={() => wissel(r.sleutel)}
-                        className={cn(
-                          "inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-base font-semibold transition-colors",
-                          aan
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-secondary text-secondary-foreground",
-                        )}
-                      >
-                        {aan ? (
-                          <Check className="size-4" aria-hidden />
-                        ) : (
-                          <Plus className="size-4" aria-hidden />
-                        )}
-                        {r.naam}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
+            <ChipKeuze
+              id="in-huis-kop"
+              kop="In huis — toch nodig? Tik erop"
+              label="Heb je al in huis"
+              regels={a.inHuis}
+              gekozen={gekozen}
+              wissel={wissel}
+            />
+          ) : null}
+
+          {a.meestal.length ? (
+            <ChipKeuze
+              id="meestal-kop"
+              kop="Heb je meestal — toch nodig? Tik erop"
+              label="Heb je meestal (basisvoorraad)"
+              uitleg="Je basisvoorraad uit Mijn keuken. Foodlo zet die niet op je lijst."
+              regels={a.meestal}
+              gekozen={gekozen}
+              wissel={wissel}
+            />
           ) : null}
 
           {a.zonderRecept.length ? (

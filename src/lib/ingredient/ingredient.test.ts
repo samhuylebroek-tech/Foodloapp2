@@ -220,3 +220,53 @@ describe("lijst: nodig · in huis · verpakking per regel", () => {
     expect(m.has("d")).toBe(false);
   });
 });
+
+describe("basisvoorraad (voorraadniveau basis)", () => {
+  const opts = {
+    plan: [{ plan_date: "2026-11-20", recipe_id: "p", personen: 2 }],
+    recepten: [{ id: "p", title: "Pannenkoeken", servings: 2 }],
+    ingredienten: [
+      { recipe_id: "p", name: "bloem", quantity: 250, unit: "g" },
+      { recipe_id: "p", name: "olijfolie", quantity: 2, unit: "el" },
+      { recipe_id: "p", name: "zout", quantity: 1, unit: "snuf" },
+      { recipe_id: "p", name: "melk", quantity: 50, unit: "cl" },
+    ],
+    voorraad: [],
+    lijst: [],
+    vanaf: "2026-11-18",
+  };
+
+  it("basisproducten niet kopen maar 'heb je meestal' (ook zout)", () => {
+    const a = berekenAanvulling({ ...opts, basisvoorraad: ["olijfolie", "zout", "bloem"] });
+    expect(a.kopen.map((r) => r.naam)).toEqual(["melk"]);
+    expect(a.meestal.map((r) => r.naam).sort()).toEqual(["bloem", "olijfolie", "zout"]);
+  });
+
+  it("zonder basisvoorraad: gewone werking, zout nooit", () => {
+    const a = berekenAanvulling(opts);
+    expect(a.kopen.map((r) => r.naam).sort()).toEqual(["bloem", "melk", "olijfolie"]);
+    expect(a.meestal).toEqual([]);
+  });
+
+  it("geregistreerde voorraad wint van 'meestal'", () => {
+    const a = berekenAanvulling({
+      ...opts,
+      voorraad: [{ id: "v", naam: "bloem", hoeveelheid: 100, eenheid: "g" }],
+      basisvoorraad: ["bloem"],
+    });
+    expect(a.meestal.map((r) => r.naam)).toEqual([]);
+    expect(a.kopen.find((r) => r.naam === "bloem")!.quantity).toBe(150);
+  });
+
+  it("menu wijzigen (lijstBijsturen) zet basisproducten niet op de lijst", async () => {
+    const { lijstBijsturen } = await import("@/lib/kringloop");
+    const b = lijstBijsturen({
+      ...opts,
+      voorraad: [{ id: "basis-0", naam: "olijfolie", hoeveelheid: null, eenheid: "" }],
+      lijst: [],
+      toegevoegd: ["p"],
+      weggehaald: [],
+    });
+    expect(b.nieuw.map((r) => r.naam).sort()).toEqual(["bloem", "melk"]);
+  });
+});

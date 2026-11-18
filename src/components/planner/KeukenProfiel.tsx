@@ -179,6 +179,10 @@ export function VoorraadKeuze({
           <p id="basis-uitleg" className="text-base font-semibold">
             Wat heb je altijd in huis?
           </p>
+          <p className="text-[0.95rem] text-muted-foreground">
+            Die zet Foodlo niet op je lijst. Bij Slim aanvullen staan ze onder &quot;Heb je
+            meestal&quot;: één tik en ze staan er toch op.
+          </p>
           <div className="flex flex-wrap gap-2" role="group" aria-labelledby="basis-uitleg">
             {[...BASIS_SUGGESTIES, ...extra].map((p) => {
               const aan = basis.includes(p);

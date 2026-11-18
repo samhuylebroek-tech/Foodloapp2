@@ -29,6 +29,8 @@ import {
   type VoorraadRij,
 } from "@/lib/kringloop";
 import { lokaleDatum } from "@/lib/tijd";
+import { db } from "@/lib/module-beschikbaar";
+import { leesProfiel, leesToestelProfiel } from "@/lib/planner/profiel";
 
 export const KOMENDE_DAGEN = 7;
 
@@ -97,6 +99,30 @@ async function vindLijst(userId: string): Promise<string | null> {
   return data?.id ?? null;
 }
 
+/**
+ * Voorraadniveau "basis": de gekozen basisproducten (op het account na voorstel 0013, anders
+ * op dit toestel). Bij een ander niveau: niets. Een fout = niets (gewone werking).
+ */
+export async function basisVoorLijst(userId: string): Promise<string[]> {
+  let profiel = leesToestelProfiel(userId);
+  try {
+    const { data, error } = await db
+      .from("planprofiel")
+      .select("voorraadniveau, basisvoorraad")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!error && data) profiel = leesProfiel(data);
+  } catch {
+    /* tabel of netwerk weg: toestel */
+  }
+  return profiel.voorraadniveau === "basis" ? profiel.basisvoorraad : [];
+}
+
+/** Basisproducten als voorraad zonder hoeveelheid: "aanwezig", dus niet op de lijst. */
+function basisAlsVoorraad(basis: readonly string[]) {
+  return basis.map((naam, i) => ({ id: `basis-${i}`, naam, hoeveelheid: null, eenheid: "" }));
+}
+
 /** Ruwe rijen die Slim aanvullen al las; Vandaag hergebruikt ze (BUG-118, geen dubbele verzoeken). */
 export type AanvullingRuw = {
   voorraad: { id: string; naam: string; hoeveelheid: number | null; eenheid: string }[];
@@ -110,6 +136,8 @@ export type AanvullingRuw = {
   }[];
   /** Recepten waarvan de ingrediënten gelezen zijn (ook als een recept er geen heeft). */
   receptIds: string[];
+  /** Voorraadniveau "basis": je basisproducten (heb je meestal). */
+  basis?: string[];
   /** Het weekmenu en de recepten (voor "nodig · in huis · te kopen" op de lijst). */
   plan?: PlanMaaltijd[];
   recepten?: { id: string; title: string; servings: number | null }[];
@@ -122,7 +150,7 @@ export async function laadAanvulling(
 ): Promise<{ listId: string | null; aanvulling: Aanvulling; ruw: AanvullingRuw }> {
   // Alleen lezen: bekijken mag niets aanmaken. De lijst komt er pas bij het aanvullen.
   const listId = await vindLijst(userId);
-  const [plan, later, voorraad, lijst] = await Promise.all([
+  const [plan, later, voorraad, lijst, basis] = await Promise.all([
     supabase
       .from("meal_plan")
       .select("plan_date, recipe_id, personen, custom_title, soort")
@@ -144,6 +172,7 @@ export async function laadAanvulling(
           .select("id, name, checked, quantity, unit, recipe_id")
           .eq("list_id", listId)
       : Promise.resolve({ data: [] as never[] }),
+    basisVoorLijst(userId),
   ]);
   if (plan.error) throw plan.error;
   const ids = [
@@ -167,6 +196,7 @@ export async function laadAanvulling(
       ingredienten: (ingredienten.data ?? []) as AanvullingRuw["ingredienten"],
       plan: (plan.data ?? []) as PlanMaaltijd[],
       recepten: (recepten.data ?? []) as NonNullable<AanvullingRuw["recepten"]>,
+      basis,
     },
     aanvulling: berekenAanvulling({
       plan: plan.data ?? [],
@@ -178,6 +208,7 @@ export async function laadAanvulling(
       nogGepland: new Set(
         (later.data ?? []).map((p) => p.recipe_id).filter((x): x is string => !!x),
       ),
+      basisvoorraad: basis,
     }),
   };
 }
@@ -251,8 +282,8 @@ export async function vulAan(
   gekozen: Set<string> | "alles",
 ): Promise<{ aantal: number; herstel: Herstel }> {
   const { aanvulling } = await laadAanvulling(userId);
-  const kandidaten = [...aanvulling.kopen, ...aanvulling.inHuis].filter((r) =>
-    gekozen === "alles" ? aanvulling.kopen.includes(r) : gekozen.has(r.sleutel),
+  const kandidaten = [...aanvulling.kopen, ...aanvulling.inHuis, ...aanvulling.meestal].filter(
+    (r) => (gekozen === "alles" ? aanvulling.kopen.includes(r) : gekozen.has(r.sleutel)),
   );
   if (!kandidaten.length) return { aantal: 0, herstel: async () => undefined };
   const herstel = await schrijfNaarLijst(userId, kandidaten);
@@ -659,7 +690,7 @@ async function bijstuurRonde(o: {
   toegevoegd: string[];
   weggehaald: string[];
 }): Promise<{ effect: LijstEffect; herstel: Herstel }> {
-  const [plan, later, voorraad, lijst] = await Promise.all([
+  const [plan, later, voorraad, lijst, basis] = await Promise.all([
     supabase
       .from("meal_plan")
       .select("plan_date, recipe_id, personen, custom_title, soort")
@@ -675,6 +706,7 @@ async function bijstuurRonde(o: {
       .gt("plan_date", o.tot),
     supabase.from("pantry_items").select("id, naam, hoeveelheid, eenheid").eq("user_id", o.userId),
     supabase.from("shopping_items").select("*").eq("list_id", o.listId),
+    basisVoorLijst(o.userId),
   ]);
   moet(plan);
   moet(later);
@@ -697,7 +729,8 @@ async function bijstuurRonde(o: {
     plan: plan.data ?? [],
     recepten: recepten.data ?? [],
     ingredienten: ingredienten.data ?? [],
-    voorraad: voorraad.data ?? [],
+    // Basisvoorraad ("heb je meestal") telt als aanwezig: komt niet op de lijst.
+    voorraad: [...(voorraad.data ?? []), ...basisAlsVoorraad(basis)],
     lijst: rijen,
     vanaf: o.vandaag,
     toegevoegd: o.toegevoegd,

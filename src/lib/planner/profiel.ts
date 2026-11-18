@@ -39,6 +39,9 @@ export const LEEG_PROFIEL: PlanProfiel = {
 
 /** Voorstellen voor de basisvoorraad; je kiest zelf, niets staat standaard aan. */
 export const BASIS_SUGGESTIES = [
+  "zout",
+  "peper",
+  "olie",
   "bloem",
   "suiker",
   "olijfolie",

@@ -131,6 +131,8 @@ export type Aanvulling = {
   kopen: Regel[];
   /** Volledig in de voorraad. */
   inHuis: Regel[];
+  /** Basisvoorraad ("heb je meestal"): niet op de lijst, met één tik toch toe te voegen. */
+  meestal: Regel[];
   /** Volledig gedekt door wat al op de lijst staat. */
   opLijst: Regel[];
   /** Op de lijst voor een gerecht dat niet meer gepland is. */
@@ -229,6 +231,11 @@ export function berekenAanvulling(opts: {
   vanaf: string;
   /** Recepten die ook later nog gepland zijn (buiten het venster): hun regels zijn niet "niet meer nodig". */
   nogGepland?: Set<string>;
+  /**
+   * Voorraadniveau "basis": je gekozen basisproducten. Die gaan niet op de lijst maar staan bij
+   * "heb je meestal" (ook zout en peper, als je ze koos). Leeg/weg = gewone werking.
+   */
+  basisvoorraad?: readonly string[];
 }): Aanvulling {
   const komend = opts.plan.filter((p) => p.plan_date >= opts.vanaf);
   const zonderRecept = komend
@@ -240,9 +247,11 @@ export function berekenAanvulling(opts: {
   const { behoeften, aantalGerechten } = behoeftenVan(komend, opts.recepten, opts.ingredienten);
 
   const openLijst = opts.lijst.filter((i) => !i.checked);
+  const basis = opts.basisvoorraad ?? [];
   const uit: Aanvulling = {
     kopen: [],
     inHuis: [],
+    meestal: [],
     opLijst: [],
     nietMeerNodig: openLijst
       .filter((i) => i.id && i.recipe_id && !geplandeRecepten.has(i.recipe_id))
@@ -283,6 +292,16 @@ export function berekenAanvulling(opts: {
       recipe_id: b.recipe_id,
     };
 
+    // Basisvoorraad: heb je meestal. Niet op de lijst, wel één tik om toch toe te voegen.
+    if (
+      basis.length &&
+      zitInVoorraad(b.naam, [...basis]) &&
+      !inHuis.aanwezig &&
+      !opLijst.aanwezig
+    ) {
+      uit.meestal.push(regel);
+      continue;
+    }
     // Onbekende hoeveelheid ergens: aanwezig = genoeg (niet gokken, niet dubbel kopen).
     if (opLijst.aanwezig && (b.waarde == null || opLijst.onbekend)) {
       uit.opLijst.push(regel);
@@ -308,6 +327,34 @@ export function berekenAanvulling(opts: {
     }
     if (opLijst.waarde > 0) regel.opLijstDeels = `${toon(opLijst.waarde)} ${unit}`.trim();
     uit.kopen.push(regel);
+  }
+  // Zout, peper, water komen nooit op de lijst; koos je ze als basisvoorraad, dan zie je ze
+  // wel bij "heb je meestal" (zodat je weet dat Foodlo ermee rekent).
+  if (basis.length) {
+    const gezien = new Set(uit.meestal.map((r) => canoniekeNaam(r.naam)));
+    const recepten = new Map(opts.recepten.map((r) => [r.id, r]));
+    for (const p of komend) {
+      const recept = p.recipe_id ? recepten.get(p.recipe_id) : undefined;
+      if (!recept) continue;
+      for (const ing of opts.ingredienten) {
+        const naam = ing.name.trim();
+        if (ing.recipe_id !== recept.id || !naam || !isBasis(naam)) continue;
+        if (!zitInVoorraad(naam, [...basis]) || gezien.has(canoniekeNaam(naam))) continue;
+        gezien.add(canoniekeNaam(naam));
+        uit.meestal.push({
+          sleutel: productSleutel(naam, ing.unit),
+          naam,
+          quantity: null,
+          unit: (ing.unit ?? "").trim(),
+          nodig: null,
+          inHuisDeels: null,
+          opLijstDeels: null,
+          categorie: categorieVan(naam, {}),
+          voor: [{ titel: recept.title, dag: p.plan_date }],
+          recipe_id: recept.id,
+        });
+      }
+    }
   }
   return uit;
 }
