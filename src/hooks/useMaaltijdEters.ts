@@ -25,6 +25,7 @@ import {
   metEigenRegels,
 } from "@/lib/maaltijd-eters";
 import { useModuleBeschikbaar } from "@/lib/module-beschikbaar";
+import { lijstUitleg, planPersonen, wijzigMenu, type Herstel } from "@/lib/kringloop-db";
 import { bewaarEters, haalEters, serverOordeel, useHuishouden } from "@/lib/voeding-db";
 import { maaltijdOordeel, namenLijst, type MaaltijdOordeel } from "@/lib/voorstel-eters";
 
@@ -80,20 +81,48 @@ export function useMaaltijdEters(
       toast.error("Wie meeëet, kon niet bewaard worden. Probeer het opnieuw.");
       return false;
     }
+    // P2: porties volgen het aantal mee-eters; de lijst gaat mee (één keer ongedaan te maken).
+    let porties: { herstel: Herstel; tekst: string } | null = null;
+    if (user && lidIds.length) {
+      try {
+        const voorheen = (vorige?.length ? vorige : leden.map((l) => l.id)).length;
+        const r = await wijzigMenu(user.id, planPersonen(planId, { nu: lidIds.length, voorheen }));
+        if (r.veranderd) {
+          const lijst = lijstUitleg(r.effect);
+          porties = {
+            herstel: r.herstel,
+            tekst: `porties aangepast${lijst ? ` · ${lijst}` : ""}`,
+          };
+          void qc.invalidateQueries({ queryKey: ["meal-plan"] });
+          void qc.invalidateQueries({ queryKey: ["aanvulling"] });
+          void qc.invalidateQueries({ queryKey: ["shopping"] });
+          void qc.invalidateQueries({ queryKey: ["home-dagmenu"] });
+        }
+      } catch {
+        toast.error("Het aantal porties kon niet mee aangepast worden. Pas het zelf aan in Week.");
+      }
+    }
     ververs();
     const namen = leden.filter((l) => lidIds.includes(l.id)).map((l) => l.naam);
-    toast.success(melding ?? `Eet mee: ${namenLijst(namen)}`, {
+    const basis = melding ?? `Eet mee: ${namenLijst(namen)}`;
+    toast.success(porties ? `${basis} · ${porties.tekst}` : basis, {
       duration: 8000,
       action: {
         label: "Ongedaan maken",
         onClick: async () => {
           try {
+            if (porties) await porties.herstel();
             await opslaan(planId, vorige);
             toast("Teruggezet");
           } catch {
             toast.error("Terugzetten lukte niet. Kijk even na wie meeëet.");
           } finally {
             ververs();
+            if (porties) {
+              void qc.invalidateQueries({ queryKey: ["meal-plan"] });
+              void qc.invalidateQueries({ queryKey: ["shopping"] });
+              void qc.invalidateQueries({ queryKey: ["aanvulling"] });
+            }
           }
         },
       },

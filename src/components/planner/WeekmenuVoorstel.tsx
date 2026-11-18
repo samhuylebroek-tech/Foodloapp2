@@ -44,6 +44,11 @@ import { alleRijen } from "@/lib/pagineer";
 import { useVoorstelEters } from "@/hooks/useVoorstelEters";
 import { maaltijdOordeel, veiligVoorEters } from "@/lib/voorstel-eters";
 import { OordeelMelding } from "@/components/veiligheid/EtersOordeel";
+import { usePlanProfiel } from "@/hooks/usePlanProfiel";
+import { herkenApparatuur, moeilijkheidVan } from "@/lib/planner/apparatuur";
+import { pastInKeuken } from "@/lib/planner/engine";
+import { onveiligeGerechten } from "@/lib/planner/servercontrole";
+import { serverOordeel } from "@/lib/voeding-db";
 
 export function ReceptFoto({
   url,
@@ -250,15 +255,47 @@ export function WeekmenuVoorstel({
       allergieen: kennis.allergieen,
     }),
   );
+  // P1-engine: dezelfde keukenfilters (apparatuur, kookervaring) als "Stel mijn week samen".
+  // Blijft er niets over, dan niet filteren (zoals versoepelen in de engine; nooit veiligheid).
+  const keuken = usePlanProfiel();
+  const inKeuken = voorstelbaarVoorMij.filter((r) =>
+    pastInKeuken(
+      {
+        ...kandidaat(r),
+        vereist: herkenApparatuur({
+          title: r.title,
+          description: r.description ?? null,
+          tags: r.tags ?? [],
+          stappen: r.instructions ?? [],
+        }),
+        moeilijkheid: moeilijkheidVan({
+          difficulty: r.difficulty,
+          stappen: r.instructions,
+          minuten: (r.prep_minutes ?? 0) + (r.cook_minutes ?? 0),
+        }),
+      },
+      { apparatuur: keuken.apparatuur, kookervaring: keuken.kookervaring },
+    ),
+  );
+  const keukenBasis = inKeuken.length ? inKeuken : voorstelbaarVoorMij;
   // Mee-eters: wat niet veilig is voor iemand die meeeet, stelt Foodlo niet voor. Voor leden
-  // waarvan je de gegevens niet mag lezen, kijkt de server het getoonde gerecht na (zie onder).
+  // waarvan je de gegevens niet mag lezen, kijkt de server elk gekozen gerecht na (BUG-152).
   const actiefReceptId = rijen[actieveStap]?.recept?.id;
+  const gekozenIds = [
+    ...new Set([
+      ...(actiefReceptId ? [actiefReceptId] : []),
+      ...rijen.filter((r) => r.aan && r.recept).map((r) => r.recept!.id),
+    ]),
+  ];
   const eters = useVoorstelEters({
     gezinId,
     gekozen: gekozenEters,
-    receptIds: actiefReceptId ? [actiefReceptId] : [],
+    receptIds: gekozenIds,
   });
-  const voorstelbaar = veiligVoorEters(voorstelbaarVoorMij, kandidaat, eters).veilig;
+  const voorstelbaar = veiligVoorEters(keukenBasis, kandidaat, eters).veilig;
+  const nietLeesbaar = eters.eters
+    .filter((l) => !eters.voeding.get(l.id) && l.user_id !== user?.id)
+    .map((l) => l.id);
 
   function regelVoor(datum: string): DagRegel {
     const eigen = regels[datum] ?? instelling.perDag[weekdagVan(datum)] ?? {};
@@ -952,11 +989,32 @@ export function WeekmenuVoorstel({
                     onClick={async () => {
                       setBezigMet("bezig");
                       try {
+                        const gekozen = rijen.filter((rij) => rij.aan);
+                        // BUG-152: elk gekozen gerecht via de server nakijken vóór het bewaren.
+                        let onveilig: Set<string>;
+                        try {
+                          onveilig = await onveiligeGerechten(
+                            gekozen.filter((r) => r.recept).map((r) => r.recept!.id),
+                            nietLeesbaar,
+                            serverOordeel,
+                          );
+                        } catch {
+                          toast.error("Nakijken voor wie meeeet lukte niet. Er is niets bewaard.");
+                          return;
+                        }
+                        if (onveilig.size) {
+                          setRijen((v) =>
+                            v.map((r) =>
+                              r.recept && onveilig.has(r.recept.id) ? { ...r, aan: false } : r,
+                            ),
+                          );
+                          toast.error(
+                            `${onveilig.size === 1 ? "Eén gerecht past" : `${onveilig.size} gerechten passen`} niet voor iedereen die meeeet. Kies daar een ander gerecht; er is nog niets bewaard.`,
+                          );
+                          return;
+                        }
                         // Fase 1: de gekozen mee-eters worden bij elke geplande maaltijd bewaard.
-                        await onZet(
-                          rijen.filter((rij) => rij.aan),
-                          gekozenEters ? eters.eters.map((e) => e.id) : null,
-                        );
+                        await onZet(gekozen, gekozenEters ? eters.eters.map((e) => e.id) : null);
                       } finally {
                         setBezigMet("");
                       }

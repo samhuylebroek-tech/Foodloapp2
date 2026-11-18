@@ -166,9 +166,15 @@ export function RecipeForm({
   const [manier, setManierRuw] = useState<Manier>(startManier);
   // Vriendelijke foutmelding met alternatieven (link onbereikbaar, geen recept, foto onleesbaar).
   const [importFout, setImportFout] = useState<ImportFoutInfo | null>(null);
+  // P2-fix: "Bewaren" bovenaan en de vaste "Klaar"-balk pas na een gekozen bron (anders dekken
+  // ze de keuzes af en staan er twee hoofdknoppen).
+  const [bronGekozen, setBronGekozen] = useState(
+    Boolean(recipe) || Boolean(startNaam) || Boolean(gedeeldeTekst.trim() || gedeeldeLink),
+  );
   function setManier(m: Manier) {
     setManierRuw(m);
     setImportFout(null);
+    setBronGekozen(true);
   }
   // Video-link (fase 2): alleen de link en de bronvermelding, nooit de video zelf.
   const [videoUrl, setVideoUrl] = useState(gedeeldeVideo ? gedeeldeLink : "");
@@ -1238,16 +1244,30 @@ export function RecipeForm({
             ? "We zoeken de ingrediënten op de foto…"
             : null;
 
+  const toonBewaren =
+    Boolean(recipe) ||
+    bronGekozen ||
+    ingevuld ||
+    Boolean(title.trim()) ||
+    formIngredienten.length > 0 ||
+    stappen.length > 0;
+
   return (
     <div className="space-y-6">
-      {!recipe && !stapsgewijs && (
+      {!recipe && !stapsgewijs && toonBewaren && (
         <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-card p-2 shadow-zacht">
           {/* Niet plakkend: de paginakop is hoger dan 4,25 rem, waardoor deze balk bij het
               scrollen onder de kop verdween en inhoud bedekte. "Klaar" staat ook onderaan. */}
           <p className="flex-1 px-2 text-base font-medium">
             {koppelMaaltijd ? "Bijna klaar om te koppelen" : "Nieuw gerecht"}
           </p>
-          <Button onClick={openControle} disabled={saving} className="h-14 shrink-0 px-6 text-base">
+          {/* Eén gevulde hoofdknop per scherm: de vaste "Klaar" onderaan; deze is rustig. */}
+          <Button
+            variant="outline"
+            onClick={openControle}
+            disabled={saving}
+            className="h-14 shrink-0 px-6 text-base"
+          >
             {saving ? <Loader2 className="size-5 animate-spin" /> : null}
             {koppelMaaltijd ? "Klaar en koppelen" : "Bewaren"}
           </Button>
@@ -2130,7 +2150,7 @@ export function RecipeForm({
       )}
       <div
         className={
-          stapsgewijs
+          stapsgewijs || (!recipe && !toonBewaren)
             ? "hidden"
             : "sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-20 -mx-1 rounded-2xl border border-border bg-card/95 p-2 shadow-lg backdrop-blur md:bottom-4"
         }

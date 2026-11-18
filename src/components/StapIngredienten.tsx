@@ -31,10 +31,13 @@ export function StapIngredienten({ ingredienten, factor, groot }: Props) {
             }
           >
             {!i.herhaling && hoeveelheid && (
-              <span className="font-semibold text-primary">{hoeveelheid}</span>
+              <span className="shrink-0 whitespace-nowrap font-semibold text-primary">
+                {hoeveelheid}
+              </span>
             )}
-            {/* Lange woorden (bv. "peperkoek") mogen breken bij grote tekst. */}
-            <span className="min-w-0 [overflow-wrap:anywhere]">{t(i.name)}</span>
+            {/* Grote tekst: eerst op een spatie afbreken; een te lang woord krijgt een
+                afbreekstreepje op een lettergreep (hyphens), nooit midden in een woord zonder. */}
+            <span className="min-w-0 break-words hyphens-auto">{t(i.name)}</span>
             {i.herhaling && (
               <span className={groot ? "text-lg text-muted-foreground" : "text-base text-muted-foreground"}>
                 ({t("rest")})

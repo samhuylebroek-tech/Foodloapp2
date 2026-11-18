@@ -319,6 +319,19 @@ function slaagt(
   }
 }
 
+/**
+ * De keukenfilters van de engine (apparatuur, kookervaring), voor voorstellen buiten "Stel mijn
+ * week samen" ("Laat Foodlo kiezen"): zelfde regel, één plek.
+ */
+export function pastInKeuken(
+  k: PlanKandidaat,
+  ctx: Pick<PlanContext, "apparatuur" | "kookervaring">,
+): boolean {
+  const c = ctx as PlanContext;
+  const dag = { datum: "" } as PlanDag;
+  return slaagt("apparatuur", k, dag, c, []) && slaagt("ervaring", k, dag, c, []);
+}
+
 /** Wat de harde filters overlaten, en anders de filter waarna niets overbleef. */
 export function filterVoorDag(
   ctx: PlanContext,

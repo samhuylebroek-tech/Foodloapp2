@@ -121,3 +121,12 @@ export function metEigenRegels(
   });
   return m;
 }
+
+/**
+ * Nieuw aantal porties: gasten blijven staan (6 porties, 4 gezinsleden, 1 eet niet mee = 5).
+ * Zonder bewaard aantal: het aantal mee-eters.
+ */
+export function nieuwePorties(oud: number | null, eters: { nu: number; voorheen: number }): number {
+  const n = oud == null ? eters.nu : oud + (eters.nu - eters.voorheen);
+  return Math.max(1, Math.min(50, Math.round(n)));
+}

@@ -31,6 +31,7 @@ import {
 import { lokaleDatum } from "@/lib/tijd";
 import { db } from "@/lib/module-beschikbaar";
 import { leesProfiel, leesToestelProfiel } from "@/lib/planner/profiel";
+import { nieuwePorties } from "@/lib/maaltijd-eters";
 
 export const KOMENDE_DAGEN = 7;
 
@@ -588,6 +589,35 @@ export function planWeg(planId: string): () => Promise<PlanUitvoering> {
       },
       erbij: [],
       weg: rij.group_id ? [] : [{ plan_date: rij.plan_date, recipe_id: rij.recipe_id }],
+    };
+  };
+}
+
+/**
+ * Porties volgen het aantal mee-eters (P2): eet er iemand niet (meer) mee, dan wijzigt het
+ * aantal personen en stuurt de lijst bij. Gezinsmaaltijden en maaltijden zonder recept: niets.
+ */
+export function planPersonen(
+  planId: string,
+  eters: { nu: number; voorheen: number },
+): () => Promise<PlanUitvoering> {
+  return async () => {
+    const niets = { herstel: async () => undefined, erbij: [], weg: [] };
+    const rij = await leesPlan(planId);
+    if (!rij || rij.group_id || !rij.recipe_id) return niets;
+    const oud = (rij["personen"] as number | null) ?? null;
+    const n = nieuwePorties(oud, eters);
+    if (oud === n) return niets;
+    moet(await supabase.from("meal_plan").update({ personen: n }).eq("id", planId));
+    const stap = { plan_date: rij.plan_date, recipe_id: rij.recipe_id };
+    return {
+      id: planId,
+      herstel: async () => {
+        moet(await supabase.from("meal_plan").update({ personen: oud }).eq("id", planId));
+      },
+      // Zelfde gerecht erbij én weg: de lijst wordt opnieuw berekend voor de nieuwe porties.
+      erbij: [stap],
+      weg: [stap],
     };
   };
 }

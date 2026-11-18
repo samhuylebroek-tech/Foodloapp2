@@ -96,3 +96,14 @@ describe("eigen regels voor jouw lid", () => {
     expect(metEigenRegels(bestaand, { id: "m" }, "u", { allergieen: ["noten"] })).toBe(bestaand);
   });
 });
+
+describe("porties volgen de mee-eters (P2)", () => {
+  it("gasten blijven staan, minimum 1", async () => {
+    const { nieuwePorties } = await import("./maaltijd-eters");
+    expect(nieuwePorties(4, { nu: 3, voorheen: 4 })).toBe(3);
+    expect(nieuwePorties(6, { nu: 3, voorheen: 4 })).toBe(5);
+    expect(nieuwePorties(2, { nu: 4, voorheen: 3 })).toBe(3);
+    expect(nieuwePorties(null, { nu: 3, voorheen: 4 })).toBe(3);
+    expect(nieuwePorties(1, { nu: 1, voorheen: 3 })).toBe(1);
+  });
+});
