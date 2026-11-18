@@ -20,6 +20,7 @@ import { herstelNietNu, nietNuLijst, zetNietNu } from "@/lib/intelligentie/niet-
 import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
 import type { Aanbeveling } from "@/lib/intelligentie/voorstel";
 import { beveelAan } from "@/lib/planner/engine";
+import { usePlanProfiel } from "@/hooks/usePlanProfiel";
 import { dagenTekst, type OudInHuis } from "@/lib/intelligentie/gebruik-eerst";
 import { zitInVoorraad } from "@/lib/voorraad-match";
 import { leesKennismaking } from "@/lib/kennismaking";
@@ -78,6 +79,7 @@ export function VanavondVoorstellen({
   const ids = recepten.map((r) => r.id);
 
   const { data: bronnen } = useVoorstelBronnen(ids, slim);
+  const plan = usePlanProfiel();
   // Werkstroom F: het weer stuurt zacht bij (alleen als het aan staat en er een bron is).
   const { weer } = useWeer();
 
@@ -97,7 +99,10 @@ export function VanavondVoorstellen({
         category: r.category,
         tags: r.tags ?? [],
         ingredienten: bronnen.ingredienten[r.id] ?? [],
+        vereist: bronnen.vereist[r.id] ?? [],
       })),
+      // P1: geen recept voor een toestel dat je niet hebt (standaard oven + kookplaat).
+      apparatuur: plan.apparatuur,
       context,
       voorraad: bronnen.voorraad,
       geschiedenis: vatSamen(bronnen.plan, minuten, context.datum),
@@ -115,7 +120,7 @@ export function VanavondVoorstellen({
       onlangsGekocht: bronnen.onlangsGekocht,
       max: 12,
     });
-  }, [bronnen, recepten, weekmenu, nietNu, user?.id, weer]);
+  }, [bronnen, recepten, weekmenu, nietNu, user?.id, weer, plan.apparatuur]);
 
   // Stap 2: wat niet veilig is voor een mee-eter, stellen we niet voor (werkstroom A).
   // Wie eet mee vanavond? Standaard het hele huishouden; aan te passen voor vandaag.

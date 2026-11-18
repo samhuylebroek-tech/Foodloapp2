@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRestjes } from "@/hooks/useRestjes";
 import { useVoorstelBronnen } from "@/hooks/useVoorstelBronnen";
+import { usePlanProfiel } from "@/hooks/usePlanProfiel";
 import { vatSamen } from "@/lib/intelligentie/geschiedenis";
 import { herstelNietNu, nietNuLijst, zetNietNu } from "@/lib/intelligentie/niet-nu";
 import { gekooktTekst, planRestje, restjeVeilig, type Restje } from "@/lib/intelligentie/restjes";
@@ -80,6 +81,7 @@ export function VulAan({
 
   // Klaar om te tonen: alle ingrediënten geladen (of er zijn geen eigen recepten).
   const klaar = isSuccess || (receptenKlaar && recepten.length === 0);
+  const plan = usePlanProfiel();
 
   // Restjes eerst, met dezelfde allergie- en dieetregel (onbekende ingrediënten = niet voorstellen).
   const restjesRijen = useMemo(() => {
@@ -105,7 +107,10 @@ export function VulAan({
         category: r.category,
         tags: r.tags ?? [],
         ingredienten: bronnen.ingredienten[r.id] ?? [],
+        vereist: bronnen.vereist[r.id] ?? [],
       })),
+      apparatuur: plan.apparatuur,
+      moment,
       voorraad: bronnen.voorraad,
       oudInHuis: bronnen.oudInHuis,
       onlangsGekocht: bronnen.onlangsGekocht,
@@ -137,6 +142,8 @@ export function VulAan({
     vandaag,
     user?.id,
     restjesRijen,
+    plan.apparatuur,
+    moment,
   ]);
 
   if (!actief || !klaar || (!voorstellen.length && !restjesRijen.length)) return null;

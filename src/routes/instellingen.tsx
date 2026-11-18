@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   Bell,
   Check,
+  ChefHat,
   ChevronDown,
   Compass,
   Download,
@@ -269,6 +270,13 @@ function InstellingenPage() {
               tint="groen"
               titel={t("Kennismaking aanpassen")}
               uitleg={t("Kookervaring, kooktijd, dieet en allergieën")}
+            />
+            <LinkRij
+              to="/mijn-keuken"
+              icoon={ChefHat}
+              tint="honing"
+              titel={t("Mijn keuken")}
+              uitleg={t("Toestellen, kookervaring, voorraad en weekbudget")}
             />
             <LinkRij to="/hulp" icoon={Compass} tint="groen" titel={t("Help Center")} />
           </Groep>

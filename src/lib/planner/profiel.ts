@@ -14,7 +14,7 @@
  */
 import { leesBedrag } from "@/lib/budget";
 import type { Ervaring } from "@/lib/kennismaking";
-import { isApparaat, STANDAARD_APPARATUUR, type Apparaat } from "./apparatuur";
+import { apparaatNaam, isApparaat, STANDAARD_APPARATUUR, type Apparaat } from "./apparatuur";
 
 export type Kookervaring = "beginner" | "gemiddeld" | "ervaren";
 export type Voorraadniveau = "geen" | "basis" | "volledig";
@@ -176,4 +176,11 @@ export function wisToestelProfielen() {
   } catch {
     /* niets */
   }
+}
+
+/** Korte samenvatting voor een rij in Instellingen: "Oven, kookplaat (aangenomen)". */
+export function apparatuurSamenvatting(a: readonly Apparaat[], aangenomen: boolean): string {
+  const namen = a.map((x) => apparaatNaam(x).toLowerCase()).join(", ");
+  const tekst = namen ? namen.charAt(0).toUpperCase() + namen.slice(1) : "Geen toestellen";
+  return aangenomen ? `${tekst} (aangenomen)` : tekst;
 }

@@ -97,6 +97,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ReceptApparatuur } from "@/components/recept/ReceptApparatuur";
+import { bewaarVereisten, leesVereisten } from "@/lib/planner/vereisten-db";
+import type { Apparaat } from "@/lib/planner/apparatuur";
 import {
   Dialog,
   DialogContent,
@@ -200,6 +203,19 @@ export function RecipeForm({
   );
   const [stappenTekst, setStappenTekst] = useState((recipe?.instructions ?? []).join("\n"));
   const [stapKeuze, setStapKeuze] = useState<StapKoppeling>(recipe?.step_ingredients ?? {});
+  // P1: apparatuur die het recept vraagt (null = wat Foodlo herkent uit de tekst).
+  const [apparatuurZelf, setApparatuurZelf] = useState<Apparaat[] | null>(null);
+  const [apparatuurAangepast, setApparatuurAangepast] = useState(false);
+  useEffect(() => {
+    if (!recipe?.id) return;
+    let weg = false;
+    void leesVereisten([recipe.id]).then((v) => {
+      if (!weg && v[recipe.id]) setApparatuurZelf(v[recipe.id]!);
+    });
+    return () => {
+      weg = true;
+    };
+  }, [recipe?.id]);
   const [meerDetails, setMeerDetails] = useState(false);
   // Stap voor stap (beginners, alleen bij een nieuw recept): velden blijven bestaan, alleen verborgen.
   const [stapsgewijs, setStapsgewijs] = useState(false);
@@ -1085,6 +1101,10 @@ export function RecipeForm({
       if (cleanRows.length) {
         const { error } = await supabase.from("recipe_ingredients").insert(cleanRows);
         if (error) throw error;
+      }
+      if (apparatuurAangepast && !over) {
+        // Hulp voor de planner: mag het bewaren van het recept nooit tegenhouden.
+        await bewaarVereisten(recipeId, apparatuurZelf).catch(() => null);
       }
       if (!bewaardeFoto) {
         toast.message("Een passende foto wordt toegevoegd…");
@@ -2059,6 +2079,17 @@ export function RecipeForm({
                   ))}
                 </select>
               </div>
+              <ReceptApparatuur
+                titel={title}
+                beschrijving={description}
+                tags={tags.split(",").map((t) => t.trim()).filter(Boolean)}
+                stappen={stappen}
+                zelf={apparatuurZelf}
+                zet={(a) => {
+                  setApparatuurZelf(a);
+                  setApparatuurAangepast(true);
+                }}
+              />
               <div>
                 <Label htmlFor="tags" className="text-base">
                   Labels (met komma)

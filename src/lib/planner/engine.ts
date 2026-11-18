@@ -675,7 +675,12 @@ export function maakGoedkoper(
  * Vanavond / Waarom nu: de beste voorstellen voor één moment, elk met 1 à 2 redenen.
  * Zelfde engine; zonder weekgegevens doen variatie, kost en apparatuur niets.
  */
-export function beveelAan(i: Invoer & { apparatuur?: readonly Apparaat[] | null }): Aanbeveling[] {
+export function beveelAan(
+  i: Omit<Invoer, "kandidaten"> & {
+    kandidaten: readonly PlanKandidaat[];
+    apparatuur?: readonly Apparaat[] | null | undefined;
+  },
+): Aanbeveling[] {
   const ctx: PlanContext = {
     dagen: [],
     kandidaten: i.kandidaten,

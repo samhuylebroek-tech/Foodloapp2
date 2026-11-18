@@ -30,6 +30,7 @@ import { Route as KennismakingRouteImport } from './routes/kennismaking'
 import { Route as MakerRouteImport } from './routes/maker'
 import { Route as MeerRouteImport } from './routes/meer'
 import { Route as MeldingenRouteImport } from './routes/meldingen'
+import { Route as MijnKeukenRouteImport } from './routes/mijn-keuken'
 import { Route as MijnVoedingRouteImport } from './routes/mijn-voeding'
 import { Route as PartnerRouteImport } from './routes/partner'
 import { Route as PlannerRouteImport } from './routes/planner'
@@ -214,6 +215,11 @@ const MeerRoute = MeerRouteImport.update({
 const MeldingenRoute = MeldingenRouteImport.update({
   id: '/meldingen',
   path: '/meldingen',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MijnKeukenRoute = MijnKeukenRouteImport.update({
+  id: '/mijn-keuken',
+  path: '/mijn-keuken',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MijnVoedingRoute = MijnVoedingRouteImport.update({
@@ -640,6 +646,7 @@ export interface FileRoutesByFullPath {
   '/maker': typeof MakerRoute
   '/meer': typeof MeerRoute
   '/meldingen': typeof MeldingenRoute
+  '/mijn-keuken': typeof MijnKeukenRoute
   '/mijn-voeding': typeof MijnVoedingRoute
   '/partner': typeof PartnerRouteWithChildren
   '/planner': typeof PlannerRoute
@@ -740,6 +747,7 @@ export interface FileRoutesByTo {
   '/maker': typeof MakerRoute
   '/meer': typeof MeerRoute
   '/meldingen': typeof MeldingenRoute
+  '/mijn-keuken': typeof MijnKeukenRoute
   '/mijn-voeding': typeof MijnVoedingRoute
   '/planner': typeof PlannerRoute
   '/premium': typeof PremiumRoute
@@ -842,6 +850,7 @@ export interface FileRoutesById {
   '/maker': typeof MakerRoute
   '/meer': typeof MeerRoute
   '/meldingen': typeof MeldingenRoute
+  '/mijn-keuken': typeof MijnKeukenRoute
   '/mijn-voeding': typeof MijnVoedingRoute
   '/partner': typeof PartnerRouteWithChildren
   '/planner': typeof PlannerRoute
@@ -947,6 +956,7 @@ export interface FileRouteTypes {
     | '/maker'
     | '/meer'
     | '/meldingen'
+    | '/mijn-keuken'
     | '/mijn-voeding'
     | '/partner'
     | '/planner'
@@ -1047,6 +1057,7 @@ export interface FileRouteTypes {
     | '/maker'
     | '/meer'
     | '/meldingen'
+    | '/mijn-keuken'
     | '/mijn-voeding'
     | '/planner'
     | '/premium'
@@ -1148,6 +1159,7 @@ export interface FileRouteTypes {
     | '/maker'
     | '/meer'
     | '/meldingen'
+    | '/mijn-keuken'
     | '/mijn-voeding'
     | '/partner'
     | '/planner'
@@ -1252,6 +1264,7 @@ export interface RootRouteChildren {
   MakerRoute: typeof MakerRoute
   MeerRoute: typeof MeerRoute
   MeldingenRoute: typeof MeldingenRoute
+  MijnKeukenRoute: typeof MijnKeukenRoute
   MijnVoedingRoute: typeof MijnVoedingRoute
   PartnerRoute: typeof PartnerRouteWithChildren
   PlannerRoute: typeof PlannerRoute
@@ -1423,6 +1436,13 @@ declare module '@tanstack/react-router' {
       path: '/meldingen'
       fullPath: '/meldingen'
       preLoaderRoute: typeof MeldingenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mijn-keuken': {
+      id: '/mijn-keuken'
+      path: '/mijn-keuken'
+      fullPath: '/mijn-keuken'
+      preLoaderRoute: typeof MijnKeukenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mijn-voeding': {
@@ -2172,6 +2192,7 @@ const rootRouteChildren: RootRouteChildren = {
   MakerRoute: MakerRoute,
   MeerRoute: MeerRoute,
   MeldingenRoute: MeldingenRoute,
+  MijnKeukenRoute: MijnKeukenRoute,
   MijnVoedingRoute: MijnVoedingRoute,
   PartnerRoute: PartnerRouteWithChildren,
   PlannerRoute: PlannerRoute,

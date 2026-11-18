@@ -1,6 +1,10 @@
-/** Weekbudget van de aangemelde gebruiker (per toestel). */
+/**
+ * Weekbudget van de aangemelde gebruiker: op het account (planprofiel, voorstel 0013) en, als
+ * terugval, op dit toestel. Bewaren schrijft beide, zodat wissen ook echt wist.
+ */
 import { useSyncExternalStore } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { usePlanProfiel } from "@/hooks/usePlanProfiel";
 import { BUDGET_GEWIJZIGD, leesWeekbudget, zetWeekbudget } from "@/lib/budget";
 
 function abonneer(melding: () => void) {
@@ -15,10 +19,19 @@ function abonneer(melding: () => void) {
 export function useWeekbudget(): [number | null, (bedrag: number | null) => void] {
   const { user } = useAuth();
   const id = user?.id ?? null;
-  const budget = useSyncExternalStore(
+  const plan = usePlanProfiel();
+  const toestel = useSyncExternalStore(
     abonneer,
     () => leesWeekbudget(id),
     () => null,
   );
-  return [budget, (b: number | null) => id && zetWeekbudget(id, b)];
+  const budget = plan.opslag === "account" ? (plan.profiel.weekbudget ?? toestel) : toestel;
+  return [
+    budget,
+    (b: number | null) => {
+      if (!id) return;
+      zetWeekbudget(id, b);
+      if (plan.opslag === "account") void plan.bewaar({ weekbudget: b }).catch(() => undefined);
+    },
+  ];
 }
