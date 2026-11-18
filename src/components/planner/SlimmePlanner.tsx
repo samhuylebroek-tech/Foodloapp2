@@ -190,7 +190,9 @@ export function MenuSamenvatting({ menu }: { menu: MenuVoorstel }) {
       <Coins className="mt-0.5 size-6 shrink-0" aria-hidden />
       <div className="min-w-0 flex-1 space-y-1 text-base">
         <p className="font-semibold" data-weekkost={menu.kost.totaal}>
-          Dit menu ≈ {euro(menu.kost.totaal)} (schatting)
+          {menu.kost.geschat + menu.kost.nietGeschat === 0
+            ? "Nog geen gerecht gekozen"
+            : `Dit menu ≈ ${euro(menu.kost.totaal)} (schatting)`}
           {menu.budget ? ` · budget ${euro(menu.budget.bedrag)}` : ""}
         </p>
         {menu.budget ? (
@@ -203,7 +205,7 @@ export function MenuSamenvatting({ menu }: { menu: MenuVoorstel }) {
           <p className="text-[0.95rem] text-muted-foreground">
             <Link
               to="/mijn-keuken"
-              className="inline-flex min-h-11 items-center underline underline-offset-4"
+              className="font-medium underline underline-offset-4"
             >
               Stel een weekbudget in
             </Link>{" "}
