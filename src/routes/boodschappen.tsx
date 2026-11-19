@@ -108,6 +108,15 @@ import {
   type LijstBotsing,
 } from "@/components/lijst/LijstVeiligheid";
 import type { Vervanger } from "@/lib/assistent/vervangingen";
+import { ConflictKeuze, type ConflictVoorstel } from "@/components/samenwerking/ConflictKeuze";
+import { AanwezigRegel } from "@/components/samenwerking/AanwezigRegel";
+import {
+  itemConflictTekst,
+  itemRegel,
+  itemVingerafdruk,
+  voegItemsSamen,
+} from "@/lib/samenwerking/conflict";
+import { laatsteWijziger, logActiviteit } from "@/lib/samenwerking/db";
 import { bewaarVolgorde, leesVolgorde } from "@/lib/winkelvolgorde";
 import {
   CATEGORIE_LABEL,
@@ -1030,6 +1039,69 @@ function BoodschappenPage() {
     setBewerkCategorie(categorieVan(item.name, correcties));
   }
 
+  // P5: keuze bij een gelijktijdige wijziging van een product.
+  const [itemConflict, setItemConflict] = useState<ConflictVoorstel | null>(null);
+  async function toonItemConflict(
+    gezien: Item,
+    huidig: { id: string; name: string; quantity: number | null; unit: string; note: string | null } | null,
+    mijn: { name: string; quantity: number | null; unit: string; note: string | null },
+  ) {
+    if (!user || !actief) return;
+    const lijstId = actief;
+    const wijziger = await laatsteWijziger(gezien.id, user.id);
+    const samen = huidig ? voegItemsSamen(mijn, huidig) : null;
+    const zetMijn = async () => {
+      setBewerkItem(null);
+      if (huidig) {
+        const vorig = huidig;
+        const { error } = await supabase.from("shopping_items").update(mijn).eq("id", gezien.id);
+        if (error) return void toast.error("Bewaren lukte niet. Er is niets veranderd.");
+        onthoud(`${vorig.name} teruggezet zoals ${wijziger?.naam ?? "het"} was`, async () => {
+          await supabase
+            .from("shopping_items")
+            .update({ name: vorig.name, quantity: vorig.quantity, unit: vorig.unit, note: vorig.note })
+            .eq("id", vorig.id);
+        });
+        toast.success("Jouw versie staat op de lijst", {
+          action: { label: "Ongedaan maken", onClick: () => void zetTerug() },
+        });
+      } else {
+        await zetRijenTerug([{ ...gezien, ...mijn, checked: false }], lijstId);
+        toast.success(`${mijn.name} staat weer op de lijst`);
+      }
+      refresh();
+    };
+    setItemConflict({
+      kop: itemConflictTekst({ wie: wijziger?.naam, mijnNaam: gezien.name, huidig }),
+      wie: wijziger?.naam ?? null,
+      hun: huidig ? itemRegel(huidig) : null,
+      mijn: itemRegel(mijn),
+      houdHun: () => {
+        setBewerkItem(null);
+        refresh();
+      },
+      zetMijn,
+      allebei: huidig
+        ? {
+            label: samen ? `Samenvoegen: ${itemRegel(samen)}` : "Allebei op de lijst",
+            doe: async () => {
+              setBewerkItem(null);
+              if (samen) {
+                await supabase
+                  .from("shopping_items")
+                  .update({ ...samen, unit: samen.unit ?? "" })
+                  .eq("id", huidig.id);
+              } else {
+                await zetRijenTerug([{ ...gezien, ...mijn, checked: false }], lijstId);
+              }
+              refresh();
+              toast.success(samen ? "Samengevoegd" : "Allebei staan op de lijst");
+            },
+          }
+        : undefined,
+    });
+  }
+
   async function bewaarItem() {
     if (!bewerkItem || !bewerkNaam.trim()) return;
     const hoeveelheid = bewerkAantal.trim() ? Number(bewerkAantal.replace(",", ".")) : null;
@@ -1038,20 +1110,38 @@ function BoodschappenPage() {
       return;
     }
     const maat = belgischeMaat(hoeveelheid, bewerkEenheid);
-    const vorig = bewerkItem;
-    const { error } = await supabase
+    const mijn = {
+      name: bewerkNaam.trim(),
+      quantity: maat.quantity,
+      unit: maat.unit,
+      note: bewerkNota.trim() ? bewerkNota.trim().slice(0, 100) : null,
+    };
+    // P5: veranderde iemand anders (gezinslid, ander toestel) dit product intussen? Dan vragen
+    // in plaats van stil te overschrijven.
+    const { data: nu } = await supabase
       .from("shopping_items")
-      .update({
-        name: bewerkNaam.trim(),
-        quantity: maat.quantity,
-        unit: maat.unit,
-        note: bewerkNota.trim() ? bewerkNota.trim().slice(0, 100) : null,
-      })
-      .eq("id", bewerkItem.id);
+      .select("id, name, quantity, unit, note, checked")
+      .eq("id", bewerkItem.id)
+      .limit(1);
+    const huidig = (nu ?? [])[0] ?? null;
+    if (!huidig || itemVingerafdruk(huidig) !== itemVingerafdruk(bewerkItem)) {
+      await toonItemConflict(bewerkItem, huidig, mijn);
+      return;
+    }
+    const vorig = bewerkItem;
+    const { error } = await supabase.from("shopping_items").update(mijn).eq("id", bewerkItem.id);
     if (error) {
       toast.error("Het lukte niet om op te slaan. Probeer het opnieuw.");
       return;
     }
+    if (actieveLijst?.group_id && user)
+      void logActiviteit({
+        groupId: actieveLijst.group_id,
+        actorId: user.id,
+        soort: "lijst",
+        tekst: `${vorig.name} aangepast naar ${itemRegel(mijn)}`,
+        refId: vorig.id,
+      });
     if (bewerkCategorie && bewerkCategorie !== categorieVan(bewerkNaam.trim(), correcties)) {
       zetCategorie(bewerkNaam.trim(), bewerkCategorie);
     }
@@ -1371,6 +1461,16 @@ function BoodschappenPage() {
               <Users className="size-4" aria-hidden /> Iedereen in je gezin kan aanvullen en
               afvinken.
             </p>
+          ) : null}
+          {/* P5: wie er nu ook in de gezinslijst bezig is (realtime aanwezigheid). */}
+          {actieveLijst?.group_id ? (
+            <div className="mt-2">
+              <AanwezigRegel
+                kanaal={`lijst:${actieveLijst.id}`}
+                plek="de lijst"
+                bezig={!!bewerkItem || winkel}
+              />
+            </div>
           ) : null}
         </div>
       }
@@ -2201,6 +2301,8 @@ function BoodschappenPage() {
           }}
         />
       )}
+
+      <ConflictKeuze voorstel={itemConflict} onSluit={() => setItemConflict(null)} />
 
       <Dialog
         open={deelOpen}

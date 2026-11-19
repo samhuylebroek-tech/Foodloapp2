@@ -39,6 +39,7 @@ import {
 import { db } from "@/lib/module-beschikbaar";
 import { leesProfiel, leesToestelProfiel } from "@/lib/planner/profiel";
 import { nieuwePorties } from "@/lib/maaltijd-eters";
+import { controleer, MenuConflict, planVingerafdruk } from "@/lib/samenwerking/conflict";
 
 export const KOMENDE_DAGEN = 7;
 
@@ -602,6 +603,8 @@ export function planErbij(o: {
   personen?: number | null;
   customTitle?: string | null;
   soort?: string | null;
+  /** P5: in het gezinsweekmenu (dan stuurt de eigen lijst niet bij). */
+  groupId?: string | null;
 }): () => Promise<PlanUitvoering> {
   return async () => {
     const { data } = moet(
@@ -615,7 +618,7 @@ export function planErbij(o: {
           plan_date: o.datum,
           meal_type: o.moment,
           personen: o.personen ?? null,
-          group_id: null,
+          group_id: o.groupId ?? null,
         })
         .select("id")
         .single(),
@@ -627,7 +630,7 @@ export function planErbij(o: {
       herstel: async () => {
         moet(await supabase.from("meal_plan").delete().eq("id", id));
       },
-      erbij: [{ plan_date: o.datum, recipe_id: o.recipeId }],
+      erbij: o.groupId ? [] : [{ plan_date: o.datum, recipe_id: o.recipeId }],
       weg: [],
     };
   };
@@ -647,11 +650,22 @@ async function leesPlan(planId: string): Promise<PlanRij | null> {
   return ((data ?? [])[0] as PlanRij | undefined) ?? null;
 }
 
+/**
+ * P5 — optimistische controle: `verwacht` is de vingerafdruk van de maaltijd zoals de gebruiker
+ * ze zag. Veranderde iemand anders ze intussen (of haalde ze weg), dan `MenuConflict`: er wordt
+ * niets geschreven en de app vraagt wat er moet gebeuren. Zonder `verwacht`: geen controle.
+ */
+function bewaak(rij: PlanRij | null, verwacht: string | undefined) {
+  const c = controleer(verwacht, rij ? planVingerafdruk(rij) : null);
+  if (c.soort !== "door") throw new MenuConflict(rij);
+}
+
 /** Gerecht uit het weekmenu halen. Al weg (dubbel tikken, ander toestel)? Dan gebeurt er niets. */
-export function planWeg(planId: string): () => Promise<PlanUitvoering> {
+export function planWeg(planId: string, verwacht?: string): () => Promise<PlanUitvoering> {
   return async () => {
     const rij = await leesPlan(planId);
     if (!rij) return { herstel: async () => undefined, erbij: [], weg: [] };
+    bewaak(rij, verwacht);
     moet(await supabase.from("meal_plan").delete().eq("id", planId));
     return {
       id: planId,
@@ -671,11 +685,13 @@ export function planWeg(planId: string): () => Promise<PlanUitvoering> {
 export function planPersonen(
   planId: string,
   eters: { nu: number; voorheen: number },
+  verwacht?: string,
 ): () => Promise<PlanUitvoering> {
   return async () => {
     const niets = { herstel: async () => undefined, erbij: [], weg: [] };
     const rij = await leesPlan(planId);
     if (!rij || rij.group_id || !rij.recipe_id) return niets;
+    bewaak(rij, verwacht);
     const oud = (rij["personen"] as number | null) ?? null;
     const n = nieuwePorties(oud, eters);
     if (oud === n) return niets;
@@ -694,10 +710,16 @@ export function planPersonen(
 }
 
 /** Ander recept op dezelfde plek (ook: een titel zonder recept koppelen). */
-export function planVervang(planId: string, recipeId: string): () => Promise<PlanUitvoering> {
+export function planVervang(
+  planId: string,
+  recipeId: string,
+  verwacht?: string,
+): () => Promise<PlanUitvoering> {
   return async () => {
     const rij = await leesPlan(planId);
+    if (!rij && verwacht) throw new MenuConflict(null);
     if (!rij) throw new Error("Deze maaltijd staat niet meer in je weekmenu");
+    bewaak(rij, verwacht);
     moet(
       await supabase
         .from("meal_plan")
@@ -725,10 +747,13 @@ export function planVerplaats(
   planId: string,
   datum: string,
   moment: string,
+  verwacht?: string,
 ): () => Promise<PlanUitvoering> {
   return async () => {
     const rij = await leesPlan(planId);
+    if (!rij && verwacht) throw new MenuConflict(null);
     if (!rij) throw new Error("Deze maaltijd staat niet meer in je weekmenu");
+    bewaak(rij, verwacht);
     moet(
       await supabase
         .from("meal_plan")

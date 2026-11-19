@@ -96,6 +96,12 @@ import { VulAan } from "@/components/planner/VulAan";
 import { VerplaatsSheet, KoppelSheet } from "@/components/planner/PlanSheets";
 import { useTablet } from "@/hooks/useTablet";
 import { TabletWeek } from "@/components/planner/TabletWeek";
+import { ConflictKeuze, type ConflictVoorstel } from "@/components/samenwerking/ConflictKeuze";
+import { WeekActiviteit } from "@/components/samenwerking/WeekActiviteit";
+import { AanwezigRegel } from "@/components/samenwerking/AanwezigRegel";
+import { conflictTekst, dagNaam, MenuConflict, planVingerafdruk } from "@/lib/samenwerking/conflict";
+import { conflictMeldingTekst, menuMeldingTekst, type MenuWijziging } from "@/lib/samenwerking/meldingen";
+import { laatsteWijziger, meldGezin, mijnNaam, stuurMelding, titelVanPlan } from "@/lib/samenwerking/db";
 
 export const Route = createFileRoute("/planner")({
   head: () => ({
@@ -318,10 +324,96 @@ function PlannerPage() {
     for (const k of ["meal-plan", "shopping", "aanvulling", "voorraad", "home-dagmenu", "home-week"])
       void qc.invalidateQueries({ queryKey: [k] });
   }
+  // P5: gelijktijdige wijziging (gezinslid, tweede toestel) → keuze in plaats van overschrijven.
+  const [conflict, setConflict] = useState<ConflictVoorstel | null>(null);
+  /** Gezinsweekmenu: log + melding voor de andere gezinsleden (nooit voor je eigen menu). */
+  function meldAanGezin(wat: MenuWijziging, titel: string, datum: string, refId?: string) {
+    if (eigenMenu || !gezin || !user) return;
+    void meldGezin({
+      groupId: gezin.id,
+      actorId: user.id,
+      datum,
+      refId: refId ?? null,
+      tekst: (wie) => menuMeldingTekst({ wie, datum, titel, wat }),
+    });
+  }
+  /** Wat er moet gebeuren als iemand anders dezelfde maaltijd intussen veranderde. */
+  type BijConflict = {
+    planId: string;
+    datum: string;
+    mijnTitel: string;
+    wat: MenuWijziging;
+    /** Toch de mijne zetten (zonder controle). */
+    zetMijn: () => Promise<PlanUitvoering>;
+    /** Was de maaltijd weggehaald: de mijne opnieuw inplannen. */
+    opnieuw?: () => Promise<PlanUitvoering>;
+    /** "Allebei op woensdag": de mijne erbij, die van de ander blijft. */
+    allebei?: () => Promise<PlanUitvoering>;
+    tekst: string;
+    /** Na elke keuze (bv. een open blad sluiten). */
+    sluit?: () => void;
+  };
+  async function toonConflict(fout: MenuConflict, bij: BijConflict) {
+    if (!user) return;
+    const huidig = fout.huidig;
+    const [hun, wijziger] = await Promise.all([
+      huidig ? titelVanPlan(huidig) : Promise.resolve(null),
+      laatsteWijziger(huidig?.id ?? bij.planId, user.id),
+    ]);
+    const datum = huidig?.plan_date ?? bij.datum;
+    const zetMijn = huidig ? bij.zetMijn : bij.opnieuw;
+    setConflict({
+      kop: conflictTekst({ wie: wijziger?.naam, datum, titel: hun }),
+      wie: wijziger?.naam ?? null,
+      hun,
+      mijn: bij.mijnTitel,
+      uitleg: eigenMenu ? "Je boodschappenlijst past zich aan wat je kiest aan." : undefined,
+      houdHun: () => {
+        bij.sluit?.();
+        vernieuwMenu();
+        toast(hun ? `${hun} blijft op ${labelVoor(datum)} staan` : "Er is niets veranderd");
+      },
+      zetMijn: async () => {
+        bij.sluit?.();
+        if (!zetMijn) {
+          vernieuwMenu();
+          return;
+        }
+        const id = await menuWijziging(zetMijn, bij.tekst);
+        if (id === null || eigenMenu || !gezin) return;
+        meldAanGezin(bij.wat, bij.mijnTitel, bij.datum, id ?? bij.planId);
+        // Wie het eerst veranderde, hoort dat zijn keuze vervangen is (en kan het terugdraaien).
+        if (wijziger) {
+          const ik = await mijnNaam(user.id);
+          void stuurMelding({
+            groupId: gezin.id,
+            actorId: user.id,
+            soort: "conflict",
+            naar: [wijziger.id],
+            link: "/planner?weergave=gezin",
+            tekst: conflictMeldingTekst({ wie: ik, datum, mijnTitel: bij.mijnTitel, jouwTitel: hun }),
+          });
+        }
+      },
+      allebei:
+        huidig && bij.allebei
+          ? {
+              label: `Allebei op ${dagNaam(datum)}`,
+              doe: async () => {
+                bij.sluit?.();
+                const id = await menuWijziging(bij.allebei!, `${bij.mijnTitel} staat er ook op ${labelVoor(datum)}`);
+                if (id) meldAanGezin("erbij", bij.mijnTitel, datum, id);
+              },
+            }
+          : undefined,
+    });
+  }
+
   /** Voert een menuwijziging uit met lijst; geeft het plan-id terug, of null als het mislukte. */
   async function menuWijziging(
     actie: () => Promise<PlanUitvoering>,
     tekst: string,
+    bijConflict?: BijConflict,
   ): Promise<string | undefined | null> {
     if (!user || menuBezig.current) return null;
     menuBezig.current = true;
@@ -335,6 +427,10 @@ function PlannerPage() {
       return r.id;
     } catch (fout) {
       vernieuwMenu();
+      if (fout instanceof MenuConflict && bijConflict) {
+        await toonConflict(fout, bijConflict);
+        return null;
+      }
       toast.error(
         fout instanceof HalfGelukt
           ? "Dat lukte maar half. Kijk je weekmenu en lijst even na."
@@ -346,13 +442,31 @@ function PlannerPage() {
     }
   }
 
-  async function verwijder(id: string, recipeId?: string | null, titel?: string) {
+  async function verwijder(id: string, recipeId?: string | null, titel?: string, rij?: PlanRow) {
+    const naam = titel ?? "Gerecht";
+    const bij: BijConflict | undefined = rij
+      ? {
+          planId: id,
+          datum: rij.plan_date,
+          mijnTitel: `${naam} weghalen`,
+          wat: "weg",
+          zetMijn: planWeg(id),
+          tekst: `${naam} uit je weekmenu`,
+        }
+      : undefined;
     if (eigenMenu) {
-      await menuWijziging(planWeg(id), `${titel ?? "Gerecht"} uit je weekmenu`);
+      await menuWijziging(planWeg(id, rij ? planVingerafdruk(rij) : undefined), `${naam} uit je weekmenu`, bij);
       return;
     }
-    await supabase.from("meal_plan").delete().eq("id", id);
-    qc.invalidateQueries({ queryKey: ["meal-plan"] });
+    // P5: ook het gezinsweekmenu via wijzigMenu: controle op gelijktijdige wijziging en één
+    // "Ongedaan maken".
+    const gelukt = await menuWijziging(
+      planWeg(id, rij ? planVingerafdruk(rij) : undefined),
+      `${naam} uit het gezinsweekmenu`,
+      bij,
+    );
+    if (gelukt === null) return;
+    if (rij) meldAanGezin("weg", naam, rij.plan_date, id);
     if (!recipeId) return;
     // Staan de ingrediënten van dit gerecht nog op een boodschappenlijst?
     const { data } = await supabase
@@ -434,6 +548,7 @@ function PlannerPage() {
       return;
     }
     await zetEters(data.id, eters);
+    meldAanGezin("erbij", titel, datum, data.id);
     setKiezen(null);
     setWeekStart(maandagVan(new Date(`${datum}T12:00:00`)));
     toast.success(`${titel} staat op ${labelVoor(datum)}`, {
@@ -714,6 +829,7 @@ function PlannerPage() {
         return;
       }
       geplandeRij = data;
+      meldAanGezin("erbij", naam, datum, data.id);
     }
     if (geplandeRij) await zetEters(geplandeRij.id, eters);
     if (extra?.maakRecept && geplandeRij) {
@@ -754,22 +870,40 @@ function PlannerPage() {
   /** Verplaatst of dupliceert een geplande maaltijd naar een andere dag/moment. */
   async function verplaatsNaar(rij: PlanRow, datum: string, moment: string, kopie: boolean) {
     if (!user) return;
-    if (eigenMenu) {
+    const titel = rij.recipes?.title ?? rij.custom_title ?? "Gerecht";
+    const tekst = kopie ? `Ook ingepland op ${labelVoor(datum)}` : `Verplaatst naar ${labelVoor(datum)}`;
+    const groupId = eigenMenu ? null : rij.group_id;
+    const erbij = planErbij({
+      userId: user.id,
+      recipeId: rij.recipe_id,
+      datum,
+      moment,
+      personen: rij.personen ?? null,
+      customTitle: rij.custom_title,
+      soort: rij.soort ?? null,
+      groupId,
+    });
+    if (eigenMenu || !kopie) {
       const id = await menuWijziging(
+        kopie ? erbij : planVerplaats(rij.id, datum, moment, planVingerafdruk(rij)),
+        tekst,
         kopie
-          ? planErbij({
-              userId: user.id,
-              recipeId: rij.recipe_id,
+          ? undefined
+          : {
+              planId: rij.id,
               datum,
-              moment,
-              personen: rij.personen ?? null,
-              customTitle: rij.custom_title,
-              soort: rij.soort ?? null,
-            })
-          : planVerplaats(rij.id, datum, moment),
-        kopie ? `Ook ingepland op ${labelVoor(datum)}` : `Verplaatst naar ${labelVoor(datum)}`,
+              mijnTitel: `${titel} op ${labelVoor(datum)}`,
+              wat: "verplaatst",
+              zetMijn: planVerplaats(rij.id, datum, moment),
+              opnieuw: erbij,
+              tekst,
+              sluit: () => setVerplaats(null),
+            },
       );
-      if (id !== null) setVerplaats(null);
+      if (id !== null) {
+        setVerplaats(null);
+        if (!kopie) meldAanGezin("verplaatst", titel, datum, rij.id);
+      }
       return;
     }
     const { error } = kopie
@@ -794,9 +928,24 @@ function PlannerPage() {
   }
 
   async function koppelRecept(rij: PlanRow, recept: Recipe) {
-    if (eigenMenu) {
-      const id = await menuWijziging(planVervang(rij.id, recept.id), `${recept.title} gekoppeld`);
-      if (id !== null) setKoppelRij(null);
+    if (eigenMenu || rij.group_id) {
+      const id = await menuWijziging(
+        planVervang(rij.id, recept.id, planVingerafdruk(rij)),
+        `${recept.title} gekoppeld`,
+        {
+          planId: rij.id,
+          datum: rij.plan_date,
+          mijnTitel: recept.title,
+          wat: "anders",
+          zetMijn: planVervang(rij.id, recept.id),
+          tekst: `${recept.title} gekoppeld`,
+          sluit: () => setKoppelRij(null),
+        },
+      );
+      if (id !== null) {
+        setKoppelRij(null);
+        meldAanGezin("anders", recept.title, rij.plan_date, rij.id);
+      }
       return;
     }
     const { error } = await supabase
@@ -986,7 +1135,7 @@ function PlannerPage() {
               <Plus className="size-5" /> Recept maken of importeren
             </DropdownMenuItem>
           ) : null}
-          {p.recipe_id && eigenMenu ? (
+          {p.recipe_id ? (
             <DropdownMenuItem
               onSelect={() => setVervangRij(p)}
               className="min-h-12 rounded-lg text-base"
@@ -1025,7 +1174,7 @@ function PlannerPage() {
             <Repeat className="size-5" /> Volgende week opnieuw
           </DropdownMenuItem>
           <DropdownMenuItem
-            onSelect={() => void verwijder(p.id, p.recipe_id, p.recipes?.title ?? "Dit gerecht")}
+            onSelect={() => void verwijder(p.id, p.recipe_id, p.recipes?.title ?? p.custom_title ?? "Dit gerecht", p)}
             className="min-h-12 rounded-lg text-base text-destructive focus:text-destructive"
           >
             <Trash2 className="size-5" /> Uit planning halen
@@ -1223,7 +1372,7 @@ function PlannerPage() {
             titel={p.recipes?.title ?? "dit gerecht"}
             oordeel={oordelen[p.id]}
             mee={mee}
-            onAnder={eigenMenu ? () => setVervangRij(p) : undefined}
+            onAnder={() => setVervangRij(p)}
             onVervanger={(i) => zoekVervanger(p, i)}
           />
         ) : null}
@@ -1439,6 +1588,11 @@ function PlannerPage() {
           </div>
         </section>
 
+        {/* P5: wie er nu ook in het gezinsweekmenu bezig is (realtime aanwezigheid). */}
+        {!eigenMenu && gezin ? (
+          <AanwezigRegel kanaal={`weekmenu:${gezin.id}`} plek="het weekmenu" bezig={!!(vervangRij || verplaats || koppelRij || kiezen)} />
+        ) : null}
+
         {/* Werkstroom F: geschatte kost van de week en waarschuwing boven het weekbudget. */}
         <WeekBudget
           plan={plan.map((p) => ({
@@ -1492,6 +1646,9 @@ function PlannerPage() {
             </p>
           </section>
         )}
+
+        {/* P5: "Wie veranderde wat" deze week — alleen in het gezinsweekmenu (alleen gezinsleden). */}
+        {!eigenMenu && gezin ? <WeekActiviteit groupId={gezin.id} van={week[0]!} tot={week[6]!} /> : null}
 
         {/* Usecase 7: lege dagen deze week? Per dag één voorstel, met redenen en ongedaan maken.
             Alleen in je eigen weekmenu (daar is ongedaan maken altijd mogelijk). */}
@@ -1826,19 +1983,41 @@ function PlannerPage() {
         <KoppelSheet
           rij={vervangRij}
           titel="Ander gerecht"
-          uitleg={`In plaats van “${vervangRij.recipes?.title ?? "dit gerecht"}” op ${labelVoor(vervangRij.plan_date)}. Je lijst past zich aan.`}
+          uitleg={`In plaats van “${vervangRij.recipes?.title ?? "dit gerecht"}” op ${labelVoor(vervangRij.plan_date)}.${eigenMenu ? " Je lijst past zich aan." : ""}`}
           beginZoek=""
           zonder={vervangRij.recipe_id}
           onSluit={() => setVervangRij(null)}
           onKies={async (r) => {
-            const id = await menuWijziging(
-              planVervang(vervangRij.id, r.id),
-              `${r.title} in plaats van ${vervangRij.recipes?.title ?? "het vorige gerecht"}`,
-            );
-            if (id !== null) setVervangRij(null);
+            const rij = vervangRij;
+            const tekst = `${r.title} in plaats van ${rij.recipes?.title ?? "het vorige gerecht"}`;
+            const erbij = planErbij({
+              userId: user!.id,
+              recipeId: r.id,
+              datum: rij.plan_date,
+              moment: rij.meal_type,
+              personen: rij.personen ?? null,
+              groupId: eigenMenu ? null : rij.group_id,
+            });
+            const id = await menuWijziging(planVervang(rij.id, r.id, planVingerafdruk(rij)), tekst, {
+              planId: rij.id,
+              datum: rij.plan_date,
+              mijnTitel: r.title,
+              wat: "anders",
+              zetMijn: planVervang(rij.id, r.id),
+              opnieuw: erbij,
+              allebei: erbij,
+              tekst,
+              sluit: () => setVervangRij(null),
+            });
+            if (id !== null) {
+              setVervangRij(null);
+              meldAanGezin("anders", r.title, rij.plan_date, rij.id);
+            }
           }}
         />
       )}
+
+      <ConflictKeuze voorstel={conflict} onSluit={() => setConflict(null)} />
 
       {opruimVraag && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-0 sm:items-center sm:p-4">
