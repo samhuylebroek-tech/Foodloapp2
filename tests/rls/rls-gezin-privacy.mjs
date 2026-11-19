@@ -58,6 +58,8 @@ const VASTE_WAARDEN = { signaal: "'niet_nu'", handle: "'test-a'", tekst: "'Lekke
 // Ook verplichte kolommen met een CHECK krijgen hier een geldige waarde (voorstellen 0011/0012).
 const EXTRA_KOLOMMEN = {
   aanbeveling_feedback: { onderwerp: "'curry'" },
+  // Voorstel 0017: afzender (standaard auth.uid(), hier zonder sessie) en een vaste soort.
+  app_meldingen: { actor_id: `'${A}'`, soort: "'menu'" },
   abonnementen: { plan: "'premium_maand'", status: "'proef'" },
   budget_weken: { week: "date_trunc('week', current_date)::date" },
   entitlements: { recht: "'premium.weekmenu_extra'" },

@@ -895,6 +895,34 @@ export function demoSeed() {
     huishouden_leden,
     lid_voeding,
     maaltijd_eters,
+    // P5 (voorstel 0017, alleen demo): Jan rondde gisteren het winkelen af; Marie krijgt dat als
+    // melding in de app (bel) en het staat in "Wie veranderde wat".
+    app_meldingen: [
+      {
+        id: "a5a5a5a5-0017-4000-8000-000000000001",
+        user_id: DEMO_USER_ID,
+        group_id: GEZIN,
+        actor_id: JAN,
+        soort: "winkelen-klaar",
+        tekst: "Jan is klaar met winkelen (4 dingen gekocht)",
+        link: "/boodschappen",
+        sleutel: null,
+        gelezen_op: null,
+        created_at: new Date(Date.now() - 20 * 3600000).toISOString(),
+      },
+    ],
+    gezin_activiteit: [
+      {
+        id: "a6a6a6a6-0017-4000-8000-000000000001",
+        group_id: GEZIN,
+        actor_id: JAN,
+        soort: "winkelen",
+        tekst: "Jan is klaar met winkelen (4 dingen gekocht)",
+        datum: dag(-1),
+        ref_id: null,
+        created_at: new Date(Date.now() - 20 * 3600000).toISOString(),
+      },
+    ],
     inspiration_recipes: INSPIRATIE,
     inspiration_ingredients: INSPIRATIE_INGREDIENTEN,
     groups: [

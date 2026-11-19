@@ -99,9 +99,24 @@ import { TabletWeek } from "@/components/planner/TabletWeek";
 import { ConflictKeuze, type ConflictVoorstel } from "@/components/samenwerking/ConflictKeuze";
 import { WeekActiviteit } from "@/components/samenwerking/WeekActiviteit";
 import { AanwezigRegel } from "@/components/samenwerking/AanwezigRegel";
-import { conflictTekst, dagNaam, MenuConflict, planVingerafdruk } from "@/lib/samenwerking/conflict";
-import { conflictMeldingTekst, menuMeldingTekst, type MenuWijziging } from "@/lib/samenwerking/meldingen";
-import { laatsteWijziger, meldGezin, mijnNaam, stuurMelding, titelVanPlan } from "@/lib/samenwerking/db";
+import {
+  conflictTekst,
+  dagNaam,
+  MenuConflict,
+  planVingerafdruk,
+} from "@/lib/samenwerking/conflict";
+import {
+  conflictMeldingTekst,
+  menuMeldingTekst,
+  type MenuWijziging,
+} from "@/lib/samenwerking/meldingen";
+import {
+  laatsteWijziger,
+  meldGezin,
+  mijnNaam,
+  stuurMelding,
+  titelVanPlan,
+} from "@/lib/samenwerking/db";
 
 export const Route = createFileRoute("/planner")({
   head: () => ({
@@ -391,7 +406,12 @@ function PlannerPage() {
             soort: "conflict",
             naar: [wijziger.id],
             link: "/planner?weergave=gezin",
-            tekst: conflictMeldingTekst({ wie: ik, datum, mijnTitel: bij.mijnTitel, jouwTitel: hun }),
+            tekst: conflictMeldingTekst({
+              wie: ik,
+              datum,
+              mijnTitel: bij.mijnTitel,
+              jouwTitel: hun,
+            }),
           });
         }
       },
@@ -401,7 +421,10 @@ function PlannerPage() {
               label: `Allebei op ${dagNaam(datum)}`,
               doe: async () => {
                 bij.sluit?.();
-                const id = await menuWijziging(bij.allebei!, `${bij.mijnTitel} staat er ook op ${labelVoor(datum)}`);
+                const id = await menuWijziging(
+                  bij.allebei!,
+                  `${bij.mijnTitel} staat er ook op ${labelVoor(datum)}`,
+                );
                 if (id) meldAanGezin("erbij", bij.mijnTitel, datum, id);
               },
             }
@@ -455,7 +478,11 @@ function PlannerPage() {
         }
       : undefined;
     if (eigenMenu) {
-      await menuWijziging(planWeg(id, rij ? planVingerafdruk(rij) : undefined), `${naam} uit je weekmenu`, bij);
+      await menuWijziging(
+        planWeg(id, rij ? planVingerafdruk(rij) : undefined),
+        `${naam} uit je weekmenu`,
+        bij,
+      );
       return;
     }
     // P5: ook het gezinsweekmenu via wijzigMenu: controle op gelijktijdige wijziging en één
@@ -871,7 +898,9 @@ function PlannerPage() {
   async function verplaatsNaar(rij: PlanRow, datum: string, moment: string, kopie: boolean) {
     if (!user) return;
     const titel = rij.recipes?.title ?? rij.custom_title ?? "Gerecht";
-    const tekst = kopie ? `Ook ingepland op ${labelVoor(datum)}` : `Verplaatst naar ${labelVoor(datum)}`;
+    const tekst = kopie
+      ? `Ook ingepland op ${labelVoor(datum)}`
+      : `Verplaatst naar ${labelVoor(datum)}`;
     const groupId = eigenMenu ? null : rij.group_id;
     const erbij = planErbij({
       userId: user.id,
@@ -1174,7 +1203,14 @@ function PlannerPage() {
             <Repeat className="size-5" /> Volgende week opnieuw
           </DropdownMenuItem>
           <DropdownMenuItem
-            onSelect={() => void verwijder(p.id, p.recipe_id, p.recipes?.title ?? p.custom_title ?? "Dit gerecht", p)}
+            onSelect={() =>
+              void verwijder(
+                p.id,
+                p.recipe_id,
+                p.recipes?.title ?? p.custom_title ?? "Dit gerecht",
+                p,
+              )
+            }
             className="min-h-12 rounded-lg text-base text-destructive focus:text-destructive"
           >
             <Trash2 className="size-5" /> Uit planning halen
@@ -1590,7 +1626,11 @@ function PlannerPage() {
 
         {/* P5: wie er nu ook in het gezinsweekmenu bezig is (realtime aanwezigheid). */}
         {!eigenMenu && gezin ? (
-          <AanwezigRegel kanaal={`weekmenu:${gezin.id}`} plek="het weekmenu" bezig={!!(vervangRij || verplaats || koppelRij || kiezen)} />
+          <AanwezigRegel
+            kanaal={`weekmenu:${gezin.id}`}
+            plek="het weekmenu"
+            bezig={!!(vervangRij || verplaats || koppelRij || kiezen)}
+          />
         ) : null}
 
         {/* Werkstroom F: geschatte kost van de week en waarschuwing boven het weekbudget. */}
@@ -1648,7 +1688,9 @@ function PlannerPage() {
         )}
 
         {/* P5: "Wie veranderde wat" deze week — alleen in het gezinsweekmenu (alleen gezinsleden). */}
-        {!eigenMenu && gezin ? <WeekActiviteit groupId={gezin.id} van={week[0]!} tot={week[6]!} /> : null}
+        {!eigenMenu && gezin ? (
+          <WeekActiviteit groupId={gezin.id} van={week[0]!} tot={week[6]!} />
+        ) : null}
 
         {/* Usecase 7: lege dagen deze week? Per dag één voorstel, met redenen en ongedaan maken.
             Alleen in je eigen weekmenu (daar is ongedaan maken altijd mogelijk). */}
@@ -1998,17 +2040,21 @@ function PlannerPage() {
               personen: rij.personen ?? null,
               groupId: eigenMenu ? null : rij.group_id,
             });
-            const id = await menuWijziging(planVervang(rij.id, r.id, planVingerafdruk(rij)), tekst, {
-              planId: rij.id,
-              datum: rij.plan_date,
-              mijnTitel: r.title,
-              wat: "anders",
-              zetMijn: planVervang(rij.id, r.id),
-              opnieuw: erbij,
-              allebei: erbij,
+            const id = await menuWijziging(
+              planVervang(rij.id, r.id, planVingerafdruk(rij)),
               tekst,
-              sluit: () => setVervangRij(null),
-            });
+              {
+                planId: rij.id,
+                datum: rij.plan_date,
+                mijnTitel: r.title,
+                wat: "anders",
+                zetMijn: planVervang(rij.id, r.id),
+                opnieuw: erbij,
+                allebei: erbij,
+                tekst,
+                sluit: () => setVervangRij(null),
+              },
+            );
             if (id !== null) {
               setVervangRij(null);
               meldAanGezin("anders", r.title, rij.plan_date, rij.id);

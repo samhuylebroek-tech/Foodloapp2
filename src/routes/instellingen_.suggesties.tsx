@@ -22,7 +22,8 @@ export const Route = createFileRoute("/instellingen_/suggesties")({
       { title: "Suggesties en meldingen – Foodlo" },
       {
         name: "description",
-        content: "Kies welke tips Foodlo je uit zichzelf toont en welke meldingen je in de app krijgt.",
+        content:
+          "Kies welke tips Foodlo je uit zichzelf toont en welke meldingen je in de app krijgt.",
       },
     ],
   }),

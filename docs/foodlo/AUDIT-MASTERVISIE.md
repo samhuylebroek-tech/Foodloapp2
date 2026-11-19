@@ -24,7 +24,7 @@ Gemeten in de code, niet uit documenten. "Werkt" = de handeling bewaart en is ge
 | Na het koken: restjes en voorraad bijwerken met bevestiging | **Ontbreekt** als één stap | — |
 | Assistent die acties op planning/lijst voorstelt en na bevestiging uitvoert | **Ontbreekt** (assistent werkt op één recept) | — |
 | Proactieve suggesties met aan/uit per soort | **Gedeeltelijk** (losse kaarten, geen centrale instelling) | — |
-| Gelijktijdige wijzigingen: waarschuwen i.p.v. overschrijven | **Ontbreekt** (realtime ververst, geen conflictmelding) | — |
+| Gelijktijdige wijzigingen: waarschuwen i.p.v. overschrijven | **Gebouwd (P5, 2026-11-19)**: inhoudscontrole vlak vóór het schrijven (weekmenu via `wijzigMenu`, lijst-item), keuze "Houd die van Jan / Zet de mijne / Bekijk allebei", één ongedaan maken; aanwezigheid "Jan is de lijst aan het bewerken" | samenwerking.spec, conflict.test |
 | Echte prijzen, echte winkels, echt weer | **Extern** (testadapters, duidelijk gelabeld) | `supermarkt/`, `weer.ts` |
 
 **Dubbel (opgelost in P2):** `kostrem.ts` bleek een AI-kostenrem, geen prijsschatter; de echte dubbeling zat tussen budgetkaart en planner (andere schaalregel). Nu één bron: `budget.ts`, ook voor lijst en winkelmodus; budgetgeschiedenis per week (voorstel 0014).
@@ -48,6 +48,6 @@ Gemeten in de code, niet uit documenten. "Werkt" = de handeling bewaart en is ge
 - **P2 Ingrediënten & lijst**: synoniemen, eenheden-omrekening, verpakkingsmaten, behoefte/voorraad/te kopen apart, één kostenbron (kostrem + budget samen), budget op account + geschiedenis, basisvoorraad.
 - **P3 Na het koken**: restjes en voorraad bijwerken met bevestiging, receptversies (origineel bewaard bij aanpassen).
 - **P4 Assistent met acties**: "Maak mijn week goedkoper", "Vervang woensdag", "Ik heb morgen 15 min" → voorstel met verschillen → bevestigen → uitvoeren via wijzigMenu; regels eerst, AI optioneel; proactieve suggesties met één instellingenpagina. **Gebouwd (2026-11-19)**: `/assistent` (opdrachten zonder AI, voorstel met verschillen, Doe maar/Nee, één ongedaan maken), Instellingen › Suggesties (voorstel 0016, niet uitgevoerd), hooguit één kaart op Vandaag, "Laat Foodlo kiezen" via de engine. Open: echte AI-terugval (alleen testmodus), migratie 0016.
-- **P5 Samenwerking**: conflictmelding bij gelijktijdige wijziging, lijst verdelen, meldingen.
+- **P5 Samenwerking**: conflictmelding bij gelijktijdige wijziging, lijst verdelen, meldingen. **Gebouwd (2026-11-19)**: conflictkeuze in gezinsweekmenu en eigen menu (via `wijzigMenu`) en bij een lijst-item; gezinslijst verdelen (wie haalt wat, winkel, "Mijn deel", winkelmodus, rollen kijker/kind); bel met meldingen in de app (gezin, toegewezen, klaar met winkelen, restje, conflict), per soort aan/uit in Instellingen › Suggesties en meldingen; "Wie veranderde wat" op Week (gezin). Voorstel 0017 (niet uitgevoerd) + tests/rls/samenwerking.mjs. Open: migratie 0017, aanwezigheid alleen echt te testen met Supabase Realtime (niet in de nep-databank), geen push naar buiten.
 - **P6 Kwaliteit**: de 20 verplichte tests als één E2E-reeks, schermen voor/na, toegankelijkheid, offline.
 - **Daarna** fases 3–9 uit FASES.md (keuken/collecties, creators/video, BCC, premium, privacy, afwerking).

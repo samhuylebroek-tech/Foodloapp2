@@ -70,7 +70,7 @@ export function MeldingenBel() {
           className="mx-auto max-w-lg rounded-t-3xl p-0 sm:bottom-6 sm:rounded-3xl"
         >
           <SheetHeader className="px-5 pb-2 pt-5 text-left">
-            <SheetTitle className="text-sectietitel">Meldingen</SheetTitle>
+            <SheetTitle className="pr-12 font-display text-xl font-semibold">Meldingen</SheetTitle>
             <SheetDescription className="text-base">
               Wat er in je gezin gebeurde. Deze meldingen blijven in de app.
             </SheetDescription>
@@ -92,7 +92,7 @@ export function MeldingenBel() {
                   {m.lijst.map((x) => {
                     const Icoon = ICOON[x.soort];
                     return (
-                      <li key={x.id}>
+                      <li key={x.id} className="@container">
                         <button
                           type="button"
                           onClick={() => {
@@ -105,13 +105,14 @@ export function MeldingenBel() {
                             x.gelezen ? "bg-muted/40" : "bg-secondary",
                           )}
                         >
-                          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-card text-primary ring-1 ring-border">
+                          {/* Grote tekst (smal kader): pictogram weg, zodat de tekst niet midden in woorden breekt. */}
+                          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-card text-primary ring-1 ring-border @max-[22rem]:hidden">
                             <Icoon className="size-5" aria-hidden />
                           </span>
                           <span className="min-w-0 flex-1">
                             <span
                               className={cn(
-                                "block text-base leading-snug break-words",
+                                "block text-base leading-snug hyphens-auto",
                                 !x.gelezen && "font-semibold",
                               )}
                             >

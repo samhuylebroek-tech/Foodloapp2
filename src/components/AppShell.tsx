@@ -263,8 +263,9 @@ export function AppShell({
               />
               <span
                 className={cn(
-                  "hidden font-display text-[1.6rem] font-semibold leading-none tracking-tight min-[400px]:inline",
-                  titelWeg && "min-[400px]:hidden lg:inline",
+                  // P5: naast de bel past het woordmerk pas vanaf 480 px (430 px liep anders uit).
+                  "hidden font-display text-[1.6rem] font-semibold leading-none tracking-tight min-[480px]:inline",
+                  titelWeg && "min-[480px]:hidden lg:inline",
                 )}
               >
                 Foodlo
