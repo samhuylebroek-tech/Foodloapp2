@@ -17,14 +17,15 @@ import { AppShell } from "@/components/AppShell";
 import { NuKaart } from "@/components/vandaag/NuKaart";
 import { Daarna } from "@/components/vandaag/Daarna";
 import { WegwijsKaart } from "@/components/vandaag/WegwijsKaart";
-import { WeerSignaal } from "@/components/vandaag/WeerSignaal";
 import { haalGedeeldeAanvulling, useAanvulling } from "@/hooks/useAanvulling";
 import { leesVoortgang } from "@/lib/kookstand";
 import { hoofdStap, signalen as signalenVan } from "@/lib/vandaag";
 import { laadVandaag } from "@/lib/vandaag-db";
 import { gekooktePlannen } from "@/lib/koken/kookmomenten";
 import { useKookmomenten } from "@/lib/koken/kookmomenten-db";
-import { GebruikEerstKaart } from "@/components/vandaag/GebruikEerstKaart";
+import { ProactieveKaart } from "@/components/vandaag/ProactieveKaart";
+import { useSuggesties } from "@/hooks/useSuggesties";
+import { isAan } from "@/lib/suggesties";
 import { EmptyState } from "@/components/EmptyState";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import type { Recipe } from "@/lib/types";
@@ -196,12 +197,18 @@ function StartPage() {
       gekookt,
     });
   }, [stand, recipes.length, etenstijden, gekookt]);
+  // P4: "Vergeten boodschappen" uit in Instellingen › Suggesties = geen "aanvullen"-signaal.
+  const suggesties = useSuggesties();
+  const boodschappenAan = isAan(suggesties.inst, "boodschappen");
   const signalen = useMemo(
     () =>
       stand && stap
-        ? signalenVan({ ...stand, nu: new Date(), voortgang: {}, heeftRecepten: true }, stap)
+        ? signalenVan(
+            { ...stand, nu: new Date(), voortgang: {}, heeftRecepten: true },
+            stap,
+          ).filter((s) => boodschappenAan || s.soort !== "aanvullen")
         : [],
-    [stand, stap],
+    [stand, stap, boodschappenAan],
   );
   async function zetOpLijst(welke: Set<string> | "alles") {
     setZetBezig(true);
@@ -264,10 +271,9 @@ function StartPage() {
   return (
     <AppShell breed title={groetTekst} kop={kop}>
       <div className="space-y-12">
-        {/* Werkstroom F: klein, optioneel weersignaal (testgegevens tot er een weerdienst is). */}
-        <WeerSignaal />
-        {/* P3: restjes en verse producten die eerst op moeten, met een voorstel. */}
-        <GebruikEerstKaart recepten={recipes} restjeKnop={stap?.soort !== "kiezen"} />
+        {/* P4: hooguit één proactieve kaart (Gebruik eerst, budget, weer, variatie, seizoen),
+            per soort aan/uit in Instellingen › Suggesties. */}
+        <ProactieveKaart recepten={recipes} restjeKnop={stap?.soort !== "kiezen"} />
         <WegwijsKaart />
         {/* Tablet en groter: "Daarna" en "Ook vandaag" naast elkaar; alleen één? Dan volle breedte. */}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-12 md:grid-cols-2 md:gap-8 md:[&>*:only-child]:col-span-2">
@@ -339,15 +345,15 @@ function StartPage() {
                   : t("Nog niets gepland deze week.")}
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-x-4">
+            <div className="flex min-w-0 max-w-full flex-wrap items-center gap-x-4">
               {/* P4: de assistent met acties ("vervang woensdag", "maak mijn week goedkoper"). */}
               <Link
                 to="/assistent"
                 search={{ van: "vandaag" }}
-                className="flex min-h-12 shrink-0 items-center gap-1.5 text-base font-semibold text-primary"
+                className="flex min-h-12 min-w-0 max-w-full items-center gap-1.5 text-base font-semibold text-primary"
               >
-                <MessageCircleQuestion className="size-5" aria-hidden />
-                {t("Vraag de assistent")}
+                <MessageCircleQuestion className="size-5 shrink-0" aria-hidden />
+                <span className="min-w-0">{t("Vraag de assistent")}</span>
               </Link>
               <Link
                 to="/planner"

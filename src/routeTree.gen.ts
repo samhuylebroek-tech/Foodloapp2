@@ -74,6 +74,7 @@ import { Route as HulpSlugRouteImport } from './routes/hulp.$slug'
 import { Route as HulpTutorialsRouteImport } from './routes/hulp.tutorials'
 import { Route as InspiratieIndexRouteImport } from './routes/inspiratie.index'
 import { Route as InspiratieIdRouteImport } from './routes/inspiratie.$id'
+import { Route as InstellingenSuggestiesRouteImport } from './routes/instellingen_.suggesties'
 import { Route as KaartenIndexRouteImport } from './routes/kaarten.index'
 import { Route as KaartenIdRouteImport } from './routes/kaarten.$id'
 import { Route as MakersIndexRouteImport } from './routes/makers.index'
@@ -439,6 +440,11 @@ const InspiratieIdRoute = InspiratieIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => InspiratieRoute,
 } as any)
+const InstellingenSuggestiesRoute = InstellingenSuggestiesRouteImport.update({
+  id: '/instellingen_/suggesties',
+  path: '/instellingen/suggesties',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const KaartenIndexRoute = KaartenIndexRouteImport.update({
   id: '/kaarten/',
   path: '/kaarten/',
@@ -699,6 +705,7 @@ export interface FileRoutesByFullPath {
   '/hulp/$slug': typeof HulpSlugRoute
   '/hulp/tutorials': typeof HulpTutorialsRoute
   '/inspiratie/$id': typeof InspiratieIdRoute
+  '/instellingen/suggesties': typeof InstellingenSuggestiesRoute
   '/kaarten/$id': typeof KaartenIdRoute
   '/makers/$handle': typeof MakersHandleRoute
   '/partner/abonnement': typeof PartnerAbonnementRoute
@@ -800,6 +807,7 @@ export interface FileRoutesByTo {
   '/hulp/$slug': typeof HulpSlugRoute
   '/hulp/tutorials': typeof HulpTutorialsRoute
   '/inspiratie/$id': typeof InspiratieIdRoute
+  '/instellingen/suggesties': typeof InstellingenSuggestiesRoute
   '/kaarten/$id': typeof KaartenIdRoute
   '/makers/$handle': typeof MakersHandleRoute
   '/partner/abonnement': typeof PartnerAbonnementRoute
@@ -907,6 +915,7 @@ export interface FileRoutesById {
   '/hulp/$slug': typeof HulpSlugRoute
   '/hulp/tutorials': typeof HulpTutorialsRoute
   '/inspiratie/$id': typeof InspiratieIdRoute
+  '/instellingen_/suggesties': typeof InstellingenSuggestiesRoute
   '/kaarten/$id': typeof KaartenIdRoute
   '/makers/$handle': typeof MakersHandleRoute
   '/partner/abonnement': typeof PartnerAbonnementRoute
@@ -1015,6 +1024,7 @@ export interface FileRouteTypes {
     | '/hulp/$slug'
     | '/hulp/tutorials'
     | '/inspiratie/$id'
+    | '/instellingen/suggesties'
     | '/kaarten/$id'
     | '/makers/$handle'
     | '/partner/abonnement'
@@ -1116,6 +1126,7 @@ export interface FileRouteTypes {
     | '/hulp/$slug'
     | '/hulp/tutorials'
     | '/inspiratie/$id'
+    | '/instellingen/suggesties'
     | '/kaarten/$id'
     | '/makers/$handle'
     | '/partner/abonnement'
@@ -1222,6 +1233,7 @@ export interface FileRouteTypes {
     | '/hulp/$slug'
     | '/hulp/tutorials'
     | '/inspiratie/$id'
+    | '/instellingen_/suggesties'
     | '/kaarten/$id'
     | '/makers/$handle'
     | '/partner/abonnement'
@@ -1301,6 +1313,7 @@ export interface RootRouteChildren {
   WachtwoordHerstellenRoute: typeof WachtwoordHerstellenRoute
   WeekSamenstellenRoute: typeof WeekSamenstellenRoute
   WelkomRoute: typeof WelkomRoute
+  InstellingenSuggestiesRoute: typeof InstellingenSuggestiesRoute
   KaartenIdRoute: typeof KaartenIdRoute
   MakersHandleRoute: typeof MakersHandleRoute
   ReceptenIdRoute: typeof ReceptenIdRoute
@@ -1771,6 +1784,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/inspiratie/$id'
       preLoaderRoute: typeof InspiratieIdRouteImport
       parentRoute: typeof InspiratieRoute
+    }
+    '/instellingen_/suggesties': {
+      id: '/instellingen_/suggesties'
+      path: '/instellingen/suggesties'
+      fullPath: '/instellingen/suggesties'
+      preLoaderRoute: typeof InstellingenSuggestiesRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/kaarten/': {
       id: '/kaarten/'
@@ -2245,6 +2265,7 @@ const rootRouteChildren: RootRouteChildren = {
   WachtwoordHerstellenRoute: WachtwoordHerstellenRoute,
   WeekSamenstellenRoute: WeekSamenstellenRoute,
   WelkomRoute: WelkomRoute,
+  InstellingenSuggestiesRoute: InstellingenSuggestiesRoute,
   KaartenIdRoute: KaartenIdRoute,
   MakersHandleRoute: MakersHandleRoute,
   ReceptenIdRoute: ReceptenIdRoute,

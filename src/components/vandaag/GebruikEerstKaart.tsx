@@ -4,7 +4,7 @@
  * één voorstel uit de engine dat het opmaakt. Nooit "bedorven" of "vervalt": alleen richtwaarden.
  * Uit met "Slimme voorstellen". Allergieën en dieet: dezelfde regel als overal.
  */
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChefHat, Hourglass, Loader2, Soup } from "lucide-react";
@@ -44,24 +44,18 @@ type ReceptKort = {
 
 const minutenVan = (r: ReceptKort) => (r.prep_minutes ?? 0) + (r.cook_minutes ?? 0);
 
-export function GebruikEerstKaart({
-  recepten,
-  restjeKnop = true,
-}: {
-  recepten: readonly ReceptKort[];
-  /** Nee als de Nu-kaart zelf al "Eet vanavond restjes" toont (niets gepland). */
-  restjeKnop?: boolean;
-}) {
-  const t = useT();
+/**
+ * P4: wat "Gebruik eerst" zou tonen (restjes en wat al even in huis is), zonder iets te tekenen.
+ * Zo kan Vandaag kiezen welke ene proactieve kaart er komt.
+ */
+export function useGebruikEerst(recepten: readonly ReceptKort[]) {
   const { user } = useAuth();
-  const qc = useQueryClient();
-  const { momenten, weekmenu } = useVoorkeuren();
+  const { weekmenu } = useVoorkeuren();
   const [slim] = useSlimmeVoorstellen();
   const plan = usePlanProfiel();
   const alleRestjes = useRestjes();
   const ids = useMemo(() => recepten.map((r) => r.id), [recepten]);
   const { data: bronnen } = useVoorstelBronnen(ids, slim);
-  const [bezig, setBezig] = useState(false);
 
   const kennis = useMemo(() => leesKennismaking(user?.id), [user?.id]);
   const restjes = useMemo(
@@ -115,7 +109,35 @@ export function GebruikEerstKaart({
     };
   }, [bronnen, recepten, weekmenu, kennis, user?.id, plan.apparatuur]);
 
-  if (!slim || !user || (!restjes.length && !opmaken?.oud.length)) return null;
+  return { slim, restjes, opmaken };
+}
+
+export function GebruikEerstKaart({
+  recepten,
+  restjeKnop = true,
+  toonRestjes = true,
+  toonVoorraad = true,
+  voet,
+}: {
+  recepten: readonly ReceptKort[];
+  /** Nee als de Nu-kaart zelf al "Eet vanavond restjes" toont (niets gepland). */
+  restjeKnop?: boolean;
+  /** P4: per soort aan of uit (Instellingen › Suggesties). */
+  toonRestjes?: boolean;
+  toonVoorraad?: boolean;
+  /** P4: "Niet meer tonen" en de link naar de instellingen. */
+  voet?: ReactNode;
+}) {
+  const t = useT();
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const { momenten } = useVoorkeuren();
+  const [bezig, setBezig] = useState(false);
+  const eerst = useGebruikEerst(recepten);
+  const restjes = toonRestjes ? eerst.restjes : [];
+  const opmaken = toonVoorraad ? eerst.opmaken : null;
+
+  if (!eerst.slim || !user || (!restjes.length && !opmaken?.oud.length)) return null;
 
   async function eetVanavond(r: Restje) {
     if (!user || bezig) return;
@@ -232,6 +254,7 @@ export function GebruikEerstKaart({
           )}
         </div>
       ) : null}
+      {voet}
     </section>
   );
 }

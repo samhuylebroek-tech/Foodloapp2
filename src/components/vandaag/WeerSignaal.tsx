@@ -4,11 +4,13 @@
  */
 import { Link } from "@tanstack/react-router";
 import { CloudRain, Snowflake, Sun } from "lucide-react";
+import type { ReactNode } from "react";
 import { useWeer } from "@/hooks/useWeer";
 
 const ICOON = { warm: Sun, koud: Snowflake, nat: CloudRain } as const;
 
-export function WeerSignaal() {
+/** `voet`: P4 "Niet meer tonen" en de link naar Instellingen › Suggesties. */
+export function WeerSignaal({ voet }: { voet?: ReactNode } = {}) {
   const { weer, signaal } = useWeer();
   if (!weer || !signaal) return null;
   const Icoon = ICOON[signaal.soort];
@@ -37,6 +39,7 @@ export function WeerSignaal() {
             Weer uitzetten
           </Link>
         </p>
+        {voet}
       </div>
     </section>
   );

@@ -123,10 +123,11 @@ export function VoorstelKaart({
       ) : null}
 
       {kanUitvoeren ? (
-        <dl className="grid gap-3 text-base sm:grid-cols-2">
+        <dl className="grid grid-cols-[minmax(0,1fr)] gap-3 text-base sm:grid-cols-2 [&>*]:min-w-0">
           <div className="rounded-2xl border border-border p-3">
-            <dt className="flex items-center gap-2 font-bold">
-              <ShoppingBasket className="size-5 shrink-0" aria-hidden /> Boodschappenlijst
+            <dt className="flex min-w-0 items-center gap-2 font-bold">
+              <ShoppingBasket className="size-5 shrink-0" aria-hidden />
+              <span className="min-w-0 break-words hyphens-auto">Boodschappenlijst</span>
             </dt>
             <dd className="mt-1 space-y-1">
               {lijstGelijk ? <p>Blijft gelijk.</p> : null}
@@ -143,21 +144,23 @@ export function VoorstelKaart({
             </dd>
           </div>
           <div className="rounded-2xl border border-border p-3">
-            <dt className="flex items-center gap-2 font-bold">
-              <Wallet className="size-5 shrink-0" aria-hidden /> Kost (schatting)
+            <dt className="flex min-w-0 items-center gap-2 font-bold">
+              <Wallet className="size-5 shrink-0" aria-hidden />
+              <span className="min-w-0 break-words hyphens-auto">Kost (schatting)</span>
             </dt>
             <dd className="mt-1" data-kostverschil={v.kost?.verschil ?? ""}>
               {v.kost
                 ? Math.abs(v.kost.verschil) < 0.01
                   ? "Ongeveer gelijk."
-                  : `${euro(v.kost.voor)} → ${euro(v.kost.na)} (${v.kost.verschil < 0 ? "−" : "+"} ${euro(Math.abs(v.kost.verschil))})`
+                  : `${euro(v.kost.voor)} → ${euro(v.kost.na)} (${v.kost.verschil < 0 ? "−" : "+"}\u00a0${euro(Math.abs(v.kost.verschil))})`
                 : "Verandert niet of niet te schatten."}
             </dd>
           </div>
           {v.eters.length ? (
             <div className="rounded-2xl border border-border p-3 sm:col-span-2">
-              <dt className="flex items-center gap-2 font-bold">
-                <Users className="size-5 shrink-0" aria-hidden /> Wie eet mee
+              <dt className="flex min-w-0 items-center gap-2 font-bold">
+                <Users className="size-5 shrink-0" aria-hidden />
+                <span className="min-w-0 break-words hyphens-auto">Wie eet mee</span>
               </dt>
               {v.eters.map((e) => (
                 <dd key={e.datum} className="mt-1">

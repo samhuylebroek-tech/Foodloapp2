@@ -10,6 +10,7 @@ import {
   Compass,
   Download,
   ExternalLink,
+  Lightbulb,
   Loader2,
   LogOut,
   QrCode,
@@ -524,6 +525,14 @@ function SlimmeVoorstellen({ t }: { t: (s: string) => string }) {
         </span>
         <Switch checked={voorraad} onCheckedChange={zetVoorraad} />
       </label>
+      {/* P4: per soort suggestie aan/uit (restjes, budget, weer …). */}
+      <LinkRij
+        to="/instellingen/suggesties"
+        icoon={Lightbulb}
+        tint="honing"
+        titel={t("Suggesties")}
+        uitleg={t("Welke tips Foodlo op Vandaag toont")}
+      />
     </Groep>
   );
 }
