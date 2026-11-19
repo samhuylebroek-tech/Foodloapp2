@@ -33,6 +33,7 @@ import {
   WalletCards,
   ArrowUpDown,
   LayoutGrid,
+  UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -117,6 +118,8 @@ import {
   voegItemsSamen,
 } from "@/lib/samenwerking/conflict";
 import { laatsteWijziger, logActiviteit } from "@/lib/samenwerking/db";
+import { useLijstVerdeling } from "@/hooks/useLijstVerdeling";
+import { mijnDeel, toewijzingVan, wieHaaltTekst, WINKELS } from "@/lib/samenwerking/verdelen";
 import { bewaarVolgorde, leesVolgorde } from "@/lib/winkelvolgorde";
 import {
   CATEGORIE_LABEL,
@@ -532,9 +535,22 @@ function BoodschappenPage() {
   // Fase 5: productcatalogus met tegels.
   const [catalogusOpen, setCatalogusOpen] = useState(false);
 
+  // P5: de lijst verdelen ("Jan haalt de bakker"), "Mijn deel" en de rechten op een gezinslijst.
+  const verdeling = useLijstVerdeling(lijsten.find((l) => l.id === actief));
+  const [alleenMijn, setAlleenMijn] = useState(false);
+  const mijnIds = useMemo(
+    () => new Set(mijnDeel(items, verdeling.toewijzingen, user?.id).map((i) => i.id)),
+    [items, verdeling.toewijzingen, user?.id],
+  );
+  const toonMijnDeel = alleenMijn && !!lijsten.find((l) => l.id === actief)?.group_id;
+  const haalt = (item: { id: string }) =>
+    wieHaaltTekst(toewijzingVan(item.id, verdeling.toewijzingen), verdeling.namen, user?.id);
+  const [bewerkWie, setBewerkWie] = useState("");
+  const [bewerkWinkel, setBewerkWinkel] = useState("");
+
   const groepen = useMemo(() => {
     const per = new Map<CategorieId, Item[]>();
-    for (const item of items.filter((rij) => !rij.checked)) {
+    for (const item of items.filter((rij) => !rij.checked && (!toonMijnDeel || mijnIds.has(rij.id)))) {
       const handmatig = correcties[normaliseerTekst(item.name)];
       // Echte productherkenning (BUG-057): "ui" in de voorraad is geen "suiker".
       const thuis = zitInVoorraad(item.name, voorraad);
@@ -550,7 +566,7 @@ function BoodschappenPage() {
         id,
         lijst: per.get(id)!,
       }));
-  }, [items, voorraad, correcties, volgorde]);
+  }, [items, voorraad, correcties, volgorde, toonMijnDeel, mijnIds]);
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["shopping"] });
 
@@ -880,6 +896,10 @@ function BoodschappenPage() {
   /** Verwijderen met "Ongedaan maken": we zetten hetzelfde item dan gewoon terug. */
   async function verwijder(item: Item) {
     if (!user || !actief) return;
+    if (!verdeling.rechten.verwijderen) {
+      toast("Op deze gezinslijst kan jij afvinken, maar niets weghalen.");
+      return;
+    }
     const { error } = await supabase.from("shopping_items").delete().eq("id", item.id);
     if (error) {
       toast.error(`${item.name} verwijderen lukte niet. Probeer het opnieuw.`);
@@ -986,6 +1006,10 @@ function BoodschappenPage() {
 
   async function verwijderGekozen() {
     if (!gekozen.size || !actief) return;
+    if (!verdeling.rechten.verwijderen) {
+      toast("Op deze gezinslijst kan jij afvinken, maar niets weghalen.");
+      return;
+    }
     const weg = items.filter((i) => gekozen.has(i.id));
     const lijstId = actief;
     const { error } = await supabase
@@ -1031,6 +1055,13 @@ function BoodschappenPage() {
   }
 
   function openBewerken(item: Item) {
+    if (!verdeling.rechten.bewerken) {
+      toast("Op deze gezinslijst kan jij afvinken. Aanpassen doet iemand die de lijst beheert.");
+      return;
+    }
+    const t = toewijzingVan(item.id, verdeling.toewijzingen);
+    setBewerkWie(t?.toegewezen_aan ?? "");
+    setBewerkWinkel(t?.winkel ?? "");
     setBewerkItem(item);
     setBewerkNaam(item.name);
     setBewerkAantal(item.quantity == null ? "" : String(item.quantity));
@@ -1116,6 +1147,11 @@ function BoodschappenPage() {
       unit: maat.unit,
       note: bewerkNota.trim() ? bewerkNota.trim().slice(0, 100) : null,
     };
+    // P5: wie haalt het en waar (los van het product zelf: botst niet).
+    if (verdeling.rechten.verdelen) {
+      const ok = await verdeling.wijs(bewerkItem, { aan: bewerkWie || null, winkel: bewerkWinkel });
+      if (!ok) toast.error("Wie het haalt, kon niet bewaard worden. Probeer het opnieuw.");
+    }
     // P5: veranderde iemand anders (gezinslid, ander toestel) dit product intussen? Dan vragen
     // in plaats van stil te overschrijven.
     const { data: nu } = await supabase
@@ -1204,6 +1240,10 @@ function BoodschappenPage() {
 
   async function wisAfgevinkt() {
     if (!actief || !user || !actieveLijst) return;
+    if (!verdeling.rechten.verwijderen) {
+      toast("Op deze gezinslijst kan jij afvinken, maar niets weghalen.");
+      return;
+    }
     await bewaarGekocht(user.id, actieveLijst, klaar).catch(() => {});
     const { error } = await supabase
       .from("shopping_items")
@@ -1278,6 +1318,10 @@ function BoodschappenPage() {
 
   async function wisAlles() {
     if (!actief || !user || !actieveLijst) return;
+    if (!verdeling.rechten.verwijderen) {
+      toast("Op deze gezinslijst kan jij afvinken, maar niets weghalen.");
+      return;
+    }
     await bewaarGekocht(user.id, actieveLijst, klaar).catch(() => {});
     const { error } = await supabase.from("shopping_items").delete().eq("list_id", actief);
     if (error) {
@@ -1644,6 +1688,42 @@ function BoodschappenPage() {
                     </div>
                   )}
 
+                  {/* P5: gezinslijst verdelen — alles, of alleen wat aan jou gevraagd is. */}
+                  {actieveLijst?.group_id ? (
+                    <div
+                      role="group"
+                      aria-label="Welk deel van de lijst"
+                      className="flex flex-wrap items-center gap-2"
+                    >
+                      <Button
+                        variant={alleenMijn ? "outline" : "secondary"}
+                        size="sm"
+                        aria-pressed={!alleenMijn}
+                        onClick={() => setAlleenMijn(false)}
+                      >
+                        Hele lijst
+                      </Button>
+                      <Button
+                        variant={alleenMijn ? "secondary" : "outline"}
+                        size="sm"
+                        aria-pressed={alleenMijn}
+                        onClick={() => setAlleenMijn(true)}
+                      >
+                        <UserRound aria-hidden /> Mijn deel ({items.filter((i) => !i.checked && mijnIds.has(i.id)).length})
+                      </Button>
+                      {!verdeling.rechten.verwijderen ? (
+                        <p className="basis-full text-[0.95rem] text-muted-foreground">
+                          Jij kan afvinken; aanpassen en weghalen doet wie de lijst beheert.
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {toonMijnDeel && !groepen.length ? (
+                    <p className="paneel px-4 py-5 text-base" data-testid="mijn-deel-leeg">
+                      Niets aan jou gevraagd. Tik op "Hele lijst" om alles te zien.
+                    </p>
+                  ) : null}
+
                   {/* Desktop: afdelingen in twee kolommen, zoals een winkelbriefje (tablet: één brede kolom, namen blijven leesbaar). */}
                   <div className="space-y-4 lg:block lg:columns-2 lg:gap-4 lg:space-y-0 lg:[&>section]:mb-4 lg:[&>section]:break-inside-avoid">
                     {groepen.map(({ id, lijst }) => {
@@ -1700,6 +1780,7 @@ function BoodschappenPage() {
                                     onVerwijder={() => verwijder(item)}
                                     onWaarom={() => setWaarom(item)}
                                     door={doorWie(item)}
+                                    haalt={haalt(item)}
                                     onCategorie={(c) => zetCategorie(item.name, c)}
                                     botsing={botsingen[item.id]}
                                     onVervanger={() => setVervangItem(item)}
@@ -2295,6 +2376,7 @@ function BoodschappenPage() {
           }}
           voorMorgen={voorMorgen}
           kostTekst={kostTekst}
+          wieHaalt={haalt}
           onVoorMorgen={async (v) => {
             const aantal = await aanvulling.zetOpLijst(new Set(v.sleutels));
             if (aantal) void meet("winkel.voor_morgen", undefined, { aantal });
@@ -2471,6 +2553,46 @@ function BoodschappenPage() {
                 className="mt-1 h-14 text-base"
               />
             </label>
+            {verdeling.rechten.verdelen && actieveLijst?.group_id && verdeling.leden.length ? (
+              <label className="block text-base font-semibold">
+                Wie haalt dit?
+                <select
+                  value={bewerkWie}
+                  onChange={(e) => setBewerkWie(e.target.value)}
+                  className="mt-1 h-14 w-full rounded-xl border border-input bg-background px-3 text-base"
+                >
+                  <option value="">Niemand in het bijzonder</option>
+                  {verdeling.leden.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.id === user?.id ? `Ik (${l.naam})` : l.naam}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            {verdeling.rechten.verdelen ? (
+              <label className="block text-base font-semibold">
+                Winkel
+                <Input
+                  placeholder="bv. Bakker, Colruyt"
+                  value={bewerkWinkel}
+                  maxLength={30}
+                  list="winkel-keuzes"
+                  onChange={(e) => setBewerkWinkel(e.target.value)}
+                  className="mt-1 h-14 text-base"
+                />
+                <datalist id="winkel-keuzes">
+                  {WINKELS.map((w) => (
+                    <option key={w} value={w} />
+                  ))}
+                </datalist>
+                {verdeling.opslag === "toestel" && actieveLijst?.group_id ? (
+                  <span className="mt-1 block text-[0.95rem] font-normal text-muted-foreground">
+                    Voorlopig alleen op dit toestel bewaard.
+                  </span>
+                ) : null}
+              </label>
+            ) : null}
             <label className="block text-base font-semibold">
               Afdeling
               <select
@@ -2633,6 +2755,7 @@ function ItemRij({
   onVink,
   onBewerk,
   onVerwijder,
+  haalt,
   onCategorie,
   onWaarom,
   door,
@@ -2647,6 +2770,8 @@ function ItemRij({
   onVink: () => void;
   onBewerk: () => void;
   onVerwijder: () => void;
+  /** P5: "Jan haalt dit · Bakker". */
+  haalt?: string | null;
   onCategorie: (categorie: CategorieId) => void;
   /** B3: uitleg waarom dit op de lijst staat. */
   onWaarom?: () => void;
@@ -2728,6 +2853,14 @@ function ItemRij({
           {door ? (
             <span className="block truncate text-[0.95rem] text-muted-foreground">
               toegevoegd door {door}
+            </span>
+          ) : null}
+          {haalt ? (
+            <span
+              className="block break-words text-[0.95rem] font-semibold text-primary"
+              data-testid="wie-haalt"
+            >
+              {haalt}
             </span>
           ) : null}
           {item.recept && onWaarom ? (

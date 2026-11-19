@@ -92,6 +92,7 @@ export function Winkelmodus({
   voorMorgen = null,
   onVoorMorgen,
   kostTekst = "",
+  wieHaalt,
 }: {
   lijstId: string;
   groepen: { id: CategorieId; lijst: WinkelItem[] }[];
@@ -108,6 +109,8 @@ export function Winkelmodus({
   onVoorMorgen?: (v: VoorMorgen) => Promise<void>;
   /** P2: geschatte kost van wat nog te kopen is (zelfde bron als de lijst en de budgetkaart). */
   kostTekst?: string;
+  /** P5: "Jan haalt dit · Bakker" per product (gezinslijst verdelen). */
+  wieHaalt?: (item: WinkelItem) => string | null;
 }) {
   const [voorMorgenBezig, setVoorMorgenBezig] = useState(false);
   const [stap, setStap] = useState(0);
@@ -302,6 +305,14 @@ export function Winkelmodus({
                       {maatVan(item) ? (
                         <span className="mt-0.5 block text-xl text-muted-foreground">
                           {maatVan(item)}
+                        </span>
+                      ) : null}
+                      {wieHaalt?.(item) ? (
+                        <span
+                          className="mt-0.5 block break-words text-lg font-semibold text-primary"
+                          data-testid="winkel-wie-haalt"
+                        >
+                          {wieHaalt(item)}
                         </span>
                       ) : null}
                     </span>

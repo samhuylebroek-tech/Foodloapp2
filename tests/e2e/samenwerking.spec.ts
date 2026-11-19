@@ -168,3 +168,140 @@ test("tegelijk dezelfde dag veranderen: keuze, Zet de mijne + ongedaan maken, Ho
   }
   expect(extern).toEqual([]);
 });
+
+const GEZINSLIJST = "c6c6c6c6-0000-4000-8000-000000000001";
+const KIJKER = "55555555-5555-4555-8555-555555555555";
+async function zaaiGezinslijst() {
+  await seedDb({
+    shopping_lists: [
+      {
+        id: GEZINSLIJST,
+        user_id: "11111111-1111-4111-8111-111111111111",
+        group_id: GEZIN,
+        name: "Gezinslijst",
+        created_at: "2026-11-02T10:00:00Z",
+      },
+    ],
+    shopping_items: [
+      ["brood", 1, "stuk(s)"],
+      ["kaas", 300, "g"],
+      ["appels", 6, ""],
+    ].map(([name, quantity, unit], i) => ({
+      id: `c7c7c7c7-0000-4000-8000-00000000000${i}`,
+      user_id: "11111111-1111-4111-8111-111111111111",
+      list_id: GEZINSLIJST,
+      name,
+      quantity,
+      unit,
+      checked: false,
+      recipe_id: null,
+      note: null,
+      created_at: "2026-11-02T10:00:00Z",
+    })),
+  });
+}
+
+test("lijst verdelen: Marie laat Jan het brood halen → Jan ziet het in Mijn deel en in de winkel", async ({
+  page,
+  extern,
+}) => {
+  await zaaiGezinslijst();
+  await meldAan(page);
+  await page.goto("/boodschappen?lijst=gezin");
+  await page.getByRole("button", { name: "brood aanpassen" }).click();
+  const venster = page.getByRole("dialog");
+  await venster.getByLabel("Wie haalt dit?").selectOption({ label: "Jan Peeters" });
+  await venster.getByLabel("Winkel").fill("Bakker");
+  await venster.getByRole("button", { name: "Opslaan" }).click();
+  await expect(
+    page.getByTestId("wie-haalt").filter({ hasText: "Jan haalt dit · Bakker" }),
+  ).toBeVisible();
+  await expect
+    .poll(async () => (await nepDb())["lijst_toewijzingen"] ?? [])
+    .toEqual([
+      expect.objectContaining({
+        item_id: "c7c7c7c7-0000-4000-8000-000000000000",
+        toegewezen_aan: JAN,
+        winkel: "Bakker",
+      }),
+    ]);
+  // Jan krijgt een melding (in de app, niet naar buiten).
+  await expect
+    .poll(async () =>
+      ((await nepDb())["app_meldingen"] ?? [])
+        .filter((m) => m["user_id"] === JAN && m["soort"] === "toegewezen")
+        .map((m) => m["tekst"]),
+    )
+    .toEqual(["Marie vraagt of jij 1 stuk(s) brood haalt"]);
+
+  const jan = await tweedeBrowser(page, JAN);
+  try {
+    await jan.p.goto("/boodschappen?lijst=gezin");
+    await expect(jan.p.getByText("appels").first()).toBeVisible();
+    await jan.p.getByRole("button", { name: /Mijn deel \(1\)/ }).click();
+    await expect(jan.p.getByText("appels")).toHaveCount(0);
+    await expect(jan.p.getByTestId("wie-haalt")).toHaveText("Jij haalt dit · Bakker");
+    // Winkelmodus met "Mijn deel": alleen wat Jan haalt, met wie/waar; afvinken blijft gedeeld.
+    await jan.p.getByRole("button", { name: "Ik ga winkelen" }).click();
+    const winkel = jan.p.getByRole("dialog", { name: "Winkelmodus" });
+    await expect(winkel.getByTestId("winkel-wie-haalt").first()).toHaveText(
+      "Jij haalt dit · Bakker",
+    );
+    await winkel.getByRole("button", { name: /brood.*— tik om af te vinken$/ }).click();
+    await expect
+      .poll(
+        async () =>
+          (await nepDb())["shopping_items"]!.find(
+            (r) => r["id"] === "c7c7c7c7-0000-4000-8000-000000000000",
+          )!["checked"],
+      )
+      .toBe(true);
+  } finally {
+    await jan.ctx.close();
+  }
+  expect(extern).toEqual([]);
+});
+
+test("kijker op de gezinslijst: afvinken mag, aanpassen en weghalen niet", async ({
+  page,
+  extern,
+}) => {
+  await zaaiGezinslijst();
+  await seedDb({
+    group_members: [
+      {
+        id: "acacacac-0000-4000-8000-000000000009",
+        group_id: GEZIN,
+        user_id: KIJKER,
+        rol: "lid",
+        status: "actief",
+        created_at: "2026-10-01T10:00:00Z",
+        recipes_view: true,
+        recipes_edit: false,
+        planner_view: true,
+        planner_edit: false,
+        shopping_view: true,
+        shopping_edit: false,
+      },
+    ],
+    profiles: [{ id: KIJKER, display_name: "Oma Rita", onboarding_klaar: true }],
+  });
+  await meldAan(page, KIJKER);
+  await page.goto("/boodschappen?lijst=gezin");
+  await expect(
+    page.getByText("Jij kan afvinken; aanpassen en weghalen doet wie de lijst beheert."),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "kaas aanpassen" }).click();
+  await expect(page.getByText(/kan jij afvinken. Aanpassen doet/)).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByText("kaas").first().click();
+  await expect
+    .poll(
+      async () =>
+        (await nepDb())["shopping_items"]!.find(
+          (r) => r["id"] === "c7c7c7c7-0000-4000-8000-000000000001",
+        )!["checked"],
+    )
+    .toBe(true);
+  expect(extern).toEqual([]);
+});
