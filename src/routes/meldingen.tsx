@@ -40,13 +40,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/meldingen")({
   head: () => ({
     meta: [
-      { title: "Meldingen – Foodlo" },
+      { title: "Herinneringen – Foodlo" },
       {
         name: "description",
         content:
           "Kies zelf welke herinneringen je krijgt voor je menu, je weekplanning, je boodschappen en het koken.",
       },
-      { property: "og:title", content: "Meldingen – Foodlo" },
+      { property: "og:title", content: "Herinneringen – Foodlo" },
       {
         property: "og:description",
         content: "Herinneringen voor menu, weekplanning, boodschappen en koken.",
@@ -97,11 +97,11 @@ function MeldingenPagina() {
     try {
       if (status === "aan") {
         setStatus(await zetMeldingenUit());
-        toast.success(t("Meldingen staan uit"));
+        toast.success(t("Herinneringen staan uit"));
       } else {
         const nieuw = await zetMeldingenAan();
         setStatus(nieuw);
-        if (nieuw === "aan") toast.success(t("Meldingen staan aan"));
+        if (nieuw === "aan") toast.success(t("Herinneringen staan aan"));
         else if (nieuw === "geweigerd")
           toast.error(
             t("Je telefoon blokkeert meldingen. Zet ze aan bij de instellingen van je browser."),
@@ -125,7 +125,7 @@ function MeldingenPagina() {
   const aan = status === "aan";
 
   return (
-    <AppShell title={t("Meldingen")}>
+    <AppShell title={t("Herinneringen")}>
       <div className="space-y-7">
         {/* Status op dit toestel: één duidelijke schakelaar. */}
         <section
@@ -148,14 +148,14 @@ function MeldingenPagina() {
               )}
             </span>
             <div className="min-w-0">
-              <h2 className="text-kaarttitel">{t("Meldingen op dit toestel")}</h2>
+              <h2 className="text-kaarttitel">{t("Herinneringen op dit toestel")}</h2>
               <p
                 className={cn("mt-1 text-base", aan ? "text-inkt-zacht" : "text-muted-foreground")}
               >
                 {aan
                   ? t("Je krijgt herinneringen op dit toestel.")
                   : t(
-                      "Zet meldingen aan om herinneringen te krijgen voor je menu, boodschappen en koken.",
+                      "Zet herinneringen aan voor je menu, boodschappen en koken. Wat je gezin doet, zie je apart bij de bel.",
                     )}
               </p>
             </div>
@@ -174,7 +174,7 @@ function MeldingenPagina() {
               ) : (
                 <Bell className="size-5" />
               )}
-              {aan ? t("Meldingen uitzetten") : t("Meldingen aanzetten")}
+              {aan ? t("Herinneringen uitzetten") : t("Herinneringen aanzetten")}
             </Button>
             {aan && (
               <Button

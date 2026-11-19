@@ -811,6 +811,7 @@ export function demoSeed() {
   }));
   // Verzonnen gezinsleden en klantenkaarten, zodat ook die schermen gevuld te zien zijn.
   const GEZIN = "abababab-0000-4000-8000-000000000001";
+  const GEZINSLIJST = "c9c9c9c9-0000-4000-8000-000000000000";
   const JAN = "22222222-2222-4222-8222-222222222222";
   const LOTTE = "33333333-3333-4333-8333-333333333333";
   const rechten = {
@@ -1008,28 +1009,64 @@ export function demoSeed() {
         name: "Boodschappen",
         created_at: "2026-11-01T10:00:00Z",
       },
+      // P6: de gedeelde gezinslijst van "Thuis", zodat "Wie haalt dit?" en "Mijn deel" in de
+      // demo te zien zijn (bereikbaar via Gezin › Gezinslijst of de lijstkiezer).
+      {
+        id: GEZINSLIJST,
+        user_id: DEMO_USER_ID,
+        group_id: GEZIN,
+        name: "Gezinslijst",
+        created_at: "2026-11-05T10:00:00Z",
+      },
+    ],
+    lijst_toewijzingen: [
+      {
+        id: "c9c9c9c9-0000-4000-8000-000000000001",
+        item_id: "c9c9c9c9-0000-4000-8000-000000000010",
+        list_id: GEZINSLIJST,
+        toegewezen_aan: JAN,
+        winkel: "Bakker",
+      },
     ],
     shopping_items: [
-      ["melk", 1, "l", false],
-      ["brood", 1, "stuk(s)", false],
-      ["rundvlees (stoofvlees)", 1000, "g", false],
-      ["uien", 3, "", false],
-      ["donker bier", 50, "cl", false],
-      ["citroen", 1, "", false],
-      ["zalmfilet", 2, "stuk(s)", true],
-      ["koffie", 1, "pak", true],
-    ].map(([name, quantity, unit, checked], i) => ({
-      id: `ffffffff-0000-4000-8000-00000000000${i}`,
-      user_id: DEMO_USER_ID,
-      list_id: LIJST,
-      name,
-      quantity,
-      unit,
-      checked,
-      recipe_id: null,
-      note: null,
-      created_at: new Date(Date.now() - i * 60000).toISOString(),
-    })),
+      ...[
+        ["melk", 1, "l", false],
+        ["brood", 1, "stuk(s)", false],
+        ["rundvlees (stoofvlees)", 1000, "g", false],
+        ["uien", 3, "", false],
+        ["donker bier", 50, "cl", false],
+        ["citroen", 1, "", false],
+        ["zalmfilet", 2, "stuk(s)", true],
+        ["koffie", 1, "pak", true],
+      ].map(([name, quantity, unit, checked], i) => ({
+        id: `ffffffff-0000-4000-8000-00000000000${i}`,
+        user_id: DEMO_USER_ID,
+        list_id: LIJST,
+        name,
+        quantity,
+        unit,
+        checked,
+        recipe_id: null,
+        note: null,
+        created_at: new Date(Date.now() - i * 60000).toISOString(),
+      })),
+      ...[
+        ["volkorenbrood", 1, "stuk", DEMO_USER_ID],
+        ["appels", 6, "", JAN],
+        ["jonge kaas", 300, "g", DEMO_USER_ID],
+      ].map(([name, quantity, unit, door], i) => ({
+        id: `c9c9c9c9-0000-4000-8000-00000000001${i}`,
+        user_id: door,
+        list_id: GEZINSLIJST,
+        name,
+        quantity,
+        unit,
+        checked: false,
+        recipe_id: null,
+        note: null,
+        created_at: new Date(Date.now() - (i + 10) * 60000).toISOString(),
+      })),
+    ],
     // Kolommen zoals de echte tabel: naam / hoeveelheid / eenheid.
     pantry_items: [
       ["bloem", 1, "kg"],

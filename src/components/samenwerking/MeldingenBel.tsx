@@ -6,6 +6,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
+  AlarmClock,
   Bell,
   CalendarDays,
   CheckCheck,
@@ -72,7 +73,8 @@ export function MeldingenBel() {
           <SheetHeader className="px-5 pb-2 pt-5 text-left">
             <SheetTitle className="pr-12 font-display text-xl font-semibold">Meldingen</SheetTitle>
             <SheetDescription className="text-base">
-              Wat er in je gezin gebeurde. Deze meldingen blijven in de app.
+              Wat er in je gezin gebeurde. Deze meldingen blijven in de app. Een seintje op je
+              telefoon heet een herinnering.
             </SheetDescription>
           </SheetHeader>
           <div className="px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-1">
@@ -152,6 +154,13 @@ export function MeldingenBel() {
               className="mt-4 flex min-h-12 items-center gap-2 rounded-xl px-2 text-base font-semibold text-primary"
             >
               <Settings2 className="size-5" aria-hidden /> Kies welke meldingen je krijgt
+            </Link>
+            <Link
+              to="/meldingen"
+              onClick={() => setOpen(false)}
+              className="flex min-h-12 items-center gap-2 rounded-xl px-2 text-base font-semibold text-primary"
+            >
+              <AlarmClock className="size-5" aria-hidden /> Herinneringen op je telefoon
             </Link>
           </div>
         </SheetContent>

@@ -156,3 +156,15 @@ export function toonbaar(maat: Maat): { quantity: number; unit: string } {
   if (maat.familie === "stuk") return { quantity: rond(maat.waarde), unit: "" };
   return { quantity: rond(maat.waarde), unit: maat.familie };
 }
+
+/**
+ * Eenheid om te tonen, met nette enkelvoud/meervoud: "1 stuk", "2 stuks", "1 teentje",
+ * "3 teentjes" in plaats van "stuk(s)" en "teen(tjes)". Andere eenheden blijven zoals ze zijn.
+ */
+export function netteEenheid(quantity: number | null | undefined, unit: string | null | undefined) {
+  const u = (unit ?? "").trim();
+  const een = quantity != null && Math.abs(quantity) <= 1;
+  if (/^stuk\(s\)$/i.test(u)) return een ? "stuk" : "stuks";
+  if (/^teen\(tjes\)$/i.test(u)) return een ? "teentje" : "teentjes";
+  return u;
+}

@@ -1504,7 +1504,7 @@ function PlannerPage() {
 
         {/* Week kiezen: duidelijke titel met datums, grote pijlen, rustige dagkeuze */}
         {/* Mobiel: één compacte weekband die bovenaan blijft staan (dag wisselen kan altijd). */}
-        <section aria-label="Week kiezen" className="paneel sticky top-[calc(4rem+env(safe-area-inset-top))] z-20 p-2.5 shadow-kaart md:static md:p-3 md:shadow-none lg:col-start-1 lg:row-start-1 lg:w-full lg:max-w-lg lg:p-4">
+        <section aria-label="Week kiezen" className="paneel @container sticky top-[calc(4rem+env(safe-area-inset-top))] z-20 p-2.5 shadow-kaart md:static md:p-3 md:shadow-none lg:col-start-1 lg:row-start-1 lg:w-full lg:max-w-lg lg:p-4">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -1564,7 +1564,8 @@ function PlannerPage() {
               Terug naar vandaag
             </button>
           ) : null}
-          <div className="mt-2 grid grid-cols-7 gap-1 md:hidden" role="tablist" aria-label="Dag kiezen">
+          {/* P6: bij grote tekst (smal kader in rem) twee rijen (4 + 3) in plaats van zeven krappe kolommen. */}
+          <div className="mt-2 grid grid-cols-4 gap-1 @[20rem]:grid-cols-7 md:hidden" role="tablist" aria-label="Dag kiezen">
             {week.map((dag) => {
               const d = new Date(`${dag}T12:00:00`);
               const actief = !heleWeek && dag === gekozenDag;

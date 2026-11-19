@@ -6,6 +6,7 @@
  * Opslag: de bestaande tabel `recipe_versions` (momentopname jsonb). Een momentopname is de stand
  * VÓÓR een wijziging, met de reden. Deze module is puur: staten, verschillen en de versielijst.
  */
+import { netteEenheid } from "@/lib/ingredient/eenheden";
 
 export type VersieReden =
   "assistent" | "porties" | "aanvullen" | "import" | "bewerken" | "terugzetten";
@@ -118,7 +119,8 @@ export function receptVelden(s: ReceptStaat): Record<(typeof TERUG_TE_ZETTEN)[nu
 
 function hoeveel(i: StaatIngredient) {
   if (i.quantity == null) return "";
-  return `${String(i.quantity).replace(".", ",")}${i.unit ? ` ${i.unit}` : ""}`;
+  const unit = netteEenheid(i.quantity, i.unit);
+  return `${String(i.quantity).replace(".", ",")}${unit ? ` ${unit}` : ""}`;
 }
 
 const sleutel = (n: string) => n.trim().toLowerCase();

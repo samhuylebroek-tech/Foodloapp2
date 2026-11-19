@@ -78,7 +78,7 @@ export function MeldingVraag({ actief = true }: { actief?: boolean }) {
     setBezig(true);
     const status = await zetMeldingenAan();
     setBezig(false);
-    if (status === "aan") toast.success(t("Meldingen staan aan"));
+    if (status === "aan") toast.success(t("Herinneringen staan aan"));
     else if (status === "geweigerd")
       toast.error(t("Je telefoon blokkeert meldingen. Je kan ze later alsnog aanzetten."));
     else if (status === "open-in-eigen-tab")
@@ -90,7 +90,7 @@ export function MeldingVraag({ actief = true }: { actief?: boolean }) {
     setBezig(true);
     await zetMeldingenUit();
     setBezig(false);
-    toast.message(t("Meldingen blijven uit"));
+    toast.message(t("Herinneringen blijven uit"));
     onthoudKeuze();
   };
 

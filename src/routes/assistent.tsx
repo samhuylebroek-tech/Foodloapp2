@@ -277,7 +277,8 @@ function Gesprek({ beginVraag }: { beginVraag: string | undefined }) {
         <p className="flex items-start gap-2 text-base text-muted-foreground">
           <ShieldCheck className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
           <span>
-            Foodlo doet niets zonder jouw "Doe maar". Allergieën en dieet blijven op je toestel.
+            Foodlo doet niets zonder jouw "Doe maar". Allergieën en dieet gaan nooit naar de AI;
+            Foodlo controleert ze zelf bij elk voorstel.
           </span>
         </p>
       </section>

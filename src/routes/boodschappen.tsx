@@ -111,6 +111,7 @@ import {
 import type { Vervanger } from "@/lib/assistent/vervangingen";
 import { ConflictKeuze, type ConflictVoorstel } from "@/components/samenwerking/ConflictKeuze";
 import { AanwezigRegel } from "@/components/samenwerking/AanwezigRegel";
+import { GezinslijstMaken } from "@/components/lijst/GezinslijstMaken";
 import {
   itemConflictTekst,
   itemRegel,
@@ -1534,6 +1535,15 @@ function BoodschappenPage() {
       }
     >
       <div className="space-y-5">
+        {user && zoekLijst === "gezin" && lijsten.length && !lijsten.some((l) => l.group_id) ? (
+          <GezinslijstMaken
+            userId={user.id}
+            onGemaakt={(id) => {
+              void qc.invalidateQueries({ queryKey: ["shopping-lists"] });
+              setActief(id);
+            }}
+          />
+        ) : null}
         {!online && (
           <p
             role="status"

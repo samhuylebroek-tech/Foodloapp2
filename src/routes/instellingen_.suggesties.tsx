@@ -142,7 +142,7 @@ function SuggestiesPagina() {
             <div id="meldingen" className="scroll-mt-24">
               <Groep
                 titel="Meldingen in de app"
-                voet={`Deze meldingen zie je bij de bel bovenaan. Ze gaan niet naar je telefoon of e-mail; herinneringen op je telefoon kies je apart bij Meldingen. Een melding noemt nooit waarom iets niet veilig is voor iemand. ${
+                voet={`Deze meldingen zie je bij de bel bovenaan. Ze gaan niet naar je telefoon of e-mail; herinneringen op je telefoon kies je apart bij "Herinneringen op je telefoon". Een melding noemt nooit waarom iets niet veilig is voor iemand. ${
                   mld.opslag === "account"
                     ? "Deze keuzes staan op je account."
                     : "Deze keuzes gelden op dit toestel."

@@ -233,7 +233,8 @@ export function AppShell({
 
       {/* Topbalk: woordmerk of terug, (desktop) hoofdmenu, Nieuw en Meer. */}
       <header
-        className="sticky top-0 z-30 border-b border-border/60 bg-background/90 backdrop-blur-md"
+        // P6: dekkend; doorschijnend liet tekst eronder vaag zien ("Terug naar …").
+        className="sticky top-0 z-30 border-b border-border/60 bg-background"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         {/* BUG-126: op 320 px met tekst 200 % liep de kop uit; kleinere tussenruimtes onder 400 px. */}

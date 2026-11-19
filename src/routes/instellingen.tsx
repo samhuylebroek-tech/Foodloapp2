@@ -251,7 +251,12 @@ function InstellingenPage() {
                 ) : null
               }
             />
-            <LinkRij to="/meldingen" icoon={Bell} tint="honing" titel={t("Meldingen")} />
+            <LinkRij
+              to="/meldingen"
+              icoon={Bell}
+              tint="honing"
+              titel={t("Herinneringen op je telefoon")}
+            />
             <LinkRij
               to="/installeren"
               icoon={Smartphone}

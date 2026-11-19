@@ -140,8 +140,8 @@ function MeerPage() {
             to="/meldingen"
             icoon={Bell}
             tint="honing"
-            titel={t("Meldingen")}
-            uitleg={t("Kies wanneer Foodlo je helpt")}
+            titel={t("Herinneringen op je telefoon")}
+            uitleg={t("Een seintje om te koken of te winkelen")}
           />
           <LinkRij
             to="/credits"
