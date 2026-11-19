@@ -13,12 +13,17 @@ import { Switch } from "@/components/ui/switch";
 import { useSuggesties } from "@/hooks/useSuggesties";
 import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
 import { isAan, SUGGESTIE_SOORTEN, type SuggestieSoort } from "@/lib/suggesties";
+import { useMeldingInstellingen } from "@/hooks/useMeldingInstellingen";
+import { meldingAan, MELDING_SOORTEN, type MeldingSoort } from "@/lib/samenwerking/meldingen";
 
 export const Route = createFileRoute("/instellingen_/suggesties")({
   head: () => ({
     meta: [
-      { title: "Suggesties – Foodlo" },
-      { name: "description", content: "Kies welke tips Foodlo je uit zichzelf toont." },
+      { title: "Suggesties en meldingen – Foodlo" },
+      {
+        name: "description",
+        content: "Kies welke tips Foodlo je uit zichzelf toont en welke meldingen je in de app krijgt.",
+      },
     ],
   }),
   component: SuggestiesPagina,
@@ -27,6 +32,16 @@ export const Route = createFileRoute("/instellingen_/suggesties")({
 function SuggestiesPagina() {
   const sug = useSuggesties();
   const [slim] = useSlimmeVoorstellen();
+  const mld = useMeldingInstellingen();
+
+  async function zetMelding(soort: MeldingSoort, aan: boolean, label: string) {
+    try {
+      await mld.zet(soort, aan);
+      toast.success(`${label}: ${aan ? "aan" : "uit"}`);
+    } catch {
+      toast.error("Bewaren lukte niet. Er is niets veranderd.");
+    }
+  }
 
   async function zet(soort: SuggestieSoort, aan: boolean, label: string) {
     try {
@@ -38,7 +53,10 @@ function SuggestiesPagina() {
   }
 
   return (
-    <AppShell title="Suggesties" ondertitel="Kies welke tips Foodlo je uit zichzelf toont.">
+    <AppShell
+      title="Suggesties en meldingen"
+      ondertitel="Kies welke tips Foodlo je uit zichzelf toont en welke meldingen je krijgt."
+    >
       <div className="mx-auto max-w-2xl space-y-7 pb-8">
         <Link
           to="/instellingen"
@@ -119,6 +137,34 @@ function SuggestiesPagina() {
                 ) : null}
               </div>
             </Groep>
+            {/* P5: meldingen in de app (bel bovenaan), per soort aan/uit. Nooit naar buiten. */}
+            <div id="meldingen" className="scroll-mt-24">
+              <Groep
+                titel="Meldingen in de app"
+                voet={`Deze meldingen zie je bij de bel bovenaan. Ze gaan niet naar je telefoon of e-mail; herinneringen op je telefoon kies je apart bij Meldingen. Een melding noemt nooit waarom iets niet veilig is voor iemand. ${
+                  mld.opslag === "account"
+                    ? "Deze keuzes staan op je account."
+                    : "Deze keuzes gelden op dit toestel."
+                }`}
+              >
+                {MELDING_SOORTEN.map((s) => (
+                  <label key={s.id} className="block cursor-pointer px-4 py-3">
+                    <span className="flex min-h-12 items-center gap-3.5">
+                      <span className="min-w-0 flex-1 text-[1.05rem] font-semibold leading-snug break-words hyphens-auto">
+                        {s.label}
+                      </span>
+                      <Switch
+                        checked={meldingAan(mld.inst, s.id)}
+                        onCheckedChange={(aan) => void zetMelding(s.id, aan, s.label)}
+                      />
+                    </span>
+                    <span className="mt-1 block text-[0.95rem] text-muted-foreground">
+                      {s.uitleg}
+                    </span>
+                  </label>
+                ))}
+              </Groep>
+            </div>
           </>
         )}
       </div>

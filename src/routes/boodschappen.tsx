@@ -117,7 +117,8 @@ import {
   itemVingerafdruk,
   voegItemsSamen,
 } from "@/lib/samenwerking/conflict";
-import { laatsteWijziger, logActiviteit } from "@/lib/samenwerking/db";
+import { laatsteWijziger, logActiviteit, meldGezin } from "@/lib/samenwerking/db";
+import { winkelenKlaarTekst } from "@/lib/samenwerking/meldingen";
 import { useLijstVerdeling } from "@/hooks/useLijstVerdeling";
 import { mijnDeel, toewijzingVan, wieHaaltTekst, WINKELS } from "@/lib/samenwerking/verdelen";
 import { bewaarVolgorde, leesVolgorde } from "@/lib/winkelvolgorde";
@@ -1292,6 +1293,17 @@ function BoodschappenPage() {
     try {
       const r = await klaarMetWinkelen({ userId: user.id, lijst: actieveLijst, gekocht: klaar });
       void meet("kringloop.naar_voorraad", undefined, { aantal: r.inVoorraad });
+      // P5: gezinslijst afgerond → de anderen krijgen "Jan is klaar met winkelen" (in de app).
+      if (actieveLijst.group_id) {
+        const aantal = klaar.length;
+        void meldGezin({
+          groupId: actieveLijst.group_id,
+          actorId: user.id,
+          soort: "winkelen-klaar",
+          link: "/boodschappen?lijst=gezin",
+          tekst: (wie) => winkelenKlaarTekst({ wie, aantal }),
+        });
+      }
       refresh();
       vernieuwKringloop();
       qc.invalidateQueries({ queryKey: ["shopping-history"] });
@@ -1502,8 +1514,10 @@ function BoodschappenPage() {
           ) : null}
           {actieveLijst?.group_id ? (
             <p className="mt-2 flex items-center gap-2 text-base text-muted-foreground">
-              <Users className="size-4" aria-hidden /> Iedereen in je gezin kan aanvullen en
-              afvinken.
+              <Users className="size-4" aria-hidden />{" "}
+              {verdeling.rechten.bewerken
+                ? "Iedereen in je gezin kan aanvullen en afvinken."
+                : "Je gezin deelt deze lijst. Jij kan afvinken."}
             </p>
           ) : null}
           {/* P5: wie er nu ook in de gezinslijst bezig is (realtime aanwezigheid). */}

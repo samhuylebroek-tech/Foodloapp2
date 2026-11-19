@@ -291,10 +291,17 @@ test("kijker op de gezinslijst: afvinken mag, aanpassen en weghalen niet", async
   await expect(
     page.getByText("Jij kan afvinken; aanpassen en weghalen doet wie de lijst beheert."),
   ).toBeVisible();
-  await page.getByRole("button", { name: "kaas aanpassen" }).click();
+  // Telefoon: midden in beeld, niet onder de vaste kop of de onderbalk.
+  const midden = (l: ReturnType<Page["getByRole"]>) =>
+    l.evaluate((el) => el.scrollIntoView({ block: "center" }));
+  const potlood = page.getByRole("button", { name: "kaas aanpassen" });
+  await midden(potlood);
+  await potlood.click();
   await expect(page.getByText(/kan jij afvinken. Aanpassen doet/)).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page.getByText("kaas").first().click();
+  const vinkje = page.getByRole("checkbox", { name: "kaas als gekocht aanvinken" });
+  await midden(vinkje);
+  await vinkje.click();
   await expect
     .poll(
       async () =>
@@ -303,5 +310,65 @@ test("kijker op de gezinslijst: afvinken mag, aanpassen en weghalen niet", async
         )!["checked"],
     )
     .toBe(true);
+  expect(extern).toEqual([]);
+});
+
+test("melding: Jan ziet bij de bel dat Marie het gezinsmenu veranderde, leest ze; soort uit → geen melding", async ({
+  page,
+  extern,
+}) => {
+  await meldAan(page);
+  const jan = await tweedeBrowser(page, JAN);
+  try {
+    await page.goto("/planner?weergave=gezin");
+    const eerst = await kiesAnderGerecht(page, "Stoofvlees met frietjes", "Griekse salade");
+    await eerst.kies();
+    await expect.poll(async () => (await planRij())["recipe_id"]).toBe(R(6));
+
+    await jan.p.goto("/");
+    const bel = jan.p.getByTestId("meldingen-bel");
+    await expect(bel).toHaveAttribute("aria-label", "Meldingen, 1 nieuw");
+    await bel.click();
+    const blad = jan.p.getByRole("dialog", { name: "Meldingen" });
+    const melding = blad.getByRole("button", {
+      name: new RegExp(`Marie veranderde ${dag} in Griekse salade`),
+    });
+    await expect(melding).toBeVisible();
+    await melding.click();
+    await expect(jan.p).toHaveURL(/\/planner\?weergave=gezin/);
+    await expect
+      .poll(
+        async () =>
+          ((await nepDb())["app_meldingen"] ?? []).filter(
+            (m) => m["user_id"] === JAN && m["gelezen_op"],
+          ).length,
+      )
+      .toBe(1);
+    await expect(bel).toHaveAttribute("aria-label", "Meldingen");
+
+    // Jan zet "Weekmenu gewijzigd" uit (Instellingen › Suggesties en meldingen).
+    await jan.p.goto("/instellingen/suggesties");
+    const schakelaar = jan.p.getByRole("switch", { name: /^Weekmenu gewijzigd/ });
+    await expect(schakelaar).toBeChecked();
+    await schakelaar.click();
+    await expect(schakelaar).not.toBeChecked();
+    await expect
+      .poll(async () => JSON.stringify((await nepDb())["app_melding_instellingen"] ?? []))
+      .toContain("menu");
+
+    // Marie verandert nog eens: geen melding meer voor Jan (niet in de teller, niet in de lijst).
+    await page.reload();
+    const weer = await kiesAnderGerecht(page, "Griekse salade", "Witloof");
+    await weer.kies();
+    await expect.poll(async () => (await planRij())["recipe_id"]).toBe(R(8));
+    await jan.p.goto("/");
+    await expect(jan.p.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(bel).toHaveAttribute("aria-label", "Meldingen");
+    await bel.click();
+    await expect(blad.getByText("Nog geen meldingen")).toBeVisible();
+    await expect(blad.getByText(/Witloof/)).toHaveCount(0);
+  } finally {
+    await jan.ctx.close();
+  }
   expect(extern).toEqual([]);
 });

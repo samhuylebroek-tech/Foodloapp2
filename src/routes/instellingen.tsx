@@ -530,8 +530,8 @@ function SlimmeVoorstellen({ t }: { t: (s: string) => string }) {
         to="/instellingen/suggesties"
         icoon={Lightbulb}
         tint="honing"
-        titel={t("Suggesties")}
-        uitleg={t("Welke tips Foodlo op Vandaag toont")}
+        titel={t("Suggesties en meldingen")}
+        uitleg={t("Welke tips en meldingen in de app je krijgt")}
       />
     </Groep>
   );

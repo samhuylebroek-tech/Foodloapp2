@@ -79,7 +79,8 @@ test("één kaart tegelijk; soort uitzetten → kaart weg; niet meer tonen → t
   // Instellingen › Suggesties: weer uit.
   await weer.getByRole("link", { name: "Suggesties instellen" }).click();
   await expect(page).toHaveURL(/\/instellingen\/suggesties/);
-  await expect(page.getByRole("switch")).toHaveCount(7);
+  // 7 soorten suggesties + 5 soorten meldingen in de app (P5).
+  await expect(page.getByRole("region", { name: "Op Vandaag" }).getByRole("switch")).toHaveCount(7);
   expect(await axeErnstig(page)).toEqual([]);
   const schakelaar = page.getByRole("switch", { name: /^Weer/ });
   await expect(schakelaar).toBeChecked();

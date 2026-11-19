@@ -34,6 +34,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { meet } from "@/lib/meten";
+import { MeldingenBel } from "@/components/samenwerking/MeldingenBel";
 
 type Pad =
   "/" | "/gerechten" | "/planner" | "/boodschappen" | "/voorraad" | "/inspiratie" | "/meer";
@@ -309,6 +310,8 @@ export function AppShell({
           </nav>
 
           <div className="ml-auto flex shrink-0 items-center gap-1 min-[400px]:gap-2">
+            {/* P5: meldingen in de app (gezin, restjes), met ongelezen teller. */}
+            {session ? <MeldingenBel /> : null}
             <button
               type="button"
               onClick={() => setNieuwOpen(true)}
