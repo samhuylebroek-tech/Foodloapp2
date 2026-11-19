@@ -37,7 +37,8 @@ import { weekmenuIdeeen, type WeekmenuIdee } from "@/lib/ai.functions";
 import { ideeTitelToegelaten } from "@/lib/veiligheid";
 import { bruikbareVoorraad, useVoorraadBijhouden } from "@/lib/intelligentie/voorraad-modus";
 import { type WeekmenuInstelling, type DagVoorkeur } from "@/lib/voorkeuren";
-import { kiesUitEigen, type DagRegel, type Soortkeuze } from "@/lib/weekmenu-voorstel";
+import { type DagRegel, type Soortkeuze } from "@/lib/weekmenu-voorstel";
+import { kiesViaEngine } from "@/lib/planner/laat-kiezen";
 import { datumTekst, labelVoor, kortLabel } from "./gedeeld";
 import { GerechtKaart } from "./ReceptKiezer";
 import { alleRijen } from "@/lib/pagineer";
@@ -317,7 +318,9 @@ export function WeekmenuVoorstel({
     setBezigMet("Foodlo stelt je week samen…");
     try {
       const lijst = alleRegels();
-      const keuzes = kiesUitEigen({
+      const keuzes = kiesViaEngine({
+        allergieen: kennis.allergieen,
+        dieet: kennis.dieet,
         recepten: voorstelbaar,
         ingredienten,
         regels: lijst,
@@ -333,7 +336,9 @@ export function WeekmenuVoorstel({
         const sleutel = `${regel.datum}|${regel.moment}`;
         const keuze = eersteKeuzes.get(sleutel);
         if (keuze?.recept || !getoondeRecepten.current[sleutel]?.length) continue;
-        const [herstart] = kiesUitEigen({
+        const [herstart] = kiesViaEngine({
+          allergieen: kennis.allergieen,
+          dieet: kennis.dieet,
           recepten: voorstelbaar,
           ingredienten,
           regels: [regel],
@@ -426,7 +431,9 @@ export function WeekmenuVoorstel({
       getoondeRecepten.current[sleutel] = [...(getoondeRecepten.current[sleutel] ?? []), huidig];
     }
     const over = voorstelbaar.filter((r) => r.id !== huidig && !gebruikt.includes(r.id));
-    const [keuze] = kiesUitEigen({
+    const [keuze] = kiesViaEngine({
+      allergieen: kennis.allergieen,
+      dieet: kennis.dieet,
       recepten: over,
       ingredienten,
       regels: [{ ...regelVoor(datum), moment }],
@@ -437,7 +444,9 @@ export function WeekmenuVoorstel({
     });
     if (!keuze?.recept) {
       getoondeRecepten.current[sleutel] = [];
-      const [herstart] = kiesUitEigen({
+      const [herstart] = kiesViaEngine({
+        allergieen: kennis.allergieen,
+        dieet: kennis.dieet,
         recepten: over,
         ingredienten,
         regels: [{ ...regelVoor(datum), moment }],
