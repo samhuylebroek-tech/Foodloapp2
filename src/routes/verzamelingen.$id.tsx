@@ -7,6 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleNietBeschikbaar } from "@/components/ModuleNietBeschikbaar";
 import { ReceptRaster } from "@/components/makers/MakerOnderdelen";
+import { VerzamelingBeheer } from "@/components/makers/VerzamelingBeheer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -211,6 +212,8 @@ function VerzamelingPagina() {
         ) : null}
         {receptenLaden ? (
           <div className="h-40 animate-pulse rounded-3xl bg-muted" aria-label="Laden" />
+        ) : recepten.length && eigen ? (
+          <VerzamelingBeheer v={v} recepten={recepten} />
         ) : recepten.length ? (
           <ReceptRaster
             recepten={recepten}
@@ -221,7 +224,14 @@ function VerzamelingPagina() {
           <EmptyState
             icon={<BookmarkX />}
             title="Nog leeg"
-            description='Open een recept en tik op "Bewaar in…" om het hier te bewaren.'
+            description='Open een recept (ook in Ontdek) en tik op "Bewaar in…" om het hier te bewaren.'
+            action={
+              eigen ? (
+                <Button asChild variant="outline" className="h-14 w-full text-base">
+                  <Link to="/inspiratie">Naar Ontdek</Link>
+                </Button>
+              ) : undefined
+            }
           />
         )}
       </div>

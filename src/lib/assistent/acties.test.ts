@@ -502,3 +502,33 @@ describe("wat kan ik met mijn restjes? (fase 3)", () => {
     expect(voorstelVoor("restjes", context({ restjes: [] })).leeg).toMatch(/geen restjes/);
   });
 });
+
+describe("verzameling inplannen (fase 3)", () => {
+  const plan = (receptIds: string[], ctx = context()) =>
+    maakActieVoorstel({ soort: "collectie", naam: "Snel", receptIds }, ctx);
+  it("op vrije dagen, in volgorde, nooit over een bestaande maaltijd", () => {
+    const v = plan(["omelet", "pompoen"]);
+    expect(v.menu.map((m) => m.naar)).toEqual(["Omelet met spinazie", "Pompoensoep"]);
+    const bezet = new Set(context().rijen.map((r) => r.datum));
+    for (const s of v.stappen) {
+      expect(s.soort).toBe("erbij");
+      if (s.soort === "erbij") expect(bezet.has(s.datum)).toBe(false);
+    }
+    expect(v.menu[0]!.datum < v.menu[1]!.datum).toBe(true);
+    expect(onveiligInVoorstel(v, context())).toEqual([]);
+  });
+  it("vlees met vegetarische Gust aan tafel: overgeslagen, zonder de reden van iemand te noemen", () => {
+    const v = plan(["stoof", "omelet"]);
+    expect(v.menu.map((m) => m.naar)).toEqual(["Omelet met spinazie"]);
+    expect(v.waarschuwingen.join(" ")).toMatch(/Stoofvlees met frietjes/);
+    expect(v.waarschuwingen.join(" ")).not.toMatch(/vegetarisch|noten|allergie/i);
+  });
+  it("eigen allergie is een harde grens; onbekend recept wordt uitgelegd", () => {
+    const v = plan(["omelet", "maker-recept"], context({}, { allergieen: ["eieren"] }));
+    expect(v.stappen).toEqual([]);
+    expect(v.waarschuwingen.join(" ")).toMatch(/niet bij je eigen recepten/);
+  });
+  it("lege verzameling: niets te doen", () => {
+    expect(plan([]).leeg).toMatch(/leeg/);
+  });
+});

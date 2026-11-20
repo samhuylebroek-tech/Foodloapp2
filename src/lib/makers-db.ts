@@ -356,6 +356,19 @@ export async function haalUitVerzameling(collectionId: string, recipeId: string)
   gooi(error);
 }
 
+/** Fase 3: nieuwe posities bewaren (na herschikken). */
+export async function zetVolgorde(
+  collectionId: string,
+  rijen: readonly { recipe_id: string; positie: number }[],
+) {
+  if (!rijen.length) return;
+  const { error } = await db.from("collection_recipes").upsert(
+    rijen.map((r) => ({ collection_id: collectionId, recipe_id: r.recipe_id, positie: r.positie })),
+    { onConflict: "collection_id,recipe_id" },
+  );
+  gooi(error);
+}
+
 export async function haalVerzameling(id: string): Promise<Verzameling | null> {
   const { data, error } = await db
     .from("collections")

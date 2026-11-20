@@ -24,6 +24,8 @@ export type Opdracht =
   | { soort: "op-lijst"; zoek: string; receptId?: string | undefined }
   | { soort: "wat-met"; ingredient: string }
   | { soort: "restjes" }
+  /** Fase 3: een verzameling inplannen (alleen via de knop "Inplannen", niet uit tekst). */
+  | { soort: "collectie"; naam: string; receptIds: string[] }
   | { soort: "verplaats"; van: string; naar: string };
 
 export type Herkenning =
@@ -427,5 +429,7 @@ export function omschrijf(o: Opdracht, dagNaam: (datum: string) => string): stri
       return `${dagNaam(o.van)} verplaatsen naar ${dagNaam(o.naar)}`;
     case "restjes":
       return "Wat je met je restjes kan doen";
+    case "collectie":
+      return `"${o.naam}" inplannen op je vrije dagen`;
   }
 }

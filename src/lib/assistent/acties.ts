@@ -825,6 +825,101 @@ function restjesVoorstel(ctx: AssistentContext): Voorstel {
   );
 }
 
+/**
+ * Fase 3 — een verzameling inplannen: de recepten in de volgorde van de verzameling, elk op de
+ * eerstvolgende vrije dag (geen hoofdmaaltijd gepland, vandaag tot 13 dagen verder). Elk recept
+ * gaat door dezelfde veiligheid als overal (jouw allergie/dieet/liever niet én iedereen die
+ * meeëet); wat niet past, wordt overgeslagen zonder de reden te noemen. Bestaande maaltijden
+ * worden nooit overschreven. Verandert niets tot "Doe maar".
+ */
+function collectieVoorstel(
+  ctx: AssistentContext,
+  o: { naam: string; receptIds: readonly string[] },
+): Voorstel {
+  const titel = `"${o.naam}" in je week`;
+  if (!o.receptIds.length) return leegVoorstel(titel, "Deze verzameling is nog leeg.");
+  const vrij: string[] = [];
+  for (let i = 0; i < 14 && vrij.length < o.receptIds.length; i++) {
+    const d = plusDagen(ctx.vandaag, i);
+    if (!ctx.rijen.some((r) => r.datum === d && r.moment === ctx.hoofdMoment)) vrij.push(d);
+  }
+  const eters = etersVan(ctx, null);
+  const ec = etersContext(ctx, eters);
+  const personen = eters.length || ctx.standaardPersonen;
+  const overgeslagen: string[] = [];
+  const onbekend: string[] = [];
+  const menu: MenuVerschil[] = [];
+  const stappen: Stap[] = [];
+  let dagIndex = 0;
+  for (const id of new Set(o.receptIds)) {
+    const k = kandidaatVan(ctx, id);
+    if (!k) {
+      onbekend.push(id);
+      continue;
+    }
+    const eigen = toegelaten(k, {
+      voorkeur: {
+        maxMinuten: 0,
+        soort: null,
+        vermijd: ctx.plan.vermijd ?? "",
+        dieet: ctx.plan.dieet,
+      },
+      ...(ctx.plan.allergieen ? { allergieen: [...ctx.plan.allergieen] } : {}),
+    });
+    if (!eigen || (ec && nietGeschikt(k, ec))) {
+      overgeslagen.push(k.title);
+      continue;
+    }
+    const datum = vrij[dagIndex];
+    if (!datum) break;
+    dagIndex++;
+    menu.push({
+      datum,
+      moment: ctx.hoofdMoment,
+      van: null,
+      naar: k.title,
+      uitleg: k.minuten ? `${k.minuten} min · uit "${o.naam}"` : `uit "${o.naam}"`,
+    });
+    stappen.push({ soort: "erbij", datum, moment: ctx.hoofdMoment, recipeId: k.id, personen });
+  }
+  const waarschuwingen: string[] = [];
+  if (overgeslagen.length)
+    waarschuwingen.push(
+      `Niet ingepland, want het past niet voor iedereen die meeëet: ${namenLijst(overgeslagen)}.`,
+    );
+  if (onbekend.length)
+    waarschuwingen.push(
+      `${onbekend.length} ${onbekend.length === 1 ? "recept staat" : "recepten staan"} niet bij je eigen recepten (bv. van een maker). Bewaar ${onbekend.length === 1 ? "het" : "ze"} eerst als eigen recept om ${onbekend.length === 1 ? "het" : "ze"} in te plannen.`,
+    );
+  const nietGepland = o.receptIds.length - onbekend.length - overgeslagen.length - menu.length;
+  if (nietGepland > 0)
+    waarschuwingen.push(
+      `Geen vrije dag meer voor ${nietGepland} ${nietGepland === 1 ? "recept" : "recepten"} in de komende twee weken. Bestaande maaltijden blijven staan.`,
+    );
+  if (!stappen.length)
+    return leegVoorstel(titel, "Foodlo kon geen recept uit deze verzameling inplannen.", {
+      waarschuwingen,
+    });
+  return {
+    titel,
+    menu,
+    lijst: lijstVerschil(
+      ctx,
+      stappen.map((s) => ({ van: null, naar: s.soort === "erbij" ? s.recipeId : null })),
+      [],
+    ),
+    kost: kostVerschil(
+      ctx,
+      stappen.map((s) => ({ van: null, naar: s.soort === "erbij" ? s.recipeId : null, personen })),
+    ),
+    eters: eters.length
+      ? menu.map((m) => ({ datum: m.datum, namen: eters.map((e) => e.naam) }))
+      : [],
+    waarschuwingen,
+    stappen,
+  };
+}
+
 /** Het voorstel voor een opdracht. Verandert niets. */
 export function maakActieVoorstel(o: Opdracht, ctx: AssistentContext): Voorstel {
   switch (o.soort) {
@@ -846,6 +941,8 @@ export function maakActieVoorstel(o: Opdracht, ctx: AssistentContext): Voorstel 
       return watMet(ctx, o.ingredient);
     case "restjes":
       return restjesVoorstel(ctx);
+    case "collectie":
+      return collectieVoorstel(ctx, o);
   }
 }
 

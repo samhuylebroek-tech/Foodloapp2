@@ -20,6 +20,8 @@ import { toonBelgischeMaat } from "@/lib/ingredienten";
 import { AllergieWaarschuwing } from "@/components/AllergieWaarschuwing";
 import { useAuth } from "@/hooks/useAuth";
 import { RecipePhoto } from "@/components/RecipePhoto";
+import { BewaarIn } from "@/components/makers/BewaarIn";
+import { useModuleBeschikbaar } from "@/lib/module-beschikbaar";
 
 export const Route = createFileRoute("/inspiratie/$id")({
   head: () => ({
@@ -41,6 +43,7 @@ function InspiratieDetailPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [bezig, setBezig] = useState(false);
+  const verzamelingen = useModuleBeschikbaar("collections");
   const [toegevoegd, setToegevoegd] = useState<{ recipeId: string; bestondAl: boolean } | null>(null);
   const [bereidingOpen, setBereidingOpen] = useState(false);
   const [controleOpen, setControleOpen] = useState(false);
@@ -250,6 +253,7 @@ function InspiratieDetailPage() {
                   <CalendarPlus className="size-5" /> Aan weekmenu
                 </Button>
               </div>
+              {verzamelingen.beschikbaar ? <BewaarIn receptId={toegevoegd.recipeId} /> : null}
               <Button variant="ghost" className="h-12 text-base" onClick={() => navigate({ to: "/inspiratie" })}>
                 Verder inspiratie bekijken
               </Button>

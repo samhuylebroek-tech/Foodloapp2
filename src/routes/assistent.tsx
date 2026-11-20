@@ -7,7 +7,8 @@
  * niets. Redenen van gezinsleden die niet gedeeld zijn, staan nergens.
  */
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { haalVerzameling } from "@/lib/makers-db";
 import { ArrowLeft, MessageCircleQuestion, Send, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -38,7 +39,7 @@ import { lokaleDatum } from "@/lib/tijd";
 import { bewaarEters, serverOordeel } from "@/lib/voeding-db";
 
 type Van = "vandaag" | "week" | "lijst";
-type Zoek = { van?: Van; vraag?: string };
+type Zoek = { van?: Van; vraag?: string; verzameling?: string };
 
 export const Route = createFileRoute("/assistent")({
   validateSearch: (s: Record<string, unknown>): Zoek => ({
@@ -47,6 +48,9 @@ export const Route = createFileRoute("/assistent")({
       : {}),
     ...(typeof s["vraag"] === "string" && s["vraag"].trim()
       ? { vraag: s["vraag"].slice(0, 200) }
+      : {}),
+    ...(typeof s["verzameling"] === "string" && /^[0-9a-f-]{36}$/i.test(s["verzameling"])
+      ? { verzameling: s["verzameling"] }
       : {}),
   }),
   head: () => ({
@@ -101,8 +105,10 @@ const terugval = isDemoOmgeving(import.meta.env as unknown as Record<string, str
   : null;
 
 function AssistentPagina() {
-  const { van, vraag } = Route.useSearch();
-  const terug = TERUG[van ?? "week"];
+  const { van, vraag, verzameling } = Route.useSearch();
+  const terug = verzameling
+    ? { to: `/verzamelingen/${verzameling}`, tekst: "Terug naar de verzameling" }
+    : TERUG[van ?? "week"];
   return (
     <AppShell title="Assistent" ondertitel="Vraag Foodlo iets aan je week te veranderen.">
       <div className="mx-auto max-w-3xl space-y-6 pb-8">
@@ -113,13 +119,19 @@ function AssistentPagina() {
           <ArrowLeft className="size-5" aria-hidden />
           {terug.tekst}
         </Link>
-        <Gesprek beginVraag={vraag} />
+        <Gesprek beginVraag={vraag} verzameling={verzameling} />
       </div>
     </AppShell>
   );
 }
 
-function Gesprek({ beginVraag }: { beginVraag: string | undefined }) {
+function Gesprek({
+  beginVraag,
+  verzameling,
+}: {
+  beginVraag: string | undefined;
+  verzameling?: string | undefined;
+}) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { ctx, nietLeesbaar, regels, recepten } = useAssistentContext();
@@ -180,6 +192,35 @@ function Gesprek({ beginVraag }: { beginVraag: string | undefined }) {
       },
     ]);
   }
+
+  // Fase 3: een verzameling inplannen (?verzameling=…): meteen het voorstel om na te kijken.
+  const { data: verz } = useQuery({
+    queryKey: ["verzameling", verzameling],
+    enabled: !!verzameling && !!user,
+    queryFn: () => haalVerzameling(verzameling!),
+  });
+  const verzGevraagd = useRef(false);
+  useEffect(() => {
+    if (!ctx || !verz || verzGevraagd.current) return;
+    verzGevraagd.current = true;
+    const id = `b${++teller.current}`;
+    const ids = [...(verz.collection_recipes ?? [])]
+      .sort((a, b) => a.positie - b.positie)
+      .map((r) => r.recipe_id);
+    const opdracht = { soort: "collectie" as const, naam: verz.naam, receptIds: ids };
+    setStanden((s) => ({ ...s, [id]: { soort: "open" } }));
+    setBerichten((b) => [
+      ...b,
+      { id: `${id}-jij`, wie: "jij", tekst: `Plan "${verz.naam}" in` },
+      {
+        id,
+        wie: "foodlo",
+        tekst: `Ik begreep: ${omschrijf(opdracht, (d) => dagNaam(d, ctx.vandaag))}. Kijk het na en tik op "Doe maar".`,
+        bron: "regels",
+        voorstel: maakActieVoorstel(opdracht, ctx),
+      },
+    ]);
+  }, [ctx, verz]);
 
   // Vraag uit een kaart of link (?vraag=…): één keer stellen zodra alles geladen is.
   useEffect(() => {

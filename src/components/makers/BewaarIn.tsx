@@ -21,6 +21,7 @@ import {
   zetInVerzameling,
 } from "@/lib/makers-db";
 import { cn } from "@/lib/utils";
+import { volgendePositie } from "@/lib/collecties";
 
 export function BewaarIn({ receptId }: { receptId: string }) {
   const { user } = useAuth();
@@ -51,7 +52,8 @@ export function BewaarIn({ receptId }: { receptId: string }) {
         await haalUitVerzameling(id, receptId);
         toast.success(`Uit "${naam}" gehaald`);
       } else {
-        const positie = lijst.find((v) => v.id === id)?.collection_recipes?.length ?? 0;
+        // Achteraan, ook als er na herschikken gaten in de posities zitten.
+        const positie = volgendePositie(lijst.find((v) => v.id === id)?.collection_recipes ?? []);
         await zetInVerzameling(id, receptId, positie);
         toast.success(`Bewaard in "${naam}"`);
       }

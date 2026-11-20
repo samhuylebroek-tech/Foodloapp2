@@ -59,10 +59,7 @@ export function useRestjes(): Restje[] {
 export function useRestjesActies() {
   const { user } = useAuth();
   const gezinId = useEigenGezinId();
-  return useMemo(
-    () => (user ? restjesActies(user.id, gezinId) : null),
-    [user, gezinId],
-  );
+  return useMemo(() => (user ? restjesActies(user.id, gezinId) : null), [user, gezinId]);
 }
 
 /** Waar staan de restjes? Voor een eerlijke zin ("op dit toestel" of "bij je gezin"). */
