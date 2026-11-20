@@ -189,3 +189,117 @@ test("videorecept: maker zet tijden bij de stappen, fan ziet klikbare tijden", a
   await expect(fan.getByText("Stoof de prei in boter.").first()).toBeVisible();
   await fanContext.close();
 });
+
+const AHMED_USER = "9a9a9a9a-0000-4000-8000-000000000002";
+const AHMED = "c7c7c7c7-0000-4000-8000-000000000002";
+const HARIRA = "a7a7a7a7-0000-4000-8000-000000000006";
+const TAJINE = "a7a7a7a7-0000-4000-8000-000000000003";
+
+const mijnAbo = async () =>
+  (await nepDb()).maker_abonnementen?.find((a) => a["fan_id"] === IK && a["creator_id"] === AHMED);
+
+test("abonneren in testmodus → exclusief recept zichtbaar → opzeggen → niet meer zichtbaar", async ({
+  page,
+}) => {
+  await meldAan(page);
+  // Zonder abonnement: titel en foto met een slotje, de inhoud niet.
+  await page.goto("/makers/chef-ahmed");
+  const harira = page.getByRole("listitem").filter({ hasText: "Harira van mijn moeder" });
+  await expect(harira.getByText("Voor abonnees")).toBeVisible();
+  await harira.getByRole("link").first().click();
+  await expect(page.getByTestId("recept-exclusief")).toContainText(
+    "Dit recept is voor abonnees van Chef Ahmed",
+  );
+  await expect(page.getByText("Laat 40 minuten zacht koken.")).toHaveCount(0);
+  await page.getByRole("link", { name: "Bekijk het abonnement" }).click();
+  await expect(page).toHaveURL(/\/makers\/chef-ahmed$/);
+
+  const blok = page.getByTestId("maker-abonneren");
+  await expect(blok).toContainText("Testmodus");
+  await expect(blok).toContainText("Er wordt niets aangerekend");
+  await expect(blok).toContainText(/€\s3,99 per maand/);
+  await expect(blok).toContainText(/Inclusief €\s0,69 btw \(21 %\)/);
+  await blok.getByRole("button", { name: "Abonneren in testmodus" }).click();
+  const vraag = page.getByRole("alertdialog");
+  await expect(vraag).toContainText("Er wordt niets aangerekend");
+  await vraag.getByRole("button", { name: "Ja, abonneren (test)" }).click();
+  await expect(blok.getByRole("status")).toContainText("Je bent abonnee (testmodus)");
+  await expect.poll(async () => (await mijnAbo())?.["status"]).toBe("actief");
+  const betalingen = (await nepDb()).maker_betalingen?.filter((b) => b["fan_id"] === IK) ?? [];
+  expect(betalingen.map((b) => `${b["soort"]}/${b["bedrag_cent"]}/${b["test"]}`)).toEqual([
+    "betaling/399/true",
+  ]);
+
+  // Met abonnement: het recept en de exclusieve collectie zijn te zien.
+  await expect(harira.getByText("Voor abonnees")).toHaveCount(0);
+  await page.goto(`/recepten/${HARIRA}`);
+  await expect(page.getByRole("heading", { name: "Harira van mijn moeder" }).first()).toBeVisible();
+  await expect(page.getByText("Laat 40 minuten zacht koken.").first()).toBeVisible();
+  await page.goto("/makers/chef-ahmed");
+  await page.getByRole("tab", { name: /Collecties/ }).click();
+  await page.getByRole("link", { name: /Ramadan-avonden/ }).click();
+  await expect(page.getByRole("link", { name: /Harira van mijn moeder/ })).toBeVisible();
+
+  // Opzeggen: uitleg over de testterugbetaling vooraf; daarna weer op slot.
+  await page.goto("/makers/chef-ahmed");
+  await blok.getByRole("button", { name: "Abonnement opzeggen" }).click();
+  await expect(vraag).toContainText("stopt meteen");
+  await expect(vraag).toContainText("alles terug");
+  await vraag.getByRole("button", { name: "Ja, opzeggen" }).click();
+  await expect(page.getByText(/Opgezegd\. Testterugbetaling: €\s3,99/)).toBeVisible();
+  await expect.poll(async () => (await mijnAbo())?.["status"]).toBe("opgezegd");
+  expect(
+    ((await nepDb()).maker_betalingen ?? [])
+      .filter((b) => b["fan_id"] === IK)
+      .map((b) => b["soort"])
+      .sort(),
+  ).toEqual(["betaling", "terugbetaling"]);
+  await blok.getByText(/Testbetalingen \(2\)/).click();
+  await expect(blok.getByText("Testterugbetaling", { exact: false })).toBeVisible();
+
+  await page.goto(`/recepten/${HARIRA}`);
+  await expect(page.getByTestId("recept-exclusief")).toBeVisible();
+  await page.goto("/verzamelingen/e7e7e7e7-0000-4000-8000-000000000003");
+  await expect(page.getByText("Deze collectie is voor abonnees")).toBeVisible();
+});
+
+test("maker: abonnement instellen, abonnees zonder betaalgegevens, recept exclusief maken", async ({
+  page,
+}) => {
+  await meldAan(page, AHMED_USER);
+  await page.goto("/maker");
+  const blok = page.getByTestId("maker-abonnement");
+  await expect(blok).toContainText("Er wordt niets aangerekend en niets uitbetaald");
+  await expect(
+    blok.getByRole("switch", { name: "Abonnement aanbieden (testmodus)" }),
+  ).toHaveAttribute("aria-checked", "true");
+  // Abonnees: alleen voornaam en sinds wanneer, geen bedragen per persoon.
+  await expect(blok.getByText("1 actieve abonnee", { exact: false })).toBeVisible();
+  const jan = blok.getByRole("listitem").filter({ hasText: "Jan" });
+  await expect(jan).toContainText("loopt");
+  await expect(jan).not.toContainText("€");
+  await expect(blok).not.toContainText("test_demo_1");
+
+  // Ongeldige prijs → uitleg; geldige → bewaard.
+  await blok.getByLabel("Testprijs per maand (inclusief btw)").fill("0,20");
+  await blok.getByRole("button", { name: "Abonnement bewaren" }).click();
+  await expect(blok.getByRole("alert")).toContainText("tussen € 1 en € 50");
+  await blok.getByLabel("Testprijs per maand (inclusief btw)").fill("4,50");
+  await blok.getByRole("button", { name: "Abonnement bewaren" }).click();
+  await expect(page.getByText("Abonnement bewaard (testmodus)")).toBeVisible();
+  await expect
+    .poll(
+      async () =>
+        (await nepDb()).maker_plannen?.find((p) => p["creator_id"] === AHMED)?.["prijs_cent"],
+    )
+    .toBe(450);
+
+  const rij = page.getByRole("listitem", { name: "Kip-tajine met abrikozen" });
+  await rij.getByRole("switch", { name: "Alleen voor abonnees" }).click();
+  await expect
+    .poll(
+      async () =>
+        (await nepDb()).recipe_publicaties?.find((p) => p["recipe_id"] === TAJINE)?.["exclusief"],
+    )
+    .toBe(true);
+});

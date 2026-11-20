@@ -3,7 +3,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChefHat, ExternalLink, Flag, Loader2, Pencil, Video } from "lucide-react";
 import { toast } from "sonner";
-import { MakerAbonnees } from "@/components/makers/MakerAbonnees";
+import {
+  haalMakerPlan,
+  MAKER_PLAN_SLEUTEL,
+  MakerAbonnees,
+} from "@/components/makers/MakerAbonnees";
+import { Switch } from "@/components/ui/switch";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleNietBeschikbaar } from "@/components/ModuleNietBeschikbaar";
@@ -124,7 +129,7 @@ function MakerBeheer() {
             </div>
           </section>
           <MijnRecepten maker={maker} />
-          <MakerAbonnees />
+          <MakerAbonnees maker={maker} />
           <MijnMeldingen />
         </div>
       )}
@@ -443,6 +448,15 @@ function PublicatieRij({
     );
   }
 
+  // Fase 4: exclusief voor abonnees kan alleen met een actief (test)abonnement.
+  const planBeschikbaar = useModuleBeschikbaar("maker_plannen").beschikbaar;
+  const { data: plan = null } = useQuery({
+    queryKey: [MAKER_PLAN_SLEUTEL, maker.id],
+    enabled: planBeschikbaar,
+    queryFn: () => haalMakerPlan(maker.id),
+  });
+  const exclusief = !!publicatie?.exclusief;
+
   const statusId = `status-${recept.id}`;
   return (
     <li className="paneel space-y-3 p-4" aria-label={recept.title}>
@@ -521,6 +535,35 @@ function PublicatieRij({
           </Button>
         )}
       </div>
+      {planBeschikbaar ? (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between gap-3">
+            <label htmlFor={`excl-${recept.id}`} className="text-base font-semibold">
+              Alleen voor abonnees
+            </label>
+            <Switch
+              id={`excl-${recept.id}`}
+              checked={exclusief}
+              disabled={bezig || (!exclusief && !plan?.actief)}
+              aria-describedby={`excl-uitleg-${recept.id}`}
+              onCheckedChange={(aan) =>
+                void schrijf(
+                  { exclusief: aan },
+                  aan
+                    ? `"${recept.title}" is nu alleen voor abonnees`
+                    : `"${recept.title}" is weer voor iedereen die het mag zien`,
+                  { exclusief: !aan },
+                )
+              }
+            />
+          </div>
+          <p id={`excl-uitleg-${recept.id}`} className="text-[0.95rem] text-muted-foreground">
+            {plan?.actief
+              ? "Anderen zien de titel en foto, en een uitnodiging om te abonneren (testmodus)."
+              : "Zet eerst je abonnement aan (onderaan deze pagina)."}
+          </p>
+        </div>
+      ) : null}
       <details className="rounded-2xl bg-muted/60 p-3">
         <summary className="flex min-h-11 cursor-pointer items-center gap-2 text-base font-semibold">
           <Video className="size-5" aria-hidden />
@@ -554,8 +597,9 @@ function PublicatieRij({
             </p>
           ) : null}
           <p className="text-[0.95rem] text-muted-foreground">
-            Foodlo bewaart alleen de link: de video blijft bij {videoBron(video)?.platform ?? "de dienst"}{" "}
-            en wordt niet gedownload. Je naam staat er als bron bij.
+            Foodlo bewaart alleen de link: de video blijft bij{" "}
+            {videoBron(video)?.platform ?? "de dienst"} en wordt niet gedownload. Je naam staat er
+            als bron bij.
           </p>
           {publicatie?.video_url ? (
             <VideoTijden

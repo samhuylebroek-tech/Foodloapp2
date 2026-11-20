@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, Play, Share2 } from "lucide-react";
+import { ExternalLink, Lock, Play, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState } from "@/components/EmptyState";
@@ -18,6 +18,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { videoBron } from "@/lib/makers";
+import { MakerAbonneren } from "@/components/makers/MakerAbonneren";
+import { useMakerRechten } from "@/lib/betalen/useMakerRechten";
 import {
   haalGevolgd,
   haalMakerOpHandle,
@@ -62,6 +64,7 @@ function MakerPagina() {
     enabled: beschikbaar && !!user,
     queryFn: () => haalGevolgd(user!.id),
   });
+  const rechten = useMakerRechten();
 
   if (laden || (beschikbaar && makerQ.isLoading)) {
     return (
@@ -97,9 +100,16 @@ function MakerPagina() {
     );
   }
 
+  const eigen = maker.user_id === user?.id;
+  // Fase 4: exclusieve recepten zonder abonnement blijven zichtbaar als titel en foto (slotje).
+  const toegang = eigen || rechten.magMaker(maker.id);
+  const exclusieveIds = new Set(
+    recepten.filter((r) => r.publicatie.exclusief).map((r) => r.recept.id),
+  );
+  const opslot = (r: { id: string }) => !toegang && exclusieveIds.has(r.id);
   const videos = recepten.flatMap(({ recept, publicatie }) => {
     const v = videoBron(publicatie.video_url);
-    return v ? [{ recept, video: v }] : [];
+    return v && !opslot(recept) ? [{ recept, video: v }] : [];
   });
   // Openbare verzamelingen tonen alleen recepten die zelf openbaar zijn.
   const openbareCollecties = collecties
@@ -110,7 +120,6 @@ function MakerPagina() {
         .filter((r) => (c.collection_recipes ?? []).some((x) => x.recipe_id === r.id)),
     }))
     .filter((c) => c.recepten.length > 0);
-  const eigen = maker.user_id === user?.id;
 
   async function deel() {
     const url = `${window.location.origin}/makers/${maker!.handle}`;
@@ -180,6 +189,8 @@ function MakerPagina() {
           </div>
         </section>
 
+        {!eigen ? <MakerAbonneren maker={maker} aantalExclusief={exclusieveIds.size} /> : null}
+
         <Tabs defaultValue="recepten">
           <TabsList className="grid h-auto w-full grid-cols-3 gap-1 p-1">
             <TabsTrigger value="recepten" className="min-h-12 text-base">
@@ -200,6 +211,7 @@ function MakerPagina() {
               <ReceptRaster
                 recepten={recepten.map((r) => r.recept)}
                 label={`Recepten van ${maker.naam}`}
+                opslot={opslot}
               />
             ) : (
               <EmptyState
@@ -231,6 +243,12 @@ function MakerPagina() {
                         className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent"
                         aria-hidden
                       />
+                      {c.exclusief && !toegang ? (
+                        <span className="absolute left-2 top-2 inline-flex min-h-8 items-center gap-1 rounded-full bg-black/75 px-2.5 text-[0.9rem] font-semibold text-white">
+                          <Lock className="size-4" aria-hidden />
+                          Voor abonnees
+                        </span>
+                      ) : null}
                       <span className="absolute inset-x-0 bottom-0 p-3 text-white">
                         <span className="block font-display text-xl font-semibold leading-tight">
                           {c.naam}

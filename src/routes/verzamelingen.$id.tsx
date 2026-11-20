@@ -15,12 +15,15 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import {
   haalBronnen,
+  haalMijnMaker,
   haalVerzameling,
   verwijderVerzameling,
   wijzigVerzameling,
   zichtbareReceptenIn,
 } from "@/lib/makers-db";
 import { useModuleBeschikbaar } from "@/lib/module-beschikbaar";
+import { useMakerRechten } from "@/lib/betalen/useMakerRechten";
+import { haalMakerPlan, MAKER_PLAN_SLEUTEL } from "@/components/makers/MakerAbonnees";
 
 export const Route = createFileRoute("/verzamelingen/$id")({
   head: () => ({
@@ -48,8 +51,21 @@ function VerzamelingPagina() {
   });
   const v = vQ.data ?? null;
   const eigen = !!v && v.user_id === user?.id;
+  // Fase 4: exclusieve collectie van een maker — alleen voor abonnees (testmodus).
+  const rechten = useMakerRechten();
+  const { data: maker = null } = useQuery({
+    queryKey: ["maker-van", v?.user_id],
+    enabled: !!v && (!!v.exclusief || eigen),
+    queryFn: () => haalMijnMaker(v!.user_id),
+  });
+  const { data: plan = null } = useQuery({
+    queryKey: [MAKER_PLAN_SLEUTEL, maker?.id],
+    enabled: eigen && !!maker,
+    queryFn: () => haalMakerPlan(maker!.id).catch(() => null),
+  });
+  const opslot = !!v?.exclusief && !eigen && !(maker && rechten.magMaker(maker.id));
   // Tweede laag naast RLS: een privéverzameling van iemand anders nooit tonen.
-  const zichtbaar = !!v && (eigen || v.openbaar);
+  const zichtbaar = !!v && (eigen || v.openbaar) && !opslot;
   useEffect(() => setNaam(v?.naam ?? ""), [v?.naam]);
 
   const { data: recepten = [], isLoading: receptenLaden } = useQuery({
@@ -85,6 +101,26 @@ function VerzamelingPagina() {
       </AppShell>
     );
   }
+  if (v && opslot) {
+    return (
+      <AppShell title={v.naam}>
+        <EmptyState
+          icon={<Lock />}
+          title="Deze collectie is voor abonnees"
+          description={`${maker?.naam ?? "Deze maker"} deelt deze collectie alleen met abonnees. In testmodus kan je abonneren zonder dat er iets aangerekend wordt.`}
+          action={
+            maker ? (
+              <Button asChild className="h-14 w-full text-base">
+                <Link to="/makers/$handle" params={{ handle: maker.handle }}>
+                  Bekijk het abonnement
+                </Link>
+              </Button>
+            ) : undefined
+          }
+        />
+      </AppShell>
+    );
+  }
   if (!v || !zichtbaar) {
     return (
       <AppShell title="Verzameling">
@@ -116,6 +152,12 @@ function VerzamelingPagina() {
     await qc.invalidateQueries({ queryKey: ["verzameling", id] });
     await qc.invalidateQueries({ queryKey: ["verzamelingen"] });
     toast.success(aan ? "Openbaar op je makerpagina (alleen openbare recepten)" : "Weer privé");
+  }
+
+  async function zetExclusief(aan: boolean) {
+    await wijzigVerzameling(v!.id, { exclusief: aan });
+    await qc.invalidateQueries({ queryKey: ["verzameling", id] });
+    toast.success(aan ? "Alleen voor je abonnees" : "Weer voor iedereen die je pagina bekijkt");
   }
 
   async function verwijder() {
@@ -208,6 +250,18 @@ function VerzamelingPagina() {
                 onCheckedChange={(aan) => void zetOpenbaar(aan)}
               />
             </div>
+            {v.openbaar && (plan?.actief || v.exclusief) ? (
+              <div className="flex min-h-14 items-center justify-between gap-3">
+                <Label htmlFor="verz-exclusief" className="text-base">
+                  Alleen voor abonnees (testmodus)
+                </Label>
+                <Switch
+                  id="verz-exclusief"
+                  checked={!!v.exclusief}
+                  onCheckedChange={(aan) => void zetExclusief(aan)}
+                />
+              </div>
+            ) : null}
           </div>
         ) : null}
         {receptenLaden ? (

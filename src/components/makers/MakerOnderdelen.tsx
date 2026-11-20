@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BadgeCheck, Check, Flag, Loader2, TriangleAlert, UserPlus } from "lucide-react";
+import { BadgeCheck, Check, Flag, Loader2, Lock, TriangleAlert, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -312,10 +312,13 @@ export function ReceptRaster({
   recepten,
   label,
   bron,
+  opslot,
 }: {
   recepten: ReceptKaart[];
   label: string;
   bron?: (r: ReceptKaart) => Pick<Maker, "naam" | "handle"> | null | undefined;
+  /** Fase 4: exclusief recept zonder abonnement — titel en foto, met een slotje. */
+  opslot?: (r: ReceptKaart) => boolean;
 }) {
   const oordeelVan = useAllergieOordelen(recepten);
   return (
@@ -333,13 +336,21 @@ export function ReceptRaster({
               params={{ id: r.id }}
               className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <RecipePhoto
-                path={r.image_url}
-                alt=""
-                recept={r}
-                opschrift
-                className="aspect-[4/3] w-full"
-              />
+              <span className="relative block">
+                <RecipePhoto
+                  path={r.image_url}
+                  alt=""
+                  recept={r}
+                  opschrift
+                  className="aspect-[4/3] w-full"
+                />
+                {opslot?.(r) ? (
+                  <span className="absolute left-2 top-2 inline-flex min-h-8 items-center gap-1 rounded-full bg-black/75 px-2.5 text-[0.9rem] font-semibold text-white">
+                    <Lock className="size-4" aria-hidden />
+                    Voor abonnees
+                  </span>
+                ) : null}
+              </span>
               <div className="space-y-1 p-3">
                 <p className="font-display text-lg font-semibold leading-snug break-words hyphens-auto">
                   {r.title}

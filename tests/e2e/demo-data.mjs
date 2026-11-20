@@ -333,6 +333,7 @@ export const MAKER_RECEPT = {
   tajine: MR(3),
   linzen: MR(4),
   pompoen: MR(5),
+  harira: MR(6),
 };
 
 const MAKER_RECEPTEN = [
@@ -420,6 +421,25 @@ const MAKER_RECEPTEN = [
     ],
     null,
   ],
+  // Fase 4: exclusief voor abonnees van Chef Ahmed (testmodus).
+  [
+    6,
+    "ahmed",
+    "Harira van mijn moeder",
+    "soep",
+    ["soep", "Marokkaans"],
+    20,
+    45,
+    null,
+    ["kikkererwten", "rode linzen", "tomaten", "selder", "koriander", "citroen"],
+    [
+      "Fruit ui en selder in olijfolie.",
+      "Voeg tomaten, linzen en kikkererwten toe met water.",
+      "Laat 40 minuten zacht koken.",
+      "Werk af met koriander en een scheut citroen.",
+    ],
+    null,
+  ],
 ];
 
 export function makerSeed(DEMO_USER_ID, JAN) {
@@ -500,8 +520,57 @@ export function makerSeed(DEMO_USER_ID, JAN) {
     gepubliceerd_op: `2026-10-${String(20 + i).padStart(2, "0")}T10:00:00Z`,
     video_url: video,
     moderatie: "goedgekeurd",
+    exclusief: n === 6,
   }));
+  // Fase 4 (voorstel 0021, testmodus): Chef Ahmed biedt een abonnement aan; Jan is abonnee.
+  const maker_plannen = [
+    {
+      id: "c8c8c8c8-0000-4000-8000-000000000002",
+      creator_id: MAKER_IDS.ahmed,
+      prijs_cent: 399,
+      voordelen: [
+        "Elke maand twee familierecepten die nergens anders staan",
+        "Mijn ramadan-avonden als collectie",
+      ],
+      actief: true,
+      modus: "test",
+      updated_at: "2026-11-01T10:00:00Z",
+    },
+  ];
+  const maker_abonnementen = [
+    {
+      id: "c9c9c9c9-0000-4000-8000-000000000001",
+      fan_id: JAN,
+      creator_id: MAKER_IDS.ahmed,
+      status: "actief",
+      modus: "test",
+      prijs_cent: 399,
+      start_op: "2026-11-03T18:00:00Z",
+      periode_einde: "2099-12-03T18:00:00Z",
+      opgezegd_op: null,
+    },
+  ];
+  const maker_betalingen = [
+    {
+      id: "cacacaca-0000-4000-8000-000000000001",
+      abonnement_id: "c9c9c9c9-0000-4000-8000-000000000001",
+      fan_id: JAN,
+      creator_id: MAKER_IDS.ahmed,
+      soort: "betaling",
+      bedrag_cent: 399,
+      btw_cent: 69,
+      platform_cent: 41,
+      maker_cent: 233,
+      provider: "test",
+      provider_ref: "test_demo_1",
+      test: true,
+      created_at: "2026-11-03T18:00:00Z",
+    },
+  ];
   return {
+    maker_plannen,
+    maker_abonnementen,
+    maker_betalingen,
     creators,
     recipes,
     recipe_ingredients,
@@ -537,6 +606,15 @@ export function makerSeed(DEMO_USER_ID, JAN) {
         openbaar: true,
         created_at: "2026-10-25T10:00:00Z",
       },
+      {
+        id: "e7e7e7e7-0000-4000-8000-000000000003",
+        user_id: MAKER_USERS.ahmed,
+        naam: "Ramadan-avonden",
+        beschrijving: "Voor abonnees (testmodus).",
+        openbaar: true,
+        exclusief: true,
+        created_at: "2026-11-02T10:00:00Z",
+      },
     ],
     collection_recipes: [
       {
@@ -556,6 +634,18 @@ export function makerSeed(DEMO_USER_ID, JAN) {
         collection_id: "e7e7e7e7-0000-4000-8000-000000000002",
         recipe_id: MR(1),
         positie: 0,
+      },
+      {
+        id: "e8e8e8e8-0000-4000-8000-000000000004",
+        collection_id: "e7e7e7e7-0000-4000-8000-000000000003",
+        recipe_id: MR(6),
+        positie: 0,
+      },
+      {
+        id: "e8e8e8e8-0000-4000-8000-000000000005",
+        collection_id: "e7e7e7e7-0000-4000-8000-000000000003",
+        recipe_id: MR(3),
+        positie: 1,
       },
     ],
     community_bijdragen: [
@@ -885,6 +975,9 @@ export function demoSeed() {
     lid_id: HL(n),
   }));
   return {
+    maker_plannen: makers.maker_plannen,
+    maker_abonnementen: makers.maker_abonnementen,
+    maker_betalingen: makers.maker_betalingen,
     creators: makers.creators,
     recipe_publicaties: makers.recipe_publicaties,
     follows: makers.follows,

@@ -35,7 +35,17 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { zichtbareEigenaren } from "@/lib/zichtbare-eigenaren";
+import { eigenId, zichtbareEigenaren } from "@/lib/zichtbare-eigenaren";
+import { magExclusiefZien } from "@/lib/betalen/maker-abonnement";
+import { mijnMakerRechten } from "@/lib/betalen/maker-abonnement.functions";
+import type { Maker } from "@/lib/makers";
+
+/** Fase 4: exclusief makerrecept, en je hebt (nog) geen abonnement op die maker. */
+class ExclusiefRecept extends Error {
+  constructor(readonly maker: Pick<Maker, "naam" | "handle">) {
+    super("exclusief");
+  }
+}
 import { haalPubliekeBron } from "@/lib/makers-db";
 import { ReceptMakerDeel } from "@/components/makers/ReceptMakerDeel";
 import { ReceptDelen } from "@/components/recept/ReceptDelen";
@@ -59,7 +69,7 @@ import { Input } from "@/components/ui/input";
 import { importRecipeFromText } from "@/lib/ai.functions";
 import { useT, useVoorkeuren } from "@/lib/voorkeuren";
 import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/types";
-import { Copy, Users } from "lucide-react";
+import { Copy, Lock, Users } from "lucide-react";
 import { KookTimers } from "@/components/KookTimers";
 import { bewaarVoortgang, leesVoortgang, vindTimers, wisVoortgang } from "@/lib/kookstand";
 import { meldMetHerstel, useKringloopVernieuw } from "@/hooks/useAanvulling";
@@ -325,26 +335,46 @@ function ReceptPage() {
     staleTime: 60 * 1000,
   });
 
-  const { data, isLoading, isError } = useQuery({
+  const {
+    data,
+    isLoading,
+    isError,
+    error: receptFout,
+  } = useQuery({
     queryKey: ["recipe", id],
     // Niet zichtbaar of niet gevonden: opnieuw proberen helpt niet; meteen de melding tonen.
     retry: (keer, fout) =>
-      !(fout instanceof Error && /niet-zichtbaar|PGRST116|0 rows/.test(fout.message)) && keer < 2,
+      !(fout instanceof Error && /niet-zichtbaar|exclusief|PGRST116|0 rows/.test(fout.message)) &&
+      keer < 2,
     queryFn: async () => {
-      const [recipeRes, ingRes] = await Promise.all([
+      const [recipeRes, ingRes, bron, eigenaren] = await Promise.all([
         supabase.from("recipes").select("*").eq("id", id).single(),
         supabase
           .from("recipe_ingredients")
           .select("*")
           .eq("recipe_id", id)
           .order("position", { ascending: true }),
+        haalPubliekeBron(id),
+        zichtbareEigenaren(),
       ]);
+      // Fase 4: exclusief makerrecept zonder abonnement → uitnodiging, geen inhoud. Vóór de
+      // fout van het recept zelf: in productie verbergt RLS (voorstel 0021) die rij dan al.
+      if (bron?.publicatie.exclusief && !eigenaren.includes(bron.maker.user_id)) {
+        const ik = await eigenId();
+        const { entitlements } = await mijnMakerRechten();
+        const mag = magExclusiefZien({
+          exclusief: true,
+          creatorId: bron.maker.id,
+          isMaker: false,
+          gebruiker: ik ? { id: ik, entitlements } : null,
+        });
+        if (!mag) throw new ExclusiefRecept(bron.maker);
+      }
       if (recipeRes.error) throw recipeRes.error;
       if (ingRes.error) throw ingRes.error;
       // Tweede laag naast RLS (BUG-105): een recept van een onbekende nooit tonen.
-      const eigenaren = await zichtbareEigenaren();
       // Module B: een openbaar gepubliceerd (en goedgekeurd) makerrecept mag iedereen zien.
-      if (!eigenaren.includes((recipeRes.data as Recipe).user_id) && !(await haalPubliekeBron(id)))
+      if (!eigenaren.includes((recipeRes.data as Recipe).user_id) && !bron)
         throw new Error("niet-zichtbaar");
       return { recipe: recipeRes.data as Recipe, ingredients: ingRes.data as Ingredient[] };
     },
@@ -524,6 +554,29 @@ function ReceptPage() {
     if (!veiligPlan) return;
     const ids = mee.etersVan(veiligPlan).map((e) => e.id);
     void mee.zet(veiligPlan, zonderEter(ids, lidId), `${naam} eet niet mee`);
+  }
+
+  if (isError && receptFout instanceof ExclusiefRecept) {
+    const m = receptFout.maker;
+    return (
+      <AppShell title="Recept">
+        <div className="paneel space-y-3 p-6 text-center" data-testid="recept-exclusief">
+          <span className="mx-auto flex size-16 items-center justify-center rounded-full bg-secondary text-primary">
+            <Lock className="size-8" aria-hidden />
+          </span>
+          <h1 className="text-sectietitel">Dit recept is voor abonnees van {m.naam}</h1>
+          <p className="mx-auto max-w-prose text-base text-muted-foreground">
+            {m.naam} deelt dit recept alleen met abonnees. In testmodus kan je abonneren zonder dat
+            er iets aangerekend wordt.
+          </p>
+          <Button asChild className="h-14 px-6 text-base">
+            <Link to="/makers/$handle" params={{ handle: m.handle }}>
+              Bekijk het abonnement
+            </Link>
+          </Button>
+        </div>
+      </AppShell>
+    );
   }
 
   if (isError) {
@@ -1122,7 +1175,8 @@ function ReceptPage() {
                   <Copy />
                   {t("Dupliceren")}
                 </DropdownMenuItem>
-              ) : (
+              ) : makerBron?.publicatie.exclusief ? null : (
+                // Fase 4: een exclusief recept blijft bij de maker (geen kopie die na opzeggen blijft).
                 <DropdownMenuItem
                   onSelect={() => setKopieVraag(true)}
                   className="min-h-12 text-base"

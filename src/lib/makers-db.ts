@@ -4,7 +4,9 @@
  * `useModuleBeschikbaar` en tonen anders "binnenkort".
  */
 import { db } from "@/lib/module-beschikbaar";
-import { zichtbareEigenaren } from "@/lib/zichtbare-eigenaren";
+import { eigenId, zichtbareEigenaren } from "@/lib/zichtbare-eigenaren";
+import { magExclusiefZien } from "@/lib/betalen/maker-abonnement";
+import { mijnMakerRechten } from "@/lib/betalen/maker-abonnement.functions";
 import {
   isPubliekZichtbaar,
   MODERATIE_VOORAF,
@@ -228,7 +230,10 @@ export async function zetPublicatie(
   creatorId: string,
   recipeId: string,
   velden: Partial<
-    Pick<Publicatie, "zichtbaarheid" | "status" | "gepubliceerd_op" | "video_url" | "moderatie">
+    Pick<
+      Publicatie,
+      "zichtbaarheid" | "status" | "gepubliceerd_op" | "video_url" | "moderatie" | "exclusief"
+    >
   >,
 ): Promise<Publicatie> {
   // Bijwerken als er al een rij is (anders zou een upsert de andere velden terugzetten).
@@ -354,6 +359,8 @@ export type Verzameling = {
   naam: string;
   beschrijving: string | null;
   openbaar: boolean;
+  /** Fase 4: alleen voor abonnees van de maker (testmodus; RLS-voorstel 0021). */
+  exclusief?: boolean | null;
   created_at?: string;
   collection_recipes?: { id: string; recipe_id: string; positie: number }[];
 };
@@ -385,7 +392,7 @@ export async function maakVerzameling(
 
 export async function wijzigVerzameling(
   id: string,
-  velden: Partial<Pick<Verzameling, "naam" | "beschrijving" | "openbaar">>,
+  velden: Partial<Pick<Verzameling, "naam" | "beschrijving" | "openbaar" | "exclusief">>,
 ) {
   const { error } = await db.from("collections").update(velden).eq("id", id);
   gooi(error);
@@ -466,10 +473,23 @@ export async function zichtbareReceptenIn(v: Verzameling): Promise<ReceptKaart[]
     haalBronnen(ids),
   ]);
   const perId = new Map(recepten.map((r) => [r.id, r]));
+  // Fase 4: een exclusief makerrecept alleen met een abonnement op die maker.
+  const exclusief = [...bronnen.values()].some((b) => b.publicatie.exclusief);
+  const rechten = exclusief ? (await mijnMakerRechten()).entitlements : [];
+  const ik = exclusief ? await eigenId() : null;
   return ids.flatMap((id) => {
     const r = perId.get(id);
     if (!r) return [];
-    return eigenaren.includes(r.user_id) || bronnen.has(id) ? [r] : [];
+    if (eigenaren.includes(r.user_id)) return [r];
+    const b = bronnen.get(id);
+    if (!b) return [];
+    const mag = magExclusiefZien({
+      exclusief: b.publicatie.exclusief,
+      creatorId: b.maker.id,
+      isMaker: false,
+      gebruiker: ik ? { id: ik, entitlements: rechten } : null,
+    });
+    return mag ? [r] : [];
   });
 }
 
