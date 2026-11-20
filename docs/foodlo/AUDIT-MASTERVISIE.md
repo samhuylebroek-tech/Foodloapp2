@@ -1,4 +1,4 @@
-# Audit tegenover de mastervisie (2026-11-18, branch claude/sleepy-euler-eghoc3, na 077fb04)
+# Audit tegenover de mastervisie (2026-11-18, bijgewerkt 2026-11-20 na P6; branch claude/sleepy-euler-eghoc3)
 
 Gemeten in de code, niet uit documenten. "Werkt" = de handeling bewaart en is getest met E2E tegen de nep-databank.
 
@@ -6,7 +6,7 @@ Gemeten in de code, niet uit documenten. "Werkt" = de handeling bewaart en is ge
 | Domein | Stand | Bewijs in de code |
 |---|---|---|
 | Wijziging maaltijd → lijst | **Werkt**: menu + lijst in één actie, half-mislukt wordt teruggedraaid, één keer ongedaan maken | `kringloop-db.ts` `wijzigMenu`, `planVervang/planVerplaats/planWeg` |
-| Kosten/budget na wijziging | **Werkt als weergave** (wordt telkens herberekend), maar budget staat alleen op het toestel en stuurt de voorstellen niet | `budget.ts` `schatWeek`, `leesWeekbudget` (localStorage) |
+| Kosten/budget na wijziging | **Werkt** (P1/P2): herberekend na elke wijziging; budget stuurt "Stel mijn week samen" en "Maak je week goedkoper"; geschiedenis per week (voorstel 0014, demo tot migratie) | `budget.ts`, `planner/engine.ts`, kwaliteit-20 test 15/16 |
 | Veiligheid (allergie/dieet, wie eet mee) | **Werkt** overal gelijk; hard/zacht; privacy van redenen | `veiligheid.ts`, `gezin-veiligheid.ts`, `voorstel-eters.ts` |
 | Voorstellen (vanavond, vul aan, weekvoorstel) | **Werkt**, met redenen, "niet nu", restjes, gebruik-eerst, seizoen, weer | `intelligentie/*` |
 | Ingrediënten | **Werkt (P2)**: synoniemen als data, omrekening (stuk↔g alleen met gekend stukgewicht), optellen, gangbare verpakking, nodig/in huis/te kopen op lijst en Slim aanvullen | `src/lib/ingredient/` |
@@ -14,17 +14,19 @@ Gemeten in de code, niet uit documenten. "Werkt" = de handeling bewaart en is ge
 | Recepten, import, editor, kookstand, assistent | **Werkt**; fase 2 (alle bronnen, video, delen) is in bouw | RecipeForm, kookstand, `assistent/*` |
 | Gezin, realtime | **Werkt**: realtime op planner, lijst, gezin | `postgres_changes` in 3 schermen |
 | Makers, community, partners, premium | **Werkt in demo**, live na migraties 0008/0011/0012 | eigen routes |
-| Keukenapparatuur | **Ontbreekt** (0 vermeldingen) | — |
-| Kookervaring (beginner/ervaren) | **Ontbreekt** | — |
-| Weekcontext per dag (weinig tijd, niet thuis, feestelijk, restjesdag) | **Ontbreekt** | — |
-| Alternatieven "goedkoper / sneller / past beter" | **Ontbreekt** (er is één "ander gerecht") | — |
-| Menu genereren met budget als stuurfactor | **Ontbreekt** (budget waarschuwt alleen achteraf) | — |
-| Ontbijt/lunch/tussendoor plannen | **Gedeeltelijk** (meal_type bestaat, generator kent vooral avondeten) | `meal_type` |
-| Meerdere weken vooruit genereren | **Ontbreekt** (handmatig wel) | — |
-| Na het koken: restjes en voorraad bijwerken met bevestiging | **Ontbreekt** als één stap | — |
-| Assistent die acties op planning/lijst voorstelt en na bevestiging uitvoert | **Ontbreekt** (assistent werkt op één recept) | — |
-| Proactieve suggesties met aan/uit per soort | **Gedeeltelijk** (losse kaarten, geen centrale instelling) | — |
+| Keukenapparatuur | **Gebouwd (P1)**: Mijn keuken (oven, airfryer …), voorstellen houden er rekening mee; op het account na migratie 0013 | `mijn-keuken.tsx`, slimme-planner.spec |
+| Kookervaring (beginner/ervaren) | **Gebouwd (P1)** in het planprofiel en de engine | `planner/profiel.ts`, `engine.ts` |
+| Weekcontext per dag (weinig tijd, niet thuis, feestelijk, restjesdag) | **Gebouwd (P1)** in "Stel je week samen" | slimme-planner.spec, kwaliteit-20 test 1 |
+| Alternatieven "goedkoper / sneller / past beter" | **Gebouwd (P1)**: per dag in het voorstel + "Maak je week goedkoper" | slimme-planner.spec, kwaliteit-20 test 16 |
+| Menu genereren met budget als stuurfactor | **Gebouwd (P1)** (schatting, vaste richtprijzen) | `engine.ts` |
+| Ontbijt/lunch/tussendoor plannen | **Werkt** voor ontbijt/middag/avond (momentfilter in de engine, BUG-159); tussendoortjes niet apart | `engine.ts` |
+| Meerdere weken vooruit genereren | **Gedeeltelijk**: engine rekent per 7 dagen; scherm plant week per week | `engine.ts` |
+| Na het koken: restjes en voorraad bijwerken met bevestiging | **Gebouwd (P3)**: "Klaar met koken" met restjes en voorraad op vraag (BUG-157) | na-het-koken.spec, restjes.spec |
+| Assistent die acties op planning/lijst voorstelt en na bevestiging uitvoert | **Gebouwd (P4)**: /assistent met "Doe maar" en ongedaan maken, zonder AI (regels/testmodus) | week-assistent.spec |
+| Proactieve suggesties met aan/uit per soort | **Gebouwd (P4)**: Instellingen › Suggesties (voorstel 0016) | suggesties.spec |
 | Gelijktijdige wijzigingen: waarschuwen i.p.v. overschrijven | **Gebouwd (P5, 2026-11-19)**: inhoudscontrole vlak vóór het schrijven (weekmenu via `wijzigMenu`, lijst-item), keuze "Houd die van Jan / Zet de mijne / Bekijk allebei", één ongedaan maken; aanwezigheid "Jan is de lijst aan het bewerken" | samenwerking.spec, conflict.test |
+| Offline (Week, Lijst, Vandaag) | **Gebouwd (P6)**: melding op elk scherm, laatst bekende gegevens ook na herladen, wachtrij voor afvinken en toevoegen, eerlijke melding bij herstel | `offline-cache.ts`, `OfflineBand.tsx`, kwaliteit-20 test 20 |
+| De 20 verplichte testen | **Gebouwd (P6)**: `kwaliteit-20.spec.ts`, elk met controle in de nep-databank; 5 projecten (telefoon, desktop, 360, 768, groot + Extra duidelijk) | kwaliteit-20.spec |
 | Echte prijzen, echte winkels, echt weer | **Extern** (testadapters, duidelijk gelabeld) | `supermarkt/`, `weer.ts` |
 
 **Dubbel (opgelost in P2):** `kostrem.ts` bleek een AI-kostenrem, geen prijsschatter; de echte dubbeling zat tussen budgetkaart en planner (andere schaalregel). Nu één bron: `budget.ts`, ook voor lijst en winkelmodus; budgetgeschiedenis per week (voorstel 0014).

@@ -24,7 +24,6 @@ import {
   History,
   Sparkles,
   CalendarDays,
-  WifiOff,
   Settings2,
   Undo2,
   Lightbulb,
@@ -434,14 +433,19 @@ function BoodschappenPage() {
       // Wat mislukt, gaat terug in de wachtrij: nooit "bewaard" melden als het niet zo is.
       let mislukt = 0;
       let opgegeven = 0;
+      let weg = 0;
       for (const a of acties) {
         let ok = true;
         if (a.soort === "vink") {
-          const { error } = await supabase
+          // P6 (conflictregel bij herstel): haalde iemand het product intussen weg, dan zetten
+          // we het niet stil terug, maar zeggen we het.
+          const { data, error } = await supabase
             .from("shopping_items")
             .update({ checked: a.checked })
-            .eq("id", a.id);
+            .eq("id", a.id)
+            .select("id");
           ok = !error;
+          if (ok && !(data ?? []).length) weg++;
         } else {
           const p = parseIngredientLine(a.tekst);
           if (p)
@@ -464,7 +468,13 @@ function BoodschappenPage() {
         toast.error(
           `${meervoud(mislukt)} nog niet bewaard. We proberen het opnieuw zodra de verbinding beter is.`,
         );
-      if (!mislukt && !opgegeven) toast.success("Je wijzigingen zijn bewaard");
+      if (weg)
+        toast.info(
+          weg === 1
+            ? "1 product werd intussen van de lijst gehaald; dat afvinken is niet meer nodig."
+            : `${weg} producten werden intussen van de lijst gehaald; dat afvinken is niet meer nodig.`,
+        );
+      if (!mislukt && !opgegeven) toast.success("Je wijzigingen zijn bewaard en verstuurd");
     }
     const aan = () => {
       zet();
@@ -712,7 +722,20 @@ function BoodschappenPage() {
     if (!geparsed) return;
     if (!online) {
       zetInWachtrij({ soort: "toevoegen", userId: user.id, listId: actief, tekst });
-      toast.info("Je bent offline — we bewaren het straks");
+      // Meteen zichtbaar op de lijst (gemarkeerd als "wacht"); na herstel komt de echte regel.
+      qc.setQueryData<Item[]>(["shopping", actief], (oud) => [
+        ...(oud ?? []),
+        {
+          id: `wacht-${Date.now()}`,
+          name: geparsed.name,
+          quantity: geparsed.quantity ?? null,
+          unit: geparsed.unit ?? "",
+          checked: false,
+          recipe_id: null,
+          note: "Wacht op verbinding",
+        } as Item,
+      ]);
+      toast.info("Je bent offline — we versturen het zodra je weer online bent");
       return;
     }
     // Zelfde product herkennen, ook met synoniemen: "knoflook" = "look".
@@ -843,6 +866,10 @@ function BoodschappenPage() {
 
   async function vink(item: Item) {
     const nieuwWaarde = !item.checked;
+    if (item.id.startsWith("wacht-")) {
+      toast("Dit product wacht nog op verbinding. Afvinken kan zodra het verstuurd is.");
+      return;
+    }
     if (!online) {
       zetInWachtrij({ soort: "vink", id: item.id, checked: nieuwWaarde });
       qc.setQueryData<Item[]>(["shopping", actief], (oud) =>
@@ -1544,14 +1571,7 @@ function BoodschappenPage() {
             }}
           />
         ) : null}
-        {!online && (
-          <p
-            role="status"
-            className="flex items-center gap-2 rounded-2xl bg-honing-zacht px-4 py-3 text-base text-honing-foreground"
-          >
-            <WifiOff className="size-5 shrink-0" /> Je bent offline — we bewaren alles straks.
-          </p>
-        )}
+        {/* Offline-melding: bovenaan elk scherm (OfflineBand in AppShell, P6). */}
 
         {weergave === "lijst" ? (
           // B1 — lijst eerst. Telefoon: lijst bovenaan, invoer vast onderaan, de rest ná de lijst.
@@ -2446,7 +2466,7 @@ function BoodschappenPage() {
             </p>
             {deelLink ? (
               <div className="rounded-xl bg-secondary p-3">
-                <p className="break-all text-base">{deelLink}</p>
+                <p className="text-base [overflow-wrap:anywhere]">{deelLink}</p>
                 <Button
                   variant="ghost"
                   className="mt-1 h-11"

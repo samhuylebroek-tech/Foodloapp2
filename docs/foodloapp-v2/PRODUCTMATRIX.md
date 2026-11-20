@@ -227,7 +227,7 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | Web push | Behouden | ja | — |
 | Native push | Te ontwikkelen | sterk aanbevolen | #23 |
 | Talen (10, machinevertaling) | Behouden | nee (lancering in het Nederlands) | Vertalingen nalezen: F2 |
-| Offline (lijst, klantenkaart) | Behouden; offline-scherm gebouwd (ronde 3): web via de service worker, app via `server.errorPath` (actief na een nieuwe app-build) | ja | `offline.spec.ts` |
+| Offline (lijst, klantenkaart, Week, Vandaag) | Behouden; offline-scherm (ronde 3). **Gebouwd (marathon P6)**: melding op elk scherm met teller, laatst bekende Week/Lijst/Vandaag ook na herladen (7 dagen, gewist bij afmelden), wachtrij afvinken/toevoegen met eerlijke melding bij herstel; geen migratie nodig | ja | `offline.spec.ts`, `kwaliteit-20.spec.ts` (test 20), `offline-cache.test.ts` |
 
 ## I. Mobiele platformen en lancering
 | Onderdeel | Status | F1 nodig | Voorwaarde |

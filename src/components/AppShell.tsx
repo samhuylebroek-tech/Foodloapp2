@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/sheet";
 import { meet } from "@/lib/meten";
 import { MeldingenBel } from "@/components/samenwerking/MeldingenBel";
+import { OfflineBand } from "@/components/OfflineBand";
 
 type Pad =
   "/" | "/gerechten" | "/planner" | "/boodschappen" | "/voorraad" | "/inspiratie" | "/meer";
@@ -354,6 +355,7 @@ export function AppShell({
           breedte,
         )}
       >
+        <OfflineBand />
         {kop ?? (
           <div className="mb-6 flex flex-wrap items-start justify-between gap-x-4 gap-y-3 lg:mb-8">
             {/* Titel breekt nooit midden in een woord; knoppen springen desnoods eronder. */}
