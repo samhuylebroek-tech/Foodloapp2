@@ -39,7 +39,9 @@ test.beforeEach(async ({ page }) => {
 
 test("maker volgen, ontvolgen en ongedaan maken", async ({ page }) => {
   await page.goto("/makers/chef-ahmed");
-  await expect(page.getByRole("heading", { name: "Chef Ahmed", level: 2 })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Chef Ahmed", level: 2, exact: true }),
+  ).toBeVisible();
   await expect(page.getByText("Geverifieerd").first()).toBeVisible();
   await expect(page.getByRole("link", { name: /Kip-tajine met abrikozen/ })).toBeVisible();
 

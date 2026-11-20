@@ -122,12 +122,19 @@ test("partnerplan: eigenaar kiest Partner Plus, analist kan niets wijzigen", asy
   void extern;
 });
 
-test("maker: blok Abonnees met fee-berekening, uitgeschakeld", async ({ page, extern }) => {
+test("maker: abonnement in testmodus met fee-berekening (fase 4), standaard uit", async ({
+  page,
+  extern,
+}) => {
   await meldAan(page, LOTTE_USER);
   await page.goto("/maker");
-  const blok = page.getByRole("region", { name: "Abonnees" });
+  const blok = page.getByRole("region", { name: "Abonnement voor fans" });
   await expect(blok.getByText("Testmodus: nog niet te koop.")).toBeVisible();
-  await expect(blok.getByRole("switch", { name: "Abonnees toelaten" })).toBeDisabled();
+  await expect(blok.getByText(/Er wordt niets aangerekend en niets uitbetaald/)).toBeVisible();
+  // Zonder plan staat het abonnement uit; de maker kiest het zelf.
+  await expect(
+    blok.getByRole("switch", { name: "Abonnement aanbieden (testmodus)" }),
+  ).toHaveAttribute("aria-checked", "false");
   await blok.getByLabel(/Testprijs per maand/).fill("4,99");
   const verdeling = blok.getByRole("definition");
   await expect(blok.getByText("Jij krijgt")).toBeVisible();
