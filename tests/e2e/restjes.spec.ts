@@ -1,6 +1,6 @@
 /**
  * Restjes (usecase 18): na het koken bewaren, op Vandaag voorstellen ("Eet vanavond restjes"),
- * in Keuken tonen met "Is op"; altijd met ongedaan maken; uit met "Slimme voorstellen".
+ * in Keuken tonen met "Opgegeten"/"Weggegooid"; altijd met ongedaan maken; uit met "Slimme voorstellen".
  * Restjes staan op het toestel. Nepdata (demo).
  */
 import type { Page } from "@playwright/test";
@@ -100,7 +100,7 @@ test("Vandaag: 'Eet vanavond restjes' plant ze zonder lijst; ongedaan maken zet 
   void extern;
 });
 
-test("Keuken: restjes met 'Is op' (en ongedaan maken); na 3 dagen niet meer voorgesteld", async ({
+test("Keuken: restjes met 'Opgegeten' (en ongedaan maken); na 3 dagen niet meer voorgesteld", async ({
   page,
   extern,
 }) => {
@@ -114,7 +114,7 @@ test("Keuken: restjes met 'Is op' (en ongedaan maken); na 3 dagen niet meer voor
   const lijst = page.getByRole("region", { name: "Restjes" });
   await expect(lijst).toContainText("5 dagen geleden gekookt");
   await expect(lijst).toContainText("Kijk zelf of het nog goed is.");
-  await lijst.getByRole("button", { name: "Is op: Stoofvlees met frietjes" }).click();
+  await lijst.getByRole("button", { name: "Opgegeten: Stoofvlees met frietjes" }).click();
   await expect(page.getByRole("region", { name: "Restjes" })).toHaveCount(0);
   await page.getByRole("button", { name: "Ongedaan maken", exact: true }).first().click();
   await expect(page.getByRole("region", { name: "Restjes" })).toContainText("Stoofvlees");

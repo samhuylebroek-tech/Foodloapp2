@@ -23,6 +23,7 @@ export type Opdracht =
   | { soort: "niet-thuis"; datum: string }
   | { soort: "op-lijst"; zoek: string; receptId?: string | undefined }
   | { soort: "wat-met"; ingredient: string }
+  | { soort: "restjes" }
   | { soort: "verplaats"; van: string; naar: string };
 
 export type Herkenning =
@@ -44,6 +45,7 @@ export const VOORBEELDEN = [
   "Niemand thuis vrijdag",
   "Verplaats donderdag naar vrijdag",
   "Wat kan ik maken met pompoen?",
+  "Wat kan ik met mijn restjes?",
 ] as const;
 
 // ---------------------------------------------------------------- woorden
@@ -293,6 +295,10 @@ export function herkenOpdracht(zin: string, ctx: HerkenContext): Herkenning {
     return { ok: true, opdracht: { soort: "op-lijst", zoek, receptId: r?.id } };
   }
 
+  // 2b. Restjes (fase 3): "wat kan ik met mijn restjes?", "nog restjes over?".
+  if (heeft(w, "restje", "restjes", "restjeskoken", "overschot", "overschotjes", "overschotten"))
+    return { ok: true, opdracht: { soort: "restjes" } };
+
   // 3. Een gezinslid eet (niet) mee.
   const naam = naamIn(w, ctx.namen ?? []);
   if (naam && eersteDag && (w.includes("mee") || heeft(w, "meeeten", "komt", "aanschuiven"))) {
@@ -419,5 +425,7 @@ export function omschrijf(o: Opdracht, dagNaam: (datum: string) => string): stri
       return `Gerechten met ${o.ingredient}`;
     case "verplaats":
       return `${dagNaam(o.van)} verplaatsen naar ${dagNaam(o.naar)}`;
+    case "restjes":
+      return "Wat je met je restjes kan doen";
   }
 }

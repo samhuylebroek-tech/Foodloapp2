@@ -457,3 +457,48 @@ describe("privacy", () => {
     expect(voorAI("Gust is vegetarisch; iets met pompoen").tekst).toBe("iets met pompoen");
   });
 });
+
+describe("wat kan ik met mijn restjes? (fase 3)", () => {
+  const NU = new Date(2026, 10, 16, 18).getTime();
+  const dag = 86400000;
+  const restje = (id: string, titel: string, dagenOud: number, receptId: string | null) => ({
+    id,
+    titel,
+    receptId,
+    porties: 2,
+    gekookt: NU - dagenOud * dag,
+  });
+  it("oudste eerst, alleen wat nog goed is, en niets uitvoeren", () => {
+    const v = voorstelVoor(
+      "wat kan ik met mijn restjes?",
+      context({
+        nu: NU,
+        restjes: [
+          restje("a", "Zalm met krieltjes", 0, "zalm"),
+          restje("b", "Stoofvlees met frietjes", 2, "stoof"),
+          restje("c", "Oude soep", 5, null),
+        ],
+      }),
+    );
+    expect(v.ideeen?.map((i) => i.title)).toEqual([
+      "Stoofvlees met frietjes",
+      "Zalm met krieltjes",
+    ]);
+    expect(v.stappen).toEqual([]);
+    expect(v.waarschuwingen.join(" ")).toMatch(/langer dan 3 dagen/);
+  });
+  it("met een allergie: een restje zonder gekende ingrediënten wordt niet voorgesteld", () => {
+    const v = voorstelVoor(
+      "restjes",
+      context(
+        { nu: NU, restjes: [restje("x", "Iets van gisteren", 1, null)] },
+        { allergieen: ["noten"] },
+      ),
+    );
+    expect(v.ideeen ?? []).toEqual([]);
+    expect(v.waarschuwingen.join(" ")).toMatch(/allergie/);
+  });
+  it("geen restjes: eerlijke uitleg", () => {
+    expect(voorstelVoor("restjes", context({ restjes: [] })).leeg).toMatch(/geen restjes/);
+  });
+});

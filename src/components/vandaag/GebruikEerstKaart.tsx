@@ -11,7 +11,7 @@ import { ChefHat, Hourglass, Loader2, Soup } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useRestjes } from "@/hooks/useRestjes";
+import { useRestjes, useRestjesActies } from "@/hooks/useRestjes";
 import { useVoorstelBronnen } from "@/hooks/useVoorstelBronnen";
 import { bepaalContext } from "@/lib/intelligentie/context";
 import { dagenTekst, voorstelDatOpmaakt } from "@/lib/intelligentie/gebruik-eerst";
@@ -20,7 +20,6 @@ import { nietTonenLijst } from "@/lib/intelligentie/niet-nu";
 import {
   bijnaOpRestjes,
   gekooktTekst,
-  planRestje,
   restjeVeilig,
   type Restje,
 } from "@/lib/intelligentie/restjes";
@@ -130,6 +129,7 @@ export function GebruikEerstKaart({
 }) {
   const t = useT();
   const { user } = useAuth();
+  const restjeActies = useRestjesActies();
   const qc = useQueryClient();
   const { momenten } = useVoorkeuren();
   const [bezig, setBezig] = useState(false);
@@ -160,7 +160,7 @@ export function GebruikEerstKaart({
         .select("id")
         .single();
       if (error || !data) throw error ?? new Error("geen id");
-      planRestje(user.id, r.id, lokaleDatum());
+      restjeActies?.plan(r.id, lokaleDatum());
       void meet("restjes.vanavond", undefined, { bron: "gebruik-eerst" });
       const vernieuw = () => {
         for (const k of ["home-dagmenu", "home-week", "meal-plan"])
@@ -173,7 +173,7 @@ export function GebruikEerstKaart({
           label: "Ongedaan maken",
           onClick: async () => {
             await supabase.from("meal_plan").delete().eq("id", data.id);
-            planRestje(user.id, r.id, null);
+            restjeActies?.plan(r.id, null);
             vernieuw();
           },
         },

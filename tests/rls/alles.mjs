@@ -67,6 +67,7 @@ const ALLE_VOORSTELLEN = schrijf("alle-voorstellen.sql", [
   "0016_suggestie_instellingen.up.sql",
   "0017_samenwerking.up.sql",
   "0018_gezinslijst_kijker.up.sql",
+  "0019_restjes.up.sql",
 ]);
 
 const gevallen = [
@@ -103,7 +104,7 @@ const gevallen = [
     "rls-gezin-privacy.mjs",
     ALLE_VOORSTELLEN,
     0,
-    "0002a + 0002 + 0004 + 0006 … 0018: alleen de voorraad",
+    "0002a + 0002 + 0004 + 0006 … 0019: alleen de voorraad",
   ],
   [
     "makers-community.mjs",
@@ -158,6 +159,12 @@ const gevallen = [
     null,
     0,
     "voorstel 0018 (BUG-163): lek aangetoond, kijker mag na 0018 alleen afvinken, heen+terug",
+  ],
+  [
+    "restjes.mjs",
+    null,
+    0,
+    "voorstel 0019: restjes eigen + actief gezin, ander gezin niets, afloop, vaste velden, heen+terug",
   ],
   ["verwijder-gezinseigenaar.mjs", null, 0, "verslag BUG-110/025 (rapporteert, faalt niet)"],
 ];

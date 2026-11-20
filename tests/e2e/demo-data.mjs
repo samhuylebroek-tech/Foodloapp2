@@ -924,6 +924,23 @@ export function demoSeed() {
         created_at: new Date(Date.now() - 20 * 3600000).toISOString(),
       },
     ],
+    // Fase 3 (voorstel 0019, alleen demo): eerder deze maand afgesloten restjes, voor het kleine
+    // verspillingsoverzicht in Keuken. Geen open restjes: die zouden elke test op Vandaag raken.
+    restjes: [
+      ["a7a7a7a7-0019-4000-8000-000000000001", "Pompoensoep", 3, "opgegeten"],
+      ["a7a7a7a7-0019-4000-8000-000000000002", "Rijst van zondag", 1, "weggegooid"],
+    ].map(([id, titel, porties, status]) => ({
+      id,
+      user_id: DEMO_USER_ID,
+      group_id: GEZIN,
+      titel,
+      recipe_id: null,
+      porties,
+      gekookt_op: new Date(Date.now() - 2 * 3600000).toISOString(),
+      gepland_op: null,
+      status,
+      afgesloten_op: new Date(Date.now() - 3600000).toISOString(),
+    })),
     inspiration_recipes: INSPIRATIE,
     inspiration_ingredients: INSPIRATIE_INGREDIENTEN,
     groups: [

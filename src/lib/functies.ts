@@ -102,7 +102,8 @@ export const FUNCTIES: Functie[] = [
       "Eet vanavond restjes",
       "Plan restjes",
       "Restjes",
-      "Is op",
+      "Opgegeten",
+      "Weggegooid",
     ],
   },
   {

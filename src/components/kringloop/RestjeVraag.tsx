@@ -1,17 +1,19 @@
 /**
  * Na het koken (usecase 18, P3): "Blijft er iets over?" Eén tik op het aantal porties bewaart een
- * restje op dit toestel, met "Ongedaan maken". Opnieuw tikken past de porties aan. De naam is
+ * restje (op je account na migratie 0019, anders op dit toestel), met "Ongedaan maken". Opnieuw tikken past de porties aan. De naam is
  * voorgevuld en aan te passen; de bewaardatum is een richtwaarde, geen veiligheidsbelofte.
  */
 import { useId, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import { bewaarRestje, bewaarRichtwaarde, verwijderRestje } from "@/lib/intelligentie/restjes";
+import { useRestjesActies } from "@/hooks/useRestjes";
+import { bewaarRichtwaarde } from "@/lib/intelligentie/restjes";
 import { meet } from "@/lib/meten";
 import { cn } from "@/lib/utils";
 
 export function RestjeVraag({ titel, receptId }: { titel: string; receptId: string }) {
   const { user } = useAuth();
+  const acties = useRestjesActies();
   const [gekozen, setGekozen] = useState<number | null>(null);
   const [naam, setNaam] = useState(titel);
   const naamId = useId();
@@ -20,8 +22,8 @@ export function RestjeVraag({ titel, receptId }: { titel: string; receptId: stri
   const richtwaarde = bewaarRichtwaarde(Date.now());
 
   function kies(porties: number) {
-    if (!user) return;
-    const r = bewaarRestje(user.id, { titel: naam.trim() || titel, receptId, porties });
+    if (!user || !acties) return;
+    const r = acties.bewaar({ titel: naam.trim() || titel, receptId, porties });
     setGekozen(porties);
     void meet("restjes.bewaard", undefined, { porties });
     toast.success(`Restje bewaard: ${porties} ${porties === 1 ? "portie" : "porties"}`, {
@@ -29,7 +31,7 @@ export function RestjeVraag({ titel, receptId }: { titel: string; receptId: stri
       action: {
         label: "Ongedaan maken",
         onClick: () => {
-          verwijderRestje(user.id, r.id);
+          acties.verwijder(r.id);
           setGekozen(null);
         },
       },

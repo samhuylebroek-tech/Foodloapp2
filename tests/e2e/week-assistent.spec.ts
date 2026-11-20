@@ -62,7 +62,7 @@ test("vanaf Week: context, voorbeeldvragen, zonder AI; goedkoper → Doe maar �
     /Week \d+ · \d+ gerechten? gepland/,
   );
   const voorbeelden = page.getByRole("list", { name: "Voorbeeldvragen" });
-  await expect(voorbeelden.getByRole("button")).toHaveCount(6);
+  await expect(voorbeelden.getByRole("button")).toHaveCount(7);
   expect(await axeErnstig(page)).toEqual([]);
 
   const menuVoor = await menu();

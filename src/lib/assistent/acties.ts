@@ -13,6 +13,14 @@
 import { bekendeKost, euro } from "@/lib/budget";
 import type { HuishoudenLid, LidVoeding } from "@/lib/gezin-veiligheid";
 import { toegelaten } from "@/lib/intelligentie/voorstel";
+import {
+  RESTJE_VOORSTEL_DAGEN,
+  bewaarRichtwaarde,
+  dagenOud,
+  gekooktTekst,
+  restjeVeilig,
+  type Restje,
+} from "@/lib/intelligentie/restjes";
 import { etersVoorMaaltijd } from "@/lib/maaltijd-eters";
 import {
   FILTER_TEKST,
@@ -70,6 +78,10 @@ export type AssistentContext = {
   standaardPersonen: number;
   /** Het hoofdmoment van de dag ("avondeten"). */
   hoofdMoment: string;
+  /** Restjes (toestel of account), voor "wat kan ik met mijn restjes?". */
+  restjes?: readonly Restje[] | undefined;
+  /** Tijdstip "nu" (ms), voor de leeftijd van restjes; standaard Date.now(). */
+  nu?: number | undefined;
 };
 
 export type MenuVerschil = {
@@ -94,7 +106,14 @@ export type Stap =
     }
   | { soort: "lijst"; recipeId: string; personen: number };
 
-export type Idee = { id: string; title: string; minuten: number; reden: string };
+export type Idee = {
+  id: string;
+  title: string;
+  minuten: number;
+  reden: string;
+  /** Geen recept om te openen (bv. een restje zonder recept). */
+  geenLink?: boolean | undefined;
+};
 
 export type Voorstel = {
   titel: string;
@@ -756,6 +775,56 @@ function watMet(ctx: AssistentContext, ingredient: string): Voorstel {
   );
 }
 
+/**
+ * "Wat kan ik met mijn restjes?": je restjes die nog goed zijn (hooguit 3 dagen), de oudste
+ * eerst, en alleen als ze passen bij je allergieën en dieet (zelfde regel als Vandaag).
+ * Verandert niets: plannen gebeurt met één tik op Vandaag of in Week.
+ */
+function restjesVoorstel(ctx: AssistentContext): Voorstel {
+  const titel = "Je restjes";
+  const nu = ctx.nu ?? Date.now();
+  const alle = [...(ctx.restjes ?? [])].sort((a, b) => a.gekookt - b.gekookt);
+  if (!alle.length)
+    return leegVoorstel(
+      titel,
+      'Je hebt geen restjes bewaard. Na het koken vraagt Foodlo "Blijft er iets over?".',
+    );
+  const goed = alle.filter((r) => dagenOud(r, nu) <= RESTJE_VOORSTEL_DAGEN);
+  const veilig = goed.filter((r) =>
+    restjeVeilig(r, r.receptId ? kandidaatVan(ctx, r.receptId)?.ingredienten : undefined, {
+      allergieen: ctx.plan.allergieen,
+      dieet: ctx.plan.dieet,
+    }),
+  );
+  const ideeen: Idee[] = veilig.slice(0, 5).map((r) => ({
+    id: r.receptId ?? r.id,
+    title: r.titel,
+    minuten: 0,
+    reden: [
+      `${r.porties} ${r.porties === 1 ? "portie" : "porties"}`,
+      gekooktTekst(r, nu),
+      r.gepland ? "al gepland" : `richtwaarde tot ${bewaarRichtwaarde(r.gekookt, nu).tot}`,
+    ].join(" · "),
+    ...(r.receptId ? {} : { geenLink: true }),
+  }));
+  const waarschuwingen: string[] = [];
+  if (goed.length > veilig.length)
+    waarschuwingen.push(
+      "Niet elk restje staat hier: van sommige kent Foodlo de ingrediënten niet, en met een allergie of dieet stelt het die niet voor.",
+    );
+  if (alle.length > goed.length)
+    waarschuwingen.push(
+      "Sommige restjes zijn langer dan 3 dagen geleden gekookt. Twijfel je, eet ze dan niet meer.",
+    );
+  if (!ideeen.length)
+    return leegVoorstel(titel, "Geen restje dat Foodlo nu kan voorstellen.", { waarschuwingen });
+  return leegVoorstel(
+    titel,
+    'Eet de oudste eerst. Op Vandaag plan je ze met "Eet vanavond restjes"; in Week met "Plan restjes". Daarna tik je in Keuken op "Opgegeten".',
+    { ideeen, waarschuwingen },
+  );
+}
+
 /** Het voorstel voor een opdracht. Verandert niets. */
 export function maakActieVoorstel(o: Opdracht, ctx: AssistentContext): Voorstel {
   switch (o.soort) {
@@ -775,6 +844,8 @@ export function maakActieVoorstel(o: Opdracht, ctx: AssistentContext): Voorstel 
       return opLijst(ctx, o);
     case "wat-met":
       return watMet(ctx, o.ingredient);
+    case "restjes":
+      return restjesVoorstel(ctx);
   }
 }
 

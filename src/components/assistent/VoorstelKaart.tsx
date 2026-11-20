@@ -70,20 +70,29 @@ export function VoorstelKaart({
         <ul aria-label="Ideeën uit je recepten" className="space-y-2">
           {v.ideeen.map((i) => (
             <li key={i.id}>
-              <Link
-                to="/recepten/$id"
-                params={{ id: i.id }}
-                className="flex min-h-14 items-center gap-3 rounded-2xl bg-secondary p-3 text-base"
-              >
-                <span className="min-w-0 flex-1">
-                  <span className="block font-semibold break-words">{i.title}</span>
-                  <span className="block text-muted-foreground">
-                    {i.minuten ? `${i.minuten} min · ` : ""}
-                    {i.reden}
+              {i.geenLink ? (
+                <span className="flex min-h-14 items-center gap-3 rounded-2xl bg-secondary p-3 text-base">
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold break-words">{i.title}</span>
+                    <span className="block text-muted-foreground">{i.reden}</span>
                   </span>
                 </span>
-                <ArrowRight className="size-5 shrink-0" aria-hidden />
-              </Link>
+              ) : (
+                <Link
+                  to="/recepten/$id"
+                  params={{ id: i.id }}
+                  className="flex min-h-14 items-center gap-3 rounded-2xl bg-secondary p-3 text-base"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold break-words">{i.title}</span>
+                    <span className="block text-muted-foreground">
+                      {i.minuten ? `${i.minuten} min · ` : ""}
+                      {i.reden}
+                    </span>
+                  </span>
+                  <ArrowRight className="size-5 shrink-0" aria-hidden />
+                </Link>
+              )}
             </li>
           ))}
         </ul>

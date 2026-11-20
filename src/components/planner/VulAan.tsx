@@ -15,12 +15,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useRestjes } from "@/hooks/useRestjes";
+import { useRestjes, useRestjesActies } from "@/hooks/useRestjes";
 import { useVoorstelBronnen } from "@/hooks/useVoorstelBronnen";
 import { usePlanProfiel } from "@/hooks/usePlanProfiel";
 import { vatSamen } from "@/lib/intelligentie/geschiedenis";
 import { herstelNietNu, nietTonenLijst, zetNietNu } from "@/lib/intelligentie/niet-nu";
-import { gekooktTekst, planRestje, restjeVeilig, type Restje } from "@/lib/intelligentie/restjes";
+import { gekooktTekst, restjeVeilig, type Restje } from "@/lib/intelligentie/restjes";
 import { restjesVoorWeek } from "@/lib/intelligentie/restjes-week";
 import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
 import { vulAan } from "@/lib/intelligentie/vul-aan";
@@ -48,6 +48,7 @@ export function VulAan({
   onZet: (rijen: Rij[]) => Promise<void>;
 }) {
   const { user } = useAuth();
+  const restjeActies = useRestjesActies();
   const { weekmenu } = useVoorkeuren();
   const [slim] = useSlimmeVoorstellen();
   const [nietNu, setNietNu] = useState<string[]>([]);
@@ -180,7 +181,7 @@ export function VulAan({
         .select("id")
         .single();
       if (error || !data) throw error ?? new Error("geen id");
-      planRestje(user.id, r.id, datum);
+      restjeActies?.plan(r.id, datum);
       void meet("week.restjes", undefined, { porties: r.porties });
       const vernieuw = () => {
         for (const k of ["meal-plan", "home-dagmenu", "home-week"])
@@ -193,7 +194,7 @@ export function VulAan({
           label: "Ongedaan maken",
           onClick: async () => {
             await supabase.from("meal_plan").delete().eq("id", data.id);
-            planRestje(user.id, r.id, null);
+            restjeActies?.plan(r.id, null);
             vernieuw();
           },
         },

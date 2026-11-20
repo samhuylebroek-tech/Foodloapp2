@@ -2,10 +2,10 @@
  * Restjes (usecase 18): na het koken één tik "Er blijft over", daarna stelt Foodlo de restjes
  * voor op Vandaag en in Week, en toont ze in Keuken.
  *
- * Voorlopig alleen op dit toestel (zoals "Niet nu"). Bewust niet in de voorraadtabel: daar zou
+ * Dit bestand is de lijst op het toestel (snel, werkt offline). Fase 3: als de tabel `restjes`
+ * bestaat (voorstel 0019), houdt `restjes-db.ts` deze lijst gelijk met het account en het gezin;
+ * anders blijft alles op het toestel zoals voordien. Bewust niet in de voorraadtabel: daar zou
  * "Restje spaghetti bolognese" als "spaghetti in huis" tellen voor de lijst en de voorstellen.
- * Naar het account (en gedeeld met het huishouden) kan pas met een eigen kolom of tabel na een
- * goedgekeurde migratie (zie FOODLOAPP-INTELLIGENCE-ARCHITECTUUR §8).
  * Geen gezondheidsgegevens: alleen de naam van het gerecht, porties en de kookdatum.
  */
 import type { Dieet } from "@/lib/kennismaking";
@@ -26,9 +26,60 @@ export type Restje = {
   gekookt: number;
   /** Ingepland om op te eten (YYYY-MM-DD): dan niet opnieuw voorstellen. */
   gepland?: string;
+  /** Staat (ook) op het account (fase 3, tabel `restjes`). */
+  bron?: "account";
+  /** Lokaal gewijzigd, nog niet op het account bewaard (bv. offline). */
+  vuil?: boolean;
+  /** Wie het bewaarde (account), bv. een gezinslid. */
+  door?: string;
+  /** Het gezin waarin het op het account staat (vast na bewaren). */
+  groep?: string | null;
+};
+
+export type Afloop = "opgegeten" | "weggegooid";
+/** Een afgesloten restje, voor het kleine verspillingsoverzicht per maand. */
+export type AfgeslotenRestje = {
+  id: string;
+  titel: string;
+  porties: number;
+  status: Afloop;
+  /** Tijdstip van afsluiten (ms). */
+  op: number;
 };
 
 const sleutel = (userId: string) => `foodlo:restjes:${userId}`;
+const afloopSleutel = (userId: string) => `foodlo:restjes-afloop:${userId}`;
+const wegSleutel = (userId: string) => `foodlo:restjes-weg:${userId}`;
+/** Zo lang onthoudt het toestel afgesloten restjes (voor het overzicht per maand). */
+const AFLOOP_BEWAREN = 400;
+
+/** Een nieuwe id: een uuid (past in de tabel), anders tijd + toeval. */
+export function nieuweRestjeId(nu = Date.now()): string {
+  try {
+    const c = (globalThis as { crypto?: { randomUUID?: () => string } }).crypto;
+    if (c?.randomUUID) return c.randomUUID();
+  } catch {
+    // Geen crypto: val terug.
+  }
+  return `${nu}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function leesJson<T>(s: string): T[] {
+  try {
+    const ruw = window.localStorage.getItem(s);
+    const l = ruw ? (JSON.parse(ruw) as unknown) : [];
+    return Array.isArray(l) ? (l as T[]) : [];
+  } catch {
+    return [];
+  }
+}
+function schrijfJson(s: string, l: unknown[]) {
+  try {
+    window.localStorage.setItem(s, JSON.stringify(l));
+  } catch {
+    // Opslag geblokkeerd.
+  }
+}
 
 function lees(userId: string): Restje[] {
   try {
@@ -76,18 +127,21 @@ export function bewaarRestje(
   r: { titel: string; receptId: string | null; porties: number },
   nu = Date.now(),
 ): Restje {
+  const titel = r.titel.slice(0, 120);
+  // Eén restje per gerecht per dag: opnieuw tikken past de porties aan (zelfde id, zodat het
+  // account dezelfde rij bijwerkt in plaats van een tweede te maken).
+  const alle = lees(userId);
+  const vorige = alle.find(
+    (x) => x.receptId === r.receptId && x.titel === titel && dagenOud(x, nu) === 0,
+  );
   const nieuw: Restje = {
-    id: `${nu}-${Math.random().toString(36).slice(2, 8)}`,
-    titel: r.titel.slice(0, 120),
+    id: vorige?.id ?? nieuweRestjeId(nu),
+    titel,
     receptId: r.receptId,
     porties: Math.max(1, Math.min(12, Math.round(r.porties))),
     gekookt: nu,
   };
-  // Eén restje per gerecht per dag: opnieuw tikken past de porties aan.
-  const rest = lees(userId).filter(
-    (x) => !(x.receptId === nieuw.receptId && x.titel === nieuw.titel && dagenOud(x, nu) === 0),
-  );
-  schrijf(userId, [...rest, nieuw]);
+  schrijf(userId, [...alle.filter((x) => x !== vorige), nieuw]);
   return nieuw;
 }
 
@@ -115,7 +169,117 @@ export function planRestje(userId: string, id: string, datum: string | null) {
 
 /** Ongedaan maken: een verwijderd restje terugzetten zoals het was. */
 export function zetRestjeTerug(userId: string, r: Restje) {
+  vergeetWeg(userId, r.id);
   schrijf(userId, [...lees(userId).filter((x) => x.id !== r.id), r]);
+}
+
+/** De hele lijst vervangen (na het ophalen van het account). */
+export function vervangRestjes(userId: string, l: readonly Restje[]) {
+  schrijf(userId, [...l]);
+}
+
+/** Alle restjes zonder opruimen of sorteren (voor de synchronisatie). */
+export function ruweRestjes(userId: string): Restje[] {
+  return lees(userId);
+}
+
+/**
+ * Opgegeten of weggegooid: uit de lijst, en onthouden voor het overzicht per maand.
+ * Geeft het restje terug (voor ongedaan maken met `heropenRestje`).
+ */
+export function sluitRestje(
+  userId: string,
+  id: string,
+  status: Afloop,
+  nu = Date.now(),
+): Restje | null {
+  const weg = verwijderRestje(userId, id);
+  if (!weg) return null;
+  const log = leesJson<AfgeslotenRestje>(afloopSleutel(userId)).filter(
+    (a) => a.id !== id && nu - a.op < AFLOOP_BEWAREN * DAG,
+  );
+  schrijfJson(afloopSleutel(userId), [
+    ...log,
+    { id, titel: weg.titel, porties: weg.porties, status, op: nu },
+  ]);
+  return weg;
+}
+
+/** Ongedaan maken van opgegeten/weggegooid. */
+export function heropenRestje(userId: string, r: Restje) {
+  schrijfJson(
+    afloopSleutel(userId),
+    leesJson<AfgeslotenRestje>(afloopSleutel(userId)).filter((a) => a.id !== r.id),
+  );
+  zetRestjeTerug(userId, r);
+}
+
+/** Afgesloten restjes op dit toestel. */
+export function afgeslotenRestjes(userId: string | null | undefined): AfgeslotenRestje[] {
+  if (!userId) return [];
+  return leesJson<AfgeslotenRestje>(afloopSleutel(userId)).filter(
+    (a) =>
+      a &&
+      typeof a.op === "number" &&
+      (a.status === "opgegeten" || a.status === "weggegooid") &&
+      typeof a.porties === "number",
+  );
+}
+
+/**
+ * Verwijderd op dit toestel (ongedaan maken van "bewaren"): het account mag het niet terugzetten
+ * tot het daar ook weg is. Geldt hooguit een week.
+ */
+export function merkWeg(userId: string, id: string, nu = Date.now()) {
+  const l = leesJson<{ id: string; op: number }>(wegSleutel(userId)).filter(
+    (x) => x.id !== id && nu - x.op < OPRUIMEN_NA * DAG,
+  );
+  schrijfJson(wegSleutel(userId), [...l, { id, op: nu }]);
+}
+export function wegGemerkt(userId: string): Set<string> {
+  return new Set(leesJson<{ id: string }>(wegSleutel(userId)).map((x) => x.id));
+}
+export function vergeetWeg(userId: string, id: string) {
+  const l = leesJson<{ id: string }>(wegSleutel(userId));
+  if (l.some((x) => x.id === id))
+    schrijfJson(
+      wegSleutel(userId),
+      l.filter((x) => x.id !== id),
+    );
+}
+
+export type Verspilling = {
+  maand: string;
+  opgegeten: number;
+  weggegooid: number;
+  /** Aandeel weggegooide porties (0–100), of null als er niets gemarkeerd is. */
+  procentWeg: number | null;
+};
+
+/**
+ * Klein overzicht per maand (YYYY-MM): porties opgegeten en weggegooid. Een richtwaarde: het
+ * telt alleen wat je zelf markeerde.
+ */
+export function verspillingVanMaand(
+  lijst: readonly Pick<AfgeslotenRestje, "porties" | "status" | "op">[],
+  maand: string,
+): Verspilling {
+  let opgegeten = 0;
+  let weggegooid = 0;
+  for (const a of lijst) {
+    const d = new Date(a.op);
+    const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    if (m !== maand) continue;
+    if (a.status === "opgegeten") opgegeten += a.porties;
+    else weggegooid += a.porties;
+  }
+  const totaal = opgegeten + weggegooid;
+  return {
+    maand,
+    opgegeten,
+    weggegooid,
+    procentWeg: totaal ? Math.round((weggegooid / totaal) * 100) : null,
+  };
 }
 
 /** Hele kalenderdagen sinds het koken (0 = vandaag, 1 = gisteren). */

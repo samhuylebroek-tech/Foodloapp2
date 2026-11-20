@@ -15,8 +15,13 @@ import type { EtersContext } from "@/lib/voorstel-eters";
 
 /** Het actieve gezin van de gebruiker (zelfde sleutel als de assistent: gedeelde cache). */
 export function useEigenGezinId() {
+  return useEigenGezin().id;
+}
+
+/** Zelfde als `useEigenGezinId`, met `klaar` (opgehaald, ook als er geen gezin is). */
+export function useEigenGezin(): { id: string | null; klaar: boolean } {
   const { user } = useAuth();
-  const { data } = useQuery({
+  const { data, isSuccess, isError } = useQuery({
     queryKey: ["assistent-gezin", user?.id],
     enabled: !!user,
     staleTime: 5 * 60_000,
@@ -31,7 +36,7 @@ export function useEigenGezinId() {
       return (data?.group_id as string | undefined) ?? null;
     },
   });
-  return data ?? null;
+  return { id: data ?? null, klaar: isSuccess || isError };
 }
 
 export function useVoorstelEters(opties: {

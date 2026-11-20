@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useMaaltijdEters } from "@/hooks/useMaaltijdEters";
+import { useRestjes } from "@/hooks/useRestjes";
 import { usePlanProfiel } from "@/hooks/usePlanProfiel";
 import { useKandidaten, usePlannerGegevens } from "@/hooks/usePlannerGegevens";
 import { useVoorstelEters } from "@/hooks/useVoorstelEters";
@@ -47,6 +48,7 @@ export function useAssistentContext() {
   const [budget] = useWeekbudget();
   const { momenten, weekmenu } = useVoorkeuren();
   const huis = useVoorstelEters({});
+  const restjes = useRestjes();
   const { data: ruw, isSuccess: menuKlaar } = useQuery({
     queryKey: [ASSISTENT_MENU, user?.id, vandaag],
     enabled: !!user,
@@ -136,6 +138,7 @@ export function useAssistentContext() {
       inHuis: voorraad,
       standaardPersonen: standaardPersonen(kennis),
       hoofdMoment,
+      restjes,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -156,6 +159,7 @@ export function useAssistentContext() {
     huis.leden,
     hoofdMoment,
     weekmenu.vermijd,
+    restjes,
   ]);
 
   return { ctx, nietLeesbaar, eters, budget, regels: g.regels, recepten: g.recepten };
