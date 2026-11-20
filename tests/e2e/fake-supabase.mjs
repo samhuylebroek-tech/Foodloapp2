@@ -58,11 +58,37 @@ function seed() {
   };
 }
 
+// Eigenaar van het platform (zelfde vaste ID als src/lib/eigenaar.ts). Alleen in de demo
+// (DEMO=1) krijgt dit account een eigenaarsrol in de NEP-databank, zodat de eigenaar het Business
+// Control Center in testmodus kan uitproberen. Verandert niets aan productie of echte rechten.
+const DEMO_EIGENAAR = "e11454f4-8b82-4b7a-81a4-4c161b3b222d";
+/** Alleen in de demo voor de eigenaar (niet in E2E: die zetten hun eigen beheerrechten). */
+const demoBeheer = () => ({
+  admin_users: [
+    {
+      user_id: DEMO_EIGENAAR,
+      role: "super_admin",
+      active: true,
+      can_view_private_content: false,
+      note: "Demo-eigenaar (nep-databank)",
+      read_only: false,
+      mfa_required: false,
+    },
+  ],
+  profiel: { id: DEMO_EIGENAAR, display_name: "Eigenaar (demo)", onboarding_klaar: true },
+});
+
 const metDemo = (aan) => {
   if (!aan) return seed();
   const { extraProfielen, ...demo } = demoSeed();
   const basis = seed();
-  return { ...basis, ...demo, profiles: [...basis.profiles, ...extraProfielen] };
+  const beheer = DEMO ? demoBeheer() : null;
+  return {
+    ...basis,
+    ...demo,
+    ...(beheer ? { admin_users: beheer.admin_users } : {}),
+    profiles: [...basis.profiles, ...extraProfielen, ...(beheer ? [beheer.profiel] : [])],
+  };
 };
 const db = maakDb(metDemo(DEMO));
 const log = [];
@@ -110,6 +136,7 @@ export const NEP_BEHEERSLEUTEL = "sb_secret_nep_alleen_lokaal";
 const EXTRA_DEMO_LOGINS = {
   "partner@foodlo.be": PARTNER_USERS.els,
   "proef@foodlo.be": PARTNER_USERS.proef,
+  "beheer@foodlo.be": DEMO_EIGENAAR,
 };
 
 const RPC_STANDAARD = {
