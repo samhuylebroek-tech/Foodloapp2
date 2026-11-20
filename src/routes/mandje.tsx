@@ -281,24 +281,24 @@ function MandjePagina() {
                                   zet(k.regel.id, { product: i, aantal: aantalVoor(k.regel, p) })
                                 }
                               />
-                              <span className="min-w-0 flex-1">
+                              <span className="min-w-0 flex-1 break-words">
                                 <span className="block text-base font-semibold">{p.naam}</span>
                                 <span className="block text-[0.95rem] text-muted-foreground">
                                   {[p.merk, p.inhoud].filter(Boolean).join(" · ")}
                                 </span>
-                              </span>
-                              <span className="shrink-0 text-base font-semibold tabular-nums">
-                                {p.prijsCent === null ? (
-                                  <span className="text-[0.95rem] font-normal text-muted-foreground">
-                                    Geen prijs van de winkel
-                                  </span>
-                                ) : (
-                                  euroCent(p.prijsCent)
-                                )}
+                                <span className="mt-1 block text-base font-semibold tabular-nums">
+                                  {p.prijsCent === null ? (
+                                    <span className="font-normal text-muted-foreground">
+                                      Geen prijs van de winkel
+                                    </span>
+                                  ) : (
+                                    euroCent(p.prijsCent)
+                                  )}
+                                </span>
                               </span>
                             </label>
                           ))}
-                          <div className="flex items-center gap-3">
+                          <div className="flex flex-wrap items-center gap-3">
                             <span className="text-base" id={`aantal-${k.regel.id}`}>
                               Aantal
                             </span>
@@ -360,7 +360,7 @@ function MandjePagina() {
               </section>
             ) : null}
 
-            <div className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] z-10 -mx-4 space-y-2 bg-background/95 px-4 py-3 backdrop-blur md:bottom-0">
+            <div className="paneel space-y-3 p-4">
               <p className="text-base" aria-live="polite">
                 <strong>Testtotaal: {euroCent(totaal.totaalCent)}</strong> voor {regels.length}{" "}
                 {regels.length === 1 ? "product" : "producten"}

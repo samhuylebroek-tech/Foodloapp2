@@ -242,7 +242,7 @@ export function LijstSlimmer({
           Foodlo gebruikt hier vaste regels, geen AI: dit is gratis en telt niet mee voor je slimme
           vragen.
         </p>
-        <div className="sticky bottom-0 -mx-6 mt-4 flex flex-col gap-2 bg-background/95 px-6 py-3 backdrop-blur sm:flex-row">
+        <div className="mt-4 flex flex-col gap-2 pb-2 sm:flex-row">
           {groepen.length ? (
             <Button
               className="h-14 flex-1 text-lg"

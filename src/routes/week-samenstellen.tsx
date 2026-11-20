@@ -703,7 +703,7 @@ function Samenstellen({ week }: { week: string | undefined }) {
 
       <div className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] z-10 -mx-4 bg-background/95 px-4 py-3 backdrop-blur md:bottom-0">
         <Button
-          className="h-14 w-full text-lg"
+          className="h-auto min-h-14 w-full py-2 text-lg"
           disabled={!aantal}
           onClick={() => {
             setWissels({});
