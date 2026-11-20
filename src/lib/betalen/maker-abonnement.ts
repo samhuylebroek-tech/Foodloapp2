@@ -12,10 +12,11 @@
  */
 import { heeftRecht, type Entitlement } from "./entitlements";
 import { FEE_VOORSTEL, leesPrijs, verdeelOpbrengst } from "./fee";
+import { makerPrijsGrenzen, PRIJZEN } from "./prijzen";
 import { euro } from "./types";
 
-export const MAKER_PERIODE_DAGEN = 30;
-export const HERROEPING_DAGEN = 14;
+export const MAKER_PERIODE_DAGEN = PRIJZEN.periodeDagen.maand;
+export const HERROEPING_DAGEN = PRIJZEN.herroepingDagen;
 export const MAX_VOORDELEN = 5;
 
 export type MakerPlan = {
@@ -85,7 +86,10 @@ export function valideerMakerPlan(
   voordelenTekst: string,
 ): { prijs_cent: number; voordelen: string[] } | { fout: string } {
   const prijs = leesPrijs(prijsInvoer);
-  if (!prijs) return { fout: "Geef een testprijs tussen € 1 en € 50 per maand, bv. 3,99." };
+  if (!prijs)
+    return {
+      fout: `Geef een testprijs tussen ${makerPrijsGrenzen()} per maand, bv. 3,99.`,
+    };
   const voordelen = [
     ...new Set(
       voordelenTekst

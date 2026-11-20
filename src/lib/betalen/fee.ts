@@ -4,6 +4,8 @@
  * Btw: de prijs is inclusief btw; de btw-afdracht (OSS, per land) hangt af van de gekozen
  * provider en wordt pas na de fiscale review berekend. Daarom staat ze hier apart als voorstel.
  */
+import { PRIJZEN } from "./prijzen";
+
 export type FeeInstelling = {
   /** Platformfee in procent van het bedrag na btw (voorstel). */
   platformProcent: number;
@@ -14,11 +16,12 @@ export type FeeInstelling = {
   btwProcent: number;
 };
 
+/** Uit de centrale prijsconfiguratie (`prijzen.ts`). */
 export const FEE_VOORSTEL: FeeInstelling = {
-  platformProcent: 15,
-  betaalProcent: 1.5,
-  betaalVastCent: 25,
-  btwProcent: 21,
+  platformProcent: PRIJZEN.platformProcent,
+  betaalProcent: PRIJZEN.betaalkosten.procent,
+  betaalVastCent: PRIJZEN.betaalkosten.vastCent,
+  btwProcent: PRIJZEN.btw.procent,
 };
 
 export type Verdeling = {
@@ -47,10 +50,10 @@ export function verdeelOpbrengst(prijsCent: number, f: FeeInstelling = FEE_VOORS
   };
 }
 
-/** Invoer "4,99" of "4.99" → 499; ongeldig of buiten 1–50 euro → null. */
+/** Invoer "4,99" of "4.99" → 499; ongeldig of buiten de makergrenzen (PRIJZEN.maker) → null. */
 export function leesPrijs(invoer: string): number | null {
   const t = invoer.trim().replace(/\s|€/g, "").replace(",", ".");
   if (!/^\d+(\.\d{1,2})?$/.test(t)) return null;
   const cent = Math.round(Number(t) * 100);
-  return cent >= 100 && cent <= 5000 ? cent : null;
+  return cent >= PRIJZEN.maker.minCent && cent <= PRIJZEN.maker.maxCent ? cent : null;
 }

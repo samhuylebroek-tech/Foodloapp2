@@ -11,20 +11,24 @@ const OVERGANGEN: Record<AbonnementStatus, Partial<Record<BetaalEventSoort, Abon
     betaling_gelukt: "actief",
     betaling_mislukt: "betaling_mislukt",
     opgezegd: "opgezegd",
+    terugbetaald: "geen",
   },
   actief: {
     betaling_gelukt: "actief",
     betaling_mislukt: "betaling_mislukt",
     opgezegd: "opgezegd",
+    terugbetaald: "geen",
   },
   betaling_mislukt: {
     betaling_gelukt: "actief",
     opgezegd: "opgezegd",
     periode_afgelopen: "geen",
+    terugbetaald: "geen",
   },
   opgezegd: {
     periode_afgelopen: "geen",
     checkout_voltooid: "actief",
+    terugbetaald: "geen",
   },
 };
 
@@ -61,7 +65,13 @@ export function verwerkEvent(staat: AbonnementStaat, event: BetaalEvent): Uitkom
 /** Geeft deze status (nu) toegang tot de premiumfuncties? */
 export function geeftToegang(status: AbonnementStatus): boolean {
   // Opgezegd: toegang tot het einde van de betaalde periode (gecontroleerd via geldig_tot).
-  return status === "actief" || status === "proef" || status === "opgezegd";
+  // Mislukte betaling: toegang tijdens de genadeperiode (fase 6), ook via geldig_tot.
+  return (
+    status === "actief" ||
+    status === "proef" ||
+    status === "opgezegd" ||
+    status === "betaling_mislukt"
+  );
 }
 
 export const STATUS_UITLEG: Record<AbonnementStatus, { titel: string; uitleg: string }> = {
@@ -84,6 +94,6 @@ export const STATUS_UITLEG: Record<AbonnementStatus, { titel: string; uitleg: st
   betaling_mislukt: {
     titel: "Betaling mislukt",
     uitleg:
-      "De laatste betaling lukte niet. Premium werkt nog even; pas je betaalgegevens aan om het te houden.",
+      "De laatste betaling lukte niet. Premium werkt nog even (genadeperiode); pas je betaalgegevens aan om het te houden. Je gegevens blijven bewaard.",
   },
 };

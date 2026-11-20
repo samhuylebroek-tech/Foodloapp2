@@ -3,9 +3,11 @@
  * Vaste tips zonder AI tellen niet mee: die zijn gratis en onbeperkt. Op het toestel, per gebruiker
  * en per dag; de server heeft daarnaast zijn eigen rem (`kostrem.ts`). Nooit tokens of kosten tonen.
  */
+import { AI_LIMIETEN } from "@/lib/betalen/rechten";
 import { lokaleDatum } from "@/lib/tijd";
 
-export const DAGLIMIET = 20;
+/** Uit de centrale rechtenlijst (fase 6): gelijk voor gratis en Premium. */
+export const DAGLIMIET = AI_LIMIETEN.gratis.assistentPerDag;
 
 export type Gebruik = { dag: string; aantal: number };
 

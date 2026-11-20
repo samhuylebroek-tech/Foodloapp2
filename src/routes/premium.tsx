@@ -1,12 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Lock, Minus } from "lucide-react";
+import { Check, Minus } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { TestmodusBand } from "@/components/TestmodusBand";
 import { Button } from "@/components/ui/button";
+import { PremiumExtraBlok } from "@/components/premium/PremiumExtra";
 import { startTestCheckout } from "@/lib/betalen/betalen.functions";
+import { btwRegel, jaarBesparingCent, prijsPer } from "@/lib/betalen/prijzen";
+import { KERN_GRATIS, NIVEAUS, RECHTEN } from "@/lib/betalen/rechten";
 import { STATUS_UITLEG } from "@/lib/betalen/statusmachine";
 import { euro, PLANNEN } from "@/lib/betalen/types";
 import { useAbonnement } from "@/lib/betalen/useAbonnement";
@@ -17,31 +20,28 @@ export const Route = createFileRoute("/premium")({
   component: Premium,
 });
 
-/** Wat gratis is, blijft gratis. Premium voegt alleen extra's toe. */
+/**
+ * Wat gratis is, blijft gratis. Premium voegt alleen extra's toe. Beide kolommen komen uit de
+ * centrale rechtenlijst (`rechten.ts`), zodat deze tabel nooit iets anders belooft dan de server.
+ */
 const RIJEN: { functie: string; gratis: boolean; premium: boolean }[] = [
-  { functie: "Recepten bewaren, plannen en koken", gratis: true, premium: true },
-  { functie: "Boodschappenlijst en voorraad", gratis: true, premium: true },
-  { functie: "Allergie- en dieetcontrole", gratis: true, premium: true },
-  { functie: "Gezin en delen", gratis: true, premium: true },
-  { functie: "Extra weekmenu-sjablonen", gratis: false, premium: true },
-  { functie: "Seizoenskalender met wat nu lekker is", gratis: false, premium: true },
-];
-
-const SEIZOEN = [
-  "Pompoen en butternut",
-  "Prei en witloof",
-  "Spruitjes en boerenkool",
-  "Appels en peren",
+  ...KERN_GRATIS.map((functie) => ({ functie, gratis: true, premium: true })),
+  ...NIVEAUS.premium.rechten.map((r) => ({
+    functie: RECHTEN[r].titel,
+    gratis: false,
+    premium: true,
+  })),
 ];
 
 function Premium() {
   const plan = PLANNEN.premium_maand;
-  const { data, isLoading, mag } = useAbonnement();
+  const jaar = PLANNEN.premium_jaar;
+  const { data, isLoading } = useAbonnement();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const start = useServerFn(startTestCheckout);
   const checkout = useMutation({
-    mutationFn: () => start({ data: { plan: "premium_maand" } }),
+    mutationFn: (gekozen: "premium_maand" | "premium_jaar") => start({ data: { plan: gekozen } }),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["abonnement"] });
       toast.success("Testabonnement gestart. Er werd niets aangerekend.");
@@ -109,7 +109,12 @@ function Premium() {
             </h2>
             <p className="text-base text-muted-foreground">
               Voorstel, nog niet te koop. Eerst {plan.proefDagen} dagen gratis proberen, daarna
-              maandelijks opzegbaar in twee tikken.
+              maandelijks opzegbaar in twee tikken. Prijs inclusief btw ({btwRegel(plan.prijsCent)}
+              ).
+            </p>
+            <p className="text-base">
+              Of per jaar: <strong>{prijsPer(jaar.prijsCent, "jaar")}</strong> (
+              {euro(jaarBesparingCent())} minder dan twaalf maanden; {btwRegel(jaar.prijsCent)}).
             </p>
             {isLoading ? null : heeftPremium ? (
               <div className="space-y-2">
@@ -121,37 +126,35 @@ function Premium() {
                 </Button>
               </div>
             ) : (
-              <Button
-                className="h-14 w-full px-6 text-base sm:w-auto"
-                disabled={checkout.isPending}
-                onClick={() => checkout.mutate()}
-              >
-                Premium testen (testmodus)
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  className="h-14 w-full px-6 text-base sm:w-auto"
+                  disabled={checkout.isPending}
+                  onClick={() => checkout.mutate("premium_maand")}
+                >
+                  Premium testen (testmodus)
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-14 w-full px-6 text-base sm:w-auto"
+                  disabled={checkout.isPending}
+                  onClick={() => checkout.mutate("premium_jaar")}
+                >
+                  Per jaar testen (testmodus)
+                </Button>
+              </div>
             )}
           </section>
-          <section aria-labelledby="extra" className="paneel space-y-3 p-4">
-            <h2 id="extra" className="text-sectietitel">
-              Premium-extra: seizoenskalender
-            </h2>
-            {mag("premium.seizoenskalender") ? (
-              <>
-                <p className="text-base text-muted-foreground">Nu op zijn best in België:</p>
-                <ul aria-label="Seizoenskalender" className="grid gap-2 sm:grid-cols-2">
-                  {SEIZOEN.map((s) => (
-                    <li key={s} className="rounded-xl bg-secondary px-3 py-2 text-base">
-                      {s}
-                    </li>
-                  ))}
-                </ul>
-              </>
-            ) : (
-              <p className="flex items-start gap-2 text-base text-muted-foreground">
-                <Lock className="mt-0.5 size-5 shrink-0" aria-hidden />
-                Beschikbaar met Premium. Alles wat je nu gratis gebruikt, blijft gratis.
-              </p>
-            )}
-          </section>
+          <PremiumExtraBlok
+            soort="seizoenskalender"
+            titel="Premium-extra: seizoenskalender"
+            metKnop={false}
+          />
+          <PremiumExtraBlok
+            soort="weekmenu_sjablonen"
+            titel="Premium-extra: weekmenu-sjablonen"
+            metKnop={false}
+          />
         </div>
       )}
     </AppShell>

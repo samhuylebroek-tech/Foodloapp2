@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { TestmodusBand } from "@/components/TestmodusBand";
 import { FEE_VOORSTEL, leesPrijs, verdeelOpbrengst } from "@/lib/betalen/fee";
+import { makerPrijsGrenzen } from "@/lib/betalen/prijzen";
 import { euro } from "@/lib/betalen/types";
 import { valideerMakerPlan, type MakerPlan } from "@/lib/betalen/maker-abonnement";
 import { mijnMakerAbonnees } from "@/lib/betalen/maker-abonnement.functions";
@@ -128,7 +129,9 @@ export function MakerAbonnees({ maker }: { maker: Maker }) {
             className="min-h-14 max-w-40 text-base"
           />
           <p id={`${id}-prijs-hulp`} className="text-[0.95rem] text-muted-foreground">
-            {prijs ? "Tussen € 1 en € 50." : "Geef een bedrag tussen € 1 en € 50, bv. 3,99."}
+            {prijs
+              ? `Tussen ${makerPrijsGrenzen()}.`
+              : `Geef een bedrag tussen ${makerPrijsGrenzen()}, bv. 3,99.`}
           </p>
         </div>
         <div className="space-y-1.5">

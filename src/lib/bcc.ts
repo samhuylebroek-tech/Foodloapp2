@@ -9,6 +9,7 @@
  */
 import type { AdminRol, Rechten } from "@/lib/admin.functions";
 import { FEE_VOORSTEL, verdeelOpbrengst, type FeeInstelling } from "@/lib/betalen/fee";
+import { btwUitInclusief as btwCentraal } from "@/lib/betalen/prijzen";
 
 // ---------- rollen ----------
 
@@ -56,8 +57,7 @@ export const WIJZIG_RECHT: Partial<Record<string, Rechten>> = {
 
 /** Btw-deel uit een bedrag inclusief btw (België 21 %). */
 export function btwUitInclusief(cent: number, procent = FEE_VOORSTEL.btwProcent): number {
-  const c = Math.max(0, Math.round(cent));
-  return Math.round(c - c / (1 + procent / 100));
+  return btwCentraal(cent, procent);
 }
 
 /** "2026-11-03T18:00:00Z" of "2026-11-03" → "2026-11". */
@@ -89,6 +89,9 @@ export type FactuurRij = {
   status: "betaald" | "open" | "mislukt";
   test?: boolean;
   datum: string;
+  /** Fase 6 (voorstel 0023): een creditnota is een terugbetaling. */
+  soort?: "factuur" | "creditnota" | null;
+  btw_cent?: number | null;
 };
 
 export type Bedrag = { aantal: number; brutoCent: number; btwCent: number };
@@ -153,11 +156,12 @@ export function omzetPerMaand(
     const maand = maandVan(f.datum);
     if (!maand) continue;
     const r = rij(maand);
-    telOp(
-      f.partner_id ? r.partnerplannen : r.premium,
-      f.bedrag_cent,
-      btwUitInclusief(f.bedrag_cent),
-    );
+    const btw = f.btw_cent ?? btwUitInclusief(f.bedrag_cent);
+    if (f.soort === "creditnota") {
+      telOp(r.terugbetalingen, f.bedrag_cent, btw);
+      continue;
+    }
+    telOp(f.partner_id ? r.partnerplannen : r.premium, f.bedrag_cent, btw);
   }
   for (const r of per.values()) {
     const plus = [r.makerAbonnementen, r.partnerplannen, r.premium];

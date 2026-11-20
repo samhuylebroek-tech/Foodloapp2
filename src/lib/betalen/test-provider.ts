@@ -13,6 +13,8 @@ import {
   type BetaalProvider,
   type CheckoutResultaat,
   type PlanId,
+  type TerugbetalingResultaat,
+  type UitbetalingResultaat,
 } from "./types";
 
 let teller = 0;
@@ -42,7 +44,8 @@ export class TestBetaalProvider implements BetaalProvider {
       abonnementRef,
       plan,
       tijd: this.klok().toISOString(),
-      bedragCent: soort === "betaling_gelukt" ? PLANNEN[plan].prijsCent : 0,
+      bedragCent:
+        soort === "betaling_gelukt" || soort === "terugbetaald" ? PLANNEN[plan].prijsCent : 0,
     };
   }
 
@@ -66,6 +69,38 @@ export class TestBetaalProvider implements BetaalProvider {
     const plan = this.staten.get(abonnementRef)?.plan ?? "premium_maand";
     const { body, handtekening } = this.maakWebhook(this.event("opgezegd", abonnementRef, plan));
     return this.verwerkWebhook(body, handtekening);
+  }
+
+  async terugbetaal(i: {
+    abonnementRef: string;
+    bedragCent: number;
+    reden: string;
+  }): Promise<TerugbetalingResultaat> {
+    if (!Number.isInteger(i.bedragCent) || i.bedragCent <= 0)
+      throw new Error("Een terugbetaling moet groter dan € 0 zijn.");
+    if (!i.reden.trim()) throw new Error("Geef een reden voor de terugbetaling.");
+    return {
+      ref: nieuwId("re_test"),
+      bedragCent: i.bedragCent,
+      status: "test_terugbetaald",
+      modus: "test",
+    };
+  }
+
+  async startUitbetaling(i: {
+    ontvangerRef: string;
+    bedragCent: number;
+    periode: string;
+  }): Promise<UitbetalingResultaat> {
+    if (!Number.isInteger(i.bedragCent) || i.bedragCent < 0)
+      throw new Error("Een uitbetaling kan niet negatief zijn.");
+    if (!i.ontvangerRef) throw new Error("Geen ontvanger.");
+    return {
+      ref: nieuwId("po_test"),
+      bedragCent: i.bedragCent,
+      status: "zou_uitbetaald_worden",
+      modus: "test",
+    };
   }
 
   async verwerkWebhook(ruweBody: string, handtekening: string | null | undefined) {

@@ -340,7 +340,8 @@ export const bccOmzet = createServerFn({ method: "GET" })
         .limit(5000);
       const { data: fac, error: facFout } = await db
         .from("facturen")
-        .select("user_id, partner_id, bedrag_cent, status, test, datum")
+        // "*": soort/btw_cent (voorstel 0023) bestaan pas na die migratie.
+        .select("*")
         .limit(5000);
       const betOk = !error;
       const facOk = !facFout;

@@ -12,6 +12,17 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { testBetalingGeweigerd } from "@/lib/betaalpoort";
 import { isOntbrekendeTabel } from "@/lib/module-beschikbaar";
+import {
+  genadeTot,
+  moetSluiten,
+  periodeDagen,
+  plusDagenIso,
+  proRataWijziging,
+  terugbetalingMogelijk,
+  type FactuurInfo,
+} from "./abonnement-regels";
+import { btwUitInclusief, PRIJZEN } from "./prijzen";
+import { kiesBetaalProvider } from "./provider";
 import { verwerkEvent } from "./statusmachine";
 import { TestBetaalProvider } from "./test-provider";
 import { PLANNEN, type AbonnementStatus, type BetaalEvent, type PlanId } from "./types";
@@ -31,17 +42,14 @@ export type Abonnement = {
   provider_ref: string;
   periode_einde: string | null;
   opgezegd_op: string | null;
+  /** Fase 6 (voorstel 0023): tot wanneer Premium werkt na een mislukte betaling. */
+  genade_tot?: string | null;
+  /** Fase 6: plan dat ingaat bij de volgende periode (bv. jaar → maand). */
+  gepland_plan?: PlanId | null;
 };
 
-export type Factuur = {
-  id: string;
-  nummer: string;
-  omschrijving: string;
-  bedrag_cent: number;
-  status: "betaald" | "open" | "mislukt";
-  test: boolean;
-  datum: string;
-};
+/** Met btw en soort (factuur of creditnota) uit voorstel 0023. */
+export type Factuur = FactuurInfo;
 
 export type MijnAbonnement = {
   beschikbaar: boolean;
@@ -61,7 +69,17 @@ function bewaak() {
 }
 
 function plusDagen(dagen: number) {
-  return new Date(Date.now() + dagen * 86400000).toISOString().slice(0, 10);
+  return plusDagenIso(new Date(), dagen);
+}
+
+/** Volgend testfactuurnummer (TEST-2026-0001). */
+async function volgendNummer(db: LosseDb): Promise<string> {
+  const { count } = await db.from("facturen").select("id", { count: "exact", head: true });
+  return `TEST-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(4, "0")}`;
+}
+
+function btwVelden(bedragCent: number) {
+  return { btw_cent: btwUitInclusief(bedragCent), btw_procent: PRIJZEN.btw.procent };
 }
 
 type Eigenaar = { user_id: string | null; partner_id: string | null };
@@ -81,7 +99,12 @@ async function verwerk(
   if (al && bestaand) return bestaand;
 
   const uitkomst = verwerkEvent({ status: bestaand?.status ?? "geen", verwerkt: [] }, event);
-  const plan = PLANNEN[event.plan];
+  // Een geplande overstap (jaar → maand) gaat in bij de eerstvolgende geslaagde betaling.
+  const planId: PlanId =
+    event.soort === "betaling_gelukt" && bestaand?.gepland_plan
+      ? bestaand.gepland_plan
+      : event.plan;
+  const plan = PLANNEN[planId];
   const status = uitkomst.staat.status;
   await db.from("betaal_events").insert({
     event_id: event.id,
@@ -98,17 +121,26 @@ async function verwerk(
     event.soort === "proef_gestart"
       ? plusDagen(plan.proefDagen)
       : event.soort === "checkout_voltooid" || event.soort === "betaling_gelukt"
-        ? plusDagen(30)
+        ? plusDagen(periodeDagen(planId))
         : (bestaand?.periode_einde ?? null);
+  const genade =
+    status === "betaling_mislukt"
+      ? bestaand?.status === "betaling_mislukt" && bestaand.genade_tot
+        ? bestaand.genade_tot
+        : genadeTot()
+      : null;
   const velden = {
     ...wie,
-    plan: event.plan,
+    plan: planId,
     status,
     modus: "test",
     provider: "test",
     provider_ref: event.abonnementRef,
     periode_einde: status === "geen" ? null : periodeEinde,
     opgezegd_op: status === "opgezegd" ? event.tijd : null,
+    genade_tot: genade,
+    gepland_plan:
+      status === "geen" || planId !== event.plan ? null : (bestaand?.gepland_plan ?? null),
   };
   const { data: abo, error } = bestaand
     ? await db.from("abonnementen").update(velden).eq("id", bestaand.id).select("*").single()
@@ -124,7 +156,11 @@ async function verwerk(
         ...wie,
         recht,
         bron: "abonnement",
-        geldig_tot: velden.periode_einde,
+        // Genadeperiode: Premium werkt door tot het laatste van periode-einde en genade.
+        geldig_tot:
+          genade && (!velden.periode_einde || genade > velden.periode_einde)
+            ? genade
+            : velden.periode_einde,
       })),
     );
   }
@@ -134,16 +170,18 @@ async function verwerk(
     event.soort === "betaling_gelukt" ||
     event.soort === "betaling_mislukt"
   ) {
-    const { count } = await db.from("facturen").select("id", { count: "exact", head: true });
+    const bedrag = event.soort === "proef_gestart" ? 0 : plan.prijsCent;
     await db.from("facturen").insert({
       ...wie,
       abonnement_id: (abo as Abonnement).id,
-      nummer: `TEST-${new Date().getFullYear()}-${String((count ?? 0) + 1).padStart(4, "0")}`,
+      nummer: await volgendNummer(db),
       omschrijving:
         event.soort === "proef_gestart"
           ? `${plan.naam}: proefperiode (${plan.proefDagen} dagen)`
-          : `${plan.naam}: 1 maand`,
-      bedrag_cent: event.soort === "proef_gestart" ? 0 : plan.prijsCent,
+          : `${plan.naam}: 1 ${plan.interval}`,
+      bedrag_cent: bedrag,
+      ...btwVelden(bedrag),
+      soort: "factuur",
       status: event.soort === "betaling_mislukt" ? "mislukt" : "betaald",
       test: true,
       datum: event.tijd.slice(0, 10),
@@ -207,7 +245,21 @@ export const mijnAbonnement = createServerFn({ method: "POST" })
     if (ontbreekt && isOntbrekendeTabel(ontbreekt)) {
       return { beschikbaar: false, abonnement: null, facturen: [], entitlements: [] };
     }
-    const abonnement = await haalAbonnement(db, wie);
+    let abonnement = await haalAbonnement(db, wie);
+    // Fase 6: opgezegd en de periode is voorbij, of de genadeperiode is om → Premium sluit.
+    // Dezelfde weg als een provider-webhook ("periode_afgelopen"), alleen in testmodus.
+    if (abonnement && moetSluiten(abonnement) && !testBetalingGeweigerd("test")) {
+      const provider = new TestBetaalProvider();
+      const { body, handtekening } = provider.maakWebhook(
+        provider.event("periode_afgelopen", abonnement.provider_ref, abonnement.plan),
+      );
+      abonnement = await verwerk(
+        db,
+        wie,
+        abonnement,
+        await provider.verwerkWebhook(body, handtekening),
+      );
+    }
     const kol = wie.user_id ? "user_id" : "partner_id";
     const waarde = wie.user_id ?? wie.partner_id;
     // BUG-181: facturen van een organisatie alleen voor eigenaar of financiën (zoals RLS 0012
@@ -247,7 +299,7 @@ export const startTestCheckout = createServerFn({ method: "POST" })
   .inputValidator((d) =>
     z
       .object({
-        plan: z.enum(["premium_maand", "partner_basis", "partner_plus"]),
+        plan: z.enum(["premium_maand", "premium_jaar", "partner_basis", "partner_plus"]),
         partnerId: z.string().uuid().optional(),
       })
       .refine((x) => (PLANNEN[x.plan].voor === "partner") === Boolean(x.partnerId), {
@@ -311,7 +363,9 @@ export const zegTestAbonnementOp = createServerFn({ method: "POST" })
 export const simuleerTestBetaling = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ soort: z.enum(["betaling_mislukt", "betaling_gelukt"]) }).parse(d),
+    z
+      .object({ soort: z.enum(["betaling_mislukt", "betaling_gelukt", "periode_afgelopen"]) })
+      .parse(d),
   )
   .handler(async ({ context, data }) => {
     bewaak();
@@ -327,4 +381,122 @@ export const simuleerTestBetaling = createServerFn({ method: "POST" })
     const event = await provider.verwerkWebhook(body, handtekening);
     const nieuw = await verwerk(db, wie, abo, event);
     return { ok: true, status: nieuw.status };
+  });
+
+/**
+ * Fase 6: overstappen tussen maand en jaar (testmodus). Naar jaar: meteen, met het ongebruikte
+ * deel als tegoed (testfactuur voor het verschil). Naar maand: gepland voor de volgende periode.
+ */
+export const wijzigTestPlan = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ naar: z.enum(["premium_maand", "premium_jaar"]) }).parse(d))
+  .handler(async ({ context, data }) => {
+    bewaak();
+    const db = await adminDb();
+    const ctx = context as Ctx;
+    const wie = { user_id: ctx.userId, partner_id: null };
+    const abo = await haalAbonnement(db, wie);
+    if (!abo) throw new Error("Er is nog geen testabonnement.");
+    const w = proRataWijziging({
+      van: abo.plan,
+      naar: data.naar,
+      status: abo.status,
+      periodeEinde: abo.periode_einde,
+    });
+    if (w.soort === "niet_mogelijk" || w.soort === "zelfde") throw new Error(w.tekst);
+    const naar = PLANNEN[data.naar];
+    if (abo.status === "proef" || w.soort === "downgrade") {
+      // Proef: het plan na de proef. Downgrade: pas vanaf de volgende periode.
+      const velden =
+        abo.status === "proef"
+          ? { plan: data.naar, gepland_plan: null }
+          : { gepland_plan: data.naar };
+      const { error } = await db.from("abonnementen").update(velden).eq("id", abo.id);
+      if (error) throw new Error("De overstap kon niet bewaard worden.");
+      return { ok: true, soort: w.soort, tekst: w.tekst };
+    }
+    // Upgrade: meteen, nieuwe periode van een jaar, rechten verlengd, testfactuur voor het verschil.
+    const einde = plusDagen(periodeDagen(data.naar));
+    const { error } = await db
+      .from("abonnementen")
+      .update({ plan: data.naar, periode_einde: einde, gepland_plan: null })
+      .eq("id", abo.id);
+    if (error) throw new Error("De overstap kon niet bewaard worden.");
+    await db
+      .from("entitlements")
+      .update({ geldig_tot: einde })
+      .eq("user_id", ctx.userId)
+      .eq("bron", "abonnement");
+    await db.from("facturen").insert({
+      ...wie,
+      abonnement_id: abo.id,
+      nummer: await volgendNummer(db),
+      omschrijving: `${naar.naam}: overstap, 1 jaar min ${(w.tegoedCent / 100).toFixed(2).replace(".", ",")} euro tegoed`,
+      bedrag_cent: w.teBetalenCent,
+      ...btwVelden(w.teBetalenCent),
+      soort: "factuur",
+      status: "betaald",
+      test: true,
+      datum: plusDagen(0),
+    });
+    await db.from("betaal_events").insert({
+      event_id: `evt_test_wijziging_${abo.id}_${Date.now()}`,
+      provider: "test",
+      soort: "plan_gewijzigd",
+      abonnement_ref: abo.provider_ref,
+      ...wie,
+      verwerkt: true,
+      reden: null,
+      ontvangen_op: new Date().toISOString(),
+    });
+    return { ok: true, soort: w.soort, tekst: w.tekst };
+  });
+
+/**
+ * Fase 6: terugbetaling binnen de herroepingstermijn (testmodus). Via de provider-interface
+ * (`terugbetaal`), dan een testcreditnota en het event "terugbetaald": Premium stopt meteen,
+ * gratis functies en gegevens blijven.
+ */
+export const vraagTestTerugbetaling = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    bewaak();
+    const db = await adminDb();
+    const ctx = context as Ctx;
+    const wie = { user_id: ctx.userId, partner_id: null };
+    const abo = await haalAbonnement(db, wie);
+    if (!abo || abo.status === "geen") throw new Error("Er is geen lopend testabonnement.");
+    const { data: fac } = await db
+      .from("facturen")
+      .select("*")
+      .eq("user_id", ctx.userId)
+      .order("datum", { ascending: false })
+      .limit(50);
+    const t = terugbetalingMogelijk((fac ?? []) as Factuur[]);
+    if (!t.mag) throw new Error(t.tekst);
+    const provider = kiesBetaalProvider("test");
+    const terug = await provider.terugbetaal({
+      abonnementRef: abo.provider_ref,
+      bedragCent: t.bedragCent,
+      reden: "herroeping binnen de termijn",
+    });
+    await db.from("facturen").insert({
+      ...wie,
+      abonnement_id: abo.id,
+      nummer: await volgendNummer(db),
+      omschrijving: `Terugbetaling ${t.factuur.nummer} (binnen ${PRIJZEN.herroepingDagen} dagen)`,
+      bedrag_cent: terug.bedragCent,
+      ...btwVelden(terug.bedragCent),
+      soort: "creditnota",
+      verwijst_naar: t.factuur.id,
+      status: "betaald",
+      test: true,
+      datum: plusDagen(0),
+    });
+    const test = new TestBetaalProvider();
+    const { body, handtekening } = test.maakWebhook(
+      test.event("terugbetaald", abo.provider_ref, abo.plan),
+    );
+    const nieuw = await verwerk(db, wie, abo, await test.verwerkWebhook(body, handtekening));
+    return { ok: true, status: nieuw.status, bedragCent: terug.bedragCent };
   });
