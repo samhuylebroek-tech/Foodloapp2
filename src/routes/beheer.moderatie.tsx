@@ -227,15 +227,28 @@ function Moderatie() {
                       <p className="text-sm text-slate-300">“{m.toelichting}”</p>
                     ) : null}
                     {m.bijdrage ? (
-                      <p className="rounded-lg border border-white/10 bg-slate-950/60 p-2 text-sm">
-                        {m.bijdrage.weergavenaam ? `${m.bijdrage.weergavenaam}: ` : ""}
-                        {m.bijdrage.tekst}
-                        {m.bijdrage.verborgen ? (
-                          <span className="ml-2 rounded bg-amber-500/20 px-1.5 text-xs text-amber-200">
-                            verborgen
+                      <div className="space-y-2 rounded-lg border border-white/10 bg-slate-950/60 p-2 text-sm">
+                        <p>
+                          <span className="text-slate-400">
+                            {m.bijdrage.soort === "reactie" ? "Reactie" : "Ik heb het gemaakt"}{" "}
+                            ·{" "}
                           </span>
+                          {m.bijdrage.weergavenaam ? `${m.bijdrage.weergavenaam}: ` : ""}
+                          {m.bijdrage.tekst}
+                          {m.bijdrage.verborgen ? (
+                            <span className="ml-2 rounded bg-amber-500/20 px-1.5 text-xs text-amber-200">
+                              verborgen
+                            </span>
+                          ) : null}
+                        </p>
+                        {m.bijdrage.foto ? (
+                          <img
+                            src={m.bijdrage.foto}
+                            alt="Foto bij de gemelde bijdrage"
+                            className="max-h-48 rounded-lg object-cover"
+                          />
                         ) : null}
-                      </p>
+                      </div>
                     ) : null}
                     {m.receptTitel ? (
                       <p className="text-sm text-slate-300">Recept: {m.receptTitel}</p>

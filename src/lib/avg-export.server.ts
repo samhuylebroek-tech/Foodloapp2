@@ -75,6 +75,11 @@ export const AVG_SECTIES = [
   "abonnementen",
   "facturen",
   "toegangsrechten",
+  // Fase 4 (voorstel 0021): makerabonnementen in testmodus, plan als maker, blokkades.
+  "maker_abonnementen",
+  "maker_testbetalingen",
+  "maker_plan",
+  "blokkades",
 ] as const;
 
 export type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
@@ -222,6 +227,12 @@ async function nieuweModules(db: Db, userId: string) {
     eigen("facturen"),
     eigen("entitlements"),
   ]);
+  const [makerAbos, makerBetalingen, makerPlan, blokkades] = await Promise.all([
+    eigen("maker_abonnementen", "*", "fan_id"),
+    eigen("maker_betalingen", "id, soort, bedrag_cent, btw_cent, test, created_at", "fan_id"),
+    optioneel((d) => perBlok(d, "maker_plannen", "*", "creator_id", makerIds), db),
+    eigen("gebruiker_blokkades", "*", "blokkeerder_id"),
+  ]);
 
   return {
     mijn_voeding: voeding,
@@ -239,6 +250,10 @@ async function nieuweModules(db: Db, userId: string) {
     abonnementen,
     facturen,
     toegangsrechten: rechten,
+    maker_abonnementen: makerAbos,
+    maker_testbetalingen: makerBetalingen,
+    maker_plan: makerPlan,
+    blokkades,
   };
 }
 

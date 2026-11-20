@@ -1,25 +1,41 @@
 /**
- * Community op een openbaar makerrecept: "Ik heb dit gekookt" (sterren + één zin) en een rustige
- * rij "Zo kookten anderen het". Geen ranglijst, geen eindeloze tijdlijn; elke bijdrage is te
- * melden en je eigen bijdrage verwijder je met "Ongedaan maken".
+ * Community op een openbaar makerrecept (fase 4): "Ik heb het gemaakt" (sterren, één zin en
+ * eventueel een foto) en gewone reacties, in een rustige rij "Zo kookten anderen het". Geen
+ * ranglijst, geen eindeloze tijdlijn. Alleen je voornaam staat erbij. Andermans bijdrage kan je
+ * melden (moderatie in beheer) of de persoon blokkeren; je eigen bijdrage verwijder je met
+ * "Ongedaan maken".
  */
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Trash2, Utensils } from "lucide-react";
+import { Ban, Loader2, MessageCircle, Trash2, Utensils, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { Sterren, SterrenKiezer } from "@/components/Sterren";
+import { FotoKiezer } from "@/components/FotoKiezer";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { valideerBijdrage } from "@/lib/makers";
 import {
+  valideerBijdrage,
+  valideerReactie,
+  zichtbareBijdragen,
+  type BijdrageSoort,
+} from "@/lib/makers";
+import {
+  blokkeer,
+  deblokkeer,
   haalBijdragen,
+  haalBlokkades,
   haalPubliekeBron,
   plaatsBijdrage,
   verwijderBijdrage,
   type Bijdrage,
 } from "@/lib/makers-db";
+import {
+  uploadCommunityFoto,
+  useCommunityFotoUrl,
+  verwijderCommunityFoto,
+} from "@/lib/community-foto";
 import { useModuleBeschikbaar } from "@/lib/module-beschikbaar";
 import { MeldKnop } from "./MakerOnderdelen";
 
@@ -29,52 +45,89 @@ function voornaam(meta: Record<string, unknown> | undefined): string | null {
   return v.trim().split(/\s+/)[0]!.slice(0, 30);
 }
 
+export const BLOKKADES_SLEUTEL = "blokkades";
+
 export function ReceptCommunity({ receptId }: { receptId: string }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { beschikbaar } = useModuleBeschikbaar("community_bijdragen");
+  const blokModule = useModuleBeschikbaar("gebruiker_blokkades");
   const { data: bron } = useQuery({
     queryKey: ["recept-bron", receptId],
     enabled: beschikbaar,
     queryFn: () => haalPubliekeBron(receptId),
     staleTime: 60 * 1000,
   });
-  const { data: bijdragen = [], isLoading } = useQuery({
+  const { data: alle = [], isLoading } = useQuery({
     queryKey: ["bijdragen", receptId],
     enabled: beschikbaar && !!bron,
-    queryFn: () => haalBijdragen(receptId),
+    queryFn: () => haalBijdragen(receptId, user?.id),
   });
-  const [open, setOpen] = useState(false);
+  const { data: blokkades = [] } = useQuery({
+    queryKey: [BLOKKADES_SLEUTEL, user?.id],
+    enabled: blokModule.beschikbaar && !!user,
+    queryFn: () => haalBlokkades(user!.id),
+  });
+  const [open, setOpen] = useState<BijdrageSoort | null>(null);
   const [sterren, setSterren] = useState(0);
   const [tekst, setTekst] = useState("");
+  const [foto, zetFotoBestand] = useState<{ bestand: File; url: string } | null>(null);
+  const setFoto = (f: File | null) =>
+    zetFotoBestand((oud) => {
+      if (oud) URL.revokeObjectURL(oud.url);
+      return f ? { bestand: f, url: URL.createObjectURL(f) } : null;
+    });
   const [fout, setFout] = useState<string | null>(null);
   const [bezig, setBezig] = useState(false);
 
   // Alleen op openbare makerrecepten (community = publieke inhoud).
   if (!beschikbaar || !bron) return null;
   const vernieuw = () => qc.invalidateQueries({ queryKey: ["bijdragen", receptId] });
+  const geblokkeerd = new Set(blokkades.map((b) => b.geblokkeerd_id));
+  const { zichtbaar, weggelaten } = zichtbareBijdragen(alle, user?.id, geblokkeerd);
+
+  function sluit() {
+    setOpen(null);
+    setTekst("");
+    setSterren(0);
+    setFoto(null);
+    setFout(null);
+  }
 
   async function plaats(e: React.FormEvent) {
     e.preventDefault();
-    if (!user) return;
-    const f = valideerBijdrage(tekst, sterren);
+    if (!user || !open) return;
+    const f = open === "gemaakt" ? valideerBijdrage(tekst, sterren) : valideerReactie(tekst);
     if (f) return setFout(f);
     setFout(null);
     setBezig(true);
+    let pad: string | null = null;
     try {
+      if (open === "gemaakt" && foto) {
+        try {
+          pad = await uploadCommunityFoto(foto.bestand, user.id);
+        } catch {
+          setFout("De foto kon niet bewaard worden. Probeer een andere foto, of deel zonder foto.");
+          return;
+        }
+      }
       await plaatsBijdrage({
         recipe_id: receptId,
         user_id: user.id,
         weergavenaam: voornaam(user.user_metadata),
         tekst,
-        sterren,
+        sterren: open === "gemaakt" ? sterren : null,
+        soort: open,
+        foto_url: pad,
       });
-      setTekst("");
-      setSterren(0);
-      setOpen(false);
+      const soort = open;
+      sluit();
       await vernieuw();
-      toast.success("Bedankt om te delen hoe het ging!");
+      toast.success(
+        soort === "gemaakt" ? "Bedankt om te delen hoe het ging!" : "Je reactie staat erbij",
+      );
     } catch {
+      if (pad) void verwijderCommunityFoto(pad);
       setFout("Je bijdrage kon niet geplaatst worden. Probeer het opnieuw.");
     } finally {
       setBezig(false);
@@ -96,6 +149,27 @@ export function ReceptCommunity({ receptId }: { receptId: string }) {
     }
   }
 
+  async function blokkeerVan(b: Bijdrage) {
+    if (!user) return;
+    const naam = b.weergavenaam ?? "Deze persoon";
+    try {
+      await blokkeer(user.id, b.user_id, b.weergavenaam);
+      await qc.invalidateQueries({ queryKey: [BLOKKADES_SLEUTEL] });
+      toast.success(`${naam} is geblokkeerd. Je ziet hun bijdragen niet meer.`, {
+        id: `blok-${b.user_id}`,
+        action: {
+          label: "Ongedaan maken",
+          onClick: () =>
+            void deblokkeer(user.id, b.user_id).then(() =>
+              qc.invalidateQueries({ queryKey: [BLOKKADES_SLEUTEL] }),
+            ),
+        },
+      });
+    } catch {
+      toast.error("Blokkeren lukte niet.");
+    }
+  }
+
   return (
     <section aria-labelledby="community-titel" className="space-y-4">
       <h2 id="community-titel" className="text-sectietitel">
@@ -103,23 +177,68 @@ export function ReceptCommunity({ receptId }: { receptId: string }) {
       </h2>
       {open ? (
         <form onSubmit={(e) => void plaats(e)} className="paneel space-y-4 p-4" noValidate>
-          <SterrenKiezer waarde={sterren} onKies={setSterren} label="Hoe was het?" />
+          <h3 className="text-base font-semibold">
+            {open === "gemaakt" ? "Ik heb het gemaakt" : "Reageren"}
+          </h3>
+          {open === "gemaakt" ? (
+            <SterrenKiezer waarde={sterren} onKies={setSterren} label="Hoe was het?" />
+          ) : null}
           <div className="space-y-2">
             <Label htmlFor="bijdrage-tekst" className="text-base">
-              Eén zin over hoe het ging
+              {open === "gemaakt" ? "Eén zin over hoe het ging" : "Je reactie of vraag"}
             </Label>
             <Textarea
               id="bijdrage-tekst"
               value={tekst}
               maxLength={280}
               onChange={(e) => setTekst(e.target.value)}
-              placeholder="Bijvoorbeeld: met wat extra look, en de kinderen aten alles op."
+              placeholder={
+                open === "gemaakt"
+                  ? "Bijvoorbeeld: met wat extra look, en de kinderen aten alles op."
+                  : "Bijvoorbeeld: kan dit ook met diepvriesprei?"
+              }
               className="min-h-20 text-base"
             />
             <p className="text-[0.9rem] text-muted-foreground">
               Iedereen die dit recept ziet, leest dit met je voornaam erbij.
             </p>
           </div>
+          {open === "gemaakt" ? (
+            <div className="space-y-2">
+              <p className="text-base font-semibold">Foto (mag, hoeft niet)</p>
+              {foto ? (
+                <div className="flex flex-wrap items-center gap-3">
+                  <img
+                    src={foto.url}
+                    alt="Je gekozen foto"
+                    className="size-24 rounded-xl object-cover"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setFoto(null)}
+                    className="h-14 px-4 text-base"
+                  >
+                    <X aria-hidden />
+                    Foto weghalen
+                  </Button>
+                </div>
+              ) : (
+                <FotoKiezer
+                  rustig
+                  onBestand={(f) =>
+                    f.type.startsWith("image/")
+                      ? setFoto(f)
+                      : setFout("Kies een foto (jpg of png).")
+                  }
+                />
+              )}
+              <p className="text-[0.9rem] text-muted-foreground">
+                Iedereen die dit recept ziet, kan je foto zien. Kies een foto van het gerecht, niet
+                van mensen.
+              </p>
+            </div>
+          ) : null}
           {fout ? (
             <p role="alert" className="text-base font-semibold text-destructive">
               {fout}
@@ -130,67 +249,133 @@ export function ReceptCommunity({ receptId }: { receptId: string }) {
               {bezig ? <Loader2 className="animate-spin" aria-hidden /> : null}
               Delen
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              className="h-14 px-6 text-base"
-            >
+            <Button type="button" variant="outline" onClick={sluit} className="h-14 px-6 text-base">
               Annuleren
             </Button>
           </div>
         </form>
       ) : (
-        <Button variant="outline" onClick={() => setOpen(true)} className="h-14 px-5 text-base">
-          <Utensils aria-hidden />
-          Ik heb dit gekookt
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setOpen("gemaakt")}
+            className="h-14 px-5 text-base"
+          >
+            <Utensils aria-hidden />
+            Ik heb het gemaakt
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setOpen("reactie")}
+            className="h-14 px-5 text-base"
+          >
+            <MessageCircle aria-hidden />
+            Reageren
+          </Button>
+        </div>
       )}
 
       {isLoading ? (
         <Loader2 className="size-6 animate-spin" aria-label="Laden" />
-      ) : bijdragen.length ? (
+      ) : zichtbaar.length ? (
         <ul className="space-y-3">
-          {bijdragen.map((b) => {
-            const eigen = b.user_id === user?.id;
-            return (
-              <li key={b.id} className="paneel space-y-2 p-4">
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <span className="font-semibold">
-                    {eigen ? "Jij" : (b.weergavenaam ?? "Iemand")}
-                  </span>
-                  <Sterren waarde={b.sterren} klein />
-                  <span className="text-[0.9rem] text-muted-foreground">
-                    {new Date(b.created_at).toLocaleDateString("nl-BE", {
-                      day: "numeric",
-                      month: "long",
-                    })}
-                  </span>
-                </div>
-                <p className="text-base break-words">{b.tekst}</p>
-                <div className="flex flex-wrap gap-1">
-                  {eigen ? (
-                    <Button
-                      variant="ghost"
-                      onClick={() => void verwijder(b)}
-                      className="h-auto min-h-12 px-3 text-base"
-                    >
-                      <Trash2 className="size-4" aria-hidden />
-                      Verwijderen
-                    </Button>
-                  ) : (
-                    <MeldKnop soort="bijdrage" doelId={b.id} label="Melden" klein />
-                  )}
-                </div>
-              </li>
-            );
-          })}
+          {zichtbaar.map((b) => (
+            <BijdrageRij
+              key={b.id}
+              b={b}
+              eigen={b.user_id === user?.id}
+              kanBlokkeren={blokModule.beschikbaar}
+              onVerwijder={() => void verwijder(b)}
+              onBlokkeer={() => void blokkeerVan(b)}
+            />
+          ))}
         </ul>
       ) : (
         <p className="text-base text-muted-foreground">
           Nog niemand vertelde hoe het ging. Kookte jij het al?
         </p>
       )}
+      {weggelaten ? (
+        <p className="text-[0.95rem] text-muted-foreground">
+          {weggelaten === 1
+            ? "1 bijdrage van iemand die je blokkeerde, is verborgen."
+            : `${weggelaten} bijdragen van mensen die je blokkeerde, zijn verborgen.`}{" "}
+          Beheren in Instellingen › Gegevens en privacy.
+        </p>
+      ) : null}
     </section>
+  );
+}
+
+function BijdrageRij({
+  b,
+  eigen,
+  kanBlokkeren,
+  onVerwijder,
+  onBlokkeer,
+}: {
+  b: Bijdrage;
+  eigen: boolean;
+  kanBlokkeren: boolean;
+  onVerwijder: () => void;
+  onBlokkeer: () => void;
+}) {
+  const fotoUrl = useCommunityFotoUrl(b.foto_url);
+  const naam = eigen ? "Jij" : (b.weergavenaam ?? "Iemand");
+  const reactie = b.soort === "reactie" || b.sterren === null;
+  return (
+    <li className="paneel space-y-2 p-4">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="font-semibold">{naam}</span>
+        {reactie ? (
+          <span className="text-[0.95rem] text-muted-foreground">reageerde</span>
+        ) : (
+          <>
+            <span className="text-[0.95rem] text-muted-foreground">maakte het</span>
+            <Sterren waarde={b.sterren ?? 0} klein />
+          </>
+        )}
+        <span className="text-[0.9rem] text-muted-foreground">
+          {new Date(b.created_at).toLocaleDateString("nl-BE", { day: "numeric", month: "long" })}
+        </span>
+      </div>
+      {eigen && b.verborgen ? (
+        <p role="note" className="rounded-xl bg-muted p-2 text-[0.95rem]">
+          Het Foodlo-team heeft deze bijdrage verborgen. Alleen jij ziet ze nog.
+        </p>
+      ) : null}
+      <p className="text-base break-words">{b.tekst}</p>
+      {fotoUrl ? (
+        <img
+          src={fotoUrl}
+          alt={`Foto van ${naam === "Jij" ? "jou" : naam}`}
+          loading="lazy"
+          className="max-h-64 w-full max-w-sm rounded-2xl object-cover"
+        />
+      ) : null}
+      <div className="flex flex-wrap gap-1">
+        {eigen ? (
+          <Button variant="ghost" onClick={onVerwijder} className="h-auto min-h-12 px-3 text-base">
+            <Trash2 className="size-4" aria-hidden />
+            Verwijderen
+          </Button>
+        ) : (
+          <>
+            <MeldKnop soort="bijdrage" doelId={b.id} label="Melden" klein />
+            {kanBlokkeren ? (
+              <Button
+                variant="ghost"
+                onClick={onBlokkeer}
+                className="h-auto min-h-12 px-3 text-base"
+              >
+                <Ban className="size-4" aria-hidden />
+                Blokkeren
+                <span className="sr-only"> {b.weergavenaam ?? "deze persoon"}</span>
+              </Button>
+            ) : null}
+          </>
+        )}
+      </div>
+    </li>
   );
 }

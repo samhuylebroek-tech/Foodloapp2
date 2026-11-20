@@ -119,9 +119,14 @@ const RPC_STANDAARD = {
 };
 
 const server = http.createServer((req, res) => {
+  const stukken = [];
   let data = "";
-  req.on("data", (c) => (data += c));
+  let ruw = Buffer.alloc(0);
+  req.on("data", (c) => stukken.push(c));
   req.on("end", () => {
+    // Binair veilig (foto-uploads); tekst voor alle andere aanvragen.
+    ruw = Buffer.concat(stukken);
+    data = ruw.toString();
     // Eén foute aanvraag mag de hele nep-server nooit laten crashen.
     verwerk().catch((e) => {
       console.error("[nep-supabase] fout:", e instanceof Error ? e.message : e);
@@ -390,6 +395,48 @@ const server = http.createServer((req, res) => {
         ...cors,
       });
       return res.end(readFileSync(bestand));
+    }
+    // Fase 4 — communityfoto's (nep): upload, getekende link en ophalen. Bestanden staan als
+    // rijen { bucket_id, name, inhoud (base64), type } in "__opslag"; niets verlaat deze computer.
+    const cUp = url.pathname.match(/^\/storage\/v1\/object\/community-fotos\/(.+)$/);
+    if (cUp && req.method === "POST") {
+      if (!geldigToken(auth)) return stuur(res, 401, { error: "niet aangemeld" });
+      const naam = decodeURIComponent(cUp[1]);
+      const soort = String(req.headers["content-type"] ?? "");
+      let bytes = ruw;
+      let type = soort;
+      const grens = soort.match(/boundary=(.+)$/)?.[1];
+      if (grens) {
+        // multipart/form-data van supabase-js: neem het deel met de afbeelding.
+        const delen = ruw.toString("latin1").split(`--${grens}`);
+        const deel = delen.find((d) => /content-type:\s*image\//i.test(d));
+        if (deel) {
+          const start = deel.indexOf("\r\n\r\n") + 4;
+          const inhoud = deel.slice(start).replace(/\r\n$/, "");
+          bytes = Buffer.from(inhoud, "latin1");
+          type = deel.match(/content-type:\s*([^\r\n]+)/i)?.[1] ?? "image/jpeg";
+        }
+      }
+      db.t("__opslag").push({
+        bucket_id: "community-fotos",
+        name: naam,
+        inhoud: bytes.toString("base64"),
+        type: type || "image/jpeg",
+      });
+      return stuur(res, 200, { Key: `community-fotos/${naam}`, Id: naam });
+    }
+    const cTeken = url.pathname.match(/^\/storage\/v1\/object\/sign\/community-fotos\/(.+)$/);
+    if (cTeken && req.method === "POST") {
+      return stuur(res, 200, {
+        signedURL: `/object/sign/community-fotos/${cTeken[1]}?token=nep`,
+      });
+    }
+    if (cTeken && req.method === "GET") {
+      const naam = decodeURIComponent(cTeken[1]);
+      const f = db.t("__opslag").find((o) => o.bucket_id === "community-fotos" && o.name === naam);
+      if (!f?.inhoud) return stuur(res, 404, { error: "geen foto" });
+      res.writeHead(200, { "content-type": f.type, "cache-control": "max-age=3600", ...cors });
+      return res.end(Buffer.from(f.inhoud, "base64"));
     }
     // Opslag (nep): bestanden staan als rijen { bucket_id, name } in de tabel "__opslag".
     // list = de bestanden direct in een map; remove = wissen (zoals de Storage-API).

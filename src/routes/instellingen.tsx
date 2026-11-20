@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { GeblokkeerdBeheer } from "@/components/makers/GeblokkeerdBeheer";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/hooks/useAuth";
@@ -662,6 +663,7 @@ function OverFoodlo({ t }: { t: (s: string) => string }) {
         disabled={bezig}
         onClick={() => void download()}
       />
+      <GeblokkeerdBeheer />
       <LinkRij to="/privacy" icoon={ShieldCheck} tint="grijs" titel={t("Privacybeleid")} />
       {links.map((l) => (
         <a

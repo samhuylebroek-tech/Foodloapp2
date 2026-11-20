@@ -218,7 +218,38 @@ export const MELD_REDENEN = [
 export type MeldReden = (typeof MELD_REDENEN)[number]["waarde"];
 export type MeldSoort = "recept" | "bijdrage" | "maker" | "collectie";
 
-/** Eén zin bij "Ik heb dit gekookt": ingekort, zonder lege ruimte, 1–5 sterren. */
+/** Fase 4: "Ik heb het gemaakt" (sterren, eventueel foto) of een gewone reactie (geen sterren). */
+export type BijdrageSoort = "gemaakt" | "reactie";
+
+/** Een reactie of vraag bij een openbaar recept: 2–280 tekens, geen sterren. */
+export function valideerReactie(tekst: string): string | null {
+  const t = tekst.trim();
+  if (t.length < 2) return "Schrijf een korte reactie of vraag.";
+  if (t.length > 280) return "Houd het kort: hoogstens 280 tekens.";
+  return null;
+}
+
+/**
+ * Bijdragen die je te zien krijgt: niet verborgen door moderatie en niet van iemand die je
+ * blokkeerde. Je eigen bijdragen zie je altijd (ook als ze verborgen werden, met uitleg).
+ */
+export function zichtbareBijdragen<T extends { user_id: string; verborgen: boolean }>(
+  bijdragen: readonly T[],
+  ik: string | null | undefined,
+  geblokkeerd: ReadonlySet<string>,
+) {
+  const zichtbaar: T[] = [];
+  let weggelaten = 0;
+  for (const b of bijdragen) {
+    if (b.user_id === ik) zichtbaar.push(b);
+    else if (b.verborgen) continue;
+    else if (geblokkeerd.has(b.user_id)) weggelaten += 1;
+    else zichtbaar.push(b);
+  }
+  return { zichtbaar, weggelaten };
+}
+
+/** Eén zin bij "Ik heb het gemaakt": ingekort, zonder lege ruimte, 1–5 sterren. */
 export function valideerBijdrage(tekst: string, sterren: number): string | null {
   const t = tekst.trim();
   if (!Number.isInteger(sterren) || sterren < 1 || sterren > 5) return "Kies 1 tot 5 sterren.";

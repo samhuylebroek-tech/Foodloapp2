@@ -1,5 +1,5 @@
 /**
- * Module B (community): "Ik heb dit gekookt" op een openbaar makerrecept, eigen bijdrage
+ * Module B (community): "Ik heb het gemaakt" op een openbaar makerrecept, eigen bijdrage
  * verwijderen met ongedaan maken, en melden van andermans bijdrage. Eigen recepten (niet openbaar)
  * krijgen geen community. Nepdata.
  */
@@ -32,7 +32,7 @@ test("bijdrage plaatsen, verwijderen en terugzetten", async ({ page }) => {
   const sectie = page.getByRole("region", { name: "Zo kookten anderen het" });
   await expect(sectie.getByText("Met wat extra kaneel")).toBeVisible();
 
-  await sectie.getByRole("button", { name: "Ik heb dit gekookt" }).click();
+  await sectie.getByRole("button", { name: "Ik heb het gemaakt" }).click();
   // Zonder sterren: vriendelijke uitleg, niets verstuurd.
   await sectie.getByLabel("Eén zin over hoe het ging").fill("Heerlijk, met couscous erbij.");
   await sectie.getByRole("button", { name: "Delen" }).click();
@@ -78,7 +78,7 @@ test("andermans bijdrage melden komt in de wachtrij (en in Jouw makerpagina)", a
 test("eigen (niet-openbaar) recept heeft geen community", async ({ page }) => {
   await page.goto(`/recepten/${STOOFVLEES}`);
   await expect(page.getByRole("button", { name: "Start koken" }).first()).toBeVisible();
-  await expect(page.getByRole("button", { name: "Ik heb dit gekookt" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Ik heb het gemaakt" })).toHaveCount(0);
   // "Bewaar in…" kan wel bij je eigen recepten.
   await expect(page.getByRole("button", { name: /Bewaard in 1|Bewaar in…/ })).toBeVisible();
 });

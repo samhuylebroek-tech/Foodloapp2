@@ -164,6 +164,9 @@ describe("AVG-export (BUG-026/103)", () => {
             "beheerder_id",
             "follower_id",
             "melder_id",
+            // Fase 4: eigen makerabonnementen en blokkades.
+            "fan_id",
+            "blokkeerder_id",
           ].includes(k) &&
             v === IK) ||
           // Rijen die horen bij eigen rijen (eigen gezinsleden, makerprofiel, verzamelingen).

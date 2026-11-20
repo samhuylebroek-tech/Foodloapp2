@@ -11,6 +11,7 @@ import {
   isPubliekZichtbaar,
   MODERATIE_VOORAF,
   type Maker,
+  type BijdrageSoort,
   type MeldReden,
   type MeldSoort,
   type Publicatie,
@@ -501,35 +502,93 @@ export type Bijdrage = {
   user_id: string;
   weergavenaam: string | null;
   tekst: string;
-  sterren: number;
+  /** Fase 4: leeg bij een gewone reactie. */
+  sterren: number | null;
+  /** Fase 4: "gemaakt" (standaard, ook voor oudere rijen) of "reactie". */
+  soort?: BijdrageSoort | null;
   foto_url: string | null;
   verborgen: boolean;
   created_at: string;
 };
 
-export async function haalBijdragen(recipeId: string): Promise<Bijdrage[]> {
-  const { data, error } = await db
-    .from("community_bijdragen")
-    .select("*")
-    .eq("recipe_id", recipeId)
-    .eq("verborgen", false)
+export async function haalBijdragen(recipeId: string, ik?: string | null): Promise<Bijdrage[]> {
+  // Niet verborgen, plus je eigen bijdragen (die zie je altijd, ook na moderatie).
+  let q = db.from("community_bijdragen").select("*").eq("recipe_id", recipeId);
+  q = ik ? q.or(`verborgen.eq.false,user_id.eq.${ik}`) : q.eq("verborgen", false);
+  const { data, error } = await q
     .order("created_at", { ascending: false })
     // Rustige rij, geen eindeloze tijdlijn.
-    .limit(12);
+    .limit(20);
   gooi(error);
   return (data ?? []) as Bijdrage[];
 }
 
 export async function plaatsBijdrage(
-  b: Pick<Bijdrage, "recipe_id" | "user_id" | "weergavenaam" | "tekst" | "sterren">,
+  b: Pick<Bijdrage, "recipe_id" | "user_id" | "weergavenaam" | "tekst" | "sterren"> & {
+    soort?: BijdrageSoort;
+    foto_url?: string | null;
+  },
 ): Promise<Bijdrage> {
   const { data, error } = await db
     .from("community_bijdragen")
-    .insert({ ...b, tekst: b.tekst.trim(), foto_url: null, verborgen: false })
+    .insert({
+      ...b,
+      soort: b.soort ?? "gemaakt",
+      sterren: b.soort === "reactie" ? null : b.sterren,
+      tekst: b.tekst.trim(),
+      foto_url: b.foto_url ?? null,
+      verborgen: false,
+      created_at: new Date().toISOString(),
+    })
     .select("*")
     .single();
   gooi(error);
   return data as Bijdrage;
+}
+
+// ---------- blokkeren (fase 4; privé: alleen jij ziet wie je blokkeerde) ----------
+
+export type Blokkade = {
+  id: string;
+  blokkeerder_id: string;
+  geblokkeerd_id: string;
+  /** Voornaam zoals die bij de bijdrage stond, om je lijst te herkennen. */
+  weergavenaam: string | null;
+  created_at: string;
+};
+
+export async function haalBlokkades(userId: string): Promise<Blokkade[]> {
+  const { data, error } = await db
+    .from("gebruiker_blokkades")
+    .select("*")
+    .eq("blokkeerder_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  gooi(error);
+  return (data ?? []) as Blokkade[];
+}
+
+export async function blokkeer(userId: string, ander: string, weergavenaam: string | null) {
+  if (userId === ander) throw new Error("Jezelf blokkeren kan niet.");
+  const { error } = await db.from("gebruiker_blokkades").upsert(
+    {
+      blokkeerder_id: userId,
+      geblokkeerd_id: ander,
+      weergavenaam: weergavenaam?.slice(0, 30) ?? null,
+      created_at: new Date().toISOString(),
+    },
+    { onConflict: "blokkeerder_id,geblokkeerd_id" },
+  );
+  gooi(error);
+}
+
+export async function deblokkeer(userId: string, ander: string) {
+  const { error } = await db
+    .from("gebruiker_blokkades")
+    .delete()
+    .eq("blokkeerder_id", userId)
+    .eq("geblokkeerd_id", ander);
+  gooi(error);
 }
 
 export async function verwijderBijdrage(b: Bijdrage): Promise<() => Promise<void>> {

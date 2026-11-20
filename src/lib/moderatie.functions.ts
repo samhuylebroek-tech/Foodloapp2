@@ -11,6 +11,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { bewaker, logboek } from "@/lib/admin.functions";
 import { isOntbrekendeTabel } from "@/lib/module-beschikbaar";
+import { COMMUNITY_BUCKET, isCommunityFotoPad } from "@/lib/community-foto";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Ctx = { supabase: any; userId: string; claims?: any };
@@ -32,7 +33,15 @@ export type OpenMelding = {
   toelichting: string | null;
   created_at: string;
   /** Bij een bijdrage: de tekst en of ze nu verborgen is. */
-  bijdrage: { tekst: string; verborgen: boolean; weergavenaam: string | null } | null;
+  bijdrage: {
+    tekst: string;
+    verborgen: boolean;
+    weergavenaam: string | null;
+    /** Fase 4: "gemaakt" of "reactie". */
+    soort: string;
+    /** Fase 4: getekende link (1 uur) naar de foto bij "Ik heb het gemaakt", of null. */
+    foto: string | null;
+  } | null;
   /** Bij een recept: de titel. */
   receptTitel: string | null;
 };
@@ -116,7 +125,7 @@ export const moderatieWachtrij = createServerFn({ method: "GET" })
       bijdrageIds.length
         ? db
             .from("community_bijdragen")
-            .select("id, tekst, verborgen, weergavenaam")
+            .select("id, tekst, verborgen, weergavenaam, soort, foto_url")
             .in("id", bijdrageIds)
         : Promise.resolve({ data: [] }),
     ]);
@@ -125,6 +134,14 @@ export const moderatieWachtrij = createServerFn({ method: "GET" })
     );
     const maker = new Map(((makers.data ?? []) as Rij[]).map((m) => [String(m.id), m]));
     const bijdrage = new Map(((bijdragen.data ?? []) as Rij[]).map((b) => [String(b.id), b]));
+    // Fase 4: foto's bij gemelde bijdragen, via een kortlevende getekende link (privé map).
+    const fotoLink = new Map<string, string>();
+    for (const b of bijdrage.values()) {
+      const pad = typeof b.foto_url === "string" ? b.foto_url : null;
+      if (!pad || !isCommunityFotoPad(pad)) continue;
+      const { data: link } = await db.storage.from(COMMUNITY_BUCKET).createSignedUrl(pad, 3600);
+      if (link?.signedUrl) fotoLink.set(String(b.id), link.signedUrl);
+    }
 
     // Partnercampagnes (voorstel 0011): ontbreekt de tabel, dan gewoon geen campagnes.
     let campagnes: IngediendeCampagne[] = [];
@@ -202,6 +219,8 @@ export const moderatieWachtrij = createServerFn({ method: "GET" })
                 tekst: String(b.tekst),
                 verborgen: b.verborgen === true,
                 weergavenaam: (b.weergavenaam as string | null) ?? null,
+                soort: b.soort === "reactie" ? "reactie" : "gemaakt",
+                foto: fotoLink.get(String(b.id)) ?? null,
               }
             : null,
           receptTitel: m.soort === "recept" ? (titel.get(String(m.doel_id)) ?? null) : null,
