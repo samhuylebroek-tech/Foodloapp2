@@ -72,7 +72,11 @@ export function RedenKnop({
   const [reden, setReden] = useState("");
   if (!open)
     return (
-      <Button variant="outline" className="min-h-11" onClick={() => setOpen(true)}>
+      <Button
+        variant="outline"
+        className="h-auto min-h-11 whitespace-normal text-left"
+        onClick={() => setOpen(true)}
+      >
         {label}
       </Button>
     );
@@ -135,7 +139,11 @@ export function BevestigKnop({
   const [open, setOpen] = useState(false);
   if (!open)
     return (
-      <Button variant="outline" className="min-h-11" onClick={() => setOpen(true)}>
+      <Button
+        variant="outline"
+        className="h-auto min-h-11 whitespace-normal text-left"
+        onClick={() => setOpen(true)}
+      >
         {label}
       </Button>
     );

@@ -65,7 +65,7 @@ function Uitbetalingen() {
 
   return (
     <AdminShell
-      titel="Makeruitbetalingen (testmodus)"
+      titel="Uitbetalingen (testmodus)"
       omschrijving="Wat makers zouden ontvangen van hun abonnementen, met één centrale verdeling maker/platform."
     >
       {isLoading ? (
@@ -81,8 +81,8 @@ function Uitbetalingen() {
         <div className="space-y-4">
           <BccTestmodus>
             Er wordt niets uitbetaald. Elke regel staat op “zou uitbetaald worden”. Voor echte
-            uitbetalingen is eerst een betaal- en uitbetalingsprovider nodig, met
-            identiteitscontrole (KYC) van elke maker, een btw-review en het akkoord van de eigenaar.
+            uitbetalingen is eerst een betaaldienst nodig, een controle van de identiteit (KYC) van
+            elke maker, een btw-review en het akkoord van de eigenaar.
           </BccTestmodus>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Kpi
@@ -96,7 +96,7 @@ function Uitbetalingen() {
               extra={maandLabel(data.maand)}
             />
             <Kpi label="Platform" waarde={euro(totaalPlatform)} extra={maandLabel(data.maand)} />
-            <Kpi label="Identiteitscontrole (KYC)" waarde="Niet gekoppeld" extra="geen provider" />
+            <Kpi label="KYC" waarde="Nee" extra="niet gekoppeld, geen provider" />
           </div>
 
           <Kaart className="space-y-3">
@@ -123,7 +123,7 @@ function Uitbetalingen() {
                     inputMode="decimal"
                     aria-invalid={procentFout || undefined}
                     aria-describedby={procentFout ? "procent-fout" : undefined}
-                    className="mt-1 min-h-11 w-40 border-white/10 bg-slate-950 text-slate-100"
+                    className="mt-1 min-h-11 w-full max-w-40 border-white/10 bg-slate-950 text-slate-100"
                   />
                 </label>
                 <Button

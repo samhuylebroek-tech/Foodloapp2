@@ -1,4 +1,4 @@
-# Audit tegenover de mastervisie (2026-11-18, bijgewerkt 2026-11-20 na P6, fase 3 en fase 4; branch claude/sleepy-euler-eghoc3)
+# Audit tegenover de mastervisie (2026-11-18, bijgewerkt 2026-11-20 na P6, fase 3, fase 4 en fase 5; branch claude/sleepy-euler-eghoc3)
 
 Gemeten in de code, niet uit documenten. "Werkt" = de handeling bewaart en is getest met E2E tegen de nep-databank.
 
@@ -59,4 +59,5 @@ Gemeten in de code, niet uit documenten. "Werkt" = de handeling bewaart en is ge
 - **P5 Samenwerking**: conflictmelding bij gelijktijdige wijziging, lijst verdelen, meldingen. **Gebouwd (2026-11-19)**: conflictkeuze in gezinsweekmenu en eigen menu (via `wijzigMenu`) en bij een lijst-item; gezinslijst verdelen (wie haalt wat, winkel, "Mijn deel", winkelmodus, rollen kijker/kind); bel met meldingen in de app (gezin, toegewezen, klaar met winkelen, restje, conflict), per soort aan/uit in Instellingen › Suggesties en meldingen; "Wie veranderde wat" op Week (gezin). Voorstel 0017 (niet uitgevoerd) + tests/rls/samenwerking.mjs. Open: migratie 0017, aanwezigheid alleen echt te testen met Supabase Realtime (niet in de nep-databank), geen push naar buiten.
 - **P6 Kwaliteit**: de 20 verplichte tests als één E2E-reeks, schermen voor/na, toegankelijkheid, offline.
 - **Fase 4 (2026-11-20)**: gebouwd zoals hierboven; voorstel 0021 niet uitgevoerd. Open: account-opruimen voor community-foto's (BUG-179), ingeplande exclusieve recepten na opzeggen (BUG-180), echte betaalprovider pas na G5.
+- **Fase 5 (2026-11-20)**: Business Control Center in testmodus gebouwd (partneraanvragen, campagnes met vertoningen/klikken via gesponsord_tel, omzet per maand met btw apart, makeruitbetalingen "zou uitbetaald worden" met centraal percentage, teamuitnodigingen zonder e-mail, rollen per scherm, leesbaar auditlog); partnerportaal afgewerkt (testbudget, cijfers per campagne, facturen). Voorstel 0022 niet uitgevoerd. Open: teamleden echt toelaten vraagt een beslissing over de vaste eigenaarscontrole; BUG-183; echte betaal-/uitbetaalprovider en KYC pas na G5.
 - **Daarna** fases 3–9 uit FASES.md (keuken/collecties, creators/video, BCC, premium, privacy, afwerking).
