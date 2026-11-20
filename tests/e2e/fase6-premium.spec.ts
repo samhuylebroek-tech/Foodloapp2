@@ -116,7 +116,7 @@ test("geweigerde testbetaling → genadeperiode met duidelijke melding, geen geg
   await startPremium(page);
   await page.getByRole("button", { name: "Mislukte betaling nabootsen" }).click();
   const melding = page.getByRole("alert").filter({ hasText: "lukte niet" });
-  await expect(melding).toContainText("Je laatste (test)betaling lukte niet.");
+  await expect(melding).toContainText("Je laatste testbetaling lukte niet.");
   await expect(melding).toContainText("genadeperiode van 7 dagen");
   await expect(melding).toContainText("blijven altijd bewaard");
   await expect(page.getByRole("status").getByText("Betaling mislukt")).toBeVisible();

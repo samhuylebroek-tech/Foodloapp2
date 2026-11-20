@@ -139,7 +139,7 @@ function AbonnementPagina() {
             >
               <AlertTriangle className="mt-0.5 size-6 shrink-0 text-destructive" aria-hidden />
               <div className="min-w-0 space-y-1">
-                <p className="font-semibold">Je laatste (test)betaling lukte niet.</p>
+                <p className="font-semibold">Je laatste testbetaling lukte niet.</p>
                 <p>
                   Premium blijft werken tot{" "}
                   <strong>{korteDatum(abo?.genade_tot ?? abo?.periode_einde ?? "")}</strong>{" "}
