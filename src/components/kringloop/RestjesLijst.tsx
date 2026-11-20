@@ -86,12 +86,12 @@ export function RestjesLijst() {
                     </span>
                   ) : null}
                 </span>
-                <span className="ml-auto flex shrink-0 flex-wrap gap-2">
+                <span className="ml-auto flex min-w-0 max-w-full flex-wrap gap-2">
                   <button
                     type="button"
                     aria-label={`Opgegeten: ${r.titel}`}
                     onClick={() => sluit(r, "opgegeten")}
-                    className="min-h-12 rounded-full border border-border px-4 text-base font-semibold hover:bg-muted"
+                    className="min-h-12 max-w-full rounded-full border border-border px-4 text-base font-semibold break-words hover:bg-muted"
                   >
                     Opgegeten
                   </button>
@@ -99,7 +99,7 @@ export function RestjesLijst() {
                     type="button"
                     aria-label={`Weggegooid: ${r.titel}`}
                     onClick={() => sluit(r, "weggegooid")}
-                    className="min-h-12 rounded-full border border-border px-4 text-base font-semibold text-muted-foreground hover:bg-muted"
+                    className="min-h-12 max-w-full rounded-full border border-border px-4 text-base font-semibold break-words text-muted-foreground hover:bg-muted"
                   >
                     Weggegooid
                   </button>

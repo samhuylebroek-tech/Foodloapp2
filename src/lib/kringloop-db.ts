@@ -358,15 +358,24 @@ export async function klaarMetWinkelen(opts: {
   userId: string;
   lijst: { id: string; name: string; group_id?: string | null };
   gekocht: (Gekocht & { id: string; recipe_id?: string | null; note?: string | null })[];
+  /** Fase 3: alleen deze items naar de voorraad (leeg = niets); weglaten = alles. */
+  inVoorraadIds?: ReadonlySet<string> | undefined;
+  /** "Heb ik al": ongedaan maken zet het item terug als nog te kopen. */
+  terugOpen?: boolean | undefined;
+  /** In "Eerder gekocht" bewaren (standaard ja; "Heb ik al" niet: niet gekocht). */
+  geschiedenis?: boolean | undefined;
 }): Promise<{ inVoorraad: number; herstel: Herstel }> {
   const { userId, lijst, gekocht } = opts;
+  const naarVoorraad = opts.inVoorraadIds
+    ? gekocht.filter((g) => opts.inVoorraadIds!.has(g.id))
+    : gekocht;
   const { data: bestaand } = moet(
     await supabase
       .from("pantry_items")
       .select("id, naam, hoeveelheid, eenheid, updated_at")
       .eq("user_id", userId),
   );
-  const plan = voorraadNaKoop(gekocht, (bestaand ?? []) as VoorraadRij[]);
+  const plan = voorraadNaKoop(naarVoorraad, (bestaand ?? []) as VoorraadRij[]);
   const oud = new Map(
     (bestaand ?? []).map((v) => [v.id as string, v.hoeveelheid as number | null]),
   );
@@ -426,7 +435,7 @@ export async function klaarMetWinkelen(opts: {
             unit: g.unit ?? "",
             recipe_id: g.recipe_id ?? null,
             note: g.note ?? null,
-            checked: true,
+            checked: !opts.terugOpen,
           })),
         ),
       );
@@ -436,16 +445,17 @@ export async function klaarMetWinkelen(opts: {
     throw fout;
   }
   // Geschiedenis ("Eerder gekocht") is een extraatje: mag nooit de actie doen mislukken.
-  await bewaarGekocht(
-    userId,
-    lijst,
-    gekocht.map((g) => ({
-      name: g.name,
-      quantity: g.quantity,
-      unit: g.unit ?? "",
-      recipe_id: g.recipe_id ?? null,
-    })),
-  ).catch(() => undefined);
+  if (opts.geschiedenis !== false)
+    await bewaarGekocht(
+      userId,
+      lijst,
+      gekocht.map((g) => ({
+        name: g.name,
+        quantity: g.quantity,
+        unit: g.unit ?? "",
+        recipe_id: g.recipe_id ?? null,
+      })),
+    ).catch(() => undefined);
   return {
     inVoorraad: plan.bijwerken.length + plan.nieuw.length,
     herstel: eenmalig(() => draaiTerug(gedaan)),

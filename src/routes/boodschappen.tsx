@@ -51,6 +51,8 @@ import { HalfGelukt, klaarMetWinkelen } from "@/lib/kringloop-db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useVoorraadBijhouden } from "@/lib/intelligentie/voorraad-modus";
+import { idsNaarVoorraad, useNaWinkelen, voorraadKeuzes } from "@/lib/intelligentie/na-winkelen";
 import { zorgVoorLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
 import { vervangNaam, vervanging, zelfdeProduct } from "@/lib/product-herkenning";
 import { zitInVoorraad } from "@/lib/voorraad-match";
@@ -1315,11 +1317,68 @@ function BoodschappenPage() {
     [items, ruwAanvulling],
   );
   const [winkelKlaarBezig, setWinkelKlaarBezig] = useState(false);
-  async function klaarMetWinkelenNu() {
+  // Fase 3: "Klaar met winkelen" volgens de keuze (altijd / eerst vragen met vinkjes / nooit).
+  const [naWinkelenKeuze] = useNaWinkelen();
+  const [voorraadVraag, setVoorraadVraag] = useState<Set<string> | null>(null);
+  const [voorraadBijgehouden] = useVoorraadBijhouden();
+  function klaarMetWinkelenNu() {
     if (!user || !actieveLijst || !klaar.length || winkelKlaarBezig) return;
+    if (naWinkelenKeuze === "vragen" && voorraadKeuzes(klaar).length) {
+      setVoorraadVraag(new Set(voorraadKeuzes(klaar).map((i) => i.id)));
+      return;
+    }
+    void rondWinkelenAf(idsNaarVoorraad(naWinkelenKeuze));
+  }
+
+  /** "Heb ik al": van de lijst af en (als je je voorraad bijhoudt) in de voorraad; ongedaan maken. */
+  async function hebIkAl(item: Item) {
+    if (!user || !actieveLijst) return;
+    if (!verdeling.rechten.verwijderen) {
+      toast("Op deze gezinslijst kan jij afvinken, maar niets weghalen.");
+      return;
+    }
+    if (item.id.startsWith("wacht-") || !online) {
+      toast("Dat kan zodra je weer verbinding hebt.");
+      return;
+    }
+    try {
+      const r = await klaarMetWinkelen({
+        userId: user.id,
+        lijst: actieveLijst,
+        gekocht: [item],
+        inVoorraadIds: voorraadBijgehouden ? undefined : new Set(),
+        terugOpen: true,
+        geschiedenis: false,
+      });
+      void meet("boodschappen.heb_ik_al", undefined, { voorraad: r.inVoorraad });
+      refresh();
+      vernieuwKringloop();
+      meldMetHerstel(
+        r.inVoorraad
+          ? `${item.name}: van je lijst, in je voorraad`
+          : `${item.name}: van je lijst, je hebt het al`,
+        async () => {
+          await r.herstel();
+          refresh();
+        },
+        vernieuwKringloop,
+      );
+    } catch {
+      toast.error("Dat lukte niet. Je lijst blijft zoals hij was.");
+    }
+  }
+
+  async function rondWinkelenAf(inVoorraadIds: ReadonlySet<string> | undefined) {
+    if (!user || !actieveLijst || !klaar.length || winkelKlaarBezig) return;
+    setVoorraadVraag(null);
     setWinkelKlaarBezig(true);
     try {
-      const r = await klaarMetWinkelen({ userId: user.id, lijst: actieveLijst, gekocht: klaar });
+      const r = await klaarMetWinkelen({
+        userId: user.id,
+        lijst: actieveLijst,
+        gekocht: klaar,
+        inVoorraadIds,
+      });
       void meet("kringloop.naar_voorraad", undefined, { aantal: r.inVoorraad });
       // P5: gezinslijst afgerond → de anderen krijgen "Jan is klaar met winkelen" (in de app).
       if (actieveLijst.group_id) {
@@ -1829,6 +1888,7 @@ function BoodschappenPage() {
                                     botsing={botsingen[item.id]}
                                     onVervanger={() => setVervangItem(item)}
                                     behoefte={behoefte.get(item.id)}
+                                    onHebIkAl={() => void hebIkAl(item)}
                                   />
                                 </li>
                               ))}
@@ -1876,6 +1936,71 @@ function BoodschappenPage() {
                           >
                             <PackageCheck /> Klaar met winkelen
                           </Button>
+                          <Dialog
+                            open={voorraadVraag !== null}
+                            onOpenChange={(o) => !o && setVoorraadVraag(null)}
+                          >
+                            <DialogContent className="max-h-[90dvh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle>Wat mag in je voorraad?</DialogTitle>
+                                <DialogDescription>
+                                  Vink af wat je niet in je voorraad wilt. Je lijst wordt daarna
+                                  opgeruimd.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <ul className="space-y-1" aria-label="Gekocht">
+                                {voorraadKeuzes(klaar).map((item) => {
+                                  const id = `naar-voorraad-${item.id}`;
+                                  return (
+                                    <li key={item.id}>
+                                      <label
+                                        htmlFor={id}
+                                        className="flex min-h-14 cursor-pointer items-center gap-3 rounded-xl px-2 hover:bg-muted"
+                                      >
+                                        <Checkbox
+                                          id={id}
+                                          className="size-7"
+                                          checked={voorraadVraag?.has(item.id) ?? false}
+                                          onCheckedChange={(aan) =>
+                                            setVoorraadVraag((oud) => {
+                                              const n = new Set(oud ?? []);
+                                              if (aan) n.add(item.id);
+                                              else n.delete(item.id);
+                                              return n;
+                                            })
+                                          }
+                                        />
+                                        <span className="min-w-0 flex-1 break-words text-lg">
+                                          {item.name}
+                                          {maatTekst(item) ? (
+                                            <span className="text-muted-foreground">
+                                              {" "}
+                                              · {maatTekst(item)}
+                                            </span>
+                                          ) : null}
+                                        </span>
+                                      </label>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                              <DialogFooter className="flex-col gap-2 sm:flex-col">
+                                <Button
+                                  className="h-14 w-full text-base"
+                                  onClick={() => void rondWinkelenAf(voorraadVraag ?? new Set())}
+                                >
+                                  <PackageCheck /> Zet in voorraad ({voorraadVraag?.size ?? 0})
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="h-14 w-full text-base"
+                                  onClick={() => void rondWinkelenAf(new Set())}
+                                >
+                                  Niets in voorraad, lijst opruimen
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
                           {/* Rustig, niet rood naast de hoofdknop: er volgt nog een bevestiging. */}
                           <Button
                             variant="ghost"
@@ -2806,6 +2931,7 @@ function ItemRij({
   botsing,
   onVervanger,
   behoefte,
+  onHebIkAl,
 }: {
   item: Item;
   kiesModus: boolean;
@@ -2826,6 +2952,8 @@ function ItemRij({
   onVervanger?: () => void;
   /** P2: nodig · in huis, en een gangbare verpakking (rustig, één regel). */
   behoefte?: DrieGetallen | undefined;
+  /** Fase 3: "Heb ik al" — van de lijst af (en in de voorraad als je die bijhoudt). */
+  onHebIkAl?: (() => void) | undefined;
 }) {
   const start = useRef<number | null>(null);
   const behoefteTekst = behoefte ? korteBehoefteZonderKopen(behoefte) : "";
@@ -2943,6 +3071,20 @@ function ItemRij({
           <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-[0.95rem] font-semibold tabular-nums text-muted-foreground">
             {maatTekst(item)}
           </span>
+        ) : null}
+        {onHebIkAl && !item.checked && !kiesModus ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onHebIkAl();
+            }}
+            aria-label={`${item.name}: heb ik al`}
+            className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-border px-3 text-[0.95rem] font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            Heb ik al
+          </button>
         ) : null}
       </label>
       {!kiesModus ? (

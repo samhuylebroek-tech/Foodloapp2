@@ -1,7 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ChefHat, Loader2, Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import {
+  ChefHat,
+  Loader2,
+  Minus,
+  Pencil,
+  Plus,
+  Search,
+  ShoppingCart,
+  Trash2,
+  WifiOff,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,11 +31,26 @@ import { magVoorstellen } from "@/lib/veiligheid";
 import { gebruikEerst } from "@/lib/intelligentie/gebruik-eerst";
 import { merkVoorraadGebruik, useVoorraadBijhouden } from "@/lib/intelligentie/voorraad-modus";
 import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
+import { NA_WINKELEN_LABEL, useNaWinkelen } from "@/lib/intelligentie/na-winkelen";
 import { opsomming } from "@/lib/vandaag";
 import { RestjesLijst } from "@/components/kringloop/RestjesLijst";
 import { vindDubbels, voegToeAlsNieuw, zorgVoorLijst } from "@/lib/boodschappen";
 import type { Recipe } from "@/lib/types";
-import { CATEGORIE_LABEL, CATEGORIE_VOLGORDE, categorieVan } from "@/lib/categorie";
+import { useOnline } from "@/hooks/useOnline";
+import {
+  EENHEDEN,
+  EENHEID_LABEL,
+  PLEKKEN,
+  PLEK_LABEL,
+  bewaarPlek,
+  eenheidKeuze,
+  isBijnaOp,
+  leesHoeveelheid,
+  leesPlekken,
+  plekVan,
+  zoekVoorraad,
+  type Plek,
+} from "@/lib/voorraad-plek";
 
 export const Route = createFileRoute("/voorraad")({
   head: () => ({
@@ -55,7 +80,19 @@ type Item = {
   eenheid: string;
   created_at?: string | null;
   updated_at?: string | null;
+  /** Na voorstel 0020; anders op dit toestel of een gok op basis van de naam. */
+  plek?: string | null;
 };
+
+/** Kolom bestaat (nog) niet (Postgres 42703, PostgREST PGRST204). */
+function isOntbrekendeKolom(fout: { code?: string; message?: string } | null): boolean {
+  if (!fout) return false;
+  return (
+    fout.code === "42703" ||
+    fout.code === "PGRST204" ||
+    /column .* does not exist|could not find the '.*' column/i.test(fout.message ?? "")
+  );
+}
 
 type Ing = { recipe_id: string; name: string; quantity: number | null; unit: string };
 
@@ -88,18 +125,29 @@ function VoorraadPage() {
   const t = useT();
   const [nieuw, setNieuw] = useState("");
   const [bezigMet, setBezigMet] = useState<string | null>(null);
+  const [zoek, setZoek] = useState("");
+  const [bewerk, setBewerk] = useState<string | null>(null);
+  const [plekken, setPlekken] = useState<Record<string, Plek>>({});
+  const online = useOnline();
+  useEffect(() => setPlekken(leesPlekken(user?.id)), [user?.id]);
 
   useEffect(() => {
     void meet("voorraad.bekeken");
   }, []);
 
-  const { data: items = [], isLoading } = useQuery({
+  const {
+    data: items = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["voorraad", user?.id],
     enabled: !!user,
     queryFn: async () => {
+      // "*": ook `plek` en `houdbaar_tot` als die kolommen er (na een migratie) zijn.
       const { data, error } = await supabase
         .from("pantry_items")
-        .select("id, naam, hoeveelheid, eenheid, created_at, updated_at")
+        .select("*")
         .eq("user_id", user!.id)
         .order("naam");
       if (error) throw error;
@@ -152,19 +200,21 @@ function VoorraadPage() {
   );
   const oudPerNaam = useMemo(() => new Map(oudInHuis.map((o) => [o.naam, o.dagen])), [oudInHuis]);
   const [slim] = useSlimmeVoorstellen();
-  // Mobiel-eerst: voorraad per afdeling (zelfde indeling als de boodschappenlijst).
-  const perAfdeling = useMemo(() => {
-    const per = new Map<string, typeof items>();
-    for (const item of items) {
-      const c = categorieVan(item.naam, {});
-      per.set(c, [...(per.get(c) ?? []), item]);
+  const [naWinkelenKeuze, zetNaWinkelenKeuze] = useNaWinkelen();
+  // Fase 3: per plek (koelkast, diepvries, kast), met zoeken.
+  const gevonden = useMemo(() => zoekVoorraad(items, zoek), [items, zoek]);
+  const perPlek = useMemo(() => {
+    const per = new Map<Plek, Item[]>();
+    for (const item of gevonden) {
+      const p = plekVan(item, plekken);
+      per.set(p, [...(per.get(p) ?? []), item]);
     }
-    return CATEGORIE_VOLGORDE.filter((c) => per.has(c)).map((c) => ({
-      id: c,
-      label: c === "voorraadkast" ? "Kast en houdbaar" : CATEGORIE_LABEL[c],
-      lijst: per.get(c)!,
+    return PLEKKEN.filter((p) => per.has(p)).map((p) => ({
+      id: p,
+      label: PLEK_LABEL[p],
+      lijst: per.get(p)!,
     }));
-  }, [items]);
+  }, [gevonden, plekken]);
   const suggesties = useMemo(() => {
     const perRecept = new Map<string, { name: string }[]>();
     for (const ing of ingredienten) {
@@ -205,8 +255,106 @@ function VoorraadPage() {
     void qc.invalidateQueries({ queryKey: ["home-dagmenu"] });
   };
 
+  const offlineMelding = () => {
+    toast(t("Je bent offline. Aanpassen kan zodra je weer verbinding hebt."));
+  };
+
+  /** Hoeveelheid, eenheid en plek bewaren (met ongedaan maken). */
+  const bewaarAanpassing = async (
+    item: Item,
+    v: { hoeveelheid: number | null; eenheid: string; plek: Plek },
+  ) => {
+    if (!user) return;
+    if (!online) return offlineMelding();
+    merkVoorraadGebruik(user.id);
+    const vorig = {
+      hoeveelheid: item.hoeveelheid,
+      eenheid: item.eenheid,
+      plek: plekVan(item, plekken),
+    };
+    const { error } = await supabase
+      .from("pantry_items")
+      .update({ hoeveelheid: v.hoeveelheid, eenheid: v.eenheid })
+      .eq("id", item.id);
+    if (error) {
+      toast.error(t("Aanpassen lukte niet."));
+      return;
+    }
+    await zetPlek(item, v.plek);
+    setBewerk(null);
+    vernieuw();
+    toast.success(`${item.naam} ${t("aangepast")}`, {
+      action: {
+        label: t("Ongedaan maken"),
+        onClick: async () => {
+          await supabase
+            .from("pantry_items")
+            .update({ hoeveelheid: vorig.hoeveelheid, eenheid: vorig.eenheid })
+            .eq("id", item.id);
+          await zetPlek(item, vorig.plek);
+          vernieuw();
+        },
+      },
+    });
+  };
+
+  /** Plek op het account (kolom `plek`, voorstel 0020) of anders op dit toestel. */
+  const zetPlek = async (item: Item, plek: Plek) => {
+    if (!user || plekVan(item, plekken) === plek) return;
+    const { error } = await supabase
+      .from("pantry_items")
+      .update({ plek } as never)
+      .eq("id", item.id);
+    if (!error) {
+      qc.setQueryData(["voorraad", user.id], (oud: Item[] | undefined) =>
+        oud?.map((i) => (i.id === item.id ? { ...i, plek } : i)),
+      );
+      return;
+    }
+    if (!isOntbrekendeKolom(error)) throw error;
+    bewaarPlek(user.id, item.id, plek);
+    setPlekken(leesPlekken(user.id));
+  };
+
+  /** "Bijna op": één tik zet het op je lijst (niet dubbel), met ongedaan maken. */
+  const zetOpLijst = async (item: Item) => {
+    if (!user) return;
+    if (!online) return offlineMelding();
+    setBezigMet(item.id);
+    try {
+      const listId = await zorgVoorLijst(user.id);
+      const dubbel = await vindDubbels(listId, [{ name: item.naam, quantity: null, unit: "" }]);
+      if (dubbel.length) {
+        toast(`${item.naam} ${t("staat al op je lijst")}`);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("shopping_items")
+        .insert({ user_id: user.id, list_id: listId, name: item.naam, quantity: null, unit: "" })
+        .select("id")
+        .single();
+      if (error || !data) throw error ?? new Error("geen id");
+      void meet("voorraad.bijna_op_lijst");
+      void qc.invalidateQueries({ queryKey: ["shopping"] });
+      toast.success(`${item.naam} ${t("staat op je lijst")}`, {
+        action: {
+          label: t("Ongedaan maken"),
+          onClick: async () => {
+            await supabase.from("shopping_items").delete().eq("id", data.id);
+            void qc.invalidateQueries({ queryKey: ["shopping"] });
+          },
+        },
+      });
+    } catch {
+      toast.error(t("Op je lijst zetten lukte niet. Probeer het opnieuw."));
+    } finally {
+      setBezigMet(null);
+    }
+  };
+
   const voegToe = async (regel = nieuw.trim()) => {
     if (!regel || !user) return;
+    if (!online) return offlineMelding();
     merkVoorraadGebruik(user.id);
     // BUG-101: "-5 kg rijst" werd stil 5 kg. Een minteken tegen een getal is geen opsomming.
     if (/^-\d/.test(regel)) {
@@ -229,6 +377,7 @@ function VoorraadPage() {
   };
 
   const verwijder = async (item: Item) => {
+    if (!online) return offlineMelding();
     if (user) merkVoorraadGebruik(user.id);
     const { error } = await supabase.from("pantry_items").delete().eq("id", item.id);
     if (error) {
@@ -259,6 +408,7 @@ function VoorraadPage() {
 
   // Hoeveelheid met één tik aanpassen; naar nul = uit de voorraad (met ongedaan maken).
   const wijzigAantal = async (item: Item, richting: 1 | -1) => {
+    if (!online) return offlineMelding();
     if (user) merkVoorraadGebruik(user.id);
     const stap = stapVoor(item.eenheid);
     const huidig = item.hoeveelheid ?? 1;
@@ -351,6 +501,24 @@ function VoorraadPage() {
             >
               {bijgehouden ? t("Ik houd mijn voorraad niet bij") : t("Ik houd mijn voorraad bij")}
             </button>
+            <fieldset className="mt-2">
+              <legend className="font-semibold">{t("Na het winkelen")}</legend>
+              <div className="mt-1 flex flex-col gap-1">
+                {(["altijd", "vragen", "nooit"] as const).map((k) => (
+                  <label key={k} className="flex min-h-12 cursor-pointer items-center gap-3">
+                    <input
+                      type="radio"
+                      name="na-winkelen"
+                      value={k}
+                      checked={naWinkelenKeuze === k}
+                      onChange={() => zetNaWinkelenKeuze(k)}
+                      className="size-6 accent-[var(--primary)]"
+                    />
+                    <span>{t(NA_WINKELEN_LABEL[k])}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
           </div>
 
           <form
@@ -399,9 +567,53 @@ function VoorraadPage() {
             </div>
           ) : null}
 
+          {!online ? (
+            <p
+              role="status"
+              className="mt-4 flex items-start gap-2 rounded-2xl bg-muted px-4 py-3 text-base"
+            >
+              <WifiOff className="mt-0.5 size-5 shrink-0" aria-hidden />
+              {t(
+                "Je bent offline. Je ziet je voorraad van daarnet; aanpassen kan zodra je weer verbinding hebt.",
+              )}
+            </p>
+          ) : null}
+
+          {items.length ? (
+            <div className="mt-4">
+              <label htmlFor="voorraad-zoek" className="text-base font-semibold">
+                {t("Zoek in je voorraad")}
+              </label>
+              <div className="relative mt-1">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
+                  aria-hidden
+                />
+                <Input
+                  id="voorraad-zoek"
+                  type="search"
+                  value={zoek}
+                  onChange={(e) => setZoek(e.target.value)}
+                  placeholder={t("Bijvoorbeeld: kaas")}
+                  className="h-14 pl-10 text-lg"
+                />
+              </div>
+            </div>
+          ) : null}
+
           {isLoading ? (
             <div className="mt-6">
               <PageSkeleton rows={2} />
+            </div>
+          ) : isError ? (
+            <div role="alert" className="mt-6 rounded-2xl bg-muted px-4 py-4 text-base">
+              <p className="font-semibold">{t("Je voorraad laden lukte niet.")}</p>
+              <p className="text-muted-foreground">
+                {t("Er is niets verloren. Controleer je verbinding en probeer opnieuw.")}
+              </p>
+              <Button variant="outline" className="mt-3 h-12" onClick={() => void refetch()}>
+                {t("Opnieuw proberen")}
+              </Button>
             </div>
           ) : items.length === 0 ? (
             <div className="mt-6">
@@ -412,9 +624,20 @@ function VoorraadPage() {
                 )}
               />
             </div>
+          ) : !gevonden.length ? (
+            <p role="status" className="mt-6 rounded-2xl bg-muted px-4 py-3 text-base">
+              {t("Niets gevonden voor")} "{zoek.trim()}".{" "}
+              <button
+                type="button"
+                onClick={() => setZoek("")}
+                className="inline-flex min-h-11 items-center font-semibold underline underline-offset-4"
+              >
+                {t("Toon alles")}
+              </button>
+            </p>
           ) : (
             <ul className="mt-6 space-y-5" aria-label={t("In huis")}>
-              {perAfdeling.map((g) => (
+              {perPlek.map((g) => (
                 <li key={g.id}>
                   <h3
                     id={`voorraad-${g.id}`}
@@ -426,59 +649,95 @@ function VoorraadPage() {
                     className="paneel divide-y divide-border/80 overflow-hidden"
                     aria-label={t(g.label)}
                   >
-                    {g.lijst.map((item) => (
-                      <li
-                        key={item.id}
-                        className="flex min-h-[4.25rem] flex-wrap items-center gap-x-2 gap-y-1 py-2 pl-4 pr-1"
-                      >
-                        {/* Bij grote tekst schuiven − + en verwijderen naar een tweede regel,
-                            zodat de productnaam nooit afgekapt wordt (review punt 1). */}
-                        <span className="min-w-0 flex-1 basis-40">
-                          <span className="block hyphens-auto break-words text-lg font-semibold leading-snug">
-                            {item.naam}
-                          </span>
-                          <span className="block text-[0.95rem] tabular-nums text-muted-foreground">
-                            {item.hoeveelheid
-                              ? toonBelgischeMaat(item.hoeveelheid, item.eenheid)
-                              : t("in huis")}
-                          </span>
-                          {oudPerNaam.has(item.naam) ? (
-                            <span className="block text-[0.95rem] font-semibold text-[oklch(0.42_0.1_55)] dark:text-[oklch(0.85_0.09_75)]">
-                              {t("Al")} {oudPerNaam.get(item.naam)}{" "}
-                              {oudPerNaam.get(item.naam) === 1
-                                ? t("dag in huis")
-                                : t("dagen in huis")}
+                    {g.lijst.map((item) => {
+                      const bijnaOp = isBijnaOp(item);
+                      return (
+                        <li key={item.id} className="py-2 pl-4 pr-1">
+                          <div className="flex min-h-[3.25rem] flex-wrap items-center gap-x-2 gap-y-1">
+                            {/* Bij grote tekst schuiven de knoppen naar een tweede regel,
+                                zodat de productnaam nooit afgekapt wordt (review punt 1). */}
+                            <span className="min-w-0 flex-1 basis-40">
+                              <span className="block hyphens-auto break-words text-lg font-semibold leading-snug">
+                                {item.naam}
+                              </span>
+                              <span className="block text-[0.95rem] tabular-nums text-muted-foreground">
+                                {item.hoeveelheid
+                                  ? toonBelgischeMaat(item.hoeveelheid, item.eenheid)
+                                  : t("in huis")}
+                                {bijnaOp ? (
+                                  <span className="ml-2 font-semibold text-[oklch(0.42_0.1_55)] dark:text-[oklch(0.85_0.09_75)]">
+                                    · {t("Bijna op")}
+                                  </span>
+                                ) : null}
+                              </span>
+                              {oudPerNaam.has(item.naam) ? (
+                                <span className="block text-[0.95rem] font-semibold text-[oklch(0.42_0.1_55)] dark:text-[oklch(0.85_0.09_75)]">
+                                  {t("Al")} {oudPerNaam.get(item.naam)}{" "}
+                                  {oudPerNaam.get(item.naam) === 1
+                                    ? t("dag in huis")
+                                    : t("dagen in huis")}
+                                </span>
+                              ) : null}
                             </span>
+                            <span className="ml-auto flex shrink-0 items-center rounded-full bg-muted p-0.5">
+                              <button
+                                type="button"
+                                onClick={() => void wijzigAantal(item, -1)}
+                                aria-label={`${t("Minder")}: ${item.naam}`}
+                                className="flex size-11 items-center justify-center rounded-full hover:bg-card active:bg-card"
+                              >
+                                <Minus className="size-5" aria-hidden />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void wijzigAantal(item, 1)}
+                                aria-label={`${t("Meer")}: ${item.naam}`}
+                                className="flex size-11 items-center justify-center rounded-full hover:bg-card active:bg-card"
+                              >
+                                <Plus className="size-5" aria-hidden />
+                              </button>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setBewerk(bewerk === item.id ? null : item.id)}
+                              aria-expanded={bewerk === item.id}
+                              aria-label={`${t("Aanpassen")}: ${item.naam}`}
+                              className="flex size-12 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                            >
+                              <Pencil className="size-5" aria-hidden />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void verwijder(item)}
+                              aria-label={`${t("Verwijderen")}: ${item.naam}`}
+                              className="flex size-12 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-destructive"
+                            >
+                              <Trash2 className="size-5" aria-hidden />
+                            </button>
+                          </div>
+                          {bijnaOp ? (
+                            <Button
+                              variant="secondary"
+                              onClick={() => void zetOpLijst(item)}
+                              disabled={bezigMet === item.id}
+                              aria-label={`${item.naam} ${t("op mijn lijst")}`}
+                              className="mt-1 h-12 text-base"
+                            >
+                              <ShoppingCart className="size-5" aria-hidden />
+                              {t("Op mijn lijst")}
+                            </Button>
                           ) : null}
-                        </span>
-                        <span className="ml-auto flex shrink-0 items-center rounded-full bg-muted p-0.5">
-                          <button
-                            type="button"
-                            onClick={() => void wijzigAantal(item, -1)}
-                            aria-label={`${t("Minder")}: ${item.naam}`}
-                            className="flex size-11 items-center justify-center rounded-full hover:bg-card active:bg-card"
-                          >
-                            <Minus className="size-5" aria-hidden />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void wijzigAantal(item, 1)}
-                            aria-label={`${t("Meer")}: ${item.naam}`}
-                            className="flex size-11 items-center justify-center rounded-full hover:bg-card active:bg-card"
-                          >
-                            <Plus className="size-5" aria-hidden />
-                          </button>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => void verwijder(item)}
-                          aria-label={`${t("Verwijderen")}: ${item.naam}`}
-                          className="flex size-12 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-destructive"
-                        >
-                          <Trash2 className="size-5" aria-hidden />
-                        </button>
-                      </li>
-                    ))}
+                          {bewerk === item.id ? (
+                            <AanpasVak
+                              item={item}
+                              plek={plekVan(item, plekken)}
+                              onBewaar={(v) => void bewaarAanpassing(item, v)}
+                              onAnnuleer={() => setBewerk(null)}
+                            />
+                          ) : null}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </li>
               ))}
@@ -574,5 +833,110 @@ function VoorraadPage() {
         </section>
       </div>
     </AppShell>
+  );
+}
+
+/** Hoeveelheid, eenheid en plek aanpassen voor één product. */
+function AanpasVak({
+  item,
+  plek,
+  onBewaar,
+  onAnnuleer,
+}: {
+  item: Item;
+  plek: Plek;
+  onBewaar: (v: { hoeveelheid: number | null; eenheid: string; plek: Plek }) => void;
+  onAnnuleer: () => void;
+}) {
+  const t = useT();
+  const [hoeveel, setHoeveel] = useState(
+    item.hoeveelheid != null ? String(item.hoeveelheid).replace(".", ",") : "",
+  );
+  const [eenheid, setEenheid] = useState<string>(eenheidKeuze(item.eenheid));
+  const [waar, setWaar] = useState<Plek>(plek);
+  const id = `aanpas-${item.id}`;
+  const fout = hoeveel.trim() !== "" && leesHoeveelheid(hoeveel) === null;
+  return (
+    <form
+      aria-label={`${t("Aanpassen")}: ${item.naam}`}
+      className="mt-2 mr-3 grid gap-3 rounded-2xl bg-muted p-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (fout) return;
+        onBewaar({
+          hoeveelheid: hoeveel.trim() ? leesHoeveelheid(hoeveel) : null,
+          eenheid,
+          plek: waar,
+        });
+      }}
+    >
+      <div className="flex flex-wrap gap-3">
+        <div className="min-w-0 flex-1 basis-28">
+          <label htmlFor={`${id}-hoeveel`} className="block text-base font-semibold">
+            {t("Hoeveelheid")}
+          </label>
+          <Input
+            id={`${id}-hoeveel`}
+            inputMode="decimal"
+            value={hoeveel}
+            onChange={(e) => setHoeveel(e.target.value)}
+            aria-invalid={fout}
+            aria-describedby={fout ? `${id}-fout` : undefined}
+            className="mt-1 h-14 text-lg"
+          />
+        </div>
+        <div className="min-w-0 flex-1 basis-32">
+          <label htmlFor={`${id}-eenheid`} className="block text-base font-semibold">
+            {t("Eenheid")}
+          </label>
+          <select
+            id={`${id}-eenheid`}
+            value={eenheid}
+            onChange={(e) => setEenheid(e.target.value)}
+            className="mt-1 h-14 w-full rounded-xl border border-input bg-background px-3 text-lg"
+          >
+            {EENHEDEN.map((e) => (
+              <option key={e} value={e}>
+                {t(EENHEID_LABEL[e])}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      {fout ? (
+        <p id={`${id}-fout`} className="text-base font-semibold text-destructive">
+          {t("Typ een getal groter dan 0, bijvoorbeeld 1,5 of 250.")}
+        </p>
+      ) : null}
+      <fieldset>
+        <legend className="text-base font-semibold">{t("Waar staat het?")}</legend>
+        <div className="mt-1 flex flex-wrap gap-2">
+          {PLEKKEN.map((p) => (
+            <label
+              key={p}
+              className="flex min-h-12 cursor-pointer items-center gap-2 rounded-full border border-border bg-background px-4 text-base has-[:checked]:border-primary has-[:checked]:font-semibold"
+            >
+              <input
+                type="radio"
+                name={`${id}-plek`}
+                value={p}
+                checked={waar === p}
+                onChange={() => setWaar(p)}
+                className="size-5 accent-[var(--primary)]"
+              />
+              {t(PLEK_LABEL[p])}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" className="h-14 flex-1 text-base">
+          {t("Bewaren")}
+        </Button>
+        <Button type="button" variant="ghost" className="h-14 text-base" onClick={onAnnuleer}>
+          {t("Annuleren")}
+        </Button>
+      </div>
+    </form>
   );
 }
