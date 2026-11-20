@@ -187,6 +187,16 @@ function PlannerPage() {
   const [boodschappenOpen, setBoodschappenOpen] = useState(false);
   const [dagKeuze, setDagKeuze] = useState<string | null>(null);
   const [heleWeek, setHeleWeek] = useState(false);
+  // P6: bij grote tekst (≥ 150 %) zou een vaste weekband een groot deel van het scherm bedekken
+  // (en knoppen eronder onbereikbaar maken); dan schuift ze gewoon mee.
+  const [grootTekst, setGrootTekst] = useState(false);
+  useEffect(() => {
+    const meet = () =>
+      setGrootTekst(parseFloat(getComputedStyle(document.documentElement).fontSize) >= 24);
+    meet();
+    window.addEventListener("resize", meet);
+    return () => window.removeEventListener("resize", meet);
+  }, []);
 
   // De week begint op maandag of (als je dat kiest) op zondag.
   const week = Array.from({ length: 7 }, (_, i) => {
@@ -1504,7 +1514,7 @@ function PlannerPage() {
 
         {/* Week kiezen: duidelijke titel met datums, grote pijlen, rustige dagkeuze */}
         {/* Mobiel: één compacte weekband die bovenaan blijft staan (dag wisselen kan altijd). */}
-        <section aria-label="Week kiezen" className="paneel @container sticky top-[calc(4rem+env(safe-area-inset-top))] z-20 p-2.5 shadow-kaart md:static md:p-3 md:shadow-none lg:col-start-1 lg:row-start-1 lg:w-full lg:max-w-lg lg:p-4">
+        <section aria-label="Week kiezen" className={`paneel @container ${grootTekst ? "" : "sticky top-[calc(4rem+env(safe-area-inset-top))] z-20"} p-2.5 shadow-kaart md:static md:p-3 md:shadow-none lg:col-start-1 lg:row-start-1 lg:w-full lg:max-w-lg lg:p-4`}>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"

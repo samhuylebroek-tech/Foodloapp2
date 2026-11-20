@@ -11,6 +11,7 @@ import { axeErnstig, expect, meldAan, resetDemo, seedDb, test, zetKlok } from ".
 
 test.describe.configure({ timeout: 300_000 });
 
+const NEP = "http://127.0.0.1:54439/rest/v1";
 const R = (n: number) => `aaaaaaaa-0000-4000-8000-00000000000${n}`;
 const JAN = "22222222-2222-4222-8222-222222222222";
 const GEZIN = "abababab-0000-4000-8000-000000000001";
@@ -46,6 +47,8 @@ test("nieuwe schermen P1–P5: geen ernstige axe-meldingen", async ({ page, exte
   await resetDemo();
   await zetKlok(page, 14);
   await meldAan(page);
+  // Een lege week om samen te stellen (de demo plant de komende dagen al).
+  await fetch(`${NEP}/meal_plan?id=neq.0`, { method: "DELETE" });
   const fouten: string[] = [];
   const meet = async (naam: string) => {
     await wacht(page);
@@ -57,6 +60,7 @@ test("nieuwe schermen P1–P5: geen ernstige axe-meldingen", async ({ page, exte
   await expect(page.getByRole("heading", { name: "Stel je week samen", level: 1 })).toBeVisible({
     timeout: 60_000,
   });
+  await page.getByRole("button", { name: "Volgende week", exact: true }).click();
   await meet("week-samenstellen");
   await page.getByRole("button", { name: /^Stel mijn menu samen/ }).click();
   await expect(page.getByRole("button", { name: "Bewaar dit menu" })).toBeVisible({
@@ -188,7 +192,10 @@ test("conflictmelding (twee browsers): geen ernstige axe-meldingen, keuze met to
     expect(await axeErnstig(page)).toEqual([]);
     // Toetsenbord: "Houd die van Jan" bereikbaar, met zichtbare focus, Enter werkt.
     const houd = keuze.getByRole("button", { name: "Houd die van Jan" });
+    // Met het toetsenbord erheen (Shift+Tab en terug), zodat :focus-visible geldt.
     await houd.focus();
+    await page.keyboard.press("Shift+Tab");
+    await page.keyboard.press("Tab");
     await expect(houd).toBeFocused();
     expect(await zichtbareFocus(houd)).toBe(true);
     await page.keyboard.press("Enter");
@@ -206,7 +213,9 @@ test("toetsenbordroute week samenstellen: Tab bereikt de hoofdknop met zichtbare
   await resetDemo();
   await zetKlok(page, 14);
   await meldAan(page);
+  await fetch(`${NEP}/meal_plan?id=neq.0`, { method: "DELETE" });
   await page.goto("/week-samenstellen");
+  await page.getByRole("button", { name: "Volgende week", exact: true }).click();
   const hoofd = page.getByRole("button", { name: /^Stel mijn menu samen/ });
   await expect(hoofd).toBeVisible({ timeout: 60_000 });
   await wacht(page);
