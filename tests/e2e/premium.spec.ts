@@ -28,7 +28,7 @@ test("testcheckout, status, nagebootste betalingen en opzeggen in twee tikken", 
   await expect(page.getByRole("heading", { name: /4,99 per maand/ })).toBeVisible();
   await expect(page.getByRole("rowheader", { name: "Allergie- en dieetcontrole" })).toBeVisible();
   // Zonder recht: de premium-extra is op slot.
-  await expect(page.getByText("Beschikbaar met Premium.", { exact: false })).toBeVisible();
+  await expect(page.getByTestId("premium-uitleg").first()).toContainText("Dit hoort bij Premium.");
   await expect(page.getByRole("list", { name: "Seizoenskalender" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Premium testen (testmodus)" }).click();

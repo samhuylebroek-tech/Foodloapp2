@@ -11,7 +11,20 @@ import {
 } from "@/components/beheer/BccDelen";
 import { maandLabel } from "@/lib/bcc";
 import { bccOmzet } from "@/lib/bcc.functions";
+import { PRIJZEN } from "@/lib/betalen/prijzen";
 import { euro } from "@/lib/betalen/types";
+
+/** Fase 6: de prijsvoorstellen komen uit één bestand (src/lib/betalen/prijzen.ts). */
+const PRIJSREGELS: [string, string][] = [
+  ["Premium per maand", euro(PRIJZEN.premium.maandCent)],
+  ["Premium per jaar", euro(PRIJZEN.premium.jaarCent)],
+  ["Proefperiode", `${PRIJZEN.premium.proefDagen} dagen`],
+  ["Makerabonnement", `${euro(PRIJZEN.maker.minCent)} – ${euro(PRIJZEN.maker.maxCent)} per maand`],
+  ["Partner Plus", `${euro(PRIJZEN.partner.plusMaandCent)} per maand`],
+  ["Platformdeel (standaard)", `${PRIJZEN.platformProcent} %`],
+  ["Btw (voorbeeld)", `${PRIJZEN.btw.land} ${PRIJZEN.btw.procent} %`],
+  ["Genadeperiode / herroeping", `${PRIJZEN.genadeDagen} / ${PRIJZEN.herroepingDagen} dagen`],
+];
 
 export const Route = createFileRoute("/beheer/omzet")({ component: Omzet });
 
@@ -129,7 +142,24 @@ function Omzet() {
             )}
             <p className="mt-3 text-xs text-slate-400">
               Een terugbetaling ontstaat wanneer een fan een makerabonnement opzegt (deel van de
-              resterende periode, testmodus).
+              resterende periode, testmodus) of Premium binnen de herroepingstermijn terugvraagt.
+            </p>
+          </Kaart>
+          <Kaart>
+            <h2 className="mb-2 text-base font-semibold">Prijsvoorstellen (centraal)</h2>
+            <dl
+              className="grid gap-x-4 gap-y-1 text-sm sm:grid-cols-2"
+              aria-label="Prijsvoorstellen"
+            >
+              {PRIJSREGELS.map(([k, v]) => (
+                <div key={k} className="flex flex-wrap justify-between gap-2">
+                  <dt className="text-slate-300">{k}</dt>
+                  <dd className="font-semibold">{v}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-3 text-xs text-slate-400">
+              Voorstellen in testmodus. Het platformdeel kan je wijzigen bij Uitbetalingen.
             </p>
           </Kaart>
         </div>
