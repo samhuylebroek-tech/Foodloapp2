@@ -36,7 +36,7 @@ import { exporteerMijnGegevens } from "@/lib/export.functions";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { creditOverzicht } from "@/lib/credits.functions";
-import { verwijderMijnAccount } from "@/lib/account.functions";
+import { AccountVerwijderen } from "@/components/instellingen/AccountVerwijderen";
 
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -548,63 +548,6 @@ function SlimmeVoorstellen({ t }: { t: (s: string) => string }) {
         uitleg={t("Slimme vragen vandaag en deze maand")}
       />
     </Groep>
-  );
-}
-
-function AccountVerwijderen() {
-  const [open, setOpen] = useState(false);
-  const [tekst, setTekst] = useState("");
-  const [bezig, setBezig] = useState(false);
-  const verwijder = useServerFn(verwijderMijnAccount);
-  if (!open)
-    return (
-      <KnopRij
-        icoon={Trash2}
-        gevaar
-        titel="Account verwijderen"
-        uitleg="Wist al je gegevens definitief"
-        onClick={() => setOpen(true)}
-      />
-    );
-  return (
-    <div className="space-y-3 bg-[oklch(0.97_0.02_25)] p-4 dark:bg-transparent">
-      <p className="text-lg font-semibold">Weet je het zeker?</p>
-      <p className="text-base text-muted-foreground">
-        Je account, recepten, weekmenu's, lijsten en foto's worden definitief gewist. Dit kan niet
-        ongedaan gemaakt worden. Typ VERWIJDER om te bevestigen.
-      </p>
-      <Input
-        value={tekst}
-        onChange={(e) => setTekst(e.target.value)}
-        className="h-14 text-lg"
-        aria-label="Typ VERWIJDER"
-        autoCapitalize="characters"
-      />
-      <div className="grid grid-cols-2 gap-2">
-        <Button variant="outline" className="h-14 text-base" onClick={() => setOpen(false)}>
-          Annuleren
-        </Button>
-        <Button
-          variant="destructive"
-          className="h-14 text-base"
-          disabled={tekst.trim() !== "VERWIJDER" || bezig}
-          onClick={async () => {
-            setBezig(true);
-            try {
-              await verwijder({ data: { bevestiging: "VERWIJDER" } });
-              await supabase.auth.signOut();
-              // Volledige herlaadbeurt (alle caches weg); de bevestiging staat op de aanmeldpagina.
-              window.location.href = "/aanmelden?verwijderd=1";
-            } catch (e) {
-              toast.error((e as Error).message);
-              setBezig(false);
-            }
-          }}
-        >
-          {bezig ? <Loader2 className="size-5 animate-spin" /> : "Definitief verwijderen"}
-        </Button>
-      </div>
-    </div>
   );
 }
 

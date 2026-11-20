@@ -91,6 +91,8 @@ const metDemo = (aan) => {
   };
 };
 const db = maakDb(metDemo(DEMO));
+/** Fase 8: ook na /__reset?demo=1 (E2E) werkt de demo-aanmelding, zodat tests echt aanmelden. */
+let demoAan = DEMO;
 const log = [];
 /** Storingen per pad: { pad: { soort: "fout"|"traag"|"netwerk", keer, ms, status } } */
 const storingen = new Map();
@@ -123,12 +125,23 @@ export function maakToken(sub = TEST_USER.id, opties = {}) {
     exp: nu + (opties.vervalt ?? 3600 * 24),
     iat: nu,
     aal: opties.aal ?? "aal1",
-    session_id: "nep-sessie",
+    // Fase 8: elke aanmelding krijgt een eigen sessie (afmelden op andere toestellen).
+    session_id: opties.sessie ?? "nep-sessie",
   });
   return `${kop}.${inhoud}.${TEST_TOKEN_PREFIX}`;
 }
 const geldigToken = (auth) =>
   (auth ?? "").startsWith("Bearer ") && auth.endsWith(`.${TEST_TOKEN_PREFIX}`);
+/** Inhoud van het token (zonder controle), of null. */
+function claims(auth) {
+  try {
+    return JSON.parse(
+      Buffer.from(String(auth).split(" ")[1].split(".")[1], "base64url").toString(),
+    );
+  } catch {
+    return null;
+  }
+}
 
 /** Verzonnen beheersleutel voor tests en demo (geen echt geheim). */
 export const NEP_BEHEERSLEUTEL = "sb_secret_nep_alleen_lokaal";
@@ -173,7 +186,8 @@ const server = http.createServer((req, res) => {
     if (url.pathname === "/__reset") {
       log.length = 0;
       storingen.clear();
-      db.reset(metDemo(DEMO || url.searchParams.get("demo") === "1"));
+      demoAan = DEMO || url.searchParams.get("demo") === "1";
+      db.reset(metDemo(demoAan));
       return stuur(res, 200, { ok: true });
     }
     if (url.pathname === "/__db") return stuur(res, 200, Object.fromEntries(db.tabellen));
@@ -224,21 +238,79 @@ const server = http.createServer((req, res) => {
     }
 
     const auth = req.headers["authorization"];
+    // Fase 8: verwijderde accounts en ingetrokken sessies (zoals echte Supabase Auth).
+    const verwijderd = (id) => db.t("__verwijderd").some((v) => v.id === id);
+    const sessieIngetrokken = (id) =>
+      db.t("__sessies").some((x) => x.id === id && x.ingetrokken === true);
+    const nieuweSessie = (sub) => {
+      const id = randomUUID();
+      db.t("__sessies").push({
+        id,
+        user_id: sub,
+        created_at: new Date().toISOString(),
+        refreshed_at: new Date().toISOString(),
+        user_agent: String(req.headers["user-agent"] ?? "").slice(0, 200),
+        aal: "aal1",
+        ingetrokken: false,
+      });
+      return id;
+    };
+
+    // Verwijderen door de server (service-sleutel), zoals auth.admin.deleteUser.
+    const adminWis = url.pathname.match(/^\/auth\/v1\/admin\/users\/([0-9a-f-]{36})$/);
+    if (adminWis && req.method === "DELETE") {
+      if (!verwijderd(adminWis[1])) db.t("__verwijderd").push({ id: adminWis[1] });
+      for (const x of db.t("__sessies")) if (x.user_id === adminWis[1]) x.ingetrokken = true;
+      return stuur(res, 200, {});
+    }
 
     // ---- Auth ----
     if (url.pathname === "/auth/v1/token") {
-      const demoLogin = DEMO && body?.email === "demo@foodlo.be" && body?.password === "demo1234";
+      const demoLogin =
+        demoAan && body?.email === "demo@foodlo.be" && body?.password === "demo1234";
       // Extra demo-aanmeldingen (verzonnen): partneromgeving en een proefabonnement.
       const extraSub =
-        DEMO && body?.password === "demo1234" ? EXTRA_DEMO_LOGINS[body?.email] : undefined;
-      const refreshSub = String(body?.refresh_token ?? "").startsWith("nep-refresh:")
-        ? String(body.refresh_token).slice("nep-refresh:".length)
-        : undefined;
-      const anderSub = extraSub ?? refreshSub;
+        demoAan && body?.password === "demo1234" ? EXTRA_DEMO_LOGINS[body?.email] : undefined;
+      const [refreshSub, refreshSessie] = String(body?.refresh_token ?? "").startsWith(
+        "nep-refresh:",
+      )
+        ? String(body.refresh_token).slice("nep-refresh:".length).split(":")
+        : [undefined, undefined];
+      const aanmeldSub = demoLogin ? TEST_USER.id : extraSub;
+      if (aanmeldSub && verwijderd(aanmeldSub)) {
+        return stuur(res, 400, {
+          code: 400,
+          error_code: "invalid_credentials",
+          msg: "Invalid login credentials",
+        });
+      }
+      if (refreshSub && (verwijderd(refreshSub) || sessieIngetrokken(refreshSessie))) {
+        return stuur(res, 400, {
+          code: 400,
+          error_code: "refresh_token_not_found",
+          msg: "Invalid Refresh Token: Refresh Token Not Found",
+        });
+      }
+      if (aanmeldSub) {
+        const sessie = nieuweSessie(aanmeldSub);
+        return stuur(res, 200, {
+          access_token: maakToken(aanmeldSub, { sessie }),
+          refresh_token: `nep-refresh:${aanmeldSub}:${sessie}`,
+          token_type: "bearer",
+          expires_in: 86400,
+          expires_at: Math.floor(Date.now() / 1000) + 86400,
+          user: {
+            ...TEST_USER,
+            id: aanmeldSub,
+            email: demoLogin ? TEST_USER.email : (body?.email ?? TEST_USER.email),
+          },
+        });
+      }
+      const anderSub = refreshSub;
       if (anderSub && /^[0-9a-f-]{36}$/.test(anderSub)) {
         return stuur(res, 200, {
-          access_token: maakToken(anderSub),
-          refresh_token: `nep-refresh:${anderSub}`,
+          access_token: maakToken(anderSub, refreshSessie ? { sessie: refreshSessie } : {}),
+          refresh_token: `nep-refresh:${anderSub}${refreshSessie ? `:${refreshSessie}` : ""}`,
           token_type: "bearer",
           expires_in: 86400,
           expires_at: Math.floor(Date.now() / 1000) + 86400,
@@ -305,6 +377,14 @@ const server = http.createServer((req, res) => {
       } catch {
         /* geen leesbaar token: geldigToken beslist */
       }
+      const c = claims(auth);
+      if (c && (verwijderd(c.sub ?? TEST_USER.id) || sessieIngetrokken(c.session_id))) {
+        return stuur(res, 403, {
+          code: 403,
+          error_code: "session_not_found",
+          msg: "Session from session_id claim in JWT does not exist",
+        });
+      }
       if (geldigToken(auth) && !verlopen) {
         let sub = TEST_USER.id;
         try {
@@ -360,7 +440,19 @@ const server = http.createServer((req, res) => {
         user: { ...TEST_USER, id: sub },
       });
     }
-    if (url.pathname === "/auth/v1/logout") return stuur(res, 204, null);
+    if (url.pathname === "/auth/v1/logout") {
+      // scope: global (standaard), local of others — zoals supabase.auth.signOut({ scope }).
+      const c = claims(auth);
+      const scope = url.searchParams.get("scope") ?? "global";
+      if (c?.sub)
+        for (const x of db.t("__sessies")) {
+          if (x.user_id !== c.sub) continue;
+          const eigen = x.id === c.session_id;
+          if (scope === "global" || (scope === "local" && eigen) || (scope === "others" && !eigen))
+            x.ingetrokken = true;
+        }
+      return stuur(res, 204, null);
+    }
     if (url.pathname.startsWith("/auth/v1/")) return stuur(res, 200, {});
 
     // ---- Data ----
@@ -461,6 +553,31 @@ const server = http.createServer((req, res) => {
         });
         tel("ai_gebruik_totaal", (r) => r.dag === dag && r.soort === soort, { dag, soort });
         return stuur(res, 200, null);
+      }
+      // Voorstel 0025: public.mijn_aanmeldingen / public.meld_aanmelding_af — je eigen sessies
+      // (auth.sessions) zien en er één afmelden. Nooit die van een ander.
+      if (naam === "mijn_aanmeldingen" || naam === "meld_aanmelding_af") {
+        const c = geldigToken(auth) ? claims(auth) : null;
+        if (!c?.sub) return stuur(res, 401, { message: "niet aangemeld" });
+        const eigen = db.t("__sessies").filter((x) => x.user_id === c.sub && !x.ingetrokken);
+        if (naam === "meld_aanmelding_af") {
+          const doel = eigen.find((x) => x.id === body?._id);
+          if (!doel) return stuur(res, 400, { code: "P0001", message: "sessie niet gevonden" });
+          doel.ingetrokken = true;
+          return stuur(res, 200, true);
+        }
+        return stuur(
+          res,
+          200,
+          eigen.map((x) => ({
+            id: x.id,
+            created_at: x.created_at,
+            refreshed_at: x.refreshed_at,
+            user_agent: x.user_agent,
+            aal: x.aal,
+            huidige: x.id === c.session_id,
+          })),
+        );
       }
       return stuur(res, 200, RPC_STANDAARD[naam] ?? null);
     }

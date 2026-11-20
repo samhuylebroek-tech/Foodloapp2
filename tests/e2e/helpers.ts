@@ -103,8 +103,11 @@ export async function meldAan(page: Page, sub?: string) {
   await page.addInitScript(
     ([sleutel, waarde]) => {
       // Slechts één keer per tabblad: anders zou afmelden meteen ongedaan gemaakt worden.
-      if (window.sessionStorage.getItem("nep-sessie-gezet")) return;
+      // Ook in window.name: na "account verwijderen" wist de app sessionStorage (fase 8).
+      if (window.sessionStorage.getItem("nep-sessie-gezet") || window.name.includes("nep-sessie"))
+        return;
       window.sessionStorage.setItem("nep-sessie-gezet", "1");
+      window.name = `${window.name} nep-sessie`.trim();
       window.localStorage.setItem(sleutel!, waarde!);
       // Rondleiding/onboarding-hints overslaan zodat de kernflow centraal staat.
       window.localStorage.setItem("rondleiding-gezien", "1");

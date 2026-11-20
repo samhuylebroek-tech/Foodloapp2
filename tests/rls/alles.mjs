@@ -73,6 +73,7 @@ const ALLE_VOORSTELLEN = schrijf("alle-voorstellen.sql", [
   "0022_bcc_testmodus.up.sql",
   "0023_premium_beheer.up.sql",
   "0024_ai_gebruik_mandjes.up.sql",
+  "0025_privacy_toestemmingen_rechten.up.sql",
 ]);
 
 const gevallen = [
@@ -109,7 +110,7 @@ const gevallen = [
     "rls-gezin-privacy.mjs",
     ALLE_VOORSTELLEN,
     0,
-    "0002a + 0002 + 0004 + 0006 … 0023: alleen de voorraad",
+    "0002a + 0002 + 0004 + 0006 … 0025: alleen de voorraad",
   ],
   [
     "makers-community.mjs",
@@ -200,6 +201,18 @@ const gevallen = [
     null,
     0,
     "voorstel 0024: AI-gebruik alleen eigen dagtotaal via ai_gebruik_tel (vaste soorten, plafond), anoniem totaal alleen server, testmandjes eigen + testmodus verplicht, heen+terug",
+  ],
+  [
+    "privacy-0025.mjs",
+    null,
+    0,
+    "voorstel 0025 (BUG-164): kijker schrijft niet meer bij een ander, toestemmingen en sessies alleen eigen, heen+terug",
+  ],
+  [
+    "account-verwijderen.mjs",
+    null,
+    0,
+    "fase 8: register volledig, account verwijderen laat niets achter (alle voorstellen t/m 0025), gezin overgedragen/opgeheven, facturen anoniem",
   ],
   ["verwijder-gezinseigenaar.mjs", null, 0, "verslag BUG-110/025 (rapporteert, faalt niet)"],
 ];

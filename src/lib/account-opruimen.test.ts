@@ -122,11 +122,19 @@ describe("draagGezinnenOver (BUG-110)", () => {
           { group_id: "g1", user_id: A, status: "actief", created_at: "2026-01-01" },
           { group_id: "g1", user_id: "x", status: "uitgenodigd", created_at: "2026-01-02" },
         ],
+        shopping_lists: [
+          { id: "gl", group_id: "g1", user_id: A },
+          { id: "ander", group_id: "g9", user_id: "iemand" },
+        ],
+        meal_plan: [{ id: "m", group_id: "g1", user_id: A }],
       },
       [],
     );
     expect(await draagGezinnenOver(db, A)).toEqual({ overgedragen: 0, gewist: 1 });
     expect(tabellen["groups"]).toEqual([]);
+    // Fase 8 (BUG-192): eerst gezinslijst en gezinsmenu weg, anders weigert de databank (FK).
+    expect(tabellen["shopping_lists"]!.map((l) => l["id"])).toEqual(["ander"]);
+    expect(tabellen["meal_plan"]).toEqual([]);
   });
   it("raakt gezinnen van anderen niet", async () => {
     const { db, tabellen } = nep({ groups: [{ id: "g2", owner_id: "iemand" }] }, []);

@@ -70,6 +70,8 @@ const EXTRA_KOLOMMEN = {
   partner_leden: { rol: "'eigenaar'" },
   // Voorstel 0024: vaste soorten en testmandjes (testmodus verplicht, niet-lege regels).
   ai_gebruik_dag: { soort: "'kookhulp.vraag'" },
+  // Voorstel 0025: toestemmingen per soort.
+  toestemmingen: { soort: "'analyse'", aan: "true" },
   winkel_mandjes: {
     provider: "'test'",
     test: "true",
