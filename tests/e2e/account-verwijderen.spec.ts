@@ -135,7 +135,9 @@ test("BUG-110: gezin en gezinslijst gaan naar het actieve lid; diens items blijv
 async function zaaiNieuweModules() {
   await resetDemo();
   await seedDb({
-    planprofiel: [{ id: "f8000000-0000-4000-8000-000000000001", user_id: IK, ervaring: "beginner" }],
+    planprofiel: [
+      { id: "f8000000-0000-4000-8000-000000000001", user_id: IK, ervaring: "beginner" },
+    ],
     kookmomenten: [{ id: "f8000000-0000-4000-8000-000000000002", user_id: IK, porties: 2 }],
     suggestie_instellingen: [{ id: "f8000000-0000-4000-8000-000000000003", user_id: IK }],
     app_melding_instellingen: [{ id: "f8000000-0000-4000-8000-000000000004", user_id: IK }],
@@ -217,7 +219,9 @@ test("fase 8: daarna verwijst geen enkele rij nog naar de gebruiker, en aanmelde
   expect(opslag).toContain(`community-fotos/${JAN}/van-jan.jpg`);
 
   // Toestel: niets meer van Foodlo (behalve wat de testopstelling zelf zet).
-  await expect(page.getByRole("status")).toContainText("Je account en je gegevens zijn verwijderd.");
+  await expect(page.getByRole("status")).toContainText(
+    "Je account en je gegevens zijn verwijderd.",
+  );
   const sleutels = await page.evaluate(() => Object.keys(localStorage));
   expect(sleutels.filter((k) => /^foodlo|majeba/.test(k))).toEqual([]);
 

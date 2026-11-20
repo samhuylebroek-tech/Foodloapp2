@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { AVG_SECTIES, verzamelPersoonsgegevens } from "./avg-export.server";
+import {
+  AVG_SECTIES,
+  AVG_UITLEG,
+  NIET_IN_EXPORT,
+  verzamelPersoonsgegevens,
+} from "./avg-export.server";
+import { GEGEVENS_REGISTER } from "@/lib/privacy/gegevens-register";
 
 const IK = "11111111-1111-4111-8111-111111111111";
 const ANDER = "22222222-2222-4222-8222-222222222222";
@@ -167,6 +173,11 @@ describe("AVG-export (BUG-026/103)", () => {
             // Fase 4: eigen makerabonnementen en blokkades.
             "fan_id",
             "blokkeerder_id",
+            // Fase 8: toewijzingen door/aan jou, jouw gezinsactiviteit, toestemming die jij gaf.
+            "toegewezen_door",
+            "toegewezen_aan",
+            "actor_id",
+            "toestemming_door",
           ].includes(k) &&
             v === IK) ||
           // Rijen die horen bij eigen rijen (eigen gezinsleden, makerprofiel, verzamelingen).
@@ -266,5 +277,73 @@ describe("AVG-export (BUG-026/103)", () => {
   it("een andere fout bij een nieuwe tabel laat de export wel falen (geen half bestand)", async () => {
     const { db } = nepDb(wereld(), [], ["facturen"]);
     await expect(verzamelPersoonsgegevens(db, IK)).rejects.toThrow();
+  });
+
+  it("fase 8: elke directe regel uit het gegevensregister staat in de export (of bewust niet)", async () => {
+    const { db, oproepen } = nepDb({});
+    await verzamelPersoonsgegevens(db, IK);
+    const mist = GEGEVENS_REGISTER.filter((r) => !r.via)
+      .map((r) => `${r.tabel}.${r.kolom}`)
+      .filter((sleutel) => !NIET_IN_EXPORT[sleutel])
+      .filter((sleutel) => {
+        const [tabel, kolom] = sleutel.split(".");
+        return !oproepen.some(
+          (o) => o.tabel === tabel && o.filters.some(([k, v]) => k === kolom && v === IK),
+        );
+      });
+    expect(mist).toEqual([]);
+    for (const [k, reden] of Object.entries(NIET_IN_EXPORT)) {
+      expect(
+        GEGEVENS_REGISTER.some((r) => `${r.tabel}.${r.kolom}` === k),
+        k,
+      ).toBe(true);
+      expect(reden.length).toBeGreaterThan(10);
+    }
+  });
+
+  it("fase 8: uitleg bovenaan, nieuwe modules eigen rijen, niets van een gezinslid of vreemde", async () => {
+    const { db } = nepDb({
+      ...wereld(),
+      planprofiel: [
+        { id: "pp1", user_id: IK, ervaring: "beginner" },
+        { id: "pp2", user_id: ANDER, ervaring: "geheim-profiel" },
+      ],
+      restjes: [
+        { id: "re1", user_id: IK, titel: "Soep" },
+        { id: "re2", user_id: ANDER, titel: "geheim-restje" },
+      ],
+      lijst_toewijzingen: [
+        { id: "t1", toegewezen_door: ANDER, toegewezen_aan: IK, winkel: "Colruyt" },
+        { id: "t2", toegewezen_door: ANDER, toegewezen_aan: ANDER, winkel: "geheim-winkel" },
+      ],
+      app_meldingen: [
+        { id: "m1", user_id: IK, actor_id: ANDER, tekst: "Jan plande het menu" },
+        { id: "m2", user_id: ANDER, actor_id: IK, tekst: "geheim-melding-aan-jan" },
+      ],
+      toestemmingen: [
+        { id: "to1", user_id: IK, soort: "ai", aan: false },
+        { id: "to2", user_id: ANDER, soort: "analyse", aan: true },
+      ],
+      ai_gebruik_dag: [{ id: "a1", user_id: IK, dag: "2026-11-20", soort: "kookhulp.vraag" }],
+    });
+    const uit = await verzamelPersoonsgegevens(db, IK);
+    expect(uit.uitleg).toEqual(AVG_UITLEG);
+    expect(uit.planprofiel).toHaveLength(1);
+    expect(uit.restjes).toHaveLength(1);
+    expect(uit.lijst_toewijzingen).toEqual({
+      door_jou: [],
+      aan_jou: [{ id: "t1", toegewezen_door: ANDER, toegewezen_aan: IK, winkel: "Colruyt" }],
+    });
+    expect(uit.meldingen_in_de_app).toHaveLength(1);
+    expect(uit.toestemmingen).toEqual([{ id: "to1", soort: "ai", aan: false }]);
+    expect(uit.ai_gebruik_per_dag).toHaveLength(1);
+    const tekst = JSON.stringify(uit);
+    for (const geheim of [
+      "geheim-profiel",
+      "geheim-restje",
+      "geheim-winkel",
+      "geheim-melding-aan-jan",
+    ])
+      expect(tekst).not.toContain(geheim);
   });
 });

@@ -92,6 +92,24 @@ test("Mijn gegevens downloaden: volledig, eigen gegevens, niets van een ander", 
   const lidVoeding = json["huishouden_voeding"] as { lid_id: string; dieet: string | null }[];
   expect(lidVoeding.map((r) => r.lid_id)).toEqual(["aeaeaeae-0000-4000-8000-000000000004"]);
   expect(JSON.stringify(json["huishouden_leden"])).toContain("Gust");
+  // Fase 8: uitleg in gewone taal en de modules uit de voorstellen 0013–0025.
+  expect(Array.isArray(json["uitleg"])).toBe(true);
+  expect(String((json["uitleg"] as string[])[0])).toContain("alle gegevens");
+  for (const sectie of [
+    "planprofiel",
+    "budget_per_week",
+    "kookmomenten",
+    "suggestie_instellingen",
+    "meldingen_in_de_app",
+    "restjes",
+    "ai_gebruik_per_dag",
+    "testmandjes",
+    "toestemmingen",
+  ])
+    expect(Array.isArray(json[sectie]), sectie).toBe(true);
+  expect((json["restjes"] as unknown[]).length).toBeGreaterThan(0);
+  expect((json["budget_per_week"] as unknown[]).length).toBeGreaterThan(0);
+  expect(json["lijst_toewijzingen"]).toHaveProperty("aan_jou");
   void extern;
 });
 

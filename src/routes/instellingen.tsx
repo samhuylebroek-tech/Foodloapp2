@@ -610,7 +610,7 @@ function OverFoodlo({ t }: { t: (s: string) => string }) {
         icoon={Download}
         tint="groen"
         titel={bezig ? t("Bezig…") : t("Mijn gegevens downloaden")}
-        uitleg={t("Een bestand met al je recepten en lijsten")}
+        uitleg={t("Al je gegevens in één leesbaar bestand (JSON), met uitleg")}
         disabled={bezig}
         onClick={() => void download()}
       />

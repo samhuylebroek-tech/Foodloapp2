@@ -80,14 +80,58 @@ export const AVG_SECTIES = [
   "maker_testbetalingen",
   "maker_plan",
   "blokkades",
+  // Fase 8: voorstellen 0006 en 0013–0025 (zelfde regel: lege lijst zolang de tabel ontbreekt).
+  "voorstel_feedback",
+  "planprofiel",
+  "budget_per_week",
+  "kookmomenten",
+  "suggestie_instellingen",
+  "lijst_toewijzingen",
+  "meldingen_in_de_app",
+  "melding_instellingen",
+  "gezinsactiviteit_door_jou",
+  "restjes",
+  "ai_gebruik_per_dag",
+  "testmandjes",
+  "voeding_waarvoor_jij_toestemming_gaf",
+  "maker_uitbetalingen",
+  "samenwerkingen_als_maker",
+  "toestemmingen",
+  "betaalgebeurtenissen",
+  "berichten_van_foodlo",
+] as const;
+
+/**
+ * Persoonskolommen uit het gegevensregister die bewust NIET in de export staan (unittest
+ * avg-export.test.ts eist dat elke andere directe regel geëxporteerd wordt).
+ */
+export const NIET_IN_EXPORT: Readonly<Record<string, string>> = {
+  "recipe_versions.gewijzigd_door": "Een versie van het recept van iemand anders: van die persoon.",
+  "app_meldingen.actor_id": "Een melding die naar iemand anders ging: van die persoon.",
+  "gebruiker_blokkades.geblokkeerd_id":
+    "Wie jou blokkeerde, blijft privé (veiligheid van die persoon).",
+  "maker_uitbetalingen.vastgelegd_door": "Beheerhandeling, geen gegevens over jou als gebruiker.",
+  "partner_aanvragen.beoordeeld_door": "Beheerhandeling, geen gegevens over jou als gebruiker.",
+  "beheer_uitnodigingen.uitgenodigd_door": "Beheerhandeling, geen gegevens over jou als gebruiker.",
+};
+
+/** Korte uitleg bovenaan het bestand, in gewone taal (AVG art. 12: begrijpelijk). */
+export const AVG_UITLEG = [
+  "Dit bestand bevat alle gegevens die Foodlo over jou bewaart, op het moment van downloaden.",
+  "Elke sectie is een lijst. Een lege lijst betekent: niets bewaard (of die functie is nog niet actief).",
+  "Er staan geen gegevens van anderen in, behalve wat ze met jou deelden (bv. wie een product op de gezinslijst aan jou toewees).",
+  "Niet opgenomen, omdat ze misbruikt kunnen worden: kaartnummers van klantenkaarten en sleutels van meldingen.",
+  "Allergieën en dieet staan in 'mijn_voeding' en 'huishouden_voeding'. Bewaar dit bestand veilig.",
+  "Vragen of iets laten verbeteren: Instellingen › Feedback, of via het contactadres in het privacybeleid.",
 ] as const;
 
 export type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
 
-export type AvgExport = { gemaakt_op: string; gebruiker_id: string } & Record<
-  (typeof AVG_SECTIES)[number],
-  Json
->;
+export type AvgExport = {
+  gemaakt_op: string;
+  gebruiker_id: string;
+  uitleg: readonly string[];
+} & Record<(typeof AVG_SECTIES)[number], Json>;
 
 /** Tabellen zonder kolom `id`: vaste volgorde op een andere kolom (nodig voor paginering). */
 const VOLGORDE: Record<string, string> = {
@@ -227,6 +271,57 @@ async function nieuweModules(db: Db, userId: string) {
     eigen("facturen"),
     eigen("entitlements"),
   ]);
+  const [
+    voorstelFeedback,
+    planprofiel,
+    budgetWeken,
+    kookmomenten,
+    suggesties,
+    toegewezenDoor,
+    toegewezenAan,
+    appMeldingen,
+    meldingInstellingen,
+    activiteit,
+    restjes,
+    aiDag,
+    mandjes,
+    lidVoedingToestemming,
+    uitbetalingen,
+    samenwerkingen,
+    toestemmingen,
+  ] = await Promise.all([
+    eigen("aanbeveling_feedback"),
+    eigen("planprofiel"),
+    eigen("budget_weken"),
+    eigen("kookmomenten"),
+    eigen("suggestie_instellingen"),
+    eigen("lijst_toewijzingen", "*", "toegewezen_door"),
+    eigen("lijst_toewijzingen", "*", "toegewezen_aan"),
+    eigen("app_meldingen", "id, group_id, soort, tekst, link, gelezen_op, created_at"),
+    eigen("app_melding_instellingen"),
+    eigen("gezin_activiteit", "id, group_id, soort, tekst, datum, created_at", "actor_id"),
+    eigen("restjes"),
+    eigen("ai_gebruik_dag", "id, dag, soort, aantal, uit_cache"),
+    eigen("winkel_mandjes"),
+    eigen("lid_voeding", "lid_id, toestemming_soort, toestemming_op", "toestemming_door"),
+    optioneel(
+      (d) =>
+        perBlok(
+          d,
+          "maker_uitbetalingen",
+          "id, creator_id, maand, bruto_cent, btw_cent, betaalkosten_cent, platform_cent, maker_cent, platform_procent, status, test, created_at",
+          "creator_id",
+          makerIds,
+        ),
+      db,
+    ),
+    optioneel((d) => perBlok(d, "samenwerkingen", "*", "creator_id", makerIds), db),
+    eigen("toestemmingen", "id, soort, aan, niveau, sinds"),
+  ]);
+  const [betaalEvents, berichten] = await Promise.all([
+    eigen("betaal_events", "id, provider, soort, verwerkt, ontvangen_op, created_at"),
+    eigen("admin_message_recipients", "id, message_id, kanaal, status, created_at"),
+  ]);
   const [makerAbos, makerBetalingen, makerPlan, blokkades] = await Promise.all([
     eigen("maker_abonnementen", "*", "fan_id"),
     eigen("maker_betalingen", "id, soort, bedrag_cent, btw_cent, test, created_at", "fan_id"),
@@ -254,6 +349,24 @@ async function nieuweModules(db: Db, userId: string) {
     maker_testbetalingen: makerBetalingen,
     maker_plan: makerPlan,
     blokkades,
+    voorstel_feedback: voorstelFeedback,
+    planprofiel,
+    budget_per_week: budgetWeken,
+    kookmomenten,
+    suggestie_instellingen: suggesties,
+    lijst_toewijzingen: { door_jou: toegewezenDoor, aan_jou: toegewezenAan },
+    meldingen_in_de_app: appMeldingen,
+    melding_instellingen: meldingInstellingen,
+    gezinsactiviteit_door_jou: activiteit,
+    restjes,
+    ai_gebruik_per_dag: aiDag,
+    testmandjes: mandjes,
+    voeding_waarvoor_jij_toestemming_gaf: lidVoedingToestemming,
+    maker_uitbetalingen: uitbetalingen,
+    samenwerkingen_als_maker: samenwerkingen,
+    toestemmingen,
+    betaalgebeurtenissen: betaalEvents,
+    berichten_van_foodlo: berichten,
   };
 }
 
@@ -383,6 +496,7 @@ export async function verzamelPersoonsgegevens(
   return {
     gemaakt_op: new Date().toISOString(),
     gebruiker_id: userId,
+    uitleg: AVG_UITLEG,
     profiel: profielRij ?? null,
     recepten,
     ingredienten,

@@ -196,7 +196,8 @@ export async function ruimRegisterOp(
     try {
       const ids = await ouderIds(db, regel, userId);
       const blokken = ids === null ? [null] : [];
-      if (ids) for (let i = 0; i < ids.length; i += 100) blokken.push(ids.slice(i, i + 100) as never);
+      if (ids)
+        for (let i = 0; i < ids.length; i += 100) blokken.push(ids.slice(i, i + 100) as never);
       for (const blok of blokken as (string[] | null)[]) {
         const basis =
           regel.actie === "wissen"
@@ -260,7 +261,9 @@ export async function gezinGevolgen(client: unknown, userId: string): Promise<Ge
     let naam: string | null = null;
     if (opvolger) {
       const { data: p } = await db.from("profiles").select("id, display_name").eq("id", opvolger);
-      naam = String(((p ?? []) as { display_name?: string | null }[])[0]?.display_name ?? "") || "een ander gezinslid";
+      naam =
+        String(((p ?? []) as { display_name?: string | null }[])[0]?.display_name ?? "") ||
+        "een ander gezinslid";
     }
     uit.push({ naam: g.naam || "Mijn gezin", opvolger: naam });
   }

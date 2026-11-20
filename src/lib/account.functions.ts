@@ -42,9 +42,8 @@ export const verwijderMijnAccount = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ bevestiging: z.literal("VERWIJDER") }).parse(d))
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { draagGezinnenOver, ruimCommunityFotosOp, ruimFotosOp, ruimRegisterOp } = await import(
-      "@/lib/account-opruimen.server"
-    );
+    const { draagGezinnenOver, ruimCommunityFotosOp, ruimFotosOp, ruimRegisterOp } =
+      await import("@/lib/account-opruimen.server");
     const mislukt = "Je account kon niet verwijderd worden. Probeer later opnieuw.";
     if (isEigenaar(context.userId)) throw new Error(EIGENAAR_NIET_VERWIJDEREN);
 
