@@ -211,6 +211,27 @@ export async function haalPubliekeRecepten(
   const pubs = ((data ?? []) as Publicatie[]).filter((p) => isPubliekZichtbaar(p));
   const recepten = await haalRecepten(pubs.map((p) => p.recipe_id));
   const perId = new Map(recepten.map((r) => [r.id, r]));
+  // Fase 4: zonder abonnement verbergt RLS (voorstel 0021) een exclusief recept; de aankondiging
+  // (titel en foto, geen inhoud) komt dan uit een databankfunctie. Ontbreekt die: geen kaart.
+  if (pubs.some((p) => p.exclusief && !perId.has(p.recipe_id))) {
+    const { data: aank } = await db.rpc("exclusieve_aankondigingen", { p_creator: creatorId });
+    for (const a of (Array.isArray(aank) ? aank : []) as {
+      recipe_id: string;
+      title: string;
+      image_url: string | null;
+    }[])
+      if (!perId.has(a.recipe_id))
+        perId.set(a.recipe_id, {
+          id: a.recipe_id,
+          user_id: "",
+          title: a.title,
+          image_url: a.image_url,
+          category: null,
+          tags: null,
+          prep_minutes: null,
+          cook_minutes: null,
+        });
+  }
   return pubs.flatMap((p) => {
     const recept = perId.get(p.recipe_id);
     return recept ? [{ recept, publicatie: p }] : [];

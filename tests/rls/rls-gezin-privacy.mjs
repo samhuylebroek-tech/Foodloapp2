@@ -62,6 +62,8 @@ const EXTRA_KOLOMMEN = {
   app_meldingen: { actor_id: `'${A}'`, soort: "'menu'" },
   abonnementen: { plan: "'premium_maand'", status: "'proef'" },
   budget_weken: { week: "date_trunc('week', current_date)::date" },
+  // Voorstel 0021: "gemaakt" (standaard) vraagt 1–5 sterren; sterren is niet meer verplicht.
+  community_bijdragen: { sterren: "5" },
   entitlements: { recht: "'premium.weekmenu_extra'" },
   facturen: { status: "'betaald'" },
   partner_aanvragen: { bedrijfsnaam: "'Bakkerij A'", soort: "'retail'" },

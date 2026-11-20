@@ -183,7 +183,13 @@ export function MeldKnop({
       setReden(null);
       setToelichting("");
       toast.success("Bedankt. Het Foodlo-team bekijkt je melding.");
-    } catch {
+    } catch (e) {
+      // Fase 4 (voorstel 0021): één open melding per persoon per inhoud.
+      if ((e as { code?: string } | null)?.code === "23505") {
+        setOpen(false);
+        toast.success("Je meldde dit al. Het Foodlo-team bekijkt het.");
+        return;
+      }
       toast.error("Je melding kon niet verstuurd worden. Probeer het opnieuw.");
     } finally {
       setBezig(false);
