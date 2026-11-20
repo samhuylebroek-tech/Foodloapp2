@@ -217,7 +217,9 @@ test("lijst verdelen: Marie laat Jan het brood halen → Jan ziet het in Mijn de
     page.getByTestId("wie-haalt").filter({ hasText: "Jan haalt dit · Bakker" }),
   ).toBeVisible();
   await expect
-    .poll(async () => (await nepDb())["lijst_toewijzingen"] ?? [])
+    .poll(async () =>
+      ((await nepDb())["lijst_toewijzingen"] ?? []).filter((t) => t["list_id"] === GEZINSLIJST),
+    )
     .toEqual([
       expect.objectContaining({
         item_id: "c7c7c7c7-0000-4000-8000-000000000000",

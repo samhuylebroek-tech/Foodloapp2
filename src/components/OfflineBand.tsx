@@ -1,6 +1,6 @@
 /**
- * P6 — Offline-melding bovenaan elk scherm. De regio bestaat altijd (role="status"), zodat een
- * schermlezer het meldt zodra de verbinding wegvalt of terugkomt.
+ * P6 — Offline-melding bovenaan elk scherm. Het voorleesgebied (aria-live) bestaat altijd, zodat
+ * een schermlezer het meldt zodra de verbinding wegvalt; de melding zelf heeft role="status".
  *
  * Eerlijk per plek: op de lijst worden afvinken en toevoegen bewaard en straks verstuurd; elders
  * zie je de laatst bekende gegevens en wacht wijzigen tot je weer online bent.
@@ -27,9 +27,12 @@ export function OfflineBand() {
   const pad = useRouterState({ select: (s) => s.location.pathname });
   const lijst = pad.startsWith("/boodschappen");
   return (
-    <div role="status" aria-live="polite" data-testid="offline-band">
+    <div aria-live="polite" data-testid="offline-band">
       {online ? null : (
-        <p className="mb-5 flex items-start gap-3 rounded-2xl bg-honing-zacht px-4 py-3 text-base text-honing-foreground ring-1 ring-honing/40">
+        <p
+          role="status"
+          className="mb-5 flex items-start gap-3 rounded-2xl bg-honing-zacht px-4 py-3 text-base text-honing-foreground ring-1 ring-honing/40"
+        >
           <WifiOff className="mt-0.5 size-5 shrink-0" aria-hidden />
           <span className="min-w-0">
             <span className="block font-semibold">

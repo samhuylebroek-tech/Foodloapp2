@@ -24,6 +24,11 @@ const voorraad = async () => ((await nepDb()).pantry_items ?? []).map((p) => Str
 
 test.beforeEach(async ({ page }) => {
   await resetDemo();
+  // Deze tests gaan over Maries eigen lijst; de demo-gezinslijst (P6) telt hier niet mee.
+  await fetch(
+    "http://127.0.0.1:54439/rest/v1/shopping_items?list_id=eq.c9c9c9c9-0000-4000-8000-000000000000",
+    { method: "DELETE" },
+  );
   await meldAan(page);
 });
 

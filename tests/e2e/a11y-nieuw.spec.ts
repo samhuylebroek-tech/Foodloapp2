@@ -240,7 +240,7 @@ test("toetsenbordroute week samenstellen: Tab bereikt de hoofdknop met zichtbare
   void extern;
 });
 
-test("offline-melding wordt voorgelezen (role=status) en verdwijnt na herstel", async ({
+test("offline-melding wordt voorgelezen (aria-live + role=status) en verdwijnt na herstel", async ({
   page,
   context,
   extern,
@@ -250,9 +250,9 @@ test("offline-melding wordt voorgelezen (role=status) en verdwijnt na herstel", 
   await page.goto("/boodschappen");
   await expect(page.getByText("donker bier").first()).toBeVisible({ timeout: 30_000 });
   const band = page.getByTestId("offline-band");
-  await expect(band).toHaveAttribute("role", "status");
+  await expect(band).toHaveAttribute("aria-live", "polite");
   await context.setOffline(true);
-  await expect(band).toContainText("Je bent offline");
+  await expect(band.getByRole("status")).toContainText("Je bent offline");
   await wacht(page);
   expect(await axeErnstig(page)).toEqual([]);
   await context.setOffline(false);
