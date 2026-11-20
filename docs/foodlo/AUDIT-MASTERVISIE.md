@@ -1,4 +1,4 @@
-# Audit tegenover de mastervisie (2026-11-18, bijgewerkt 2026-11-20 na P6; branch claude/sleepy-euler-eghoc3)
+# Audit tegenover de mastervisie (2026-11-18, bijgewerkt 2026-11-20 na P6 en fase 3; branch claude/sleepy-euler-eghoc3)
 
 Gemeten in de code, niet uit documenten. "Werkt" = de handeling bewaart en is getest met E2E tegen de nep-databank.
 
@@ -27,6 +27,9 @@ Gemeten in de code, niet uit documenten. "Werkt" = de handeling bewaart en is ge
 | Gelijktijdige wijzigingen: waarschuwen i.p.v. overschrijven | **Gebouwd (P5, 2026-11-19)**: inhoudscontrole vlak vóór het schrijven (weekmenu via `wijzigMenu`, lijst-item), keuze "Houd die van Jan / Zet de mijne / Bekijk allebei", één ongedaan maken; aanwezigheid "Jan is de lijst aan het bewerken" | samenwerking.spec, conflict.test |
 | Offline (Week, Lijst, Vandaag) | **Gebouwd (P6)**: melding op elk scherm, laatst bekende gegevens ook na herladen, wachtrij voor afvinken en toevoegen, eerlijke melding bij herstel | `offline-cache.ts`, `OfflineBand.tsx`, kwaliteit-20 test 20 |
 | De 20 verplichte testen | **Gebouwd (P6)**: `kwaliteit-20.spec.ts`, elk met controle in de nep-databank; 5 projecten (telefoon, desktop, 360, 768, groot + Extra duidelijk) | kwaliteit-20.spec |
+| Restjes op het account, verspilling, assistent (fase 3) | **Gebouwd**: account + gezin (voorstel 0019, tot dan toestel), opgegeten/weggegooid, overzicht per maand, "wat kan ik met mijn restjes?" | fase3-keuken.spec, tests/rls/restjes.mjs |
+| Voorraadscherm, "Heb ik al", Klaar met winkelen met vinkjes (fase 3) | **Gebouwd**: zoeken, plek (0020, tot dan toestel), aanpassen, bijna op → lijst, fout/offline; "Na het winkelen" altijd/vragen/nooit | fase3-beheer.spec |
+| Collecties beheren (fase 3) | **Gebouwd**: maken, Ontdek → Bewaar in, herschikken (pijlen/slepen/toetsenbord), eruit + ongedaan, delen als openbaar, inplannen via assistent met veiligheid | fase3-beheer.spec, acties.test |
 | Echte prijzen, echte winkels, echt weer | **Extern** (testadapters, duidelijk gelabeld) | `supermarkt/`, `weer.ts` |
 
 **Dubbel (opgelost in P2):** `kostrem.ts` bleek een AI-kostenrem, geen prijsschatter; de echte dubbeling zat tussen budgetkaart en planner (andere schaalregel). Nu één bron: `budget.ts`, ook voor lijst en winkelmodus; budgetgeschiedenis per week (voorstel 0014).
