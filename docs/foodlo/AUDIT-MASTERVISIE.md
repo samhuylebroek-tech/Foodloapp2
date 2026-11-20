@@ -1,4 +1,4 @@
-# Audit tegenover de mastervisie (2026-11-18, bijgewerkt 2026-11-20 na P6 en fase 3; branch claude/sleepy-euler-eghoc3)
+# Audit tegenover de mastervisie (2026-11-18, bijgewerkt 2026-11-20 na P6, fase 3 en fase 4; branch claude/sleepy-euler-eghoc3)
 
 Gemeten in de code, niet uit documenten. "Werkt" = de handeling bewaart en is getest met E2E tegen de nep-databank.
 
@@ -13,7 +13,10 @@ Gemeten in de code, niet uit documenten. "Werkt" = de handeling bewaart en is ge
 | Voorraad | **Werkt**: 3 niveaus (P1); basisvoorraad = "heb je meestal", niet op de lijst (P2) | `planner/profiel.ts`, `kringloop.ts` |
 | Recepten, import, editor, kookstand, assistent | **Werkt**; fase 2 (alle bronnen, video, delen) is in bouw | RecipeForm, kookstand, `assistent/*` |
 | Gezin, realtime | **Werkt**: realtime op planner, lijst, gezin | `postgres_changes` in 3 schermen |
-| Makers, community, partners, premium | **Werkt in demo**, live na migraties 0008/0011/0012 | eigen routes |
+| Makers, community, partners, premium | **Werkt in demo**, live na migraties 0008/0011/0012 (+ 0021 voor fase 4) | eigen routes |
+| Feed "Volgend", videorecepten van makers (fase 4) | **Gebouwd**: feed op Ontdek + melding bij de bel; video-link met tijden per stap | fase4-makers.spec, makers-feed.test, video-tijden.test |
+| Maker-abonnement (fase 4) | **Gebouwd in TESTMODUS**: plan, exclusieve recepten/collecties via heeftRecht, abonneren/opzeggen met testterugbetaling, btw als tekst; geen provider, geen echte betaling | fase4-makers.spec, maker-abonnement.test, tests/rls/makers-abonnement.mjs |
+| Community (fase 4) | **Gebouwd**: reacties, "Ik heb het gemaakt" met foto, melden → moderatie (met foto), blokkeren; voorstel 0021 | fase4-community.spec, community.test |
 | Keukenapparatuur | **Gebouwd (P1)**: Mijn keuken (oven, airfryer …), voorstellen houden er rekening mee; op het account na migratie 0013 | `mijn-keuken.tsx`, slimme-planner.spec |
 | Kookervaring (beginner/ervaren) | **Gebouwd (P1)** in het planprofiel en de engine | `planner/profiel.ts`, `engine.ts` |
 | Weekcontext per dag (weinig tijd, niet thuis, feestelijk, restjesdag) | **Gebouwd (P1)** in "Stel je week samen" | slimme-planner.spec, kwaliteit-20 test 1 |
@@ -55,4 +58,5 @@ Gemeten in de code, niet uit documenten. "Werkt" = de handeling bewaart en is ge
 - **P4 Assistent met acties**: "Maak mijn week goedkoper", "Vervang woensdag", "Ik heb morgen 15 min" → voorstel met verschillen → bevestigen → uitvoeren via wijzigMenu; regels eerst, AI optioneel; proactieve suggesties met één instellingenpagina. **Gebouwd (2026-11-19)**: `/assistent` (opdrachten zonder AI, voorstel met verschillen, Doe maar/Nee, één ongedaan maken), Instellingen › Suggesties (voorstel 0016, niet uitgevoerd), hooguit één kaart op Vandaag, "Laat Foodlo kiezen" via de engine. Open: echte AI-terugval (alleen testmodus), migratie 0016.
 - **P5 Samenwerking**: conflictmelding bij gelijktijdige wijziging, lijst verdelen, meldingen. **Gebouwd (2026-11-19)**: conflictkeuze in gezinsweekmenu en eigen menu (via `wijzigMenu`) en bij een lijst-item; gezinslijst verdelen (wie haalt wat, winkel, "Mijn deel", winkelmodus, rollen kijker/kind); bel met meldingen in de app (gezin, toegewezen, klaar met winkelen, restje, conflict), per soort aan/uit in Instellingen › Suggesties en meldingen; "Wie veranderde wat" op Week (gezin). Voorstel 0017 (niet uitgevoerd) + tests/rls/samenwerking.mjs. Open: migratie 0017, aanwezigheid alleen echt te testen met Supabase Realtime (niet in de nep-databank), geen push naar buiten.
 - **P6 Kwaliteit**: de 20 verplichte tests als één E2E-reeks, schermen voor/na, toegankelijkheid, offline.
+- **Fase 4 (2026-11-20)**: gebouwd zoals hierboven; voorstel 0021 niet uitgevoerd. Open: account-opruimen voor community-foto's (BUG-179), ingeplande exclusieve recepten na opzeggen (BUG-180), echte betaalprovider pas na G5.
 - **Daarna** fases 3–9 uit FASES.md (keuken/collecties, creators/video, BCC, premium, privacy, afwerking).

@@ -192,14 +192,23 @@ function MakerPagina() {
         {!eigen ? <MakerAbonneren maker={maker} aantalExclusief={exclusieveIds.size} /> : null}
 
         <Tabs defaultValue="recepten">
-          <TabsList className="grid h-auto w-full grid-cols-3 gap-1 p-1">
-            <TabsTrigger value="recepten" className="min-h-12 text-base">
+          <TabsList className="flex h-auto w-full flex-wrap gap-1 p-1">
+            <TabsTrigger
+              value="recepten"
+              className="min-h-12 flex-1 basis-auto whitespace-normal text-base"
+            >
               Recepten ({recepten.length})
             </TabsTrigger>
-            <TabsTrigger value="collecties" className="min-h-12 text-base">
+            <TabsTrigger
+              value="collecties"
+              className="min-h-12 flex-1 basis-auto whitespace-normal text-base"
+            >
               Collecties ({openbareCollecties.length})
             </TabsTrigger>
-            <TabsTrigger value="videos" className="min-h-12 text-base">
+            <TabsTrigger
+              value="videos"
+              className="min-h-12 flex-1 basis-auto whitespace-normal text-base"
+            >
               Video's ({videos.length})
             </TabsTrigger>
           </TabsList>

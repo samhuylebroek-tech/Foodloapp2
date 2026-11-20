@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Lock, Play, UserPlus } from "lucide-react";
+import { ChevronRight, Library, Lock, Play, UserPlus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { RecipePhoto } from "@/components/RecipePhoto";
@@ -138,14 +138,14 @@ function FeedRij({ item }: { item: FeedItem }) {
           path={item.recept.image_url}
           alt=""
           recept={item.recept}
-          className="size-20 shrink-0 rounded-xl"
+          className="size-[80px] shrink-0 rounded-xl @max-[22rem]:hidden"
         />
       ) : (
         <span
           aria-hidden
-          className="flex size-20 shrink-0 items-center justify-center rounded-xl bg-[var(--honing-zacht)] font-display text-2xl font-semibold text-[var(--honing-foreground)]"
+          className="flex size-[80px] shrink-0 items-center justify-center rounded-xl bg-[var(--honing-zacht)] text-[var(--honing-foreground)] @max-[22rem]:hidden"
         >
-          {item.collectie.aantal}
+          <Library className="size-[32px]" />
         </span>
       )}
       <span className="min-w-0 flex-1">
@@ -179,7 +179,8 @@ function FeedRij({ item }: { item: FeedItem }) {
   const klasse =
     "paneel flex min-h-24 items-center gap-3 p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
   return (
-    <li>
+    // Grote tekst (smal kader): de afbeelding valt weg, zodat de tekst niet midden in woorden breekt.
+    <li className="@container">
       {item.soort === "recept" ? (
         <Link to="/recepten/$id" params={{ id: item.recept.id }} className={klasse}>
           {inhoud}
