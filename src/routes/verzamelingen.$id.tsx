@@ -213,7 +213,7 @@ function VerzamelingPagina() {
         {receptenLaden ? (
           <div className="h-40 animate-pulse rounded-3xl bg-muted" aria-label="Laden" />
         ) : recepten.length && eigen ? (
-          <VerzamelingBeheer v={v} recepten={recepten} />
+          <VerzamelingBeheer v={v} recepten={recepten} bron={(r) => bronnen?.get(r.id)?.maker} />
         ) : recepten.length ? (
           <ReceptRaster
             recepten={recepten}

@@ -291,7 +291,7 @@ export function useAllergieOordelen(recepten: ReceptKaart[]) {
       : null;
 }
 
-function AllergieLabel({ oordeel }: { oordeel: AllergieOordeel | null }) {
+export function AllergieLabel({ oordeel }: { oordeel: AllergieOordeel | null }) {
   if (!oordeel || (oordeel.status !== "allergeen" && oordeel.status !== "onbekend")) return null;
   const tekst =
     oordeel.status === "allergeen"

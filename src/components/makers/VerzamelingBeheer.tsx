@@ -9,8 +9,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, CalendarPlus, GripVertical, Link2, Lock, X } from "lucide-react";
 import { toast } from "sonner";
 import { RecipePhoto } from "@/components/RecipePhoto";
+import { AllergieLabel, MakerBron, useAllergieOordelen } from "@/components/makers/MakerOnderdelen";
 import { Button } from "@/components/ui/button";
 import { appOrigin } from "@/lib/app-url";
+import type { Maker } from "@/lib/makers";
 import { gewijzigdePosities, herschik, verzamelingLink } from "@/lib/collecties";
 import {
   haalUitVerzameling,
@@ -20,7 +22,17 @@ import {
   type Verzameling,
 } from "@/lib/makers-db";
 
-export function VerzamelingBeheer({ v, recepten }: { v: Verzameling; recepten: ReceptKaart[] }) {
+export function VerzamelingBeheer({
+  v,
+  recepten,
+  bron,
+}: {
+  v: Verzameling;
+  recepten: ReceptKaart[];
+  /** Bronvermelding voor recepten van makers (zoals in het raster). */
+  bron?: (r: ReceptKaart) => Pick<Maker, "naam" | "handle"> | null | undefined;
+}) {
+  const oordeelVan = useAllergieOordelen(recepten);
   const qc = useQueryClient();
   const [volgorde, setVolgorde] = useState<string[] | null>(null);
   const [sleep, setSleep] = useState<number | null>(null);
@@ -176,10 +188,18 @@ export function VerzamelingBeheer({ v, recepten }: { v: Verzameling; recepten: R
                       className="size-12 shrink-0 rounded-xl"
                       icoonClassName="size-6"
                     />
-                    <span className="min-w-0 break-words text-lg font-semibold leading-snug">
-                      {r.title}
+                    <span className="min-w-0">
+                      <span className="block break-words text-lg font-semibold leading-snug">
+                        {r.title}
+                      </span>
+                      <AllergieLabel oordeel={oordeelVan(r)} />
                     </span>
                   </Link>
+                  {bron?.(r) ? (
+                    <span className="w-full pl-[4.5rem]">
+                      <MakerBron maker={bron(r)!} className="text-[0.95rem]" />
+                    </span>
+                  ) : null}
                   <span className="ml-auto flex shrink-0 items-center gap-1">
                     <button
                       type="button"
