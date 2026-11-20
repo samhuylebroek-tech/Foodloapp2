@@ -67,6 +67,13 @@ const TABEL: [string[], Prijs][] = [
   [["boter"], { perKg: 10 }],
   [["kaas", "gemalen kaas", "geraspte kaas", "gruyere", "emmentaler"], { perKg: 13 }],
   [["parmezaan"], { perKg: 25 }],
+  // Fase 7: goedkopere alternatieven die de boodschappen-agent voorstelt (zelfde richtprijzen).
+  [["grana padano"], { perKg: 17 }],
+  [["diepvriesspinazie"], { perKg: 3.2 }],
+  [["diepvriesframbozen"], { perKg: 7 }],
+  [["pijnboompitten"], { perKg: 40 }],
+  [["zonnebloempitten"], { perKg: 6 }],
+  [["zonnebloemolie"], { perKg: 3.5 }],
   [["feta", "mozzarella", "geitenkaas"], { perKg: 12, kgPerStuk: 0.125 }],
   [["yoghurt", "platte kaas"], { perKg: 2.6 }],
   [["ei", "eieren"], { perStuk: 0.32 }],

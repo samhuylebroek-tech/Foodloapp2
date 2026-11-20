@@ -29,6 +29,7 @@ import { Route as InstallerenRouteImport } from './routes/installeren'
 import { Route as InstellingenRouteImport } from './routes/instellingen'
 import { Route as KennismakingRouteImport } from './routes/kennismaking'
 import { Route as MakerRouteImport } from './routes/maker'
+import { Route as MandjeRouteImport } from './routes/mandje'
 import { Route as MeerRouteImport } from './routes/meer'
 import { Route as MeldingenRouteImport } from './routes/meldingen'
 import { Route as MijnKeukenRouteImport } from './routes/mijn-keuken'
@@ -217,6 +218,11 @@ const KennismakingRoute = KennismakingRouteImport.update({
 const MakerRoute = MakerRouteImport.update({
   id: '/maker',
   path: '/maker',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MandjeRoute = MandjeRouteImport.update({
+  id: '/mandje',
+  path: '/mandje',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MeerRoute = MeerRouteImport.update({
@@ -687,6 +693,7 @@ export interface FileRoutesByFullPath {
   '/instellingen': typeof InstellingenRoute
   '/kennismaking': typeof KennismakingRoute
   '/maker': typeof MakerRoute
+  '/mandje': typeof MandjeRoute
   '/meer': typeof MeerRoute
   '/meldingen': typeof MeldingenRoute
   '/mijn-keuken': typeof MijnKeukenRoute
@@ -795,6 +802,7 @@ export interface FileRoutesByTo {
   '/instellingen': typeof InstellingenRoute
   '/kennismaking': typeof KennismakingRoute
   '/maker': typeof MakerRoute
+  '/mandje': typeof MandjeRoute
   '/meer': typeof MeerRoute
   '/meldingen': typeof MeldingenRoute
   '/mijn-keuken': typeof MijnKeukenRoute
@@ -905,6 +913,7 @@ export interface FileRoutesById {
   '/instellingen': typeof InstellingenRoute
   '/kennismaking': typeof KennismakingRoute
   '/maker': typeof MakerRoute
+  '/mandje': typeof MandjeRoute
   '/meer': typeof MeerRoute
   '/meldingen': typeof MeldingenRoute
   '/mijn-keuken': typeof MijnKeukenRoute
@@ -1018,6 +1027,7 @@ export interface FileRouteTypes {
     | '/instellingen'
     | '/kennismaking'
     | '/maker'
+    | '/mandje'
     | '/meer'
     | '/meldingen'
     | '/mijn-keuken'
@@ -1126,6 +1136,7 @@ export interface FileRouteTypes {
     | '/instellingen'
     | '/kennismaking'
     | '/maker'
+    | '/mandje'
     | '/meer'
     | '/meldingen'
     | '/mijn-keuken'
@@ -1235,6 +1246,7 @@ export interface FileRouteTypes {
     | '/instellingen'
     | '/kennismaking'
     | '/maker'
+    | '/mandje'
     | '/meer'
     | '/meldingen'
     | '/mijn-keuken'
@@ -1347,6 +1359,7 @@ export interface RootRouteChildren {
   InstellingenRoute: typeof InstellingenRoute
   KennismakingRoute: typeof KennismakingRoute
   MakerRoute: typeof MakerRoute
+  MandjeRoute: typeof MandjeRoute
   MeerRoute: typeof MeerRoute
   MeldingenRoute: typeof MeldingenRoute
   MijnKeukenRoute: typeof MijnKeukenRoute
@@ -1516,6 +1529,13 @@ declare module '@tanstack/react-router' {
       path: '/maker'
       fullPath: '/maker'
       preLoaderRoute: typeof MakerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mandje': {
+      id: '/mandje'
+      path: '/mandje'
+      fullPath: '/mandje'
+      preLoaderRoute: typeof MandjeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/meer': {
@@ -2335,6 +2355,7 @@ const rootRouteChildren: RootRouteChildren = {
   InstellingenRoute: InstellingenRoute,
   KennismakingRoute: KennismakingRoute,
   MakerRoute: MakerRoute,
+  MandjeRoute: MandjeRoute,
   MeerRoute: MeerRoute,
   MeldingenRoute: MeldingenRoute,
   MijnKeukenRoute: MijnKeukenRoute,

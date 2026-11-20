@@ -54,7 +54,14 @@ describe("TestSupermarktProvider: testgegevens, zelfde basisgedrag", () => {
   it("productvoorstellen altijd met het label testgegevens", async () => {
     const p = await new TestSupermarktProvider().productVoorstellen("halfvolle melk");
     expect(p).toEqual([
-      { naam: "Halfvolle melk (test)", prijsCent: 109, inhoud: "1 l", label: "testgegevens" },
+      {
+        naam: "Halfvolle melk (test)",
+        prijsCent: 109,
+        inhoud: "1 l",
+        label: "testgegevens",
+        merk: "Huismerk",
+        maat: { quantity: 1, unit: "l" },
+      },
     ]);
     expect(await new TestSupermarktProvider().productVoorstellen("saffraan")).toEqual([]);
   });

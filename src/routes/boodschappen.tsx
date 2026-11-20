@@ -33,6 +33,8 @@ import {
   ArrowUpDown,
   LayoutGrid,
   UserRound,
+  Wand2,
+  Store,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -103,6 +105,12 @@ import { ItemNaam, Winkelmodus, type Vervanging } from "@/components/winkel/Wink
 import { WaaromSheet, type WaaromRegel } from "@/components/lijst/WaaromSheet";
 import { WinkelvolgordeSheet } from "@/components/lijst/WinkelvolgordeSheet";
 import { CatalogusSheet } from "@/components/lijst/CatalogusSheet";
+import { LijstSlimmer } from "@/components/lijst/LijstSlimmer";
+import { voerSlimUit } from "@/lib/lijst-slimmer-db";
+import { samenvatting as slimSamenvatting, type Basis, type SlimVerschil } from "@/lib/lijst-slimmer";
+import { leesKennismaking } from "@/lib/kennismaking";
+import { magVoorstellen } from "@/lib/veiligheid";
+import { useWeekbudget } from "@/hooks/useWeekbudget";
 import {
   LijstBotsingLabel,
   VervangerSheet,
@@ -234,6 +242,8 @@ function BoodschappenPage() {
   const [deelOpen, setDeelOpen] = useState(false);
   const [deelLink, setDeelLink] = useState<string | null>(null);
   const [winkelIdeeen, setWinkelIdeeen] = useState(false);
+  // Fase 7: boodschappen-agent ("Maak mijn lijst slimmer").
+  const [slimmerOpen, setSlimmerOpen] = useState(false);
   const [vaakAlles, setVaakAlles] = useState(false);
   // Wanneer werd iets afgevinkt (deze sessie) — het laatst afgevinkte staat bovenaan "In je kar".
   const [afvinkTijd, setAfvinkTijd] = useState<Record<string, number>>({});
@@ -691,6 +701,65 @@ function BoodschappenPage() {
     [vaakLos, items], // eslint-disable-line react-hooks/exhaustive-deps
   );
   const beurten = useMemo(() => perBeurt(geschiedenis).slice(0, 10), [geschiedenis]);
+  // Fase 7: wat de boodschappen-agent als "misschien vergeten" mag voorstellen: alleen je eigen
+  // vaste producten en wat je vaak koopt (nooit verzonnen).
+  const slimBasis = useMemo<Basis[]>(
+    () => [
+      ...vaste.map((v) => ({
+        name: v.name,
+        quantity: v.quantity,
+        unit: v.unit,
+        reden: "Staat bij je vaste producten",
+      })),
+      ...suggesties.map((sg) => ({
+        name: sg.name,
+        quantity: sg.quantity,
+        unit: sg.unit,
+        reden: sg.reden,
+      })),
+    ],
+    [vaste, suggesties],
+  );
+  const [weekbudget] = useWeekbudget();
+  const slimVeilig = useMemo(() => {
+    const k = leesKennismaking(user?.id);
+    return (naam: string) =>
+      magVoorstellen({ title: naam, ingredienten: [naam] }, { allergieen: k.allergieen, dieet: k.dieet });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+  async function pasSlimToe(gekozen: SlimVerschil[], vorige: CategorieId[]) {
+    if (!user || !actief) return;
+    let herstel: () => Promise<void>;
+    try {
+      herstel = await voerSlimUit(user.id, actief, gekozen, vorige);
+    } catch {
+      toast.error("Het lukte niet om je lijst aan te passen. Er is niets veranderd.");
+      refresh();
+      return;
+    }
+    void meet("boodschappen.slimmer", undefined, { aantal: gekozen.length });
+    setVolgorde(leesVolgorde());
+    refresh();
+    const terug = async () => {
+      await herstel();
+      setVolgorde(leesVolgorde());
+    };
+    onthoud("Je lijst staat weer zoals ervoor", terug);
+    toast.success(`Lijst slimmer gemaakt: ${slimSamenvatting(gekozen)}`, {
+      action: {
+        label: "Ongedaan maken",
+        onClick: () => {
+          // Ook uit de terugstapel halen: één keer ongedaan maken is genoeg.
+          terugStapel.current = terugStapel.current.filter((x) => x.draaiOm !== terug);
+          setTerugAantal(terugStapel.current.length);
+          void terug()
+            .then(() => toast.success("Je lijst staat weer zoals ervoor"))
+            .catch(() => toast.error("Terugzetten lukte niet."))
+            .finally(refresh);
+        },
+      },
+    });
+  }
   const weekOpen = useMemo(() => {
     const alToegevoegd = new Set([
       ...items.map((i) => i.recipe_id).filter(Boolean),
@@ -2028,6 +2097,54 @@ function BoodschappenPage() {
                 <AanvulKaart />
               </div>
 
+              {/* Fase 7: boodschappen-agent en de testwinkel. */}
+              <section aria-labelledby="slimmer-winkelen" className="paneel overflow-hidden">
+                <h2
+                  id="slimmer-winkelen"
+                  className="px-4 pt-3 text-base font-bold text-muted-foreground"
+                >
+                  Slimmer winkelen
+                </h2>
+                <ul className="divide-y divide-border/70">
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => setSlimmerOpen(true)}
+                      className="flex min-h-16 w-full items-center gap-3 px-4 py-2 text-left hover:bg-muted/60"
+                    >
+                      <Wand2 className="size-6 shrink-0 text-primary" aria-hidden />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-lg font-semibold">Maak mijn lijst slimmer</span>
+                        <span className="block text-base text-muted-foreground">
+                          Dubbels, winkelvolgorde, goedkoper, vergeten
+                        </span>
+                      </span>
+                      <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+                    </button>
+                  </li>
+                  {actief && openAantal > 0 ? (
+                    <li>
+                      <Link
+                        to="/mandje"
+                        search={{ lijst: actief }}
+                        className="flex min-h-16 w-full items-center gap-3 px-4 py-2 text-left hover:bg-muted/60"
+                      >
+                        <Store className="size-6 shrink-0 text-primary" aria-hidden />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-lg font-semibold">
+                            Stuur naar winkel (testmodus)
+                          </span>
+                          <span className="block text-base text-muted-foreground">
+                            Probeer een online mandje, zonder echte winkel
+                          </span>
+                        </span>
+                        <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+                      </Link>
+                    </li>
+                  ) : null}
+                </ul>
+              </section>
+
               <section aria-labelledby="toevoegen-uit" className="paneel overflow-hidden">
                 <h2
                   id="toevoegen-uit"
@@ -2260,6 +2377,20 @@ function BoodschappenPage() {
         onSluit={() => setVolgordeOpen(false)}
       />
 
+      <LijstSlimmer
+        open={slimmerOpen}
+        onOpenChange={setSlimmerOpen}
+        userId={user?.id}
+        items={items}
+        basis={slimBasis}
+        voorraad={voorraad}
+        volgorde={volgorde}
+        veilig={slimVeilig}
+        magVerwijderen={verdeling.rechten.verwijderen}
+        budget={weekbudget}
+        onDoeMaar={pasSlimToe}
+      />
+
       <WinkelIdeeen
         open={winkelIdeeen}
         onOpenChange={setWinkelIdeeen}
@@ -2307,6 +2438,16 @@ function BoodschappenPage() {
               }}
             >
               <Lightbulb /> Winkelideeën
+            </Button>
+            <Button
+              variant="outline"
+              className="h-14 w-full justify-start text-base"
+              onClick={() => {
+                setMeerOpen(false);
+                setSlimmerOpen(true);
+              }}
+            >
+              <Wand2 /> Maak mijn lijst slimmer
             </Button>
             {/* P4: "zet de ingrediënten van … op de lijst" via de assistent (met voorstel). */}
             <Button asChild variant="outline" className="h-14 w-full justify-start text-base">
