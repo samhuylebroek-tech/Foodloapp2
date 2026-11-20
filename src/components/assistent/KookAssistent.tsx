@@ -11,7 +11,7 @@
 import { bewaarVersie, verwijderVersie } from "@/lib/recept-versies-db";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowRight,
   Check,
@@ -45,7 +45,9 @@ import {
 } from "@/lib/assistent/aanpassen";
 import { BRON_LABEL, naarVervangers, type AssistentBron } from "@/lib/assistent/adapter";
 import { etersUit } from "@/lib/assistent/eters";
-import { DAGLIMIET, nogVandaag, registreerVraag } from "@/lib/assistent/gebruik";
+import { DAGLIMIET, nogVandaag, registreerCache, registreerVraag } from "@/lib/assistent/gebruik";
+import { cacheSleutel, inCache, uitCache } from "@/lib/ai/vraag-cache";
+import type { HulpAntwoord } from "@/lib/assistent/adapter";
 import { bewaarAlsKopie, herstel, pasOrigineelAan } from "@/lib/assistent/opslaan";
 import {
   ingredientRedenen,
@@ -320,12 +322,34 @@ export function KookAssistent({
     void meet("assistent.vervangen", undefined, { bekend: !!veiligeVervangers(naam, []).bekend });
   }
 
-  async function vraagSlim(soort: "vervang" | "vraag", tekst: string) {
-    if (!user || nog <= 0) return null;
+  async function vraagSlim(
+    soort: "vervang" | "vraag",
+    tekst: string,
+  ): Promise<(HulpAntwoord & { uitCache?: boolean }) | null> {
+    if (!user) return null;
+    const aiSoort = soort === "vervang" ? "kookhulp.vervang" : "kookhulp.vraag";
+    // Fase 7: dezelfde vraag (24 u) komt uit de cache en telt niet mee.
+    const k = cacheSleutel(soort, tekst, recept.title);
+    const bewaard = uitCache<HulpAntwoord>(user.id, k);
+    if (bewaard) {
+      registreerCache(user.id, aiSoort);
+      void meet("assistent.slim", undefined, { soort, bron: bewaard.bron, cache: true });
+      return { ...bewaard, uitCache: true };
+    }
+    // Limiet bereikt: geen kapotte knop, maar de vaste tips met een vriendelijke uitleg.
+    if (nog <= 0)
+      return {
+        bron: "regels",
+        melding:
+          "Je slimme vragen voor vandaag zijn op. Hier zijn de vaste tips; die blijven gratis. Morgen kan je weer slimme vragen stellen.",
+      };
     setSlimBezig(true);
     try {
       const r = await assistentHulp({ data: { soort, tekst, recept: recept.title } });
-      if (r.bron !== "regels") setNog(registreerVraag(user.id));
+      if (r.bron !== "regels") {
+        setNog(registreerVraag(user.id, aiSoort));
+        inCache(user.id, k, r);
+      }
       void meet("assistent.slim", undefined, { soort, bron: r.bron });
       return r;
     } catch {
@@ -346,6 +370,9 @@ export function KookAssistent({
       bron: r.bron,
       lijst: naarVervangers(r.vervangers ?? []),
       ...(r.melding ? { melding: r.melding } : {}),
+      ...(r.uitCache
+        ? { melding: "Dit antwoord had je vandaag al gekregen: het telt niet opnieuw mee." }
+        : {}),
     });
   }
 
@@ -612,7 +639,7 @@ export function KookAssistent({
                     variant="outline"
                     className="w-full"
                     onClick={() => void slimVervangers()}
-                    disabled={slimBezig || nog <= 0}
+                    disabled={slimBezig}
                   >
                     {slimBezig ? (
                       <Loader2 className="size-5 animate-spin" aria-hidden />
@@ -625,7 +652,13 @@ export function KookAssistent({
                 <p className="text-[0.95rem] text-muted-foreground">
                   {nog > 0
                     ? `Je kan vandaag nog ${nog} van de ${DAGLIMIET} slimme vragen stellen. Vaste tips zijn altijd gratis.`
-                    : "Je slimme vragen voor vandaag zijn op. Vaste tips blijven werken."}
+                    : "Je slimme vragen voor vandaag zijn op. Vaste tips blijven werken."}{" "}
+                  <Link
+                    to="/instellingen/ai-gebruik"
+                    className="inline-flex min-h-11 items-center underline underline-offset-4"
+                  >
+                    Bekijk je AI-gebruik
+                  </Link>
                 </p>
               </section>
             ) : null}
@@ -778,7 +811,7 @@ export function KookAssistent({
                     variant="outline"
                     className="w-full"
                     onClick={() => void slimAntwoord()}
-                    disabled={slimBezig || nog <= 0}
+                    disabled={slimBezig}
                   >
                     {slimBezig ? (
                       <Loader2 className="size-5 animate-spin" aria-hidden />

@@ -1220,6 +1220,22 @@ export function demoSeed() {
       hoeveelheid,
       eenheid,
     })),
+    // Fase 7 (voorstel 0024): verzonnen, geanonimiseerde AI-totalen voor het Control Center
+    // (alleen dag, soort en aantal; geen gebruikers).
+    ai_gebruik_totaal: [
+      [0, "kookhulp.vervang", 42, 9],
+      [0, "kookhulp.vraag", 17, 3],
+      [-1, "weekassistent", 12, 0],
+      [-2, "kookhulp.vervang", 35, 6],
+    ]
+      .filter(([terug]) => dag(terug).slice(0, 7) === dag(0).slice(0, 7))
+      .map(([terug, soort, aantal, uit_cache], i) => ({
+        id: `a1a1a1a1-0024-4000-8000-00000000000${i}`,
+        dag: dag(terug),
+        soort,
+        aantal,
+        uit_cache,
+      })),
     // P2 (voorstel 0014): verzonnen budgetgeschiedenis van Marie, drie vorige weken.
     budget_weken: [
       [1, 104.6, 1, 6],

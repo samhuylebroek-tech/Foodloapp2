@@ -170,7 +170,7 @@ function Gesprek({
       { vandaag: ctx.vandaag, namen, recepten: ctx.plan.kandidaten },
       { terugval, resterend: nog },
     );
-    if (uitkomst.teldMee) setNog(registreerVraag(user.id));
+    if (uitkomst.teldMee) setNog(registreerVraag(user.id, "weekassistent"));
     const h = uitkomst.herkenning;
     if (!h.ok) {
       setBerichten((b) => [

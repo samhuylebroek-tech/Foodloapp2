@@ -539,6 +539,14 @@ function SlimmeVoorstellen({ t }: { t: (s: string) => string }) {
         titel={t("Suggesties en meldingen")}
         uitleg={t("Welke tips en meldingen in de app je krijgt")}
       />
+      {/* Fase 7: hoeveel slimme vragen je gebruikte (zonder inhoud). */}
+      <LinkRij
+        to="/instellingen/ai-gebruik"
+        icoon={Sparkles}
+        tint="honing"
+        titel={t("AI-gebruik")}
+        uitleg={t("Slimme vragen vandaag en deze maand")}
+      />
     </Groep>
   );
 }

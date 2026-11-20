@@ -654,3 +654,38 @@ export const bccUitnodigingIntrekken = createServerFn({ method: "POST" })
     await logboek(db, profiel, "bcc.team.ingetrokken", "uitnodiging", data.id);
     return { ok: true };
   });
+
+// ---------- AI-gebruik (fase 7): alleen totalen over iedereen, nooit wie ----------
+
+export const bccAiGebruik = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(
+    async ({
+      context,
+    }): Promise<{
+      beschikbaar: boolean;
+      rijen: { dag: string; soort: string; aantal: number; uit_cache: number }[];
+    }> => {
+      const { db } = await poort(context, "ai.view", false);
+      const sinds = new Date();
+      sinds.setDate(sinds.getDate() - 40);
+      const { data, error } = await db
+        .from("ai_gebruik_totaal")
+        .select("dag, soort, aantal, uit_cache")
+        .gte("dag", sinds.toISOString().slice(0, 10))
+        .limit(5000);
+      if (error) {
+        if (isOntbrekendeTabel(error)) return { beschikbaar: false, rijen: [] };
+        throw new Error("Het AI-gebruik kon niet geladen worden.");
+      }
+      return {
+        beschikbaar: true,
+        rijen: ((data ?? []) as Rij[]).map((r) => ({
+          dag: String(r.dag),
+          soort: String(r.soort),
+          aantal: Number(r.aantal) || 0,
+          uit_cache: Number(r.uit_cache) || 0,
+        })),
+      };
+    },
+  );

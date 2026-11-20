@@ -78,6 +78,7 @@ const SECTIES: Sectie[] = [
       { pad: "/beheer/credits", label: "Credits", recht: "finance.view" },
       { pad: "/beheer/kosten", label: "Kosten", recht: "finance.view" },
       { pad: "/beheer/ai", label: "AI-gebruik", recht: "ai.view" },
+      { pad: "/beheer/ai-totaal", label: "AI-totaal per actie", recht: "ai.view" },
     ],
   },
   {

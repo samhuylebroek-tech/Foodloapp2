@@ -74,5 +74,5 @@ export function mandjeTotaal(regels: readonly MandjeRegel[]): {
 
 /** "€ 4,50" uit eurocent (Belgische notatie, vaste spatie). */
 export function euroCent(cent: number): string {
-  return `€ ${(cent / 100).toLocaleString("nl-BE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `€\u00a0${(cent / 100).toLocaleString("nl-BE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }

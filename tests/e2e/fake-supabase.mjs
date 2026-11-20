@@ -426,6 +426,42 @@ const server = http.createServer((req, res) => {
         else rij.klikken += 1;
         return stuur(res, 200, null);
       }
+      // Voorstel 0024: public.ai_gebruik_tel — +1 op je eigen dagtotaal en op het anonieme
+      // totaal (alleen dag en soort, nooit wie of wat). Cache-antwoorden tellen apart.
+      if (naam === "ai_gebruik_tel") {
+        if (!geldigToken(auth)) return stuur(res, 401, { message: "niet aangemeld" });
+        const soort = String(body?.p_soort ?? "");
+        if (!/^[a-z.]{3,40}$/.test(soort)) return stuur(res, 400, { message: "onbekende soort" });
+        let sub;
+        try {
+          sub = JSON.parse(
+            Buffer.from(auth.split(" ")[1].split(".")[1], "base64url").toString(),
+          ).sub;
+        } catch {
+          return stuur(res, 401, { message: "niet aangemeld" });
+        }
+        const d = new Date();
+        const twee = (n) => String(n).padStart(2, "0");
+        const dag = `${d.getFullYear()}-${twee(d.getMonth() + 1)}-${twee(d.getDate())}`;
+        const cache = body?.p_cache === true;
+        const tel = (tabel, zoek, nieuw) => {
+          const t = db.t(tabel);
+          let rij = t.find(zoek);
+          if (!rij) {
+            rij = { id: randomUUID(), ...nieuw, aantal: 0, uit_cache: 0 };
+            t.push(rij);
+          }
+          if (cache) rij.uit_cache += 1;
+          else rij.aantal += 1;
+        };
+        tel("ai_gebruik_dag", (r) => r.user_id === sub && r.dag === dag && r.soort === soort, {
+          user_id: sub,
+          dag,
+          soort,
+        });
+        tel("ai_gebruik_totaal", (r) => r.dag === dag && r.soort === soort, { dag, soort });
+        return stuur(res, 200, null);
+      }
       return stuur(res, 200, RPC_STANDAARD[naam] ?? null);
     }
     if (url.pathname.startsWith("/rest/v1/")) {

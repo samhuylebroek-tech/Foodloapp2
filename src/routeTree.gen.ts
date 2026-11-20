@@ -47,6 +47,7 @@ import { Route as WelkomRouteImport } from './routes/welkom'
 import { Route as BeheerIndexRouteImport } from './routes/beheer.index'
 import { Route as BeheerActiviteitRouteImport } from './routes/beheer.activiteit'
 import { Route as BeheerAiRouteImport } from './routes/beheer.ai'
+import { Route as BeheerAiTotaalRouteImport } from './routes/beheer.ai-totaal'
 import { Route as BeheerAnalyticsRouteImport } from './routes/beheer.analytics'
 import { Route as BeheerBeveiligingRouteImport } from './routes/beheer.beveiliging'
 import { Route as BeheerCampagnesRouteImport } from './routes/beheer.campagnes'
@@ -79,6 +80,7 @@ import { Route as HulpSlugRouteImport } from './routes/hulp.$slug'
 import { Route as HulpTutorialsRouteImport } from './routes/hulp.tutorials'
 import { Route as InspiratieIndexRouteImport } from './routes/inspiratie.index'
 import { Route as InspiratieIdRouteImport } from './routes/inspiratie.$id'
+import { Route as InstellingenAiGebruikRouteImport } from './routes/instellingen_.ai-gebruik'
 import { Route as InstellingenSuggestiesRouteImport } from './routes/instellingen_.suggesties'
 import { Route as KaartenIndexRouteImport } from './routes/kaarten.index'
 import { Route as KaartenIdRouteImport } from './routes/kaarten.$id'
@@ -310,6 +312,11 @@ const BeheerAiRoute = BeheerAiRouteImport.update({
   path: '/ai',
   getParentRoute: () => BeheerRoute,
 } as any)
+const BeheerAiTotaalRoute = BeheerAiTotaalRouteImport.update({
+  id: '/ai-totaal',
+  path: '/ai-totaal',
+  getParentRoute: () => BeheerRoute,
+} as any)
 const BeheerAnalyticsRoute = BeheerAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -469,6 +476,11 @@ const InspiratieIdRoute = InspiratieIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => InspiratieRoute,
+} as any)
+const InstellingenAiGebruikRoute = InstellingenAiGebruikRouteImport.update({
+  id: '/instellingen_/ai-gebruik',
+  path: '/instellingen/ai-gebruik',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const InstellingenSuggestiesRoute = InstellingenSuggestiesRouteImport.update({
   id: '/instellingen_/suggesties',
@@ -710,6 +722,7 @@ export interface FileRoutesByFullPath {
   '/welkom': typeof WelkomRoute
   '/beheer/activiteit': typeof BeheerActiviteitRoute
   '/beheer/ai': typeof BeheerAiRoute
+  '/beheer/ai-totaal': typeof BeheerAiTotaalRoute
   '/beheer/analytics': typeof BeheerAnalyticsRoute
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
   '/beheer/campagnes': typeof BeheerCampagnesRoute
@@ -740,6 +753,7 @@ export interface FileRoutesByFullPath {
   '/hulp/$slug': typeof HulpSlugRoute
   '/hulp/tutorials': typeof HulpTutorialsRoute
   '/inspiratie/$id': typeof InspiratieIdRoute
+  '/instellingen/ai-gebruik': typeof InstellingenAiGebruikRoute
   '/instellingen/suggesties': typeof InstellingenSuggestiesRoute
   '/kaarten/$id': typeof KaartenIdRoute
   '/makers/$handle': typeof MakersHandleRoute
@@ -818,6 +832,7 @@ export interface FileRoutesByTo {
   '/welkom': typeof WelkomRoute
   '/beheer/activiteit': typeof BeheerActiviteitRoute
   '/beheer/ai': typeof BeheerAiRoute
+  '/beheer/ai-totaal': typeof BeheerAiTotaalRoute
   '/beheer/analytics': typeof BeheerAnalyticsRoute
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
   '/beheer/campagnes': typeof BeheerCampagnesRoute
@@ -847,6 +862,7 @@ export interface FileRoutesByTo {
   '/hulp/$slug': typeof HulpSlugRoute
   '/hulp/tutorials': typeof HulpTutorialsRoute
   '/inspiratie/$id': typeof InspiratieIdRoute
+  '/instellingen/ai-gebruik': typeof InstellingenAiGebruikRoute
   '/instellingen/suggesties': typeof InstellingenSuggestiesRoute
   '/kaarten/$id': typeof KaartenIdRoute
   '/makers/$handle': typeof MakersHandleRoute
@@ -930,6 +946,7 @@ export interface FileRoutesById {
   '/welkom': typeof WelkomRoute
   '/beheer/activiteit': typeof BeheerActiviteitRoute
   '/beheer/ai': typeof BeheerAiRoute
+  '/beheer/ai-totaal': typeof BeheerAiTotaalRoute
   '/beheer/analytics': typeof BeheerAnalyticsRoute
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
   '/beheer/campagnes': typeof BeheerCampagnesRoute
@@ -960,6 +977,7 @@ export interface FileRoutesById {
   '/hulp/$slug': typeof HulpSlugRoute
   '/hulp/tutorials': typeof HulpTutorialsRoute
   '/inspiratie/$id': typeof InspiratieIdRoute
+  '/instellingen_/ai-gebruik': typeof InstellingenAiGebruikRoute
   '/instellingen_/suggesties': typeof InstellingenSuggestiesRoute
   '/kaarten/$id': typeof KaartenIdRoute
   '/makers/$handle': typeof MakersHandleRoute
@@ -1044,6 +1062,7 @@ export interface FileRouteTypes {
     | '/welkom'
     | '/beheer/activiteit'
     | '/beheer/ai'
+    | '/beheer/ai-totaal'
     | '/beheer/analytics'
     | '/beheer/beveiliging'
     | '/beheer/campagnes'
@@ -1074,6 +1093,7 @@ export interface FileRouteTypes {
     | '/hulp/$slug'
     | '/hulp/tutorials'
     | '/inspiratie/$id'
+    | '/instellingen/ai-gebruik'
     | '/instellingen/suggesties'
     | '/kaarten/$id'
     | '/makers/$handle'
@@ -1152,6 +1172,7 @@ export interface FileRouteTypes {
     | '/welkom'
     | '/beheer/activiteit'
     | '/beheer/ai'
+    | '/beheer/ai-totaal'
     | '/beheer/analytics'
     | '/beheer/beveiliging'
     | '/beheer/campagnes'
@@ -1181,6 +1202,7 @@ export interface FileRouteTypes {
     | '/hulp/$slug'
     | '/hulp/tutorials'
     | '/inspiratie/$id'
+    | '/instellingen/ai-gebruik'
     | '/instellingen/suggesties'
     | '/kaarten/$id'
     | '/makers/$handle'
@@ -1263,6 +1285,7 @@ export interface FileRouteTypes {
     | '/welkom'
     | '/beheer/activiteit'
     | '/beheer/ai'
+    | '/beheer/ai-totaal'
     | '/beheer/analytics'
     | '/beheer/beveiliging'
     | '/beheer/campagnes'
@@ -1293,6 +1316,7 @@ export interface FileRouteTypes {
     | '/hulp/$slug'
     | '/hulp/tutorials'
     | '/inspiratie/$id'
+    | '/instellingen_/ai-gebruik'
     | '/instellingen_/suggesties'
     | '/kaarten/$id'
     | '/makers/$handle'
@@ -1374,6 +1398,7 @@ export interface RootRouteChildren {
   WachtwoordHerstellenRoute: typeof WachtwoordHerstellenRoute
   WeekSamenstellenRoute: typeof WeekSamenstellenRoute
   WelkomRoute: typeof WelkomRoute
+  InstellingenAiGebruikRoute: typeof InstellingenAiGebruikRoute
   InstellingenSuggestiesRoute: typeof InstellingenSuggestiesRoute
   KaartenIdRoute: typeof KaartenIdRoute
   MakersHandleRoute: typeof MakersHandleRoute
@@ -1657,6 +1682,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerAiRouteImport
       parentRoute: typeof BeheerRoute
     }
+    '/beheer/ai-totaal': {
+      id: '/beheer/ai-totaal'
+      path: '/ai-totaal'
+      fullPath: '/beheer/ai-totaal'
+      preLoaderRoute: typeof BeheerAiTotaalRouteImport
+      parentRoute: typeof BeheerRoute
+    }
     '/beheer/analytics': {
       id: '/beheer/analytics'
       path: '/analytics'
@@ -1880,6 +1912,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/inspiratie/$id'
       preLoaderRoute: typeof InspiratieIdRouteImport
       parentRoute: typeof InspiratieRoute
+    }
+    '/instellingen_/ai-gebruik': {
+      id: '/instellingen_/ai-gebruik'
+      path: '/instellingen/ai-gebruik'
+      fullPath: '/instellingen/ai-gebruik'
+      preLoaderRoute: typeof InstellingenAiGebruikRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/instellingen_/suggesties': {
       id: '/instellingen_/suggesties'
@@ -2211,6 +2250,7 @@ const BeheerUiRouteWithChildren = BeheerUiRoute._addFileChildren(
 interface BeheerRouteChildren {
   BeheerActiviteitRoute: typeof BeheerActiviteitRoute
   BeheerAiRoute: typeof BeheerAiRoute
+  BeheerAiTotaalRoute: typeof BeheerAiTotaalRoute
   BeheerAnalyticsRoute: typeof BeheerAnalyticsRoute
   BeheerBeveiligingRoute: typeof BeheerBeveiligingRoute
   BeheerCampagnesRoute: typeof BeheerCampagnesRoute
@@ -2245,6 +2285,7 @@ interface BeheerRouteChildren {
 const BeheerRouteChildren: BeheerRouteChildren = {
   BeheerActiviteitRoute: BeheerActiviteitRoute,
   BeheerAiRoute: BeheerAiRoute,
+  BeheerAiTotaalRoute: BeheerAiTotaalRoute,
   BeheerAnalyticsRoute: BeheerAnalyticsRoute,
   BeheerBeveiligingRoute: BeheerBeveiligingRoute,
   BeheerCampagnesRoute: BeheerCampagnesRoute,
@@ -2370,6 +2411,7 @@ const rootRouteChildren: RootRouteChildren = {
   WachtwoordHerstellenRoute: WachtwoordHerstellenRoute,
   WeekSamenstellenRoute: WeekSamenstellenRoute,
   WelkomRoute: WelkomRoute,
+  InstellingenAiGebruikRoute: InstellingenAiGebruikRoute,
   InstellingenSuggestiesRoute: InstellingenSuggestiesRoute,
   KaartenIdRoute: KaartenIdRoute,
   MakersHandleRoute: MakersHandleRoute,

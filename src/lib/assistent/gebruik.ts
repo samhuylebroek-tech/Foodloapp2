@@ -4,6 +4,8 @@
  * en per dag; de server heeft daarnaast zijn eigen rem (`kostrem.ts`). Nooit tokens of kosten tonen.
  */
 import { AI_LIMIETEN } from "@/lib/betalen/rechten";
+import { bewaarRegel, type AiSoort } from "@/lib/ai/gebruik-log";
+import { db } from "@/lib/module-beschikbaar";
 import { lokaleDatum } from "@/lib/tijd";
 
 /** Uit de centrale rechtenlijst (fase 6): gelijk voor gratis en Premium. */
@@ -36,8 +38,15 @@ export function leesGebruik(userId: string | null | undefined): Gebruik | null {
   }
 }
 
-/** Telt één slimme vraag; geeft wat er vandaag nog overblijft. */
-export function registreerVraag(userId: string, nu = new Date()): number {
+/**
+ * Telt één slimme vraag; geeft wat er vandaag nog overblijft. Fase 7: ook in het gebruikslog
+ * (dag + soort, geen inhoud) en, als voorstel 0024 er is, als dagtotaal op je account.
+ */
+export function registreerVraag(
+  userId: string,
+  soort: AiSoort = "kookhulp.vraag",
+  nu = new Date(),
+): number {
   const dag = lokaleDatum(nu);
   const nieuw = telOp(leesGebruik(userId), dag);
   try {
@@ -45,7 +54,27 @@ export function registreerVraag(userId: string, nu = new Date()): number {
   } catch {
     /* privévenster: niet bewaren */
   }
+  bewaarRegel(userId, { dag, soort });
+  telOpAccount(soort, false);
   return resterend(nieuw, dag);
+}
+
+/** Een antwoord uit de cache: telt niet mee voor de limiet, wel zichtbaar als "uit de cache". */
+export function registreerCache(userId: string, soort: AiSoort, nu = new Date()) {
+  bewaarRegel(userId, { dag: lokaleDatum(nu), soort, cache: true });
+  telOpAccount(soort, true);
+}
+
+/** Voorstel 0024: +1 op je dagtotaal (en het anonieme totaal). Bestaat de functie niet: niets. */
+function telOpAccount(soort: AiSoort, cache: boolean) {
+  try {
+    void db.rpc("ai_gebruik_tel", { p_soort: soort, p_cache: cache }).then(
+      () => undefined,
+      () => undefined,
+    );
+  } catch {
+    /* meten mag nooit iets breken */
+  }
 }
 
 export function nogVandaag(userId: string | null | undefined, nu = new Date()): number {
