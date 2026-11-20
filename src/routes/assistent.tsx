@@ -140,6 +140,7 @@ function Gesprek({
   const [standen, setStanden] = useState<Record<string, KaartStand>>({});
   const [invoer, setInvoer] = useState("");
   const [nog, setNog] = useState(() => nogVandaag(user?.id));
+  useEffect(() => setNog(nogVandaag(user?.id)), [user?.id]);
   const herstel = useRef<Record<string, Uitvoering>>({});
   const teller = useRef(0);
   const gevraagd = useRef(false);

@@ -302,6 +302,8 @@ export function KookAssistent({
     vast: boolean;
   } | null>(null);
   const [nog, setNog] = useState(() => nogVandaag(user?.id));
+  // De gebruiker is bij de eerste weergave soms nog niet geladen: dan opnieuw lezen.
+  useEffect(() => setNog(nogVandaag(user?.id)), [user?.id]);
 
   const uitkomst = useMemo(
     () => (gekozen ? veiligeVervangers(gekozen, eters) : null),
