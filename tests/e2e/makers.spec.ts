@@ -98,7 +98,10 @@ test("Ontdek toont makers om te volgen; overzicht met zoeken en Volgend-filter",
 test("bronvermelding op een openbaar makerrecept leidt naar de maker", async ({ page }) => {
   await page.goto(`/recepten/${TAJINE}`);
   await expect(page.getByRole("link", { name: "Van Chef Ahmed" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Video op TikTok/ })).toBeVisible();
+  // Fase 4: de video van de maker staat op de videokaart, met de maker als bron.
+  await expect(page.getByTestId("video-bron")).toContainText("Video van Chef Ahmed op TikTok");
+  await expect(page.getByRole("link", { name: /Bekijk de video bij TikTok/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Video op TikTok/ })).toHaveCount(0);
   // Geen bewerkknop: het is niet jouw recept.
   await expect(page.getByRole("link", { name: "Aanpassen" })).toHaveCount(0);
   await page.getByRole("link", { name: "Van Chef Ahmed" }).click();
@@ -144,7 +147,7 @@ test("maker worden, handle controleren en een recept openbaar publiceren", async
     .toBe("openbaar/gepubliceerd/wacht");
 
   // Video-link: alleen bekende diensten.
-  await rij.getByText(/Video-link/).click();
+  await rij.getByText(/Video en tijden/).click();
   await rij.getByLabel("Link naar je kookvideo").fill("https://evil.example/video");
   await rij.getByRole("button", { name: "Video bewaren" }).click();
   await expect(rij.getByRole("alert")).toContainText("YouTube");

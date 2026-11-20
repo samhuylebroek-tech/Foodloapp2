@@ -11,7 +11,14 @@ import { useModuleBeschikbaar } from "@/lib/module-beschikbaar";
 import { BewaarIn } from "./BewaarIn";
 import { MakerBron, MeldKnop } from "./MakerOnderdelen";
 
-export function ReceptMakerDeel({ receptId }: { receptId: string }) {
+export function ReceptMakerDeel({
+  receptId,
+  zonderVideo = false,
+}: {
+  receptId: string;
+  /** Fase 4: de video van de maker staat al op de videokaart (met tijden bij de stappen). */
+  zonderVideo?: boolean;
+}) {
   const { user } = useAuth();
   const makers = useModuleBeschikbaar("creators");
   const verzamelingen = useModuleBeschikbaar("collections");
@@ -21,7 +28,7 @@ export function ReceptMakerDeel({ receptId }: { receptId: string }) {
     queryFn: () => haalPubliekeBron(receptId),
     staleTime: 60 * 1000,
   });
-  const video = videoBron(bron?.publicatie.video_url);
+  const video = zonderVideo ? null : videoBron(bron?.publicatie.video_url);
   const eigen = bron?.maker.user_id === user?.id;
 
   if (!bron && !verzamelingen.beschikbaar) return null;

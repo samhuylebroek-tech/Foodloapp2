@@ -140,3 +140,52 @@ test("lege toestand: wie niemand volgt, krijgt uitleg", async ({ page }) => {
   await expect(feed.getByText("Je volgt nog niemand")).toBeVisible();
   await expect(feed.getByRole("link", { name: "Makers ontdekken" })).toBeVisible();
 });
+
+const LOTTE_USER = "9a9a9a9a-0000-4000-8000-000000000001";
+const STOEMP = "a7a7a7a7-0000-4000-8000-000000000002";
+
+test("videorecept: maker zet tijden bij de stappen, fan ziet klikbare tijden", async ({
+  page,
+  browser,
+}) => {
+  await meldAan(page, LOTTE_USER);
+  await page.goto("/maker");
+  const rij = page.getByRole("listitem", { name: "Stoemp met prei en spekjes" });
+  await rij.getByText(/Video en tijden/).click();
+  await expect(rij.getByText(/Foodlo bewaart alleen de link/)).toBeVisible();
+  const tijden = rij.getByTestId("video-tijden");
+  await tijden.getByLabel(/Stap 1:/).fill("0:20");
+  await tijden.getByLabel(/Stap 2:/).fill("1.05");
+  await tijden.getByLabel(/Stap 4:/).fill("9:99");
+  await tijden.getByRole("button", { name: "Tijden bewaren" }).click();
+  await expect(tijden.getByRole("alert")).toHaveText("Stap 4: Schrijf de tijd zoals 0:45 of 1:30.");
+  await expect(tijden.getByLabel(/Stap 4:/)).toBeFocused();
+  await tijden.getByLabel(/Stap 4:/).fill("3:40");
+  await tijden.getByRole("button", { name: "Tijden bewaren" }).click();
+  await expect(page.getByText("Tijden bij de stappen bewaard")).toBeVisible();
+  await expect
+    .poll(async () => (await nepDb()).recipes?.find((r) => r["id"] === STOEMP)?.["instructions"])
+    .toEqual([
+      "0:20 Kook de aardappelen gaar.",
+      "1:05 Stoof de prei in boter.",
+      "Bak de spekjes krokant.",
+      "3:40 Stamp alles samen en kruid met nootmuskaat.",
+    ]);
+
+  // De fan (Marie) ziet de videokaart met de maker als bron en klikbare tijden.
+  const fanContext = await browser.newContext();
+  const fan = await fanContext.newPage();
+  await fan.route("**/*", (route) => {
+    const host = new URL(route.request().url()).hostname;
+    return host === "127.0.0.1" || host === "localhost"
+      ? route.continue()
+      : route.abort("blockedbyclient");
+  });
+  await meldAan(fan);
+  await fan.goto(`/recepten/${STOEMP}`);
+  await expect(fan.getByTestId("video-bron")).toContainText("Video van Lotte kookt op YouTube");
+  const tijd = fan.getByRole("link", { name: /Bekijk op 1 minuut 5 seconden in de video/ });
+  await expect(tijd).toHaveAttribute("href", "https://www.youtube.com/watch?v=demo-stoemp&t=65s");
+  await expect(fan.getByText("Stoof de prei in boter.").first()).toBeVisible();
+  await fanContext.close();
+});

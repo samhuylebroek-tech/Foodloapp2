@@ -318,6 +318,13 @@ function ReceptPage() {
     void meet("recept.bekeken", undefined, { id });
   }, [id]);
 
+  // Fase 4: video van de maker (op de publicatie) als het recept zelf geen video-link heeft.
+  const { data: makerBron } = useQuery({
+    queryKey: ["recept-bron", id],
+    queryFn: () => haalPubliekeBron(id),
+    staleTime: 60 * 1000,
+  });
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ["recipe", id],
     // Niet zichtbaar of niet gevonden: opnieuw proberen helpt niet; meteen de melding tonen.
@@ -699,7 +706,9 @@ function ReceptPage() {
   function deelRecept() {
     setDeelOpen(true);
   }
-  const video = herkenVideoLink(recipe.source_url);
+  const eigenVideo = herkenVideoLink(recipe.source_url);
+  const makerVideo = eigenVideo ? null : herkenVideoLink(makerBron?.publicatie.video_url);
+  const video = eigenVideo ?? makerVideo;
 
   // BUG-145: AI schrijft nooit meer stil in je recept. Eerst een voorstel met alleen de lege velden,
   // pas na "Overnemen" wordt er iets bewaard (principe: AI overschrijft nooit zonder nakijken).
@@ -1317,12 +1326,16 @@ function ReceptPage() {
             {video ? (
               <VideoBronKaart
                 video={video}
-                maker={makerUitOmschrijving(recipe.description) ?? video.maker}
+                maker={
+                  makerVideo && makerBron
+                    ? makerBron.maker.naam
+                    : (makerUitOmschrijving(recipe.description) ?? video.maker)
+                }
               />
             ) : null}
 
             {/* Module B: bronvermelding van de maker, video-link en "Bewaar in…". */}
-            <ReceptMakerDeel receptId={recipe.id} />
+            <ReceptMakerDeel receptId={recipe.id} zonderVideo={!!makerVideo} />
 
             {isOwner && (ingredients.length === 0 || recipe.instructions.length === 0) && (
               <div className="rounded-2xl border border-primary/40 bg-secondary p-4">

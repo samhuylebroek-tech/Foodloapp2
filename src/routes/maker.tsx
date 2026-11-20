@@ -8,6 +8,7 @@ import { AppShell } from "@/components/AppShell";
 import { EmptyState } from "@/components/EmptyState";
 import { ModuleNietBeschikbaar } from "@/components/ModuleNietBeschikbaar";
 import { MakerAvatar } from "@/components/makers/MakerOnderdelen";
+import { VideoTijden } from "@/components/makers/VideoTijden";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -269,7 +270,7 @@ function ProfielFormulier({ maker, onKlaar }: { maker: Maker | null; onKlaar: ()
   );
 }
 
-type EigenRecept = { id: string; title: string };
+type EigenRecept = { id: string; title: string; instructions: string[] };
 
 function MijnRecepten({ maker }: { maker: Maker }) {
   const { user } = useAuth();
@@ -279,7 +280,7 @@ function MijnRecepten({ maker }: { maker: Maker }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("recipes")
-        .select("id, title")
+        .select("id, title, instructions")
         .eq("user_id", user!.id)
         .is("deleted_at", null)
         .eq("is_concept", false)
@@ -523,7 +524,7 @@ function PublicatieRij({
       <details className="rounded-2xl bg-muted/60 p-3">
         <summary className="flex min-h-11 cursor-pointer items-center gap-2 text-base font-semibold">
           <Video className="size-5" aria-hidden />
-          Video-link {publicatie?.video_url ? "(ingesteld)" : "(optioneel)"}
+          Video en tijden {publicatie?.video_url ? "(ingesteld)" : "(optioneel)"}
         </summary>
         <div className="mt-2 space-y-2">
           <Label htmlFor={`video-${recept.id}`} className="text-base">
@@ -551,6 +552,16 @@ function PublicatieRij({
             <p role="alert" className="text-base font-semibold text-destructive">
               {videoFout}
             </p>
+          ) : null}
+          <p className="text-[0.95rem] text-muted-foreground">
+            Foodlo bewaart alleen de link: de video blijft bij {videoBron(video)?.platform ?? "de dienst"}{" "}
+            en wordt niet gedownload. Je naam staat er als bron bij.
+          </p>
+          {publicatie?.video_url ? (
+            <VideoTijden
+              recept={{ ...recept, instructions: recept.instructions ?? [] }}
+              videoUrl={publicatie.video_url}
+            />
           ) : null}
         </div>
       </details>
