@@ -72,6 +72,7 @@ const ALLE_VOORSTELLEN = schrijf("alle-voorstellen.sql", [
   "0021_makers_abonnement_community.up.sql",
   "0022_bcc_testmodus.up.sql",
   "0023_premium_beheer.up.sql",
+  "0024_ai_gebruik_mandjes.up.sql",
 ]);
 
 const gevallen = [
@@ -193,6 +194,12 @@ const gevallen = [
     null,
     0,
     "voorstel 0023: alleen eigen facturen, rechten/plannen/abonnementen niet door de app te schrijven, creditnota en btw-regels, testmodus verplicht, heen+terug",
+  ],
+  [
+    "ai-gebruik-mandjes.mjs",
+    null,
+    0,
+    "voorstel 0024: AI-gebruik alleen eigen dagtotaal via ai_gebruik_tel (vaste soorten, plafond), anoniem totaal alleen server, testmandjes eigen + testmodus verplicht, heen+terug",
   ],
   ["verwijder-gezinseigenaar.mjs", null, 0, "verslag BUG-110/025 (rapporteert, faalt niet)"],
 ];

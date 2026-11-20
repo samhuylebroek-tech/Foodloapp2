@@ -68,6 +68,14 @@ const EXTRA_KOLOMMEN = {
   facturen: { status: "'betaald'" },
   partner_aanvragen: { bedrijfsnaam: "'Bakkerij A'", soort: "'retail'" },
   partner_leden: { rol: "'eigenaar'" },
+  // Voorstel 0024: vaste soorten en testmandjes (testmodus verplicht, niet-lege regels).
+  ai_gebruik_dag: { soort: "'kookhulp.vraag'" },
+  winkel_mandjes: {
+    provider: "'test'",
+    test: "true",
+    referentie: "'TEST-000001'",
+    regels: `'[{"product":"x"}]'`,
+  },
 };
 
 function waarde(type) {
