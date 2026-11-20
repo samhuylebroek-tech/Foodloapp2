@@ -189,9 +189,9 @@ Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
 | AI-credits (saldo, reserveren, terugstorten, cache, limieten) | Behouden | F1 | `credits.server.ts` |
 | Creditpakketten kopen | Geblokkeerd | F3 | G5 |
 | Gratis ervaring met limiet (100 gerechten) | Behouden | F1 | `limiet.ts` |
-| Premium, abonnementen | Gebouwd in testmodus (marathon): /premium, /abonnement (status, opzeggen in 2 tikken, testfacturen), entitlements (heeftRecht), getest met premium.spec + betalen.test en tests/rls/partners-premium.mjs; actief in productie na migratie 0012, echt verkopen pas na G5 | F3 | B5 (#29), G5, juridisch advies |
-| Betaalprovider achter een adapter (geen vaste keuze) | Gebouwd (marathon): `src/lib/betalen/` (BetaalProvider, TestBetaalProvider, webhook-verifier, statusmachine idempotent op event-id); serverweg alleen als BETAALPROVIDER_GEKOPPELD=false en modus test | F3 | Stripe Connect of Mollie te evalueren |
-| Facturatie, btw/OSS, DAC7, herroeping | Latere fase | F3 | Boekhouder/jurist |
+| Premium, abonnementen | Gebouwd in testmodus (marathon + fase 6): /premium (maand/jaar, btw, extra's van de server: seizoenskalender + weekmenu-sjablonen, anders "Dit hoort bij Premium"), /abonnement (volgende testfactuur, maand ↔ jaar pro rata, opzeggen tot einde periode, terugbetaling binnen 14 dagen, genadeperiode bij mislukte betaling, facturen met btw + tekstdownload), één rechtenlijst `rechten.ts` met `vereisRecht` op de server; getest met premium.spec, fase6-premium.spec (telefoon/desktop), fase6.test, betalen.test, tests/rls/partners-premium.mjs + premium-beheer.mjs; actief in productie na migratie 0012 + 0023, echt verkopen pas na G5 | F3 | B5 (#29), G5, juridisch advies |
+| Betaalprovider achter een adapter (geen vaste keuze) | Gebouwd (marathon + fase 6): `src/lib/betalen/` (BetaalProvider met checkout, webhook, terugbetaal, startUitbetaling; alleen TestBetaalProvider via `kiesBetaalProvider`, statusmachine idempotent op event-id); serverweg alleen als BETAALPROVIDER_GEKOPPELD=false en modus test; eisen/criteria in docs/foodlo/BETAALPROVIDER-EISEN.md (geen keuze) | F3 | Stripe Connect of Mollie te evalueren |
+| Facturatie, btw/OSS, DAC7, herroeping | Testmodus (fase 6): testfacturen en -creditnota's met btw apart (BE 21 % als voorbeeld, centraal in prijzen.ts), herroeping 14 dagen; echte facturatie/OSS/DAC7 latere fase; getest met fase6.test en premium-beheer.mjs, actief na migratie 0023 | F3 | Boekhouder/jurist |
 | Zakelijke abonnementen, commerciële samenwerkingen | Latere fase | F3 | — |
 
 ## F. Intelligente assistent
