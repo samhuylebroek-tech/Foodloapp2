@@ -197,7 +197,7 @@ export function bccTotalen(rijen: readonly TotaalRij[], vandaag: string) {
 
 /** "€ 0,12" of, onder een cent, "minder dan € 0,01". */
 export function kleineKost(cent: number): string {
-  if (cent <= 0) return "€ 0,00";
-  if (cent < 1) return "minder dan € 0,01";
-  return `€ ${(cent / 100).toLocaleString("nl-BE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (cent <= 0) return "€\u00a00,00";
+  if (cent < 1) return "minder dan €\u00a00,01";
+  return `€\u00a0${(cent / 100).toLocaleString("nl-BE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }

@@ -29,6 +29,7 @@ import { datumTekst, labelVoor, maandagVan } from "@/components/planner/gedeeld"
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useWeerFactor } from "@/hooks/useWeer";
 import { useKandidaten, usePlannerGegevens } from "@/hooks/usePlannerGegevens";
 import { useMaaltijdEters } from "@/hooks/useMaaltijdEters";
 import { usePlanProfiel } from "@/hooks/usePlanProfiel";
@@ -180,6 +181,8 @@ function Samenstellen({ week }: { week: string | undefined }) {
   const huis = useVoorstelEters({});
   const mee = useMaaltijdEters([]);
   const vandaag = lokaleDatum();
+  // Fase 7: weer (alleen de eerstvolgende dagen) en seizoen als zachte factor; uit te zetten.
+  const weerF = useWeerFactor();
   const ditMaandag = datumTekst(maandagVan(new Date()));
   const [start, setStart] = useState<string>(() =>
     week && week >= ditMaandag ? week : ditMaandag,
@@ -263,11 +266,22 @@ function Samenstellen({ week }: { week: string | undefined }) {
               maxMinuten: moment === hoofd ? pd?.maxMinuten || weekmenu.maxMinuten || 0 : 0,
               chips: i.chips,
               soort: moment === hoofd ? (pd?.soort ?? null) : null,
+              weer: weerF.weer && datum <= plusDagen(vandaag, 2) ? weerF.weer : null,
             };
           }),
         ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [dagen, inst, gekozenMomenten, huis.leden, weekmenu, hoofd, bestaand],
+    [
+      dagen,
+      inst,
+      gekozenMomenten,
+      huis.leden,
+      weekmenu,
+      hoofd,
+      bestaand,
+      weerF.weer?.temp,
+      weerF.weer?.regen,
+    ],
   );
 
   // Wat al vastligt in deze periode en niet vervangen wordt: niet opnieuw voorstellen.
@@ -640,6 +654,26 @@ function Samenstellen({ week }: { week: string | undefined }) {
             Mijn keuken aanpassen
           </Link>
         </p>
+        <div
+          className="paneel flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3"
+          data-testid="weer-seizoen"
+        >
+          <p className="min-w-0 flex-1 text-[0.95rem]">
+            {weerF.tekst}
+            {weerF.test ? " (testgegevens, geen echte weerdienst)" : ""}
+            {weerF.stand === "weer" ? " Geldt voor vandaag tot overmorgen." : ""}
+          </p>
+          {weerF.heeftBron ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="underline underline-offset-4"
+              onClick={() => weerF.zet(weerF.stand === "uit")}
+            >
+              {weerF.stand === "uit" ? "Weer meetellen" : "Weer niet meetellen"}
+            </Button>
+          ) : null}
+        </div>
       </section>
 
       <section aria-labelledby="dagen-titel" className="space-y-3">

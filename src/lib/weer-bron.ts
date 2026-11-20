@@ -25,6 +25,8 @@ export interface WeerAdapter {
 }
 
 export type TestWeerSoort = "warm" | "koud" | "nat" | "zacht";
+/** Fase 7: "geen" doet alsof de weerbron niets geeft (geen netwerk), voor demo en tests. */
+export type TestWeerKeuze = TestWeerSoort | "geen";
 export const TEST_WEER_SLEUTEL = "foodlo:testweer";
 
 /** Vaste demodata per maand: een gewone Belgische dag (verzonnen, geen meting). */
@@ -59,16 +61,18 @@ export function testWeerVoor(nu: Date, soort?: TestWeerSoort | null): WeerMeting
 export class TestWeerAdapter implements WeerAdapter {
   readonly naam = "Testweer";
   readonly modus = "test" as const;
-  constructor(private readonly soort: () => TestWeerSoort | null = leesTestWeerSoort) {}
-  async haal(nu: Date) {
-    return testWeerVoor(nu, this.soort());
+  constructor(private readonly soort: () => TestWeerKeuze | null = leesTestWeerSoort) {}
+  async haal(nu: Date): Promise<WeerMeting | null> {
+    const s = this.soort();
+    if (s === "geen") return null;
+    return testWeerVoor(nu, s);
   }
 }
 
-export function leesTestWeerSoort(): TestWeerSoort | null {
+export function leesTestWeerSoort(): TestWeerKeuze | null {
   try {
     const w = window.localStorage.getItem(TEST_WEER_SLEUTEL);
-    return w === "warm" || w === "koud" || w === "nat" || w === "zacht" ? w : null;
+    return w === "warm" || w === "koud" || w === "nat" || w === "zacht" || w === "geen" ? w : null;
   } catch {
     return null;
   }

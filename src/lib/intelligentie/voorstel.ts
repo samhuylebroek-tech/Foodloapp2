@@ -98,7 +98,23 @@ const WARM = [
   "gratin",
   "lasagne",
 ];
-const FRIS = ["salade", "koud", "gazpacho", "poke", "carpaccio", "tartaar", "wrap"];
+// Fase 7: "warm → lichte gerechten"; drempel 22 °C, gelijk aan het weersignaal op Vandaag.
+const FRIS = [
+  "salade",
+  "slaatje",
+  "koud",
+  "gazpacho",
+  "poke",
+  "carpaccio",
+  "tartaar",
+  "wrap",
+  "licht",
+  "lichte",
+  "zomers",
+  "tabouleh",
+];
+/** Vanaf deze temperatuur krijgen lichte gerechten voorrang (zelfde grens als weerSignaal). */
+export const WARME_DAG = 22;
 const OVEN = ["oven", "stoof", "stoverij", "ovenschotel", "gratin", "lasagne"];
 
 function soortVanKandidaat(k: Kandidaat) {
@@ -197,13 +213,13 @@ export function beoordeel(k: Kandidaat, i: Invoer): Aanbeveling {
   if (c.weer) {
     if (c.weer.temp <= 8 && heeftWoord(tekst, WARM))
       plus("weer", 4, `Warm eten voor een koude dag (${Math.round(c.weer.temp)} °C)`);
-    if (c.weer.temp >= 25) {
+    if (c.weer.temp >= WARME_DAG) {
       if (heeftWoord(tekst, FRIS))
         plus("weer", 4, `Fris voor een warme dag (${Math.round(c.weer.temp)} °C)`);
       else if (heeftWoord(tekst, OVEN)) score -= 4;
     }
     // Werkstroom F: regen zonder kou: zacht naar een comfortgerecht.
-    if (c.weer.regen && c.weer.temp > 8 && c.weer.temp < 25 && heeftWoord(tekst, WARM))
+    if (c.weer.regen && c.weer.temp > 8 && c.weer.temp < WARME_DAG && heeftWoord(tekst, WARM))
       plus("weer", 3, "Iets warms voor een regendag");
   }
 

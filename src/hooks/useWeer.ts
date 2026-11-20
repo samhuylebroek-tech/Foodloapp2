@@ -5,6 +5,9 @@
 import { useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useSuggesties } from "@/hooks/useSuggesties";
+import { isAan } from "@/lib/suggesties";
+import { weerFactor, type WeerFactor } from "@/lib/weer-seizoen";
 import {
   kiesWeerAdapter,
   weerAan,
@@ -26,15 +29,28 @@ function abonneer(melding: () => void) {
   };
 }
 
+/**
+ * Fase 7: één instelling. Weer staat aan als de weerschakelaar (toestel) én de suggestiesoort
+ * "weer" aan staan; wie het ergens uitzet, zet het overal uit (weerkaart, voorstellen, planner).
+ */
 export function useWeerAan(): [boolean, (aan: boolean) => void] {
   const { user } = useAuth();
   const id = user?.id ?? null;
-  const aan = useSyncExternalStore(
+  const sug = useSuggesties();
+  const toestel = useSyncExternalStore(
     abonneer,
     () => weerAan(id),
     () => false,
   );
-  return [aan, (w: boolean) => id && zetWeer(id, w)];
+  const aan = toestel && isAan(sug.inst, "weer");
+  return [
+    aan,
+    (w: boolean) => {
+      if (!id) return;
+      zetWeer(id, w);
+      if (isAan(sug.inst, "weer") !== w) void sug.zet("weer", w).catch(() => undefined);
+    },
+  ];
 }
 
 export function useWeer(): {
@@ -54,4 +70,12 @@ export function useWeer(): {
   });
   const weer = adapter && aan ? (data ?? null) : null;
   return { heeftBron: !!adapter, aan, weer, signaal: weerSignaal(weer) };
+}
+
+/** Fase 7: weer of seizoen voor de weekplanner, met één zin uitleg. */
+export function useWeerFactor(): WeerFactor & { zet: (aan: boolean) => void; heeftBron: boolean } {
+  const [aan, zet] = useWeerAan();
+  const { heeftBron, weer } = useWeer();
+  const f = weerFactor({ aan, heeftBron, meting: weer, maand: new Date().getMonth() });
+  return { ...f, zet, heeftBron };
 }

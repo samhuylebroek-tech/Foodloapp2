@@ -11,6 +11,8 @@ import { PageSkeleton } from "@/components/PageSkeleton";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useSuggesties } from "@/hooks/useSuggesties";
+import { useAuth } from "@/hooks/useAuth";
+import { zetWeer } from "@/lib/weer-bron";
 import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
 import { isAan, SUGGESTIE_SOORTEN, type SuggestieSoort } from "@/lib/suggesties";
 import { useMeldingInstellingen } from "@/hooks/useMeldingInstellingen";
@@ -31,6 +33,7 @@ export const Route = createFileRoute("/instellingen_/suggesties")({
 });
 
 function SuggestiesPagina() {
+  const { user } = useAuth();
   const sug = useSuggesties();
   const [slim] = useSlimmeVoorstellen();
   const mld = useMeldingInstellingen();
@@ -47,6 +50,8 @@ function SuggestiesPagina() {
   async function zet(soort: SuggestieSoort, aan: boolean, label: string) {
     try {
       await sug.zet(soort, aan);
+      // Fase 7: één weerinstelling (ook de schakelaar bij Maaltijden en de weekplanner).
+      if (soort === "weer" && user) zetWeer(user.id, aan);
       toast.success(`${label}: ${aan ? "aan" : "uit"}`);
     } catch {
       toast.error("Bewaren lukte niet. Er is niets veranderd.");
