@@ -37,6 +37,8 @@ export type Publicatie = {
   moderatie?: Moderatie;
   /** Uitleg van het Foodlo-team bij "afgewezen" (moderatie in /beheer/moderatie). */
   moderatie_reden?: string | null;
+  /** Fase 4: alleen voor abonnees van deze maker (testmodus; RLS-voorstel 0021). */
+  exclusief?: boolean | null;
 };
 
 /** Openbare inhoud gaat eerst langs moderatie (C1 vóór elke publieke inhoud). */

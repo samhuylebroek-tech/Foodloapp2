@@ -28,6 +28,7 @@ import { RecipePhoto } from "@/components/RecipePhoto";
 import { themas as maakThemas, type Thema } from "@/lib/themas";
 import { ThemaRij } from "@/components/ontdek/ThemaRij";
 import { MakersRij } from "@/components/makers/MakersRij";
+import { VolgendFeed } from "@/components/makers/VolgendFeed";
 import { GesponsordPlek } from "@/components/ontdek/GesponsordPlek";
 import { OntdekLeeg } from "@/components/ontdek/OntdekLeeg";
 import { soortLabel } from "@/lib/recept-keuzes";
@@ -292,6 +293,8 @@ function InspiratiePage() {
           <ThemaRij themas={themaLijst} onKies={setThema} />
         ) : null}
 
+        {/* Fase 4: nieuw van makers die je volgt (chronologisch), pas na de migratie. */}
+        {!thema && !actieveFilters && !filters.zoek ? <VolgendFeed /> : null}
         {/* Makers (module B): alleen zonder zoekopdracht of filter, en pas na de migratie. */}
         {!thema && !actieveFilters && !filters.zoek ? <MakersRij /> : null}
         {/* Partners (voorstel 0011): één vaste, gelabelde plek; nooit tussen de ideeën. */}

@@ -41,6 +41,12 @@ export const MELDING_SOORTEN = [
     label: "Tegelijk gewijzigd",
     uitleg: "Als iemand anders net hetzelfde veranderde als jij, en wat er toen gekozen werd.",
   },
+  {
+    id: "maker",
+    label: "Nieuw van makers die je volgt",
+    uitleg:
+      "Als een maker die je volgt een nieuw recept deelt (op dit toestel bijgehouden; de maker ziet niet wie volgt).",
+  },
 ] as const;
 
 export type MeldingSoort = (typeof MELDING_SOORTEN)[number]["id"];
@@ -99,7 +105,7 @@ export type AppMelding = {
   gelezen: boolean;
   /** ISO-tijdstip. */
   op: string;
-  /** Lokaal afgeleid (restje) of uit de databank (gezin). */
+  /** Lokaal afgeleid (restje, maker) of uit de databank (gezin). */
   bron: "gezin" | "toestel";
 };
 

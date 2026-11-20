@@ -14,6 +14,7 @@ import {
   type Publicatie,
   type Zichtbaarheid,
 } from "@/lib/makers";
+import { bouwFeed, type FeedItem, type Volg } from "@/lib/makers-feed";
 
 export type ReceptKaart = {
   id: string;
@@ -103,12 +104,11 @@ export async function haalGevolgd(userId: string): Promise<Set<string>> {
 }
 
 export async function volg(userId: string, creatorId: string) {
-  const { error } = await db
-    .from("follows")
-    .upsert(
-      { follower_id: userId, creator_id: creatorId },
-      { onConflict: "follower_id,creator_id" },
-    );
+  const { error } = await db.from("follows").upsert(
+    // Fase 4: het moment van volgen bepaalt wat "nieuw" is in de meldingen.
+    { follower_id: userId, creator_id: creatorId, created_at: new Date().toISOString() },
+    { onConflict: "follower_id,creator_id" },
+  );
   gooi(error);
 }
 
@@ -119,6 +119,60 @@ export async function ontvolg(userId: string, creatorId: string) {
     .eq("follower_id", userId)
     .eq("creator_id", creatorId);
   gooi(error);
+}
+
+/** Fase 4: wie je volgt, met het moment waarop je begon (voor "nieuw sinds je volgt"). */
+export async function haalVolgt(userId: string): Promise<Volg[]> {
+  const { data, error } = await db
+    .from("follows")
+    .select("creator_id, created_at")
+    .eq("follower_id", userId)
+    .limit(500);
+  gooi(error);
+  return (data ?? []) as Volg[];
+}
+
+/**
+ * Fase 4 — feed "Volgend": openbare recepten en collecties van gevolgde makers, nieuwste eerst.
+ * Leeg als je niemand volgt. Exclusieve recepten verschijnen als aankondiging (titel en foto);
+ * de inhoud blijft achter het abonnement (RLS-voorstel 0021).
+ */
+export async function haalVolgendFeed(
+  userId: string,
+): Promise<{ volgt: Volg[]; feed: FeedItem[] }> {
+  const volgt = await haalVolgt(userId);
+  if (!volgt.length) return { volgt, feed: [] };
+  const ids = volgt.map((v) => v.creator_id);
+  const { data: makers, error: e1 } = await db.from("creators").select("*").in("id", ids);
+  gooi(e1);
+  const { data: pubs, error: e2 } = await publiekFilter(
+    db.from("recipe_publicaties").select("*").in("creator_id", ids),
+  )
+    .order("gepubliceerd_op", { ascending: false })
+    .limit(60);
+  gooi(e2);
+  const publicaties = (pubs ?? []) as Publicatie[];
+  const lijst = (makers ?? []) as Maker[];
+  const [recepten, collecties] = await Promise.all([
+    haalRecepten(publicaties.map((p) => p.recipe_id)),
+    db
+      .from("collections")
+      .select("*, collection_recipes(recipe_id)")
+      .in(
+        "user_id",
+        lijst.map((m) => m.user_id),
+      )
+      .eq("openbaar", true)
+      .limit(60),
+  ]);
+  const feed = bouwFeed({
+    gevolgd: new Set(ids),
+    makers: lijst,
+    publicaties,
+    recepten,
+    collecties: collecties.error ? [] : ((collecties.data ?? []) as never[]),
+  });
+  return { volgt, feed };
 }
 
 // ---------- publicaties ----------

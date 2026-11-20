@@ -96,6 +96,7 @@ export function VolgKnop({
       if (naar) await volg(user.id, maker.id);
       else await ontvolg(user.id, maker.id);
       await qc.invalidateQueries({ queryKey: ["gevolgd"] });
+      await qc.invalidateQueries({ queryKey: ["volgend-feed"] });
       if (!stil)
         toast.success(naar ? `Je volgt ${maker.naam}` : `Je volgt ${maker.naam} niet meer`, {
           // Eén melding per maker: snel na elkaar tikken stapelt geen meldingen op.

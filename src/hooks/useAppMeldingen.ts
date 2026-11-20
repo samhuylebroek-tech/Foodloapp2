@@ -12,6 +12,8 @@ import { useMeldingInstellingen } from "@/hooks/useMeldingInstellingen";
 import { useRestjes } from "@/hooks/useRestjes";
 import { bijnaOpRestjes } from "@/lib/intelligentie/restjes";
 import { db, useModuleBeschikbaar } from "@/lib/module-beschikbaar";
+import { haalVolgendFeed } from "@/lib/makers-db";
+import { nieuwVanGevolgden } from "@/lib/makers-feed";
 import { MELDINGEN_TABEL } from "@/lib/samenwerking/db";
 import {
   aantalOngelezen,
@@ -93,8 +95,31 @@ export function useAppMeldingen() {
     };
   }, [user, beschikbaar, qc]);
 
+  // Fase 4: nieuw recept van een maker die je volgt — afgeleid op dit toestel uit de feed
+  // "Volgend" (zelfde query als op Ontdek). De maker krijgt hier niets van te zien.
+  const volgen = useModuleBeschikbaar("follows");
+  const makerAan = !inst.uit.includes("maker");
+  const { data: volgend } = useQuery({
+    queryKey: ["volgend-feed", user?.id],
+    enabled: !!user && volgen.beschikbaar && makerAan,
+    staleTime: 60_000,
+    refetchInterval: 5 * 60_000,
+    queryFn: () => haalVolgendFeed(user!.id),
+  });
+
   const vandaag = lokaleDatum();
   const alle = useMemo(() => {
+    const vanMakers: AppMelding[] = volgend
+      ? nieuwVanGevolgden(volgend.feed, volgend.volgt).map((m) => ({
+          id: m.id,
+          soort: "maker",
+          tekst: m.tekst,
+          link: veiligeLink(m.link),
+          gelezen: gelezen.includes(m.id),
+          op: m.op,
+          bron: "toestel",
+        }))
+      : [];
     const vanRestjes: AppMelding[] = bijnaOpRestjes(restjes).map((r) => {
       const id = `restje:${r.id}:${r.laatsteDag ? "laatst" : "bijna"}`;
       return {
@@ -107,16 +132,17 @@ export function useAppMeldingen() {
         bron: "toestel",
       };
     });
-    return [...gezin, ...vanRestjes];
-  }, [gezin, restjes, gelezen, vandaag]);
+    return [...gezin, ...vanRestjes, ...vanMakers];
+  }, [gezin, restjes, gelezen, vandaag, volgend]);
 
   const lijst = zichtbareMeldingen(alle, inst);
   const ongelezen = aantalOngelezen(alle, inst);
 
   async function markeer(ids: string[]) {
     if (!user || !ids.length) return;
-    const lokaal = ids.filter((id) => id.startsWith("restje:"));
-    const opAccount = ids.filter((id) => !id.startsWith("restje:"));
+    const opToestel = (id: string) => id.startsWith("restje:") || id.startsWith("maker:");
+    const lokaal = ids.filter(opToestel);
+    const opAccount = ids.filter((id) => !opToestel(id));
     if (lokaal.length) {
       const nieuw = [...new Set([...gelezen, ...lokaal])];
       setGelezen(nieuw);

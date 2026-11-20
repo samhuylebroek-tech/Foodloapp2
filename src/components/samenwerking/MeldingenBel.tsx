@@ -10,6 +10,7 @@ import {
   Bell,
   CalendarDays,
   CheckCheck,
+  ChefHat,
   CookingPot,
   PackageCheck,
   Settings2,
@@ -35,6 +36,7 @@ const ICOON: Record<MeldingSoort, LucideIcon> = {
   "winkelen-klaar": PackageCheck,
   restje: CookingPot,
   conflict: Users,
+  maker: ChefHat,
 };
 
 export function MeldingenBel() {
