@@ -59,7 +59,7 @@ function Logboek() {
                     <td>{r.naam ?? r.actor_naam}</td>
                     <td className="text-slate-400">{rolNaam(r.actor_role)}</td>
                     <td>
-                      {auditOmschrijving(String(r.action))}
+                      <span className="block">{auditOmschrijving(String(r.action))}</span>
                       <span className="block text-xs text-slate-500">{r.action}</span>
                     </td>
                     <td className="text-slate-400">
