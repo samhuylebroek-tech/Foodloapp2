@@ -141,9 +141,17 @@ function GeenPartner({ userId }: { userId: string }) {
           <div>
             <p className="font-semibold">Je aanvraag voor {aanvraag.bedrijfsnaam} is ontvangen.</p>
             <p className="text-muted-foreground">
-              Status: {aanvraag.status === "nieuw" ? "wacht op het Foodlo-team" : aanvraag.status}.
-              Je hoeft niets meer te doen.
+              {aanvraag.status === "geweigerd"
+                ? "Het Foodlo-team heeft je aanvraag niet goedgekeurd."
+                : aanvraag.status === "goedgekeurd"
+                  ? "Je aanvraag is goedgekeurd. Herlaad de pagina om je partneromgeving te openen."
+                  : "Status: wacht op het Foodlo-team. Je hoeft niets meer te doen."}
             </p>
+            {aanvraag.status === "geweigerd" && aanvraag.beoordeling_reden ? (
+              <p className="mt-2 rounded-xl bg-muted p-3 text-base">
+                Reden: {aanvraag.beoordeling_reden}
+              </p>
+            ) : null}
           </div>
         </div>
       ) : (

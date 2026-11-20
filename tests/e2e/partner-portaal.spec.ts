@@ -65,7 +65,8 @@ test("zonder partnerrol: uitleg en aanvraag versturen", async ({ page, extern })
   await form.getByLabel(/Website/).fill("bakkerij.example");
   await form.getByRole("button", { name: "Aanvraag versturen" }).click();
   await expect(page.getByText(/Je aanvraag voor Bakkerij De Test is ontvangen/)).toBeVisible();
-  const aanvragen = (await nepDb()).partner_aanvragen ?? [];
+  // De demo bevat ook een verzonnen open aanvraag van een ander account (fase 5).
+  const aanvragen = ((await nepDb()).partner_aanvragen ?? []).filter((a) => a["user_id"] === IK);
   expect(aanvragen.map((a) => [a["user_id"], a["bedrijfsnaam"], a["soort"], a["status"]])).toEqual([
     [IK, "Bakkerij De Test", "retail", "nieuw"],
   ]);

@@ -42,6 +42,8 @@ export type Campagne = {
   einde: string | null;
   doel: string | null;
   beoordeling_reden?: string | null;
+  /** Voorstel 0022: testbudget in eurocent (niets wordt aangerekend). */
+  testbudget_cent?: number | null;
 };
 
 export type GesponsordItem = {

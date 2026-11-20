@@ -23,6 +23,7 @@ import {
 import { useAdmin } from "@/hooks/useAdmin";
 import { TweedeStap } from "@/components/TweedeStap";
 import type { Rechten } from "@/lib/admin.functions";
+import { rolNaam } from "@/lib/bcc";
 
 /**
  * Demo en tests draaien tegen een nep-Supabase met een verzonnen project-id. Dan toont het
@@ -80,6 +81,16 @@ const SECTIES: Sectie[] = [
     ],
   },
   {
+    label: "Partners & omzet",
+    icoon: CreditCard,
+    subs: [
+      { pad: "/beheer/partners", label: "Partneraanvragen", recht: "partners.view" },
+      { pad: "/beheer/campagnes", label: "Campagnes", recht: "partners.view" },
+      { pad: "/beheer/omzet", label: "Omzet (testmodus)", recht: "finance.view" },
+      { pad: "/beheer/uitbetalingen", label: "Uitbetalingen (testmodus)", recht: "finance.view" },
+    ],
+  },
+  {
     label: "Communicatie",
     icoon: Megaphone,
     subs: [
@@ -100,7 +111,7 @@ const SECTIES: Sectie[] = [
       { pad: "/beheer/beveiliging", label: "Beveiliging", recht: "dashboard.view" },
       { pad: "/beheer/logboek", label: "Auditlogboek", recht: "audit.view" },
       { pad: "/beheer/instellingen", label: "Instellingen", recht: "settings.manage" },
-      { pad: "/beheer/team", label: "Beheerders", recht: "admins.manage" },
+      { pad: "/beheer/team", label: "Team en rollen", recht: "admins.manage" },
     ],
   },
 ];
@@ -220,7 +231,7 @@ export function AdminShell({
             })}
           </nav>
           <div className="mt-4 rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-slate-400">
-            <p className="font-medium text-slate-200">{profiel?.role.replace("_", " ")}</p>
+            <p className="font-medium text-slate-200">{rolNaam(profiel?.role)}</p>
             <p className="mt-1">Elke actie wordt gelogd.</p>
             <Link
               to="/"

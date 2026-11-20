@@ -768,6 +768,7 @@ export function partnerSeed(DEMO_USER_ID) {
       einde: dag(20),
       doel: "Seizoenspompoen bekender maken.",
       beoordeling_reden: null,
+      testbudget_cent: 25000,
     },
     {
       id: CAMPAGNE_IDS.kruiden,
@@ -845,7 +846,19 @@ export function partnerSeed(DEMO_USER_ID) {
   return {
     partners,
     partner_leden,
-    partner_aanvragen: [],
+    // Fase 5: één open aanvraag (verzonnen) voor het Business Control Center.
+    partner_aanvragen: [
+      {
+        id: "5a0a0a0a-0000-4000-8000-000000000001",
+        user_id: PARTNER_USERS.proef,
+        bedrijfsnaam: "Bakkerij De Korenaar",
+        soort: "producent",
+        website: "https://korenaar.example/",
+        bericht: "Wij bakken desembrood en willen onze bloem aan recepten koppelen (verzonnen).",
+        status: "nieuw",
+        created_at: `${dag(-2)}T09:30:00Z`,
+      },
+    ],
     campagnes,
     gesponsorde_items,
     partner_producten,

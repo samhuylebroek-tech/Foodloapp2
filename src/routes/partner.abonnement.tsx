@@ -10,6 +10,7 @@ import { STATUS_UITLEG } from "@/lib/betalen/statusmachine";
 import { euro, PLANNEN, type PlanId } from "@/lib/betalen/types";
 import { useAbonnement } from "@/lib/betalen/useAbonnement";
 import { korteDatum } from "@/lib/partners";
+import { btwUitInclusief } from "@/lib/bcc";
 
 export const Route = createFileRoute("/partner/abonnement")({ component: PartnerAbonnement });
 
@@ -51,7 +52,10 @@ function PartnerAbonnement() {
 
   return (
     <>
-      <PartnerKop titel="Abonnement" uitleg="Zakelijke plannen voor je organisatie." />
+      <PartnerKop
+        titel="Abonnement en facturen"
+        uitleg="Zakelijke plannen voor je organisatie en je testfacturen (ook van campagnes)."
+      />
       <TestmodusBand>
         Testplannen: prijzen zijn een voorstel, er wordt niets aangerekend. Facturen hieronder zijn
         testfacturen.
@@ -114,7 +118,11 @@ function PartnerAbonnement() {
             <h2 id="pf-titel" className="text-sectietitel">
               Testfacturen
             </h2>
-            {!data?.facturen.length ? (
+            {!magBeheren ? (
+              <p className="paneel p-4 text-base text-muted-foreground">
+                Facturen zijn alleen zichtbaar voor de eigenaar en financiën van je organisatie.
+              </p>
+            ) : !data?.facturen.length ? (
               <p className="paneel p-4 text-base text-muted-foreground">Nog geen facturen.</p>
             ) : (
               <ul className="space-y-2" aria-label="Testfacturen">
@@ -126,7 +134,18 @@ function PartnerAbonnement() {
                         · {f.nummer} · {korteDatum(f.datum)}
                       </span>
                     </span>
-                    <strong>{euro(f.bedrag_cent)}</strong>
+                    <span className="text-right">
+                      <strong>{euro(f.bedrag_cent)}</strong>
+                      <span className="block text-[0.95rem] text-muted-foreground">
+                        {f.status === "open"
+                          ? "testfactuur, niet te betalen"
+                          : f.status === "mislukt"
+                            ? "testbetaling mislukt"
+                            : "testbetaling gelukt"}
+                        {" · waarvan btw "}
+                        {euro(btwUitInclusief(f.bedrag_cent))}
+                      </span>
+                    </span>
                   </li>
                 ))}
               </ul>

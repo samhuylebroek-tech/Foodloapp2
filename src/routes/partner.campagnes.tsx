@@ -5,19 +5,41 @@ import { toast } from "sonner";
 import { AlleenLezen, PartnerKop, usePartner } from "@/components/partner/PartnerShell";
 import { Veld } from "@/components/partner/Velden";
 import { Button } from "@/components/ui/button";
-import { bewaarCampagne, dienCampagneIn, haalCampagnes, haalItems } from "@/lib/partners-db";
+import {
+  bewaarCampagne,
+  dienCampagneIn,
+  haalCampagnes,
+  haalDagtotalen,
+  haalItems,
+} from "@/lib/partners-db";
+import { klikratio, leesTestbudget, procent } from "@/lib/bcc";
+import { euro } from "@/lib/betalen/types";
 import {
   campagneBewerkbaar,
   indienFout,
   korteDatum,
+  rapportTotalen,
   STATUS_LABEL,
   type Campagne,
 } from "@/lib/partners";
 
 export const Route = createFileRoute("/partner/campagnes")({ component: Campagnes });
 
-type Concept = { id?: string; naam: string; doel: string; start: string; einde: string };
-const LEEG: Concept = { naam: "", doel: "", start: "", einde: "" };
+type Concept = {
+  id?: string;
+  naam: string;
+  doel: string;
+  start: string;
+  einde: string;
+  budget: string;
+  /** Had de campagne al een testbudget-kolom (voorstel 0022)? */
+  metBudget?: boolean;
+};
+const LEEG: Concept = { naam: "", doel: "", start: "", einde: "", budget: "" };
+
+function budgetTekst(cent: number) {
+  return euro(cent).replace(/\s?€/, "").trim();
+}
 
 function Campagnes() {
   const { partner, mag } = usePartner();
@@ -38,6 +60,14 @@ function Campagnes() {
     queryFn: () => haalItems(ids),
   });
   const magBewerken = mag("campagnes.bewerken");
+  const magCijfers = mag("rapportage.zien");
+  // Alleen de eigen campagnes: de ids komen uit de lijst van deze partner (en RLS 0011).
+  const { data: dagen = [] } = useQuery({
+    queryKey: ["partner", partner.id, "dagtotalen", ids.join(",")],
+    enabled: magCijfers && data.length > 0,
+    queryFn: () => haalDagtotalen(ids),
+  });
+  const cijfers = new Map(rapportTotalen(dagen).perCampagne.map((p) => [p.campagne_id, p]));
   const [concept, setConcept] = useState<Concept | null>(null);
   const ververs = () => qc.invalidateQueries({ queryKey: ["partner", partner.id] });
 
@@ -50,6 +80,10 @@ function Campagnes() {
         doel: c.doel,
         start: c.start,
         einde: c.einde,
+        testbudget_cent:
+          c.metBudget || (leesTestbudget(c.budget) ?? 0) > 0
+            ? (leesTestbudget(c.budget) ?? 0)
+            : undefined,
       }),
     onSuccess: () => {
       toast.success("Campagne bewaard als concept.");
@@ -72,6 +106,10 @@ function Campagnes() {
     concept && concept.start && concept.einde && concept.einde < concept.start
       ? "De einddatum ligt vóór de begindatum."
       : null;
+  const budgetFout =
+    concept && leesTestbudget(concept.budget) === null
+      ? "Vul een bedrag in euro in, bv. 250 of 250,50 (max. € 100.000)."
+      : null;
 
   return (
     <>
@@ -91,7 +129,7 @@ function Campagnes() {
           className="paneel space-y-4 p-4"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!naamFout && !datumFout) bewaar.mutate(concept);
+            if (!naamFout && !datumFout && !budgetFout) bewaar.mutate(concept);
           }}
         >
           <h2 className="text-sectietitel">
@@ -125,11 +163,18 @@ function Campagnes() {
               fout={datumFout}
             />
           </div>
+          <Veld
+            label="Testbudget in euro (niet verplicht)"
+            uitleg="Testmodus: er wordt niets aangerekend. Na goedkeuring zie je een testfactuur."
+            waarde={concept.budget}
+            onWijzig={(v) => setConcept({ ...concept, budget: v })}
+            fout={budgetFout}
+          />
           <div className="flex flex-wrap gap-2">
             <Button
               type="submit"
               className="h-14 px-6 text-base"
-              disabled={!!naamFout || !!datumFout || bewaar.isPending}
+              disabled={!!naamFout || !!datumFout || !!budgetFout || bewaar.isPending}
             >
               Campagne bewaren
             </Button>
@@ -171,6 +216,25 @@ function Campagnes() {
                     {aantal === 1 ? "gesponsord item" : "gesponsorde items"}
                   </p>
                   {c.doel ? <p className="text-base">Doel: {c.doel}</p> : null}
+                  {c.testbudget_cent ? (
+                    <p className="text-base">
+                      Testbudget: {euro(c.testbudget_cent)}{" "}
+                      <span className="text-muted-foreground">(testmodus, niets aangerekend)</span>
+                    </p>
+                  ) : null}
+                  {magCijfers && c.status !== "concept" && c.status !== "ingediend" ? (
+                    <p className="text-base" aria-label={`Cijfers van ${c.naam}`}>
+                      {(cijfers.get(c.id)?.vertoningen ?? 0).toLocaleString("nl-BE")} keer getoond ·{" "}
+                      {(cijfers.get(c.id)?.klikken ?? 0).toLocaleString("nl-BE")} keer bekeken ·
+                      klikratio{" "}
+                      {procent(
+                        klikratio(
+                          cijfers.get(c.id)?.vertoningen ?? 0,
+                          cijfers.get(c.id)?.klikken ?? 0,
+                        ),
+                      )}
+                    </p>
+                  ) : null}
                   {c.status === "concept" && c.beoordeling_reden ? (
                     <p role="note" className="rounded-xl bg-muted p-3 text-base">
                       Teruggestuurd door het Foodlo-team: {c.beoordeling_reden}
@@ -188,6 +252,8 @@ function Campagnes() {
                             doel: c.doel ?? "",
                             start: c.start ?? "",
                             einde: c.einde ?? "",
+                            budget: c.testbudget_cent ? budgetTekst(c.testbudget_cent) : "",
+                            metBudget: c.testbudget_cent != null,
                           })
                         }
                       >

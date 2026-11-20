@@ -14,16 +14,15 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { RechtenPerScherm, TeamUitnodigingen } from "@/components/beheer/TeamUitnodigingen";
+import { ROL_NAAM, rolNaam } from "@/lib/bcc";
 
 export const Route = createFileRoute("/beheer/team")({ component: Team });
 
-const ROLLEN = [
-  { id: "super_admin", label: "Super admin", uitleg: "Alles, ook beheerders en instellingen" },
-  { id: "admin", label: "Admin", uitleg: "Gebruikers, recepten, inhoud, support" },
-  { id: "support", label: "Support", uitleg: "Support en gebruikersinzage" },
-  { id: "content_manager", label: "Content manager", uitleg: "Recepten, labels en inhoud" },
-  { id: "analyst", label: "Analist", uitleg: "Alleen cijfers bekijken" },
-];
+// Fase 5: rollen in gewone taal (eigenaar, beheerder, moderator, analist, support).
+const ROLLEN = (["super_admin", "admin", "content_manager", "analyst", "support"] as const).map(
+  (id) => ({ id, label: ROL_NAAM[id].naam, uitleg: ROL_NAAM[id].uitleg }),
+);
 
 function Team() {
   const { mag } = useAdmin();
@@ -55,14 +54,14 @@ function Team() {
 
   if (!mag("admins.manage")) {
     return (
-      <AdminShell titel="Beheerders">
+      <AdminShell titel="Team en rollen">
         <p className="text-slate-400">Je hebt geen toegang tot dit onderdeel.</p>
       </AdminShell>
     );
   }
 
   return (
-    <AdminShell titel="Beheerders" omschrijving="Wie mag wat in het Control Center">
+    <AdminShell titel="Team en rollen" omschrijving="Wie mag wat in het Control Center">
       <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
         <Kaart>
           <p className="mb-3 text-sm font-medium">Huidig team</p>
@@ -72,7 +71,7 @@ function Team() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="text-sm font-medium">{b.naam || "(geen naam)"}</p>
-                    <p className="text-xs text-slate-400">{b.role.replace("_", " ")}</p>
+                    <p className="text-xs text-slate-400">{rolNaam(b.role)}</p>
                   </div>
                   <Button
                     size="sm"
@@ -161,6 +160,10 @@ function Team() {
             ))}
           </div>
         </Kaart>
+      </div>
+      <div className="mt-4 grid gap-4 xl:grid-cols-2">
+        <TeamUitnodigingen />
+        <RechtenPerScherm />
       </div>
     </AdminShell>
   );

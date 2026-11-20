@@ -63,7 +63,7 @@ export const PARTNER_MENU: Item[] = [
   { pad: "/partner/samenwerkingen", label: "Samenwerkingen", icoon: Handshake },
   { pad: "/partner/rapportage", label: "Rapportage", icoon: BarChart3 },
   { pad: "/partner/team", label: "Team", icoon: Users },
-  { pad: "/partner/abonnement", label: "Abonnement", icoon: CreditCard },
+  { pad: "/partner/abonnement", label: "Plan en facturen", icoon: CreditCard },
 ];
 
 function isActief(pad: string, item: Item) {

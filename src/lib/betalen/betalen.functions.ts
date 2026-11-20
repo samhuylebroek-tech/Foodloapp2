@@ -210,13 +210,28 @@ export const mijnAbonnement = createServerFn({ method: "POST" })
     const abonnement = await haalAbonnement(db, wie);
     const kol = wie.user_id ? "user_id" : "partner_id";
     const waarde = wie.user_id ?? wie.partner_id;
+    // BUG-181: facturen van een organisatie alleen voor eigenaar of financiën (zoals RLS 0012
+    // facturen_lezen → partner_mag 'abonnement.beheren'); een analist ziet het plan, geen facturen.
+    let magFacturen = true;
+    if (data.partnerId) {
+      const { data: lid } = await db
+        .from("partner_leden")
+        .select("rol")
+        .eq("partner_id", data.partnerId)
+        .eq("user_id", ctx.userId)
+        .maybeSingle();
+      const rol = (lid as { rol?: string } | null)?.rol;
+      magFacturen = rol === "eigenaar" || rol === "finance";
+    }
     const [{ data: facturen }, { data: rechten }] = await Promise.all([
-      db
-        .from("facturen")
-        .select("*")
-        .eq(kol, waarde)
-        .order("datum", { ascending: false })
-        .limit(50),
+      magFacturen
+        ? db
+            .from("facturen")
+            .select("*")
+            .eq(kol, waarde)
+            .order("datum", { ascending: false })
+            .limit(50)
+        : Promise.resolve({ data: [] }),
       db.from("entitlements").select("recht, geldig_tot").eq(kol, waarde),
     ]);
     return {

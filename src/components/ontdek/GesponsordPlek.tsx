@@ -5,13 +5,14 @@
  * - Dezelfde allergie- en dieetregel als voorstellen: past het niet, dan geen plek.
  * - Toont niets zolang de module ontbreekt of er geen goedgekeurde, lopende campagne is.
  */
+import { useEffect } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { leesKennismaking } from "@/lib/kennismaking";
 import { useModuleBeschikbaar } from "@/lib/module-beschikbaar";
 import { gesponsordLabel, kiesGesponsordePlek, magGesponsordTonen } from "@/lib/partners";
-import { haalGesponsordeInhoud, haalLopendeCampagnes } from "@/lib/partners-db";
+import { haalGesponsordeInhoud, haalLopendeCampagnes, telGesponsord } from "@/lib/partners-db";
 import { RecipePhoto } from "@/components/RecipePhoto";
 
 function vandaag() {
@@ -35,17 +36,30 @@ export function GesponsordPlek() {
       return haalGesponsordeInhoud(item, campagne);
     },
   });
-  if (!beschikbaar || !data) return null;
-
   const kennis = leesKennismaking(user?.id);
-  if (
-    data.recept &&
-    !magGesponsordTonen(data.recept, { allergieen: kennis.allergieen, dieet: kennis.dieet })
-  ) {
-    return null;
-  }
-  // Een product heeft geen ingrediëntenlijst om te controleren: bij allergieën geen plek.
-  if (!data.recept && kennis.allergieen.length) return null;
+  const toon =
+    beschikbaar &&
+    !!data &&
+    (data.recept
+      ? magGesponsordTonen(data.recept, { allergieen: kennis.allergieen, dieet: kennis.dieet })
+      : // Een product heeft geen ingrediëntenlijst om te controleren: bij allergieën geen plek.
+        !kennis.allergieen.length);
+  const itemId = toon ? data!.item.id : null;
+
+  // Fase 5: één vertoning per item per dag per tabblad tellen (gesponsord_tel, alleen dagtotalen).
+  useEffect(() => {
+    if (!itemId) return;
+    const sleutel = `foodlo:gesponsord-getoond:${itemId}:${vandaag()}`;
+    try {
+      if (window.sessionStorage.getItem(sleutel)) return;
+      window.sessionStorage.setItem(sleutel, "1");
+    } catch {
+      /* zonder opslag tellen we gewoon elke keer */
+    }
+    void telGesponsord(itemId, "vertoning");
+  }, [itemId]);
+
+  if (!toon || !data) return null;
   const { label, partner } = gesponsordLabel(data.item.label_tekst, data.partner.naam);
 
   return (
@@ -64,6 +78,7 @@ export function GesponsordPlek() {
           <Link
             to="/recepten/$id"
             params={{ id: data.recept.id }}
+            onClick={() => void telGesponsord(data.item.id, "klik")}
             className="flex items-center gap-4 p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <RecipePhoto

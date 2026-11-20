@@ -3,6 +3,7 @@
 // stuurknoppen (/__*) waarmee tests storingen kunnen nabootsen.
 // Raakt nooit een echte (productie)database.
 import http from "node:http";
+import { randomUUID } from "node:crypto";
 import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -365,6 +366,38 @@ const server = http.createServer((req, res) => {
               .length,
           gepland: db.t("meal_plan").filter(anderen).length,
         });
+      }
+      // Voorstel 0011: public.gesponsord_tel — +1 op het dagtotaal van een lopende campagne
+      // (goedgekeurd/actief, geverifieerde partner, binnen de looptijd). Nooit wie.
+      if (naam === "gesponsord_tel") {
+        if (!geldigToken(auth)) return stuur(res, 401, { message: "niet aangemeld" });
+        const soort = body?._soort;
+        if (soort !== "vertoning" && soort !== "klik")
+          return stuur(res, 400, { message: "onbekende soort" });
+        const item = db.t("gesponsorde_items").find((i) => i.id === body?._item);
+        const c = item && db.t("campagnes").find((x) => x.id === item.campagne_id);
+        const p = c && db.t("partners").find((x) => x.id === c.partner_id);
+        const d = new Date();
+        const twee = (n) => String(n).padStart(2, "0");
+        const vandaag = `${d.getFullYear()}-${twee(d.getMonth() + 1)}-${twee(d.getDate())}`;
+        const loopt =
+          c &&
+          p?.verificatie_status === "geverifieerd" &&
+          ["goedgekeurd", "actief"].includes(c.status) &&
+          c.start &&
+          c.einde &&
+          c.start <= vandaag &&
+          vandaag <= c.einde;
+        if (!loopt) return stuur(res, 200, null);
+        const stat = db.t("gesponsord_statistiek");
+        let rij = stat.find((r) => r.campagne_id === c.id && r.dag === vandaag);
+        if (!rij) {
+          rij = { id: randomUUID(), campagne_id: c.id, dag: vandaag, vertoningen: 0, klikken: 0 };
+          stat.push(rij);
+        }
+        if (soort === "vertoning") rij.vertoningen += 1;
+        else rij.klikken += 1;
+        return stuur(res, 200, null);
       }
       return stuur(res, 200, RPC_STANDAARD[naam] ?? null);
     }

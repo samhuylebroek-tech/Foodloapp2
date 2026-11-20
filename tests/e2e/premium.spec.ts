@@ -118,6 +118,9 @@ test("partnerplan: eigenaar kiest Partner Plus, analist kan niets wijzigen", asy
   await expect(p2.getByText(/Huidig plan: Partner Plus/)).toBeVisible();
   await expect(p2.getByText(/Je rol mag het abonnement niet wijzigen/)).toBeVisible();
   await expect(p2.getByRole("button", { name: /testmodus|opzeggen/i })).toHaveCount(0);
+  // BUG-181: een analist ziet het plan, maar geen facturen (zoals RLS 0012).
+  await expect(p2.getByText(/Facturen zijn alleen zichtbaar voor de eigenaar/)).toBeVisible();
+  await expect(p2.getByText(/49,00/)).toHaveCount(1);
   await ander.close();
   void extern;
 });

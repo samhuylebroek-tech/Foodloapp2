@@ -68,6 +68,8 @@ export type Aanvraag = {
   bericht: string | null;
   status: "nieuw" | "in_behandeling" | "goedgekeurd" | "geweigerd";
   created_at?: string;
+  /** Fase 5 (voorstel 0022): uitleg van het Foodlo-team bij afwijzen. */
+  beoordeling_reden?: string | null;
 };
 
 export async function haalMijnAanvraag(userId: string): Promise<Aanvraag | null> {
@@ -143,7 +145,10 @@ export async function haalCampagnes(partnerId: string): Promise<Campagne[]> {
 }
 
 export async function bewaarCampagne(
-  c: Pick<Campagne, "partner_id" | "naam" | "start" | "einde" | "doel"> & { id?: string },
+  c: Pick<Campagne, "partner_id" | "naam" | "start" | "einde" | "doel"> & {
+    id?: string;
+    testbudget_cent?: number | undefined;
+  },
 ): Promise<Campagne> {
   const velden = {
     partner_id: c.partner_id,
@@ -151,6 +156,9 @@ export async function bewaarCampagne(
     start: c.start || null,
     einde: c.einde || null,
     doel: c.doel?.trim() || null,
+    // Kolom uit voorstel 0022: alleen meesturen als het scherm een waarde geeft (undefined = niet
+    // aanraken), zodat bewaren zonder budget ook werkt waar 0022 (nog) niet is uitgevoerd.
+    ...(c.testbudget_cent !== undefined ? { testbudget_cent: c.testbudget_cent } : {}),
   };
   const q = c.id
     ? db
@@ -376,4 +384,17 @@ export async function haalGesponsordeInhoud(
       ingredienten: ((ingr ?? []) as { name: string }[]).map((i) => i.name),
     },
   };
+}
+
+/**
+ * Telt een vertoning of klik van de gesponsorde plek (public.gesponsord_tel, voorstel 0011): +1 op
+ * het dagtotaal van een lopende campagne, er wordt niets over de gebruiker bewaard. Een fout (bv.
+ * de functie bestaat nog niet) mag de plek nooit breken: dan wordt er gewoon niet geteld.
+ */
+export async function telGesponsord(itemId: string, soort: "vertoning" | "klik"): Promise<void> {
+  try {
+    await db.rpc("gesponsord_tel", { _item: itemId, _soort: soort });
+  } catch {
+    /* tellen is nooit belangrijker dan tonen */
+  }
 }

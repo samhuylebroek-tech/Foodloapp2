@@ -48,6 +48,7 @@ import { Route as BeheerActiviteitRouteImport } from './routes/beheer.activiteit
 import { Route as BeheerAiRouteImport } from './routes/beheer.ai'
 import { Route as BeheerAnalyticsRouteImport } from './routes/beheer.analytics'
 import { Route as BeheerBeveiligingRouteImport } from './routes/beheer.beveiliging'
+import { Route as BeheerCampagnesRouteImport } from './routes/beheer.campagnes'
 import { Route as BeheerCommunicatieRouteImport } from './routes/beheer.communicatie'
 import { Route as BeheerCreditsRouteImport } from './routes/beheer.credits'
 import { Route as BeheerFinanceRouteImport } from './routes/beheer.finance'
@@ -63,12 +64,15 @@ import { Route as BeheerKostenRouteImport } from './routes/beheer.kosten'
 import { Route as BeheerLogboekRouteImport } from './routes/beheer.logboek'
 import { Route as BeheerMeldingenRouteImport } from './routes/beheer.meldingen'
 import { Route as BeheerModeratieRouteImport } from './routes/beheer.moderatie'
+import { Route as BeheerOmzetRouteImport } from './routes/beheer.omzet'
+import { Route as BeheerPartnersRouteImport } from './routes/beheer.partners'
 import { Route as BeheerReceptenRouteImport } from './routes/beheer.recepten'
 import { Route as BeheerSupportRouteImport } from './routes/beheer.support'
 import { Route as BeheerSysteemRouteImport } from './routes/beheer.systeem'
 import { Route as BeheerTeamRouteImport } from './routes/beheer.team'
 import { Route as BeheerTekstenRouteImport } from './routes/beheer.teksten'
 import { Route as BeheerUiRouteImport } from './routes/beheer.ui'
+import { Route as BeheerUitbetalingenRouteImport } from './routes/beheer.uitbetalingen'
 import { Route as HulpIndexRouteImport } from './routes/hulp.index'
 import { Route as HulpSlugRouteImport } from './routes/hulp.$slug'
 import { Route as HulpTutorialsRouteImport } from './routes/hulp.tutorials'
@@ -310,6 +314,11 @@ const BeheerBeveiligingRoute = BeheerBeveiligingRouteImport.update({
   path: '/beveiliging',
   getParentRoute: () => BeheerRoute,
 } as any)
+const BeheerCampagnesRoute = BeheerCampagnesRouteImport.update({
+  id: '/campagnes',
+  path: '/campagnes',
+  getParentRoute: () => BeheerRoute,
+} as any)
 const BeheerCommunicatieRoute = BeheerCommunicatieRouteImport.update({
   id: '/communicatie',
   path: '/communicatie',
@@ -385,6 +394,16 @@ const BeheerModeratieRoute = BeheerModeratieRouteImport.update({
   path: '/moderatie',
   getParentRoute: () => BeheerRoute,
 } as any)
+const BeheerOmzetRoute = BeheerOmzetRouteImport.update({
+  id: '/omzet',
+  path: '/omzet',
+  getParentRoute: () => BeheerRoute,
+} as any)
+const BeheerPartnersRoute = BeheerPartnersRouteImport.update({
+  id: '/partners',
+  path: '/partners',
+  getParentRoute: () => BeheerRoute,
+} as any)
 const BeheerReceptenRoute = BeheerReceptenRouteImport.update({
   id: '/recepten',
   path: '/recepten',
@@ -413,6 +432,11 @@ const BeheerTekstenRoute = BeheerTekstenRouteImport.update({
 const BeheerUiRoute = BeheerUiRouteImport.update({
   id: '/ui',
   path: '/ui',
+  getParentRoute: () => BeheerRoute,
+} as any)
+const BeheerUitbetalingenRoute = BeheerUitbetalingenRouteImport.update({
+  id: '/uitbetalingen',
+  path: '/uitbetalingen',
   getParentRoute: () => BeheerRoute,
 } as any)
 const HulpIndexRoute = HulpIndexRouteImport.update({
@@ -681,6 +705,7 @@ export interface FileRoutesByFullPath {
   '/beheer/ai': typeof BeheerAiRoute
   '/beheer/analytics': typeof BeheerAnalyticsRoute
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
+  '/beheer/campagnes': typeof BeheerCampagnesRoute
   '/beheer/communicatie': typeof BeheerCommunicatieRoute
   '/beheer/credits': typeof BeheerCreditsRoute
   '/beheer/finance': typeof BeheerFinanceRoute
@@ -696,12 +721,15 @@ export interface FileRoutesByFullPath {
   '/beheer/logboek': typeof BeheerLogboekRoute
   '/beheer/meldingen': typeof BeheerMeldingenRoute
   '/beheer/moderatie': typeof BeheerModeratieRoute
+  '/beheer/omzet': typeof BeheerOmzetRoute
+  '/beheer/partners': typeof BeheerPartnersRoute
   '/beheer/recepten': typeof BeheerReceptenRoute
   '/beheer/support': typeof BeheerSupportRoute
   '/beheer/systeem': typeof BeheerSysteemRoute
   '/beheer/team': typeof BeheerTeamRoute
   '/beheer/teksten': typeof BeheerTekstenRoute
   '/beheer/ui': typeof BeheerUiRouteWithChildren
+  '/beheer/uitbetalingen': typeof BeheerUitbetalingenRoute
   '/hulp/$slug': typeof HulpSlugRoute
   '/hulp/tutorials': typeof HulpTutorialsRoute
   '/inspiratie/$id': typeof InspiratieIdRoute
@@ -784,6 +812,7 @@ export interface FileRoutesByTo {
   '/beheer/ai': typeof BeheerAiRoute
   '/beheer/analytics': typeof BeheerAnalyticsRoute
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
+  '/beheer/campagnes': typeof BeheerCampagnesRoute
   '/beheer/communicatie': typeof BeheerCommunicatieRoute
   '/beheer/credits': typeof BeheerCreditsRoute
   '/beheer/finance': typeof BeheerFinanceRoute
@@ -799,11 +828,14 @@ export interface FileRoutesByTo {
   '/beheer/logboek': typeof BeheerLogboekRoute
   '/beheer/meldingen': typeof BeheerMeldingenRoute
   '/beheer/moderatie': typeof BeheerModeratieRoute
+  '/beheer/omzet': typeof BeheerOmzetRoute
+  '/beheer/partners': typeof BeheerPartnersRoute
   '/beheer/recepten': typeof BeheerReceptenRoute
   '/beheer/support': typeof BeheerSupportRoute
   '/beheer/systeem': typeof BeheerSysteemRoute
   '/beheer/team': typeof BeheerTeamRoute
   '/beheer/teksten': typeof BeheerTekstenRoute
+  '/beheer/uitbetalingen': typeof BeheerUitbetalingenRoute
   '/hulp/$slug': typeof HulpSlugRoute
   '/hulp/tutorials': typeof HulpTutorialsRoute
   '/inspiratie/$id': typeof InspiratieIdRoute
@@ -891,6 +923,7 @@ export interface FileRoutesById {
   '/beheer/ai': typeof BeheerAiRoute
   '/beheer/analytics': typeof BeheerAnalyticsRoute
   '/beheer/beveiliging': typeof BeheerBeveiligingRoute
+  '/beheer/campagnes': typeof BeheerCampagnesRoute
   '/beheer/communicatie': typeof BeheerCommunicatieRoute
   '/beheer/credits': typeof BeheerCreditsRoute
   '/beheer/finance': typeof BeheerFinanceRoute
@@ -906,12 +939,15 @@ export interface FileRoutesById {
   '/beheer/logboek': typeof BeheerLogboekRoute
   '/beheer/meldingen': typeof BeheerMeldingenRoute
   '/beheer/moderatie': typeof BeheerModeratieRoute
+  '/beheer/omzet': typeof BeheerOmzetRoute
+  '/beheer/partners': typeof BeheerPartnersRoute
   '/beheer/recepten': typeof BeheerReceptenRoute
   '/beheer/support': typeof BeheerSupportRoute
   '/beheer/systeem': typeof BeheerSysteemRoute
   '/beheer/team': typeof BeheerTeamRoute
   '/beheer/teksten': typeof BeheerTekstenRoute
   '/beheer/ui': typeof BeheerUiRouteWithChildren
+  '/beheer/uitbetalingen': typeof BeheerUitbetalingenRoute
   '/hulp/$slug': typeof HulpSlugRoute
   '/hulp/tutorials': typeof HulpTutorialsRoute
   '/inspiratie/$id': typeof InspiratieIdRoute
@@ -1000,6 +1036,7 @@ export interface FileRouteTypes {
     | '/beheer/ai'
     | '/beheer/analytics'
     | '/beheer/beveiliging'
+    | '/beheer/campagnes'
     | '/beheer/communicatie'
     | '/beheer/credits'
     | '/beheer/finance'
@@ -1015,12 +1052,15 @@ export interface FileRouteTypes {
     | '/beheer/logboek'
     | '/beheer/meldingen'
     | '/beheer/moderatie'
+    | '/beheer/omzet'
+    | '/beheer/partners'
     | '/beheer/recepten'
     | '/beheer/support'
     | '/beheer/systeem'
     | '/beheer/team'
     | '/beheer/teksten'
     | '/beheer/ui'
+    | '/beheer/uitbetalingen'
     | '/hulp/$slug'
     | '/hulp/tutorials'
     | '/inspiratie/$id'
@@ -1103,6 +1143,7 @@ export interface FileRouteTypes {
     | '/beheer/ai'
     | '/beheer/analytics'
     | '/beheer/beveiliging'
+    | '/beheer/campagnes'
     | '/beheer/communicatie'
     | '/beheer/credits'
     | '/beheer/finance'
@@ -1118,11 +1159,14 @@ export interface FileRouteTypes {
     | '/beheer/logboek'
     | '/beheer/meldingen'
     | '/beheer/moderatie'
+    | '/beheer/omzet'
+    | '/beheer/partners'
     | '/beheer/recepten'
     | '/beheer/support'
     | '/beheer/systeem'
     | '/beheer/team'
     | '/beheer/teksten'
+    | '/beheer/uitbetalingen'
     | '/hulp/$slug'
     | '/hulp/tutorials'
     | '/inspiratie/$id'
@@ -1209,6 +1253,7 @@ export interface FileRouteTypes {
     | '/beheer/ai'
     | '/beheer/analytics'
     | '/beheer/beveiliging'
+    | '/beheer/campagnes'
     | '/beheer/communicatie'
     | '/beheer/credits'
     | '/beheer/finance'
@@ -1224,12 +1269,15 @@ export interface FileRouteTypes {
     | '/beheer/logboek'
     | '/beheer/meldingen'
     | '/beheer/moderatie'
+    | '/beheer/omzet'
+    | '/beheer/partners'
     | '/beheer/recepten'
     | '/beheer/support'
     | '/beheer/systeem'
     | '/beheer/team'
     | '/beheer/teksten'
     | '/beheer/ui'
+    | '/beheer/uitbetalingen'
     | '/hulp/$slug'
     | '/hulp/tutorials'
     | '/inspiratie/$id'
@@ -1603,6 +1651,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerBeveiligingRouteImport
       parentRoute: typeof BeheerRoute
     }
+    '/beheer/campagnes': {
+      id: '/beheer/campagnes'
+      path: '/campagnes'
+      fullPath: '/beheer/campagnes'
+      preLoaderRoute: typeof BeheerCampagnesRouteImport
+      parentRoute: typeof BeheerRoute
+    }
     '/beheer/communicatie': {
       id: '/beheer/communicatie'
       path: '/communicatie'
@@ -1708,6 +1763,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerModeratieRouteImport
       parentRoute: typeof BeheerRoute
     }
+    '/beheer/omzet': {
+      id: '/beheer/omzet'
+      path: '/omzet'
+      fullPath: '/beheer/omzet'
+      preLoaderRoute: typeof BeheerOmzetRouteImport
+      parentRoute: typeof BeheerRoute
+    }
+    '/beheer/partners': {
+      id: '/beheer/partners'
+      path: '/partners'
+      fullPath: '/beheer/partners'
+      preLoaderRoute: typeof BeheerPartnersRouteImport
+      parentRoute: typeof BeheerRoute
+    }
     '/beheer/recepten': {
       id: '/beheer/recepten'
       path: '/recepten'
@@ -1748,6 +1817,13 @@ declare module '@tanstack/react-router' {
       path: '/ui'
       fullPath: '/beheer/ui'
       preLoaderRoute: typeof BeheerUiRouteImport
+      parentRoute: typeof BeheerRoute
+    }
+    '/beheer/uitbetalingen': {
+      id: '/beheer/uitbetalingen'
+      path: '/uitbetalingen'
+      fullPath: '/beheer/uitbetalingen'
+      preLoaderRoute: typeof BeheerUitbetalingenRouteImport
       parentRoute: typeof BeheerRoute
     }
     '/hulp/': {
@@ -2117,6 +2193,7 @@ interface BeheerRouteChildren {
   BeheerAiRoute: typeof BeheerAiRoute
   BeheerAnalyticsRoute: typeof BeheerAnalyticsRoute
   BeheerBeveiligingRoute: typeof BeheerBeveiligingRoute
+  BeheerCampagnesRoute: typeof BeheerCampagnesRoute
   BeheerCommunicatieRoute: typeof BeheerCommunicatieRoute
   BeheerCreditsRoute: typeof BeheerCreditsRoute
   BeheerFinanceRoute: typeof BeheerFinanceRoute
@@ -2132,12 +2209,15 @@ interface BeheerRouteChildren {
   BeheerLogboekRoute: typeof BeheerLogboekRoute
   BeheerMeldingenRoute: typeof BeheerMeldingenRoute
   BeheerModeratieRoute: typeof BeheerModeratieRoute
+  BeheerOmzetRoute: typeof BeheerOmzetRoute
+  BeheerPartnersRoute: typeof BeheerPartnersRoute
   BeheerReceptenRoute: typeof BeheerReceptenRoute
   BeheerSupportRoute: typeof BeheerSupportRoute
   BeheerSysteemRoute: typeof BeheerSysteemRoute
   BeheerTeamRoute: typeof BeheerTeamRoute
   BeheerTekstenRoute: typeof BeheerTekstenRoute
   BeheerUiRoute: typeof BeheerUiRouteWithChildren
+  BeheerUitbetalingenRoute: typeof BeheerUitbetalingenRoute
   BeheerIndexRoute: typeof BeheerIndexRoute
   BeheerGebruikerIdRoute: typeof BeheerGebruikerIdRoute
 }
@@ -2147,6 +2227,7 @@ const BeheerRouteChildren: BeheerRouteChildren = {
   BeheerAiRoute: BeheerAiRoute,
   BeheerAnalyticsRoute: BeheerAnalyticsRoute,
   BeheerBeveiligingRoute: BeheerBeveiligingRoute,
+  BeheerCampagnesRoute: BeheerCampagnesRoute,
   BeheerCommunicatieRoute: BeheerCommunicatieRoute,
   BeheerCreditsRoute: BeheerCreditsRoute,
   BeheerFinanceRoute: BeheerFinanceRoute,
@@ -2162,12 +2243,15 @@ const BeheerRouteChildren: BeheerRouteChildren = {
   BeheerLogboekRoute: BeheerLogboekRoute,
   BeheerMeldingenRoute: BeheerMeldingenRoute,
   BeheerModeratieRoute: BeheerModeratieRoute,
+  BeheerOmzetRoute: BeheerOmzetRoute,
+  BeheerPartnersRoute: BeheerPartnersRoute,
   BeheerReceptenRoute: BeheerReceptenRoute,
   BeheerSupportRoute: BeheerSupportRoute,
   BeheerSysteemRoute: BeheerSysteemRoute,
   BeheerTeamRoute: BeheerTeamRoute,
   BeheerTekstenRoute: BeheerTekstenRoute,
   BeheerUiRoute: BeheerUiRouteWithChildren,
+  BeheerUitbetalingenRoute: BeheerUitbetalingenRoute,
   BeheerIndexRoute: BeheerIndexRoute,
   BeheerGebruikerIdRoute: BeheerGebruikerIdRoute,
 }
