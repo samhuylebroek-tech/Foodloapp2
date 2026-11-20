@@ -71,6 +71,7 @@ const ALLE_VOORSTELLEN = schrijf("alle-voorstellen.sql", [
   "0020_voorraad_plek.up.sql",
   "0021_makers_abonnement_community.up.sql",
   "0022_bcc_testmodus.up.sql",
+  "0023_premium_beheer.up.sql",
 ]);
 
 const gevallen = [
@@ -107,7 +108,7 @@ const gevallen = [
     "rls-gezin-privacy.mjs",
     ALLE_VOORSTELLEN,
     0,
-    "0002a + 0002 + 0004 + 0006 … 0022: alleen de voorraad",
+    "0002a + 0002 + 0004 + 0006 … 0023: alleen de voorraad",
   ],
   [
     "makers-community.mjs",
@@ -186,6 +187,12 @@ const gevallen = [
     null,
     0,
     "voorstel 0022: aanvragen alleen via de server, testbudget per organisatie, testfacturen, uitnodigingen zonder e-mail, uitbetalingen alleen testmodus, auditlog alleen-invoegen, heen+terug",
+  ],
+  [
+    "premium-beheer.mjs",
+    null,
+    0,
+    "voorstel 0023: alleen eigen facturen, rechten/plannen/abonnementen niet door de app te schrijven, creditnota en btw-regels, testmodus verplicht, heen+terug",
   ],
   ["verwijder-gezinseigenaar.mjs", null, 0, "verslag BUG-110/025 (rapporteert, faalt niet)"],
 ];

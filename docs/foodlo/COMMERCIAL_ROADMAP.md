@@ -70,3 +70,20 @@
 - `payment_events`;
 - `ledger_entries`;
 - `entitlements` (wie mag wat zien).
+
+## 5. Fase 6: indeling gratis / premium (voorstel aan de eigenaar)
+
+Eén centrale lijst: `src/lib/betalen/rechten.ts` (rechten en niveaus) en `src/lib/betalen/prijzen.ts`
+(alle prijsvoorstellen en btw). De server controleert met `vereisRecht`; de UI toont "Dit hoort bij
+Premium" met uitleg.
+
+- **Altijd gratis (kern):** allergie- en dieetcontrole, boodschappenlijst, weekmenu plannen, recepten
+  bewaren/importeren/koken, voorraad, gezin en delen, kookstand, je gegevens exporteren. Een unit-test
+  bewaakt dat geen premiumrecht hieraan raakt.
+- **Premium (voorstel € 4,99/maand of € 49,90/jaar, 14 dagen proef):** weekmenu-sjablonen,
+  seizoenskalender. Beide vaste inhoud zonder AI-kosten.
+- **Maker (`maker:<id>`):** exclusieve recepten en collecties van die maker (fase 4).
+- **Partner Basis / Plus:** producten koppelen; campagnes en rapportage (fase 5).
+- **AI-limieten:** voor iedereen gelijk (20 slimme vragen per dag); Premium koopt geen extra AI,
+  zodat de kosten voorspelbaar blijven. Aan te passen in `AI_LIMIETEN` na beslissing.
+- Betaalprovider: geen keuze; eisen en criteria in `BETAALPROVIDER-EISEN.md`.
