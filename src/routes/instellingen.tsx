@@ -11,6 +11,7 @@ import {
   Compass,
   Download,
   ExternalLink,
+  KeyRound,
   Lightbulb,
   Loader2,
   LogOut,
@@ -606,6 +607,21 @@ function OverFoodlo({ t }: { t: (s: string) => string }) {
 
   return (
     <Groep titel={t("Gegevens en privacy")}>
+      {/* Fase 8: elke toestemming apart, met intrekken en de gevolgen. */}
+      <LinkRij
+        to="/instellingen/privacy"
+        icoon={ShieldCheck}
+        tint="groen"
+        titel={t("Privacy & toestemmingen")}
+        uitleg={t("Allergieën, gezin, community, meldingen, AI en analyse")}
+      />
+      <LinkRij
+        to="/instellingen/beveiliging"
+        icoon={KeyRound}
+        tint="inkt"
+        titel={t("Aanmelden en beveiliging")}
+        uitleg={t("Waar je aangemeld bent, afmelden op andere toestellen")}
+      />
       <KnopRij
         icoon={Download}
         tint="groen"

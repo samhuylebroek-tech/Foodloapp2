@@ -1,3 +1,4 @@
+import { analyseToegestaan } from "@/lib/privacy/toestemmingen";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -9,7 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
  * - Meten mag de app nooit hinderen: alles faalt stil.
  */
 
-export const APP_VERSIE = (import.meta.env["VITE_APP_VERSION"] as string | undefined) ?? "web-2026.09";
+export const APP_VERSIE =
+  (import.meta.env["VITE_APP_VERSION"] as string | undefined) ?? "web-2026.09";
 
 // ---------------- gebeurtenissen ----------------
 
@@ -239,6 +241,11 @@ function wisCache() {
   }
 }
 
+/** Id van de lopende sessie op dit toestel (zonder netwerk), of null. Fase 8: "Dit toestel". */
+export function huidigeSessieId(): string | null {
+  return leesCache()?.id ?? null;
+}
+
 let bezig: Promise<string | null> | null = null;
 
 /** Geeft de actieve sessie-id terug; start er één als er nog geen loopt. */
@@ -345,6 +352,8 @@ export async function meet(
     const { data } = await supabase.auth.getSession();
     const userId = data.session?.user.id;
     if (!userId) return;
+    // Fase 8: analyse uitgezet in Privacy & toestemmingen → niets meer meten.
+    if (!analyseToegestaan(userId)) return;
 
     const sessionId = await huidigeSessie(userId);
     const t = toestelInfo();

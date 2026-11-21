@@ -38,6 +38,8 @@ import {
 } from "@/lib/community-foto";
 import { useModuleBeschikbaar } from "@/lib/module-beschikbaar";
 import { MeldKnop } from "./MakerOnderdelen";
+import { useToestemmingen } from "@/lib/privacy/toestemmingen";
+import { Link } from "@tanstack/react-router";
 
 function voornaam(meta: Record<string, unknown> | undefined): string | null {
   const v = meta?.["voornaam"] ?? meta?.["display_name"];
@@ -51,6 +53,8 @@ export function ReceptCommunity({ receptId }: { receptId: string }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { beschikbaar } = useModuleBeschikbaar("community_bijdragen");
+  // Fase 8: "Zichtbaar in de community" ingetrokken → niets meer delen tot je het weer aanzet.
+  const { keuzes } = useToestemmingen(user?.id);
   const blokModule = useModuleBeschikbaar("gebruiker_blokkades");
   const { data: bron } = useQuery({
     queryKey: ["recept-bron", receptId],
@@ -254,6 +258,14 @@ export function ReceptCommunity({ receptId }: { receptId: string }) {
             </Button>
           </div>
         </form>
+      ) : !keuzes.community.aan ? (
+        <p className="paneel p-4 text-base" data-testid="community-uit">
+          Je hebt delen in de community uitgezet. Weer aanzetten kan bij{" "}
+          <Link to="/instellingen/privacy" className="font-semibold text-primary underline">
+            Privacy & toestemmingen
+          </Link>
+          .
+        </p>
       ) : (
         <div className="flex flex-wrap gap-2">
           <Button

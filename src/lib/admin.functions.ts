@@ -132,12 +132,9 @@ const SCHRIJFRECHTEN: Rechten[] = [
 // Max aantal beheeracties per minuut per beheerder.
 const LIMIET_PER_MINUUT = 120;
 
-/**
- * BUG-095: 2FA op de server. Staat UIT tot de eigenaar het herstelplan (2FA-HERSTELPLAN.md) heeft
- * goedgekeurd en twee factoren heeft ingesteld. Aanzetten = deze waarde op `true` en daarna
- * `mfa_required` voor de eigenaar aanzetten in Beheer → Team.
- */
-export const MFA_AFDWINGEN = false;
+// BUG-095: de schakelaar staat in mfa-beleid.ts (ook leesbaar voor de E2E-test).
+import { MFA_AFDWINGEN } from "@/lib/mfa-beleid";
+export { MFA_AFDWINGEN };
 
 export const MFA_MELDING =
   "Bevestig eerst met je tweede stap (2FA) om het Control Center te gebruiken.";

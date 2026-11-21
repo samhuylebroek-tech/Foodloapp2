@@ -81,6 +81,8 @@ import { Route as HulpTutorialsRouteImport } from './routes/hulp.tutorials'
 import { Route as InspiratieIndexRouteImport } from './routes/inspiratie.index'
 import { Route as InspiratieIdRouteImport } from './routes/inspiratie.$id'
 import { Route as InstellingenAiGebruikRouteImport } from './routes/instellingen_.ai-gebruik'
+import { Route as InstellingenBeveiligingRouteImport } from './routes/instellingen_.beveiliging'
+import { Route as InstellingenPrivacyRouteImport } from './routes/instellingen_.privacy'
 import { Route as InstellingenSuggestiesRouteImport } from './routes/instellingen_.suggesties'
 import { Route as KaartenIndexRouteImport } from './routes/kaarten.index'
 import { Route as KaartenIdRouteImport } from './routes/kaarten.$id'
@@ -482,6 +484,16 @@ const InstellingenAiGebruikRoute = InstellingenAiGebruikRouteImport.update({
   path: '/instellingen/ai-gebruik',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InstellingenBeveiligingRoute = InstellingenBeveiligingRouteImport.update({
+  id: '/instellingen_/beveiliging',
+  path: '/instellingen/beveiliging',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InstellingenPrivacyRoute = InstellingenPrivacyRouteImport.update({
+  id: '/instellingen_/privacy',
+  path: '/instellingen/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InstellingenSuggestiesRoute = InstellingenSuggestiesRouteImport.update({
   id: '/instellingen_/suggesties',
   path: '/instellingen/suggesties',
@@ -754,6 +766,8 @@ export interface FileRoutesByFullPath {
   '/hulp/tutorials': typeof HulpTutorialsRoute
   '/inspiratie/$id': typeof InspiratieIdRoute
   '/instellingen/ai-gebruik': typeof InstellingenAiGebruikRoute
+  '/instellingen/beveiliging': typeof InstellingenBeveiligingRoute
+  '/instellingen/privacy': typeof InstellingenPrivacyRoute
   '/instellingen/suggesties': typeof InstellingenSuggestiesRoute
   '/kaarten/$id': typeof KaartenIdRoute
   '/makers/$handle': typeof MakersHandleRoute
@@ -863,6 +877,8 @@ export interface FileRoutesByTo {
   '/hulp/tutorials': typeof HulpTutorialsRoute
   '/inspiratie/$id': typeof InspiratieIdRoute
   '/instellingen/ai-gebruik': typeof InstellingenAiGebruikRoute
+  '/instellingen/beveiliging': typeof InstellingenBeveiligingRoute
+  '/instellingen/privacy': typeof InstellingenPrivacyRoute
   '/instellingen/suggesties': typeof InstellingenSuggestiesRoute
   '/kaarten/$id': typeof KaartenIdRoute
   '/makers/$handle': typeof MakersHandleRoute
@@ -978,6 +994,8 @@ export interface FileRoutesById {
   '/hulp/tutorials': typeof HulpTutorialsRoute
   '/inspiratie/$id': typeof InspiratieIdRoute
   '/instellingen_/ai-gebruik': typeof InstellingenAiGebruikRoute
+  '/instellingen_/beveiliging': typeof InstellingenBeveiligingRoute
+  '/instellingen_/privacy': typeof InstellingenPrivacyRoute
   '/instellingen_/suggesties': typeof InstellingenSuggestiesRoute
   '/kaarten/$id': typeof KaartenIdRoute
   '/makers/$handle': typeof MakersHandleRoute
@@ -1094,6 +1112,8 @@ export interface FileRouteTypes {
     | '/hulp/tutorials'
     | '/inspiratie/$id'
     | '/instellingen/ai-gebruik'
+    | '/instellingen/beveiliging'
+    | '/instellingen/privacy'
     | '/instellingen/suggesties'
     | '/kaarten/$id'
     | '/makers/$handle'
@@ -1203,6 +1223,8 @@ export interface FileRouteTypes {
     | '/hulp/tutorials'
     | '/inspiratie/$id'
     | '/instellingen/ai-gebruik'
+    | '/instellingen/beveiliging'
+    | '/instellingen/privacy'
     | '/instellingen/suggesties'
     | '/kaarten/$id'
     | '/makers/$handle'
@@ -1317,6 +1339,8 @@ export interface FileRouteTypes {
     | '/hulp/tutorials'
     | '/inspiratie/$id'
     | '/instellingen_/ai-gebruik'
+    | '/instellingen_/beveiliging'
+    | '/instellingen_/privacy'
     | '/instellingen_/suggesties'
     | '/kaarten/$id'
     | '/makers/$handle'
@@ -1399,6 +1423,8 @@ export interface RootRouteChildren {
   WeekSamenstellenRoute: typeof WeekSamenstellenRoute
   WelkomRoute: typeof WelkomRoute
   InstellingenAiGebruikRoute: typeof InstellingenAiGebruikRoute
+  InstellingenBeveiligingRoute: typeof InstellingenBeveiligingRoute
+  InstellingenPrivacyRoute: typeof InstellingenPrivacyRoute
   InstellingenSuggestiesRoute: typeof InstellingenSuggestiesRoute
   KaartenIdRoute: typeof KaartenIdRoute
   MakersHandleRoute: typeof MakersHandleRoute
@@ -1920,6 +1946,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InstellingenAiGebruikRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/instellingen_/beveiliging': {
+      id: '/instellingen_/beveiliging'
+      path: '/instellingen/beveiliging'
+      fullPath: '/instellingen/beveiliging'
+      preLoaderRoute: typeof InstellingenBeveiligingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/instellingen_/privacy': {
+      id: '/instellingen_/privacy'
+      path: '/instellingen/privacy'
+      fullPath: '/instellingen/privacy'
+      preLoaderRoute: typeof InstellingenPrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/instellingen_/suggesties': {
       id: '/instellingen_/suggesties'
       path: '/instellingen/suggesties'
@@ -2412,6 +2452,8 @@ const rootRouteChildren: RootRouteChildren = {
   WeekSamenstellenRoute: WeekSamenstellenRoute,
   WelkomRoute: WelkomRoute,
   InstellingenAiGebruikRoute: InstellingenAiGebruikRoute,
+  InstellingenBeveiligingRoute: InstellingenBeveiligingRoute,
+  InstellingenPrivacyRoute: InstellingenPrivacyRoute,
   InstellingenSuggestiesRoute: InstellingenSuggestiesRoute,
   KaartenIdRoute: KaartenIdRoute,
   MakersHandleRoute: MakersHandleRoute,

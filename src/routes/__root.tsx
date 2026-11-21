@@ -1,3 +1,4 @@
+import { controleerSessie } from "@/lib/privacy/sessie-bewaker";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -189,6 +190,25 @@ function RootComponent() {
       if (event === "SIGNED_IN") void probeer();
     });
     return () => sub.subscription.unsubscribe();
+  }, []);
+
+  // Fase 8: afgemeld vanaf een ander toestel (of account verwijderd)? Dan hier ook afmelden.
+  useEffect(() => {
+    const kijk = () =>
+      void controleerSessie().then((af) => {
+        if (af && !window.location.pathname.startsWith("/aanmelden"))
+          window.location.href = "/aanmelden?afgemeld=1";
+      });
+    kijk();
+    const zichtbaar = () => {
+      if (document.visibilityState === "visible") kijk();
+    };
+    window.addEventListener("focus", kijk);
+    document.addEventListener("visibilitychange", zichtbaar);
+    return () => {
+      window.removeEventListener("focus", kijk);
+      document.removeEventListener("visibilitychange", zichtbaar);
+    };
   }, []);
 
   // Fouten die een gebruiker echt ervaart, komen in het Control Center terecht.

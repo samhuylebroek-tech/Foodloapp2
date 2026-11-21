@@ -1,3 +1,4 @@
+import { AFGEMELD_SLEUTEL } from "@/lib/privacy/sessie-bewaker";
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
@@ -30,6 +31,17 @@ export const Route = createFileRoute("/aanmelden")({
   component: AanmeldenPage,
 });
 
+/** Eenmalige vlag uit sessionStorage (fase 8: afgemeld vanaf een ander toestel). */
+function leesEnWis(sleutel: string): boolean {
+  try {
+    const ja = window.sessionStorage.getItem(sleutel) === "1";
+    window.sessionStorage.removeItem(sleutel);
+    return ja;
+  } catch {
+    return false;
+  }
+}
+
 function AanmeldenPage() {
   const { session, loading } = useAuth();
   const navigate = useNavigate();
@@ -52,6 +64,12 @@ function AanmeldenPage() {
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("verwijderd") === "1")
       setMelding("Je account en je gegevens zijn verwijderd.");
+    // Fase 8: afgemeld vanaf een ander toestel (Aanmelden en beveiliging).
+    else if (
+      new URLSearchParams(window.location.search).get("afgemeld") === "1" ||
+      leesEnWis(AFGEMELD_SLEUTEL)
+    )
+      setMelding("Je bent afgemeld op dit toestel. Meld je opnieuw aan als jij dat was.");
   }, []);
 
   useEffect(() => {

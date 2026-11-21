@@ -17,6 +17,49 @@ async function admin() {
   return supabaseAdmin;
 }
 
+/** Weigert als de gebruiker AI uitzette (kop van dit toestel of rij in `toestemmingen`). */
+async function controleerAiToestemming(db: Awaited<ReturnType<typeof admin>>, userId: string) {
+  const { AI_KOP, AI_UIT_MELDING, aiUitgezet } = await import("@/lib/privacy/ai-toestemming");
+  let kop: string | null = null;
+  try {
+    const { getRequest } = await import("@tanstack/react-start/server");
+    kop = getRequest()?.headers.get(AI_KOP) ?? null;
+  } catch {
+    /* buiten een verzoek (tests, achtergrondtaak): geen kop */
+  }
+  let rij: { aan?: unknown } | null = null;
+  try {
+    const { data } = await (
+      db as unknown as {
+        from: (t: string) => {
+          select: (k: string) => {
+            eq: (
+              k: string,
+              v: string,
+            ) => {
+              eq: (
+                k: string,
+                v: string,
+              ) => {
+                maybeSingle: () => PromiseLike<{ data: { aan?: unknown } | null }>;
+              };
+            };
+          };
+        };
+      }
+    )
+      .from("toestemmingen")
+      .select("aan")
+      .eq("user_id", userId)
+      .eq("soort", "ai")
+      .maybeSingle();
+    rij = data;
+  } catch {
+    /* tabel bestaat nog niet (voorstel 0025): alleen de keuze op het toestel telt */
+  }
+  if (aiUitgezet(kop, rij)) throw new Error(AI_UIT_MELDING);
+}
+
 export type CreditFout = "ONVOLDOENDE_CREDITS" | "DAGLIMIET" | "FUNCTIE_UIT" | "MAANDBUDGET";
 
 const BOODSCHAP: Record<CreditFout, string> = {
@@ -187,6 +230,8 @@ export async function metCredits<T>(
   run: (meter: AiMeter) => Promise<T>,
 ): Promise<{ resultaat: T; credits: number; cache: boolean; saldo: number | null }> {
   const db = await admin();
+  // Fase 8: "AI uit" (toestel of account) gaat vóór alles, ook vóór de cache.
+  await controleerAiToestemming(db, opts.userId);
   const model = opts.model ?? "";
   const meter = nieuweMeter();
   meter.group_id = opts.groupId ?? null;
