@@ -1,5 +1,7 @@
 # Productvisie V2: Foodloapp, je persoonlijke kookassistent
 
+> Samengevat in [`docs/foodlo/MASTER_PRODUCT_VISION.md`](../foodlo/MASTER_PRODUCT_VISION.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-11. **VOORSTEL ter goedkeuring van de eigenaar.** Bouwt voort op:
 - [PRODUCT-HERONTWERP.md](PRODUCT-HERONTWERP.md): vijf plekken, huishouden, volgende-actie-kaart;
 - [PRODUCTRONDE-2026-11-11.md](PRODUCTRONDE-2026-11-11.md): wat al gebouwd is.

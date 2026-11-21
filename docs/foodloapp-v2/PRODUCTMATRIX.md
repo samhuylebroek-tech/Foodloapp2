@@ -1,0 +1,314 @@
+# Foodloapp: volledige productmatrix
+
+**Stand en bron.** Stand 2026-11-13 (bijgewerkt met beslissing D-2026-11-13-1, optie B). Samengevat in `docs/foodlo/COMPLETE_PRODUCT_INVENTORY.md`. Gecontroleerd in de code van branch `claude/sleepy-euler-eghoc3` (= `v2/dev` + productronde 1) en in alle planningsdocumenten van `docs/foodloapp-v2/`.
+
+**Doel.** Dit document is de blijvende productchecklist: **niets verdwijnt stilzwijgend**. Een module die niet in de eerste lancering zit, blijft hier staan met een fase.
+
+## Statussen en fasen
+| Status | Betekenis |
+|---|---|
+| **Behouden** | Bestaat, werkt, blijft zoals hij is |
+| **Verbeteren** | Bestaat, maar de ervaring of de afwerking moet beter |
+| **Uitbreiden** | Bestaat, er komt functionaliteit bij |
+| **Te ontwikkelen** | Bestaat niet en hoort in fase 1 of 2 |
+| **Latere fase** | Hoort in de visie, gepland voor fase 2 of 3 |
+| **Geblokkeerd** | Kan niet verder zonder beslissing of goedkeuring (reden erbij) |
+
+| Fase | Inhoud |
+|---|---|
+| **F1** | Eerste volwaardige consumentenlancering |
+| **F2** | Verdieping: gezin, creators, intelligentie |
+| **F3** | Commercieel platform |
+
+**Gates (goedkeuring eigenaar):**
+- **G1:** migratie op productie;
+- **G2:** RLS en rechten;
+- **G3:** push of merge naar `main` of een Lovable-branch;
+- **G4:** deploy;
+- **G5:** betalingen;
+- **G6:** geheimen;
+- **G7:** iets verwijderen;
+- **G8:** gegevenscorrectie.
+
+Beslissingen "#n" verwijzen naar `BESLISSINGEN-EIGENAAR.md`.
+
+---
+
+## A. Consumentenmodules
+
+| Module | Functie | Status | Fase | Wat de gebruiker merkt / wat ontbreekt | Bewijs |
+|---|---|---|---|---|---|
+| **Vandaag** | Begroeting, datum, wat nu telt (één kaart, 8 stappen) | Behouden | F1 | Werkt, met en zonder voorraad | `vandaag.ts`, `vandaag.spec.ts` |
+| | Tijdregel: begin om, duur, aan tafel | Uitgebreid (ronde 1) | F1 | Nu ook als er nog iets ontbreekt; eerlijk als het te laat is | `tijdsplan`, PR #1 |
+| | Voorstellen met reden, "Waarom zie ik dit?", "Niet nu" | Behouden | F1 | "Niet nu" staat per toestel | `voorstel.ts`, `niet-nu.ts` |
+| | Seizoen en feestdagen (BE/NL) | Behouden | F1 | — | `intelligentie/context.ts` |
+| | "Waarom nu" op de receptpagina (zelfde motor als Vandaag) | Gebouwd (ronde 3) | F1 | Alleen eigen recepten, op het toestel, uit als slimme voorstellen uit staan | `waarom-nu.spec.ts` |
+| | Weer | Gebouwd (marathon) met testgegevens | F2 | Signaal op Vandaag + zachte bijsturing, aan/uit in Instellingen; `WeerAdapter` + TestWeerAdapter (vaste demodata, gelabeld). Getest met weer-bron.test + weer-signaal.spec. Echte bron: na licentie en serverproxy | #15, #16 |
+| | Budget | Gebouwd (marathon + P1), schatting | F2 | Weekbudget (account na migratie 0013, tot dan per toestel; stuurt nu ook de voorstellen), kost per recept en per week met vaste richtprijzen (altijd "schatting"), waarschuwing in Week. Getest met budget.test + budget.spec. Echte prijzen: na prijsbron/partner (`PrijsBron`) | #21 |
+| | Gezinscontext (mee-eters) | Gebouwd (marathon), getest met eters-voorstellen.spec (telefoon/desktop) en voorstel-eters.test; actief in productie na migratie 0010 | F2 | Receptkiezer, Vandaag ("Wie eet mee vanavond?") en "Laat Foodlo kiezen" ("Wie eet mee?"): niets onveiligs voorgesteld, anders "Niet geschikt voor …" (reden alleen als gedeeld) | 0010, #7 |
+| | "Niet voor mij" (blijvend) | Te ontwikkelen | F2 | Tabel 0006 | #17 |
+| | Alternatief als je geen zin hebt | Gebouwd (ronde 3) | F1 | "Iets anders vanavond?" onder de Vandaag-kaart: voorstellen met reden, vervangt de maaltijd met "Ongedaan maken" | `vandaag.spec.ts` |
+| **Week** | Plannen per dag en moment, verplaatsen, dupliceren, vervangen (lijst past mee aan), ongedaan maken | Behouden | F1 | — | `planner.tsx`, `weekmenu-lijst.spec.ts` |
+| | Hoofdacties en hiërarchie | Verbeterd (ronde 1) | F1 | Twee planknoppen, één hoofdknop "Slim aanvullen" | PR #1 |
+| | "Laat Foodlo kiezen", "Vul aan" voor lege dagen, restjes plannen | Behouden | F1 | — | `week-voorstel.spec.ts`, `week-vul-aan.spec.ts` |
+| | **Ingrediënten & slimme lijst (P2)**: synoniemen (ui/ajuin, room/slagroom, paprika rood/rode paprika …), omrekening g/kg, ml/cl/dl/l, el/tl/kl, stuk↔g alleen met gekend stukgewicht; nodig · in huis · te kopen per regel; gangbare verpakking (geen winkelbelofte); basisvoorraad "heb je meestal"; één kostenbron (`budget.ts`) voor engine, budgetkaart, lijst en winkelmodus; budgetgeschiedenis "Vorige weken" | Gebouwd (marathon P2), getest met ingredient.test, kosten-een-bron.test, budget-geschiedenis.test en ingredienten-lijst.spec (telefoon/desktop); werkt meteen in productie behalve budgetgeschiedenis op het account (na migratie 0014, tot dan per toestel) en basisvoorraad op het account (na 0013) | F1 | Verpakkingen en stukgewichten zijn richtwaarden; echte verpakkingen na een winkelpartner | `src/lib/ingredient/`, 0014 |
+| | **Slimme planner (P1)**: "Stel mijn week samen" (weekcontext per dag: wie eet mee, Weinig tijd, Niet thuis, Feestelijk, Restjesdag; 1–2 weken; ontbijt/middag optioneel), voorstel met waarom/porties/kost, Goedkoper/Sneller/Past beter, Bewaar dit menu (één ongedaan maken), Maak mijn week goedkoper | Gebouwd (marathon P1), getest met planner.test (33) en slimme-planner.spec (telefoon/desktop); één engine `src/lib/planner/engine.ts` ook voor Vanavond en Vul aan; budget/apparatuur op het account na migratie 0013 | F1 | "Laat Foodlo kiezen" volgt sinds P2 de keukenfilters van de engine en laat elk gekozen gerecht door de server nakijken (BUG-152); sinds P4 kiest ook "Laat Foodlo kiezen" via de engine (`planner/laat-kiezen.ts`, laat-kiezen.test + week-voorstel.spec) | `week-samenstellen.tsx`, 0013 |
+| | **Mijn keuken (P1)**: apparatuur (standaard oven + kookplaat, zichtbaar), kookervaring, voorraadniveau (geen/basis/volledig), apparatuur per recept in de editor | Gebouwd (marathon P1), getest met planner.test, slimme-planner.spec en tests/rls/planprofiel.mjs; actief op het account na migratie 0013 (tot dan op het toestel) | F1 | Ook in de kennismaking (optioneel) | `mijn-keuken.tsx`, 0013 |
+| | Personen per maaltijd | Verbeterd (ronde 3) | F1 | Standaard = gezinsgrootte uit de kennismaking (1/2/4/5), anders 4 | `standaardPersonen` (unit) |
+| | Gezinsplanning | Uitbreiden | F2 | Weergave "gezin" bestaat; de lijst past zich alleen aan bij je eigen plan | `kringloop-db.ts` |
+| | Plan delen | Uitbreiden | F2 | Alleen via de rechten van vrienden of gezin | — |
+| **Ontdek** | Catalogus, filters, thema's, "Verras mij", allergielabels | Behouden | F1 | — | `inspiratie.index.tsx` |
+| | Beeld bij recepten zonder foto | Verbeterd (ronde 1) | F1 | Ontworpen omslag in plaats van een grijs bord | PR #1 |
+| | Echte foto's van startrecepten | Geblokkeerd | F1 | Beslissing beeldbeleid (§J) | — |
+| | Persoonlijke aanbevelingen in Ontdek | Uitbreiden | F2 | Nu vooral in Vandaag en Week | — |
+| | Populair / nieuw | Te ontwikkelen | F2 | Vraagt gebruiksgegevens per recept | — |
+| | Creatorrecepten | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | Rij "Makers om te volgen" op Ontdek, `/makers` | #28 |
+| **Recepten** | Zoeken (verdraagt tikfouten), filters, automatische collecties, concepten | Behouden | F1 | — | `gerechten.tsx` |
+| | Eigen collecties | Gebouwd (marathon + fase 3: nieuw vanuit Keuken, bewaren vanuit Ontdek, herschikken met pijlen/slepen/Alt+pijl, eruit met ongedaan maken, delen als openbaar, inplannen via de assistent met veiligheidscontrole), getest met collecties.test, acties.test, fase3-beheer.spec, makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | "Bewaar in…", rij "Mijn verzamelingen", `/verzamelingen/$id`, `/assistent?verzameling=` | G1/G2 |
+| | Notities bij een recept | Gebouwd (marathon P3), getest met koken.test en na-het-koken.spec (telefoon/desktop); op het account na migratie 0015, tot dan op het toestel | F2 | Eigen notitie bij "Klaar met koken", zichtbaar als "Jouw kooknotities" op het recept; alleen voor jou, nooit naar AI | `KookNotities.tsx`, 0015 |
+| **Receptdetail** | Ingrediënten, porties, tijd, moeilijkheid, stappen met ingrediënten, voedingswaarden (lokaal), versies, foto's | Behouden | F1 | — | `recepten.$id.tsx` |
+| | Acties met woorden (Favoriet, Delen, Aanpassen, Meer) | Verbeterd (ronde 1) | F1 | — | PR #1 |
+| | Inplannen, op de lijst, kookstand | Behouden | F1 | — | — |
+| | Herkomst / creator | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | "Van <maker>" op openbare makerrecepten (Ontdek-catalogus blijft "Foodlo-keuken") | — |
+| **Kookstand** | Stappen, voortgang, timers, hervatten, scherm aan, score, restje, voorraad aftrekken | Behouden | F1 | — | `kookstand.spec.ts` |
+| | **Klaar met koken (P3)**: sterren, Niet nu / Niet voor mij, restje (naam, porties, richtwaarde bewaardatum), "Voorraad bijwerken?" als voorstel met vinkjes en bevestiging (onbekende eenheid = vraag; één keer ongedaan maken), notitie; "Gekookt" op Vandaag en in Week | Gebouwd (marathon P3), getest met koken.test (18) en na-het-koken.spec (telefoon/desktop); "gekookt" op het account na migratie 0015, tot dan op het toestel | F1 | Voorraad gaat niet meer stil omlaag na het koken (gedragswijziging). "Niet voor mij" voorlopig op het toestel (0006) | `KlaarMetKoken.tsx`, `voorraad-aftrek.ts`, 0015 |
+| | Altijd bovenaan beginnen | Opgelost (ronde 1) | F1 | — | BUG-132 |
+| | Spraak, handsfree | Latere fase | F2 | — | MODULE-AUDIT P2 |
+| **Boodschappen** | Lijsten, afdelingen, samentellen, eigen producten, eerder gekocht, winkelideeën, delen met link, offline wachtrij, Slim aanvullen, "Waarom op mijn lijst?" | Behouden | F1 | — | `lijst.spec.ts` |
+| | Rust en eenvoud | Verbeteren | F1 | Ronde 1 en 2: "Alles" in plaats van het dubbele vinkje, geen leeg vlak (BUG-138), korte voorbeeldtekst (BUG-137). Open: blokken "Toevoegen uit…" en "Klantenkaarten" samenvoegen | — |
+| | Winkelvolgorde per huishouden | Geblokkeerd | F2 | Nu per toestel | BUG-087, G1 |
+| **Winkelmodus** | Eén hand, grote rijen, "Niet gevonden", vervangen, "Voor morgen nog nodig", klaar → voorraad | Behouden | F1 | — | `winkelmodus.spec.ts` |
+| | Product altijd eerst in beeld | Opgelost (ronde 1) | F1 | — | BUG-133 |
+| **Keuken** | "Wat kan ik koken?", ontbrekende op de lijst | Behouden | F1 | — | `voorraad.spec.ts` |
+| | **Voorraadscherm (fase 3)**: zoeken, per plek (koelkast/diepvries/kast), aanpassen (hoeveelheid, eenheid, plek), "Bijna op" → één tik op de lijst, foutstaat, offline-melding | Gebouwd (fase 3), getest met voorraad-plek.test en fase3-beheer.spec (telefoon/desktop); plek op het account na migratie 0020 (tot dan op het toestel) | F1 | Drempel "bijna op" is een richtwaarde (< 150 g/ml of 1 stuk) | `voorraad-plek.ts`, 0020 |
+| | **"Heb ik al" en Klaar met winkelen (fase 3)**: één tik van de lijst naar de voorraad (als je die bijhoudt), ongedaan maken; "Na het winkelen": altijd / eerst vragen met vinkjes / nooit | Gebouwd (fase 3), getest met na-winkelen.test en fase3-beheer.spec; werkt meteen in productie (keuze op het toestel) | F1 | Standaard blijft "altijd" (zoals voordien) | `na-winkelen.ts`, `kringloop-db.ts` |
+| | Voorraad met drie standen (geen, alleen lijst, volledig) | Behouden | F1 | Onbekende voorraad telt nooit als in huis | `voorraad-modus.ts`, `voorraad-optioneel.spec.ts` |
+| | Gebruik eerst, "X dagen in huis" | Behouden | F1 | Datumgrens rond middernacht (BUG-140) | `gebruik-eerst.ts` |
+| | Restjes | Gebouwd (fase 3): op het account en bij het gezin, opgegeten/weggegooid met ongedaan maken, verspilling per maand (richtwaarde), assistent "wat kan ik met mijn restjes?"; getest met restjes-db.test, acties.test, fase3-keuken.spec, restjes.spec en tests/rls/restjes.mjs; actief in productie na migratie 0019 (tot dan op het toestel) | F2 | Eerder alleen op het toestel; ontwerp R1–R5. P3: eigen naam, richtwaarde, Restjesdag in "Stel mijn week samen" noemt de restjes, "Gebruik eerst"-kaart op Vandaag (houdbaarheid.spec) | LANCERINGSPLAN B2 |
+| | Houdbaarheid, plekken, weggegooid | Geblokkeerd | F2 | Voorstel 0007 | #17, G1 |
+| | Dubbels in de voorraad samenvoegen ("ui"/"uien") | Te ontwikkelen | F2 | — | MODULE-AUDIT P2 |
+| **Klantenkaarten** | Scannen, tonen, delen met het gezin | Behouden | F1 | Camera alleen op een echt toestel te testen | `kaarten.*` |
+| **Vrienden en delen** | Uitnodigen, rechten per onderdeel, gedeelde recepten bekijken | Behouden | F1 | Twee rechtensystemen naast elkaar | #30 |
+| **Meldingen** | Web push: menu, koken, boodschappen, weekmenu | Behouden | F1 | — | `meldingen.tsx` |
+| | **Meldingen in de app (P5)**: bel met ongelezen teller; weekmenu gewijzigd door gezinslid, iets voor jou op de lijst, klaar met winkelen, restje bijna over datum, tegelijk gewijzigd; per soort aan/uit in Instellingen › Suggesties en meldingen | Gebouwd (marathon P5), getest met meldingen.test (filters, privacy) en samenwerking.spec (telefoon/desktop) + suggesties.spec; actief in productie na migratie 0017 (restjes werken nu al, op het toestel) | F2 | Nooit naar buiten zonder toestemming; geen allergiereden in een melding | `MeldingenBel.tsx`, 0017 |
+| | Native push (APNs/FCM), voorstel in de melding | Te ontwikkelen | F1/F2 | Helpt bij Apple 4.2 | #18, #23 |
+| **Hulp en onboarding** | Help Center, tutorials, rondleiding, kennismaking, eerste stappen | Behouden | F1 | Artikels nog niet nagelezen: productie toont ze niet | #8 |
+| **Credits** | Saldo, bewegingen, extra vragen | Behouden | F1 | Kopen staat uit | G5 |
+| **Instellingen** | Profiel, kleuren, taal, etenstijden, momenten, voorraad, slimme voorstellen, export, verwijderen | Behouden | F1 | — | `instellingen.tsx` |
+| | 24-uurstijden, Nederlandse namen | Opgelost (ronde 1) | F1 | — | BUG-135 |
+| | Opdelen in onderdelen | Verbeterd (ronde 2) | F1 | Drie delen (Weergave, Maaltijden, Account en privacy) met een sprongmenu; echte subpagina's zijn een optie voor later | — |
+| | Persoonlijke allergieën, intoleranties, dieet en uitsluitingen op het account | Gebouwd (marathon), getest met gezin-leden.spec (telefoon/desktop) en tests/rls/huishouden-voeding.mjs; actief in productie na migratie 0009 | **F1** | `/mijn-voeding` met toestemmingsvraag en datum; zonder toestemming of zonder 0009 op het toestel. AVG-export neemt de nieuwe tabellen mee (avg-export.test, avg-export.spec), lege sectie zolang een tabel ontbreekt | voorstel 0009 (vroeger 0004b), FR-I-03 |
+
+## A2. Recepten toevoegen en beheren (verplicht volledig)
+
+**Geen enkele bestaande invoermethode mag verdwijnen.** Getest betekent hier: start → invoer → nakijken → bewaren → terugvinden → aanpassen → gebruiken.
+
+| # | Invoermethode | Ingang (label) | AI/credits | Nakijken vóór bewaren | Status | Testdekking | Fase |
+|---|---|---|---|---|---|---|---|
+| 1 | Zelf typen (formulier) | Recept toevoegen → "Zelf typen" | nee | ja, "Klopt alles?" | Behouden | volledig (`kernflow.spec.ts`) | F1 |
+| 1b | Stap voor stap (beginners, FR-RI-06) | Nieuw recept → "Stap voor stap" | nee | ja, stap 4 "Klopt alles?" | Gebouwd (marathon), getest met recept-stappen.spec en grote-tekst-woorden.spec (telefoon/desktop); werkt meteen in productie (geen migratie) | `recept-stappen.spec.ts` | F1 |
+| 2 | Link van een website | "Link plakken" → "Inlezen" | eerst gratis (JSON-LD), dan AI | ja, "Kijk je recept na" (allergie, dubbelcheck, velden om na te kijken); mislukt → uitleg + "Plak de tekst"/"Neem een foto"/"Typ het zelf" | Gebouwd (fase 2), getest met recepten-bronnen.spec + receptinvoer.spec (telefoon/desktop) en recepten-alle-bronnen.test; werkt meteen in productie (geen migratie) | foutpad E2E | F1 |
+| 3 | Video-link (YouTube, TikTok, Instagram, Facebook) | "Video-link" | nee (beschrijving zonder AI gelezen) | ja | Gebouwd (fase 2), getest met recepten-bronnen.spec + receptinvoer.spec (telefoon/desktop) en recepten-alle-bronnen.test; werkt meteen in productie (geen migratie). Alleen link + maker, geen download of ingesloten speler; tijdcodes (0:45) klikbaar bij YouTube/Vimeo. Maker staat in de omschrijving (geen kolom zonder migratie) | video → nakijken → bewaren → videolink | F1 |
+| 4 | Tekst plakken | "Tekst plakken" → "Recept eruit halen" | AI, terugval zonder AI (tekst-parser) | ja | Gebouwd (fase 2), getest met recepten-bronnen.spec + receptinvoer.spec (telefoon/desktop) en recepten-alle-bronnen.test; werkt meteen in productie (geen migratie) | allergeen + dubbel E2E | F1 |
+| 5 | Foto of screenshot van een recept | "Foto van recept" | AI | ja, nakijkscherm; onleesbaar → uitleg + alternatieven | Verbeterd (fase 2); handschrift met echte AI nog testen | foutpad E2E | F1 |
+| 6 | Foto van een gerecht (recept raden) | "Gerecht herkennen" | AI | ja, met "een gok" | Behouden | alleen de UI | F1 |
+| 7 | Ingrediënten herkennen op een foto | "Herken op foto" (in het formulier) | AI | alleen in het tekstveld | Verbeteren: eigen nakijkstap | geen | F1 |
+| 8 | Zoeken op naam (app, web, AI-ideeën, laten uitschrijven) | "Zoeken" | zoeken gratis, ideeën AI | ja, "Gevonden recept" | Behouden | alleen de UI | F1 |
+| 9 | Delen naar de app (PWA share target) | systeem "Delen" → Foodlo | zoals 2/3/4 | ja | Gebouwd (fase 2), getest met recepten-bronnen.spec + receptinvoer.spec (telefoon/desktop) en recepten-alle-bronnen.test; werkt meteen in productie (geen migratie): video-link → "Video-link", alleen tekst → "Tekst plakken", link → "Link plakken". Android-intent (Capacitor) nog niet ingesteld | share-route E2E | F1 |
+| 10 | Uit Ontdek | "Toevoegen aan mijn recepten" | nee | ja | Behouden | geen eigen test | F1 |
+| 11 | Recept van een vriend of gezinslid kopiëren | Meer → "Zet in mijn gerechten" | nee | ja: overzicht vóór kopiëren, foto's gaan mee (ronde 2) | Verbeterd (BUG-144) | `recept-beheer.spec.ts` | F1 |
+| 12 | Vanuit het weekmenu (zoeken, voorstellen, recept van een naam) | ReceptKiezer | AI behalve zoeken | ja, "Controleer het recept" | Behouden | regels getest | F1 |
+| 13 | "Laat Foodlo kiezen" → recepten | Week | AI | voorstel | Behouden | `week-voorstel.spec.ts` | F1 |
+| 14 | Nieuw recept koppelen aan een maaltijd | "Klaar en koppelen" | nee | ja | Behouden | ? | F1 |
+| — | Hulpmiddelen in het formulier: AI-foto, stappen verbeteren, foto van de bron ophalen | in het formulier | AI | ja (voorstel) | Behouden | — | F1 |
+| — | "Vul dit gerecht aan" op de receptpagina | receptpagina | AI | ja: voorstel met "Overnemen" of "Niet doen" (ronde 2) | Verbeterd (BUG-145) | typecheck, regressie (geen AI in de testomgeving) | F1 |
+| — | Document of PDF importeren | — | — | — | Te ontwikkelen | — | F2 |
+| — | Export van een andere app (bv. Paprika) | — | — | — | Latere fase | — | F2 |
+| — | Creator-editor: concept, publiceren, voorbeeld | — | — | — | Latere fase (zie B) | — | F2 |
+
+| Beheer | Status | Opmerking |
+|---|---|---|
+| Aanpassen (zelfde formulier), versies (10, terugzetten), foto's, concepten (automatisch bewaren) | Behouden | — |
+| **Receptversies (P3)**: origineel + elke aanpassing (assistent, porties bewaren, aanvullen, import, bewerken) met datum en wat veranderde; terugzetten met bevestiging en ongedaan maken; "Bewaar voor N personen" | Gebouwd (marathon P3), getest met recept-versies.test (10) en receptversies.spec (telefoon/desktop); werkt in productie (bestaande tabel recipe_versions, rechten getest in tests/rls/kookmomenten.mjs) | — |
+| Ingrediënten en stappen herschikken (hoger/lager-knoppen, geen slepen) | Gebouwd (marathon), getest met volgorde.test en recept-volgorde.spec; werkt meteen in productie | "Wat gebruik je bij elke stap" verhuist mee |
+| Verwijderen | Verbeterd (BUG-146, ronde 2) | Overal: bevestigen, zacht verwijderen, "Ongedaan maken"; op de pagina van een verwijderd recept staat "Terugzetten" |
+| Eigen recept dupliceren | Gebouwd (ronde 3) | Meer → "Dupliceren": kopie met "(kopie)", ingrediënten en foto's mee (`recept-beheer.spec.ts`) |
+| Publiek, privé, alleen volgers | Latere fase | Er is geen zichtbaarheidsveld (G1/G2) |
+| Eigen collecties | Gebouwd (marathon); actief na migratie 0008 | G1/G2 |
+| Delen (link en tekst) | Gebouwd (fase 2), getest met recepten-bronnen.spec | Venster "Recept delen": "Link kopiëren", "Als tekst delen" (Web Share, anders kopiëren), privé/vrienden/openbaar (openbaar via makerstudio + moderatie). Ontvanger: Meer → "Zet in mijn gerechten" |
+| Recepteditor in stappen | Verbeteren | Bij een nieuw recept gaat de keuze van invoer voor; het formulier toont daarna alles tegelijk. Ronde 3: voorbeeldweergave vóór bewaren ("Klopt alles?" › Voorbeeld, `receptinvoer.spec.ts`) |
+
+## B. Creators en food influencers
+**Kern (bouwmarathon 2026-11-14):** C1–C8 gebouwd als eerste versie achter `useModuleBeschikbaar`; in productie "binnenkort" tot migratievoorstel 0008 is uitgevoerd. Test: `makers.spec.ts`, `community.spec.ts`, `tests/rls/makers-community.mjs` (39 scenario's).
+
+| Onderdeel | Status | Fase | Voorwaarde |
+|---|---|---|---|
+| Creatorprofiel (`/makers/$handle`, bio, omslag, specialisaties, badge) | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | Omslag/profielfoto uploaden: nog niet (initialen) |
+| Publiceren en zichtbaarheid (privé, vrienden en gezin, openbaar), concept/gepubliceerd, video-link | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | Fase 4: video-link + tijden per stap ("Video en tijden", klikbaar op de receptpagina; video-tijden.test, fase4-makers.spec). Plannen en voorbeeldweergave: later |
+| Volgen, ontdekken van creators | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | Fase 4: feed "Volgend" op Ontdek (chronologisch, ontvolgen, lege toestand) + melding bij de bel (per soort uit te zetten); makers-feed.test, fase4-makers.spec |
+| Collecties van creators | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | Openbare verzameling toont alleen openbare recepten |
+| Bronvermelding → echte maker | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | — |
+| Statistieken (volgers, gepubliceerd, bewaard, ingepland; alleen totalen) | Gebouwd (marathon), getest met makers.spec + community.spec (telefoon/desktop) en tests/rls/makers-community.mjs; actief in productie na migratie 0008 | F2 | "Bekeken" en per recept: later |
+| Moderatie (meldknop, wachtrij; DSA) | Gebouwd (marathon): /beheer/moderatie (goedkeuren/afwijzen met reden, bijdrage verbergen/terugzetten, melding afsluiten, gelogd), getest met moderatie.spec (telefoon/desktop); actief in productie na migratie 0008 + 0011 | F2 | Verplicht vóór productie |
+| Gesponsorde content met duidelijk label | Gebouwd (marathon): één vaste plek in Ontdek, "Gesponsord · In samenwerking met …", allergie/dieetregel, getest met partner-portaal.spec + partners.test; actief in productie na migratie 0011 | F3 | Fase 5: vertoningen (1 per dag per tabblad) en klikken tellen via gesponsord_tel(), alleen dagtotalen; getest met fase5-bcc.spec |
+| Premium collecties, creatorabonnementen, inkomstendeling, uitbetaling/KYC | Gebouwd in TESTMODUS (fase 4): maker zet testprijs/voordelen, exclusieve recepten en collecties, fan abonneert/zegt op (testterugbetaling, btw als tekst), maker ziet abonnees zonder betaalgegevens; getest met maker-abonnement.test (13), fase4-makers.spec (telefoon/desktop), tests/rls/makers-abonnement.mjs (46); actief in productie na migratie 0008 + 0021, echte betalingen pas na G5. Geen uitbetaling | F3 | G5, #29, KYC/uitbetaling via provider, juridisch advies |
+| Affiliate, merksamenwerkingen | Latere fase | F3 | Nog geen ontwerp; juridisch advies |
+
+## C. Gezin en huishouden
+| Onderdeel | Status | Fase | Opmerking |
+|---|---|---|---|
+| Gezin maken, uitnodigen (link, QR, zoeken), verlaten, eigenaar overdragen | Behouden | F1 | `gezin.tsx`, RLS-tests |
+| Rechten per lid (6 schakelaars) | Verbeteren | F2 | Ontwerp: één huishouden zonder vinkjes (#30) |
+| Gedeelde planning en lijst | Uitbreiden | F2 | /gezin toont nu "Samen plannen" met Gezinsweekmenu (`/planner?weergave=gezin`) en Gezinslijst (`/boodschappen?lijst=gezin`), getest met gezin-leden.spec; kringloop en Vandaag nog alleen voor je eigen plan |
+| **Samenwerking (P5)**: conflictkeuze bij gelijktijdige wijziging ("Jan veranderde woensdag net in Lasagne" → Houd die van Jan / Zet de mijne / Bekijk allebei, één ongedaan maken), "Jan is de lijst aan het bewerken", "Wie veranderde wat" per week | Gebouwd (marathon P5), getest met conflict.test, samenwerking.spec (telefoon/desktop, twee browsers) en tests/rls/samenwerking.mjs; conflictcontrole werkt meteen (geen migratie), log en namen in de keuze actief in productie na migratie 0017 | F2 | Inhoudscontrole vlak vóór het schrijven (geen versiekolom nodig). Aanwezigheid via Supabase Realtime presence: niet te testen in de nep-databank |
+| **Lijst verdelen (P5)**: wie haalt wat ("Jan haalt dit · Bakker"), per winkel, "Mijn deel", winkelmodus toont wie wat haalt; kijker/kind mag afvinken maar niet aanpassen of weghalen | Gebouwd (marathon P5), getest met verdelen.test en samenwerking.spec (telefoon/desktop); actief in productie na migratie 0017, tot dan op het toestel | F2 | Toewijzen aan een persoon alleen op de gezinslijst |
+| Mee-eters per maaltijd, porties | Gebouwd (marathon + fase 1), getest met gezin-leden.spec, mee-eters-veilig.spec (telefoon/desktop), gezin-veiligheid.test, maaltijd-eters.test en tests/rls/huishouden-voeding.mjs; op het account na migratie 0010, tot dan op het toestel | F2 | "Wie eet mee?" bij inplannen, op de Vandaag-kaart, in het dagdetail van Week (en via "…" › "Wie eet mee?"), op het recept en in de kookstand; het weekvoorstel bewaart de gekozen eters. Standaard = het hele huishouden. Elke wijziging met "Ongedaan maken". Open: personen past nog niet mee aan als je later iemand uitzet |
+| **Veiligheid overal gelijk (fase 1)** | Gebouwd, getest met voorstel-eters.test (hard/zacht, privacy, meerdere eters), mee-eters-veilig.spec, eters-voorstellen.spec en gezin-leden.spec (telefoon/desktop); actief in productie na migratie 0010 | **F1** | Eén oordeel (`maaltijdOordeel` in voorstel-eters.ts): **hard** = allergie, intolerantie (gluten/coeliakie, lactose), strikt dieet (vegetarisch, veganistisch, pescotarisch) → "Niet geschikt voor …", terracotta vlak; **zacht** = "liever niet", weinig vlees → "Liever niet voor …", honing, gestippeld. Op Vandaag, Week (dagdetail + raster), recept, kookstand (banner + ingrediënt), lijst (markering + vervanger), suggesties, weekvoorstel, receptkiezer en nakijken van een nieuw recept. Reden en ingrediënt alleen als gedeeld. Halal ontbreekt nog als dieetcode |
+| Voorkeuren en **allergieën per gezinslid** (hard, nooit onveilige suggesties) | Gebouwd (marathon), getest met gezin-leden.spec, gezin-veiligheid.test en tests/rls/huishouden-voeding.mjs; actief in productie na migratie 0010 (vraagt akkoord eigenaar, AVG art. 9) | F2 | Lidkaarten (ook kinderen zonder account), toestemming per lid, "Delen met mijn gezin"; planners zien alleen "Niet veilig voor …" (server: `maaltijd_veilig_voor`). Ook in de automatische weekvoorstellen (fase 1) |
+| Gedeelde voorraad | Latere fase | F2 | BUG-112 (besloten zo te laten), 0007 |
+
+## D. Business Control Center
+| Onderdeel | Status | Fase | Opmerking |
+|---|---|---|---|
+| Overzicht, gebruikers (blokkeren, AVG-export, verwijderen), gezinnen, segmenten, support | Behouden | F1 | Ongeveer 45 schermen, `bewaker()` op 79 functies |
+| Activiteit, User Intelligence, functies, recepten, imports | Behouden | F1 | — |
+| Finance (credits, kosten, AI-gebruik) | Behouden | F1 | Omzet altijd € 0 (geen betalingen). Fase 5: apart scherm Omzet (testmodus) |
+| Communicatie (berichten, push, teksten, hulpinhoud) | Behouden | F1 | — |
+| Systeem (status, integraties, labels, klantenkaarten, beveiliging, logboek, instellingen, team) | Behouden | F1 | — |
+| 2FA voor beheer | Geblokkeerd | F1 | Gebouwd, staat uit (#2); BUG-141 |
+| Rollen bruikbaar maken, rol `finance` | Geblokkeerd | F2 | BUG-096, #31 |
+| RLS beheer (`is_admin`) | Geblokkeerd | F1 | BUG-097, 0002, G1/G2 |
+| Betaalpoort ook op de server | Opgelost (ronde 2) | F1 | BUG-143: de server weigert betalen of credits kopen zonder provider |
+| Partners, merken, producenten, retail, restaurants, campagnes, gesponsorde content, productintegraties, rapportage voor partners | Gebouwd (marathon): aparte omgeving /partner (overzicht, profiel, producten, campagnes, gesponsorde content, samenwerkingen, rapportage met alleen dagtotalen, team met rollen, abonnement) + goedkeuren in /beheer/moderatie, getest met partner-portaal.spec, partners.test en tests/rls/partners-premium.mjs; actief in productie na migratie 0011 | F3 | Fase 5: partner ziet cijfers per eigen campagne, testbudget, "Plan en facturen" met btw; analist ziet geen facturen (BUG-181) |
+| **BCC fase 5 (testmodus)**: partneraanvragen (goedkeuren/afwijzen met reden), campagnes (status, vertoningen, klikken, CTR, testbudget, goedkeuren/terugsturen/beëindigen), omzet per maand (btw en terugbetalingen apart), makeruitbetalingen (centraal platformpercentage, "zou uitbetaald worden", KYC niet gekoppeld), teamuitnodigingen zonder e-mail, rollen eigenaar/beheerder/moderator/analist met rechten per scherm, leesbaar auditlog | Gebouwd (fase 5), getest met bcc.test (20), fase5-bcc.spec (4 tests, telefoon/desktop), tests/rls/bcc-testmodus.mjs (46); actief in productie na migratie 0011 + 0012 + 0021 + 0022 | F3 | Uitgenodigde teamleden kunnen pas meewerken als de vaste eigenaarscontrole wordt aangepast (beslissing eigenaar); echte uitbetaling/KYC pas na G5 |
+| Moderatie, AVG-register, incidenten, back-ups | Moderatie gebouwd (marathon, zie B); AVG-register, incidenten, back-ups te ontwikkelen | F2 | BCC-audit §6 |
+
+## E. Betalingen en verdienmodellen
+| Onderdeel | Status | Fase | Voorwaarde |
+|---|---|---|---|
+| AI-credits (saldo, reserveren, terugstorten, cache, limieten) | Behouden | F1 | `credits.server.ts` |
+| Creditpakketten kopen | Geblokkeerd | F3 | G5 |
+| Gratis ervaring met limiet (100 gerechten) | Behouden | F1 | `limiet.ts` |
+| Premium, abonnementen | Gebouwd in testmodus (marathon + fase 6): /premium (maand/jaar, btw, extra's van de server: seizoenskalender + weekmenu-sjablonen, anders "Dit hoort bij Premium"), /abonnement (volgende testfactuur, maand ↔ jaar pro rata, opzeggen tot einde periode, terugbetaling binnen 14 dagen, genadeperiode bij mislukte betaling, facturen met btw + tekstdownload), één rechtenlijst `rechten.ts` met `vereisRecht` op de server; getest met premium.spec, fase6-premium.spec (telefoon/desktop), fase6.test, betalen.test, tests/rls/partners-premium.mjs + premium-beheer.mjs; actief in productie na migratie 0012 + 0023, echt verkopen pas na G5 | F3 | B5 (#29), G5, juridisch advies |
+| Betaalprovider achter een adapter (geen vaste keuze) | Gebouwd (marathon + fase 6): `src/lib/betalen/` (BetaalProvider met checkout, webhook, terugbetaal, startUitbetaling; alleen TestBetaalProvider via `kiesBetaalProvider`, statusmachine idempotent op event-id); serverweg alleen als BETAALPROVIDER_GEKOPPELD=false en modus test; eisen/criteria in docs/foodlo/BETAALPROVIDER-EISEN.md (geen keuze) | F3 | Stripe Connect of Mollie te evalueren |
+| Facturatie, btw/OSS, DAC7, herroeping | Testmodus (fase 6): testfacturen en -creditnota's met btw apart (BE 21 % als voorbeeld, centraal in prijzen.ts), herroeping 14 dagen; echte facturatie/OSS/DAC7 latere fase; getest met fase6.test en premium-beheer.mjs, actief na migratie 0023 | F3 | Boekhouder/jurist |
+| Zakelijke abonnementen, commerciële samenwerkingen | Latere fase | F3 | — |
+
+## F. Intelligente assistent
+| Onderdeel | Status | Fase | Opmerking |
+|---|---|---|---|
+| Context: dag, uur, seizoen, feestdagen | Behouden | F1 | Getest (26) |
+| Geschiedenis, voorraad, restjes, gebruik eerst, seizoensproducten, "niet nu", vul aan, voor morgen | Behouden | F1 | Unit + E2E |
+| Uitleg "waarom" en uitschakelbaar ("Slimme voorstellen") | Behouden | F1 | Schakelaar nu per toestel → naar het account (F2) |
+| Tijdregel (begin om) | Uitgebreid (ronde 1) | F1 | — |
+| Weer | Gebouwd (testgegevens) | F2 | Adapter + testbron; echte bron na proxy en licentie (#15, #16) |
+| Budget | Gebouwd (schatting) | F2 | Richtprijzen; echte prijzen na #21 |
+| Gezin als signaal | Latere fase | F2 | 0005 |
+| Generatieve AI (13 functies, credits, cache) | Behouden | F1 | #14, #19 |
+| Harde veiligheidsregels allergie en dieet | Behouden | F1 | `veiligheid.ts`, 20 unit- en 9 E2E-tests |
+| Privacylaag voor externe AI (vrij veld "liever niet") | Opgelost (ronde 2) | F1 | **BUG-142**: allergenen, intoleranties, dieet en gezondheid worden eruit gehaald, op het toestel én op de server |
+
+## G. Privacy, account en beveiliging
+| Onderdeel | Status | F1 nodig | Voorwaarde |
+|---|---|---|---|
+| Registreren en aanmelden met e-mail, wachtwoord herstellen | Behouden | ja | Redirect-URL bij release (BUG-022) |
+| Sociale login (Google, Apple, Microsoft) | Verbeteren | ja (Apple verplicht) | Geen eigen test; niet getest in de native app |
+| Account verwijderen, AVG-export (32 secties) | Behouden | ja | Test op staging (G1) |
+| **Account verwijderen volledig (fase 8)**: gevolgen vooraf per gezin (opvolger of opgeheven), geen bedenktijd (zo gezegd), facturen anoniem; register met elke persoonskolom (ook 0008–0025), community-foto's (BUG-179), toestel leeg (opslag, IndexedDB, offline-cache) | Gebouwd (marathon fase 8), getest met gegevens-register.test, account-opruimen.test, toestel-wissen.test, PGlite account-verwijderen.mjs (niets blijft over) en account-verwijderen.spec (telefoon/desktop: geen rij meer, aanmelden lukt niet); werkt nu al met de bestaande tabellen, nieuwe tabellen na hun migratie | ja | Test op staging (G1) |
+| **AVG-export (fase 8)**: uitleg in gewone taal + alle nieuwe modules (planprofiel, budget per week, kookmomenten, toewijzingen, meldingen, restjes, AI-gebruik, testmandjes, toestemmingen, betaalgebeurtenissen …), niets van anderen | Gebouwd (marathon fase 8), getest met avg-export.test (elke registerregel geëxporteerd of met reden) en avg-export.spec (telefoon/desktop); nieuwe secties leeg tot hun migratie | ja | — |
+| **Privacy & toestemmingen (fase 8)**: allergieën/dieet, gezin, community, meldingen, AI (standaard minimaal), analyse; wat, waarom, sinds, intrekken met gevolgen; AI uit op de server afgedwongen, analyse stopt en wist | Gebouwd (marathon fase 8), getest met toestemmingen.test, credits.server.test (AI uit), fase8-privacy.spec (telefoon/desktop); keuze op het toestel nu, op het account na migratie 0025 | ja | Akkoord 0025 |
+| **Aanmelden en beveiliging (fase 8)**: waar je aangemeld bent, één toestel of alle andere afmelden (dat toestel merkt het meteen), 2FA-uitleg | Gebouwd (marathon fase 8), getest met sessies.test en fase8-privacy.spec (twee echte aanmeldingen); lijst per sessie na migratie 0025 (tot dan: recent gebruikte toestellen), "alle andere afmelden" werkt nu al | ja | Akkoord 0025; 2FA gewone accounts later |
+| Privacyverklaring, voorwaarden, toestemming | Verbeteren | ja | Jurist (#27) |
+| Bewaartermijnen (0003/0003b), privé voorkeuren (0004) | Geblokkeerd | ja | G1, #5, #6, #12 |
+| RLS beheer (0002) | Geblokkeerd | ja | G1/G2, #3 |
+| Beveiligingsreleases (TanStack/seroval, SSRF) | Geblokkeerd | ja (hoogste prioriteit live) | G3/G4 |
+| Geheimen | Behouden | ja | — |
+
+## H. Beheer, ondersteuning en operaties
+| Onderdeel | Status | F1 nodig | Opmerking |
+|---|---|---|---|
+| Help Center (24 artikels, concept) | Geblokkeerd | ja | Nalezen (#8) |
+| Feedback, support | Behouden | ja | RLS-zwakte S8 (#3) |
+| Meten en foutopvang | Behouden | ja | — |
+| E-mail (Lovable of Resend) | Behouden | ja | Verwerkers in de privacyverklaring |
+| Web push | Behouden | ja | — |
+| Native push | Te ontwikkelen | sterk aanbevolen | #23 |
+| Talen (10, machinevertaling) | Behouden | nee (lancering in het Nederlands) | Vertalingen nalezen: F2 |
+| Offline (lijst, klantenkaart, Week, Vandaag) | Behouden; offline-scherm (ronde 3). **Gebouwd (marathon P6)**: melding op elk scherm met teller, laatst bekende Week/Lijst/Vandaag ook na herladen (7 dagen, gewist bij afmelden), wachtrij afvinken/toevoegen met eerlijke melding bij herstel; geen migratie nodig | ja | `offline.spec.ts`, `kwaliteit-20.spec.ts` (test 20), `offline-cache.test.ts` |
+
+## I. Mobiele platformen en lancering
+| Onderdeel | Status | F1 nodig | Voorwaarde |
+|---|---|---|---|
+| PWA, installeren | Behouden | ja | — |
+| Android-project (Capacitor) | Verbeteren | ja | — |
+| iOS-project | Te ontwikkelen | ja | Mac met Xcode |
+| App laadt de live website (`server.url`) | Geblokkeerd | ja | #22 (risico bij Apple 4.2) |
+| Ontwikkelaarsaccounts | Geblokkeerd | ja | #24/#25 (D-U-N-S tot 30 dagen) |
+| Staging | Geblokkeerd | ja | #1, G1 |
+| Echte toesteltests (2 iPhones, 2 Android) | Geblokkeerd | ja | #26 |
+| Storemateriaal, privacylabels, Data safety | Te ontwikkelen | ja | #27 |
+| CI (typecheck, unit, lint, build, E2E, RLS, schermen) | Behouden | ja | Draait vanaf deze PR |
+| Cloudontwikkeling reproduceerbaar | Opgelost (ronde 1) | — | BUG-131 |
+
+## L. Aanvullende wensen uit de gesprekken (traceerbaarheid, 2026-11-13)
+**Waarom:** controle van alle opdrachten van de eigenaar en van `CLAUDE.md` tegen deze matrix.
+
+**Wat:** deze wensen stonden nog niet als aparte rij in de matrix. Ze zijn hier toegevoegd. Niets is geschrapt.
+
+| Wens | Bron | Status | Fase | Opmerking |
+|---|---|---|---|---|
+| **Community:** interacties tussen gebruikers, zoals reacties, vragen aan de maker en gekookt-meldingen | Masteropdracht §6; complete productvisie §3 | "Ik heb het gemaakt" (met foto), reacties, melden → moderatie (met foto), blokkeren: Gebouwd (fase 4), getest met community.test, community.spec + fase4-community.spec (telefoon/desktop), moderatie.spec en tests/rls/makers-abonnement.mjs; actief in productie na migratie 0008 + 0021 (bucket community-fotos) | F2 | — |
+| **Creatorcontent:** video's, kooklessen en andere media | Complete productvisie §3; CLAUDE.md | Latere fase | F2/F3 | Opslag- en verwerkingskost apart ramen |
+| **AI:** ingrediënten vervangen (substituties met reden) | Masteropdracht §4 | Gebouwd (marathon) | F2 | "Vraag het Foodlo" op recept en kookstand: vaste vervangingstabel getoetst aan allergie/dieet van jou en mee-eters; slimme hulp via voorAI() + credits, in demo TestAssistentAdapter. Getest met assistent.test + assistent.spec. Echte AI: LOVABLE_API_KEY + credit_costs-rij "assistent" |
+| **AI:** recepten aanpassen (bv. vegetarisch maken, minder tijd) | Masteropdracht §4 | Gebouwd (marathon), regels | F2 | Personen, vegetarisch, zonder allergeen: voorbeeld met verschillen, "Bewaar als kopie" of "Pas dit recept aan" met ongedaan maken (assistent.spec). "Sneller": later |
+| **AI:** vragen beantwoorden (gesprek met de assistent) | Masteropdracht §4; #10 | Gebouwd (marathon), korte vraag | F2 | Vaste antwoorden eerst, slimme hulp optioneel; 20 per dag (toestel) + 30 per dag (server). Gesprek met acties: zie P4 hieronder |
+| **Assistent met acties (P4)**: "Vraag de assistent" op Vandaag, Week en Lijst; opdrachten zonder AI herkend (goedkoper, vervang dag, weinig tijd, iemand eet (niet) mee, niemand thuis, verplaats, ingrediënten op de lijst, wat met X); voorstel met verschillen (menu, lijst, kost, wie eet mee) → Doe maar / Nee, één keer ongedaan maken | Masteropdracht §4; AUDIT-MASTERVISIE P4 | Gebouwd (marathon P4), getest met opdrachten.test (46 zinnen + 12 niet herkend), acties.test (veiligheid, privacy) en week-assistent.spec (telefoon/desktop); werkt met de bestaande tabellen (geen migratie) | F1 | Uitvoeren via wijzigMenu; AI alleen als terugval voor herkennen (nu enkel testmodus in de demo, geen echte AI aangesloten) | `routes/assistent.tsx`, `lib/assistent/opdrachten.ts`, `acties.ts`, `uitvoeren.ts` |
+| **Proactieve suggesties (P4)**: Instellingen › Suggesties (7 soorten aan/uit), hooguit één kaart op Vandaag (Gebruik eerst, budget, weer, variatie, seizoen), "Niet meer tonen" per kaart | AUDIT-MASTERVISIE P4 | Gebouwd (marathon P4), getest met suggesties.test en suggesties.spec (telefoon/desktop), RLS tests/rls/suggesties.mjs; op het account na migratie 0016, tot dan op het toestel | F2 | Kaarten wijzigen niets zelf: budget/variatie/seizoen openen de assistent. "Slimme voorstellen" uit = geen kaart (ook geen weerkaart) | `ProactieveKaart.tsx`, `lib/suggesties.ts`, 0016 |
+| **AI:** agents die meerdere stappen voorstellen (bv. "plan en vul mijn week aan") | Masteropdracht §4 | Latere fase | F2/F3 | Altijd met een goedkeuringsstap (AI_ARCHITECTURE §3–4) |
+| **Boodschappen-agent (fase 7)**: "Maak mijn lijst slimmer" — dubbels samenvoegen (ingrediënt-kern), afdelingsvolgorde per winkel (voorbeeldindeling), goedkopere alternatieven (richtprijzen, allergie/dieet getoetst), vergeten vaste producten; Doe maar / Nee, één keer ongedaan | FASE7 §1 | Gebouwd (marathon fase 7), getest met lijst-slimmer.test en fase7-agenten.spec (telefoon/desktop); werkt meteen in productie (bestaande tabel shopping_items, geen migratie) | F1 | Vaste regels, geen AI | `lib/lijst-slimmer.ts`, `components/lijst/LijstSlimmer.tsx` |
+| **AI-gebruik en daglimiet zichtbaar (fase 7)**: Instellingen › AI-gebruik (vandaag/limiet, maand, per soort zonder inhoud, cache); limiet → vaste tips i.p.v. uitgeschakelde knop; cache 24 u voor identieke vragen; BCC › AI-totaal per actie (geaggregeerd, geschatte kost) | FASE7 §2 | Gebouwd (marathon fase 7), getest met gebruik-log.test en fase7-agenten.spec, RLS tests/rls/ai-gebruik-mandjes.mjs; op het toestel meteen, op het account en in het BCC na migratie 0024 | F1 | `lib/ai/gebruik-log.ts`, `lib/ai/vraag-cache.ts`, `routes/instellingen_.ai-gebruik.tsx`, `routes/beheer.ai-totaal.tsx`, 0024 |
+| **Supermarktstroom testmodus (fase 7)**: lijst → "Stuur naar winkel (testmodus)" → productkoppeling (merk/verpakking, "geen prijs van de winkel"), niet-gevonden apart, mandje met testtotaal, terug naar de lijst | FASE7 §3 | Gebouwd (marathon fase 7), getest met mandje.test, provider.test en fase7-agenten.spec; alleen TestSupermarktProvider (geen echte winkel); mandje bewaard na migratie 0024 | F2 | Echte winkel: partnercontract + server-adapter | `routes/mandje.tsx`, `lib/supermarkt/` |
+| **Weer en seizoen in de weekplanner (fase 7)**: één weerinstelling (Maaltijden + Suggesties), zachte factor in de P1-engine (warm ≥ 22 °C → lichte gerechten), zonder bron "Geen weer beschikbaar" + seizoen, uit te zetten | FASE7 §4 | Gebouwd (marathon fase 7), getest met weer-seizoen.test en fase7-agenten.spec; werkt in productie zonder weerbron (seizoen), testweer alleen in de demo | F2 | `lib/weer-seizoen.ts`, `hooks/useWeer.ts` |
+| Lokale producten als signaal | Productmissie §2; complete visie §7 | Gebouwd (marathon) | F2 | Filter "In het seizoen" in Ontdek (België, vaste lijst; seizoen-ontdek.spec); reden in voorstellen bestond al |
+| **UX:** vlotte overgangen en micro-interacties | Productmissie §3; complete visie §8 | Verbeteren | F1 | Met respect voor `prefers-reduced-motion` |
+| **UX:** lege toestanden en foutmeldingen consequent | Complete visie §8; CLAUDE.md | Behouden / Verbeteren | F1 | `EmptyState` bestaat; per scherm nalopen |
+| **Editor:** voorbeeldweergave vóór bewaren, tussentijds bewaren, stappen herschikken | Aanvulling receptinvoer §3 | Verbeterd (ronde 3) | F1 | Voorbeeld gebouwd; tussentijds bewaren bestaat (concept); stappen herschikken: open |
+| **Supermarkt:** bestaande integraties behouden, later modulair uitbreiden | CLAUDE.md | Behouden + interface (marathon) | F1 | Gedrag ongewijzigd. Interface `SupermarktProvider` (`src/lib/supermarkt/provider.ts`): LokaleSupermarkt over de bestaande functies + TestSupermarktProvider (testgegevens), getest met provider.test. Schermen omzetten pas met de eerste partner (BUG-087) |
+| **Betalingen:** terugbetalingen, annulering, fraude en chargebacks, inkomstendeling creators, platformvergoeding | CLAUDE.md | Latere fase | F3 | In COMMERCIAL_ROADMAP §4; G5 en jurist |
+| **Analytics:** creatorconversie, retentie, churn, inkomsten | CLAUDE.md | Latere fase | F3 | Alleen geaggregeerd |
+| **Kosten per eenheid:** per actieve gebruiker, creator, AI-actie, opslag, e-mail en databankbewerking | CLAUDE.md | Uitbreiden | F1 (AI) / F2 (rest) | AI-kosten worden al gemeten (`ai_usage`, beheer Kosten) |
+| **Vertalingen:** kernvertalingen statisch en professioneel nagelezen | CLAUDE.md | Latere fase | F2 | Nu machinevertaling; lancering in het Nederlands |
+| **AI Growth OS** | Masteropdracht §8; aanvulling 2026-11-13 §6 | Apart project | — | **Niet in Foodlo bouwen of vermengen.** In Foodlo staat alleen de grens (`docs/foodlo/INDUSTRY_AND_GROWTH_FUTURE.md`) |
+
+---
+
+## J. Fasering en lanceringsplan (richting: ± 6 weken, geen gegarandeerde datum)
+
+| Week | Productwerk (ik) | Wat jij beslist of regelt | Blokkeert lancering als het uitblijft |
+|---|---|---|---|
+| 1 | Ronde 2:<br>- Lijst rustiger;<br>- Instellingen opdelen;<br>- één manier van verwijderen;<br>- nakijkstap bij kopiëren en "Vul aan";<br>- testen van receptinvoer (link, tekst, foto, delen) | Beslissingen:<br>- beeldbeleid;<br>- BUG-142 (privacy);<br>- #1 staging;<br>- #24/#25 accounts **starten** | Accounts (doorlooptijd) |
+| 2 | Vandaag:<br>- "iets anders vanavond";<br>- gezinsgrootte als standaard voor het aantal personen;<br>- allergieën en voorkeuren naar het account voorbereiden | #22 app-shell, #27 jurist | Staging |
+| 3 | iOS-project, iconen, opstartscherm, offline-scherm, native push (opt-in) | #2 2FA, #26 testtoestellen | iOS-project |
+| 4 | Op staging: migraties 0002–0004, 0003/0003b, volledige suite | Akkoord G1/G2 op staging | Staging en migraties |
+| 5 | Echte toesteltest (script PRAKTIJKTEST), bugfixes, help-artikels | Testers, artikels nalezen | Toesteltest |
+| 6 | Storemateriaal, privacylabels, TestFlight en gesloten Play-test | Akkoord G3/G4, indienen | Juridische teksten |
+
+- **F1 (consumentenlancering):** A, A2, de F1-rijen van F, G, H en I.
+- **F2:** gezin (C), creators (B, eerst moderatie), weer en budget, houdbaarheid, eigen collecties, documentimport.
+- **F3:** Business Control Center voor partners (D), premium en betalingen (E), gesponsorde content, creatorverdienmodellen.
+
+## K. Openstaande beslissingen in deze ronde
+1. **Beeldbeleid startrecepten:**
+   - de ontworpen omslag (nu actief);
+   - zelf foto's maken;
+   - beeldrechten kopen;
+   - AI-illustraties, herkenbaar als illustratie.
+2. **Instellingen opdelen** in Weergave, Maaltijden, en Account en privacy.
+3. **BUG-142:** het vrije veld "liever niet" filteren en verbergen voor de AI (voorstel in het bugregister).
+4. **BUG-143:** de betaalpoort ook op de server afdwingen (autorisatiewijziging met test).
+5. De genummerde beslissingen #1–#33 in `BESLISSINGEN-EIGENAAR.md` blijven gelden. De dringendste zijn:
+   - **#1** staging;
+   - **#22** app-shell;
+   - **#24/#25** ontwikkelaarsaccounts;
+   - **#26** testtoestellen;
+   - **#27** jurist.

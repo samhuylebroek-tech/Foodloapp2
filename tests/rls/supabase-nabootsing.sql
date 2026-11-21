@@ -22,6 +22,17 @@ CREATE TABLE auth.users (
   raw_user_meta_data jsonb DEFAULT '{}'::jsonb,
   created_at timestamptz DEFAULT now()
 );
+-- Sessies (zoals auth.sessions in Supabase; aal is daar een enum, hier tekst). Voorstel 0025.
+CREATE TABLE auth.sessions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  refreshed_at timestamp,
+  user_agent text,
+  ip inet,
+  aal text DEFAULT 'aal1'
+);
 CREATE TABLE auth.audit_log_entries (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   payload jsonb,

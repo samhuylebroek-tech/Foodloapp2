@@ -1,5 +1,7 @@
 # Business Control Center en financieel controlecentrum: audit en voorstel
 
+> Samengevat in [`docs/foodlo/COMMERCIAL_ROADMAP.md`](../foodlo/COMMERCIAL_ROADMAP.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-11, branch `v2/dev` (lokaal, niet gepusht). Onderzocht vanaf commit `f5bc8dd`. De fixes staan in de commit die bij dit document hoort (zie masterplan §21).
 
 **Hoe gemeten**

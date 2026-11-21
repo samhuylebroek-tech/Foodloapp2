@@ -15,6 +15,7 @@ const staat = {
   txn: "txn-1" as string | null,
   budget: null as number | null,
   uitgegeven: [] as { kost_eur: number }[],
+  aiUit: false,
 };
 
 function tabel(naam: string) {
@@ -40,6 +41,8 @@ function tabel(naam: string) {
     maybeSingle: async () => {
       if (naam === "platform_settings")
         return { data: staat.budget == null ? null : { value: staat.budget }, error: null };
+      if (naam === "toestemmingen")
+        return { data: staat.aiUit ? { aan: false } : null, error: null };
       if (naam === "ai_cache" && filterHash)
         return { data: staat.cache.get(filterHash) ?? null, error: null };
       return { data: null, error: null };
@@ -102,6 +105,7 @@ beforeEach(() => {
   staat.txn = "txn-1";
   staat.budget = null;
   staat.uitgegeven = [];
+  staat.aiUit = false;
 });
 
 describe("hashInvoer", () => {
@@ -113,6 +117,16 @@ describe("hashInvoer", () => {
 });
 
 describe("metCredits", () => {
+  it("fase 8: AI uitgezet op het account → geweigerd vóór cache, credits en AI", async () => {
+    staat.aiUit = true;
+    const run = vi.fn(async () => "x");
+    await expect(
+      metCredits({ userId: "u1", feature: "import_url", cacheSleutel: "a" }, run),
+    ).rejects.toThrow(/AI\) uitgezet/);
+    expect(run).not.toHaveBeenCalled();
+    expect(rpcs()).toEqual([]);
+  });
+
   it("succes: reserveert, rondt af, bewaart in cache en meet", async () => {
     const run = vi.fn(async () => ({ titel: "Stoofvlees" }));
     const uit = await metCredits({ userId: "u1", feature: "import_url", cacheSleutel: "a" }, run);

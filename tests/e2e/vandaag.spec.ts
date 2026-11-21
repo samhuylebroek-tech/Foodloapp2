@@ -1,7 +1,7 @@
 /**
  * WP3 — Vandaag: één kaart met wat nú telt en één knop. Nepdata (demo), vaste klok.
  */
-import { axeErnstig, expect, meldAan, nepLog, resetDemo, test, zetKlok } from "./helpers";
+import { axeErnstig, expect, meldAan, nepDb, nepLog, resetDemo, test, zetKlok } from "./helpers";
 
 // Vastgelegd op de code vóór BUG-118 (identieke schermtekst om 8, 14 en 22 u).
 const VANDAAG_NOG_NODIG = "Nog nodig: boter, laurierblaadjes en 2 andere.";
@@ -123,5 +123,66 @@ test("Vandaag ververst na een voorraadwijziging in de app", async ({ page, exter
     .first()
     .click();
   await expect(nu.getByText(/^Nog nodig: /)).not.toContainText("boter");
+  void extern;
+});
+
+// Review 2026-11-12, punt 8: "Wanneer moet ik beginnen?" — ook als er nog iets ontbreekt.
+// Stoofvlees met frietjes duurt 170 minuten, avondeten om 18:30.
+test("Vandaag zegt wanneer je moet beginnen, en eerlijk als het al laat is", async ({
+  page,
+  extern,
+}) => {
+  await zetKlok(page, 14);
+  await page.goto("/");
+  const nu = page.locator("[data-nu]");
+  await expect(nu).toHaveAttribute("data-nu", "aanvullen");
+  await expect(nu.getByTestId("tijdregel")).toHaveText(
+    "Begin om 15:40 · 2 uur 50 min · aan tafel om 18:30",
+  );
+  // De timing is geen extra knop: nog altijd hooguit twee acties.
+  expect(await nu.locator("a, button").count()).toBeLessThanOrEqual(2);
+
+  await zetKlok(page, 17);
+  await page.reload();
+  // Na 15:40 kan het niet meer op tijd: de kaart zegt dat eerlijk, met het werkelijke uur
+  // (zetKlok rekent in de tijdzone van de testmachine, de browser in Brussel).
+  await expect(nu.getByTestId("tijdregel")).toHaveText(
+    /^Begin nu: het duurt 2 uur 50 min, dan eet je rond (19|20):50$/,
+  );
+  void extern;
+});
+
+// Ronde 3 (FR-V-10): "Iets anders vanavond" vervangt de geplande maaltijd, met ongedaan maken.
+test("Iets anders vanavond: kies een alternatief, het weekmenu volgt, ongedaan maken zet het terug", async ({
+  page,
+  extern,
+}) => {
+  await zetKlok(page, 14);
+  await page.goto("/");
+  const nu = page.locator("[data-nu]");
+  await expect(nu).toHaveAttribute("data-nu", "aanvullen");
+  // De kaart zelf houdt hooguit twee acties; de keuze staat eronder.
+  expect(await nu.locator("a, button").count()).toBeLessThanOrEqual(2);
+  await page.getByRole("button", { name: "Iets anders vanavond?" }).click();
+  await expect(page.getByRole("heading", { name: "Liever iets anders?" })).toBeVisible();
+  const vandaag = new Date().toLocaleDateString("sv-SE");
+  const avond = async () =>
+    ((await nepDb()).meal_plan ?? []).filter((m) => m["plan_date"] === vandaag) as {
+      meal_type: string;
+      recipe_id: string | null;
+    }[];
+  const voor = (await avond()).find((m) => m.meal_type === "avondeten")?.recipe_id;
+  expect(voor).toBe(STOOFVLEES);
+  await page
+    .getByRole("button", { name: /^Kook .* vanavond$/ })
+    .first()
+    .click();
+  await expect
+    .poll(async () => (await avond()).find((m) => m.meal_type === "avondeten")?.recipe_id)
+    .not.toBe(STOOFVLEES);
+  await page.getByRole("button", { name: "Ongedaan maken", exact: true }).click();
+  await expect
+    .poll(async () => (await avond()).find((m) => m.meal_type === "avondeten")?.recipe_id)
+    .toBe(STOOFVLEES);
   void extern;
 });

@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { meldVerwijderd, verwijderReceptZacht } from "@/lib/recept-verwijderen";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Heart, Search, Clock, RotateCcw, Plus, Trash2, X, SlidersHorizontal } from "lucide-react";
@@ -7,6 +8,7 @@ import { zichtbareEigenaren } from "@/lib/zichtbare-eigenaren";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { KeukenWissel } from "@/components/KeukenWissel";
+import { MijnVerzamelingen } from "@/components/makers/MijnVerzamelingen";
 import { useVoorraadStand } from "@/hooks/useVoorraadStand";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { CollectieOmslag } from "@/components/ontdek/CollectieOmslag";
@@ -338,20 +340,21 @@ function GerechtenPage() {
 
   async function verwijder(r: Recipe) {
     setBezig(true);
-    const { error } = await supabase
-      .from("recipes")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", r.id);
+    const gelukt = await verwijderReceptZacht(r.id);
     setBezig(false);
-    if (error) {
+    if (!gelukt) {
       toast.error(t("Verwijderen lukte niet"));
       return;
     }
-    toast.success(t("Gerecht verwijderd"));
     setTeVerwijderen(null);
-    qc.invalidateQueries({ queryKey: ["recipes"] });
-    qc.invalidateQueries({ queryKey: ["alle-ingredienten"] });
-    qc.invalidateQueries({ queryKey: ["meal-plan"] });
+    const ververs = () => {
+      qc.invalidateQueries({ queryKey: ["recipes"] });
+      qc.invalidateQueries({ queryKey: ["alle-ingredienten"] });
+      qc.invalidateQueries({ queryKey: ["meal-plan"] });
+    };
+    ververs();
+    // BUG-146: zelfde verwijderen als op de receptpagina, met "Ongedaan maken".
+    meldVerwijderd(r.id, t, ververs);
   }
 
   return (
@@ -394,6 +397,9 @@ function GerechtenPage() {
             aria-label={t("Zoeken")}
           />
         </div>
+
+        {/* Module B: eigen verzamelingen (pas zichtbaar na migratie 0008 of in de demo). */}
+        <MijnVerzamelingen />
 
         {collecties.length ? (
           <section aria-labelledby="collecties-titel">

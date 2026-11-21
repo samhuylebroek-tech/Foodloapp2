@@ -1,7 +1,15 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, CalendarDays, ChevronRight, Clock, Heart, Plus } from "lucide-react";
+import {
+  BookOpen,
+  CalendarDays,
+  ChevronRight,
+  Clock,
+  Heart,
+  MessageCircleQuestion,
+  Plus,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { zichtbareEigenaren } from "@/lib/zichtbare-eigenaren";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +21,11 @@ import { haalGedeeldeAanvulling, useAanvulling } from "@/hooks/useAanvulling";
 import { leesVoortgang } from "@/lib/kookstand";
 import { hoofdStap, signalen as signalenVan } from "@/lib/vandaag";
 import { laadVandaag } from "@/lib/vandaag-db";
+import { gekooktePlannen } from "@/lib/koken/kookmomenten";
+import { useKookmomenten } from "@/lib/koken/kookmomenten-db";
+import { ProactieveKaart } from "@/components/vandaag/ProactieveKaart";
+import { useSuggesties } from "@/hooks/useSuggesties";
+import { isAan } from "@/lib/suggesties";
 import { EmptyState } from "@/components/EmptyState";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import type { Recipe } from "@/lib/types";
@@ -168,6 +181,8 @@ function StartPage() {
   });
   const aanvulling = useAanvulling();
   const [zetBezig, setZetBezig] = useState(false);
+  const kookmomenten = useKookmomenten();
+  const gekookt = useMemo(() => [...gekooktePlannen(kookmomenten)], [kookmomenten]);
   const stap = useMemo(() => {
     if (!stand) return null;
     const voortgang: Record<string, number | null> = {};
@@ -179,14 +194,21 @@ function StartPage() {
       voortgang,
       heeftRecepten: recipes.length > 0,
       etenstijden,
+      gekookt,
     });
-  }, [stand, recipes.length, etenstijden]);
+  }, [stand, recipes.length, etenstijden, gekookt]);
+  // P4: "Vergeten boodschappen" uit in Instellingen › Suggesties = geen "aanvullen"-signaal.
+  const suggesties = useSuggesties();
+  const boodschappenAan = isAan(suggesties.inst, "boodschappen");
   const signalen = useMemo(
     () =>
       stand && stap
-        ? signalenVan({ ...stand, nu: new Date(), voortgang: {}, heeftRecepten: true }, stap)
+        ? signalenVan(
+            { ...stand, nu: new Date(), voortgang: {}, heeftRecepten: true },
+            stap,
+          ).filter((s) => boodschappenAan || s.soort !== "aanvullen")
         : [],
-    [stand, stap],
+    [stand, stap, boodschappenAan],
   );
   async function zetOpLijst(welke: Set<string> | "alles") {
     setZetBezig(true);
@@ -249,6 +271,9 @@ function StartPage() {
   return (
     <AppShell breed title={groetTekst} kop={kop}>
       <div className="space-y-12">
+        {/* P4: hooguit één proactieve kaart (Gebruik eerst, budget, weer, variatie, seizoen),
+            per soort aan/uit in Instellingen › Suggesties. */}
+        <ProactieveKaart recepten={recipes} restjeKnop={stap?.soort !== "kiezen"} />
         <WegwijsKaart />
         {/* Tablet en groter: "Daarna" en "Ook vandaag" naast elkaar; alleen één? Dan volle breedte. */}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-12 md:grid-cols-2 md:gap-8 md:[&>*:only-child]:col-span-2">
@@ -320,13 +345,24 @@ function StartPage() {
                   : t("Nog niets gepland deze week.")}
               </p>
             </div>
-            <Link
-              to="/planner"
-              className="flex min-h-12 shrink-0 items-center gap-1 text-base font-semibold text-primary"
-            >
-              {t("Weekmenu")}
-              <ChevronRight className="size-5" aria-hidden />
-            </Link>
+            <div className="flex min-w-0 max-w-full flex-wrap items-center gap-x-4">
+              {/* P4: de assistent met acties ("vervang woensdag", "maak mijn week goedkoper"). */}
+              <Link
+                to="/assistent"
+                search={{ van: "vandaag" }}
+                className="flex min-h-12 min-w-0 max-w-full items-center gap-1.5 text-base font-semibold text-primary"
+              >
+                <MessageCircleQuestion className="size-5 shrink-0" aria-hidden />
+                <span className="min-w-0">{t("Vraag de assistent")}</span>
+              </Link>
+              <Link
+                to="/planner"
+                className="flex min-h-12 shrink-0 items-center gap-1 text-base font-semibold text-primary"
+              >
+                {t("Weekmenu")}
+                <ChevronRight className="size-5" aria-hidden />
+              </Link>
+            </div>
           </div>
           {/* `relative`: verborgen schermlezertekst (sr-only) blijft binnen de scrollstrook. */}
           <ul className="scroll-rij relative -mx-4 mt-4 flex gap-3 overflow-x-auto px-4 pb-3 pt-1 xl:mx-0 xl:grid xl:grid-cols-7 xl:overflow-visible xl:px-0">
@@ -424,6 +460,7 @@ function StartPage() {
                         path={recipe.image_url}
                         alt={recipe.title}
                         recept={recipe}
+                        opschrift
                         className={
                           i === 0
                             ? "aspect-[4/3] w-full transition-transform duration-500 group-hover:scale-[1.03] lg:aspect-[5/4]"

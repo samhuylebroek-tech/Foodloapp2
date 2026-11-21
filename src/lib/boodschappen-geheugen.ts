@@ -109,6 +109,15 @@ type Actie = (
 export const MAX_POGINGEN = 5;
 
 const SLEUTEL = "foodlo-boodschappen-wachtrij";
+/** P6: seintje binnen dit tabblad als de wachtrij verandert (teller in de offline-melding). */
+export const WACHTRIJ_EVENT = "foodlo-wachtrij";
+const sein = () => {
+  try {
+    window.dispatchEvent(new Event(WACHTRIJ_EVENT));
+  } catch {
+    // geen venster (server)
+  }
+};
 
 export function leesWachtrij(): Actie[] {
   if (typeof window === "undefined") return [];
@@ -122,6 +131,7 @@ export function leesWachtrij(): Actie[] {
 export function zetInWachtrij(a: Actie) {
   try {
     localStorage.setItem(SLEUTEL, JSON.stringify([...leesWachtrij(), a]));
+    sein();
   } catch {
     // niets aan te doen
   }
@@ -130,6 +140,7 @@ export function zetInWachtrij(a: Actie) {
 export function leegWachtrij() {
   try {
     localStorage.removeItem(SLEUTEL);
+    sein();
   } catch {
     // ok
   }

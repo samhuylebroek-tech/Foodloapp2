@@ -1,5 +1,7 @@
 # Staging via Lovable Cloud: concreet stappenplan
 
+> Samengevat in [`docs/foodlo/RELEASE_PLAN.md`](../foodlo/RELEASE_PLAN.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-11. **Niet uitgevoerd.** Er is geen project aangemaakt, niets gekoppeld en niets gemigreerd. Dit plan gebruikt **nooit productiegegevens**.
 
 ## 1. Wat Lovable vandaag biedt (en wat niet)

@@ -6,7 +6,7 @@
  * 3. voorraad bijgehouden (zelf iets toegevoegd): "Met wat je in huis hebt".
  * Geen geregistreerde restjes = geen restjes. Nepdata (demo).
  */
-import { expect, meldAan, resetDemo, test, zetKlok } from "./helpers";
+import { alleenIkEetMee, expect, meldAan, resetDemo, test, zetKlok } from "./helpers";
 
 const NEP = "http://127.0.0.1:54439/rest/v1";
 const vandaag = () => new Date().toLocaleDateString("sv-SE");
@@ -40,6 +40,11 @@ test("1. zonder voorraad: voorstellen met redenen op Vandaag en in Week, zonder 
   await expect(page.getByText(/kon niet geladen worden|Er ging iets mis/)).toHaveCount(0);
 
   await page.goto("/planner");
+  // "Vul aan" verschijnt pas vanaf twee lege dagen in de getoonde week. Op zondag blijft er van
+  // deze week maar één dag over: kijk dan naar volgende week (die is leeg na de reset).
+  if (new Date().getDay() === 0) {
+    await page.getByRole("button", { name: "Volgende week" }).click();
+  }
   await expect(page.getByRole("region", { name: "Vul aan met voorstellen" })).toBeVisible({
     timeout: 30_000,
   });
@@ -50,6 +55,7 @@ test("2. voorraad niet bijgehouden: niets 'in huis', geen Gebruik eerst; recente
   page,
   extern,
 }) => {
+  await alleenIkEetMee(page); // gaat over rundvlees, niet over vegetarische Gust
   // Zoals na "Klaar met winkelen": rundvlees vandaag gekocht, spinazie al lang geleden.
   await fetch(`${NEP}/pantry_items?naam=eq.rundvlees`, {
     method: "PATCH",

@@ -88,3 +88,18 @@ export function gebruikEerst(
 export function dagenTekst(dagen: number) {
   return dagen === 1 ? "al 1 dag in huis" : `al ${dagen} dagen in huis`;
 }
+
+/**
+ * P3 "Gebruik eerst"-kaart op Vandaag: het best gerangschikte voorstel (uit de engine) dat een
+ * product opmaakt dat al even in huis is. Null als geen enkel voorstel het gebruikt.
+ */
+export function voorstelDatOpmaakt<T extends { aanwezig: readonly string[] }>(
+  voorstellen: readonly T[],
+  oud: readonly OudInHuis[],
+  past: (ingredient: string, product: string) => boolean,
+): { voorstel: T; product: OudInHuis } | null {
+  for (const v of voorstellen)
+    for (const o of oud)
+      if (v.aanwezig.some((n) => past(n, o.naam))) return { voorstel: v, product: o };
+  return null;
+}

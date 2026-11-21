@@ -112,3 +112,23 @@ test("kookstand heeft geen ernstige toegankelijkheidsproblemen", async ({ page, 
   expect(await axeErnstig(page)).toEqual([]);
   void extern;
 });
+
+// Review 2026-11-12, punt 5: de kookstand opende halverwege gescrold (de knop "Start koken"
+// onder de bereiding staat ver onderaan), waardoor de tip onder de vaste kop verdween.
+test("kookstand begint altijd bovenaan, ook bij een nieuwe stap", async ({ page, extern }) => {
+  await page.goto(ZALM);
+  const start = page.getByRole("button", { name: "Start koken" }).last();
+  await start.scrollIntoViewIfNeeded();
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+  await start.click();
+  await expect(page.getByText("Alles klaarzetten").first()).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  await expect(page.getByRole("heading", { name: "Zalm met citroen en dille" })).toBeInViewport();
+
+  await page.getByRole("button", { name: "Begin met koken" }).click();
+  await page.evaluate(() => window.scrollTo(0, document.scrollingElement!.scrollHeight));
+  await page.getByRole("button", { name: "Volgende" }).click();
+  await expect(page.getByText("Stap 2 van 4")).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  void extern;
+});

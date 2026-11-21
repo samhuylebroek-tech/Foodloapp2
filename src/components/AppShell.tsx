@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { moduleVoorPad } from "@/lib/functies";
 import logo from "@/assets/logo.png";
 import { Aankondigingen } from "@/components/Aankondigingen";
+import { AccountVoedingLader } from "@/lib/voeding-db";
 import { MeldingVraag, telAanmelding } from "@/components/MeldingVraag";
 import {
   Sheet,
@@ -33,6 +34,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { meet } from "@/lib/meten";
+import { MeldingenBel } from "@/components/samenwerking/MeldingenBel";
+import { OfflineBand } from "@/components/OfflineBand";
 
 type Pad =
   "/" | "/gerechten" | "/planner" | "/boodschappen" | "/voorraad" | "/inspiratie" | "/meer";
@@ -118,6 +121,7 @@ export function AppShell({
   breed = false,
   ondertitel,
   kop,
+  vasteInvoer = false,
 }: {
   title: string;
   children: ReactNode;
@@ -130,6 +134,12 @@ export function AppShell({
   ondertitel?: ReactNode;
   /** Eigen paginakop (bv. de redactionele band op Vandaag). Vervangt titel en ondertitel. */
   kop?: ReactNode;
+  /**
+   * Er staat een vaste invoerbalk boven de onderbalk (Lijst). Dan krijgt de pagina onderaan extra
+   * ruimte ONDER de inhoud, zodat niets achter de balk verdwijnt en er geen leeg vlak ontstaat
+   * boven "Hulp bij dit scherm" (BUG-138). Rem-gebaseerd: groeit mee met grote tekst.
+   */
+  vasteInvoer?: boolean;
 }) {
   const { session, loading } = useAuth();
   const t = useT();
@@ -224,7 +234,8 @@ export function AppShell({
 
       {/* Topbalk: woordmerk of terug, (desktop) hoofdmenu, Nieuw en Meer. */}
       <header
-        className="sticky top-0 z-30 border-b border-border/60 bg-background/90 backdrop-blur-md"
+        // P6: dekkend; doorschijnend liet tekst eronder vaag zien ("Terug naar …").
+        className="sticky top-0 z-30 border-b border-border/60 bg-background"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         {/* BUG-126: op 320 px met tekst 200 % liep de kop uit; kleinere tussenruimtes onder 400 px. */}
@@ -254,8 +265,9 @@ export function AppShell({
               />
               <span
                 className={cn(
-                  "hidden font-display text-[1.6rem] font-semibold leading-none tracking-tight min-[400px]:inline",
-                  titelWeg && "min-[400px]:hidden lg:inline",
+                  // P5: naast de bel past het woordmerk pas vanaf 480 px (430 px liep anders uit).
+                  "hidden font-display text-[1.6rem] font-semibold leading-none tracking-tight min-[480px]:inline",
+                  titelWeg && "min-[480px]:hidden lg:inline",
                 )}
               >
                 Foodlo
@@ -301,6 +313,8 @@ export function AppShell({
           </nav>
 
           <div className="ml-auto flex shrink-0 items-center gap-1 min-[400px]:gap-2">
+            {/* P5: meldingen in de app (gezin, restjes), met ongelezen teller. */}
+            {session ? <MeldingenBel /> : null}
             <button
               type="button"
               onClick={() => setNieuwOpen(true)}
@@ -337,9 +351,11 @@ export function AppShell({
         id="inhoud"
         className={cn(
           "mx-auto w-full overflow-x-clip px-4 pb-36 pt-6 sm:px-6 md:pb-16 md:pl-32 md:pr-8 lg:px-6 lg:pb-16 lg:pt-10",
+          vasteInvoer && "pb-[calc(9rem+5.75rem)]",
           breedte,
         )}
       >
+        <OfflineBand />
         {kop ?? (
           <div className="mb-6 flex flex-wrap items-start justify-between gap-x-4 gap-y-3 lg:mb-8">
             {/* Titel breekt nooit midden in een woord; knoppen springen desnoods eronder. */}
@@ -369,6 +385,7 @@ export function AppShell({
           </p>
         ) : null}
         <MeldingVraag actief={pathname === "/"} />
+        {session ? <AccountVoedingLader /> : null}
       </main>
 
       {/* Tablet (768–1023 px): dezelfde vijf plekken als zijbalk — duimbereik links, meer ruimte

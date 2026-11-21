@@ -10,12 +10,11 @@ import { Loader2, Soup } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useRestjes } from "@/hooks/useRestjes";
+import { useRestjes, useRestjesActies } from "@/hooks/useRestjes";
 import {
   RESTJE_VOORSTEL_DAGEN,
   dagenOud,
   gekooktTekst,
-  planRestje,
   restjeVeilig,
   type Restje,
 } from "@/lib/intelligentie/restjes";
@@ -27,6 +26,7 @@ import { useT, useVoorkeuren } from "@/lib/voorkeuren";
 
 export function RestjesVoorstel() {
   const { user } = useAuth();
+  const restjeActies = useRestjesActies();
   const qc = useQueryClient();
   const t = useT();
   const { momenten } = useVoorkeuren();
@@ -82,7 +82,7 @@ export function RestjesVoorstel() {
         .single();
       if (error || !data) throw error ?? new Error("geen id");
       // Ingepland, niet weg: het restje blijft in Keuken staan tot je "Is op" tikt.
-      planRestje(user.id, r.id, lokaleDatum());
+      restjeActies?.plan(r.id, lokaleDatum());
       void meet("restjes.vanavond", undefined, { dagen: dagenOud(r) });
       vernieuw();
       toast.success(`Restjes van ${r.titel} staan op vanavond`, {
@@ -91,7 +91,7 @@ export function RestjesVoorstel() {
           label: "Ongedaan maken",
           onClick: async () => {
             await supabase.from("meal_plan").delete().eq("id", data.id);
-            planRestje(user.id, r.id, null);
+            restjeActies?.plan(r.id, null);
             vernieuw();
           },
         },

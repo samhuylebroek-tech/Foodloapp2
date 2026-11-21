@@ -11,6 +11,7 @@ De V2-preview draait **op je eigen Mac** met verzonnen demodata. Ze praat met ee
 3. Wacht tot je `Foodlo V2-demo: http://127.0.0.1:4319` ziet.
 4. Open **http://127.0.0.1:4319** in Chrome of Safari en meld aan met
    **demo@foodlo.be** / **demo1234**.
+   Andere verzonnen accounts (zelfde wachtwoord): **beheer@foodlo.be** (eigenaar: Business Control Center op /beheer, testmodus), **partner@foodlo.be** (partneromgeving), **proef@foodlo.be** (Premium in proefperiode).
 5. Stoppen: in Terminal **Ctrl + C**.
 
 > De demodata (8 recepten, een weekmenu, een boodschappenlijst) worden bij elke start opnieuw klaargezet. Wat je wijzigt, verdwijnt bij het stoppen.

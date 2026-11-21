@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { adminAudit } from "@/lib/admin.functions";
+import { auditOmschrijving, rolNaam } from "@/lib/bcc";
 import { AdminShell, Kaart } from "@/components/AdminShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,10 @@ function Logboek() {
   });
 
   return (
-    <AdminShell titel="Auditlogboek" omschrijving="Elke beheeractie wordt onwijzigbaar bewaard">
+    <AdminShell
+      titel="Auditlogboek"
+      omschrijving="Elke beheeractie wordt onwijzigbaar bewaard: wie, wat en wanneer. Alleen lezen."
+    >
       <Kaart>
         <Input
           value={zoek}
@@ -51,11 +55,15 @@ function Logboek() {
                     <td className="py-2 whitespace-nowrap text-slate-400">
                       {new Date(r.created_at).toLocaleString("nl-BE")}
                     </td>
-                    <td>{r.actor_naam}</td>
-                    <td className="text-slate-400">{r.actor_role}</td>
-                    <td>{r.action}</td>
+                    {/* BUG-182: de server geeft `naam` en `entity_type`; die bleven leeg. */}
+                    <td>{r.naam ?? r.actor_naam}</td>
+                    <td className="text-slate-400">{rolNaam(r.actor_role)}</td>
+                    <td>
+                      <span className="block">{auditOmschrijving(String(r.action))}</span>
+                      <span className="block text-xs text-slate-500">{r.action}</span>
+                    </td>
                     <td className="text-slate-400">
-                      {r.entity}
+                      {r.entity_type ?? r.entity}
                       {r.entity_id ? ` · ${String(r.entity_id).slice(0, 8)}` : ""}
                     </td>
                     <td className="max-w-[280px] truncate text-xs text-slate-500">

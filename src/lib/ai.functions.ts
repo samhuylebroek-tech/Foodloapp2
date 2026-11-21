@@ -1,9 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
+import { hintVoorAI, voorAI } from "@/lib/ai/privacy";
 import { z } from "zod";
 import { begrensdeLijst } from "@/lib/zod-hulp";
 import { belgischeMaat, parseIngredientLine } from "@/lib/ingredienten";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { metCredits, type AiMeter } from "@/lib/credits.server";
+import { aiUitVoor, metCredits, type AiMeter } from "@/lib/credits.server";
+import { AI_UIT_MELDING } from "@/lib/privacy/ai-toestemming";
 import {
   adapterVoor,
   detecteerPlatform,
@@ -16,6 +18,13 @@ import {
   type Platform,
 } from "@/lib/import.server";
 import { leesBeperkt, TeGrootFout, veiligeUrl, veiligOphalen } from "@/lib/veilige-url";
+import { Venster } from "@/lib/kostrem";
+import {
+  isDemoOmgeving,
+  TestAssistentAdapter,
+  type HulpAntwoord,
+  type HulpVraag,
+} from "@/lib/assistent/adapter";
 
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
@@ -65,7 +74,10 @@ async function askAI(messages: unknown[], kind = "chat", meter?: AiMeter, model 
       if (res.status === 429) throw new Error("Het is even te druk. Probeer het zo opnieuw.");
       if (res.status === 402)
         throw new Error("De slimme functies zijn tijdelijk niet beschikbaar. Probeer het later opnieuw.");
-      throw new Error(`AI-fout: ${res.status} ${text.slice(0, 200)}`);
+      // Fase 8 (SECURITY-REVIEW-V2 S-07): ruwe foutinhoud alleen naar ai_events, nooit naar de gebruiker.
+      throw Object.assign(new Error("De slimme hulp gaf een fout. Probeer het straks opnieuw."), {
+        intern: `AI-fout ${res.status}: ${text.slice(0, 200)}`,
+      });
     }
     if (!res.body) throw new Error("AI gaf geen antwoord.");
 
@@ -103,7 +115,10 @@ async function askAI(messages: unknown[], kind = "chat", meter?: AiMeter, model 
     void logAi(kind, true, Date.now() - start, undefined, model);
     return antwoord;
   } catch (e) {
-    void logAi(kind, false, Date.now() - start, e instanceof Error ? e.message : String(e), model);
+    const intern = (e as { intern?: unknown } | null)?.intern;
+    const bericht =
+      typeof intern === "string" ? intern : e instanceof Error ? e.message : String(e);
+    void logAi(kind, false, Date.now() - start, bericht, model);
     throw e;
   }
 }
@@ -818,7 +833,12 @@ export const receptVanNaam = createServerFn({ method: "POST" })
   .inputValidator((data) =>
     z.object({ titel: z.string().min(2).max(160), hint: z.string().max(300).default("") }).parse(data),
   )
-  .handler(async ({ data, context }): Promise<ImportedRecipe> => {
+  .handler(async ({ data: invoer, context }): Promise<ImportedRecipe> => {
+    // BUG-142: een persoonlijke "Vermijd: …"-hint gaat alleen opgeschoond naar de AI (privacylaag).
+    const data = {
+      ...invoer,
+      hint: /^vermijd:/i.test(invoer.hint.trim()) ? hintVoorAI(invoer.hint) : invoer.hint,
+    };
     const { resultaat } = await metCredits(
       {
         userId: context.userId,
@@ -1136,7 +1156,10 @@ export const weekmenuIdeeen = createServerFn({ method: "POST" })
       })
       .parse(data),
   )
-  .handler(async ({ data, context }): Promise<WeekmenuIdee[]> => {
+  .handler(async ({ data: invoer, context }): Promise<WeekmenuIdee[]> => {
+    // BUG-142: "liever niet" kan allergieën of gezondheid bevatten. Alleen neutrale smaakwensen gaan
+    // naar de AI en in de cachesleutel; de volledige tekst filtert op het toestel (vermijdWoorden).
+    const data = { ...invoer, vermijd: voorAI(invoer.vermijd).tekst };
     const maand = new Date().toLocaleDateString("nl-BE", { month: "long" });
     const { resultaat } = await metCredits(
       {
@@ -1261,4 +1284,90 @@ export const verbeterStappen = createServerFn({ method: "POST" })
       },
     );
     return resultaat;
+  });
+
+// ---------- Kookassistent (werkstroom F) ----------
+// Volgorde: testadapter in demo/tests → echte AI als er een sleutel is → anders "regels" (de app
+// gebruikt dan de vaste tabel). Alle tekst gaat eerst door voorAI(): geen allergie, dieet of
+// gezondheid naar de AI. De vervangers worden op het toestel nog eens getoetst (veiligheid.ts).
+const assistentPerGebruiker = new Venster(30, 24 * 60 * 60_000);
+
+export const assistentHulp = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) =>
+    z
+      .object({
+        soort: z.enum(["vervang", "vraag"]),
+        tekst: z.string().trim().min(1).max(200),
+        recept: z.string().max(160).optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }): Promise<HulpAntwoord> => {
+    const tekst = voorAI(data.tekst).tekst;
+    const recept = voorAI(data.recept ?? "").tekst;
+    const vraag: HulpVraag =
+      data.soort === "vervang"
+        ? { soort: "vervang", ingredient: tekst, recept }
+        : { soort: "vraag", vraag: tekst, recept };
+    // Fase 8: AI uitgezet (Privacy & toestemmingen) → vaste tips, ook in de demo.
+    if (await aiUitVoor(context.userId)) return { bron: "regels", melding: AI_UIT_MELDING };
+    if (isDemoOmgeving(process.env)) return new TestAssistentAdapter().vraag(vraag);
+    if (!process.env["LOVABLE_API_KEY"])
+      return { bron: "regels", melding: "De slimme hulp is nog niet aangesloten." };
+    if (!tekst)
+      return { bron: "regels", melding: "Deze vraag beantwoordt Foodlo alleen met vaste tips." };
+    if (!assistentPerGebruiker.neem(context.userId))
+      return { bron: "regels", melding: "Je hebt vandaag al veel gevraagd. Morgen kan het weer." };
+    try {
+      const { resultaat } = await metCredits(
+        {
+          userId: context.userId,
+          feature: "assistent",
+          cacheSleutel: `${data.soort}|${tekst}|${recept}`,
+          model: MODEL,
+        },
+        async (meter) => {
+          const systeem =
+            data.soort === "vervang"
+              ? 'Je bent een Belgische kookhulp. Geef maximaal 4 gangbare vervangers voor het gevraagde ingrediënt in dit gerecht, elk met een korte reden (max. 12 woorden), in het Nederlands. Antwoord uitsluitend met JSON: {"vervangers":[{"naam":"...","reden":"..."}]}'
+              : 'Je bent een Belgische kookhulp. Beantwoord de kookvraag kort en praktisch (max. 3 zinnen), in gewone taal, met Belgische maten. Geef geen medisch of allergieadvies. Antwoord uitsluitend met JSON: {"antwoord":"..."}';
+          const raw = await askAI(
+            [
+              { role: "system", content: systeem },
+              { role: "user", content: recept ? `Gerecht: ${recept}\n${tekst}` : tekst },
+            ],
+            "assistent",
+            meter,
+          );
+          const uit = parseJson<{ vervangers?: unknown; antwoord?: unknown }>(raw, {});
+          if (data.soort === "vervang") {
+            const lijst = Array.isArray(uit.vervangers) ? uit.vervangers : [];
+            return {
+              bron: "ai" as const,
+              vervangers: lijst
+                .filter(
+                  (x): x is { naam: string; reden?: string } =>
+                    !!x && typeof (x as { naam?: unknown }).naam === "string",
+                )
+                .slice(0, 4)
+                .map((x) => ({
+                  naam: x.naam.slice(0, 60),
+                  reden: String(x.reden ?? "").slice(0, 140),
+                })),
+            };
+          }
+          return {
+            bron: "ai" as const,
+            antwoord: typeof uit.antwoord === "string" ? uit.antwoord.slice(0, 500) : "",
+          };
+        },
+      );
+      return resultaat;
+    } catch {
+      return {
+        bron: "regels",
+        melding: "De slimme hulp is nu niet bereikbaar. Hier zijn de vaste tips.",
+      };
+    }
   });

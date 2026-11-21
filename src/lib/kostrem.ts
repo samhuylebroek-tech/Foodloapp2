@@ -4,6 +4,9 @@
  * - `Venster`: hoeveel oproepen per sleutel (bv. IP of gebruiker) binnen een tijdvenster.
  * - `KleineCache`: begrensde cache (oudste eruit), zodat dezelfde tekst niet opnieuw betaald wordt.
  *
+ * Let op: dit gaat over AI-kosten van Foodlo zelf, niet over prijzen van eten. De enige
+ * kostenbron voor eten (weekmenu, budget, lijst, winkelmodus) is `budget.ts`.
+ *
  * Werkt per serverinstantie (in het geheugen). Dat is een vangnet, geen boekhouding: de echte
  * meting en de credits per gebruiker zitten in `credits.server.ts` en `ai_usage`.
  */

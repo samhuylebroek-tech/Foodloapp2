@@ -1,5 +1,7 @@
 # Beslissingen voor de eigenaar (overzicht)
 
+> Samengevat in [`docs/foodlo/DECISIONS_LOG.md`](../foodlo/DECISIONS_LOG.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-11. **Eén lijst met alle openstaande beslissingen**, samengevoegd uit:
 - masterplan §13 (B1–B9);
 - V2-IMPLEMENTATION-PLAN (gates G1–G7);

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { geslotenRecepten } from "@/lib/makers-db";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useFocusTerug } from "@/hooks/useFocusTerug";
 import { meet } from "@/lib/meten";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -10,16 +11,21 @@ import {
   ChevronLeft,
   ChevronRight,
   Check,
-  Sparkles,
   Copy,
   Repeat,
   Settings,
   CalendarDays,
+  CalendarRange,
+  MessageCircleQuestion,
   Clock3,
   BookOpen,
   MoreVertical,
   Users,
+  Wand2,
+  ChefHat,
 } from "lucide-react";
+import { gekooktePlannen } from "@/lib/koken/kookmomenten";
+import { useKookmomenten } from "@/lib/koken/kookmomenten-db";
 import { toast } from "sonner";
 import { meldMetHerstel } from "@/hooks/useAanvulling";
 import {
@@ -80,13 +86,38 @@ import {
   type Basis,
 } from "@/components/planner/gedeeld";
 import { ReceptKiezer } from "@/components/planner/ReceptKiezer";
+import { EterInitialen } from "@/components/planner/EterInitialen";
+import { useEtersOordelen, useMaaltijdEters } from "@/hooks/useMaaltijdEters";
+import { MaaltijdVeiligheid, OordeelLabel } from "@/components/veiligheid/EtersOordeel";
 import { LijstVraag } from "@/components/planner/LijstVraag";
 import { WeekmenuInstellingen } from "@/components/planner/WeekmenuInstellingen";
 import { ReceptFoto, WeekmenuVoorstel } from "@/components/planner/WeekmenuVoorstel";
+import { WeekBudget } from "@/components/budget/WeekBudget";
 import { VulAan } from "@/components/planner/VulAan";
 import { VerplaatsSheet, KoppelSheet } from "@/components/planner/PlanSheets";
 import { useTablet } from "@/hooks/useTablet";
 import { TabletWeek } from "@/components/planner/TabletWeek";
+import { ConflictKeuze, type ConflictVoorstel } from "@/components/samenwerking/ConflictKeuze";
+import { WeekActiviteit } from "@/components/samenwerking/WeekActiviteit";
+import { AanwezigRegel } from "@/components/samenwerking/AanwezigRegel";
+import {
+  conflictTekst,
+  dagNaam,
+  MenuConflict,
+  planVingerafdruk,
+} from "@/lib/samenwerking/conflict";
+import {
+  conflictMeldingTekst,
+  menuMeldingTekst,
+  type MenuWijziging,
+} from "@/lib/samenwerking/meldingen";
+import {
+  laatsteWijziger,
+  meldGezin,
+  mijnNaam,
+  stuurMelding,
+  titelVanPlan,
+} from "@/lib/samenwerking/db";
 
 export const Route = createFileRoute("/planner")({
   head: () => ({
@@ -105,6 +136,8 @@ export const Route = createFileRoute("/planner")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>): { weergave?: "gezin" } =>
+    s["weergave"] === "gezin" ? { weergave: "gezin" } : {},
   component: PlannerPage,
 });
 
@@ -145,13 +178,26 @@ function PlannerPage() {
     bron: string;
   } | null>(null);
 
-  const [weergave, setWeergave] = useState<"mij" | "gezin">("mij");
+  const zoekWeergave = Route.useSearch().weergave;
+  const [weergave, setWeergave] = useState<"mij" | "gezin">(
+    zoekWeergave === "gezin" ? "gezin" : "mij",
+  );
   const [instellingenOpen, setInstellingenOpen] = useState(false);
   const [voorstelOpen, setVoorstelOpen] = useState(false);
   const [kalenderOpen, setKalenderOpen] = useState(false);
   const [boodschappenOpen, setBoodschappenOpen] = useState(false);
   const [dagKeuze, setDagKeuze] = useState<string | null>(null);
   const [heleWeek, setHeleWeek] = useState(false);
+  // P6: bij grote tekst (≥ 150 %) zou een vaste weekband een groot deel van het scherm bedekken
+  // (en knoppen eronder onbereikbaar maken); dan schuift ze gewoon mee.
+  const [grootTekst, setGrootTekst] = useState(false);
+  useEffect(() => {
+    const meet = () =>
+      setGrootTekst(parseFloat(getComputedStyle(document.documentElement).fontSize) >= 24);
+    meet();
+    window.addEventListener("resize", meet);
+    return () => window.removeEventListener("resize", meet);
+  }, []);
 
   // De week begint op maandag of (als je dat kiest) op zondag.
   const week = Array.from({ length: 7 }, (_, i) => {
@@ -160,6 +206,9 @@ function PlannerPage() {
     return datumTekst(d);
   });
   const vandaag = datumTekst(new Date());
+  // P3: welke maaltijden zijn al als "gekookt" gemarkeerd?
+  const kookmomenten = useKookmomenten();
+  const gekookt = useMemo(() => gekooktePlannen(kookmomenten), [kookmomenten]);
   // Alleen de dagen die je wil zien (0 = maandag … 6 = zondag).
   const zichtbareDagen = week.filter((dag) =>
     weekmenu.dagen.includes((new Date(`${dag}T12:00:00`).getDay() + 6) % 7),
@@ -233,6 +282,36 @@ function PlannerPage() {
     },
   });
 
+  // Wie eet mee (voorstel 0010, terugval op dit toestel): initialen op de weekkaart als er zelf
+  // gekozen is, en per maaltijd het veiligheidsoordeel (fase 1: overal hetzelfde).
+  const mee = useMaaltijdEters(
+    plan.map((p) => p.id),
+    { gezinId: gezin?.id ?? null },
+  );
+  const etersVan = (planId: string) => (mee.isGekozen(planId) ? mee.etersVan(planId) : []);
+  const oordelen = useEtersOordelen(
+    plan.map((p) => ({ sleutel: p.id, recept: p.recipes, eters: mee.etersVan(p.id) })),
+    mee,
+  );
+  const [etersRij, setEtersRij] = useState<PlanRow | null>(null);
+
+  // BUG-180 (fase 8): exclusief makerrecept ingepland, maar het abonnement is gestopt.
+  const receptIds = [...new Set(plan.map((p) => p.recipe_id).filter(Boolean) as string[])].sort();
+  const { data: gesloten = new Map<string, { maker: string }>() } = useQuery({
+    queryKey: ["gesloten-recepten", receptIds.join(",")],
+    enabled: receptIds.length > 0,
+    queryFn: () => geslotenRecepten(receptIds),
+    staleTime: 60_000,
+  });
+  const zoekVervanger = (p: PlanRow, ingredient: string) => {
+    if (!p.recipe_id) return;
+    void navigate({
+      to: "/recepten/$id",
+      params: { id: p.recipe_id },
+      search: { vervang: ingredient, plan: p.id },
+    });
+  };
+
   // Het weekmenu opent op vandaag: de dag van vandaag is al gekozen en
   // gemarkeerd in de weekbalk, dus we scrollen niet automatisch naar beneden —
   // anders verdwijnt de weekwisseling uit beeld.
@@ -280,10 +359,104 @@ function PlannerPage() {
     for (const k of ["meal-plan", "shopping", "aanvulling", "voorraad", "home-dagmenu", "home-week"])
       void qc.invalidateQueries({ queryKey: [k] });
   }
+  // P5: gelijktijdige wijziging (gezinslid, tweede toestel) → keuze in plaats van overschrijven.
+  const [conflict, setConflict] = useState<ConflictVoorstel | null>(null);
+  /** Gezinsweekmenu: log + melding voor de andere gezinsleden (nooit voor je eigen menu). */
+  function meldAanGezin(wat: MenuWijziging, titel: string, datum: string, refId?: string) {
+    if (eigenMenu || !gezin || !user) return;
+    void meldGezin({
+      groupId: gezin.id,
+      actorId: user.id,
+      datum,
+      refId: refId ?? null,
+      tekst: (wie) => menuMeldingTekst({ wie, datum, titel, wat }),
+    });
+  }
+  /** Wat er moet gebeuren als iemand anders dezelfde maaltijd intussen veranderde. */
+  type BijConflict = {
+    planId: string;
+    datum: string;
+    mijnTitel: string;
+    wat: MenuWijziging;
+    /** Toch de mijne zetten (zonder controle). */
+    zetMijn: () => Promise<PlanUitvoering>;
+    /** Was de maaltijd weggehaald: de mijne opnieuw inplannen. */
+    opnieuw?: () => Promise<PlanUitvoering>;
+    /** "Allebei op woensdag": de mijne erbij, die van de ander blijft. */
+    allebei?: () => Promise<PlanUitvoering>;
+    tekst: string;
+    /** Na elke keuze (bv. een open blad sluiten). */
+    sluit?: () => void;
+  };
+  async function toonConflict(fout: MenuConflict, bij: BijConflict) {
+    if (!user) return;
+    const huidig = fout.huidig;
+    const [hun, wijziger] = await Promise.all([
+      huidig ? titelVanPlan(huidig) : Promise.resolve(null),
+      laatsteWijziger(huidig?.id ?? bij.planId, user.id),
+    ]);
+    const datum = huidig?.plan_date ?? bij.datum;
+    const zetMijn = huidig ? bij.zetMijn : bij.opnieuw;
+    setConflict({
+      kop: conflictTekst({ wie: wijziger?.naam, datum, titel: hun }),
+      wie: wijziger?.naam ?? null,
+      hun,
+      mijn: bij.mijnTitel,
+      uitleg: eigenMenu ? "Je boodschappenlijst past zich aan wat je kiest aan." : undefined,
+      houdHun: () => {
+        bij.sluit?.();
+        vernieuwMenu();
+        toast(hun ? `${hun} blijft op ${labelVoor(datum)} staan` : "Er is niets veranderd");
+      },
+      zetMijn: async () => {
+        bij.sluit?.();
+        if (!zetMijn) {
+          vernieuwMenu();
+          return;
+        }
+        const id = await menuWijziging(zetMijn, bij.tekst);
+        if (id === null || eigenMenu || !gezin) return;
+        meldAanGezin(bij.wat, bij.mijnTitel, bij.datum, id ?? bij.planId);
+        // Wie het eerst veranderde, hoort dat zijn keuze vervangen is (en kan het terugdraaien).
+        if (wijziger) {
+          const ik = await mijnNaam(user.id);
+          void stuurMelding({
+            groupId: gezin.id,
+            actorId: user.id,
+            soort: "conflict",
+            naar: [wijziger.id],
+            link: "/planner?weergave=gezin",
+            tekst: conflictMeldingTekst({
+              wie: ik,
+              datum,
+              mijnTitel: bij.mijnTitel,
+              jouwTitel: hun,
+            }),
+          });
+        }
+      },
+      allebei:
+        huidig && bij.allebei
+          ? {
+              label: `Allebei op ${dagNaam(datum)}`,
+              doe: async () => {
+                bij.sluit?.();
+                const id = await menuWijziging(
+                  bij.allebei!,
+                  `${bij.mijnTitel} staat er ook op ${labelVoor(datum)}`,
+                );
+                if (id) meldAanGezin("erbij", bij.mijnTitel, datum, id);
+              },
+            }
+          : undefined,
+    });
+  }
+
   /** Voert een menuwijziging uit met lijst; geeft het plan-id terug, of null als het mislukte. */
   async function menuWijziging(
     actie: () => Promise<PlanUitvoering>,
     tekst: string,
+    bijConflict?: BijConflict,
   ): Promise<string | undefined | null> {
     if (!user || menuBezig.current) return null;
     menuBezig.current = true;
@@ -297,6 +470,10 @@ function PlannerPage() {
       return r.id;
     } catch (fout) {
       vernieuwMenu();
+      if (fout instanceof MenuConflict && bijConflict) {
+        await toonConflict(fout, bijConflict);
+        return null;
+      }
       toast.error(
         fout instanceof HalfGelukt
           ? "Dat lukte maar half. Kijk je weekmenu en lijst even na."
@@ -308,13 +485,35 @@ function PlannerPage() {
     }
   }
 
-  async function verwijder(id: string, recipeId?: string | null, titel?: string) {
+  async function verwijder(id: string, recipeId?: string | null, titel?: string, rij?: PlanRow) {
+    const naam = titel ?? "Gerecht";
+    const bij: BijConflict | undefined = rij
+      ? {
+          planId: id,
+          datum: rij.plan_date,
+          mijnTitel: `${naam} weghalen`,
+          wat: "weg",
+          zetMijn: planWeg(id),
+          tekst: `${naam} uit je weekmenu`,
+        }
+      : undefined;
     if (eigenMenu) {
-      await menuWijziging(planWeg(id), `${titel ?? "Gerecht"} uit je weekmenu`);
+      await menuWijziging(
+        planWeg(id, rij ? planVingerafdruk(rij) : undefined),
+        `${naam} uit je weekmenu`,
+        bij,
+      );
       return;
     }
-    await supabase.from("meal_plan").delete().eq("id", id);
-    qc.invalidateQueries({ queryKey: ["meal-plan"] });
+    // P5: ook het gezinsweekmenu via wijzigMenu: controle op gelijktijdige wijziging en één
+    // "Ongedaan maken".
+    const gelukt = await menuWijziging(
+      planWeg(id, rij ? planVingerafdruk(rij) : undefined),
+      `${naam} uit het gezinsweekmenu`,
+      bij,
+    );
+    if (gelukt === null) return;
+    if (rij) meldAanGezin("weg", naam, rij.plan_date, id);
     if (!recipeId) return;
     // Staan de ingrediënten van dit gerecht nog op een boodschappenlijst?
     const { data } = await supabase
@@ -344,10 +543,20 @@ function PlannerPage() {
     toast.success("Ingrediënten van je boodschappenlijst gehaald");
   }
 
+  /** Mee-eters bij een maaltijd bewaren (voorstel 0010). Mislukt dit, dan blijft de maaltijd staan. */
+  async function zetEters(planId: string, eters?: string[]) {
+    if (!eters) return;
+    try {
+      await mee.bewaarStil(planId, eters);
+    } catch {
+      toast.error("Wie meeëet, kon niet bewaard worden. De maaltijd staat er wel.");
+    }
+  }
+
   // BUG-032: een dubbele tik terwijl de eerste nog bezig is, mag niet twee keer inplannen.
   const planBezig = useRef(false);
 
-  async function plan_toevoegen(recipeId: string, datum: string, moment: string, titel: string, personen: number) {
+  async function plan_toevoegen(recipeId: string, datum: string, moment: string, titel: string, personen: number, eters?: string[]) {
     if (!user || planBezig.current) return;
     if (eigenMenu) {
       const id = await menuWijziging(
@@ -355,6 +564,7 @@ function PlannerPage() {
         `${titel} staat op ${labelVoor(datum)}`,
       );
       if (id === null) return;
+      if (id) await zetEters(id, eters);
       setKiezen(null);
       setWeekStart(maandagVan(new Date(`${datum}T12:00:00`)));
       return;
@@ -384,6 +594,8 @@ function PlannerPage() {
       toast.error("Inplannen lukte niet");
       return;
     }
+    await zetEters(data.id, eters);
+    meldAanGezin("erbij", titel, datum, data.id);
     setKiezen(null);
     setWeekStart(maandagVan(new Date(`${datum}T12:00:00`)));
     toast.success(`${titel} staat op ${labelVoor(datum)}`, {
@@ -401,6 +613,7 @@ function PlannerPage() {
   /** Zet de aangevinkte dagen uit het voorstel in het weekmenu. */
   async function zetVoorstel(
     rijen: { datum: string; moment: string; recept: Recipe | null; idee: WeekmenuIdee | null }[],
+    gekozenEters: string[] | null = null,
   ) {
     if (!user) return;
     let gelukt = 0;
@@ -450,18 +663,24 @@ function PlannerPage() {
             planErbij({ userId: user.id, recipeId, datum: rij.datum, moment: rij.moment }),
           );
           herstellen.push(w.herstel);
+          if (w.id && gekozenEters) await zetEters(w.id, gekozenEters);
           effect.erbij += w.effect.erbij;
           effect.minder += w.effect.minder;
           effect.weg += w.effect.weg;
         } else {
-          const { error } = await supabase.from("meal_plan").insert({
-            user_id: user.id,
-            recipe_id: recipeId,
-            plan_date: rij.datum,
-            meal_type: rij.moment,
-            group_id: weergave === "gezin" ? gezin!.id : null,
-          });
+          const { data: nieuw, error } = await supabase
+            .from("meal_plan")
+            .insert({
+              user_id: user.id,
+              recipe_id: recipeId,
+              plan_date: rij.datum,
+              meal_type: rij.moment,
+              group_id: weergave === "gezin" ? gezin!.id : null,
+            })
+            .select("id")
+            .single();
           if (error) throw error;
+          if (nieuw?.id && gekozenEters) await zetEters(nieuw.id, gekozenEters);
         }
         gelukt += 1;
         ingepland.push({ recipeId, titel: rij.recept?.title ?? rij.idee?.title ?? "Gerecht" });
@@ -580,7 +799,7 @@ function PlannerPage() {
   }
 
 
-  async function nieuw_gerecht(naam: string, basis: Basis | null, datum: string, moment: string, extra?: NieuwExtra, personen?: number) {
+  async function nieuw_gerecht(naam: string, basis: Basis | null, datum: string, moment: string, extra?: NieuwExtra, personen?: number, eters?: string[]) {
     if (!user) return;
     let recipeId: string | null = null;
 
@@ -657,7 +876,9 @@ function PlannerPage() {
         return;
       }
       geplandeRij = data;
+      meldAanGezin("erbij", naam, datum, data.id);
     }
+    if (geplandeRij) await zetEters(geplandeRij.id, eters);
     if (extra?.maakRecept && geplandeRij) {
       setKiezen(null);
       navigate({ to: "/recepten/nieuw", search: { title: naam, koppel: geplandeRij.id } });
@@ -696,22 +917,42 @@ function PlannerPage() {
   /** Verplaatst of dupliceert een geplande maaltijd naar een andere dag/moment. */
   async function verplaatsNaar(rij: PlanRow, datum: string, moment: string, kopie: boolean) {
     if (!user) return;
-    if (eigenMenu) {
+    const titel = rij.recipes?.title ?? rij.custom_title ?? "Gerecht";
+    const tekst = kopie
+      ? `Ook ingepland op ${labelVoor(datum)}`
+      : `Verplaatst naar ${labelVoor(datum)}`;
+    const groupId = eigenMenu ? null : rij.group_id;
+    const erbij = planErbij({
+      userId: user.id,
+      recipeId: rij.recipe_id,
+      datum,
+      moment,
+      personen: rij.personen ?? null,
+      customTitle: rij.custom_title,
+      soort: rij.soort ?? null,
+      groupId,
+    });
+    if (eigenMenu || !kopie) {
       const id = await menuWijziging(
+        kopie ? erbij : planVerplaats(rij.id, datum, moment, planVingerafdruk(rij)),
+        tekst,
         kopie
-          ? planErbij({
-              userId: user.id,
-              recipeId: rij.recipe_id,
+          ? undefined
+          : {
+              planId: rij.id,
               datum,
-              moment,
-              personen: rij.personen ?? null,
-              customTitle: rij.custom_title,
-              soort: rij.soort ?? null,
-            })
-          : planVerplaats(rij.id, datum, moment),
-        kopie ? `Ook ingepland op ${labelVoor(datum)}` : `Verplaatst naar ${labelVoor(datum)}`,
+              mijnTitel: `${titel} op ${labelVoor(datum)}`,
+              wat: "verplaatst",
+              zetMijn: planVerplaats(rij.id, datum, moment),
+              opnieuw: erbij,
+              tekst,
+              sluit: () => setVerplaats(null),
+            },
       );
-      if (id !== null) setVerplaats(null);
+      if (id !== null) {
+        setVerplaats(null);
+        if (!kopie) meldAanGezin("verplaatst", titel, datum, rij.id);
+      }
       return;
     }
     const { error } = kopie
@@ -736,9 +977,24 @@ function PlannerPage() {
   }
 
   async function koppelRecept(rij: PlanRow, recept: Recipe) {
-    if (eigenMenu) {
-      const id = await menuWijziging(planVervang(rij.id, recept.id), `${recept.title} gekoppeld`);
-      if (id !== null) setKoppelRij(null);
+    if (eigenMenu || rij.group_id) {
+      const id = await menuWijziging(
+        planVervang(rij.id, recept.id, planVingerafdruk(rij)),
+        `${recept.title} gekoppeld`,
+        {
+          planId: rij.id,
+          datum: rij.plan_date,
+          mijnTitel: recept.title,
+          wat: "anders",
+          zetMijn: planVervang(rij.id, recept.id),
+          tekst: `${recept.title} gekoppeld`,
+          sluit: () => setKoppelRij(null),
+        },
+      );
+      if (id !== null) {
+        setKoppelRij(null);
+        meldAanGezin("anders", recept.title, rij.plan_date, rij.id);
+      }
       return;
     }
     const { error } = await supabase
@@ -893,6 +1149,20 @@ function PlannerPage() {
               <ShoppingCart className="size-5" /> Op boodschappenlijst
             </DropdownMenuItem>
           ) : null}
+          {p.recipe_id && p.plan_date <= vandaag ? (
+            <DropdownMenuItem
+              onSelect={() =>
+                void navigate({
+                  to: "/recepten/$id",
+                  params: { id: p.recipe_id as string },
+                  search: { klaar: true, plan: p.id },
+                })
+              }
+              className="min-h-12 rounded-lg text-base"
+            >
+              <ChefHat className="size-5" /> {gekookt.has(p.id) ? "Opnieuw: gekookt" : "Gekookt"}
+            </DropdownMenuItem>
+          ) : null}
           {!p.recipe_id && !p.soort ? (
             <DropdownMenuItem
               onSelect={() => setKoppelRij(p)}
@@ -914,12 +1184,20 @@ function PlannerPage() {
               <Plus className="size-5" /> Recept maken of importeren
             </DropdownMenuItem>
           ) : null}
-          {p.recipe_id && eigenMenu ? (
+          {p.recipe_id ? (
             <DropdownMenuItem
               onSelect={() => setVervangRij(p)}
               className="min-h-12 rounded-lg text-base"
             >
               <Repeat className="size-5" /> Ander gerecht
+            </DropdownMenuItem>
+          ) : null}
+          {p.recipe_id && mee.leden.length ? (
+            <DropdownMenuItem
+              onSelect={() => setEtersRij(p)}
+              className="min-h-12 rounded-lg text-base"
+            >
+              <Users className="size-5" /> Wie eet mee?
             </DropdownMenuItem>
           ) : null}
           <DropdownMenuItem
@@ -945,7 +1223,14 @@ function PlannerPage() {
             <Repeat className="size-5" /> Volgende week opnieuw
           </DropdownMenuItem>
           <DropdownMenuItem
-            onSelect={() => void verwijder(p.id, p.recipe_id, p.recipes?.title ?? "Dit gerecht")}
+            onSelect={() =>
+              void verwijder(
+                p.id,
+                p.recipe_id,
+                p.recipes?.title ?? p.custom_title ?? "Dit gerecht",
+                p,
+              )
+            }
             className="min-h-12 rounded-lg text-base text-destructive focus:text-destructive"
           >
             <Trash2 className="size-5" /> Uit planning halen
@@ -1023,6 +1308,33 @@ function PlannerPage() {
                                     {p.custom_title}
                                   </span>
                                 )}
+                                <EterInitialen leden={etersVan(p.id)} className="px-2.5 pt-1.5" />
+                                {p.recipe_id && gesloten.has(p.recipe_id) ? (
+                                  <div
+                                    className="mx-1.5 mt-1.5 space-y-1.5 rounded-xl bg-honing-zacht p-2 text-honing-foreground"
+                                    data-testid="niet-meer-beschikbaar"
+                                  >
+                                    <p className="text-[0.95rem] font-semibold leading-snug">
+                                      Niet meer beschikbaar
+                                    </p>
+                                    <p className="text-[0.95rem] leading-snug">
+                                      Exclusief van {gesloten.get(p.recipe_id)!.maker}; je
+                                      abonnement is gestopt.
+                                    </p>
+                                    <Button
+                                      variant="outline"
+                                      className="min-h-12 w-full whitespace-normal px-2 text-[0.95rem] leading-tight"
+                                      onClick={() => setVervangRij(p)}
+                                    >
+                                      Kies iets anders
+                                    </Button>
+                                  </div>
+                                ) : null}
+                                {oordelen[p.id]?.niveau && oordelen[p.id]!.niveau !== "ok" ? (
+                                  <span className="block px-2.5 pt-1.5">
+                                    <OordeelLabel oordeel={oordelen[p.id]} />
+                                  </span>
+                                ) : null}
                                 <div className="flex items-center justify-between gap-1 pb-1 pl-2.5 pr-1">
                                   <span className="truncate text-[0.9rem] text-muted-foreground">
                                     {p.recipes
@@ -1069,16 +1381,103 @@ function PlannerPage() {
     const alleMomenten = [...new Set([...momenten, ...items.map((p) => p.meal_type)])];
     const titel = datum.toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" });
     const kaart = (p: PlanRow) => (
-                    <li key={p.id} className="paneel flex min-h-24 items-center gap-2 p-3">
-                      {p.recipe_id ? <Link to="/recepten/$id" params={{ id: p.recipe_id }} search={p.personen != null ? { personen: p.personen } : {}} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ReceptFoto url={p.recipes?.image_url ?? null} recept={p.recipes} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.recipes?.title ?? "Recept"}</span>{p.recipes ? <span className="mt-0.5 flex items-center gap-1 text-base text-muted-foreground"><Clock3 className="size-3.5" /> {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) || "Tijd niet ingevuld"}</span> : null}</span></Link> : <div className="flex min-w-0 flex-1 items-center gap-3"><ReceptFoto url={null} /><span className="min-w-0"><span className="block text-base font-semibold capitalize text-muted-foreground">{p.meal_type}</span><span className="block text-lg font-semibold leading-tight">{p.custom_title}</span>{!p.soort ? <button type="button" onClick={() => setKoppelRij(p)} className="mt-0.5 block text-left text-base font-semibold text-primary underline underline-offset-2">Nog geen recept · koppelen</button> : null}</span></div>}
-                      {weergave === "gezin" && p.user_id !== user?.id ? <Avatar naam={plannerNamen[p.user_id] ?? "?"} sleutel={p.user_id} className="size-8 shrink-0 text-base" /> : null}
-                      {planActies(p)}
-                    </li>
+      <li key={p.id} className="paneel @container p-3">
+        <div className="flex min-h-[4.5rem] items-center gap-2">
+          {p.recipe_id ? (
+            <Link
+              to="/recepten/$id"
+              params={{ id: p.recipe_id }}
+              search={p.personen != null ? { personen: p.personen } : {}}
+              className="flex min-w-0 flex-1 items-center gap-3 rounded-lg hyphens-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring @max-[17rem]:flex-col @max-[17rem]:items-start"
+            >
+              <ReceptFoto url={p.recipes?.image_url ?? null} recept={p.recipes} />
+              <span className="min-w-0">
+                <span className="block text-base font-semibold capitalize text-muted-foreground">
+                  {p.meal_type}
+                </span>
+                <span className="block text-lg font-semibold leading-tight">
+                  {p.recipes?.title ?? "Recept"}
+                </span>
+                {p.recipes ? (
+                  <span className="mt-0.5 flex items-center gap-1 text-base text-muted-foreground">
+                    <Clock3 className="size-3.5" />{" "}
+                    {tijdLabel(p.recipes.prep_minutes, p.recipes.cook_minutes) ||
+                      "Tijd niet ingevuld"}
+                  </span>
+                ) : null}
+                <EterInitialen leden={etersVan(p.id)} className="mt-1" />
+                {gekookt.has(p.id) ? (
+                  <span className="mt-1 flex items-center gap-1 text-base font-semibold text-primary">
+                    <Check className="size-4" aria-hidden /> Gekookt
+                  </span>
+                ) : null}
+              </span>
+            </Link>
+          ) : (
+            <div className="flex min-w-0 flex-1 items-center gap-3 hyphens-auto @max-[17rem]:flex-col @max-[17rem]:items-start">
+              <ReceptFoto url={null} />
+              <span className="min-w-0">
+                <span className="block text-base font-semibold capitalize text-muted-foreground">
+                  {p.meal_type}
+                </span>
+                <span className="block text-lg font-semibold leading-tight">{p.custom_title}</span>
+                {!p.soort ? (
+                  <button
+                    type="button"
+                    onClick={() => setKoppelRij(p)}
+                    className="mt-0.5 block text-left text-base font-semibold text-primary underline underline-offset-2"
+                  >
+                    Nog geen recept · koppelen
+                  </button>
+                ) : null}
+              </span>
+            </div>
+          )}
+          {weergave === "gezin" && p.user_id !== user?.id ? (
+            <Avatar
+              naam={plannerNamen[p.user_id] ?? "?"}
+              sleutel={p.user_id}
+              className="size-8 shrink-0 text-base"
+            />
+          ) : null}
+          {planActies(p)}
+        </div>
+        {p.recipe_id && gesloten.has(p.recipe_id) ? (
+          <div
+            className="mt-2 space-y-2 rounded-2xl bg-honing-zacht p-3 text-honing-foreground"
+            data-testid="niet-meer-beschikbaar"
+          >
+            <p className="text-base font-semibold">Niet meer beschikbaar</p>
+            <p className="text-base">
+              Dit is een exclusief recept van {gesloten.get(p.recipe_id)!.maker}. Je abonnement is
+              gestopt, dus de stappen en ingrediënten zijn dicht. Kies iets anders voor deze dag.
+            </p>
+            <Button
+              variant="outline"
+              className="min-h-12 text-base"
+              onClick={() => setVervangRij(p)}
+            >
+              <Repeat className="size-5" aria-hidden /> Kies iets anders
+            </Button>
+          </div>
+        ) : null}
+        {p.recipe_id ? (
+          <MaaltijdVeiligheid
+            className="mt-2 border-t border-border/70 pt-2"
+            planId={p.id}
+            titel={p.recipes?.title ?? "dit gerecht"}
+            oordeel={oordelen[p.id]}
+            mee={mee}
+            onAnder={() => setVervangRij(p)}
+            onVervanger={(i) => zoekVervanger(p, i)}
+          />
+        ) : null}
+      </li>
     );
     return (
       <div className="space-y-4">
-        <div className="flex items-end gap-3">
-          <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
+          <div className="min-w-0 flex-1 basis-52">
             {groot ? (
               <p className="text-base font-semibold text-muted-foreground">
                 {dag === vandaag ? "Vandaag" : voorbij ? "Voorbij" : dag === datumTekst(new Date(Date.now() + 86400000)) ? "Morgen" : "Gepland"}
@@ -1165,7 +1564,7 @@ function PlannerPage() {
 
         {/* Week kiezen: duidelijke titel met datums, grote pijlen, rustige dagkeuze */}
         {/* Mobiel: één compacte weekband die bovenaan blijft staan (dag wisselen kan altijd). */}
-        <section aria-label="Week kiezen" className="paneel sticky top-[calc(4rem+env(safe-area-inset-top))] z-20 p-2.5 shadow-kaart md:static md:p-3 md:shadow-none lg:col-start-1 lg:row-start-1 lg:w-full lg:max-w-lg lg:p-4">
+        <section aria-label="Week kiezen" className={`paneel @container ${grootTekst ? "" : "sticky top-[calc(4rem+env(safe-area-inset-top))] z-20"} p-2.5 shadow-kaart md:static md:p-3 md:shadow-none lg:col-start-1 lg:row-start-1 lg:w-full lg:max-w-lg lg:p-4`}>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -1225,7 +1624,8 @@ function PlannerPage() {
               Terug naar vandaag
             </button>
           ) : null}
-          <div className="mt-2 grid grid-cols-7 gap-1 md:hidden" role="tablist" aria-label="Dag kiezen">
+          {/* P6: bij grote tekst (smal kader in rem) twee rijen (4 + 3) in plaats van zeven krappe kolommen. */}
+          <div className="mt-2 grid grid-cols-4 gap-1 @[20rem]:grid-cols-7 md:hidden" role="tablist" aria-label="Dag kiezen">
             {week.map((dag) => {
               const d = new Date(`${dag}T12:00:00`);
               const actief = !heleWeek && dag === gekozenDag;
@@ -1285,6 +1685,26 @@ function PlannerPage() {
           </div>
         </section>
 
+        {/* P5: wie er nu ook in het gezinsweekmenu bezig is (realtime aanwezigheid). */}
+        {!eigenMenu && gezin ? (
+          <AanwezigRegel
+            kanaal={`weekmenu:${gezin.id}`}
+            plek="het weekmenu"
+            bezig={!!(vervangRij || verplaats || koppelRij || kiezen)}
+          />
+        ) : null}
+
+        {/* Werkstroom F: geschatte kost van de week en waarschuwing boven het weekbudget. */}
+        <WeekBudget
+          plan={plan.map((p) => ({
+            id: p.id,
+            recipe_id: p.recipe_id,
+            personen: p.personen ?? null,
+            servings: p.recipes?.servings ?? null,
+          }))}
+          week={eigenMenu && weekVerschil >= 0 ? datumTekst(weekStart) : undefined}
+        />
+
         {weekRaster()}
         {tablet ? (
           <TabletWeek
@@ -1328,6 +1748,11 @@ function PlannerPage() {
           </section>
         )}
 
+        {/* P5: "Wie veranderde wat" deze week — alleen in het gezinsweekmenu (alleen gezinsleden). */}
+        {!eigenMenu && gezin ? (
+          <WeekActiviteit groupId={gezin.id} van={week[0]!} tot={week[6]!} />
+        ) : null}
+
         {/* Usecase 7: lege dagen deze week? Per dag één voorstel, met redenen en ongedaan maken.
             Alleen in je eigen weekmenu (daar is ongedaan maken altijd mogelijk). */}
         {/* Niet tegelijk met "Laat Foodlo kiezen": één voorstel tegelijk. */}
@@ -1341,18 +1766,11 @@ function PlannerPage() {
           />
         ) : null}
 
-        {/* Acties: één hoofdknop, twee rustige knoppen */}
+        {/* Acties (review 2026-11-12, punt 4): eerst plannen (twee rustige knoppen naast elkaar),
+            dan één gevulde hoofdknop voor de boodschappen. Zelf dagen kiezen is een tekstlink. */}
         <section aria-label="Acties" className="space-y-3 lg:col-span-2">
-          {/* V2-kringloop: wat nog nodig is, min voorraad en lijst — één tik. */}
-          <Button asChild className="h-16 w-full gap-3 text-lg">
-            <Link to="/aanvullen">
-              <Sparkles className="size-6" /> Slim aanvullen
-            </Link>
-          </Button>
-          <Button variant="outline" onClick={() => setBoodschappenOpen(true)} className="h-14 w-full gap-3 text-base">
-            <ShoppingCart className="size-5" /> Alles van deze week op de lijst
-          </Button>
-          <div className="grid gap-3 sm:grid-cols-2">
+          {/* Naast elkaar als het past; bij grote tekst onder elkaar. */}
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">
             <Button
               variant="outline"
               onClick={() => {
@@ -1363,9 +1781,9 @@ function PlannerPage() {
                 }
                 setKiezen({ datum: startDag, moment: momenten[momenten.length - 1] ?? "avondeten", vraagDag: true });
               }}
-              className="h-16 gap-2 text-base"
+              className="h-auto min-h-16 gap-2 px-3 text-base"
             >
-              <Plus className="size-5" /> Gerecht toevoegen
+              <Plus className="size-5 shrink-0" /> Gerecht toevoegen
             </Button>
             <Button
               variant="outline"
@@ -1376,14 +1794,82 @@ function PlannerPage() {
                 }
                 setVoorstelOpen(true);
               }}
-              className="h-16 gap-2 text-base"
+              className="h-auto min-h-16 gap-2 px-3 text-base"
             >
-              <Sparkles className="size-5" /> Laat Foodlo kiezen
+              <Wand2 className="size-5 shrink-0" /> Laat Foodlo kiezen
+            </Button>
+            {/* P1 Slimme planner: weekcontext (wie eet mee, weinig tijd, niet thuis…) en voorstel. */}
+            {eigenMenu && weekVerschil >= 0 ? (
+              <Button asChild variant="outline" className="col-span-full h-auto min-h-16 gap-2 px-3 text-base">
+                <Link to="/week-samenstellen" search={{ week: datumTekst(weekStart) }}>
+                  <CalendarRange className="size-5 shrink-0" aria-hidden /> Stel mijn week samen
+                </Link>
+              </Button>
+            ) : null}
+            {/* P4: assistent met acties; voorstel met verschillen, pas na "Doe maar" uitgevoerd. */}
+            {eigenMenu && weekVerschil >= 0 ? (
+              <Button asChild variant="outline" className="col-span-full h-auto min-h-16 gap-2 px-3 text-base">
+                <Link to="/assistent" search={{ van: "week" }}>
+                  <MessageCircleQuestion className="size-5 shrink-0" aria-hidden /> Vraag de assistent
+                </Link>
+              </Button>
+            ) : null}
+          </div>
+          {/* V2-kringloop: wat nog nodig is, min voorraad en lijst — één tik. */}
+          <Button asChild className="h-auto min-h-16 w-full flex-col gap-0.5 py-3 text-lg">
+            <Link to="/aanvullen">
+              <span className="flex items-center gap-3">
+                <ShoppingCart className="size-6 shrink-0" /> Slim aanvullen
+              </span>
+              <span className="text-base font-normal opacity-90">
+                Wat je deze week nog nodig hebt, op je lijst
+              </span>
+            </Link>
+          </Button>
+          <div className="text-center">
+            <Button
+              variant="link"
+              onClick={() => setBoodschappenOpen(true)}
+              className="h-auto min-h-12 px-2 text-base"
+            >
+              Of kies zelf welke dagen op de lijst komen
             </Button>
           </div>
         </section>
       </div>
 
+      <Sheet
+        open={!!etersRij}
+        onOpenChange={(open) => {
+          if (!open) setEtersRij(null);
+        }}
+      >
+        <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Wie eet mee?</SheetTitle>
+            <SheetDescription>{etersRij?.recipes?.title ?? "Deze maaltijd"}</SheetDescription>
+          </SheetHeader>
+          {etersRij ? (
+            <MaaltijdVeiligheid
+              className="mt-4"
+              standaardOpen
+              planId={etersRij.id}
+              titel={etersRij.recipes?.title ?? "dit gerecht"}
+              oordeel={oordelen[etersRij.id]}
+              mee={mee}
+              onAnder={
+                eigenMenu
+                  ? () => {
+                      setVervangRij(etersRij);
+                      setEtersRij(null);
+                    }
+                  : undefined
+              }
+              onVervanger={(i) => zoekVervanger(etersRij, i)}
+            />
+          ) : null}
+        </SheetContent>
+      </Sheet>
       <Sheet open={boodschappenOpen} onOpenChange={setBoodschappenOpen}>
         <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto">
           <SheetHeader>
@@ -1560,6 +2046,7 @@ function PlannerPage() {
           }
           onSluit={() => setVoorstelOpen(false)}
           onZet={zetVoorstel}
+          gezinId={gezin?.id ?? null}
         />
       )}
 
@@ -1572,6 +2059,7 @@ function PlannerPage() {
           onSluit={() => setKiezen(null)}
           onKies={plan_toevoegen}
           onNieuw={nieuw_gerecht}
+          gezinId={gezin?.id ?? null}
         />
       )}
 
@@ -1598,19 +2086,45 @@ function PlannerPage() {
         <KoppelSheet
           rij={vervangRij}
           titel="Ander gerecht"
-          uitleg={`In plaats van “${vervangRij.recipes?.title ?? "dit gerecht"}” op ${labelVoor(vervangRij.plan_date)}. Je lijst past zich aan.`}
+          uitleg={`In plaats van “${vervangRij.recipes?.title ?? "dit gerecht"}” op ${labelVoor(vervangRij.plan_date)}.${eigenMenu ? " Je lijst past zich aan." : ""}`}
           beginZoek=""
           zonder={vervangRij.recipe_id}
           onSluit={() => setVervangRij(null)}
           onKies={async (r) => {
+            const rij = vervangRij;
+            const tekst = `${r.title} in plaats van ${rij.recipes?.title ?? "het vorige gerecht"}`;
+            const erbij = planErbij({
+              userId: user!.id,
+              recipeId: r.id,
+              datum: rij.plan_date,
+              moment: rij.meal_type,
+              personen: rij.personen ?? null,
+              groupId: eigenMenu ? null : rij.group_id,
+            });
             const id = await menuWijziging(
-              planVervang(vervangRij.id, r.id),
-              `${r.title} in plaats van ${vervangRij.recipes?.title ?? "het vorige gerecht"}`,
+              planVervang(rij.id, r.id, planVingerafdruk(rij)),
+              tekst,
+              {
+                planId: rij.id,
+                datum: rij.plan_date,
+                mijnTitel: r.title,
+                wat: "anders",
+                zetMijn: planVervang(rij.id, r.id),
+                opnieuw: erbij,
+                allebei: erbij,
+                tekst,
+                sluit: () => setVervangRij(null),
+              },
             );
-            if (id !== null) setVervangRij(null);
+            if (id !== null) {
+              setVervangRij(null);
+              meldAanGezin("anders", r.title, rij.plan_date, rij.id);
+            }
           }}
         />
       )}
+
+      <ConflictKeuze voorstel={conflict} onSluit={() => setConflict(null)} />
 
       {opruimVraag && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-0 sm:items-center sm:p-4">

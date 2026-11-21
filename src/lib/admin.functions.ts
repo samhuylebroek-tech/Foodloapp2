@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { betaalInstellingGeweigerd } from "./betaalpoort";
 import { z } from "zod";
 import { begrensdeLijst } from "@/lib/zod-hulp";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -39,7 +40,11 @@ export type Rechten =
   | "settings.manage"
   | "admins.manage"
   | "privacy.manage"
-  | "private.view";
+  | "private.view"
+  // Fase 5 — Business Control Center (testmodus).
+  | "partners.view"
+  | "partners.manage"
+  | "finance.manage";
 
 const MATRIX: Record<AdminRol, Rechten[]> = {
   super_admin: [
@@ -60,6 +65,9 @@ const MATRIX: Record<AdminRol, Rechten[]> = {
     "admins.manage",
     "privacy.manage",
     "private.view",
+    "partners.view",
+    "partners.manage",
+    "finance.manage",
   ],
   admin: [
     "dashboard.view",
@@ -76,11 +84,26 @@ const MATRIX: Record<AdminRol, Rechten[]> = {
     "audit.view",
     "settings.manage",
     "privacy.manage",
+    "partners.view",
+    "partners.manage",
   ],
   support: ["dashboard.view", "users.view", "recipes.view", "support.view", "support.manage", "system.view"],
-  content_manager: ["dashboard.view", "recipes.view", "recipes.manage", "content.manage", "ai.view"],
-  analyst: ["dashboard.view", "system.view", "ai.view"],
+  content_manager: [
+    "dashboard.view",
+    "recipes.view",
+    "recipes.manage",
+    "content.manage",
+    "ai.view",
+    "partners.view",
+    "partners.manage",
+  ],
+  analyst: ["dashboard.view", "system.view", "ai.view", "partners.view"],
 };
+
+/** Alle rechten van een rol (zonder de aparte vlag voor privé-inhoud). */
+export function rechtenVanRol(rol: AdminRol): Rechten[] {
+  return [...MATRIX[rol]];
+}
 
 export function heeftRecht(profiel: AdminProfiel | null, recht: Rechten): boolean {
   if (!profiel || !profiel.active) return false;
@@ -102,17 +125,16 @@ const SCHRIJFRECHTEN: Rechten[] = [
   "settings.manage",
   "admins.manage",
   "privacy.manage",
+  "partners.manage",
+  "finance.manage",
 ];
 
 // Max aantal beheeracties per minuut per beheerder.
 const LIMIET_PER_MINUUT = 120;
 
-/**
- * BUG-095: 2FA op de server. Staat UIT tot de eigenaar het herstelplan (2FA-HERSTELPLAN.md) heeft
- * goedgekeurd en twee factoren heeft ingesteld. Aanzetten = deze waarde op `true` en daarna
- * `mfa_required` voor de eigenaar aanzetten in Beheer → Team.
- */
-export const MFA_AFDWINGEN = false;
+// BUG-095: de schakelaar staat in mfa-beleid.ts (ook leesbaar voor de E2E-test).
+import { MFA_AFDWINGEN } from "@/lib/mfa-beleid";
+export { MFA_AFDWINGEN };
 
 export const MFA_MELDING =
   "Bevestig eerst met je tweede stap (2FA) om het Control Center te gebruiken.";
@@ -886,6 +908,12 @@ export const adminInstellingZetten = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ key: z.string().min(1), value: z.any() }).parse(d))
   .handler(async ({ context, data }) => {
     const { db, profiel } = await bewaker(context as Ctx, "settings.manage");
+    // BUG-143: de betaalpoort zit op de server, niet alleen in de interface.
+    const geweigerd = betaalInstellingGeweigerd(data.key, data.value);
+    if (geweigerd) {
+      await logboek(db, profiel, "settings.geweigerd", "setting", data.key, { value: data.value });
+      throw new Error(geweigerd);
+    }
     await db
       .from("platform_settings")
       .update({ value: data.value, updated_at: new Date().toISOString(), updated_by: profiel.user_id })

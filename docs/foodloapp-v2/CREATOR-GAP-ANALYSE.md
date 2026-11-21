@@ -1,5 +1,7 @@
 # Food creators en verdienmodel: gap-analyse
 
+> Samengevat in [`docs/foodlo/COMMERCIAL_ROADMAP.md`](../foodlo/COMMERCIAL_ROADMAP.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-11. Getest als persona C (food creator, 1280 px) in de lokale demo; zie PERSONA-TESTVERSLAG-2026-11.md. Er is **niets** commercieels geactiveerd of gebouwd.
 
 **Conclusie in één zin:** Foodloapp is vandaag een persoonlijke en gezinsapp. Er bestaat geen enkele creatorfunctie. Een creator kan recepten maken en per link delen, en verder niets.

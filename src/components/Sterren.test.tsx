@@ -58,7 +58,16 @@ describe("SterrenKiezer", () => {
 
   it("knoppen zijn groot genoeg om te raken (≥ 44px, ruim boven WCAG 2.5.8)", () => {
     render(<SterrenKiezer waarde={0} onKies={() => {}} />);
-    for (const k of screen.getAllByRole("button")) expect(k.className).toMatch(/\bsize-14\b/);
+    for (const k of screen.getAllByRole("button")) {
+      expect(k.className).toMatch(/\bh-14\b/);
+      expect(k.className).toMatch(/min-w-\[44px\]/);
+    }
+  });
+
+  it("houdt de vijf sterren op één rij (geen 4 + 1 bij smalle kaarten of grote tekst)", () => {
+    render(<SterrenKiezer waarde={0} onKies={() => {}} />);
+    const rij = screen.getAllByRole("button")[0]!.parentElement!;
+    expect(rij.className).not.toMatch(/flex-wrap/);
   });
 });
 
@@ -76,8 +85,8 @@ describe("SterrenSnel", () => {
     expect(iconen[4]?.getAttribute("class")).not.toContain("honing");
   });
 
-  it("knoppen zijn minstens 44px hoog", () => {
+  it("knoppen zijn minstens 48px hoog (BUG-016, designsysteem)", () => {
     render(<SterrenSnel waarde={0} onKies={() => {}} />);
-    for (const k of screen.getAllByRole("button")) expect(k.className).toMatch(/\bh-11\b/);
+    for (const k of screen.getAllByRole("button")) expect(k.className).toMatch(/\bh-12\b/);
   });
 });

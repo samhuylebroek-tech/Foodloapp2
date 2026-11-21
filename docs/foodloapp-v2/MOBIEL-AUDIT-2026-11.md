@@ -1,5 +1,7 @@
 # Mobiele audit Foodloapp V2 (2026-11-10)
 
+> Samengevat in [`docs/foodlo/MOBILE_ARCHITECTURE.md`](../foodlo/MOBILE_ARCHITECTURE.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 **Opdracht:** de app beoordelen alsof we een premium mobiele food-app moeten afleveren, en daarna meteen herwerken.
 
 **Methode:**

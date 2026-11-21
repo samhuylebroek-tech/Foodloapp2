@@ -13,7 +13,7 @@ test.beforeEach(async ({ page }) => {
   await resetDemo();
   await meldAan(page);
   await page.goto("/voorraad");
-  await expect(page.getByRole("heading", { name: "Voorraadkast" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Voorraad", exact: true })).toBeVisible();
 });
 
 test("toont de voorraad en recepten die je ermee kan maken", async ({ page, extern }) => {

@@ -128,6 +128,8 @@ export const ALLERGENEN: Regel[] = [
       "rijstmelk",
       "pindakaas",
       "kokosroom",
+      "kokosyoghurt",
+      "sojayoghurt",
       "boterham",
     ],
   },

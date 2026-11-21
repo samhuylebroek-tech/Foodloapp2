@@ -19,6 +19,7 @@ const G = "f0000000-0000-4000-8000-0000000000f0";
 const TOEGELATEN = {
   pantry_items: "gedeelde huishoudvoorraad (BUG-112, beslissing eigenaar)",
   group_members: "lidmaatschap van hetzelfde gezin",
+  creators: "makerprofiel: bewust leesbaar voor ingelogde gebruikers (voorstel 0008)",
 };
 
 const { db, fouten } = await bouwDatabank({
@@ -52,9 +53,32 @@ const metGroep = new Set(
 );
 
 // Kolommen met een vaste lijst van toegelaten waarden (CHECK), bv. voorstel 0006.
-const VASTE_WAARDEN = { signaal: "'niet_nu'" };
+const VASTE_WAARDEN = { signaal: "'niet_nu'", handle: "'test-a'", tekst: "'Lekker'" };
 // Optionele kolommen die een tabelregel (CHECK) toch vraagt.
-const EXTRA_KOLOMMEN = { aanbeveling_feedback: { onderwerp: "'curry'" } };
+// Ook verplichte kolommen met een CHECK krijgen hier een geldige waarde (voorstellen 0011/0012).
+const EXTRA_KOLOMMEN = {
+  aanbeveling_feedback: { onderwerp: "'curry'" },
+  // Voorstel 0017: afzender (standaard auth.uid(), hier zonder sessie) en een vaste soort.
+  app_meldingen: { actor_id: `'${A}'`, soort: "'menu'" },
+  abonnementen: { plan: "'premium_maand'", status: "'proef'" },
+  budget_weken: { week: "date_trunc('week', current_date)::date" },
+  // Voorstel 0021: "gemaakt" (standaard) vraagt 1–5 sterren; sterren is niet meer verplicht.
+  community_bijdragen: { sterren: "5" },
+  entitlements: { recht: "'premium.weekmenu_extra'" },
+  facturen: { status: "'betaald'" },
+  partner_aanvragen: { bedrijfsnaam: "'Bakkerij A'", soort: "'retail'" },
+  partner_leden: { rol: "'eigenaar'" },
+  // Voorstel 0024: vaste soorten en testmandjes (testmodus verplicht, niet-lege regels).
+  ai_gebruik_dag: { soort: "'kookhulp.vraag'" },
+  // Voorstel 0025: toestemmingen per soort.
+  toestemmingen: { soort: "'analyse'", aan: "true" },
+  winkel_mandjes: {
+    provider: "'test'",
+    test: "true",
+    referentie: "'TEST-000001'",
+    regels: `'[{"product":"x"}]'`,
+  },
+};
 
 function waarde(type) {
   if (type === "uuid") return "gen_random_uuid()";
@@ -83,9 +107,13 @@ for (const t of tabellen) {
   const namen = ["user_id", ...kol.map((k) => k.column_name)];
   const waarden = [
     `'${A}'`,
-    ...kol.map((k) => VASTE_WAARDEN[k.column_name] ?? waarde(k.data_type)),
+    ...kol.map(
+      (k) =>
+        EXTRA_KOLOMMEN[t]?.[k.column_name] ?? VASTE_WAARDEN[k.column_name] ?? waarde(k.data_type),
+    ),
   ];
   for (const [k, w] of Object.entries(EXTRA_KOLOMMEN[t] ?? {})) {
+    if (namen.includes(k)) continue;
     namen.push(k);
     waarden.push(w);
   }

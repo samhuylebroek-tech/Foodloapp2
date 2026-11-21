@@ -17,6 +17,61 @@ async function admin() {
   return supabaseAdmin;
 }
 
+type ToestemmingDb = {
+  from: (t: string) => {
+    select: (k: string) => {
+      eq: (
+        k: string,
+        v: string,
+      ) => {
+        eq: (
+          k: string,
+          v: string,
+        ) => {
+          maybeSingle: () => PromiseLike<{ data: { aan?: unknown } | null }>;
+        };
+      };
+    };
+  };
+};
+
+/**
+ * Fase 8: heeft de gebruiker AI uitgezet (kop van dit toestel of rij in `toestemmingen`)?
+ * Ontbreekt de tabel (voorstel 0025 niet uitgevoerd), dan telt alleen de kop.
+ */
+export async function aiUitVoor(userId: string): Promise<boolean> {
+  const { AI_KOP, aiUitgezet } = await import("@/lib/privacy/ai-toestemming");
+  let kop: string | null = null;
+  try {
+    const { getRequest } = await import("@tanstack/react-start/server");
+    kop = getRequest()?.headers.get(AI_KOP) ?? null;
+  } catch {
+    /* buiten een verzoek (tests, achtergrondtaak): geen kop */
+  }
+  if (aiUitgezet(kop, null)) return true;
+  let rij: { aan?: unknown } | null = null;
+  try {
+    const db = (await admin()) as unknown as ToestemmingDb;
+    const { data } = await db
+      .from("toestemmingen")
+      .select("aan")
+      .eq("user_id", userId)
+      .eq("soort", "ai")
+      .maybeSingle();
+    rij = data;
+  } catch {
+    /* tabel bestaat nog niet: alleen de keuze op het toestel telt */
+  }
+  return aiUitgezet(null, rij);
+}
+
+async function controleerAiToestemming(userId: string) {
+  if (await aiUitVoor(userId)) {
+    const { AI_UIT_MELDING } = await import("@/lib/privacy/ai-toestemming");
+    throw new Error(AI_UIT_MELDING);
+  }
+}
+
 export type CreditFout = "ONVOLDOENDE_CREDITS" | "DAGLIMIET" | "FUNCTIE_UIT" | "MAANDBUDGET";
 
 const BOODSCHAP: Record<CreditFout, string> = {
@@ -187,6 +242,8 @@ export async function metCredits<T>(
   run: (meter: AiMeter) => Promise<T>,
 ): Promise<{ resultaat: T; credits: number; cache: boolean; saldo: number | null }> {
   const db = await admin();
+  // Fase 8: "AI uit" (toestel of account) gaat vóór alles, ook vóór de cache.
+  await controleerAiToestemming(opts.userId);
   const model = opts.model ?? "";
   const meter = nieuweMeter();
   meter.group_id = opts.groupId ?? null;

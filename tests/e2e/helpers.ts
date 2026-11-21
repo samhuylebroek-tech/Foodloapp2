@@ -103,8 +103,11 @@ export async function meldAan(page: Page, sub?: string) {
   await page.addInitScript(
     ([sleutel, waarde]) => {
       // Slechts één keer per tabblad: anders zou afmelden meteen ongedaan gemaakt worden.
-      if (window.sessionStorage.getItem("nep-sessie-gezet")) return;
+      // Ook in window.name: na "account verwijderen" wist de app sessionStorage (fase 8).
+      if (window.sessionStorage.getItem("nep-sessie-gezet") || window.name.includes("nep-sessie"))
+        return;
       window.sessionStorage.setItem("nep-sessie-gezet", "1");
+      window.name = `${window.name} nep-sessie`.trim();
       window.localStorage.setItem(sleutel!, waarde!);
       // Rondleiding/onboarding-hints overslaan zodat de kernflow centraal staat.
       window.localStorage.setItem("rondleiding-gezien", "1");
@@ -120,7 +123,7 @@ export async function nepDb(): Promise<Record<string, Record<string, unknown>[]>
 
 export async function storing(s: {
   pad: string;
-  soort: "fout" | "traag" | "netwerk";
+  soort: "fout" | "traag" | "netwerk" | "ontbreekt";
   methode?: string;
   keer?: number;
   ms?: number;
@@ -160,5 +163,21 @@ export async function voorraadBijhouden(
   await page.addInitScript(
     (id) => window.localStorage.setItem(`foodlo:voorraad-bijhouden:${id}`, "aan"),
     userId,
+  );
+}
+
+/**
+ * Werkstroom A: Vandaag houdt rekening met wie meeeet (standaard het hele demo-gezin, met Gust
+ * die vegetarisch is). Tests die over iets anders gaan (bv. vlees dat al even in huis is), zetten
+ * "Wie eet mee vanavond?" op alleen Marie, zoals een gebruiker dat zelf kan doen.
+ */
+export async function alleenIkEetMee(page: Page, lidId = "aeaeaeae-0000-4000-8000-000000000001") {
+  await page.addInitScript(
+    ([id, lid]) =>
+      window.localStorage.setItem(
+        `foodlo:vanavond-eters:${id}`,
+        JSON.stringify({ datum: new Date().toLocaleDateString("sv-SE"), ids: [lid] }),
+      ),
+    ["11111111-1111-4111-8111-111111111111", lidId] as const,
   );
 }

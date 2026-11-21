@@ -1,5 +1,7 @@
 # Foodloapp V2 — herontwerp (stand 2026-11-08)
 
+> Samengevat in [`docs/foodlo/MASTER_PRODUCT_BLUEPRINT.md`](../foodlo/MASTER_PRODUCT_BLUEPRINT.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 ## 1. Herbeoordeling van de vorige V2
 De vorige versie was **grotendeels cosmetisch**: nieuw lettertype, nieuwe kleuren, schaduwen en omslagen, maar dezelfde informatiearchitectuur en schermopbouw als het origineel.
 - Dezelfde 5 tabs + zijbalk, en op elke pagina een kopblok van ±130 px voor alleen een titel.

@@ -1,5 +1,7 @@
 # Security-audit Foodloapp V2: toegang, rollen en RLS
 
+> Samengevat in [`docs/foodlo/PRIVACY_AND_SECURITY.md`](../foodlo/PRIVACY_AND_SECURITY.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-11, branch `v2/dev`. Fase 1 (inventaris) vanaf `01f85e0`; **fase 2 (verificatie, §7)** daarna. Er is geen databank gewijzigd en geen productieverbinding gemaakt.
 
 ## 0. Methode en grenzen

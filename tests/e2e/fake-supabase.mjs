@@ -3,11 +3,12 @@
 // stuurknoppen (/__*) waarmee tests storingen kunnen nabootsen.
 // Raakt nooit een echte (productie)database.
 import http from "node:http";
+import { randomUUID } from "node:crypto";
 import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { maakDb, rest } from "./nep-db.mjs";
-import { demoSeed } from "./demo-data.mjs";
+import { demoSeed, PARTNER_USERS } from "./demo-data.mjs";
 
 const FOTO_MAP = path.join(path.dirname(fileURLToPath(import.meta.url)), "demo-fotos");
 
@@ -57,13 +58,41 @@ function seed() {
   };
 }
 
+// Eigenaar van het platform (zelfde vaste ID als src/lib/eigenaar.ts). Alleen in de demo
+// (DEMO=1) krijgt dit account een eigenaarsrol in de NEP-databank, zodat de eigenaar het Business
+// Control Center in testmodus kan uitproberen. Verandert niets aan productie of echte rechten.
+const DEMO_EIGENAAR = "e11454f4-8b82-4b7a-81a4-4c161b3b222d";
+/** Alleen in de demo voor de eigenaar (niet in E2E: die zetten hun eigen beheerrechten). */
+const demoBeheer = () => ({
+  admin_users: [
+    {
+      user_id: DEMO_EIGENAAR,
+      role: "super_admin",
+      active: true,
+      can_view_private_content: false,
+      note: "Demo-eigenaar (nep-databank)",
+      read_only: false,
+      mfa_required: false,
+    },
+  ],
+  profiel: { id: DEMO_EIGENAAR, display_name: "Eigenaar (demo)", onboarding_klaar: true },
+});
+
 const metDemo = (aan) => {
   if (!aan) return seed();
   const { extraProfielen, ...demo } = demoSeed();
   const basis = seed();
-  return { ...basis, ...demo, profiles: [...basis.profiles, ...extraProfielen] };
+  const beheer = DEMO ? demoBeheer() : null;
+  return {
+    ...basis,
+    ...demo,
+    ...(beheer ? { admin_users: beheer.admin_users } : {}),
+    profiles: [...basis.profiles, ...extraProfielen, ...(beheer ? [beheer.profiel] : [])],
+  };
 };
 const db = maakDb(metDemo(DEMO));
+/** Fase 8: ook na /__reset?demo=1 (E2E) werkt de demo-aanmelding, zodat tests echt aanmelden. */
+let demoAan = DEMO;
 const log = [];
 /** Storingen per pad: { pad: { soort: "fout"|"traag"|"netwerk", keer, ms, status } } */
 const storingen = new Map();
@@ -96,15 +125,32 @@ export function maakToken(sub = TEST_USER.id, opties = {}) {
     exp: nu + (opties.vervalt ?? 3600 * 24),
     iat: nu,
     aal: opties.aal ?? "aal1",
-    session_id: "nep-sessie",
+    // Fase 8: elke aanmelding krijgt een eigen sessie (afmelden op andere toestellen).
+    session_id: opties.sessie ?? "nep-sessie",
   });
   return `${kop}.${inhoud}.${TEST_TOKEN_PREFIX}`;
 }
 const geldigToken = (auth) =>
   (auth ?? "").startsWith("Bearer ") && auth.endsWith(`.${TEST_TOKEN_PREFIX}`);
+/** Inhoud van het token (zonder controle), of null. */
+function claims(auth) {
+  try {
+    return JSON.parse(
+      Buffer.from(String(auth).split(" ")[1].split(".")[1], "base64url").toString(),
+    );
+  } catch {
+    return null;
+  }
+}
 
 /** Verzonnen beheersleutel voor tests en demo (geen echt geheim). */
 export const NEP_BEHEERSLEUTEL = "sb_secret_nep_alleen_lokaal";
+
+const EXTRA_DEMO_LOGINS = {
+  "partner@foodlo.be": PARTNER_USERS.els,
+  "proef@foodlo.be": PARTNER_USERS.proef,
+  "beheer@foodlo.be": DEMO_EIGENAAR,
+};
 
 const RPC_STANDAARD = {
   credits_saldo: { saldo: 50 },
@@ -114,9 +160,14 @@ const RPC_STANDAARD = {
 };
 
 const server = http.createServer((req, res) => {
+  const stukken = [];
   let data = "";
-  req.on("data", (c) => (data += c));
+  let ruw = Buffer.alloc(0);
+  req.on("data", (c) => stukken.push(c));
   req.on("end", () => {
+    // Binair veilig (foto-uploads); tekst voor alle andere aanvragen.
+    ruw = Buffer.concat(stukken);
+    data = ruw.toString();
     // Eén foute aanvraag mag de hele nep-server nooit laten crashen.
     verwerk().catch((e) => {
       console.error("[nep-supabase] fout:", e instanceof Error ? e.message : e);
@@ -135,7 +186,8 @@ const server = http.createServer((req, res) => {
     if (url.pathname === "/__reset") {
       log.length = 0;
       storingen.clear();
-      db.reset(metDemo(DEMO || url.searchParams.get("demo") === "1"));
+      demoAan = DEMO || url.searchParams.get("demo") === "1";
+      db.reset(metDemo(demoAan));
       return stuur(res, 200, { ok: true });
     }
     if (url.pathname === "/__db") return stuur(res, 200, Object.fromEntries(db.tabellen));
@@ -177,13 +229,94 @@ const server = http.createServer((req, res) => {
       if (s.soort === "netwerk") return req.socket.destroy();
       if (s.soort === "fout")
         return stuur(res, s.status ?? 500, { code: "XX000", message: "nep-fout" });
+      // Tabel bestaat (nog) niet, zoals in productie vóór een migratie (PostgREST PGRST205).
+      if (s.soort === "ontbreekt")
+        return stuur(res, 404, {
+          code: "PGRST205",
+          message: `Could not find the table 'public.${pad.split("/").pop()}' in the schema cache`,
+        });
     }
 
     const auth = req.headers["authorization"];
+    // Fase 8: verwijderde accounts en ingetrokken sessies (zoals echte Supabase Auth).
+    const verwijderd = (id) => db.t("__verwijderd").some((v) => v.id === id);
+    const sessieIngetrokken = (id) =>
+      db.t("__sessies").some((x) => x.id === id && x.ingetrokken === true);
+    const nieuweSessie = (sub) => {
+      const id = randomUUID();
+      db.t("__sessies").push({
+        id,
+        user_id: sub,
+        created_at: new Date().toISOString(),
+        refreshed_at: new Date().toISOString(),
+        user_agent: String(req.headers["user-agent"] ?? "").slice(0, 200),
+        aal: "aal1",
+        ingetrokken: false,
+      });
+      return id;
+    };
+
+    // Verwijderen door de server (service-sleutel), zoals auth.admin.deleteUser.
+    const adminWis = url.pathname.match(/^\/auth\/v1\/admin\/users\/([0-9a-f-]{36})$/);
+    if (adminWis && req.method === "DELETE") {
+      if (!verwijderd(adminWis[1])) db.t("__verwijderd").push({ id: adminWis[1] });
+      for (const x of db.t("__sessies")) if (x.user_id === adminWis[1]) x.ingetrokken = true;
+      return stuur(res, 200, {});
+    }
 
     // ---- Auth ----
     if (url.pathname === "/auth/v1/token") {
-      const demoLogin = DEMO && body?.email === "demo@foodlo.be" && body?.password === "demo1234";
+      const demoLogin =
+        demoAan && body?.email === "demo@foodlo.be" && body?.password === "demo1234";
+      // Extra demo-aanmeldingen (verzonnen): partneromgeving en een proefabonnement.
+      const extraSub =
+        demoAan && body?.password === "demo1234" ? EXTRA_DEMO_LOGINS[body?.email] : undefined;
+      const [refreshSub, refreshSessie] = String(body?.refresh_token ?? "").startsWith(
+        "nep-refresh:",
+      )
+        ? String(body.refresh_token).slice("nep-refresh:".length).split(":")
+        : [undefined, undefined];
+      const aanmeldSub = demoLogin ? TEST_USER.id : extraSub;
+      if (aanmeldSub && verwijderd(aanmeldSub)) {
+        return stuur(res, 400, {
+          code: 400,
+          error_code: "invalid_credentials",
+          msg: "Invalid login credentials",
+        });
+      }
+      if (refreshSub && (verwijderd(refreshSub) || sessieIngetrokken(refreshSessie))) {
+        return stuur(res, 400, {
+          code: 400,
+          error_code: "refresh_token_not_found",
+          msg: "Invalid Refresh Token: Refresh Token Not Found",
+        });
+      }
+      if (aanmeldSub) {
+        const sessie = nieuweSessie(aanmeldSub);
+        return stuur(res, 200, {
+          access_token: maakToken(aanmeldSub, { sessie }),
+          refresh_token: `nep-refresh:${aanmeldSub}:${sessie}`,
+          token_type: "bearer",
+          expires_in: 86400,
+          expires_at: Math.floor(Date.now() / 1000) + 86400,
+          user: {
+            ...TEST_USER,
+            id: aanmeldSub,
+            email: demoLogin ? TEST_USER.email : (body?.email ?? TEST_USER.email),
+          },
+        });
+      }
+      const anderSub = refreshSub;
+      if (anderSub && /^[0-9a-f-]{36}$/.test(anderSub)) {
+        return stuur(res, 200, {
+          access_token: maakToken(anderSub, refreshSessie ? { sessie: refreshSessie } : {}),
+          refresh_token: `nep-refresh:${anderSub}${refreshSessie ? `:${refreshSessie}` : ""}`,
+          token_type: "bearer",
+          expires_in: 86400,
+          expires_at: Math.floor(Date.now() / 1000) + 86400,
+          user: { ...TEST_USER, id: anderSub, email: body?.email ?? TEST_USER.email },
+        });
+      }
       if (url.searchParams.get("grant_type") === "refresh_token" || demoLogin) {
         return stuur(res, 200, {
           access_token: maakToken(),
@@ -244,6 +377,14 @@ const server = http.createServer((req, res) => {
       } catch {
         /* geen leesbaar token: geldigToken beslist */
       }
+      const c = claims(auth);
+      if (c && (verwijderd(c.sub ?? TEST_USER.id) || sessieIngetrokken(c.session_id))) {
+        return stuur(res, 403, {
+          code: 403,
+          error_code: "session_not_found",
+          msg: "Session from session_id claim in JWT does not exist",
+        });
+      }
       if (geldigToken(auth) && !verlopen) {
         let sub = TEST_USER.id;
         try {
@@ -299,12 +440,145 @@ const server = http.createServer((req, res) => {
         user: { ...TEST_USER, id: sub },
       });
     }
-    if (url.pathname === "/auth/v1/logout") return stuur(res, 204, null);
+    if (url.pathname === "/auth/v1/logout") {
+      // scope: global (standaard), local of others — zoals supabase.auth.signOut({ scope }).
+      const c = claims(auth);
+      const scope = url.searchParams.get("scope") ?? "global";
+      if (c?.sub)
+        for (const x of db.t("__sessies")) {
+          if (x.user_id !== c.sub) continue;
+          const eigen = x.id === c.session_id;
+          if (scope === "global" || (scope === "local" && eigen) || (scope === "others" && !eigen))
+            x.ingetrokken = true;
+        }
+      return stuur(res, 204, null);
+    }
     if (url.pathname.startsWith("/auth/v1/")) return stuur(res, 200, {});
 
     // ---- Data ----
     if (url.pathname.startsWith("/rest/v1/rpc/")) {
       const naam = url.pathname.slice("/rest/v1/rpc/".length);
+      // Voorstel 0008: geaggregeerde makercijfers (zoals public.maker_statistiek), nooit wie.
+      if (naam === "maker_statistiek") {
+        const maker = db.t("creators").find((c) => c.id === body?.p_creator);
+        if (!maker) return stuur(res, 200, null);
+        const ids = new Set(
+          db
+            .t("recipe_publicaties")
+            .filter((p) => p.creator_id === maker.id)
+            .map((p) => p.recipe_id),
+        );
+        const anderen = (r) => ids.has(r.recipe_id) && r.user_id !== maker.user_id;
+        const verzamelingVanAnderen = new Set(
+          db
+            .t("collections")
+            .filter((c) => c.user_id !== maker.user_id)
+            .map((c) => c.id),
+        );
+        return stuur(res, 200, {
+          volgers: db.t("follows").filter((f) => f.creator_id === maker.id).length,
+          bewaard:
+            db.t("favorites").filter(anderen).length +
+            db
+              .t("collection_recipes")
+              .filter((r) => ids.has(r.recipe_id) && verzamelingVanAnderen.has(r.collection_id))
+              .length,
+          gepland: db.t("meal_plan").filter(anderen).length,
+        });
+      }
+      // Voorstel 0011: public.gesponsord_tel — +1 op het dagtotaal van een lopende campagne
+      // (goedgekeurd/actief, geverifieerde partner, binnen de looptijd). Nooit wie.
+      if (naam === "gesponsord_tel") {
+        if (!geldigToken(auth)) return stuur(res, 401, { message: "niet aangemeld" });
+        const soort = body?._soort;
+        if (soort !== "vertoning" && soort !== "klik")
+          return stuur(res, 400, { message: "onbekende soort" });
+        const item = db.t("gesponsorde_items").find((i) => i.id === body?._item);
+        const c = item && db.t("campagnes").find((x) => x.id === item.campagne_id);
+        const p = c && db.t("partners").find((x) => x.id === c.partner_id);
+        const d = new Date();
+        const twee = (n) => String(n).padStart(2, "0");
+        const vandaag = `${d.getFullYear()}-${twee(d.getMonth() + 1)}-${twee(d.getDate())}`;
+        const loopt =
+          c &&
+          p?.verificatie_status === "geverifieerd" &&
+          ["goedgekeurd", "actief"].includes(c.status) &&
+          c.start &&
+          c.einde &&
+          c.start <= vandaag &&
+          vandaag <= c.einde;
+        if (!loopt) return stuur(res, 200, null);
+        const stat = db.t("gesponsord_statistiek");
+        let rij = stat.find((r) => r.campagne_id === c.id && r.dag === vandaag);
+        if (!rij) {
+          rij = { id: randomUUID(), campagne_id: c.id, dag: vandaag, vertoningen: 0, klikken: 0 };
+          stat.push(rij);
+        }
+        if (soort === "vertoning") rij.vertoningen += 1;
+        else rij.klikken += 1;
+        return stuur(res, 200, null);
+      }
+      // Voorstel 0024: public.ai_gebruik_tel — +1 op je eigen dagtotaal en op het anonieme
+      // totaal (alleen dag en soort, nooit wie of wat). Cache-antwoorden tellen apart.
+      if (naam === "ai_gebruik_tel") {
+        if (!geldigToken(auth)) return stuur(res, 401, { message: "niet aangemeld" });
+        const soort = String(body?.p_soort ?? "");
+        if (!/^[a-z.]{3,40}$/.test(soort)) return stuur(res, 400, { message: "onbekende soort" });
+        let sub;
+        try {
+          sub = JSON.parse(
+            Buffer.from(auth.split(" ")[1].split(".")[1], "base64url").toString(),
+          ).sub;
+        } catch {
+          return stuur(res, 401, { message: "niet aangemeld" });
+        }
+        const d = new Date();
+        const twee = (n) => String(n).padStart(2, "0");
+        const dag = `${d.getFullYear()}-${twee(d.getMonth() + 1)}-${twee(d.getDate())}`;
+        const cache = body?.p_cache === true;
+        const tel = (tabel, zoek, nieuw) => {
+          const t = db.t(tabel);
+          let rij = t.find(zoek);
+          if (!rij) {
+            rij = { id: randomUUID(), ...nieuw, aantal: 0, uit_cache: 0 };
+            t.push(rij);
+          }
+          if (cache) rij.uit_cache += 1;
+          else rij.aantal += 1;
+        };
+        tel("ai_gebruik_dag", (r) => r.user_id === sub && r.dag === dag && r.soort === soort, {
+          user_id: sub,
+          dag,
+          soort,
+        });
+        tel("ai_gebruik_totaal", (r) => r.dag === dag && r.soort === soort, { dag, soort });
+        return stuur(res, 200, null);
+      }
+      // Voorstel 0025: public.mijn_aanmeldingen / public.meld_aanmelding_af — je eigen sessies
+      // (auth.sessions) zien en er één afmelden. Nooit die van een ander.
+      if (naam === "mijn_aanmeldingen" || naam === "meld_aanmelding_af") {
+        const c = geldigToken(auth) ? claims(auth) : null;
+        if (!c?.sub) return stuur(res, 401, { message: "niet aangemeld" });
+        const eigen = db.t("__sessies").filter((x) => x.user_id === c.sub && !x.ingetrokken);
+        if (naam === "meld_aanmelding_af") {
+          const doel = eigen.find((x) => x.id === body?._id);
+          if (!doel) return stuur(res, 400, { code: "P0001", message: "sessie niet gevonden" });
+          doel.ingetrokken = true;
+          return stuur(res, 200, true);
+        }
+        return stuur(
+          res,
+          200,
+          eigen.map((x) => ({
+            id: x.id,
+            created_at: x.created_at,
+            refreshed_at: x.refreshed_at,
+            user_agent: x.user_agent,
+            aal: x.aal,
+            huidige: x.id === c.session_id,
+          })),
+        );
+      }
       return stuur(res, 200, RPC_STANDAARD[naam] ?? null);
     }
     if (url.pathname.startsWith("/rest/v1/")) {
@@ -334,6 +608,48 @@ const server = http.createServer((req, res) => {
         ...cors,
       });
       return res.end(readFileSync(bestand));
+    }
+    // Fase 4 — communityfoto's (nep): upload, getekende link en ophalen. Bestanden staan als
+    // rijen { bucket_id, name, inhoud (base64), type } in "__opslag"; niets verlaat deze computer.
+    const cUp = url.pathname.match(/^\/storage\/v1\/object\/community-fotos\/(.+)$/);
+    if (cUp && req.method === "POST") {
+      if (!geldigToken(auth)) return stuur(res, 401, { error: "niet aangemeld" });
+      const naam = decodeURIComponent(cUp[1]);
+      const soort = String(req.headers["content-type"] ?? "");
+      let bytes = ruw;
+      let type = soort;
+      const grens = soort.match(/boundary=(.+)$/)?.[1];
+      if (grens) {
+        // multipart/form-data van supabase-js: neem het deel met de afbeelding.
+        const delen = ruw.toString("latin1").split(`--${grens}`);
+        const deel = delen.find((d) => /content-type:\s*image\//i.test(d));
+        if (deel) {
+          const start = deel.indexOf("\r\n\r\n") + 4;
+          const inhoud = deel.slice(start).replace(/\r\n$/, "");
+          bytes = Buffer.from(inhoud, "latin1");
+          type = deel.match(/content-type:\s*([^\r\n]+)/i)?.[1] ?? "image/jpeg";
+        }
+      }
+      db.t("__opslag").push({
+        bucket_id: "community-fotos",
+        name: naam,
+        inhoud: bytes.toString("base64"),
+        type: type || "image/jpeg",
+      });
+      return stuur(res, 200, { Key: `community-fotos/${naam}`, Id: naam });
+    }
+    const cTeken = url.pathname.match(/^\/storage\/v1\/object\/sign\/community-fotos\/(.+)$/);
+    if (cTeken && req.method === "POST") {
+      return stuur(res, 200, {
+        signedURL: `/object/sign/community-fotos/${cTeken[1]}?token=nep`,
+      });
+    }
+    if (cTeken && req.method === "GET") {
+      const naam = decodeURIComponent(cTeken[1]);
+      const f = db.t("__opslag").find((o) => o.bucket_id === "community-fotos" && o.name === naam);
+      if (!f?.inhoud) return stuur(res, 404, { error: "geen foto" });
+      res.writeHead(200, { "content-type": f.type, "cache-control": "max-age=3600", ...cors });
+      return res.end(Buffer.from(f.inhoud, "base64"));
     }
     // Opslag (nep): bestanden staan als rijen { bucket_id, name } in de tabel "__opslag".
     // list = de bestanden direct in een map; remove = wissen (zoals de Storage-API).

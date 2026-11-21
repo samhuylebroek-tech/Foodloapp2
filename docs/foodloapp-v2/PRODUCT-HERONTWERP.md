@@ -1,5 +1,7 @@
 # Foodloapp V2 — product opnieuw doordacht (2026-11-09)
 
+> Samengevat in [`docs/foodlo/MASTER_PRODUCT_BLUEPRINT.md`](../foodlo/MASTER_PRODUCT_BLUEPRINT.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Status: voorstel + eerste klikbaar prototype in de lokale demo (`v2/dev`, nep-Supabase). Niets is gepubliceerd.
 
 ---

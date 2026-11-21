@@ -162,6 +162,7 @@ test.describe("Persona B — foodcreator van 20, desktop", () => {
     const s = teller(page);
     await page.goto("/recepten/aaaaaaaa-0000-4000-8000-000000000001");
     await s.tik(page.getByRole("button", { name: "Delen" }));
+    await s.tik(page.getByRole("button", { name: "Link kopiëren" }));
     await expect(page.getByText("Link gekopieerd")).toBeVisible();
     s.meld("B4 delen");
     void extern;

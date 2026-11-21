@@ -2,16 +2,27 @@
  * WP3 — de "Nu"-kaart bovenaan Vandaag: één ding dat nu telt, één knop.
  * Welke stap het is, beslist `hoofdStap` (lib/vandaag.ts); deze kaart toont hem alleen.
  */
-import { Link } from "@tanstack/react-router";
-import { ArrowRight, CalendarDays, ChefHat, Loader2, Plus, ShoppingCart } from "lucide-react";
-import type { ReactNode } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import {
+  ArrowRight,
+  CalendarDays,
+  Check,
+  ChefHat,
+  Clock3,
+  Loader2,
+  Plus,
+  ShoppingCart,
+} from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { VanavondVoorstellen } from "@/components/kringloop/VanavondVoorstellen";
 import { RestjesVoorstel } from "@/components/kringloop/RestjesVoorstel";
 import type { Recipe } from "@/lib/types";
 import { duurLabel } from "@/lib/kookstand";
-import { opsomming, type ReceptVandaag, type Stap } from "@/lib/vandaag";
+import { opsomming, type ReceptVandaag, type Stap, type Tijdsplan } from "@/lib/vandaag";
 import { useT } from "@/lib/voorkeuren";
+import { useEtersOordelen, useMaaltijdEters } from "@/hooks/useMaaltijdEters";
+import { MaaltijdVeiligheid } from "@/components/veiligheid/EtersOordeel";
 
 const knopHoofd =
   "inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-inkt-foreground px-6 text-lg font-semibold text-inkt hover:bg-inkt-foreground/90 disabled:opacity-70";
@@ -21,6 +32,17 @@ const knopTweede =
 function momentLabel(moment: string) {
   const m = moment.trim();
   return m ? m.charAt(0).toUpperCase() + m.slice(1) : "Vandaag";
+}
+
+/** Eén zin over de timing, in gewone taal (review 2026-11-12, punt 8). */
+function tijdregel(plan: Tijdsplan | null | undefined, t: (s: string) => string): string | null {
+  if (!plan) return null;
+  const duur = duurLabel(plan.duurMin * 60);
+  if (plan.soort === "later")
+    return `${t("Begin om")} ${plan.beginOm} · ${duur} · ${t("aan tafel om")} ${plan.aanTafel}`;
+  return plan.laat
+    ? `${t("Begin nu")}: ${t("het duurt")} ${duur}, ${t("dan eet je rond")} ${plan.aanTafel}`
+    : `${t("Begin nu, dan eet je om")} ${plan.aanTafel}`;
 }
 
 function kooktijd(r: ReceptVandaag) {
@@ -50,7 +72,7 @@ export function NuKaart({
   const recept =
     stap && "recept" in stap
       ? stap.recept
-      : stap?.soort === "morgen"
+      : stap?.soort === "morgen" || stap?.soort === "gekookt"
         ? (stap.maaltijd?.recept ?? null)
         : null;
 
@@ -59,6 +81,52 @@ export function NuKaart({
   let uitleg: ReactNode = null;
   let acties: ReactNode = null;
   let extra: ReactNode = null;
+  // Ronde 3, "Iets anders vanavond" (FR-V-10): alleen als er vandaag een recept gepland is.
+  const [anders, setAnders] = useState(false);
+  const gepland =
+    stap?.soort === "aanvullen" || stap?.soort === "winkelen" || stap?.soort === "koken"
+      ? {
+          planId: stap.maaltijd.id,
+          huidigReceptId: stap.recept.id,
+          huidigeTitel: stap.recept.title,
+        }
+      : null;
+  // Fase 1: wie eet mee en is het gerecht veilig voor iedereen? (zelfde oordeel als Week en recept)
+  const navigate = useNavigate();
+  const veiligPlan =
+    gepland?.planId ??
+    (stap?.soort === "morgen" && stap.maaltijd?.recept ? stap.maaltijd.id : null);
+  const mee = useMaaltijdEters(veiligPlan ? [veiligPlan] : []);
+  const oordelen = useEtersOordelen(
+    veiligPlan && recept ? [{ sleutel: veiligPlan, recept, eters: mee.etersVan(veiligPlan) }] : [],
+    mee,
+  );
+  const veiligheid =
+    veiligPlan && recept ? (
+      <MaaltijdVeiligheid
+        className="mt-4 max-w-md"
+        planId={veiligPlan}
+        titel={recept.title}
+        oordeel={oordelen[veiligPlan]}
+        mee={mee}
+        toon="inkt"
+        onAnder={gepland ? () => setAnders(true) : undefined}
+        onVervanger={(ingredient) =>
+          void navigate({
+            to: "/recepten/$id",
+            params: { id: recept.id },
+            search: { vervang: ingredient, plan: veiligPlan },
+          })
+        }
+      />
+    ) : null;
+  // Timing: bij aanvullen en winkelen altijd; bij koken alleen als "begin om" er nog niet staat.
+  const tijd =
+    stap?.soort === "aanvullen" || stap?.soort === "winkelen"
+      ? tijdregel(stap.plan, t)
+      : stap?.soort === "koken" && !stap.beginOm
+        ? tijdregel(stap.plan, t)
+        : null;
 
   const naarRecept = (r: ReceptVandaag, tekst: string) => (
     <Link to="/recepten/$id" params={{ id: r.id }} className={knopTweede}>
@@ -69,7 +137,7 @@ export function NuKaart({
     <Link
       to="/recepten/$id"
       params={{ id: r.id }}
-      search={{ koken: true }}
+      search={gepland ? { koken: true, plan: gepland.planId } : { koken: true }}
       className={hoofd ? knopHoofd : knopTweede}
     >
       <ChefHat className="size-6" aria-hidden />
@@ -179,6 +247,18 @@ export function NuKaart({
         ) : null;
       }
       break;
+    case "gekookt":
+      // P3: na "Klaar" (kookstand of "Gekookt"): rust, geen nieuwe taak.
+      label = `${t(momentLabel(stap.maaltijd.meal_type))} ${t("vandaag")}`;
+      titel = t(stap.maaltijd.recept?.title ?? stap.maaltijd.custom_title ?? "Maaltijd");
+      uitleg = t("Gekookt. Smakelijk!");
+      acties = (
+        <Link to="/planner" className={knopTweede}>
+          <CalendarDays className="size-6" aria-hidden />
+          {t("Naar het weekmenu")}
+        </Link>
+      );
+      break;
     case "kiezen":
       titel = t("Wat eten we vandaag?");
       uitleg = t("Er staat nog niets gepland. Kies een gerecht uit je recepten.");
@@ -236,6 +316,15 @@ export function NuKaart({
                 ) : null}
                 <h2 className="mt-2 text-heldentitel text-inkt-foreground">{titel}</h2>
                 {uitleg ? <p className="mt-3 max-w-md text-lg text-inkt-zacht">{uitleg}</p> : null}
+                {tijd ? (
+                  <p
+                    className="mt-3 flex max-w-md items-start gap-2 text-lg font-semibold text-inkt-foreground"
+                    data-testid="tijdregel"
+                  >
+                    <Clock3 className="mt-1 size-5 shrink-0 text-[var(--honing)]" aria-hidden />
+                    <span>{tijd}</span>
+                  </p>
+                ) : null}
                 {extra}
                 {acties ? (
                   <div className="mt-6 flex flex-col gap-3 sm:flex-row md:flex-col lg:flex-row">
@@ -244,6 +333,36 @@ export function NuKaart({
                 ) : null}
               </div>
             )}
+            {/* Fase 1: veiligheid voor wie meeëet, buiten de hoofdacties (één hoofdknop + één tweede). */}
+            {!laden && stap ? veiligheid : null}
+            {/* Buiten de hoofdkaart-acties: de kaart houdt één hoofdactie en hooguit één tweede. */}
+            {!laden && gepland ? (
+              <div className="mt-4 flex flex-wrap items-center gap-x-6">
+                {/* P3: al gekookt (zonder kookstand)? Dan meteen "Klaar met koken". */}
+                <Link
+                  to="/recepten/$id"
+                  params={{ id: gepland.huidigReceptId }}
+                  search={{ klaar: true, plan: gepland.planId }}
+                  className="inline-flex min-h-12 items-center gap-2 text-base font-semibold text-inkt-foreground underline underline-offset-4"
+                >
+                  <Check className="size-5" aria-hidden />
+                  {t("Gekookt")}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setAnders((a) => !a)}
+                  aria-expanded={anders}
+                  className="inline-flex min-h-12 items-center gap-2 text-base font-semibold text-inkt-foreground underline underline-offset-4"
+                >
+                  {anders ? t("Toch niet") : t("Iets anders vanavond?")}
+                </button>
+                {anders ? (
+                  <div className="basis-full">
+                    <VanavondVoorstellen recepten={recepten} vervang={gepland} />
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
 

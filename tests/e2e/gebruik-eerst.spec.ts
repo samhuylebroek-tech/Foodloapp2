@@ -12,10 +12,18 @@ import {
   zetKlok,
   axeErnstig,
   voorraadBijhouden,
+  alleenIkEetMee,
 } from "./helpers";
 
 const NEP = "http://127.0.0.1:54439/rest/v1";
-const geleden = (dagen: number) => new Date(Date.now() - dagen * 86400000).toISOString();
+// BUG-140: rekenen vanaf dezelfde vaste klok als de browser (zetKlok 17 u), niet vanaf "nu".
+// Anders werd "5 dagen geleden" na 17 u "4 dagen en 17 uur" → "Al 4 dagen in huis".
+const klok = () => {
+  const d = new Date();
+  d.setHours(17, 0, 0, 0);
+  return d.getTime();
+};
+const geleden = (dagen: number) => new Date(klok() - dagen * 86400000).toISOString();
 
 test.describe.configure({ timeout: 120_000 });
 
@@ -62,6 +70,7 @@ test("Keuken: 'Al 5 dagen in huis' en 'Gebruik eerst'; recept dat het opmaakt st
 });
 
 test("Vandaag: de reden noemt wat al even in huis is", async ({ page, extern }) => {
+  await alleenIkEetMee(page); // gaat over rundvlees, niet over vegetarische Gust
   await fetch(`${NEP}/meal_plan?plan_date=eq.${new Date().toLocaleDateString("sv-SE")}`, {
     method: "DELETE",
   });
@@ -118,7 +127,8 @@ test("Klaar met winkelen zet de datum op vandaag; ongedaan maken zet hem terug",
   await page.getByRole("button", { name: "Klaar met winkelen" }).click();
   await expect(page.getByText(/in je voorraad gezet/)).toBeVisible();
   await expect.poll(datum).not.toBe(oud);
-  expect(Date.now() - Date.parse(await datum())).toBeLessThan(5 * 60_000);
+  // De app gebruikt de klok van de browser (vast op 17 u, zetKlok); vergelijk daarmee (BUG-140).
+  expect(Math.abs(klok() - Date.parse(await datum()))).toBeLessThan(5 * 60_000);
 
   await page.getByRole("button", { name: "Ongedaan maken", exact: true }).click();
   await expect.poll(datum).toBe(oud);
@@ -129,6 +139,7 @@ test("Vandaag: 'Gebruik eerst' met een gerecht dat het opmaakt bovenaan, en een 
   page,
   extern,
 }) => {
+  await alleenIkEetMee(page); // gaat over rundvlees, niet over vegetarische Gust
   await fetch(`${NEP}/meal_plan?plan_date=eq.${new Date().toLocaleDateString("sv-SE")}`, {
     method: "DELETE",
   });

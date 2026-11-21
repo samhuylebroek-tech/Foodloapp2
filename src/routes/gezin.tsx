@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCode from "qrcode";
 import {
+  CalendarDays,
   Check,
   ChefHat,
   Copy,
@@ -10,6 +11,7 @@ import {
   LogOut,
   Search,
   Share2,
+  ShoppingCart,
   Trash2,
   UserPlus,
   X,
@@ -25,7 +27,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { appOrigin } from "@/lib/app-url";
 import { beantwoordGezinsUitnodiging, nodigUitGezin } from "@/lib/gezin.functions";
-import { Groep, KnopRij, Paneel } from "@/components/mobiel/Lijst";
+import { Groep, KnopRij, LinkRij, Paneel } from "@/components/mobiel/Lijst";
+import { HuishoudenLeden } from "@/components/gezin/HuishoudenLeden";
 import { PageSkeleton } from "@/components/PageSkeleton";
 
 export const Route = createFileRoute("/gezin")({
@@ -372,11 +375,9 @@ function GezinPage() {
                         <Avatar naam={naamVan(l.user_id)} sleutel={l.user_id} className="size-11" />
                         <span className="min-w-0">
                           <span className="block text-[1.05rem] font-semibold">Jij</span>
-                          {l.rol === "eigenaar" && (
-                            <span className="block text-[0.95rem] text-muted-foreground">
-                              heeft het gezin gestart
-                            </span>
-                          )}
+                          <span className="block text-[0.95rem] text-muted-foreground">
+                            {l.rol === "eigenaar" ? "heeft het gezin gestart" : "gezinslid"}
+                          </span>
                         </span>
                       </div>
                     ) : (
@@ -393,6 +394,9 @@ function GezinPage() {
                         <span className="min-w-0 flex-1">
                           <span className="block text-[1.05rem] font-semibold">
                             {naamVan(l.user_id)}
+                          </span>
+                          <span className="block text-[0.95rem] text-muted-foreground">
+                            {l.rol === "eigenaar" ? "heeft het gezin gestart" : "gezinslid"}
                           </span>
                           <span className="flex items-start gap-1 text-[0.95rem] text-primary">
                             <ChefHat className="mt-1 size-4 shrink-0" aria-hidden />
@@ -417,6 +421,37 @@ function GezinPage() {
                   </div>
                 );
               })}
+            </Groep>
+
+            {user ? (
+              <HuishoudenLeden
+                groupId={data.groep.id}
+                userId={user.id}
+                mijnNaam={namen[user.id] ?? ""}
+                ikBenEigenaar={ikBenEigenaar}
+              />
+            ) : null}
+
+            <Groep
+              titel="Samen plannen"
+              voet="Iedereen in het gezin ziet en bewerkt hetzelfde weekmenu en dezelfde lijst."
+            >
+              <LinkRij
+                to="/planner"
+                search={{ weergave: "gezin" }}
+                icoon={CalendarDays}
+                tint="groen"
+                titel="Gezinsweekmenu"
+                uitleg="Gedeeld met het hele gezin"
+              />
+              <LinkRij
+                to="/boodschappen"
+                search={{ lijst: "gezin" }}
+                icoon={ShoppingCart}
+                tint="honing"
+                titel="Gezinslijst"
+                uitleg="Eén boodschappenlijst voor iedereen"
+              />
             </Groep>
 
             {data.leden.some((l) => l.status === "uitgenodigd") && (

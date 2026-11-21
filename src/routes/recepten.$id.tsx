@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { WaaromNu } from "@/components/WaaromNu";
+import { meldVerwijderd, verwijderReceptZacht, zetReceptTerug } from "@/lib/recept-verwijderen";
 import { markeerGezien } from "@/lib/gezien";
 import { meet } from "@/lib/meten";
 import { createFileRoute, Link, useBlocker, useNavigate } from "@tanstack/react-router";
@@ -33,7 +35,28 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { zichtbareEigenaren } from "@/lib/zichtbare-eigenaren";
+import { eigenId, zichtbareEigenaren } from "@/lib/zichtbare-eigenaren";
+import { magExclusiefZien } from "@/lib/betalen/maker-abonnement";
+import { mijnMakerRechten } from "@/lib/betalen/maker-abonnement.functions";
+import type { Maker } from "@/lib/makers";
+
+/** Fase 4: exclusief makerrecept, en je hebt (nog) geen abonnement op die maker. */
+class ExclusiefRecept extends Error {
+  constructor(readonly maker: Pick<Maker, "naam" | "handle">) {
+    super("exclusief");
+  }
+}
+import { haalPubliekeBron } from "@/lib/makers-db";
+import { ReceptMakerDeel } from "@/components/makers/ReceptMakerDeel";
+import { ReceptDelen } from "@/components/recept/ReceptDelen";
+import {
+  makerUitOmschrijving,
+  StapMetTijd,
+  VideoBronKaart,
+  zonderVideoVermelding,
+} from "@/components/recept/VideoBron";
+import { herkenVideoLink } from "@/lib/video-link";
+import { ReceptCommunity } from "@/components/makers/ReceptCommunity";
 import { zorgVoorLijst, voegToeAanLijst, type ShoppingList } from "@/lib/boodschappen";
 import { useAuth } from "@/hooks/useAuth";
 import { SterrenKiezer } from "@/components/Sterren";
@@ -46,11 +69,11 @@ import { Input } from "@/components/ui/input";
 import { importRecipeFromText } from "@/lib/ai.functions";
 import { useT, useVoorkeuren } from "@/lib/voorkeuren";
 import { CATEGORIES, DIFFICULTIES, type Ingredient, type Recipe } from "@/lib/types";
-import { Copy, Users } from "lucide-react";
+import { Copy, Lock, Users } from "lucide-react";
 import { KookTimers } from "@/components/KookTimers";
 import { bewaarVoortgang, leesVoortgang, vindTimers, wisVoortgang } from "@/lib/kookstand";
 import { meldMetHerstel, useKringloopVernieuw } from "@/hooks/useAanvulling";
-import { HalfGelukt, lijstUitleg, planErbij, verwerkKoken, wijzigMenu } from "@/lib/kringloop-db";
+import { HalfGelukt, lijstUitleg, planErbij, wijzigMenu } from "@/lib/kringloop-db";
 import { useVoorraadNamen } from "@/hooks/useVoorraadStand";
 import { isBasis, zitInVoorraad } from "@/lib/voorraad-match";
 import { soortLabel } from "@/lib/recept-keuzes";
@@ -71,8 +94,36 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { AllergieWaarschuwing } from "@/components/AllergieWaarschuwing";
-import { RestjeVraag } from "@/components/kringloop/RestjeVraag";
+import {
+  IngredientMarkering,
+  KookWaarschuwing,
+  MaaltijdVeiligheid,
+  OordeelMelding,
+} from "@/components/veiligheid/EtersOordeel";
+import { useEtersOordelen, useMaaltijdEters } from "@/hooks/useMaaltijdEters";
+import { zonderEter } from "@/lib/maaltijd-eters";
+import { KlaarMetKoken } from "@/components/koken/KlaarMetKoken";
+import { ReceptVersies } from "@/components/recept/ReceptVersies";
+import { KookNotities } from "@/components/koken/KookNotities";
+import { bewaarVersie, schrijfStaat, verwijderVersie } from "@/lib/recept-versies-db";
+import { schaalStaat, staatUit } from "@/lib/recept-versies";
 import { markeerKookstand } from "@/lib/eerste-stappen";
+import { KookAssistent, VraagFoodloKnop } from "@/components/assistent/KookAssistent";
+import { ReceptKost } from "@/components/budget/ReceptKost";
+
+/** Voorstel van "Vul dit gerecht aan": alleen wat nu leeg is (BUG-145). */
+type AanvulVoorstel = {
+  description: string | null;
+  servings: number | null;
+  prep_minutes: number | null;
+  cook_minutes: number | null;
+  instructions: string[];
+  ingredients: { name: string; quantity: number | null; unit?: string | null }[];
+};
+
+/** Kleine actieknop in de receptkop: pictogram met een woord eronder (48 px breed minimum). */
+const ACTIE_KNOP =
+  "h-auto min-h-14 min-w-14 flex-col gap-0.5 px-2 py-1 text-[0.8rem] font-semibold leading-tight";
 
 export const Route = createFileRoute("/recepten/$id")({
   head: () => ({
@@ -87,13 +138,30 @@ export const Route = createFileRoute("/recepten/$id")({
       { property: "og:description", content: "Ingrediënten, stappen en kookstand in één scherm." },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>): { personen?: number; koken?: true } => {
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { personen?: number; koken?: true; klaar?: true; plan?: string; vervang?: string } => {
     const n = Number(search["personen"]);
-    const uit: { personen?: number; koken?: true } = {};
+    const uit: {
+      personen?: number;
+      koken?: true;
+      klaar?: true;
+      plan?: string;
+      vervang?: string;
+    } = {};
+    // Fase 1: voor welke geplande maaltijd (wie eet mee) en "Vervanger zoeken" voor een ingrediënt.
+    const plan = search["plan"];
+    if (typeof plan === "string" && /^[0-9a-f-]{36}$/i.test(plan)) uit.plan = plan;
+    const vervang = search["vervang"];
+    if (typeof vervang === "string" && vervang.trim() && vervang.length <= 80)
+      uit.vervang = vervang.trim();
     if (Number.isInteger(n) && n >= 1 && n <= 50) uit.personen = n;
     // V2: "Start koken" vanaf Vandaag opent meteen de kookstand.
     if (search["koken"] === true || search["koken"] === "1" || search["koken"] === 1)
       uit.koken = true;
+    // P3: "Gekookt" vanaf Vandaag of Week opent meteen "Klaar met koken".
+    if (search["klaar"] === true || search["klaar"] === "1" || search["klaar"] === 1)
+      uit.klaar = true;
     return uit;
   },
   component: ReceptPage,
@@ -155,7 +223,7 @@ function ReceptPage() {
   const [personen, setPersonen] = useState<number | null>(zoek.personen ?? null);
   const [kookstand, setKookstand] = useState(zoek.koken === true);
   const [stap, setStap] = useState(zoek.koken === true ? -1 : 0);
-  const [klaarVragen, setKlaarVragen] = useState(false);
+  const [klaarVragen, setKlaarVragen] = useState(zoek.klaar === true);
   // V2: na per ongeluk wegklikken of herladen verder koken bij de juiste stap.
   const [bewaardeStap, setBewaardeStap] = useState<number | null>(null);
   const stapKop = useRef<HTMLParagraphElement>(null);
@@ -188,6 +256,12 @@ function ReceptPage() {
 
   // Niet per ongeluk wegnavigeren tijdens het koken (terugknop, link, veeggebaar).
   const [stopVraag, setStopVraag] = useState(false);
+  const [verwijderVraag, setVerwijderVraag] = useState(false);
+  const [kopieVraag, setKopieVraag] = useState(false);
+  const [deelOpen, setDeelOpen] = useState(false);
+  // Werkstroom F: "Vraag het Foodlo" (vervangers, aanpassen, kookvraag).
+  const [assistentOpen, setAssistentOpen] = useState(false);
+  const [aanvulVoorstel, setAanvulVoorstel] = useState<AanvulVoorstel | null>(null);
   const vernieuwKringloop = useKringloopVernieuw();
   // Keuken als één geheel: het recept weet wat er in huis is.
   const { data: voorraadNamen = [] } = useVoorraadNamen();
@@ -254,25 +328,53 @@ function ReceptPage() {
     void meet("recept.bekeken", undefined, { id });
   }, [id]);
 
-  const { data, isLoading, isError } = useQuery({
+  // Fase 4: video van de maker (op de publicatie) als het recept zelf geen video-link heeft.
+  const { data: makerBron } = useQuery({
+    queryKey: ["recept-bron", id],
+    queryFn: () => haalPubliekeBron(id),
+    staleTime: 60 * 1000,
+  });
+
+  const {
+    data,
+    isLoading,
+    isError,
+    error: receptFout,
+  } = useQuery({
     queryKey: ["recipe", id],
     // Niet zichtbaar of niet gevonden: opnieuw proberen helpt niet; meteen de melding tonen.
     retry: (keer, fout) =>
-      !(fout instanceof Error && /niet-zichtbaar|PGRST116|0 rows/.test(fout.message)) && keer < 2,
+      !(fout instanceof Error && /niet-zichtbaar|exclusief|PGRST116|0 rows/.test(fout.message)) &&
+      keer < 2,
     queryFn: async () => {
-      const [recipeRes, ingRes] = await Promise.all([
+      const [recipeRes, ingRes, bron, eigenaren] = await Promise.all([
         supabase.from("recipes").select("*").eq("id", id).single(),
         supabase
           .from("recipe_ingredients")
           .select("*")
           .eq("recipe_id", id)
           .order("position", { ascending: true }),
+        haalPubliekeBron(id),
+        zichtbareEigenaren(),
       ]);
+      // Fase 4: exclusief makerrecept zonder abonnement → uitnodiging, geen inhoud. Vóór de
+      // fout van het recept zelf: in productie verbergt RLS (voorstel 0021) die rij dan al.
+      if (bron?.publicatie.exclusief && !eigenaren.includes(bron.maker.user_id)) {
+        const ik = await eigenId();
+        const { entitlements } = await mijnMakerRechten();
+        const mag = magExclusiefZien({
+          exclusief: true,
+          creatorId: bron.maker.id,
+          isMaker: false,
+          gebruiker: ik ? { id: ik, entitlements } : null,
+        });
+        if (!mag) throw new ExclusiefRecept(bron.maker);
+      }
       if (recipeRes.error) throw recipeRes.error;
       if (ingRes.error) throw ingRes.error;
       // Tweede laag naast RLS (BUG-105): een recept van een onbekende nooit tonen.
-      const eigenaren = await zichtbareEigenaren();
-      if (!eigenaren.includes((recipeRes.data as Recipe).user_id))
+      // Module B: een openbaar gepubliceerd (en goedgekeurd) makerrecept mag iedereen zien.
+      if (!eigenaren.includes((recipeRes.data as Recipe).user_id) && !bron)
         throw new Error("niet-zichtbaar");
       return { recipe: recipeRes.data as Recipe, ingredients: ingRes.data as Ingredient[] };
     },
@@ -355,13 +457,20 @@ function ReceptPage() {
       setBewaardeStap(leesVoortgang(kookRecept.id, kookRecept.instructions.length));
   }, [kookRecept, kookstand]);
 
+  // Kookstand begint altijd bovenaan: bij het openen (de knop "Start koken" staat vaak onderaan
+  // het recept) en bij elke nieuwe stap. Anders valt de staptekst onder de vaste kop (review
+  // 2026-11-12, punt 5). Vóór het tekenen, zodat er niets verspringt.
+  useLayoutEffect(() => {
+    if (kookstand) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [kookstand, stap, klaarVragen]);
+
   // Elke stap bewaren, en bij een nieuwe stap de focus op de staptekst zetten
-  // zodat een schermlezer hem meteen voorleest.
+  // zodat een schermlezer hem meteen voorleest (zonder te scrollen: we staan al bovenaan).
   useEffect(() => {
     if (!kookstand || !kookRecept || stap < 0) return;
     bewaarVoortgang(kookRecept.id, stap);
     markeerKookstand();
-    stapKop.current?.focus();
+    stapKop.current?.focus({ preventScroll: true });
   }, [kookstand, stap, kookRecept]);
 
   // Pijltjestoetsen: vorige / volgende stap.
@@ -393,6 +502,81 @@ function ReceptPage() {
     }
     qc.invalidateQueries({ queryKey: ["rating", id] });
     qc.invalidateQueries({ queryKey: ["ratings"] });
+  }
+
+  // Fase 1 — veiligheid voor wie meeëet: de geplande maaltijd (uit de link, of de eerstvolgende
+  // met dit recept) bepaalt wie er meeëet; anders het hele huishouden.
+  const { data: volgendePlan = null } = useQuery({
+    queryKey: ["recept-volgende-plan", id],
+    enabled: !!user && !zoek.plan,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data: rij } = await supabase
+        .from("meal_plan")
+        .select("id")
+        .eq("recipe_id", id)
+        .gte("plan_date", new Date().toLocaleDateString("sv-SE"))
+        .order("plan_date")
+        .limit(1)
+        .maybeSingle();
+      return (rij?.id as string | undefined) ?? null;
+    },
+  });
+  const veiligPlan = zoek.plan ?? volgendePlan;
+  const mee = useMaaltijdEters(veiligPlan ? [veiligPlan] : []);
+  const veiligOordelen = useEtersOordelen(
+    data?.recipe
+      ? [
+          {
+            sleutel: "recept",
+            recept: data.recipe,
+            eters: mee.etersVan(veiligPlan),
+            ingredienten: data.ingredients.map((i) => i.name),
+          },
+        ]
+      : [],
+    // Op de receptpagina staat je eigen allergiewaarschuwing al; in de kookstand niet.
+    { ...mee, metMijzelf: kookstand },
+  );
+  const veiligOordeel = veiligOordelen["recept"];
+  const [vervangIngredient, setVervangIngredient] = useState<string | null>(zoek.vervang ?? null);
+  useEffect(() => {
+    if (zoek.vervang) {
+      setVervangIngredient(zoek.vervang);
+      setAssistentOpen(true);
+    }
+  }, [zoek.vervang]);
+  function zoekVervanger(ingredient: string) {
+    setVervangIngredient(ingredient);
+    setAssistentOpen(true);
+  }
+  function zonderEterHier(lidId: string, naam: string) {
+    if (!veiligPlan) return;
+    const ids = mee.etersVan(veiligPlan).map((e) => e.id);
+    void mee.zet(veiligPlan, zonderEter(ids, lidId), `${naam} eet niet mee`);
+  }
+
+  if (isError && receptFout instanceof ExclusiefRecept) {
+    const m = receptFout.maker;
+    return (
+      <AppShell title="Recept">
+        <div className="paneel space-y-3 p-6 text-center" data-testid="recept-exclusief">
+          <span className="mx-auto flex size-16 items-center justify-center rounded-full bg-secondary text-primary">
+            <Lock className="size-8" aria-hidden />
+          </span>
+          <h1 className="text-sectietitel">Dit recept is voor abonnees van {m.naam}</h1>
+          <p className="mx-auto max-w-prose text-base text-muted-foreground">
+            {m.naam} deelt dit recept alleen met abonnees. In testmodus kan je abonneren zonder dat
+            er iets aangerekend wordt.
+          </p>
+          <Button asChild className="h-14 px-6 text-base">
+            <Link to="/makers/$handle" params={{ handle: m.handle }}>
+              Bekijk het abonnement
+            </Link>
+          </Button>
+        </div>
+      </AppShell>
+    );
   }
 
   if (isError) {
@@ -501,13 +685,15 @@ function ReceptPage() {
     }
   }
 
-  async function kopieerNaarMij() {
+  // Ronde 3 (FR-RI-07): je eigen recept dupliceren gebruikt dezelfde kopie, met "(kopie)" erbij.
+  async function kopieerNaarMij(opties: { dupliceren?: boolean } = {}) {
+    setKopieVraag(false);
     if (!user) return;
     const { data, error } = await supabase
       .from("recipes")
       .insert({
         user_id: user.id,
-        title: recipe.title,
+        title: opties.dupliceren ? `${recipe.title} (kopie)`.slice(0, 160) : recipe.title,
         description: recipe.description,
         image_url: recipe.image_url,
         servings: recipe.servings,
@@ -536,50 +722,100 @@ function ReceptPage() {
         })),
       );
     }
-    toast.success(t("Toegevoegd aan jouw gerechten"));
+    // BUG-144: ook de extra foto's gaan mee (zelfde pad; account-opruimen houdt daar rekening mee).
+    if (extraFotos.length) {
+      await supabase
+        .from("recipe_photos")
+        .insert(extraFotos.map((f, position) => ({ recipe_id: data.id, path: f.path, position })));
+    }
+    toast.success(
+      opties.dupliceren
+        ? t("Kopie gemaakt. Pas ze aan zoals je wil; het origineel blijft ongewijzigd.")
+        : t("Toegevoegd aan jouw gerechten. Je kan je kopie nu aanpassen."),
+    );
     navigate({ to: "/recepten/$id", params: { id: data.id } });
   }
 
+  // BUG-146: zelfde verwijderen als in de lijst: bevestigen, zacht verwijderen, "Ongedaan maken".
+  // Vroeger: browservenster en een harde .delete() zonder weg terug.
   async function verwijder() {
-    if (!confirm("Dit recept definitief verwijderen?")) return;
-    const { error } = await supabase.from("recipes").delete().eq("id", recipe.id);
-    if (error) toast.error("Verwijderen lukte niet");
-    else {
-      toast.success("Recept verwijderd");
-      navigate({ to: "/" });
+    setVerwijderVraag(false);
+    const receptId = recipe.id;
+    if (!(await verwijderReceptZacht(receptId))) {
+      toast.error(t("Verwijderen lukte niet"));
+      return;
     }
+    const ververs = async () => {
+      await qc.invalidateQueries({ queryKey: ["recipes"] });
+      await qc.invalidateQueries({ queryKey: ["recipe", receptId] });
+      await qc.invalidateQueries({ queryKey: ["meal-plan"] });
+    };
+    await ververs();
+    meldVerwijderd(receptId, t, ververs);
+    navigate({ to: "/gerechten" });
   }
 
-  async function deelRecept() {
-    const url = window.location.href;
-    if (navigator.share) await navigator.share({ title: recipe.title, url });
-    else {
-      await navigator.clipboard.writeText(url);
-      toast.success(t("Link gekopieerd"));
-    }
+  // Fase 2: delen opent een venster met "Link kopiëren", "Als tekst delen" en wie het kan zien.
+  function deelRecept() {
+    setDeelOpen(true);
   }
+  const eigenVideo = herkenVideoLink(recipe.source_url);
+  const makerVideo = eigenVideo ? null : herkenVideoLink(makerBron?.publicatie.video_url);
+  const video = eigenVideo ?? makerVideo;
 
+  // BUG-145: AI schrijft nooit meer stil in je recept. Eerst een voorstel met alleen de lege velden,
+  // pas na "Overnemen" wordt er iets bewaard (principe: AI overschrijft nooit zonder nakijken).
   async function vulAanMetAI() {
     setAanvullen(true);
     try {
       const ai = await importRecipeFromText({
         data: { text: `Maak een volledig recept voor: ${recipe.title}` },
       });
+      const voorstel: AanvulVoorstel = {
+        description: recipe.description ? null : ai.description || null,
+        servings: recipe.servings ? null : ai.servings || null,
+        prep_minutes: recipe.prep_minutes ? null : ai.prep_minutes || null,
+        cook_minutes: recipe.cook_minutes ? null : ai.cook_minutes || null,
+        instructions: recipe.instructions.length ? [] : ai.instructions,
+        ingredients: ingredients.length ? [] : ai.ingredients,
+      };
+      const leeg =
+        !voorstel.description &&
+        !voorstel.servings &&
+        !voorstel.prep_minutes &&
+        !voorstel.cook_minutes &&
+        !voorstel.instructions.length &&
+        !voorstel.ingredients.length;
+      if (leeg) toast(t("Er valt niets aan te vullen: alles is al ingevuld."));
+      else setAanvulVoorstel(voorstel);
+    } catch {
+      toast.error(t("Aanvullen lukte niet"));
+    } finally {
+      setAanvullen(false);
+    }
+  }
+
+  async function aanvullingOvernemen() {
+    const v = aanvulVoorstel;
+    if (!v) return;
+    setAanvulVoorstel(null);
+    try {
+      // P3: de stand van vóór het aanvullen blijft bij "Versies".
+      if (user) await bewaarVersie(recipe.id, user.id, "aanvullen");
       const { error } = await supabase
         .from("recipes")
         .update({
-          description: recipe.description || ai.description,
-          servings: recipe.servings || ai.servings,
-          prep_minutes: recipe.prep_minutes || ai.prep_minutes,
-          cook_minutes: recipe.cook_minutes || ai.cook_minutes,
-          instructions: recipe.instructions.length ? recipe.instructions : ai.instructions,
+          description: recipe.description || v.description || recipe.description,
+          servings: recipe.servings || v.servings || recipe.servings,
+          prep_minutes: recipe.prep_minutes || v.prep_minutes || recipe.prep_minutes,
+          cook_minutes: recipe.cook_minutes || v.cook_minutes || recipe.cook_minutes,
+          instructions: recipe.instructions.length ? recipe.instructions : v.instructions,
         })
         .eq("id", recipe.id);
       if (error) throw error;
-
-      if (!ingredients.length && ai.ingredients.length) {
+      if (!ingredients.length && v.ingredients.length) {
         await supabase.from("recipe_ingredients").insert(
-          ai.ingredients.map((i, index) => ({
+          v.ingredients.map((i, index) => ({
             recipe_id: recipe.id,
             name: i.name,
             quantity: i.quantity,
@@ -589,11 +825,10 @@ function ReceptPage() {
         );
       }
       await qc.invalidateQueries({ queryKey: ["recipe", id] });
-      toast.success(t("Voorstel klaar. Lees het na en pas aan wat je anders wil."));
+      void qc.invalidateQueries({ queryKey: ["recept-versies", id] });
+      toast.success(t("Aangevuld. Je kan alles nog aanpassen."));
     } catch {
       toast.error(t("Aanvullen lukte niet"));
-    } finally {
-      setAanvullen(false);
     }
   }
 
@@ -602,84 +837,77 @@ function ReceptPage() {
     setKookstand(false);
   }
 
-  // V2-kringloop (S3): na het koken haalt Foodlo de gebruikte hoeveelheden zelf uit
-  // je voorraad. Geen vraag; de melding zegt wat er gebeurde, met "Ongedaan maken".
-  async function naKoken() {
-    stopKoken();
-    if (!user) return;
+  // P3: "Bewaar voor N personen" schaalt alle hoeveelheden en bewaart het origineel als versie.
+  async function bewaarPorties() {
+    if (!user || !isOwner || aantal === recipe.servings) return;
     try {
-      const r = await verwerkKoken({
-        userId: user.id,
-        ingredienten: ingredients.map((i) => ({
-          name: i.name,
-          quantity: i.quantity,
-          unit: i.unit,
-        })),
-        factor,
+      const versieId = await bewaarVersie(recipe.id, user.id, "porties");
+      const voor = staatUit(
+        recipe as unknown as Record<string, unknown>,
+        ingredients as unknown as Record<string, unknown>[],
+      );
+      await schrijfStaat(recipe.id, schaalStaat(voor, aantal));
+      setPersonen(null);
+      await qc.invalidateQueries({ queryKey: ["recipe", recipe.id] });
+      void qc.invalidateQueries({ queryKey: ["recept-versies", recipe.id] });
+      toast.success(`${t("Bewaard voor")} ${aantal} ${aantal === 1 ? "persoon" : "personen"}`, {
+        description: t("Het origineel staat bij Versies."),
+        duration: 10000,
+        action: {
+          label: "Ongedaan maken",
+          onClick: () =>
+            void (async () => {
+              try {
+                await schrijfStaat(recipe.id, voor);
+                await verwijderVersie(versieId);
+              } catch {
+                toast.error(t("Terugzetten lukte niet helemaal. Kijk het recept even na."));
+              }
+              await qc.invalidateQueries({ queryKey: ["recipe", recipe.id] });
+              void qc.invalidateQueries({ queryKey: ["recept-versies", recipe.id] });
+            })(),
+        },
       });
-      if (!r) return;
-      void meet("kringloop.opgebruikt", undefined, { aantal: r.samenvatting.length });
-      vernieuwKringloop();
-      meldMetHerstel(
-        `${t("Voorraad bijgewerkt")}: ${r.samenvatting.join(", ")}`,
-        r.herstel,
-        vernieuwKringloop,
-      );
-    } catch (fout) {
-      // Koken is gelukt; alleen de voorraad bijwerken niet. Dat zeggen we eerlijk.
-      toast.error(
-        fout instanceof HalfGelukt
-          ? "Je voorraad is maar gedeeltelijk bijgewerkt. Kijk ze even na."
-          : "Je voorraad is niet bijgewerkt. Er is niets veranderd.",
-      );
+    } catch {
+      toast.error(t("Bewaren lukte niet. Er is niets veranderd."));
     }
   }
 
-  if (kookstand && klaarVragen) {
+  // P3: "Klaar met koken" — één rustig scherm. Niets gaat stil uit je voorraad: dat is een
+  // voorstel met vinkjes en een bevestiging (vroeger trok Foodlo het meteen af).
+  if (klaarVragen) {
     return (
-      <div className="flex min-h-screen items-center bg-background p-5">
-        <div className="paneel mx-auto w-full max-w-2xl p-6 text-center">
-          <h2 className="text-paginatitel">{t("Smakelijk gegeten?")}</h2>
-          <p className="mt-3 text-xl text-muted-foreground">
-            {t("Hoeveel sterren geef je")} “{recipe.title}”?
-          </p>
-          <div className="mt-6 flex justify-center">
-            <SterrenKiezer
-              waarde={mijnScore}
-              onKies={async (n) => {
-                // Eerst de voortgang wissen (lokaal, onmiddellijk), dan pas de score
-                // over het netwerk bewaren: wie meteen afsluit, ziet geen oude stap meer.
-                wisVoortgang(recipe.id);
-                await zetScore(n);
-                toast.success(t("Bedankt voor je score"));
-                await naKoken();
-              }}
-              label={t("Jouw score")}
-            />
-          </div>
-          <RestjeVraag titel={recipe.title} receptId={recipe.id} />
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setKlaarVragen(false);
-              setStap(Math.max(0, recipe.instructions.length - 1));
-            }}
-            className="mt-6 h-16 w-full text-lg"
-          >
-            {t("Terug naar de stappen")}
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              wisVoortgang(recipe.id);
-              void naKoken();
-            }}
-            className="mt-3 h-16 w-full text-lg"
-          >
-            {t("Later")}
-          </Button>
-        </div>
-      </div>
+      <KlaarMetKoken
+        recept={{ id: recipe.id, title: recipe.title }}
+        ingredienten={ingredients.map((i) => ({
+          name: i.name,
+          quantity: i.quantity,
+          unit: i.unit,
+        }))}
+        factor={factor}
+        porties={aantal}
+        planId={veiligPlan}
+        score={mijnScore}
+        onScore={async (n) => {
+          // Eerst de voortgang wissen (lokaal, onmiddellijk), dan pas de score bewaren.
+          wisVoortgang(recipe.id);
+          await zetScore(n);
+        }}
+        onTerug={
+          kookstand && recipe.instructions.length
+            ? () => {
+                setKlaarVragen(false);
+                setStap(Math.max(0, recipe.instructions.length - 1));
+              }
+            : undefined
+        }
+        onSluit={() => {
+          wisVoortgang(recipe.id);
+          stopKoken();
+          if (zoek.klaar)
+            void navigate({ to: "/recepten/$id", params: { id: recipe.id }, search: {} });
+        }}
+      />
     );
   }
 
@@ -694,21 +922,12 @@ function ReceptPage() {
           className="sticky top-0 z-20 border-b border-border/70 bg-background/95 px-4 pb-3 backdrop-blur-md"
           style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}
         >
-          <div className="mx-auto flex max-w-2xl items-center gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-base font-semibold text-muted-foreground">
-                {recipe.title}
-              </p>
-              <p className="text-xl font-bold">
-                {voorbereiding ? (
-                  t("Alles klaarzetten")
-                ) : (
-                  <>
-                    Stap {stap + 1} van {stappen.length}
-                  </>
-                )}
-              </p>
-            </div>
+          {/* Recepttitel naast "Stoppen"; de stap eronder over de volle breedte. Zo breekt
+              "Alles klaarzetten" ook bij grote tekst niet middenin een woord (review punt 1). */}
+          <div className="mx-auto flex max-w-2xl items-start gap-3">
+            <p className="min-w-0 flex-1 break-words pt-1 text-base font-semibold leading-snug text-muted-foreground">
+              {recipe.title}
+            </p>
             <Button
               variant="zacht"
               onClick={() => setStopVraag(true)}
@@ -718,6 +937,19 @@ function ReceptPage() {
               <X className="size-6" />{" "}
               <span className="hidden min-[360px]:inline">{t("Stoppen")}</span>
             </Button>
+          </div>
+          <div className="mx-auto mt-1 flex max-w-2xl items-center justify-between gap-3">
+            <p className="min-w-0 text-xl font-bold">
+              {voorbereiding ? (
+                t("Alles klaarzetten")
+              ) : (
+                <>
+                  Stap {stap + 1} van {stappen.length}
+                </>
+              )}
+            </p>
+            {/* Werkstroom F: hulp tijdens het koken (vervangen, kookvraag). */}
+            <VraagFoodloKnop compact onClick={() => setAssistentOpen(true)} />
           </div>
           {/* Voortgang: één blokje per stap, zichtbaar én voor schermlezers. */}
           <div
@@ -755,6 +987,13 @@ function ReceptPage() {
                 ) : null}
               </p>
               <div className="mt-5">
+                <KookWaarschuwing
+                  oordeel={veiligOordeel}
+                  onVervanger={zoekVervanger}
+                  onZonder={veiligPlan ? zonderEterHier : undefined}
+                />
+              </div>
+              <div className="mt-5">
                 <PersonenKiezer aantal={aantal} onZet={setPersonen} />
               </div>
               <ul className="paneel mt-6 divide-y divide-border/80 px-4 text-xl">
@@ -763,7 +1002,10 @@ function ReceptPage() {
                     key={ing.id}
                     className="flex min-h-16 items-center justify-between gap-3 py-3"
                   >
-                    <span>{t(ing.name)}</span>
+                    <span className="min-w-0">
+                      {t(ing.name)}
+                      <IngredientMarkering ingredient={ing.name} oordeel={veiligOordeel} />
+                    </span>
                     <span className="shrink-0 font-bold tabular-nums text-primary">
                       {toonHoeveelheid(ing, factor)}
                     </span>
@@ -804,7 +1046,10 @@ function ReceptPage() {
               <ul className="mt-3 space-y-3 text-lg">
                 {ingredients.map((ing) => (
                   <li key={ing.id} className="flex justify-between gap-3">
-                    <span>{t(ing.name)}</span>
+                    <span className="min-w-0">
+                      {t(ing.name)}
+                      <IngredientMarkering ingredient={ing.name} oordeel={veiligOordeel} />
+                    </span>
                     <span className="shrink-0 tabular-nums text-muted-foreground">
                       {toonHoeveelheid(ing, factor)}
                     </span>
@@ -840,6 +1085,15 @@ function ReceptPage() {
           </div>
         </div>
 
+        <KookAssistent
+          open={assistentOpen}
+          onOpenChange={setAssistentOpen}
+          recept={recipe}
+          ingredienten={ingredients}
+          isOwner={isOwner}
+          kookstand
+          beginIngredient={vervangIngredient}
+        />
         <AlertDialog open={stopVraag} onOpenChange={setStopVraag}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -869,34 +1123,39 @@ function ReceptPage() {
     <AppShell
       title={t(recipe.title)}
       action={
+        // Review 2026-11-12, punt 10: elke actie met een zichtbaar woord onder het pictogram.
         <div className="flex flex-wrap items-center">
-          <Button variant="ghost" size="icon" onClick={toggleFavorite} aria-label={t("Favoriet")}>
-            <Heart className={isFavorite ? "fill-primary text-primary" : ""} />
-          </Button>
           <Button
             variant="ghost"
-            size="icon"
-            onClick={() => void deelRecept()}
-            aria-label={t("Delen")}
+            onClick={toggleFavorite}
+            aria-pressed={isFavorite}
+            className={ACTIE_KNOP}
           >
-            <Share2 />
+            <Heart className={isFavorite ? "fill-primary text-primary" : ""} aria-hidden />
+            {t("Favoriet")}
+          </Button>
+          <Button variant="ghost" onClick={deelRecept} className={ACTIE_KNOP}>
+            <Share2 aria-hidden />
+            {t("Delen")}
           </Button>
           {/* BUG-102: aanpassen was alleen te vinden in "…". Zichtbaar voor eigen recepten. */}
           {isOwner ? (
-            <Button variant="ghost" size="icon" asChild>
-              <Link
-                to="/recepten/$id/bewerken"
-                params={{ id: recipe.id }}
-                aria-label={t("Aanpassen")}
-              >
-                <Pencil />
+            <Button variant="ghost" asChild className={ACTIE_KNOP}>
+              <Link to="/recepten/$id/bewerken" params={{ id: recipe.id }}>
+                <Pencil aria-hidden />
+                {t("Aanpassen")}
               </Link>
             </Button>
           ) : null}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label={t("Meer")}>
-                <MoreHorizontal />
+              <Button
+                variant="ghost"
+                className={ACTIE_KNOP}
+                aria-label={t("Meer acties voor dit recept")}
+              >
+                <MoreHorizontal aria-hidden />
+                {t("Meer")}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-52 rounded-xl p-2">
@@ -907,9 +1166,19 @@ function ReceptPage() {
                     {t("Aanpassen")}
                   </Link>
                 </DropdownMenuItem>
-              ) : (
+              ) : null}
+              {isOwner ? (
                 <DropdownMenuItem
-                  onSelect={() => void kopieerNaarMij()}
+                  onSelect={() => void kopieerNaarMij({ dupliceren: true })}
+                  className="min-h-12 text-base"
+                >
+                  <Copy />
+                  {t("Dupliceren")}
+                </DropdownMenuItem>
+              ) : makerBron?.publicatie.exclusief ? null : (
+                // Fase 4: een exclusief recept blijft bij de maker (geen kopie die na opzeggen blijft).
+                <DropdownMenuItem
+                  onSelect={() => setKopieVraag(true)}
                   className="min-h-12 text-base"
                 >
                   <Copy />
@@ -920,7 +1189,7 @@ function ReceptPage() {
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onSelect={() => void verwijder()}
+                    onSelect={() => setVerwijderVraag(true)}
                     className="min-h-12 text-base text-destructive"
                   >
                     <Trash2 />
@@ -934,6 +1203,30 @@ function ReceptPage() {
       }
     >
       <div className="space-y-10">
+        {(recipe as { deleted_at?: string | null }).deleted_at ? (
+          <div
+            role="status"
+            className="flex flex-wrap items-center gap-3 rounded-2xl bg-muted px-4 py-3 text-base"
+          >
+            <span className="min-w-0 flex-1">{t("Dit gerecht is verwijderd.")}</span>
+            {isOwner ? (
+              <Button
+                variant="outline"
+                onClick={() =>
+                  void (async () => {
+                    if (await zetReceptTerug(recipe.id)) {
+                      toast.success(t("Gerecht teruggezet"));
+                      await qc.invalidateQueries({ queryKey: ["recipe", id] });
+                      await qc.invalidateQueries({ queryKey: ["recipes"] });
+                    } else toast.error(t("Terugzetten lukte niet"));
+                  })()
+                }
+              >
+                {t("Terugzetten")}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
         {/* V2: kop met foto en acties naast elkaar op desktop. */}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-6 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:gap-8 lg:gap-10">
           <div className="space-y-3">
@@ -942,6 +1235,7 @@ function ReceptPage() {
                 path={recipe.image_url}
                 alt={recipe.title}
                 recept={recipe}
+                opschrift
                 className="aspect-[4/3] w-full rounded-3xl shadow-kaart sm:aspect-[16/9]"
               />
               {fotoBezig && (
@@ -955,6 +1249,7 @@ function ReceptPage() {
                 bezig={fotoBezig}
                 heeftFoto={!!recipe.image_url}
                 onBestand={(f) => void vervangFoto(f)}
+                rustig
               />
             )}
             {extraFotos.length > 0 ? (
@@ -985,6 +1280,8 @@ function ReceptPage() {
           </div>
 
           <div className="space-y-5">
+            {/* Ronde 3: zelfde "waarom" als Vandaag, Week en Keuken (alleen eigen recepten). */}
+            {isOwner ? <WaaromNu recept={recipe} /> : null}
             {/* De receptnaam staat als paginatitel (h1) bovenaan; hier de kenmerken. */}
             <ul className="flex flex-wrap gap-2" aria-label={t("Kenmerken")}>
               {tijdLabel(recipe.prep_minutes, recipe.cook_minutes) ? (
@@ -997,6 +1294,8 @@ function ReceptPage() {
                 <Users className="size-5 text-primary" aria-hidden />
                 {aantal} {t(aantal === 1 ? "persoon" : "personen")}
               </li>
+              {/* Werkstroom F: geschatte kost (schatting, geen winkelprijs). */}
+              <ReceptKost ingredienten={ingredients} factor={factor} personen={aantal} />
               {recipe.category ? (
                 <li className="inline-flex min-h-10 items-center rounded-full bg-secondary px-3.5 text-base font-medium text-secondary-foreground">
                   {t(soortLabel(recipe.category))}
@@ -1009,9 +1308,10 @@ function ReceptPage() {
               ) : null}
             </ul>
 
-            {recipe.description ? (
+            {/* Fase 2: de bronvermelding van een video staat al op de videokaart. */}
+            {zonderVideoVermelding(recipe.description) ? (
               <p className="font-display text-xl leading-relaxed text-foreground/90">
-                {t(recipe.description)}
+                {t(zonderVideoVermelding(recipe.description))}
               </p>
             ) : null}
 
@@ -1062,9 +1362,34 @@ function ReceptPage() {
               </Button>
             </div>
 
+            <VraagFoodloKnop onClick={() => setAssistentOpen(true)} />
+            <KookAssistent
+              open={assistentOpen}
+              onOpenChange={setAssistentOpen}
+              recept={recipe}
+              ingredienten={ingredients}
+              isOwner={isOwner}
+              beginIngredient={vervangIngredient}
+            />
+
             {planOpen ? (
               <PlanKiezer momenten={momenten} servings={recipe.servings} onKies={planOp} />
             ) : null}
+
+            {/* Fase 2: recept van een video — alleen de link, geen ingesloten speler. */}
+            {video ? (
+              <VideoBronKaart
+                video={video}
+                maker={
+                  makerVideo && makerBron
+                    ? makerBron.maker.naam
+                    : (makerUitOmschrijving(recipe.description) ?? video.maker)
+                }
+              />
+            ) : null}
+
+            {/* Module B: bronvermelding van de maker, video-link en "Bewaar in…". */}
+            <ReceptMakerDeel receptId={recipe.id} zonderVideo={!!makerVideo} />
 
             {isOwner && (ingredients.length === 0 || recipe.instructions.length === 0) && (
               <div className="rounded-2xl border border-primary/40 bg-secondary p-4">
@@ -1093,6 +1418,17 @@ function ReceptPage() {
         {/* V2: geen tabbladen meer — ingrediënten en bereiding in één oogopslag.
             Desktop: ingrediënten blijven in beeld terwijl je de stappen leest. */}
         <AllergieWaarschuwing ingredienten={ingredients.map((i) => i.name)} titel={recipe.title} />
+        {veiligPlan ? (
+          <MaaltijdVeiligheid
+            planId={veiligPlan}
+            titel={recipe.title}
+            oordeel={veiligOordeel}
+            mee={mee}
+            onVervanger={zoekVervanger}
+          />
+        ) : (
+          <OordeelMelding oordeel={veiligOordeel} />
+        )}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,23rem)_minmax(0,1fr)] lg:gap-12">
           <section
             aria-labelledby="ingredienten-titel"
@@ -1123,6 +1459,12 @@ function ReceptPage() {
                   <Plus className="size-5" />
                 </Button>
               </div>
+              {/* P3: andere porties als standaard bewaren; het origineel blijft bij Versies. */}
+              {isOwner && aantal !== recipe.servings ? (
+                <Button variant="outline" onClick={() => void bewaarPorties()} className="w-full">
+                  {t("Bewaar voor")} {aantal} {t(aantal === 1 ? "persoon" : "personen")}
+                </Button>
+              ) : null}
             </div>
 
             {voorraadNamen.length && ingredients.length ? (
@@ -1151,6 +1493,7 @@ function ReceptPage() {
                           {t("in huis")}
                         </span>
                       ) : null}
+                      <IngredientMarkering ingredient={i.name} oordeel={veiligOordeel} />
                     </span>
                     <span className="shrink-0 font-semibold">
                       {i.quantity === null ? "" : toonBelgischeMaat(i.quantity * factor, i.unit)}
@@ -1195,7 +1538,9 @@ function ReceptPage() {
                     {t("Stap")} {i + 1}:
                   </span>
                   <div className="min-w-0">
-                    <p className="text-lg leading-relaxed">{netteStap(t(s))}</p>
+                    <p className="text-lg leading-relaxed">
+                      <StapMetTijd tekst={s} video={video} render={(x) => netteStap(t(x))} />
+                    </p>
                     <StapIngredienten ingredienten={stapIngredienten(i)} factor={factor} />
                   </div>
                 </li>
@@ -1240,7 +1585,7 @@ function ReceptPage() {
             {t("Jouw recept")}
           </h2>
           <SterrenKiezer waarde={mijnScore} onKies={zetScore} label={t("Jouw score")} />
-          {recipe.source_url ? (
+          {recipe.source_url && !video ? (
             <a
               href={recipe.source_url}
               target="_blank"
@@ -1256,6 +1601,9 @@ function ReceptPage() {
               onKlaar={() => qc.invalidateQueries({ queryKey: ["recipe", recipe.id] })}
             />
           ) : null}
+          {/* P3: origineel en aangepaste versies, terugzetten met bevestiging en ongedaan maken. */}
+          {isOwner ? <ReceptVersies recept={recipe} ingredienten={ingredients} /> : null}
+          <KookNotities receptId={recipe.id} />
           {isOwner && recipe.image_url ? (
             <div className="space-y-2">
               <p className="text-base font-semibold">{t("Foto's")}</p>
@@ -1273,6 +1621,8 @@ function ReceptPage() {
             </div>
           ) : null}
         </section>
+        {/* Module B: community op openbare makerrecepten. */}
+        <ReceptCommunity receptId={recipe.id} />
       </div>
       {vraagNogmaals ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 sm:items-center">
@@ -1366,6 +1716,122 @@ function ReceptPage() {
           </div>
         </div>
       ) : null}
+      <AlertDialog open={!!aanvulVoorstel} onOpenChange={(o) => !o && setAanvulVoorstel(null)}>
+        <AlertDialogContent className="max-h-[85dvh] overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Voorstel van Foodlo")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("Alleen wat nu nog leeg is. Lees het na; je kan het daarna nog aanpassen.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {aanvulVoorstel ? (
+            <div className="space-y-3 text-base" data-testid="aanvulvoorstel">
+              {aanvulVoorstel.description ? (
+                <p>
+                  <strong>{t("Beschrijving")}:</strong> {aanvulVoorstel.description}
+                </p>
+              ) : null}
+              {aanvulVoorstel.servings ? (
+                <p>
+                  <strong>{t("Personen")}:</strong> {aanvulVoorstel.servings}
+                </p>
+              ) : null}
+              {aanvulVoorstel.prep_minutes || aanvulVoorstel.cook_minutes ? (
+                <p>
+                  <strong>{t("Tijd")}:</strong>{" "}
+                  {(aanvulVoorstel.prep_minutes ?? 0) + (aanvulVoorstel.cook_minutes ?? 0)} min
+                </p>
+              ) : null}
+              {aanvulVoorstel.ingredients.length ? (
+                <div>
+                  <strong>{t("Ingrediënten")}:</strong>
+                  <ul className="mt-1 list-disc pl-5">
+                    {aanvulVoorstel.ingredients.map((i, n) => (
+                      <li key={n}>{[i.quantity, i.unit, i.name].filter(Boolean).join(" ")}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {aanvulVoorstel.instructions.length ? (
+                <div>
+                  <strong>{t("Bereiding")}:</strong>
+                  <ol className="mt-1 list-decimal pl-5">
+                    {aanvulVoorstel.instructions.map((stap, n) => (
+                      <li key={n}>{stap}</li>
+                    ))}
+                  </ol>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("Niet doen")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void aanvullingOvernemen()}>
+              {t("Overnemen")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <ReceptDelen
+        open={deelOpen}
+        onOpenChange={setDeelOpen}
+        recept={recipe}
+        ingredienten={ingredients}
+        isOwner={isOwner}
+      />
+      {/* BUG-144: eerst tonen wat er gekopieerd wordt, pas dan bewaren. */}
+      <AlertDialog open={kopieVraag} onOpenChange={setKopieVraag}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Zet in mijn gerechten?")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                "Je krijgt een eigen kopie die je zelf kan aanpassen. Het origineel blijft van de maker.",
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <ul className="space-y-1 text-base" data-testid="kopie-overzicht">
+            <li>
+              <strong>{t(recipe.title)}</strong>
+            </li>
+            <li>
+              {ingredients.length} {t(ingredients.length === 1 ? "ingrediënt" : "ingrediënten")} ·{" "}
+              {recipe.instructions.length}{" "}
+              {t(recipe.instructions.length === 1 ? "stap" : "stappen")}
+            </li>
+            <li>
+              {recipe.image_url || extraFotos.length
+                ? `${(recipe.image_url ? 1 : 0) + extraFotos.length} ${t("foto('s) gaan mee")}`
+                : t("Zonder foto")}
+            </li>
+          </ul>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("Annuleren")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void kopieerNaarMij()}>
+              {t("Zet in mijn gerechten")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {/* BUG-146: zelfde bevestiging als in de lijst; daarna "Ongedaan maken". */}
+      <AlertDialog open={verwijderVraag} onOpenChange={setVerwijderVraag}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Zeker verwijderen?")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("Je verwijdert")} “{t(recipe.title)}”.{" "}
+              {t("Het staat ook niet meer in je weekmenu.")}{" "}
+              {t("Je kan het meteen nog terugzetten.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("Annuleren")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void verwijder()}>
+              {t("Verwijderen")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }

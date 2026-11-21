@@ -8,13 +8,19 @@
 import { categorieVan, type CategorieId } from "@/lib/categorie";
 import { canoniekeNaam, zelfdeProduct } from "@/lib/product-herkenning";
 import { isBasis, zitInVoorraad } from "@/lib/voorraad-match";
+import {
+  familieVan as familieVanEenheid,
+  inFamilie,
+  naarBasis,
+  schoonEenheid,
+} from "@/lib/ingredient/eenheden";
 
 // ---------------------------------------------------------------- eenheden
 
-/** Een hoeveelheid in een vergelijkbare basis: gram, milliliter of stuks. */
+// Eén omrekening voor heel Foodlo: zie `src/lib/ingredient/eenheden.ts`.
 type Maat = { familie: string; waarde: number };
 
-const MASSA: Record<string, number> = { g: 1, gr: 1, gram: 1, kg: 1000, kilo: 1000 };
+const MASSA: Record<string, number> = { mg: 0.001, g: 1, gr: 1, gram: 1, kg: 1000, kilo: 1000 };
 const VOLUME: Record<string, number> = {
   ml: 1,
   cl: 10,
@@ -25,28 +31,25 @@ const VOLUME: Record<string, number> = {
   eetlepel: 15,
   eetlepels: 15,
   tl: 5,
+  kl: 5,
   theelepel: 5,
   theelepels: 5,
+  koffielepel: 5,
+  koffielepels: 5,
 };
-const STUKS = new Set(["", "stuk", "stuks", "stuk(s)", "st", "x"]);
 
 function eenheid(unit: string | null | undefined) {
-  return (unit ?? "").trim().toLowerCase().replace(/\.$/, "");
+  return schoonEenheid(unit);
 }
 
 /** Familie en basiswaarde; null als de hoeveelheid onbekend is. */
 export function naarMaat(quantity: number | null, unit: string | null | undefined): Maat | null {
-  if (quantity == null || !Number.isFinite(quantity)) return null;
-  const u = eenheid(unit);
-  if (u in MASSA) return { familie: "g", waarde: quantity * MASSA[u]! };
-  if (u in VOLUME) return { familie: "ml", waarde: quantity * VOLUME[u]! };
-  if (STUKS.has(u)) return { familie: "stuk", waarde: quantity };
-  return { familie: u, waarde: quantity };
+  return naarBasis(quantity, unit);
 }
 
 /** Familie van een eenheid, ook zonder hoeveelheid. */
 function familieVan(unit: string | null | undefined) {
-  return naarMaat(1, unit)?.familie ?? eenheid(unit);
+  return familieVanEenheid(unit);
 }
 
 /** Basiswaarde terug naar de eenheid van een bestaand item (bv. 970 ml → 0,97 l). */
@@ -114,6 +117,8 @@ export type Regel = {
   nodig: number | null;
   /** Deels in huis? Dan tonen we "je hebt 200 g". */
   inHuisDeels: string | null;
+  /** Hoeveel er in huis is, in `unit` (alleen geregistreerde voorraad). */
+  inHuisHoeveelheid?: number | null;
   /** Staat al een deel op de lijst? Dan tellen we daar bij op. */
   opLijstDeels: string | null;
   categorie: CategorieId;
@@ -126,6 +131,8 @@ export type Aanvulling = {
   kopen: Regel[];
   /** Volledig in de voorraad. */
   inHuis: Regel[];
+  /** Basisvoorraad ("heb je meestal"): niet op de lijst, met één tik toch toe te voegen. */
+  meestal: Regel[];
   /** Volledig gedekt door wat al op de lijst staat. */
   opLijst: Regel[];
   /** Op de lijst voor een gerecht dat niet meer gepland is. */
@@ -224,6 +231,11 @@ export function berekenAanvulling(opts: {
   vanaf: string;
   /** Recepten die ook later nog gepland zijn (buiten het venster): hun regels zijn niet "niet meer nodig". */
   nogGepland?: Set<string>;
+  /**
+   * Voorraadniveau "basis": je gekozen basisproducten. Die gaan niet op de lijst maar staan bij
+   * "heb je meestal" (ook zout en peper, als je ze koos). Leeg/weg = gewone werking.
+   */
+  basisvoorraad?: readonly string[];
 }): Aanvulling {
   const komend = opts.plan.filter((p) => p.plan_date >= opts.vanaf);
   const zonderRecept = komend
@@ -235,9 +247,11 @@ export function berekenAanvulling(opts: {
   const { behoeften, aantalGerechten } = behoeftenVan(komend, opts.recepten, opts.ingredienten);
 
   const openLijst = opts.lijst.filter((i) => !i.checked);
+  const basis = opts.basisvoorraad ?? [];
   const uit: Aanvulling = {
     kopen: [],
     inHuis: [],
+    meestal: [],
     opLijst: [],
     nietMeerNodig: openLijst
       .filter((i) => i.id && i.recipe_id && !geplandeRecepten.has(i.recipe_id))
@@ -260,6 +274,7 @@ export function berekenAanvulling(opts: {
       voorraad.filter((v) => zitInVoorraad(b.naam, [v.naam])),
       (v) => naarMaat(v.hoeveelheid, v.eenheid),
       b.familie,
+      b.naam,
     );
     // Toon in de eenheid van het recept als alle gerechten dezelfde gebruiken (1 tl, 2 el).
     const unit = b.eenheden.size === 1 ? [...b.eenheden][0]! : basisEenheid(b.familie);
@@ -277,6 +292,16 @@ export function berekenAanvulling(opts: {
       recipe_id: b.recipe_id,
     };
 
+    // Basisvoorraad: heb je meestal. Niet op de lijst, wel één tik om toch toe te voegen.
+    if (
+      basis.length &&
+      zitInVoorraad(b.naam, [...basis]) &&
+      !inHuis.aanwezig &&
+      !opLijst.aanwezig
+    ) {
+      uit.meestal.push(regel);
+      continue;
+    }
     // Onbekende hoeveelheid ergens: aanwezig = genoeg (niet gokken, niet dubbel kopen).
     if (opLijst.aanwezig && (b.waarde == null || opLijst.onbekend)) {
       uit.opLijst.push(regel);
@@ -296,21 +321,54 @@ export function berekenAanvulling(opts: {
       continue;
     }
     regel.quantity = toon(tekort);
-    if (inHuis.waarde > 0) regel.inHuisDeels = `${toon(inHuis.waarde)} ${unit}`.trim();
+    if (inHuis.waarde > 0) {
+      regel.inHuisDeels = `${toon(inHuis.waarde)} ${unit}`.trim();
+      regel.inHuisHoeveelheid = toon(inHuis.waarde);
+    }
     if (opLijst.waarde > 0) regel.opLijstDeels = `${toon(opLijst.waarde)} ${unit}`.trim();
     uit.kopen.push(regel);
+  }
+  // Zout, peper, water komen nooit op de lijst; koos je ze als basisvoorraad, dan zie je ze
+  // wel bij "heb je meestal" (zodat je weet dat Foodlo ermee rekent).
+  if (basis.length) {
+    const gezien = new Set(uit.meestal.map((r) => canoniekeNaam(r.naam)));
+    const recepten = new Map(opts.recepten.map((r) => [r.id, r]));
+    for (const p of komend) {
+      const recept = p.recipe_id ? recepten.get(p.recipe_id) : undefined;
+      if (!recept) continue;
+      for (const ing of opts.ingredienten) {
+        const naam = ing.name.trim();
+        if (ing.recipe_id !== recept.id || !naam || !isBasis(naam)) continue;
+        if (!zitInVoorraad(naam, [...basis]) || gezien.has(canoniekeNaam(naam))) continue;
+        gezien.add(canoniekeNaam(naam));
+        uit.meestal.push({
+          sleutel: productSleutel(naam, ing.unit),
+          naam,
+          quantity: null,
+          unit: (ing.unit ?? "").trim(),
+          nodig: null,
+          inHuisDeels: null,
+          opLijstDeels: null,
+          categorie: categorieVan(naam, {}),
+          voor: [{ titel: recept.title, dag: p.plan_date }],
+          recipe_id: recept.id,
+        });
+      }
+    }
   }
   return uit;
 }
 
 /** Hoeveel van een product is er al (in dezelfde familie), en is er iets zonder hoeveelheid? */
-function dekking<T>(rijen: T[], maat: (r: T) => Maat | null, familie: string) {
+function dekking<T>(rijen: T[], maat: (r: T) => Maat | null, familie: string, naam = "") {
   let waarde = 0;
   let onbekend = false;
   for (const r of rijen) {
     const m = maat(r);
+    // Stuks ↔ gram alleen met een gekend stukgewicht ("1 pompoen" ≈ 1200 g); anders niet gokken.
+    const om = m ? inFamilie(m, familie, naam) : null;
     if (!m) onbekend = true;
-    else if (m.familie === familie) waarde += m.waarde;
+    else if (om) waarde += om.waarde;
     else onbekend = true; // andere eenheid ("1 bussel" vs "2 teentjes"): niet omrekenbaar
   }
   return { aanwezig: rijen.length > 0, waarde, onbekend };
@@ -435,6 +493,7 @@ export function lijstBijsturen(opts: {
       voorraad.filter((v) => zitInVoorraad(naam, [v.naam])),
       (v) => naarMaat(v.hoeveelheid, v.eenheid),
       p.familie,
+      naam,
     );
     // Doel voor de Foodlo-regel, als basiswaarde. null = nodig, hoeveelheid onbekend.
     let doel: number | null;

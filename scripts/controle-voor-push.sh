@@ -8,7 +8,12 @@ meld() { echo "  ✗ $1"; fout=1; }
 ok() { echo "  ✓ $1"; }
 
 tak=$(git rev-parse --abbrev-ref HEAD)
-[ "$tak" = "v2/dev" ] && ok "branch is v2/dev" || meld "branch is '$tak', verwacht v2/dev (nooit main)"
+# v2/dev of een featurebranch (v2/*, claude/*) met een PR naar v2/dev; main en master nooit (T9).
+case "$tak" in
+  main | master) meld "branch is '$tak': nooit pushen naar main" ;;
+  v2/dev | v2/* | claude/*) ok "branch '$tak' is toegestaan (featurebranch of v2/dev)" ;;
+  *) meld "branch '$tak' is onbekend; gebruik v2/dev, v2/<onderwerp> of claude/<onderwerp>" ;;
+esac
 
 [ -z "$(git status --porcelain)" ] && ok "geen niet-vastgelegde wijzigingen" || meld "er zijn niet-vastgelegde wijzigingen"
 
@@ -45,5 +50,5 @@ groot=$(git log --format='' --name-only "$bereik" | sort -u | while read -r f; d
 [ -z "$groot" ] && ok "geen bestanden groter dan 5 MB" || meld "grote bestanden: $groot"
 
 echo
-[ $fout = 0 ] && echo "Klaar om te pushen (alleen na schriftelijk akkoord): git push origin v2/dev" || echo "Niet pushen: los eerst de punten met ✗ op."
+[ $fout = 0 ] && echo "Klaar om te pushen (alleen na schriftelijk akkoord): git push origin $tak" || echo "Niet pushen: los eerst de punten met ✗ op."
 exit $fout

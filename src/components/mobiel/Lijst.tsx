@@ -103,7 +103,8 @@ function RijInhoud({
       <span className="min-w-0 flex-1">
         <span
           className={cn(
-            "block text-[1.05rem] font-semibold leading-snug",
+            // P6: lange woorden ("Herinneringen") breken bij grote tekst met een koppelteken.
+            "block text-[1.05rem] font-semibold leading-snug hyphens-auto",
             gevaar ? "text-destructive" : "text-foreground",
           )}
         >

@@ -69,7 +69,9 @@ test("Keuken: recepten en voorraad één tik van elkaar, voorraad stuurt naar re
     "page",
   );
   await keuken.getByRole("link", { name: "Voorraad" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Voorraadkast" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Voorraad", exact: true }),
+  ).toBeVisible();
   // Vanuit de voorraad naar een recept dat je ermee kan maken.
   await page
     .getByRole("list", { name: "Recepten met wat je in huis hebt" })

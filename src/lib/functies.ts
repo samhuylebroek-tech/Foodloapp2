@@ -102,7 +102,8 @@ export const FUNCTIES: Functie[] = [
       "Eet vanavond restjes",
       "Plan restjes",
       "Restjes",
-      "Is op",
+      "Opgegeten",
+      "Weggegooid",
     ],
   },
   {
@@ -143,7 +144,7 @@ export const FUNCTIES: Functie[] = [
     module: "week",
     route: "/planner",
     bestanden: ["src/routes/planner.tsx"],
-    labels: ["Alles van deze week op de lijst"],
+    labels: ["Of kies zelf welke dagen op de lijst komen"],
   },
   {
     sleutel: "lijst.aanvullen",
@@ -191,7 +192,14 @@ export const FUNCTIES: Functie[] = [
     module: "keuken",
     route: "/recepten/nieuw",
     bestanden: ["src/routes/recepten.nieuw.tsx", "src/components/RecipeForm.tsx"],
-    labels: ["Hoe wil je je recept toevoegen?", "Link plakken", "Foto van recept", "Zelf typen"],
+    labels: [
+      "Hoe wil je je recept toevoegen?",
+      "Link plakken",
+      "Tekst plakken",
+      "Foto van recept",
+      "Video-link",
+      "Zelf typen",
+    ],
   },
   {
     sleutel: "keuken.zoeken",
@@ -238,7 +246,7 @@ export const FUNCTIES: Functie[] = [
     module: "voorraad",
     route: "/voorraad",
     bestanden: ["src/routes/voorraad.tsx"],
-    labels: ["Voorraadkast", "Nieuw product", "Toevoegen"],
+    labels: ["Voorraad", "Nieuw product", "Toevoegen"],
   },
   {
     sleutel: "voorraad.koken",

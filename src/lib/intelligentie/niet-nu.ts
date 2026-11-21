@@ -47,3 +47,49 @@ export function herstelNietNu(userId: string, receptId: string) {
   delete l[receptId];
   schrijf(userId, l);
 }
+
+// ---------------------------------------------------------------- "Niet voor mij" (P3)
+
+/**
+ * "Niet voor mij": dit recept niet meer voorstellen, tot je het zelf terugzet. Ook alleen op dit
+ * toestel tot voorstel 0006 (signaal `niet_voor_mij`). Je eigen recept blijft gewoon bestaan.
+ */
+const nietVoorMijSleutel = (userId: string) => `foodlo:niet-voor-mij:${userId}`;
+
+function leesNietVoorMij(userId: string): string[] {
+  try {
+    const ruw = window.localStorage.getItem(nietVoorMijSleutel(userId));
+    const l = ruw ? (JSON.parse(ruw) as unknown) : [];
+    return Array.isArray(l) ? l.filter((x): x is string => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function schrijfNietVoorMij(userId: string, l: string[]) {
+  try {
+    window.localStorage.setItem(nietVoorMijSleutel(userId), JSON.stringify([...new Set(l)]));
+  } catch {
+    // Opslag geblokkeerd: dan geldt het tot je de pagina sluit.
+  }
+}
+
+export function nietVoorMijLijst(userId: string | null | undefined): string[] {
+  return userId ? leesNietVoorMij(userId) : [];
+}
+
+export function zetNietVoorMij(userId: string, receptId: string) {
+  schrijfNietVoorMij(userId, [...leesNietVoorMij(userId), receptId]);
+}
+
+export function herstelNietVoorMij(userId: string, receptId: string) {
+  schrijfNietVoorMij(
+    userId,
+    leesNietVoorMij(userId).filter((id) => id !== receptId),
+  );
+}
+
+/** Alles wat Foodlo nu niet mag voorstellen: "Niet nu" (7 dagen) en "Niet voor mij". */
+export function nietTonenLijst(userId: string | null | undefined, nu = Date.now()): string[] {
+  return [...new Set([...nietNuLijst(userId, nu), ...nietVoorMijLijst(userId)])];
+}

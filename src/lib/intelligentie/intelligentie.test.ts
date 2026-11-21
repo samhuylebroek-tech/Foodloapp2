@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { bepaalContext, komendeFeestdag, paaszondag } from "./context";
 import { vatSamen, type Geschiedenis } from "./geschiedenis";
 import { herstelNietNu, nietNuLijst, zetNietNu, NIET_NU_DAGEN } from "./niet-nu";
-import { beveelAan, toegelaten, type Invoer, type Kandidaat } from "./voorstel";
+import { beveelAan } from "@/lib/planner/engine";
+import { toegelaten, type Invoer, type Kandidaat } from "./voorstel";
 
 // Woensdag 11 november 2026, 16 u.
 const WOENSDAG = new Date(2026, 10, 11, 16, 0);

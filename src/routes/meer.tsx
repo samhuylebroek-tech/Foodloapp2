@@ -14,7 +14,10 @@ import {
   ShieldCheck,
   Smartphone,
   Users,
+  ChefHat,
   WalletCards,
+  Sparkles,
+  Handshake,
 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Groep, LinkRij } from "@/components/mobiel/Lijst";
@@ -106,6 +109,13 @@ function MeerPage() {
             titel={t("Vrienden en gezin")}
             uitleg={t("Samen koken, delen en je gezin beheren")}
           />
+          <LinkRij
+            to="/makers"
+            icoon={ChefHat}
+            tint="honing"
+            titel={t("Makers")}
+            uitleg={t("Volg koks en deel zelf recepten")}
+          />
         </Groep>
 
         <Groep titel={t("In huis en in de winkel")}>
@@ -130,8 +140,8 @@ function MeerPage() {
             to="/meldingen"
             icoon={Bell}
             tint="honing"
-            titel={t("Meldingen")}
-            uitleg={t("Kies wanneer Foodlo je helpt")}
+            titel={t("Herinneringen op je telefoon")}
+            uitleg={t("Een seintje om te koken of te winkelen")}
           />
           <LinkRij
             to="/credits"
@@ -141,11 +151,25 @@ function MeerPage() {
             uitleg={t("Saldo en slim gebruik")}
           />
           <LinkRij
+            to="/premium"
+            icoon={Sparkles}
+            tint="honing"
+            titel={t("Premium")}
+            uitleg={t("Extra's in testmodus, nog niet te koop")}
+          />
+          <LinkRij
             to="/instellingen"
             icoon={Settings}
             tint="grijs"
             titel={t("Instellingen")}
             uitleg={t("Profiel, voorkeuren en privacy")}
+          />
+          <LinkRij
+            to="/partner"
+            icoon={Handshake}
+            tint="grijs"
+            titel={t("Voor bedrijven")}
+            uitleg={t("Partneromgeving voor merken en producenten")}
           />
         </Groep>
 

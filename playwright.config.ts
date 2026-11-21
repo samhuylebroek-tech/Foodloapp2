@@ -1,5 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// BUG-139: de testcode (zetKlok, datums in de nep-databank) rekent in dezelfde tijdzone als de
+// browser (timezoneId hieronder). Zonder dit liepen datumtests rond middernacht een dag of uur mis
+// wanneer de testmachine op UTC staat (cloud, CI).
+process.env["TZ"] = "Europe/Brussels";
+
 /**
  * End-to-end-tests draaien tegen een lokale dev-server en een NEP-Supabase.
  * Elke request naar een ander adres dan 127.0.0.1/localhost wordt in de tests
@@ -69,7 +74,7 @@ export default defineConfig({
     {
       name: "mobiel-360",
       use: { ...devices["Pixel 7"], viewport: { width: 360, height: 740 } },
-      testMatch: /kernflow|kookstand|voorraad/,
+      testMatch: /kernflow|kookstand|voorraad|kwaliteit-20/,
     },
     {
       name: "mobiel-390",
@@ -82,7 +87,13 @@ export default defineConfig({
       name: "tablet-768",
       use: { ...devices["Desktop Chrome"], viewport: { width: 768, height: 1024 }, hasTouch: true },
       testMatch:
-        /kernflow|tablet|navigatie|winkelmodus|vandaag|schermen-review|\/lijst\.spec|reis-/,
+        /kernflow|tablet|navigatie|winkelmodus|vandaag|schermen-review|\/lijst\.spec|reis-|kwaliteit-20/,
+    },
+    // P6: de 20 verplichte testen met tekst 200 % en thema "Extra duidelijk" (zie kwaliteit-20.spec.ts).
+    {
+      name: "groot-duidelijk",
+      use: { ...devices["Pixel 7"], viewport: { width: 390, height: 844 } },
+      testMatch: /kwaliteit-20/,
     },
   ],
   webServer: [

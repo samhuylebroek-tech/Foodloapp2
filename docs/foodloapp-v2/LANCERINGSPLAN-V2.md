@@ -1,5 +1,7 @@
 # Lanceringsplan Foodloapp V2: van lokaal naar de App Store en Google Play
 
+> Samengevat in [`docs/foodlo/RELEASE_PLAN.md`](../foodlo/RELEASE_PLAN.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-12, `v2/dev`, lokaal. Dit plan vat de bestaande documenten samen tot één route:
 - RELEASE-READINESS;
 - MOBIELE-STRATEGIE-IOS-ANDROID;

@@ -15,11 +15,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useRestjes } from "@/hooks/useRestjes";
+import { useRestjes, useRestjesActies } from "@/hooks/useRestjes";
 import { useVoorstelBronnen } from "@/hooks/useVoorstelBronnen";
+import { usePlanProfiel } from "@/hooks/usePlanProfiel";
 import { vatSamen } from "@/lib/intelligentie/geschiedenis";
-import { herstelNietNu, nietNuLijst, zetNietNu } from "@/lib/intelligentie/niet-nu";
-import { gekooktTekst, planRestje, restjeVeilig, type Restje } from "@/lib/intelligentie/restjes";
+import { herstelNietNu, nietTonenLijst, zetNietNu } from "@/lib/intelligentie/niet-nu";
+import { gekooktTekst, restjeVeilig, type Restje } from "@/lib/intelligentie/restjes";
 import { restjesVoorWeek } from "@/lib/intelligentie/restjes-week";
 import { useSlimmeVoorstellen } from "@/lib/intelligentie/slim";
 import { vulAan } from "@/lib/intelligentie/vul-aan";
@@ -47,11 +48,12 @@ export function VulAan({
   onZet: (rijen: Rij[]) => Promise<void>;
 }) {
   const { user } = useAuth();
+  const restjeActies = useRestjesActies();
   const { weekmenu } = useVoorkeuren();
   const [slim] = useSlimmeVoorstellen();
   const [nietNu, setNietNu] = useState<string[]>([]);
   const [bezig, setBezig] = useState<string | null>(null);
-  useEffect(() => setNietNu(nietNuLijst(user?.id)), [user?.id]);
+  useEffect(() => setNietNu(nietTonenLijst(user?.id)), [user?.id]);
   const qc = useQueryClient();
   const alleRestjes = useRestjes();
   // Zonder geregistreerde restjes: geen restjes (niets verondersteld).
@@ -80,6 +82,7 @@ export function VulAan({
 
   // Klaar om te tonen: alle ingrediënten geladen (of er zijn geen eigen recepten).
   const klaar = isSuccess || (receptenKlaar && recepten.length === 0);
+  const plan = usePlanProfiel();
 
   // Restjes eerst, met dezelfde allergie- en dieetregel (onbekende ingrediënten = niet voorstellen).
   const restjesRijen = useMemo(() => {
@@ -105,7 +108,10 @@ export function VulAan({
         category: r.category,
         tags: r.tags ?? [],
         ingredienten: bronnen.ingredienten[r.id] ?? [],
+        vereist: bronnen.vereist[r.id] ?? [],
       })),
+      apparatuur: plan.apparatuur,
+      moment,
       voorraad: bronnen.voorraad,
       oudInHuis: bronnen.oudInHuis,
       onlangsGekocht: bronnen.onlangsGekocht,
@@ -137,6 +143,8 @@ export function VulAan({
     vandaag,
     user?.id,
     restjesRijen,
+    plan.apparatuur,
+    moment,
   ]);
 
   if (!actief || !klaar || (!voorstellen.length && !restjesRijen.length)) return null;
@@ -173,7 +181,7 @@ export function VulAan({
         .select("id")
         .single();
       if (error || !data) throw error ?? new Error("geen id");
-      planRestje(user.id, r.id, datum);
+      restjeActies?.plan(r.id, datum);
       void meet("week.restjes", undefined, { porties: r.porties });
       const vernieuw = () => {
         for (const k of ["meal-plan", "home-dagmenu", "home-week"])
@@ -186,7 +194,7 @@ export function VulAan({
           label: "Ongedaan maken",
           onClick: async () => {
             await supabase.from("meal_plan").delete().eq("id", data.id);
-            planRestje(user.id, r.id, null);
+            restjeActies?.plan(r.id, null);
             vernieuw();
           },
         },
@@ -201,14 +209,14 @@ export function VulAan({
   function nietNuTik(id: string) {
     if (!user) return;
     zetNietNu(user.id, id);
-    setNietNu(nietNuLijst(user.id));
+    setNietNu(nietTonenLijst(user.id));
     toast("Je ziet dit voorstel een week niet.", {
       duration: 8000,
       action: {
         label: "Ongedaan maken",
         onClick: () => {
           herstelNietNu(user.id, id);
-          setNietNu(nietNuLijst(user.id));
+          setNietNu(nietTonenLijst(user.id));
         },
       },
     });

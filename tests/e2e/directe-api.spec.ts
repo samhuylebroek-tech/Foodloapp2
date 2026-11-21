@@ -5,6 +5,7 @@
  */
 import type { APIRequestContext, Request } from "@playwright/test";
 import { EIGENAAR } from "./beheer-paden";
+import { MFA_AFDWINGEN } from "../../src/lib/mfa-beleid";
 import { NEP_SUPABASE, expect, meldAan, resetDemo, seedDb, test, zetKlok } from "./helpers";
 
 async function token(opties: Record<string, string> = {}) {
@@ -98,18 +99,29 @@ test("2FA verplicht: met aal2 wel cijfers (controle)", async ({ page, request, e
   void extern;
 });
 
-test("2FA verplicht: sessie zonder 2e stap (aal1) krijgt geen cijfers", async ({
+test("2FA: sessie zonder 2e stap (aal1) volgt de schakelaar MFA_AFDWINGEN (BUG-095)", async ({
   page,
   request,
   extern,
 }) => {
-  // BUG-095 is nog open (afdwingen wacht op goedkeuring van het herstelplan): de server levert
-  // nu wél cijfers bij aal1. test.fail() houdt de VEILIGE verwachting vast en meldt het zodra de
-  // fix er is (dan deze regel weghalen).
-  test.fail(true, "BUG-095 open: 2FA nog niet server-side afgedwongen");
+  // BUG-095 (fase 8): afdwingen wacht op het akkoord van de eigenaar op het herstelplan; zelf
+  // aanzetten is een autorisatiewijziging (CLAUDE.md) en kan de eigenaar buitensluiten. Deze test
+  // volgt de schakelaar in src/lib/mfa-beleid.ts, zonder test.fail/test.skip:
+  // - UIT (nu): bewijst dat de schakelaar de ENIGE reden is dat aal1 cijfers krijgt (vaststelling);
+  // - AAN: aal1 krijgt geen cijfers en de server meldt waarom.
+  // De regel zelf (mfaOntbreekt) is met afdwingen = true getest in admin-rechten.test.ts.
   await beheerder(true);
   const req = await neemFinanceOp(page);
   const r = await speelAf(request, req, await token({ sub: EIGENAAR, aal: "aal1" }));
-  expect(r.tekst).not.toContain("omzetVorig");
+  if (MFA_AFDWINGEN) {
+    expect(r.tekst).not.toContain("omzetVorig");
+    expect(r.tekst).toContain("tweede stap");
+  } else {
+    test.info().annotations.push({
+      type: "BUG-095",
+      description: "2FA nog niet afgedwongen op de server (wacht op akkoord herstelplan)",
+    });
+    expect(r.tekst).toContain("omzetVorig");
+  }
   void extern;
 });

@@ -19,7 +19,9 @@ import {
 import { toonBelgischeMaat } from "@/lib/ingredienten";
 import { AllergieWaarschuwing } from "@/components/AllergieWaarschuwing";
 import { useAuth } from "@/hooks/useAuth";
-import { useSignedUrl } from "@/lib/photos";
+import { RecipePhoto } from "@/components/RecipePhoto";
+import { BewaarIn } from "@/components/makers/BewaarIn";
+import { useModuleBeschikbaar } from "@/lib/module-beschikbaar";
 
 export const Route = createFileRoute("/inspiratie/$id")({
   head: () => ({
@@ -41,9 +43,9 @@ function InspiratieDetailPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [bezig, setBezig] = useState(false);
+  const verzamelingen = useModuleBeschikbaar("collections");
   const [toegevoegd, setToegevoegd] = useState<{ recipeId: string; bestondAl: boolean } | null>(null);
   const [bereidingOpen, setBereidingOpen] = useState(false);
-  const [fotoKapot, setFotoKapot] = useState(false);
   const [controleOpen, setControleOpen] = useState(false);
   const [titel, setTitel] = useState("");
   const [categorie, setCategorie] = useState("");
@@ -63,7 +65,6 @@ function InspiratieDetailPage() {
     queryFn: () => haalInspiratieIngredienten(id),
     enabled: !!recept,
   });
-  const fotoUrl = useSignedUrl(recept?.image_url ?? null);
 
   function openControle() {
     if (!recept) return;
@@ -145,14 +146,14 @@ function InspiratieDetailPage() {
     <AppShell title="Ideeën om te koken">
       <div className="space-y-5 pb-24">
 
-        {fotoUrl && !fotoKapot ? (
-          <img
-            src={fotoUrl}
-            alt=""
-            onError={() => setFotoKapot(true)}
-            className="aspect-[16/9] w-full rounded-xl object-cover"
-          />
-        ) : null}
+        {/* Altijd een beeld: de foto, of de ontworpen omslag van de soort (review punt 2). */}
+        <RecipePhoto
+          path={recept.image_url}
+          alt=""
+          recept={{ title: recept.title, category: recept.category }}
+          opschrift
+          className="aspect-[16/9] w-full rounded-xl"
+        />
 
         <div>
           <h1 className="font-display text-2xl leading-tight">{recept.title}</h1>
@@ -252,6 +253,7 @@ function InspiratieDetailPage() {
                   <CalendarPlus className="size-5" /> Aan weekmenu
                 </Button>
               </div>
+              {verzamelingen.beschikbaar ? <BewaarIn receptId={toegevoegd.recipeId} /> : null}
               <Button variant="ghost" className="h-12 text-base" onClick={() => navigate({ to: "/inspiratie" })}>
                 Verder inspiratie bekijken
               </Button>

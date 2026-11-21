@@ -7,11 +7,15 @@ import { ALLERGENEN } from "@/lib/allergenen";
 import { markeerNieuweGebruiker } from "@/lib/eerste-stappen";
 import {
   bewaarKennismaking,
-  leesKennismaking,
+  leesToestelKennismaking,
   naarWeekmenu,
   type Kennismaking,
 } from "@/lib/kennismaking";
 import { startRondleiding } from "@/lib/rondleiding";
+import { ApparatuurKeuze, VoorraadKeuze } from "@/components/planner/KeukenProfiel";
+import { usePlanProfiel } from "@/hooks/usePlanProfiel";
+import type { Apparaat } from "@/lib/planner/apparatuur";
+import type { Voorraadniveau } from "@/lib/planner/profiel";
 import { useVoorkeuren } from "@/lib/voorkeuren";
 
 export const Route = createFileRoute("/kennismaking")({
@@ -71,7 +75,12 @@ function KennismakingPagina() {
   const navigate = useNavigate();
   const { terug } = Route.useSearch();
   const { weekmenu, zetWeekmenu } = useVoorkeuren();
-  const [k, setK] = useState<Kennismaking>(() => leesKennismaking(user?.id));
+  const [k, setK] = useState<Kennismaking>(() => leesToestelKennismaking(user?.id));
+  // Mijn keuken (P1): alleen bewaren wat je hier zelf aanraakt.
+  const plan = usePlanProfiel();
+  const [apparatuur, setApparatuur] = useState<Apparaat[] | null>(null);
+  const [niveau, setNiveau] = useState<Voorraadniveau | null>(null);
+  const [basis, setBasis] = useState<string[] | null>(null);
   const zet =
     <S extends keyof Kennismaking>(s: S) =>
     (w: Kennismaking[S]) =>
@@ -82,6 +91,14 @@ function KennismakingPagina() {
       bewaarKennismaking(user.id, k);
       const w = naarWeekmenu(k);
       if (Object.keys(w).length) zetWeekmenu({ ...weekmenu, ...w });
+      if (apparatuur || niveau || basis)
+        void plan
+          .bewaar({
+            ...(apparatuur ? { apparatuur } : {}),
+            ...(niveau ? { voorraadniveau: niveau } : {}),
+            ...(basis ? { basisvoorraad: basis } : {}),
+          })
+          .catch(() => undefined);
     }
     if (terug === "instellingen") {
       navigate({ to: "/instellingen" });
@@ -211,6 +228,19 @@ function KennismakingPagina() {
           ]}
           waarde={k.gezin}
           zet={zet("gezin")}
+        />
+
+        <ApparatuurKeuze
+          waarde={apparatuur ?? plan.apparatuur}
+          aangenomen={!apparatuur && plan.apparatuurAangenomen}
+          zet={setApparatuur}
+        />
+
+        <VoorraadKeuze
+          niveau={niveau ?? plan.voorraadniveau}
+          basis={basis ?? plan.profiel.basisvoorraad}
+          zetNiveau={setNiveau}
+          zetBasis={setBasis}
         />
 
         <Keuze

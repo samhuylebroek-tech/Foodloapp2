@@ -1,5 +1,7 @@
 # Release readiness: eerste gecontroleerde gebruikerstest van V2
 
+> Samengevat in [`docs/foodlo/IMPLEMENTATION_STATUS.md`](../foodlo/IMPLEMENTATION_STATUS.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-11, branch `v2/dev` (lokaal, **niet gepusht, niet uitgerold**). Geschreven voor de eigenaar; geen technische voorkennis nodig.
 
 **Labels:**

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { wisAlleKennismakingen } from "@/lib/kennismaking";
+import { wisOfflineCache } from "@/lib/offline-cache";
 
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
@@ -10,7 +11,10 @@ export function useAuth() {
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       // Gezondheidsgegevens van de kennismaking niet op het toestel laten na afmelden.
-      if (event === "SIGNED_OUT") wisAlleKennismakingen();
+      if (event === "SIGNED_OUT") {
+        wisAlleKennismakingen();
+        wisOfflineCache();
+      }
       setSession(s);
       setLoading(false);
     });

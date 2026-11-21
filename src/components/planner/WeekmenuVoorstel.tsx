@@ -4,6 +4,7 @@
  * allergeen, "liever niet" of iets buiten je dieet uit de kennismaking) en per voorstel 1 à 2
  * redenen. Allergieën en dieet blijven op dit toestel; de AI-ideeën krijgen ze niet.
  */
+import { voorAI } from "@/lib/ai/privacy";
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -36,10 +37,19 @@ import { weekmenuIdeeen, type WeekmenuIdee } from "@/lib/ai.functions";
 import { ideeTitelToegelaten } from "@/lib/veiligheid";
 import { bruikbareVoorraad, useVoorraadBijhouden } from "@/lib/intelligentie/voorraad-modus";
 import { type WeekmenuInstelling, type DagVoorkeur } from "@/lib/voorkeuren";
-import { kiesUitEigen, type DagRegel, type Soortkeuze } from "@/lib/weekmenu-voorstel";
+import { type DagRegel, type Soortkeuze } from "@/lib/weekmenu-voorstel";
+import { kiesViaEngine } from "@/lib/planner/laat-kiezen";
 import { datumTekst, labelVoor, kortLabel } from "./gedeeld";
 import { GerechtKaart } from "./ReceptKiezer";
 import { alleRijen } from "@/lib/pagineer";
+import { useVoorstelEters } from "@/hooks/useVoorstelEters";
+import { maaltijdOordeel, veiligVoorEters } from "@/lib/voorstel-eters";
+import { OordeelMelding } from "@/components/veiligheid/EtersOordeel";
+import { usePlanProfiel } from "@/hooks/usePlanProfiel";
+import { herkenApparatuur, moeilijkheidVan } from "@/lib/planner/apparatuur";
+import { pastInKeuken } from "@/lib/planner/engine";
+import { onveiligeGerechten } from "@/lib/planner/servercontrole";
+import { serverOordeel } from "@/lib/voeding-db";
 
 export function ReceptFoto({
   url,
@@ -113,7 +123,10 @@ export function WeekmenuVoorstel({
   alGepland,
   onSluit,
   onZet,
+  gezinId,
 }: {
+  /** Gezin voor "Wie eet mee?"; weggelaten = je eigen gezin opzoeken. */
+  gezinId?: string | null;
   week: string[];
   momenten: string[];
   instelling: WeekmenuInstelling;
@@ -122,7 +135,8 @@ export function WeekmenuVoorstel({
   /** Gerechten die deze week al ingepland staan; die stellen we niet opnieuw voor. */
   alGepland: Set<string>;
   onSluit: () => void;
-  onZet: (rijen: Rij[]) => Promise<void>;
+  /** `eters`: wie meeëet (lid-id's), of null = het hele huishouden (standaard). */
+  onZet: (rijen: Rij[], eters: string[] | null) => Promise<void>;
 }) {
   const [stap, setStap] = useState<"vragen" | "voorstel">("vragen");
   const [dagen, setDagen] = useState<string[]>(week);
@@ -138,6 +152,8 @@ export function WeekmenuVoorstel({
   const [eigenZoek, setEigenZoek] = useState("");
   const getoondeRecepten = useRef<Record<string, string[]>>({});
   const getoondeIdeeen = useRef<string[]>([]);
+  // Wie eet mee (werkstroom A): standaard het hele huishouden.
+  const [gekozenEters, setGekozenEters] = useState<string[] | null>(null);
 
   const { data: alleRecepten = [] } = useQuery({
     queryKey: ["voorstel-recepten"],
@@ -234,12 +250,53 @@ export function WeekmenuVoorstel({
 
   // Wat Foodlo zelf mag voorstellen: dezelfde harde regels als op Vandaag.
   // "Zelf een gerecht kiezen" toont wel alles, met een waarschuwing bij een allergeen.
-  const voorstelbaar = recepten.filter((r) =>
+  const voorstelbaarVoorMij = recepten.filter((r) =>
     toegelaten(kandidaat(r), {
       voorkeur: { maxMinuten: 0, soort: null, vermijd: instelling.vermijd, dieet: kennis.dieet },
       allergieen: kennis.allergieen,
     }),
   );
+  // P1-engine: dezelfde keukenfilters (apparatuur, kookervaring) als "Stel mijn week samen".
+  // Blijft er niets over, dan niet filteren (zoals versoepelen in de engine; nooit veiligheid).
+  const keuken = usePlanProfiel();
+  const inKeuken = voorstelbaarVoorMij.filter((r) =>
+    pastInKeuken(
+      {
+        ...kandidaat(r),
+        vereist: herkenApparatuur({
+          title: r.title,
+          description: r.description ?? null,
+          tags: r.tags ?? [],
+          stappen: r.instructions ?? [],
+        }),
+        moeilijkheid: moeilijkheidVan({
+          difficulty: r.difficulty,
+          stappen: r.instructions,
+          minuten: (r.prep_minutes ?? 0) + (r.cook_minutes ?? 0),
+        }),
+      },
+      { apparatuur: keuken.apparatuur, kookervaring: keuken.kookervaring },
+    ),
+  );
+  const keukenBasis = inKeuken.length ? inKeuken : voorstelbaarVoorMij;
+  // Mee-eters: wat niet veilig is voor iemand die meeeet, stelt Foodlo niet voor. Voor leden
+  // waarvan je de gegevens niet mag lezen, kijkt de server elk gekozen gerecht na (BUG-152).
+  const actiefReceptId = rijen[actieveStap]?.recept?.id;
+  const gekozenIds = [
+    ...new Set([
+      ...(actiefReceptId ? [actiefReceptId] : []),
+      ...rijen.filter((r) => r.aan && r.recept).map((r) => r.recept!.id),
+    ]),
+  ];
+  const eters = useVoorstelEters({
+    gezinId,
+    gekozen: gekozenEters,
+    receptIds: gekozenIds,
+  });
+  const voorstelbaar = veiligVoorEters(keukenBasis, kandidaat, eters).veilig;
+  const nietLeesbaar = eters.eters
+    .filter((l) => !eters.voeding.get(l.id) && l.user_id !== user?.id)
+    .map((l) => l.id);
 
   function regelVoor(datum: string): DagRegel {
     const eigen = regels[datum] ?? instelling.perDag[weekdagVan(datum)] ?? {};
@@ -261,7 +318,9 @@ export function WeekmenuVoorstel({
     setBezigMet("Foodlo stelt je week samen…");
     try {
       const lijst = alleRegels();
-      const keuzes = kiesUitEigen({
+      const keuzes = kiesViaEngine({
+        allergieen: kennis.allergieen,
+        dieet: kennis.dieet,
         recepten: voorstelbaar,
         ingredienten,
         regels: lijst,
@@ -277,7 +336,9 @@ export function WeekmenuVoorstel({
         const sleutel = `${regel.datum}|${regel.moment}`;
         const keuze = eersteKeuzes.get(sleutel);
         if (keuze?.recept || !getoondeRecepten.current[sleutel]?.length) continue;
-        const [herstart] = kiesUitEigen({
+        const [herstart] = kiesViaEngine({
+          allergieen: kennis.allergieen,
+          dieet: kennis.dieet,
           recepten: voorstelbaar,
           ingredienten,
           regels: [regel],
@@ -324,7 +385,7 @@ export function WeekmenuVoorstel({
           data: {
             aantal: gaten.length,
             wensen: `${instelling.vlees}x vlees, ${instelling.vis}x vis, ${instelling.vega}x vegetarisch`,
-            vermijd: instelling.vermijd,
+            vermijd: voorAI(instelling.vermijd).tekst,
             maxMinuten: instelling.maxMinuten,
             bekend: [...recepten.slice(0, 60).map((r) => r.title), ...getoondeIdeeen.current],
           },
@@ -370,7 +431,9 @@ export function WeekmenuVoorstel({
       getoondeRecepten.current[sleutel] = [...(getoondeRecepten.current[sleutel] ?? []), huidig];
     }
     const over = voorstelbaar.filter((r) => r.id !== huidig && !gebruikt.includes(r.id));
-    const [keuze] = kiesUitEigen({
+    const [keuze] = kiesViaEngine({
+      allergieen: kennis.allergieen,
+      dieet: kennis.dieet,
       recepten: over,
       ingredienten,
       regels: [{ ...regelVoor(datum), moment }],
@@ -381,7 +444,9 @@ export function WeekmenuVoorstel({
     });
     if (!keuze?.recept) {
       getoondeRecepten.current[sleutel] = [];
-      const [herstart] = kiesUitEigen({
+      const [herstart] = kiesViaEngine({
+        allergieen: kennis.allergieen,
+        dieet: kennis.dieet,
         recepten: over,
         ingredienten,
         regels: [{ ...regelVoor(datum), moment }],
@@ -449,7 +514,7 @@ export function WeekmenuVoorstel({
         data: {
           aantal: 1,
           wensen: regel.soort ? `Voor deze dag: ${regel.soort}` : "Gevarieerd gerecht",
-          vermijd: instelling.vermijd,
+          vermijd: voorAI(instelling.vermijd).tekst,
           maxMinuten: regel.maxMinuten,
           bekend: [
             ...recepten.slice(0, 60).map((recept) => recept.title),
@@ -578,6 +643,47 @@ export function WeekmenuVoorstel({
                 ))}
               </div>
             </div>
+
+            {eters.leden.length ? (
+              <div>
+                <h3 id="voorstel-wie" className="text-base font-semibold">
+                  Wie eet mee?
+                </h3>
+                <div
+                  role="group"
+                  aria-labelledby="voorstel-wie"
+                  className="mt-2 flex flex-wrap gap-2"
+                >
+                  {eters.leden.map((l) => {
+                    const aan = eters.eters.some((e) => e.id === l.id);
+                    return (
+                      <button
+                        key={l.id}
+                        type="button"
+                        aria-pressed={aan}
+                        onClick={() =>
+                          setGekozenEters((v) => {
+                            const nu = v ?? eters.leden.map((x) => x.id);
+                            return nu.includes(l.id) ? nu.filter((x) => x !== l.id) : [...nu, l.id];
+                          })
+                        }
+                        className={
+                          aan
+                            ? "inline-flex min-h-12 items-center gap-1.5 rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground"
+                            : "inline-flex min-h-12 items-center rounded-xl border border-border px-4 text-base font-semibold"
+                        }
+                      >
+                        {aan ? <Check className="size-4" aria-hidden /> : null}
+                        {l.naam}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-base text-muted-foreground">
+                  Foodlo stelt niets voor wat niet veilig is voor wie meeeet.
+                </p>
+              </div>
+            ) : null}
 
             <div>
               <h3 className="text-base font-semibold">Waaruit mag Foodlo kiezen?</h3>
@@ -719,6 +825,27 @@ export function WeekmenuVoorstel({
                   <p className="mt-2 text-base font-semibold">
                     Kijk de ingrediënten zelf na op je allergieën: Foodlo kent ze voor een nieuw
                     idee nog niet.
+                  </p>
+                ) : null}
+                {actieveRecept && !actieveRij.bezet ? (
+                  <OordeelMelding
+                    className="mt-3"
+                    testId="niet-geschikt"
+                    oordeel={maaltijdOordeel(
+                      {
+                        id: actieveRecept.id,
+                        title: actieveRecept.title,
+                        tags: actieveRecept.tags ?? [],
+                        ingredienten: ingredienten[actieveRecept.id] ?? [],
+                      },
+                      eters,
+                    )}
+                  />
+                ) : null}
+                {actieveRij.idee && eters.eters.length ? (
+                  <p className="mt-2 text-base text-muted-foreground">
+                    Kijk de ingrediënten van een nieuw idee zelf na voor wie meeeet: Foodlo kent ze
+                    nog niet.
                   </p>
                 ) : null}
                 {actieveRecept ? (
@@ -871,7 +998,32 @@ export function WeekmenuVoorstel({
                     onClick={async () => {
                       setBezigMet("bezig");
                       try {
-                        await onZet(rijen.filter((rij) => rij.aan));
+                        const gekozen = rijen.filter((rij) => rij.aan);
+                        // BUG-152: elk gekozen gerecht via de server nakijken vóór het bewaren.
+                        let onveilig: Set<string>;
+                        try {
+                          onveilig = await onveiligeGerechten(
+                            gekozen.filter((r) => r.recept).map((r) => r.recept!.id),
+                            nietLeesbaar,
+                            serverOordeel,
+                          );
+                        } catch {
+                          toast.error("Nakijken voor wie meeeet lukte niet. Er is niets bewaard.");
+                          return;
+                        }
+                        if (onveilig.size) {
+                          setRijen((v) =>
+                            v.map((r) =>
+                              r.recept && onveilig.has(r.recept.id) ? { ...r, aan: false } : r,
+                            ),
+                          );
+                          toast.error(
+                            `${onveilig.size === 1 ? "Eén gerecht past" : `${onveilig.size} gerechten passen`} niet voor iedereen die meeeet. Kies daar een ander gerecht; er is nog niets bewaard.`,
+                          );
+                          return;
+                        }
+                        // Fase 1: de gekozen mee-eters worden bij elke geplande maaltijd bewaard.
+                        await onZet(gekozen, gekozenEters ? eters.eters.map((e) => e.id) : null);
                       } finally {
                         setBezigMet("");
                       }

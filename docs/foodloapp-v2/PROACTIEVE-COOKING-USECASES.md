@@ -1,5 +1,7 @@
 # Proactieve kookassistent: gebruikssituaties (VOORSTEL)
 
+> Samengevat in [`docs/foodlo/FUNCTIONAL_REQUIREMENTS.md`](../foodlo/FUNCTIONAL_REQUIREMENTS.md) (bron van waarheid sinds 2026-11-13). Dit document blijft als bron en geschiedenis.
+
 Stand 2026-11-11. **Alleen voorgesteld.**
 - **Gegevens:**
   - ✅ = bestaat vandaag;
