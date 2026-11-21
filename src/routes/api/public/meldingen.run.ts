@@ -72,6 +72,25 @@ export const Route = createFileRoute("/api/public/meldingen/run")({
   },
 });
 
+type ToestemmingDb = {
+  from: (t: string) => {
+    select: (k: string) => {
+      eq: (k: string, v: string) => {
+        eq: (k: string, v: boolean) => PromiseLike<{ data: { user_id: string }[] | null }>;
+      };
+    };
+  };
+};
+
+async function meldingenIngetrokken(db: unknown): Promise<Set<string>> {
+  const { data } = await (db as ToestemmingDb)
+    .from("toestemmingen")
+    .select("user_id")
+    .eq("soort", "meldingen")
+    .eq("aan", false);
+  return new Set((data ?? []).map((r) => r.user_id));
+}
+
 async function draai() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const nu = new Date();
@@ -83,7 +102,10 @@ async function draai() {
 
   if (!abos?.length) return Response.json({ ok: true, gebruikers: 0, verstuurd: 0 });
 
-  const gebruikers = [...new Set(abos.map((a) => a.user_id))];
+  // Fase 8: wie "Meldingen" introk (op het account) krijgt niets meer, ook niet op een ander
+  // toestel dat nog aangemeld staat. Tabel ontbreekt (voor 0025): niemand overgeslagen.
+  const ingetrokken = await meldingenIngetrokken(supabaseAdmin);
+  const gebruikers = [...new Set(abos.map((a) => a.user_id))].filter((u) => !ingetrokken.has(u));
 
   const [{ data: voorkeuren }, { data: profielen }] = await Promise.all([
     supabaseAdmin.from("notification_preferences").select("*").in("user_id", gebruikers),

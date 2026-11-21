@@ -46,6 +46,25 @@ async function poort(context: unknown, recht: Parameters<typeof bewaker>[1], sch
   return { db: db as unknown as LosseDb, profiel };
 }
 
+/**
+ * Alle rijen in pagina's van 1000 (PostgREST geeft er nooit meer per verzoek, ook niet met
+ * `.limit(5000)`; BUG-093). De eerste fout komt ongewijzigd terug (bv. "tabel ontbreekt").
+ */
+async function alles<R = Rij>(
+  maak: () => { range: (a: number, b: number) => PromiseLike<{ data: unknown; error: unknown }> },
+  max = 100_000,
+): Promise<{ data: R[] | null; error: unknown }> {
+  const uit: R[] = [];
+  for (let van = 0; van < max; van += 1000) {
+    const { data, error } = await maak().range(van, van + 999);
+    if (error) return { data: null, error };
+    const r = (data ?? []) as R[];
+    uit.push(...r);
+    if (r.length < 1000) break;
+  }
+  return { data: uit, error: null };
+}
+
 async function namen(db: LosseDb, ids: string[]): Promise<Map<string, string>> {
   const uniek = [...new Set(ids.filter(Boolean))];
   if (!uniek.length) return new Map();
@@ -211,10 +230,13 @@ export const bccCampagnes = createServerFn({ method: "GET" })
         ? db.from("partners").select("id, naam").in("id", partnerIds)
         : Promise.resolve({ data: [] }),
       ids.length
-        ? db
-            .from("gesponsord_statistiek")
-            .select("campagne_id, vertoningen, klikken")
-            .in("campagne_id", ids)
+        ? alles(() =>
+            db
+              .from("gesponsord_statistiek")
+              .select("id, campagne_id, vertoningen, klikken")
+              .in("campagne_id", ids)
+              .order("id"),
+          )
         : Promise.resolve({ data: [] }),
       ids.length
         ? db.from("gesponsorde_items").select("id, campagne_id").in("campagne_id", ids)
@@ -333,16 +355,20 @@ export const bccOmzet = createServerFn({ method: "GET" })
       terugbetalingen: { maker: string; bedrag_cent: number; datum: string }[];
     }> => {
       const { db } = await poort(context, "finance.view", false);
-      const { data: bet, error } = await db
-        .from("maker_betalingen")
-        .select("creator_id, soort, bedrag_cent, btw_cent, test, created_at")
-        .order("created_at", { ascending: false })
-        .limit(5000);
-      const { data: fac, error: facFout } = await db
-        .from("facturen")
-        // "*": soort/btw_cent (voorstel 0023) bestaan pas na die migratie.
-        .select("*")
-        .limit(5000);
+      // SECURITY-REVIEW-V2 S-04: alles ophalen in pagina's van 1000 (PostgREST kapt anders stil af).
+      const { data: bet, error } = await alles(() =>
+        db
+          .from("maker_betalingen")
+          .select("id, creator_id, soort, bedrag_cent, btw_cent, test, created_at")
+          .order("id"),
+      );
+      const { data: fac, error: facFout } = await alles(() =>
+        db
+          .from("facturen")
+          // "*": soort/btw_cent (voorstel 0023) bestaan pas na die migratie.
+          .select("*")
+          .order("id"),
+      );
       const betOk = !error;
       const facOk = !facFout;
       if (!betOk && !facOk) {
@@ -413,10 +439,12 @@ export const bccUitbetalingen = createServerFn({ method: "POST" })
     }> => {
       const { db } = await poort(context, "finance.view", false);
       const platformProcent = await leesProcent(db);
-      const { data: bet, error } = await db
-        .from("maker_betalingen")
-        .select("creator_id, soort, bedrag_cent, btw_cent, test, created_at")
-        .limit(5000);
+      const { data: bet, error } = await alles(() =>
+        db
+          .from("maker_betalingen")
+          .select("id, creator_id, soort, bedrag_cent, btw_cent, test, created_at")
+          .order("id"),
+      );
       const nu = new Date().toISOString().slice(0, 7);
       if (error) {
         if (isOntbrekendeTabel(error))
@@ -515,10 +543,12 @@ export const bccTestuitbetalingVastleggen = createServerFn({ method: "POST" })
       throw new Error("De testuitbetaling kon niet vastgelegd worden.");
     }
     const platformProcent = await leesProcent(db);
-    const { data: bet } = await db
-      .from("maker_betalingen")
-      .select("creator_id, soort, bedrag_cent, btw_cent, test, created_at")
-      .limit(5000);
+    const { data: bet } = await alles(() =>
+      db
+        .from("maker_betalingen")
+        .select("id, creator_id, soort, bedrag_cent, btw_cent, test, created_at")
+        .order("id"),
+    );
     const rijen = uitbetalingPerMaker(
       ((bet ?? []) as MakerBetalingRij[]).filter((b) => maandVan(b.created_at) === data.maand),
       platformProcent,

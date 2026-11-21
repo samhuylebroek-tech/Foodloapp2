@@ -4,7 +4,8 @@ import { z } from "zod";
 import { begrensdeLijst } from "@/lib/zod-hulp";
 import { belgischeMaat, parseIngredientLine } from "@/lib/ingredienten";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { metCredits, type AiMeter } from "@/lib/credits.server";
+import { aiUitVoor, metCredits, type AiMeter } from "@/lib/credits.server";
+import { AI_UIT_MELDING } from "@/lib/privacy/ai-toestemming";
 import {
   adapterVoor,
   detecteerPlatform,
@@ -73,7 +74,10 @@ async function askAI(messages: unknown[], kind = "chat", meter?: AiMeter, model 
       if (res.status === 429) throw new Error("Het is even te druk. Probeer het zo opnieuw.");
       if (res.status === 402)
         throw new Error("De slimme functies zijn tijdelijk niet beschikbaar. Probeer het later opnieuw.");
-      throw new Error(`AI-fout: ${res.status} ${text.slice(0, 200)}`);
+      // Fase 8 (SECURITY-REVIEW-V2 S-07): ruwe foutinhoud alleen naar ai_events, nooit naar de gebruiker.
+      throw Object.assign(new Error("De slimme hulp gaf een fout. Probeer het straks opnieuw."), {
+        intern: `AI-fout ${res.status}: ${text.slice(0, 200)}`,
+      });
     }
     if (!res.body) throw new Error("AI gaf geen antwoord.");
 
@@ -111,7 +115,10 @@ async function askAI(messages: unknown[], kind = "chat", meter?: AiMeter, model 
     void logAi(kind, true, Date.now() - start, undefined, model);
     return antwoord;
   } catch (e) {
-    void logAi(kind, false, Date.now() - start, e instanceof Error ? e.message : String(e), model);
+    const intern = (e as { intern?: unknown } | null)?.intern;
+    const bericht =
+      typeof intern === "string" ? intern : e instanceof Error ? e.message : String(e);
+    void logAi(kind, false, Date.now() - start, bericht, model);
     throw e;
   }
 }
@@ -1303,6 +1310,8 @@ export const assistentHulp = createServerFn({ method: "POST" })
       data.soort === "vervang"
         ? { soort: "vervang", ingredient: tekst, recept }
         : { soort: "vraag", vraag: tekst, recept };
+    // Fase 8: AI uitgezet (Privacy & toestemmingen) → vaste tips, ook in de demo.
+    if (await aiUitVoor(context.userId)) return { bron: "regels", melding: AI_UIT_MELDING };
     if (isDemoOmgeving(process.env)) return new TestAssistentAdapter().vraag(vraag);
     if (!process.env["LOVABLE_API_KEY"])
       return { bron: "regels", melding: "De slimme hulp is nog niet aangesloten." };

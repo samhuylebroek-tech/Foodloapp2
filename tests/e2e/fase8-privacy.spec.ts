@@ -221,3 +221,30 @@ test("sessies: twee toestellen zien, het andere afmelden; daar moet je opnieuw a
   await ctx.close();
   void extern;
 });
+
+test("AI uit: de kookhulp stuurt niets naar de slimme hulp en zegt waarom (vaste tips blijven)", async ({
+  page,
+  extern,
+}) => {
+  await resetDemo();
+  await page.addInitScript(
+    (id) =>
+      window.localStorage.setItem(
+        `foodlo:toestemmingen:${id}`,
+        JSON.stringify({ ai: { aan: false, sinds: "2026-11-20T10:00:00Z" } }),
+      ),
+    IK,
+  );
+  await meldAan(page);
+  await page.goto("/recepten/aaaaaaaa-0000-4000-8000-000000000008");
+  await page.getByRole("button", { name: "Vraag het Foodlo" }).click();
+  const paneel = page.getByRole("dialog", { name: "Vraag het Foodlo" });
+  await paneel.getByLabel("Ander ingrediënt").fill("room");
+  await paneel.getByRole("button", { name: "Zoek vervangers" }).click();
+  await paneel.getByRole("button", { name: "Meer ideeën van de slimme hulp" }).click();
+  await expect(paneel.getByText(/Je hebt slimme hulp \(AI\) uitgezet/)).toBeVisible();
+  await expect(paneel.getByText("Testmodus: vaste voorbeeldantwoorden, geen echte AI")).toHaveCount(
+    0,
+  );
+  void extern;
+});
