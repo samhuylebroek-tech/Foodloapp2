@@ -6,6 +6,7 @@
 import { db } from "@/lib/module-beschikbaar";
 import { eigenId, zichtbareEigenaren } from "@/lib/zichtbare-eigenaren";
 import { magExclusiefZien } from "@/lib/betalen/maker-abonnement";
+import type { Entitlement } from "@/lib/betalen/entitlements";
 import { mijnMakerRechten } from "@/lib/betalen/maker-abonnement.functions";
 import {
   isPubliekZichtbaar,
@@ -513,6 +514,61 @@ export async function zichtbareReceptenIn(v: Verzameling): Promise<ReceptKaart[]
     });
     return mag ? [r] : [];
   });
+}
+
+type GeslotenBron = {
+  maker: Pick<Maker, "id" | "naam" | "user_id">;
+  publicatie: Pick<Publicatie, "exclusief">;
+};
+
+/**
+ * BUG-180 (fase 8): welke geplande recepten zijn exclusieve makerrecepten die je niet meer mag
+ * zien (abonnement opgezegd of verlopen)? Eigen recepten en die van je gezin/vrienden tellen
+ * nooit. Geen bron (module ontbreekt) = niet gesloten.
+ */
+export function geslotenUit(i: {
+  ids: readonly string[];
+  eigenaarVan: ReadonlyMap<string, string>;
+  bronnen: ReadonlyMap<string, GeslotenBron>;
+  eigenaren: readonly string[];
+  ik: string | null;
+  rechten: readonly Entitlement[];
+}): Map<string, { maker: string }> {
+  const uit = new Map<string, { maker: string }>();
+  for (const id of i.ids) {
+    const b = i.bronnen.get(id);
+    if (!b?.publicatie.exclusief) continue;
+    // Je eigen makerrecept, of een recept van iemand uit je gezin/vrienden: nooit gesloten.
+    if (i.ik && b.maker.user_id === i.ik) continue;
+    const eigenaar = i.eigenaarVan.get(id);
+    if (eigenaar && i.eigenaren.includes(eigenaar)) continue;
+    const mag = magExclusiefZien({
+      exclusief: true,
+      creatorId: b.maker.id,
+      isMaker: false,
+      gebruiker: i.ik ? { id: i.ik, entitlements: i.rechten } : null,
+    });
+    if (!mag) uit.set(id, { maker: b.maker.naam });
+  }
+  return uit;
+}
+
+export async function geslotenRecepten(ids: string[]): Promise<Map<string, { maker: string }>> {
+  const uniek = [...new Set(ids.filter(Boolean))];
+  if (!uniek.length) return new Map();
+  const bronnen = await haalBronnen(uniek);
+  if (![...bronnen.values()].some((b) => b.publicatie.exclusief)) return new Map();
+  const [eigenaren, ik, rechten, recepten] = await Promise.all([
+    zichtbareEigenaren(),
+    eigenId(),
+    mijnMakerRechten().then((r) => r.entitlements),
+    // Onder RLS (0021) is een gesloten recept onzichtbaar: dan geen eigenaar = gesloten.
+    db.from("recipes").select("id, user_id").in("id", uniek),
+  ]);
+  const eigenaarVan = new Map(
+    ((recepten.data ?? []) as { id: string; user_id: string }[]).map((r) => [r.id, r.user_id]),
+  );
+  return geslotenUit({ ids: uniek, eigenaarVan, bronnen, eigenaren, ik, rechten });
 }
 
 // ---------- community ----------

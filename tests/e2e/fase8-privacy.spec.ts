@@ -248,3 +248,62 @@ test("AI uit: de kookhulp stuurt niets naar de slimme hulp en zegt waarom (vaste
   );
   void extern;
 });
+
+test("BUG-180: exclusief recept na opzeggen in het weekmenu → 'Niet meer beschikbaar' en iets anders kiezen", async ({
+  page,
+  extern,
+}) => {
+  const HARIRA = "a7a7a7a7-0000-4000-8000-000000000006";
+  const AHMED = "c7c7c7c7-0000-4000-8000-000000000002";
+  await resetDemo();
+  const vandaag = new Date().toLocaleDateString("sv-SE");
+  await seedDb({
+    meal_plan: [
+      {
+        id: "f8180000-0000-4000-8000-000000000001",
+        user_id: IK,
+        group_id: null,
+        plan_date: vandaag,
+        meal_type: "avondeten",
+        recipe_id: HARIRA,
+        personen: 2,
+      },
+    ],
+    maker_abonnementen: [
+      {
+        id: "f8180000-0000-4000-8000-000000000002",
+        fan_id: IK,
+        creator_id: AHMED,
+        status: "opgezegd",
+        modus: "test",
+        prijs_cent: 399,
+        start_op: "2026-11-01T18:00:00Z",
+        periode_einde: "2026-11-10T18:00:00Z",
+        opgezegd_op: "2026-11-10T18:00:00Z",
+      },
+    ],
+  });
+  await zetKlok(page, 14);
+  await meldAan(page);
+  await page.goto("/planner");
+  const melding = page.getByTestId("niet-meer-beschikbaar").filter({ visible: true }).first();
+  await expect(melding).toContainText("Niet meer beschikbaar");
+  await expect(melding).toContainText("Chef Ahmed");
+  await melding.getByRole("button", { name: "Kies iets anders" }).click();
+  const blad = page.getByRole("dialog", { name: "Ander gerecht" });
+  await blad.getByRole("textbox", { name: "Zoek in je recepten" }).fill("pompoensoep");
+  await blad
+    .getByRole("button", { name: /pompoensoep/i })
+    .first()
+    .click();
+  await expect
+    .poll(
+      async () =>
+        ((await nepDb())["meal_plan"] ?? []).find(
+          (r) => r["id"] === "f8180000-0000-4000-8000-000000000001",
+        )?.["recipe_id"],
+    )
+    .not.toBe(HARIRA);
+  await expect(page.getByTestId("niet-meer-beschikbaar").filter({ visible: true })).toHaveCount(0);
+  void extern;
+});

@@ -1,3 +1,4 @@
+import { geslotenRecepten } from "@/lib/makers-db";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFocusTerug } from "@/hooks/useFocusTerug";
 import { meet } from "@/lib/meten";
@@ -293,6 +294,15 @@ function PlannerPage() {
     mee,
   );
   const [etersRij, setEtersRij] = useState<PlanRow | null>(null);
+
+  // BUG-180 (fase 8): exclusief makerrecept ingepland, maar het abonnement is gestopt.
+  const receptIds = [...new Set(plan.map((p) => p.recipe_id).filter(Boolean) as string[])].sort();
+  const { data: gesloten = new Map<string, { maker: string }>() } = useQuery({
+    queryKey: ["gesloten-recepten", receptIds.join(",")],
+    enabled: receptIds.length > 0,
+    queryFn: () => geslotenRecepten(receptIds),
+    staleTime: 60_000,
+  });
   const zoekVervanger = (p: PlanRow, ingredient: string) => {
     if (!p.recipe_id) return;
     void navigate({
@@ -1299,6 +1309,27 @@ function PlannerPage() {
                                   </span>
                                 )}
                                 <EterInitialen leden={etersVan(p.id)} className="px-2.5 pt-1.5" />
+                                {p.recipe_id && gesloten.has(p.recipe_id) ? (
+                                  <div
+                                    className="mx-1.5 mt-1.5 space-y-1.5 rounded-xl bg-honing-zacht p-2 text-honing-foreground"
+                                    data-testid="niet-meer-beschikbaar"
+                                  >
+                                    <p className="text-[0.95rem] font-semibold leading-snug">
+                                      Niet meer beschikbaar
+                                    </p>
+                                    <p className="text-[0.95rem] leading-snug">
+                                      Exclusief van {gesloten.get(p.recipe_id)!.maker}; je
+                                      abonnement is gestopt.
+                                    </p>
+                                    <Button
+                                      variant="outline"
+                                      className="min-h-12 w-full whitespace-normal px-2 text-[0.95rem] leading-tight"
+                                      onClick={() => setVervangRij(p)}
+                                    >
+                                      Kies iets anders
+                                    </Button>
+                                  </div>
+                                ) : null}
                                 {oordelen[p.id]?.niveau && oordelen[p.id]!.niveau !== "ok" ? (
                                   <span className="block px-2.5 pt-1.5">
                                     <OordeelLabel oordeel={oordelen[p.id]} />
@@ -1411,6 +1442,25 @@ function PlannerPage() {
           ) : null}
           {planActies(p)}
         </div>
+        {p.recipe_id && gesloten.has(p.recipe_id) ? (
+          <div
+            className="mt-2 space-y-2 rounded-2xl bg-honing-zacht p-3 text-honing-foreground"
+            data-testid="niet-meer-beschikbaar"
+          >
+            <p className="text-base font-semibold">Niet meer beschikbaar</p>
+            <p className="text-base">
+              Dit is een exclusief recept van {gesloten.get(p.recipe_id)!.maker}. Je abonnement is
+              gestopt, dus de stappen en ingrediënten zijn dicht. Kies iets anders voor deze dag.
+            </p>
+            <Button
+              variant="outline"
+              className="min-h-12 text-base"
+              onClick={() => setVervangRij(p)}
+            >
+              <Repeat className="size-5" aria-hidden /> Kies iets anders
+            </Button>
+          </div>
+        ) : null}
         {p.recipe_id ? (
           <MaaltijdVeiligheid
             className="mt-2 border-t border-border/70 pt-2"

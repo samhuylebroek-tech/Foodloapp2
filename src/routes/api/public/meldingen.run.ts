@@ -75,7 +75,10 @@ export const Route = createFileRoute("/api/public/meldingen/run")({
 type ToestemmingDb = {
   from: (t: string) => {
     select: (k: string) => {
-      eq: (k: string, v: string) => {
+      eq: (
+        k: string,
+        v: string,
+      ) => {
         eq: (k: string, v: boolean) => PromiseLike<{ data: { user_id: string }[] | null }>;
       };
     };
